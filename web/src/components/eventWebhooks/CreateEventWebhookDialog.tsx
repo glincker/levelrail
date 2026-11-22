@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -12,23 +13,30 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 import { useCreateEventWebhook } from '../../queries/eventWebhooks'
+import {
+  FIELD_RESOURCES,
+  fieldDescriptorsQueryOptions,
+} from '../../queries/fieldDescriptors'
+import { DescriptorFields } from '../DescriptorFields'
 
 export function CreateEventWebhookDialog() {
   const { t } = useTranslation('eventWebhooks')
   const create = useCreateEventWebhook()
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [url, setUrl] = useState('')
-  const [events, setEvents] = useState('')
+  const { data: descriptors } = useQuery({
+    ...fieldDescriptorsQueryOptions(FIELD_RESOURCES.eventWebhook),
+    retry: false,
+  })
+  const fields = descriptors?.fields ?? []
+  const [values, setValues] = useState<Record<string, string>>({})
+  const name = values.name ?? ''
+  const url = values.url ?? ''
+  const events = values.events ?? ''
   const [secret, setSecret] = useState<string | null>(null)
 
   function reset() {
-    setName('')
-    setUrl('')
-    setEvents('')
+    setValues({})
     setSecret(null)
     create.reset()
   }
@@ -94,40 +102,20 @@ export function CreateEventWebhookDialog() {
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4">
-            <Field>
-              <FieldLabel htmlFor="hook-name">{t('form.name')}</FieldLabel>
-              <Input
-                id="hook-name"
-                value={name}
-                placeholder={t('form.namePlaceholder')}
-                onChange={(e) => {
-                  setName(e.target.value)
+            {fields.length === 0 ? (
+              <Alert variant="destructive">
+                <AlertDescription>{t('form.fieldsFailed')}</AlertDescription>
+              </Alert>
+            ) : (
+              <DescriptorFields
+                fields={fields}
+                values={values}
+                onChange={(key, value) => {
+                  setValues((cur) => ({ ...cur, [key]: value }))
                 }}
+                idPrefix="hook"
               />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="hook-url">{t('form.url')}</FieldLabel>
-              <Input
-                id="hook-url"
-                value={url}
-                placeholder={t('form.urlPlaceholder')}
-                onChange={(e) => {
-                  setUrl(e.target.value)
-                }}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="hook-events">{t('form.events')}</FieldLabel>
-              <Input
-                id="hook-events"
-                value={events}
-                placeholder={t('form.eventsPlaceholder')}
-                onChange={(e) => {
-                  setEvents(e.target.value)
-                }}
-              />
-              <FieldDescription>{t('form.eventsHint')}</FieldDescription>
-            </Field>
+            )}
             {create.isError ? (
               <Alert variant="destructive">
                 <AlertDescription>{create.error.message}</AlertDescription>
@@ -146,7 +134,10 @@ export function CreateEventWebhookDialog() {
               <Button
                 type="submit"
                 disabled={
-                  name.trim() === '' || url.trim() === '' || create.isPending
+                  fields.length === 0 ||
+                  name.trim() === '' ||
+                  url.trim() === '' ||
+                  create.isPending
                 }
               >
                 {create.isPending ? t('form.submitting') : t('form.submit')}

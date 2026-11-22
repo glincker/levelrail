@@ -360,6 +360,7 @@
     "nodeLabel": "{{stage}}、{{status}}、{{duration}}",
     "barLabel": "{{stage}}のバー、タイムラインの{{percent}}パーセント",
     "totals": "経過時間 {{wall}}、ステージ合計 {{stages}}。",
+    "totalsRunning": "{{wall}}経過中、ここまでのステージ合計 {{stages}}。",
     "gap": {
       "outside": "ステージの間または外で{{time}}が経過しました。",
       "overlap": "ステージが{{time}}重なりました。"

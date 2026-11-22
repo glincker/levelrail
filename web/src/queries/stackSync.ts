@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { stackKeys } from './stacks'
+import { useApiMutation } from './useApiMutation'
 
 export interface StackSyncConfig {
   repo_url: string
@@ -104,16 +105,14 @@ export function usePutStackSync(name: string) {
 }
 
 export function useRefreshStackSync(name: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: () =>
+  return useApiMutation({
+    fn: () =>
       request<StackSyncStatus>(
         `${base(name)}/refresh`,
         { method: 'POST' },
         'refresh stack sync',
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: stackSyncKeys.detail(name) }),
+    invalidate: [stackSyncKeys.detail(name)],
   })
 }
 

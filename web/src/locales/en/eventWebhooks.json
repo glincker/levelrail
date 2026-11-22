@@ -21,7 +21,8 @@
     "cancel": "Cancel",
     "submit": "Add webhook",
     "submitting": "Adding",
-    "done": "Done"
+    "done": "Done",
+    "fieldsFailed": "The form fields could not be loaded. Reload the page and try again."
   },
   "card": {
     "allEvents": "All events",
@@ -58,6 +59,17 @@
       "pending": "Pending",
       "delivered": "Delivered",
       "dead": "Dead lettered"
+    }
+  },
+  "fields": {
+    "name": {
+      "help": "A short label for this subscriber."
+    },
+    "url": {
+      "help": "HTTPS endpoint that receives the signed POST requests."
+    },
+    "events": {
+      "help": "Comma separated types or families such as apps.*. Leave empty to receive every event."
     }
   }
 }

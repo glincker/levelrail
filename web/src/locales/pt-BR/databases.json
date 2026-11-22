@@ -1144,5 +1144,23 @@
     "optionalHint": "Oferece TLS ao lado da porta privada sem criptografia para que clientes antigos ainda se conectem. O banco de dados reinicia.",
     "optionalToast": "O TLS agora é opcional, o banco de dados vai reiniciar",
     "optionalFailed": "Não foi possível alterar o TLS"
+  },
+  "wiring": {
+    "title": "Como este banco de dados está conectado",
+    "apps": "Apps conectados",
+    "noApps": "Nenhum app conectado ainda.",
+    "outTitle": "Onde ele roda e quem pode acessar",
+    "node": "Nó",
+    "noNode": "Sem nó",
+    "access": "Acesso",
+    "private": "Privado",
+    "public": "Público",
+    "publicOn": "Público na porta {{port}}",
+    "backups": "Backups",
+    "noBackups": "Sem agendamento de backup",
+    "project": "Projeto",
+    "noProject": "Sem projeto",
+    "on": "Ativo",
+    "none": "Nenhum"
   }
 }

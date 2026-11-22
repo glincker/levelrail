@@ -52,9 +52,7 @@ type CachePolicyResource struct {
 
 // GetDomainHeaders calls GET .../domains/{domain}/headers.
 func (c *Client) GetDomainHeaders(ctx context.Context, name, domain string) (HeadersPolicyResource, error) {
-	var out HeadersPolicyResource
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, trafficpolicy.KindHeaders), nil, &out)
-	return out, err
+	return getJSON[HeadersPolicyResource](ctx, c, domainPolicyPath(name, domain, trafficpolicy.KindHeaders))
 }
 
 // SetDomainHeaders calls PUT .../domains/{domain}/headers.
@@ -73,9 +71,7 @@ func (c *Client) ClearDomainHeaders(ctx context.Context, name, domain string) (H
 
 // GetDomainForwarders calls GET .../domains/{domain}/forwarders.
 func (c *Client) GetDomainForwarders(ctx context.Context, name, domain string) (ForwardersPolicyResource, error) {
-	var out ForwardersPolicyResource
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, trafficpolicy.KindForwarders), nil, &out)
-	return out, err
+	return getJSON[ForwardersPolicyResource](ctx, c, domainPolicyPath(name, domain, trafficpolicy.KindForwarders))
 }
 
 // SetDomainForwarders calls PUT .../domains/{domain}/forwarders.
@@ -94,9 +90,7 @@ func (c *Client) ClearDomainForwarders(ctx context.Context, name, domain string)
 
 // GetDomainGeo calls GET .../domains/{domain}/geo.
 func (c *Client) GetDomainGeo(ctx context.Context, name, domain string) (GeoPolicyResource, error) {
-	var out GeoPolicyResource
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, trafficpolicy.KindGeo), nil, &out)
-	return out, err
+	return getJSON[GeoPolicyResource](ctx, c, domainPolicyPath(name, domain, trafficpolicy.KindGeo))
 }
 
 // SetDomainGeo calls PUT .../domains/{domain}/geo.
@@ -115,9 +109,7 @@ func (c *Client) ClearDomainGeo(ctx context.Context, name, domain string) (GeoPo
 
 // GetDomainCache calls GET .../domains/{domain}/cache.
 func (c *Client) GetDomainCache(ctx context.Context, name, domain string) (CachePolicyResource, error) {
-	var out CachePolicyResource
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, trafficpolicy.KindCache), nil, &out)
-	return out, err
+	return getJSON[CachePolicyResource](ctx, c, domainPolicyPath(name, domain, trafficpolicy.KindCache))
 }
 
 // SetDomainCache calls PUT .../domains/{domain}/cache.
@@ -199,9 +191,7 @@ type DomainPoliciesResource struct {
 
 // GetDomainPolicies calls GET .../domains/{domain}/policies.
 func (c *Client) GetDomainPolicies(ctx context.Context, name, domain string) (DomainPoliciesResource, error) {
-	var out DomainPoliciesResource
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, "policies"), nil, &out)
-	return out, err
+	return getJSON[DomainPoliciesResource](ctx, c, domainPolicyPath(name, domain, "policies"))
 }
 
 // PolicyPreviewRequest overlays draft sections and asks what happens to
@@ -256,9 +246,7 @@ func (c *Client) PurgeDomainCache(ctx context.Context, name, domain string, req 
 
 // GetDomainCacheStats calls GET .../domains/{domain}/cache/stats.
 func (c *Client) GetDomainCacheStats(ctx context.Context, name, domain string) (CacheStats, error) {
-	var out CacheStats
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, "cache/stats"), nil, &out)
-	return out, err
+	return getJSON[CacheStats](ctx, c, domainPolicyPath(name, domain, "cache/stats"))
 }
 
 // RedirectEffective explains who redirects plain HTTP to HTTPS.
@@ -302,9 +290,7 @@ type DomainRedirectsResource struct {
 
 // GetDomainRedirects calls GET .../domains/{domain}/redirects.
 func (c *Client) GetDomainRedirects(ctx context.Context, name, domain string) (DomainRedirectsResource, error) {
-	var out DomainRedirectsResource
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, "redirects"), nil, &out)
-	return out, err
+	return getJSON[DomainRedirectsResource](ctx, c, domainPolicyPath(name, domain, "redirects"))
 }
 
 // SetDomainRedirectSettings calls PUT .../domains/{domain}/redirects.
@@ -379,9 +365,7 @@ type DomainPortsResource struct {
 
 // GetDomainPorts calls GET .../domains/{domain}/ports.
 func (c *Client) GetDomainPorts(ctx context.Context, name, domain string) (DomainPortsResource, error) {
-	var out DomainPortsResource
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, "ports"), nil, &out)
-	return out, err
+	return getJSON[DomainPortsResource](ctx, c, domainPolicyPath(name, domain, "ports"))
 }
 
 // RestrictDomainPort calls PUT .../ports/{port}/restrict: only sources may

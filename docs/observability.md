@@ -277,13 +277,25 @@ The API is `GET /api/v1/observability/presets`, `GET` and `POST /api/v1/observab
 
 Fields: the OTLP endpoint of your stack (without a signal path), the instance ID and an access policy token with `logs:write` and `metrics:write`. Logs and metrics are on by default. Unverified: the Basic auth format (instance ID as user, token as password) follows the Grafana docs but has not been tested against a live stack.
 
+### Grafana Loki
+
+Fields: the Loki base URL, an optional username (the Loki user or instance ID), an optional token and an optional tenant ID. Logs only. `/loki/api/v1/push` is added when the URL has no path. The username and token become a Basic `Authorization` header, which is what Grafana Cloud uses. The tenant ID is sent as `X-Scope-OrgID` for a multi-tenant self-hosted Loki. Leave the credentials blank only for a Loki you reach without auth.
+
+```bash
+levelrail-cli observability add grafana-loki --name loki \
+  --field endpoint=https://logs-prod-012.grafana.net \
+  --field user=123456 --field token=env:GRAFANA_LOKI_TOKEN
+```
+
+Unverified: not tested against a live Grafana Cloud stack.
+
 ### Datadog
 
 Fields: your Datadog site and an API key. Logs are on by default. Metrics use the OTLP intake and are off by default, add them with `--signal logs,metrics`. Sites include US1, US3, US5, EU, AP1, AP2 and UK1. The metrics intake accepts delta temporality only and counters are exported as cumulative sums, so a metrics test can be rejected with a 400. Unverified: only US1 has been tested, the other site hosts follow Datadog's documented pattern.
 
 ### Axiom
 
-Fields: a dataset that already exists, the region (`us` or `eu`) and an API token with ingest permission. Logs and metrics are on by default. Metrics are sent to the regional edge domain with the `x-axiom-metrics-dataset` header and need a metrics dataset.
+Fields: a dataset that already exists, the region (`us` or `eu`) and an API token with ingest permission. Logs and metrics are on by default. Both signals are sent to the regional edge domain (`us-east-1.aws.edge.axiom.co` or `eu-central-1.aws.edge.axiom.co`; logs to `/v1/ingest/<dataset>`, existing targets keep their saved URL). Metrics also use the `x-axiom-metrics-dataset` header and need a metrics dataset.
 
 ### Honeycomb
 
@@ -828,7 +840,7 @@ Channels are global destinations you connect once (Settings -> Notification chan
 For most kinds, `notify_url` is a webhook URL. A few pack credentials into that one field (Pushover's user key and app token, PagerDuty's routing key). Two are exceptions:
 
 - `email` sends through the control plane's SMTP sender (Settings -> Email, or `APP_SMTP_HOST`, `APP_SMTP_PORT`, `APP_SMTP_USERNAME`, `APP_SMTP_PASSWORD`, `APP_SMTP_FROM`).
-- `webpush` ignores `notify_url`: the destination is every browser subscription registered under Settings -> Notification channels -> Browser push.
+- `webpush` ignores `notify_url`: the destination is the browser subscriptions registered under Settings -> Notification channels -> Browser push, limited to users who may see the event (admins for instance notices, readers of the app for app events).
 
 Both return a "not configured" error if the control plane has no master key set.
 

@@ -17,7 +17,13 @@
       "info": "Info",
       "warning": "Warnung",
       "critical": "Kritisch"
-    }
+    },
+    "master": "Standard-Warnungen",
+    "masterHint": "Absturzschleifen, volle Platten, ablaufende Zertifikate, 5xx-Fehler und fehlgeschlagene Backups. Immer in der App, per E-Mail wenn eingerichtet.",
+    "masterError": "Standard-Warnungen konnten nicht aktualisiert werden.",
+    "digest": "Wochenübersicht",
+    "digestHint": "Montags 08:00 UTC: Apps, Deploys, Neustarts, Zertifikate, Backups und Speicher. Braucht E-Mail.",
+    "digestError": "Wochenübersicht konnte nicht aktualisiert werden."
   },
   "tab": "Posteingang",
   "title": "Alarm-Posteingang",

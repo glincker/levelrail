@@ -155,9 +155,7 @@ func goLivePath(app, domain string) string {
 
 // GetGoLive calls GET .../domains/{domain}/go-live (a poll friendly status).
 func (c *Client) GetGoLive(ctx context.Context, app, domain string) (GoLiveResult, error) {
-	var out GoLiveResult
-	err := c.do(ctx, http.MethodGet, goLivePath(app, domain), nil, &out)
-	return out, err
+	return getJSON[GoLiveResult](ctx, c, goLivePath(app, domain))
 }
 
 // RunGoLive calls POST .../domains/{domain}/go-live.
@@ -176,9 +174,7 @@ func (c *Client) PlanGoLive(ctx context.Context, app string, req GoLivePlanReque
 
 // GetDomainAutomation calls GET /api/v1/settings/domain-automation.
 func (c *Client) GetDomainAutomation(ctx context.Context) (DomainAutomationResource, error) {
-	var out DomainAutomationResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/domain-automation", nil, &out)
-	return out, err
+	return getJSON[DomainAutomationResource](ctx, c, "/api/v1/settings/domain-automation")
 }
 
 // UpdateDomainAutomation calls PUT /api/v1/settings/domain-automation.
@@ -194,9 +190,7 @@ func (c *Client) ListAutomationRuns(ctx context.Context, limit int) ([]Automatio
 	if limit > 0 {
 		path += "?" + url.Values{"limit": {strconv.Itoa(limit)}}.Encode()
 	}
-	var out []AutomationRun
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]AutomationRun](ctx, c, path)
 }
 
 // UndoAutomationRun calls POST /api/v1/domains/automation/runs/{id}/undo.
@@ -208,9 +202,7 @@ func (c *Client) UndoAutomationRun(ctx context.Context, id string) (UndoResult, 
 
 // DNSZone calls GET /api/v1/dns/zone?domain=.
 func (c *Client) DNSZone(ctx context.Context, domain string) (DNSZoneResult, error) {
-	var out DNSZoneResult
-	err := c.do(ctx, http.MethodGet, "/api/v1/dns/zone?"+url.Values{"domain": {domain}}.Encode(), nil, &out)
-	return out, err
+	return getJSON[DNSZoneResult](ctx, c, "/api/v1/dns/zone?"+url.Values{"domain": {domain}}.Encode())
 }
 
 // BackfillBaseDomain calls POST /api/v1/settings/ingress/apps-base-domain/backfill.
@@ -270,9 +262,7 @@ type RollbackResult struct {
 
 // DomainChanges calls GET /api/v1/domains/{domain}/changes.
 func (c *Client) DomainChanges(ctx context.Context, domain string) ([]DomainChange, error) {
-	var out []DomainChange
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/"+PathEscape(domain)+"/changes", nil, &out)
-	return out, err
+	return getJSON[[]DomainChange](ctx, c, "/api/v1/domains/"+PathEscape(domain)+"/changes")
 }
 
 // RollbackDomainChange calls POST /api/v1/domains/{domain}/changes/{id}/rollback.

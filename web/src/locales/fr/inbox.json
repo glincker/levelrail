@@ -17,7 +17,13 @@
       "info": "Info",
       "warning": "Avertissement",
       "critical": "Critique"
-    }
+    },
+    "master": "Alertes par défaut",
+    "masterHint": "Boucles de plantage, disques pleins, certificats expirant, erreurs 5xx et sauvegardes en échec. Toujours dans l'app, par e-mail si configuré.",
+    "masterError": "Impossible de mettre à jour les alertes par défaut.",
+    "digest": "Résumé hebdomadaire",
+    "digestHint": "Lundi 08:00 UTC : apps, déploiements, redémarrages, certificats, sauvegardes et disque. Nécessite l'e-mail.",
+    "digestError": "Impossible de mettre à jour le résumé hebdomadaire."
   },
   "tab": "Boîte de réception",
   "title": "Boîte de réception des alertes",

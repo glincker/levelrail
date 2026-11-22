@@ -107,6 +107,7 @@ type Tuning struct {
 	RaiseAt      float64
 	LowerAt      float64
 	MinCoverage  time.Duration
+	MinSamples   int
 }
 
 func (t Tuning) withDefaults() Tuning {
@@ -124,6 +125,9 @@ func (t Tuning) withDefaults() Tuning {
 	}
 	if t.MinCoverage <= 0 {
 		t.MinCoverage = minCoverage
+	}
+	if t.MinSamples <= 0 {
+		t.MinSamples = minSampleCount
 	}
 	return t
 }
@@ -231,7 +235,7 @@ func recommendDimension(p dimensionParams) DimensionRecommendation {
 	}
 
 	coverage := dataCoverage(p.samples, p.now)
-	rec.Confidence = confidenceFor(len(p.samples), coverage, p.lookback, p.tuning.MinCoverage)
+	rec.Confidence = confidenceFor(len(p.samples), p.tuning.MinSamples, coverage, p.lookback, p.tuning.MinCoverage)
 	rec.DataSufficient = rec.Confidence != ConfidenceLow
 
 	if p.oom != nil {
@@ -316,9 +320,9 @@ func dataCoverage(samples []Sample, now time.Time) time.Duration {
 	return now.Sub(earliest)
 }
 
-func confidenceFor(sampleCount int, coverage, lookback, needCoverage time.Duration) string {
+func confidenceFor(sampleCount, minSamples int, coverage, lookback, needCoverage time.Duration) string {
 	switch {
-	case sampleCount < minSampleCount || coverage < needCoverage:
+	case sampleCount < minSamples || coverage < needCoverage:
 		return ConfidenceLow
 	case lookback > 0 && coverage < lookback:
 		return ConfidenceMedium

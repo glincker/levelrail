@@ -43,7 +43,9 @@ function Stage({
       />
       <span className="min-w-0 text-sm">
         <span className="block text-xs text-muted-foreground">{label}</span>
-        <span className="block truncate text-foreground">{value}</span>
+        <span className="block break-words text-foreground" title={value}>
+          {value}
+        </span>
       </span>
     </li>
   )

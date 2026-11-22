@@ -6,9 +6,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/webpush"
 )
 
 // This file is browser push notification subscriptions (Settings ->
@@ -20,7 +22,7 @@ import (
 // PushSubscriptions is the store surface the handlers below need.
 // *store.DB satisfies this structurally.
 type PushSubscriptions interface {
-	SavePushSubscription(ctx context.Context, s store.PushSubscription) error
+	SavePushSubscription(ctx context.Context, s store.PushSubscription, maxPerUser int) error
 	ListPushSubscriptionsForUser(ctx context.Context, userID string) ([]store.PushSubscription, error)
 	DeletePushSubscription(ctx context.Context, id, userID string) error
 }
@@ -99,13 +101,24 @@ func (rt *Router) handleCreatePushSubscription(w http.ResponseWriter, r *http.Re
 	}
 
 	var req createPushSubscriptionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, webpush.MaxRequestBytes)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.Endpoint == "" || req.Keys.P256dh == "" || req.Keys.Auth == "" {
 		writeError(w, http.StatusBadRequest, "endpoint, keys.p256dh, and keys.auth are required")
 		return
+	}
+	if err := webpush.ValidateEndpoint(req.Endpoint, webpush.AllowedHosts(os.Getenv)); err != nil {
+		writeError(w, http.StatusBadRequest, "endpoint is not a supported push service address")
+		return
+	}
+	if err := webpush.ValidateKeys(req.Keys.P256dh, req.Keys.Auth); err != nil {
+		writeError(w, http.StatusBadRequest, "keys.p256dh or keys.auth is malformed")
+		return
+	}
+	if len(req.UserAgent) > webpush.MaxUserAgentLen {
+		req.UserAgent = req.UserAgent[:webpush.MaxUserAgentLen]
 	}
 
 	id, err := store.NewPushSubscriptionID()
@@ -118,7 +131,16 @@ func (rt *Router) handleCreatePushSubscription(w http.ResponseWriter, r *http.Re
 		ID: id, UserID: userID, Endpoint: req.Endpoint,
 		P256dh: req.Keys.P256dh, Auth: req.Keys.Auth, UserAgent: req.UserAgent,
 	}
-	if err := rt.pushSubscriptions.SavePushSubscription(r.Context(), sub); err != nil {
+	err = rt.pushSubscriptions.SavePushSubscription(r.Context(), sub, webpush.MaxPerUser(os.Getenv))
+	if errors.Is(err, store.ErrPushSubscriptionOwned) {
+		writeError(w, http.StatusConflict, "this browser is already registered")
+		return
+	}
+	if errors.Is(err, store.ErrPushSubscriptionLimit) {
+		writeError(w, http.StatusConflict, "too many registered browsers, remove one first")
+		return
+	}
+	if err != nil {
 		rt.internalError(w, "api: create push subscription failed", err, slog.String("user_id", userID))
 		return
 	}

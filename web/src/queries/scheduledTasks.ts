@@ -66,7 +66,7 @@ export function useJobRuns(appName: string, taskId: string, status: string) {
   return useQuery({
     queryKey: scheduledTaskKeys.runs(appName, taskId, status),
     queryFn: () => fetchJobRuns(appName, taskId, status),
-    refetchInterval: pollMs('live'),
+    refetchInterval: pollMs('steady'),
   })
 }
 

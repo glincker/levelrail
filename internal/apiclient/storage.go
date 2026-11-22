@@ -158,16 +158,12 @@ func storageDestinationPath(id string) string {
 
 // ListStorageProviders calls GET /api/v1/storage/providers.
 func (c *Client) ListStorageProviders(ctx context.Context) ([]StorageProvider, error) {
-	var out []StorageProvider
-	err := c.do(ctx, http.MethodGet, "/api/v1/storage/providers", nil, &out)
-	return out, err
+	return getJSON[[]StorageProvider](ctx, c, "/api/v1/storage/providers")
 }
 
 // ListStorageDestinations calls GET /api/v1/storage/destinations.
 func (c *Client) ListStorageDestinations(ctx context.Context) ([]StorageDestination, error) {
-	var out []StorageDestination
-	err := c.do(ctx, http.MethodGet, "/api/v1/storage/destinations", nil, &out)
-	return out, err
+	return getJSON[[]StorageDestination](ctx, c, "/api/v1/storage/destinations")
 }
 
 // CreateStorageDestination calls POST /api/v1/storage/destinations.
@@ -179,7 +175,7 @@ func (c *Client) CreateStorageDestination(ctx context.Context, req StorageDestin
 
 // DeleteStorageDestination calls DELETE /api/v1/storage/destinations/{id}.
 func (c *Client) DeleteStorageDestination(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, storageDestinationPath(id), nil, nil)
+	return c.del(ctx, storageDestinationPath(id))
 }
 
 // TestStorageDestination calls POST /api/v1/storage/destinations/{id}/test.
@@ -191,9 +187,7 @@ func (c *Client) TestStorageDestination(ctx context.Context, id string) (Storage
 
 // ListLogArchivePolicies calls GET /api/v1/log-archive/policies.
 func (c *Client) ListLogArchivePolicies(ctx context.Context) ([]LogArchivePolicy, error) {
-	var out []LogArchivePolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/log-archive/policies", nil, &out)
-	return out, err
+	return getJSON[[]LogArchivePolicy](ctx, c, "/api/v1/log-archive/policies")
 }
 
 // SetLogArchivePolicy calls PUT /api/v1/log-archive/policy.
@@ -205,7 +199,7 @@ func (c *Client) SetLogArchivePolicy(ctx context.Context, req LogArchivePolicyRe
 
 // DeleteLogArchivePolicy calls DELETE /api/v1/log-archive/policy. An empty app is the global policy.
 func (c *Client) DeleteLogArchivePolicy(ctx context.Context, app string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/log-archive/policy?app="+url.QueryEscape(app), nil, nil)
+	return c.del(ctx, "/api/v1/log-archive/policy?app="+url.QueryEscape(app))
 }
 
 // StartLogArchiveDump calls POST /api/v1/log-archive/dump.
@@ -221,9 +215,7 @@ func (c *Client) ListLogArchiveRuns(ctx context.Context, app string, all bool) (
 	if all {
 		q.Set("all", "true")
 	}
-	var out []LogArchiveRun
-	err := c.do(ctx, http.MethodGet, "/api/v1/log-archive/runs?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[[]LogArchiveRun](ctx, c, "/api/v1/log-archive/runs?"+q.Encode())
 }
 
 // ListLogArchiveObjects calls GET /api/v1/log-archive/objects.
@@ -235,9 +227,7 @@ func (c *Client) ListLogArchiveObjects(ctx context.Context, targetID, app, curso
 	if cursor != "" {
 		q.Set("cursor", cursor)
 	}
-	var out LogArchiveObjects
-	err := c.do(ctx, http.MethodGet, "/api/v1/log-archive/objects?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[LogArchiveObjects](ctx, c, "/api/v1/log-archive/objects?"+q.Encode())
 }
 
 // DownloadLogArchiveObject calls GET /api/v1/log-archive/objects/download and returns the gzip bytes.
@@ -248,9 +238,7 @@ func (c *Client) DownloadLogArchiveObject(ctx context.Context, targetID, key str
 
 // ListStorageDefaults calls GET /api/v1/storage/defaults.
 func (c *Client) ListStorageDefaults(ctx context.Context) (StorageDefaults, error) {
-	var out StorageDefaults
-	err := c.do(ctx, http.MethodGet, "/api/v1/storage/defaults", nil, &out)
-	return out, err
+	return getJSON[StorageDefaults](ctx, c, "/api/v1/storage/defaults")
 }
 
 // SetStorageDefault calls PUT /api/v1/storage/defaults/{class}.
@@ -262,5 +250,5 @@ func (c *Client) SetStorageDefault(ctx context.Context, class, targetID string) 
 
 // ClearStorageDefault calls DELETE /api/v1/storage/defaults/{class}.
 func (c *Client) ClearStorageDefault(ctx context.Context, class string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/storage/defaults/"+url.PathEscape(class), nil, nil)
+	return c.del(ctx, "/api/v1/storage/defaults/"+url.PathEscape(class))
 }

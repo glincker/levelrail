@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 
 	"github.com/GLINCKER/levelrail/internal/dnsstatus"
@@ -21,9 +20,7 @@ func (c *Client) DomainDNSStatus(ctx context.Context, domain, app string) (DNSSt
 	if app != "" {
 		q.Set("app", app)
 	}
-	var out DNSStatusReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/dns-status?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[DNSStatusReport](ctx, c, "/api/v1/domains/dns-status?"+q.Encode())
 }
 
 // MailDNSStatus calls GET /api/v1/mail/dns/status; q carries the spec fields beyond domain.
@@ -32,7 +29,5 @@ func (c *Client) MailDNSStatus(ctx context.Context, domain string, q url.Values)
 		q = url.Values{}
 	}
 	q.Set("domain", domain)
-	var out DNSStatusReport
-	err := c.do(ctx, http.MethodGet, mailDNSPath("/status", "", q), nil, &out)
-	return out, err
+	return getJSON[DNSStatusReport](ctx, c, mailDNSPath("/status", "", q))
 }

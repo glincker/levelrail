@@ -9,7 +9,23 @@
   },
   "nodeSelect": {
     "auto": "Automatic (least loaded)",
-    "autoHint": "Automatic puts it on the least loaded eligible node. Pick a node to pin it there."
+    "autoHint": "Automatic puts it on the least loaded eligible node. Pick a node to pin it there.",
+    "picker": {
+      "choose": "Choose a node",
+      "cost": "{{amount}}/mo",
+      "freeCpu": "{{value}} CPU free",
+      "freeMemory": "{{value}} free",
+      "search": "Search nodes",
+      "empty": "No matching nodes",
+      "local": "This server",
+      "unmanaged": "Unmanaged",
+      "health": {
+        "healthy": "Healthy",
+        "offline": "Offline",
+        "cordoned": "Cordoned",
+        "pending": "Pending"
+      }
+    }
   },
   "draft": {
     "message": "You have an unsaved draft from {{time}}.",
@@ -96,6 +112,19 @@
     "summary": "{{pass}} of {{total}} checks pass",
     "allClear": "All checks pass. Nothing needs your attention.",
     "needsAction": "Needs action"
+  },
+  "healthExplain": {
+    "label": "Why",
+    "failingCheck": "Check {{target}} failing since {{since}}",
+    "restarts": "Restarts: {{n}}",
+    "crashloop": "Crashloop",
+    "lastDeploy": "Last deploy: {{status}}",
+    "logError": "Last error: {{line}}",
+    "next": {
+      "apply_preset": "Try the {{preset}} health preset",
+      "rollback": "Roll back to the previous deploy",
+      "view_logs": "Check the logs"
+    }
   },
   "logs": {
     "previousContainerEnded": "Previous container instance ended",
@@ -552,7 +581,8 @@
       "resources": "Resources",
       "security": "Security",
       "console": "Console",
-      "integrations": "Integrations"
+      "integrations": "Integrations",
+      "integrations-aws-link": "Link AWS account"
     },
     "quickNav": {
       "label": "Quick navigation (hold L)"

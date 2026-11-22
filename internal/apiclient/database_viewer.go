@@ -66,9 +66,7 @@ type DatabaseQueryResult struct {
 
 // GetDatabaseSchema calls GET /api/v1/databases/{name}/schema.
 func (c *Client) GetDatabaseSchema(ctx context.Context, name string) (DatabaseSchemaResource, error) {
-	var out DatabaseSchemaResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/schema", nil, &out)
-	return out, err
+	return getJSON[DatabaseSchemaResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/schema")
 }
 
 // QueryDatabase calls POST /api/v1/databases/{name}/query, or /query/write
@@ -127,9 +125,7 @@ type DatabaseSavedQuery struct {
 
 // GetDatabaseEngineStats calls GET /api/v1/databases/{name}/engine-stats.
 func (c *Client) GetDatabaseEngineStats(ctx context.Context, name string) (DatabaseEngineStats, error) {
-	var out DatabaseEngineStats
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/engine-stats", nil, &out)
-	return out, err
+	return getJSON[DatabaseEngineStats](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/engine-stats")
 }
 
 // ListDatabaseQueryHistory calls GET /api/v1/databases/{name}/query-history.
@@ -138,21 +134,17 @@ func (c *Client) ListDatabaseQueryHistory(ctx context.Context, name string, limi
 	if limit > 0 {
 		path += "?limit=" + strconv.Itoa(limit)
 	}
-	var out []DatabaseQueryHistoryEntry
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]DatabaseQueryHistoryEntry](ctx, c, path)
 }
 
 // ClearDatabaseQueryHistory calls DELETE /api/v1/databases/{name}/query-history.
 func (c *Client) ClearDatabaseQueryHistory(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/query-history", nil, nil)
+	return c.del(ctx, "/api/v1/databases/"+PathEscape(name)+"/query-history")
 }
 
 // ListDatabaseSavedQueries calls GET /api/v1/databases/{name}/saved-queries.
 func (c *Client) ListDatabaseSavedQueries(ctx context.Context, name string) ([]DatabaseSavedQuery, error) {
-	var out []DatabaseSavedQuery
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/saved-queries", nil, &out)
-	return out, err
+	return getJSON[[]DatabaseSavedQuery](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/saved-queries")
 }
 
 // SaveDatabaseQuery calls POST /api/v1/databases/{name}/saved-queries.
@@ -165,5 +157,5 @@ func (c *Client) SaveDatabaseQuery(ctx context.Context, name, title, sql string)
 
 // DeleteDatabaseSavedQuery calls DELETE /api/v1/databases/{name}/saved-queries/{id}.
 func (c *Client) DeleteDatabaseSavedQuery(ctx context.Context, name, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/saved-queries/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/databases/"+PathEscape(name)+"/saved-queries/"+PathEscape(id))
 }

@@ -100,16 +100,12 @@ type ApprovePreviewResult struct {
 // ListAllPreviews calls GET /api/v1/previews: previews of every readable
 // app plus platform-wide limit usage.
 func (c *Client) ListAllPreviews(ctx context.Context) (PreviewsOverview, error) {
-	var out PreviewsOverview
-	err := c.do(ctx, http.MethodGet, "/api/v1/previews", nil, &out)
-	return out, err
+	return getJSON[PreviewsOverview](ctx, c, "/api/v1/previews")
 }
 
 // GetPreviewPolicy calls GET /api/v1/apps/{name}/preview-policy.
 func (c *Client) GetPreviewPolicy(ctx context.Context, appName string) (PreviewPolicyResource, error) {
-	var out PreviewPolicyResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/preview-policy", nil, &out)
-	return out, err
+	return getJSON[PreviewPolicyResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/preview-policy")
 }
 
 // SetPreviewPolicy calls PUT /api/v1/apps/{name}/preview-policy.

@@ -26,9 +26,7 @@ type GitRemote struct {
 
 // GetGitRemote calls GET /api/v1/apps/{name}/git-remote.
 func (c *Client) GetGitRemote(ctx context.Context, name string) (GitRemote, error) {
-	var out GitRemote
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/git-remote", nil, &out)
-	return out, err
+	return getJSON[GitRemote](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/git-remote")
 }
 
 // IssueGitRemote calls POST /api/v1/apps/{name}/git-remote: it enables the
@@ -48,5 +46,5 @@ func (c *Client) SetGitRemoteBranch(ctx context.Context, name, branch string) (G
 
 // DeleteGitRemote calls DELETE /api/v1/apps/{name}/git-remote, which revokes the token.
 func (c *Client) DeleteGitRemote(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/git-remote", nil, nil)
+	return c.del(ctx, "/api/v1/apps/"+PathEscape(name)+"/git-remote")
 }

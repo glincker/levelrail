@@ -60,6 +60,40 @@ levelrail-cli inbox clear --archived --older-than 720h --yes
 
 `delete` and `clear` refuse to run without `--yes` and print how many items they would remove. API: `POST /api/v1/inbox/delete` (`{"ids":[...],"restore":false}`) and `POST /api/v1/inbox/clear` (`{"action":"archive|delete","scope":"read|resolved|archived","older_than_seconds":0,"dry_run":false,"confirm_count":0}`). Deleting through `clear` needs `confirm_count` equal to the number of matching items, so run it with `dry_run` first. Both need the `write` ability, like archiving, and every delete, undo and clear writes an audit entry (`inbox.delete`, `inbox.restore`, `inbox.clear`).
 
+## Weekly digest
+
+A separate plain text mail, once a week, about the platform as a whole. It is not the per-account daily digest above, it has no channel choice and no inbox entry, and it is off by default.
+
+What it contains (one week ending at the time it is built, from data the control plane already keeps):
+
+- Apps: how many apps exist.
+- Deploys: attempts in the week and how many failed.
+- Backups: database backups that succeeded and failed.
+- Disk: the highest disk use across nodes and which node, or "no readings".
+- Restarts: restarts per app, most first, or "none".
+- Certificates: public certificates expiring within 30 days, soonest first, or "none expiring soon". Internal certificates are skipped.
+
+A section whose data cannot be read is left out or logged and skipped, so one bad source never blocks the mail.
+
+Preview it without sending anything:
+
+```bash
+levelrail-cli alerts digest preview
+```
+
+The same text comes from `GET /api/v1/alert-defaults/digest-preview` (read ability).
+
+Turn it on with the `alerts.digest_schedule` runtime setting, which applies live:
+
+```bash
+levelrail-cli alerts digest schedule mon@08   # Monday, 08:00 UTC
+levelrail-cli alerts digest schedule off
+```
+
+The value is `off` or `<day>@<hour>`: `day` is `sun`, `mon`, `tue`, `wed`, `thu`, `fri` or `sat`, `hour` is 0 to 23, and the time is UTC. The control plane checks every 10 minutes. It sends once when the current UTC day and hour match and the digest was not already sent that day, so a restart inside the due hour does not send it twice.
+
+The mail goes to the first admin account's email address. Nothing is sent, and nothing fails, when no email provider is configured or that account has no valid address.
+
 ## Mass action guardrails
 
 - `apps bulk` already supports `dry_run` and demands the exact app list to delete. Restart, stop and redeploy of more than 10 apps (`APP_BULK_CONFIRM_ABOVE`) now also need `confirm_count` equal to the target count, so a script cannot fan out by accident. The dashboard and CLI send it after you confirm the preview.

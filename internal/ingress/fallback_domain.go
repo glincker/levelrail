@@ -21,27 +21,6 @@ const LocalHost = "localhost"
 
 // FallbackDomain synthesizes the zero-config, publicly resolvable HTTPS
 // hostname a fresh deploy with no domain configured gets routed under:
-// "<app>.<public-ip-dash-encoded>.sslip.io". Real DNS, so Caddy's
-// existing automatic-HTTPS path (internal/reconcile/ingress's own ACME
-// vs internal-issuer choice, governed by store.IngressSettings.
-// ACMEEnabled exactly like any operator-configured domain) needs no
-// special case to issue it a certificate, as long as this control
-// plane's own :80/:443 are genuinely reachable at publicHost from the
-// public internet, the same precondition any custom domain already has.
-//
-// ok is false, meaning "no fallback available, route nothing," when:
-//   - publicHost isn't a literal IP address (APP_PUBLIC_HOST as a
-//     hostname has no address to dash-encode; a hostname operator
-//     already has a resolvable name and should set a real domain
-//     instead)
-//   - the IP is private, loopback, link-local, or unspecified: sslip.io
-//     would still resolve it, but Let's Encrypt's HTTP-01 challenge
-//     could never reach a non-public address regardless, so producing
-//     a URL that can only ever fail to get a trusted certificate is
-//     worse than producing none
-//   - serviceName has no characters left after sanitizing into a valid
-//     DNS label (lowercased, non-alphanumeric runs collapsed to a
-//     single hyphen, leading/trailing hyphens trimmed)
 func FallbackDomain(publicHost, serviceName string) (domain string, ok bool) {
 	return FallbackDomainFor(publicHost, serviceName, ProviderChoice{})
 }

@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 )
 
 // maxManagedFileSize bounds how much of a candidate file is read.
@@ -139,7 +138,7 @@ func (d *Dir) read(path string) ([]byte, error) {
 	if !fi.Mode().IsRegular() {
 		return nil, ErrForeignFile
 	}
-	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0) //nolint:gosec // path is a validated managed name inside the checked directory
+	f, err := os.OpenFile(path, os.O_RDONLY|openNoFollow, 0) //nolint:gosec // path is a validated managed name inside the checked directory
 	if err != nil {
 		return nil, fmt.Errorf("open %s: %w", filepath.Base(path), err)
 	}

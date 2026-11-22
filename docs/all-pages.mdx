@@ -176,6 +176,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Server patching](/server-patching): Preview and install OS package updates on a server, with holds for kernel and container runtime upgrades.
 - [Add a node anywhere](/add-node-anywhere): Add an EC2 instance, Google Cloud VM, VPS or home server as a node in one guided flow, with zone auto-detect, preflight checks and failure-domain placement.
 - [Add a server over SSH](/add-node-over-ssh): Adopt an existing Linux machine as a node: the control plane connects over SSH, installs Docker if needed and the node agent, with host key checks.
+- [Run a node on macOS](/macos-agent): Install the Levelrail node agent on a Mac with Homebrew or a downloaded binary, run it under launchd, and know what a Mac node can and cannot do.
+- [macOS runtime](/macos-runtime): Check a Mac, run Levelrail in a managed Lima VM, keep it running with launchd, and know what is and is not supported.
 - [Run Levelrail on home hardware](/home-hardware): Install notes for a Raspberry Pi, an old laptop or a mini PC, and what to do when your home connection has no public address.
 - [Device fleets](/iot-fleet): Label a fleet of small devices, list them as a group, and roll an image out to the group in batches.
 - [Resource-aware placement](/resource-aware-placement): How new apps and databases are placed on nodes with room for them, how to read the "why here" explanation, and how to set the overcommit policy.
@@ -200,6 +202,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Connecting apps to databases](/connecting-apps-to-databases): Connect one app to several databases with connections, see reachability badges, and learn how connections differ from the older single database attachment.
 - [Backup targets, registry credentials, and app volume backups](/backups-and-storage): Configure backup targets, registry credentials, and automated backup schedules with retention policies.
 - [Backup copies](/backup-copies): Copy every new backup to a second destination after it lands in the first, track how far behind the copy is, and get alerted when it falls behind.
+- [Backup target fields](/backup-target-fields): Every field of a backup target with its type, requirement, visibility rule and CLI flag.
+- [Log drain fields](/log-drain-fields): Every field of an app log drain with its type, requirement, visibility rule and CLI flag.
 - [Volume files](/volume-files): List, download, upload and delete single files in an app's named volume, and restore one file from a backup, without SSH.
 - [Prove your backups work](/prove-your-backups-work): Run a restore drill that restores a backup into a scratch resource and checks it, so the last verified restore is green before you need the backup.
 - [Object storage](/object-storage): Connect S3-compatible buckets for log archive, build cache, and backups.

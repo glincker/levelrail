@@ -43,16 +43,12 @@ func (c *Client) ListDashboards(ctx context.Context, project string) ([]Dashboar
 	if project != "" {
 		path += "?project=" + url.QueryEscape(project)
 	}
-	var out []DashboardResource
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]DashboardResource](ctx, c, path)
 }
 
 // GetDashboard calls GET /api/v1/dashboards/{id}.
 func (c *Client) GetDashboard(ctx context.Context, id string) (DashboardResource, error) {
-	var out DashboardResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/dashboards/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[DashboardResource](ctx, c, "/api/v1/dashboards/"+PathEscape(id))
 }
 
 // CreateDashboard calls POST /api/v1/dashboards.
@@ -64,9 +60,7 @@ func (c *Client) CreateDashboard(ctx context.Context, in DashboardWrite) (Dashbo
 
 // ExportDashboard calls GET /api/v1/dashboards/{id}/export and returns the portable document.
 func (c *Client) ExportDashboard(ctx context.Context, id string) (json.RawMessage, error) {
-	var out json.RawMessage
-	err := c.do(ctx, http.MethodGet, "/api/v1/dashboards/"+PathEscape(id)+"/export", nil, &out)
-	return out, err
+	return getJSON[json.RawMessage](ctx, c, "/api/v1/dashboards/"+PathEscape(id)+"/export")
 }
 
 // ImportDashboard calls POST /api/v1/dashboards/import with an exported document.
@@ -89,12 +83,10 @@ func (c *Client) ImportDashboard(ctx context.Context, doc json.RawMessage, scope
 
 // DeleteDashboard calls DELETE /api/v1/dashboards/{id}.
 func (c *Client) DeleteDashboard(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/dashboards/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/dashboards/"+PathEscape(id))
 }
 
 // DashboardTemplates calls GET /api/v1/dashboards/templates.
 func (c *Client) DashboardTemplates(ctx context.Context) ([]DashboardTemplate, error) {
-	var out []DashboardTemplate
-	err := c.do(ctx, http.MethodGet, "/api/v1/dashboards/templates", nil, &out)
-	return out, err
+	return getJSON[[]DashboardTemplate](ctx, c, "/api/v1/dashboards/templates")
 }

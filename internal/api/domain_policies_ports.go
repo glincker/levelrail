@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
@@ -199,9 +198,8 @@ func (rt *Router) handleRestrictDomainPort(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	var req restrictPortRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[restrictPortRequest](w, r, 16<<10)
+	if !ok {
 		return
 	}
 	if len(req.Sources) == 0 || len(req.Sources) > maxRestrictSources {

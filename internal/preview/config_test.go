@@ -13,8 +13,11 @@ func lookupFrom(m map[string]string) func(string) (string, bool) {
 
 func TestConfigFromEnv_Defaults(t *testing.T) {
 	c := ConfigFromEnv(lookupFrom(nil), slog.New(slog.NewTextHandler(io.Discard, nil)))
-	if !c.Enabled || c.DefaultMode != ModeMetadata {
-		t.Errorf("defaults must be on with metadata mode, got enabled=%v mode=%q", c.Enabled, c.DefaultMode)
+	if !c.Enabled || c.DefaultMode != ModeScreenshot {
+		t.Errorf("defaults must be on with screenshot mode, got enabled=%v mode=%q", c.Enabled, c.DefaultMode)
+	}
+	if c.MaxConcurrent != 1 || c.MinInterval != time.Hour || c.RenderTimeout != 30*time.Second || c.IdleStop != 2*time.Minute {
+		t.Errorf("unexpected render defaults: %+v", c)
 	}
 	if c.MetaTimeout != 5*time.Second || c.MetaMaxHTML != 512<<10 || c.MetaMaxImage != 2<<20 || c.ThumbHeight != 400 {
 		t.Errorf("unexpected metadata defaults: %+v", c)

@@ -249,6 +249,7 @@
         "hint": "Mesma máquina, não é seguro"
       }
     },
+    "fieldsUnavailable": "Não foi possível carregar os campos do formulário. Recarregue a página e tente novamente.",
     "localRootHint": "Armazenado em {{root}}. Informe uma pasta dentro dele.",
     "localWarning": "Backups armazenados no próprio disco desta máquina se perdem junto com ela. Eles protegem contra um deploy ruim ou uma tabela excluída, não contra um disco morto, ransomware ou um servidor excluído. Use para experimentar e depois adicione um destino externo.",
     "field": {
@@ -499,5 +500,136 @@
     "restoreCancel": "Cancelar",
     "restoreClose": "Fechar",
     "restoreAccepted": "Restauração iniciada. Dump de segurança: {{id}}. Ela roda em segundo plano, então confira o histórico de execuções e o log de auditoria para ver o resultado."
+  },
+  "sftpTarget": {
+    "host": "Servidor",
+    "path": "Diretório remoto",
+    "pathHint": "Caminhos relativos começam no diretório de login do usuário SSH. Caminhos com .. são recusados.",
+    "username": "Usuário SSH",
+    "auth": "Autenticação",
+    "authPassword": "Senha",
+    "authKey": "Chave privada",
+    "password": "Senha",
+    "privateKey": "Chave privada (formato PEM ou OpenSSH)",
+    "passphrase": "Frase secreta da chave (opcional)",
+    "hostKeyTitle": "Chave de host do servidor",
+    "hostKeyHint": "O Levelrail só se conecta a um servidor cuja chave corresponda à que você fixa aqui. Obtenha a chave e compare a impressão digital com a que o responsável pelo servidor lhe passou.",
+    "fetchKey": "Obter chave de host",
+    "fetching": "Obtendo...",
+    "keyType": "Tipo de chave",
+    "fingerprint": "Impressão digital",
+    "confirm": "Conferi esta impressão digital com o servidor"
+  },
+  "fields": {
+    "backupTarget": {
+      "name": {
+        "label": "Nome",
+        "help": "Nome exibido no painel e na CLI."
+      },
+      "provider": {
+        "label": "Provedor",
+        "help": "Onde os backups são armazenados."
+      },
+      "s3": {
+        "bucket": {
+          "label": "Bucket",
+          "help": "Nome do bucket que recebe os backups."
+        },
+        "region": {
+          "label": "Região",
+          "help": "Região do bucket. Provedores personalizados a exigem."
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "help": "URL compatível com S3. R2 e provedores personalizados a exigem."
+        },
+        "access_key_id": {
+          "label": "ID da chave de acesso",
+          "help": "Chave de acesso das credenciais."
+        },
+        "secret_access_key": {
+          "label": "Chave de acesso secreta",
+          "help": "Armazenada criptografada e nunca exibida novamente."
+        }
+      },
+      "custom": {
+        "region": {
+          "label": "Região",
+          "help": "Região do bucket. Provedores personalizados a exigem."
+        }
+      },
+      "local": {
+        "path": {
+          "label": "Diretório",
+          "help": "Pasta sob a raiz de backup do plano de controle."
+        }
+      },
+      "webdav": {
+        "endpoint": {
+          "label": "URL do compartilhamento",
+          "help": "Endereço https do compartilhamento WebDAV."
+        },
+        "directory": {
+          "label": "Diretório remoto",
+          "help": "Diretório do compartilhamento que recebe os backups."
+        },
+        "username": {
+          "label": "Usuário",
+          "help": "Nome da conta usada para entrar."
+        },
+        "password": {
+          "label": "Senha",
+          "help": "Armazenada criptografada e nunca exibida novamente."
+        },
+        "ca_bundle": {
+          "label": "Pacote de CA",
+          "help": "Certificados PEM opcionais a confiar. Armazenados criptografados e nunca exibidos novamente."
+        }
+      },
+      "sftp": {
+        "endpoint": {
+          "label": "Servidor",
+          "help": "Host ou HOST:PORTA do servidor SFTP."
+        },
+        "path": {
+          "label": "Diretório remoto",
+          "help": "Caminhos relativos começam no diretório de login. Caminhos com .. são recusados."
+        },
+        "username": {
+          "label": "Usuário",
+          "help": "Nome da conta usada para entrar."
+        },
+        "auth": {
+          "label": "Autenticação",
+          "help": "Entre com senha ou chave privada."
+        },
+        "password": {
+          "label": "Senha",
+          "help": "Armazenada criptografada e nunca exibida novamente."
+        },
+        "private_key": {
+          "label": "Chave privada",
+          "help": "Chave PEM ou OpenSSH. Armazenada criptografada e nunca exibida novamente."
+        },
+        "private_key_passphrase": {
+          "label": "Frase secreta da chave",
+          "help": "Necessária só para chave criptografada. Armazenada criptografada e nunca exibida novamente."
+        },
+        "host_key": {
+          "label": "Chave do host",
+          "help": "Chave do servidor fixada. Compare a impressão digital com a do dono do servidor."
+        }
+      }
+    }
+  },
+  "restoreTest": {
+    "button": "Testar restauração",
+    "neverRun": "Último teste de restauração: nunca executado",
+    "running": "Teste de restauração em andamento",
+    "ok": "Último teste de restauração: ok {{when}}, {{seconds}} s, {{size}}",
+    "failed": "Último teste de restauração: falhou {{when}}, {{seconds}} s",
+    "startedTitle": "Teste de restauração iniciado.",
+    "startedBody": "O resultado aparece aqui quando terminar.",
+    "startFailed": "Não foi possível iniciar o teste de restauração."
   }
 }

@@ -110,6 +110,16 @@ levelrail-cli deploy-link --repo https://github.com/you/app --branch main --open
 
 It prints the link, Markdown and HTML snippets that use the static badge `docs/assets/deploy-to-levelrail.svg` from this repository's default branch. In the dashboard, the same output is behind **Get a Deploy button link** on the new-app page and in the **More actions** menu of any app deployed from git. The CLI and the dashboard share their validation rules.
 
+## No server yet
+
+If the reader has no Levelrail server, one command installs it and prints the link that opens the new-app form on the template (use a catalog template id: lowercase letters, digits and hyphens, up to 64 characters):
+
+```bash
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --template <id>
+```
+
+The flag only changes the final message of the installer: it prints `<dashboard-url>/apps/new?deploy=1&template=<id>`, which the reader opens after creating the admin account. Nothing is deployed until they press Deploy. The same value can be set with `LEVELRAIL_TEMPLATE`.
+
 ## Security
 
 - The button never carries secrets. Environment variable values are not read from a link, even if someone puts one there; only names are accepted.

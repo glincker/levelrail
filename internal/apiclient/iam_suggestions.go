@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"strconv"
 )
@@ -41,7 +40,5 @@ func (c *Client) IAMSuggestions(ctx context.Context, days int) (IAMSuggestions, 
 	if days > 0 {
 		path += "?" + url.Values{"days": {strconv.Itoa(days)}}.Encode()
 	}
-	var out IAMSuggestions
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[IAMSuggestions](ctx, c, path)
 }

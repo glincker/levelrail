@@ -28,6 +28,7 @@ vi.mock('../BuildStrainSuggestion', () => ({
 }))
 vi.mock('./ZoneSpreadCard', () => ({ ZoneSpreadCard: () => null }))
 vi.mock('./ResilienceCard', () => ({ ResilienceCard: () => null }))
+vi.mock('./NodeVersionSkewCard', () => ({ NodeVersionSkewCard: () => null }))
 vi.mock('../NodesTable', () => ({
   NodesTable: () => <div data-testid="nodes-table" />,
 }))

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -46,6 +47,9 @@ func channelNotice(channels keyreminder.Channels, notifier keyreminder.Notifier)
 				continue
 			}
 			if err := notifier.SendNotice(ctx, c, text); err != nil {
+				if errors.Is(err, alerting.ErrNoticeSkipped) {
+					continue
+				}
 				lastErr = err
 				continue
 			}

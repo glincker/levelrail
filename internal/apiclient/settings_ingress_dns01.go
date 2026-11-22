@@ -14,9 +14,7 @@ type IngressDNS01 struct {
 
 // GetIngressDNS01 calls GET /api/v1/settings/ingress/dns01.
 func (c *Client) GetIngressDNS01(ctx context.Context) (IngressDNS01, error) {
-	var out IngressDNS01
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ingress/dns01", nil, &out)
-	return out, err
+	return getJSON[IngressDNS01](ctx, c, "/api/v1/settings/ingress/dns01")
 }
 
 // SetIngressDNS01 calls PUT /api/v1/settings/ingress/dns01.

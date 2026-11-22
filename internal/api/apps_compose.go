@@ -93,6 +93,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	rt.changes.Publish(changeCompose, name)
 	writeJSON(w, http.StatusOK, resp)
 }
 

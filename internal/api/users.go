@@ -326,6 +326,7 @@ func (rt *Router) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.dropCloudGrantsFor(r.Context(), store.CloudPrincipalUser, id)
 	rt.sessions.revokeAll(id)
 	rt.revokeTrustedDevices(r.Context(), r, anonymousSignIn(id), id, "user_deleted")
 	rt.retireSignInRequests(r.Context(), r, id, "user_deleted")

@@ -112,9 +112,7 @@ func appAbusePath(app string) string {
 
 // GetAppAbuse calls GET /api/v1/apps/{name}/abuse.
 func (c *Client) GetAppAbuse(ctx context.Context, app string) (AppAbuse, error) {
-	var out AppAbuse
-	err := c.do(ctx, http.MethodGet, appAbusePath(app), nil, &out)
-	return out, err
+	return getJSON[AppAbuse](ctx, c, appAbusePath(app))
 }
 
 // SetAppAbuse calls PUT /api/v1/apps/{name}/abuse; it replaces the whole policy.

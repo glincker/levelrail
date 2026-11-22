@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // ZoneSummary is one failure domain and what it carries.
@@ -35,7 +34,5 @@ type Zones struct {
 
 // GetZones calls GET /api/v1/nodes/zones.
 func (c *Client) GetZones(ctx context.Context) (Zones, error) {
-	var out Zones
-	err := c.do(ctx, http.MethodGet, "/api/v1/nodes/zones", nil, &out)
-	return out, err
+	return getJSON[Zones](ctx, c, "/api/v1/nodes/zones")
 }

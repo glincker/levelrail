@@ -333,7 +333,8 @@ func claimServiceDomains(ctx context.Context, tx *sql.Tx, serviceName string, do
 		if err != nil {
 			return fmt.Errorf("check domain %q availability: %w", domain, err)
 		}
-		if found {
+		// A static site named like this app mirrors its domains.
+		if found && owner != serviceName {
 			return &ErrDomainTaken{Domain: domain, Owner: owner}
 		}
 

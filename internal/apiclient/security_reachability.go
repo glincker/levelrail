@@ -3,7 +3,6 @@ package apiclient
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 )
 
@@ -74,9 +73,7 @@ func (c *Client) GetSecurityReachability(ctx context.Context, refresh bool) (Rea
 	if refresh {
 		path += "?refresh=true"
 	}
-	var out ReachReport
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[ReachReport](ctx, c, path)
 }
 
 // ApplyReachFix makes the same call the dashboard's Fix button makes for an auto fix.

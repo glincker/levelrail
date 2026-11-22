@@ -69,9 +69,7 @@ func (c *Client) Search(ctx context.Context, q, kind string, limit int, cursor s
 	if cursor != "" {
 		v.Set("cursor", cursor)
 	}
-	var out SearchResponse
-	err := c.do(ctx, http.MethodGet, "/api/v1/search?"+v.Encode(), nil, &out)
-	return out, err
+	return getJSON[SearchResponse](ctx, c, "/api/v1/search?"+v.Encode())
 }
 
 // ListSavedSearches calls GET /api/v1/search/saved.
@@ -92,5 +90,5 @@ func (c *Client) SaveSearch(ctx context.Context, name, query string) (SavedSearc
 
 // DeleteSavedSearch calls DELETE /api/v1/search/saved/{id}.
 func (c *Client) DeleteSavedSearch(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/search/saved/"+url.PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/search/saved/"+url.PathEscape(id))
 }

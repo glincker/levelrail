@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -189,6 +190,7 @@ func (rt *Router) otherMembersReadable(ctx context.Context, app string, asMember
 
 // X-Total-Count is the match count before paging; without limit the full filtered set is returned.
 func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
+	r = r.WithContext(withMeshPathMemo(r.Context()))
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
 		rt.internalError(w, "api: list apps: store lacks filtered listing", errNoFilteredList)
@@ -254,12 +256,25 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 
 	var sleepRows map[string]appListSleep
 	if rows, err := rt.appSleep.ListAppSleep(r.Context()); err == nil {
-		sleepRows = sleepByApp(rows)
+		sleepRows = sleepByApp(sleepRowsForApps(rows, appNames))
 	}
 
 	placement := rt.placementResolver(r.Context())
 	owners := rt.loadStackOwners(r.Context())
 	descriptions := rt.appDescriptions(r.Context())
+	previews := rt.listPreviewCards(r.Context(), svcs)
+	jobs := rt.jobsByApp(r.Context(), time.Now())
+	var lastDeploy map[string]time.Time
+	if src, ok := rt.deployAttempts.(latestDeployActivitySource); ok {
+		lastDeploy, _ = src.LatestDeployActivity(r.Context())
+	}
+	kinds := make(map[string]string, len(svcs))
+	for _, s := range svcs {
+		kinds[s.Name], _ = classifyApp(kindInputFor(s, jobs[s.Name] != nil))
+	}
+	// Database size comes from the viewer's catalog read, so it needs the viewer's ability.
+	canDBSize := rt.callerHasAbility(r, AbilityReadSensitive)
+	live := rt.liveSummarySignals(r.Context(), svcs, kinds, time.Now(), canDBSize)
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
 		resource := toAppResourceRaw(s)
@@ -279,6 +294,20 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		}
 		if sl, ok := sleepRows[s.Name]; ok {
 			item.Sleep = &sl
+		}
+		if pc, ok := previews[s.Name]; ok {
+			item.Preview = &pc
+		}
+		js := jobs[s.Name]
+		item.AppKind, item.KindSource = classifyApp(kindInputFor(s, js != nil))
+		var deployedAt *time.Time
+		if t, ok := lastDeploy[s.Name]; ok {
+			deployedAt = &t
+		}
+		item.Summary = buildAppSummary(item.AppKind, s, conditions, deployedAt, js)
+		applyLiveSignals(item.Summary, live[s.Name])
+		if item.Summary != nil && !canDBSize {
+			item.Summary.DBSizeBytes = nil
 		}
 		out = append(out, item)
 	}
@@ -369,6 +398,7 @@ type appsSummaryResource struct {
 // counts over the same filters and visibility as the list, so a dashboard
 // can show tiles without downloading every app.
 func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
+	r = r.WithContext(withMeshPathMemo(r.Context()))
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
 		rt.internalError(w, "api: apps summary: store lacks filtered listing", errNoFilteredList)

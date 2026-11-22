@@ -70,9 +70,7 @@ func (c *Client) CreateUser(ctx context.Context, req CreateUserRequest) (UserRes
 
 // ListUsers calls GET /api/v1/users.
 func (c *Client) ListUsers(ctx context.Context) ([]UserResource, error) {
-	var out []UserResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/users", nil, &out)
-	return out, err
+	return getJSON[[]UserResource](ctx, c, "/api/v1/users")
 }
 
 // UpdateUserAbilities calls PUT /api/v1/users/{id}/abilities.
@@ -84,12 +82,10 @@ func (c *Client) UpdateUserAbilities(ctx context.Context, id string, req UpdateU
 
 // DeleteUser calls DELETE /api/v1/users/{id}.
 func (c *Client) DeleteUser(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/users/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/users/"+PathEscape(id))
 }
 
 // ListRoles calls GET /api/v1/roles.
 func (c *Client) ListRoles(ctx context.Context) ([]RoleResource, error) {
-	var out []RoleResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/roles", nil, &out)
-	return out, err
+	return getJSON[[]RoleResource](ctx, c, "/api/v1/roles")
 }

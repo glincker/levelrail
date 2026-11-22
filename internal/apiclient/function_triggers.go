@@ -54,9 +54,7 @@ type QueuedFunctionCall struct {
 
 // GetFunctionTriggers lists the triggers of one function.
 func (c *Client) GetFunctionTriggers(ctx context.Context, name string) (FunctionTriggers, error) {
-	var out FunctionTriggers
-	err := c.do(ctx, http.MethodGet, "/api/v1/functions/"+url.PathEscape(name)+"/triggers", nil, &out)
-	return out, err
+	return getJSON[FunctionTriggers](ctx, c, "/api/v1/functions/"+url.PathEscape(name)+"/triggers")
 }
 
 // PutFunctionWebhook enables, retargets or rotates the signed webhook of a function.
@@ -69,7 +67,7 @@ func (c *Client) PutFunctionWebhook(ctx context.Context, name, path string, rota
 
 // DeleteFunctionWebhook turns the webhook trigger off.
 func (c *Client) DeleteFunctionWebhook(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/functions/"+url.PathEscape(name)+"/triggers/webhook", nil, nil)
+	return c.del(ctx, "/api/v1/functions/"+url.PathEscape(name)+"/triggers/webhook")
 }
 
 // EnqueueFunctionCall queues an async call and returns at once.
@@ -106,5 +104,5 @@ func (c *Client) RetryFunctionInvocation(ctx context.Context, id string) error {
 
 // DeleteFunctionInvocation discards a call.
 func (c *Client) DeleteFunctionInvocation(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/function-invocations/"+url.PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/function-invocations/"+url.PathEscape(id))
 }

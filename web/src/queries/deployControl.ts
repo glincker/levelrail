@@ -58,11 +58,14 @@ export interface RollbackToInput {
   overrideReason?: string
 }
 
+/** A rollback result carries serving ('pending' until the ingress picks up a Pages rollback). */
+export type RollbackResult = TriggerDeployResult & { serving?: string }
+
 export function useRollbackToDeploy(appName: string) {
   const queryClient = useQueryClient()
-  return useMutation<TriggerDeployResult, ApiError, RollbackToInput>({
+  return useMutation<RollbackResult, ApiError, RollbackToInput>({
     mutationFn: (input) =>
-      postJson<TriggerDeployResult>(
+      postJson<RollbackResult>(
         `/api/v1/apps/${encodeURIComponent(appName)}/deploys/${encodeURIComponent(input.deployId)}/rollback`,
         {
           confirm: input.confirm ?? false,

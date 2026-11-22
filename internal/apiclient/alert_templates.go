@@ -53,9 +53,7 @@ func (c *Client) ApplyAlertTemplate(ctx context.Context, name, profile, channelI
 
 // GetChannelQuietHours calls GET /api/v1/notification-channels/{id}/quiet-hours.
 func (c *Client) GetChannelQuietHours(ctx context.Context, id string) (QuietHoursResource, error) {
-	var out QuietHoursResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/notification-channels/"+PathEscape(id)+"/quiet-hours", nil, &out)
-	return out, err
+	return getJSON[QuietHoursResource](ctx, c, "/api/v1/notification-channels/"+PathEscape(id)+"/quiet-hours")
 }
 
 // SetChannelQuietHours calls PUT /api/v1/notification-channels/{id}/quiet-hours.
@@ -67,5 +65,5 @@ func (c *Client) SetChannelQuietHours(ctx context.Context, id string, q QuietHou
 
 // ClearChannelQuietHours calls DELETE /api/v1/notification-channels/{id}/quiet-hours.
 func (c *Client) ClearChannelQuietHours(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/notification-channels/"+PathEscape(id)+"/quiet-hours", nil, nil)
+	return c.del(ctx, "/api/v1/notification-channels/"+PathEscape(id)+"/quiet-hours")
 }

@@ -59,9 +59,7 @@ func (c *Client) CheckMailDNS(ctx context.Context, domain, mailHost, selector st
 	if selector != "" {
 		q.Set("dkim_selector", selector)
 	}
-	var out mailrecords.Report
-	err := c.do(ctx, http.MethodGet, mailDNSPath("/check", "", q), nil, &out)
-	return out, err
+	return getJSON[mailrecords.Report](ctx, c, mailDNSPath("/check", "", q))
 }
 
 // MailStatus is the response of GET /api/v1/mail/status.

@@ -4,6 +4,7 @@ package keyreminder
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -109,7 +110,10 @@ func (r *Reminder) Tick(ctx context.Context) error {
 		if !c.Enabled {
 			continue
 		}
-		if err := r.Notifier.SendNotice(ctx, c, text); err != nil {
+		if err := r.Notifier.SendNotice(alerting.WithPushAudience(ctx, alerting.PushAudience{RootOnly: true}), c, text); err != nil {
+			if errors.Is(err, alerting.ErrNoticeSkipped) {
+				continue
+			}
 			r.Logger.Warn("keyreminder: notice failed",
 				slog.String("channel_id", c.ID), slog.String("error", err.Error()))
 			continue

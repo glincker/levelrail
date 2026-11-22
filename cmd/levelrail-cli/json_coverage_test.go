@@ -23,6 +23,7 @@ var jsonExempt = map[string]string{
 	"vm init":                       "host-local lifecycle command, prints progress lines",
 	"vm start":                      "host-local lifecycle command, prints the dashboard URL",
 	"vm stop":                       "host-local lifecycle command, prints one line",
+	"vm logs":                       "streams guest log text to the terminal, no data an agent branches on",
 	"vm shell":                      "interactive guest shell, needs a TTY",
 	"vm set":                        "host-local setting change, prints one line",
 	"vm export":                     "host-local archive writer, prints the path and checksum",

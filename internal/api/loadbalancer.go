@@ -115,6 +115,7 @@ func (rt *Router) saveLB(w http.ResponseWriter, r *http.Request, name string, cf
 		return
 	}
 	rt.nudgeReconciler()
+	rt.changes.Publish(changeLoadBalancers, name)
 	writeJSON(w, http.StatusOK, lbResource(name, &cfg))
 }
 
@@ -164,6 +165,7 @@ func (rt *Router) handleDeleteLoadBalancer(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	rt.nudgeReconciler()
+	rt.changes.Publish(changeLoadBalancers, name)
 	w.WriteHeader(http.StatusNoContent)
 }
 

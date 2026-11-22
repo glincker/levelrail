@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // ProbeAttempt is one readiness-probe attempt made during a deploy cutover.
@@ -19,7 +18,5 @@ type ProbeAttempt struct {
 
 // ListProbeAttempts calls GET /api/v1/apps/{name}/deploys/{deployID}/probes.
 func (c *Client) ListProbeAttempts(ctx context.Context, name, deployID string) ([]ProbeAttempt, error) {
-	var out []ProbeAttempt
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/probes", nil, &out)
-	return out, err
+	return getJSON[[]ProbeAttempt](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/probes")
 }

@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/certflow"
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/serverready"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -84,15 +84,15 @@ func (rt *Router) doctorCheckInodes(context.Context) doctorCheckResource {
 	if rt.dataDir == "" {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "data directory not configured"}
 	}
-	var st syscall.Statfs_t
-	if err := syscall.Statfs(rt.dataDir, &st); err != nil {
+	st, err := diskfree.Stat(rt.dataDir)
+	if err != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: fmt.Sprintf("could not read inode usage: %s", err)}
 	}
-	if st.Files == 0 {
+	if st.InodesTotal == 0 {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "this filesystem does not limit inodes"}
 	}
-	pct := float64(st.Ffree) * 100 / float64(st.Files)
-	evidence := fmt.Sprintf("%d of %d inodes free on %s", st.Ffree, st.Files, rt.dataDir)
+	pct := float64(st.InodesFree) * 100 / float64(st.InodesTotal)
+	evidence := fmt.Sprintf("%d of %d inodes free on %s", st.InodesFree, st.InodesTotal, rt.dataDir)
 	warn := envFloat(envDoctorInodeWarnPercent, defaultDoctorInodeWarnPercent)
 	if pct < warn {
 		return doctorCheckResource{
@@ -119,11 +119,11 @@ func (rt *Router) doctorCheckDockerRootDisk(ctx context.Context) doctorCheckReso
 	if err != nil || root == "" {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "could not ask Docker for its storage root"}
 	}
-	var st syscall.Statfs_t
-	if err := syscall.Statfs(root, &st); err != nil {
+	st, err := diskfree.Stat(root)
+	if err != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: fmt.Sprintf("cannot read %s from this process (a remote or sandboxed daemon): %s", root, err)}
 	}
-	free := int64(st.Bavail) * int64(st.Bsize) //nolint:gosec // statfs fields are non-negative
+	free := st.Free
 	threshold := rt.doctorDiskWarningBytes
 	if threshold <= 0 {
 		threshold = defaultDoctorDiskWarningBytes

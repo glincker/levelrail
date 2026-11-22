@@ -65,6 +65,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("docker", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDocker)),
 		one("docker_version", doctorGroupRuntime, rt.doctorCheckDockerVersion),
 		one("install_state", doctorGroupRuntime, rt.doctorCheckInstallState),
+		many("update_available", doctorGroupRuntime, rt.doctorCheckUpdateAvailable),
 		one("container_runtime", doctorGroupRuntime, rt.doctorCheckContainerRuntime),
 		one("docker_guard", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerGuard)),
 		one("docker_privilege", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerPrivilege)),
@@ -134,6 +135,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("schedule_never_runs", doctorGroupBackups, rt.doctorCheckScheduleNeverRuns),
 
 		many("nodes", doctorGroupNodes, rt.doctorCheckNodes),
+		many("agent_version_skew", doctorGroupNodes, rt.doctorCheckAgentSkew),
 		many("mesh", doctorGroupNodes, rt.doctorCheckMesh),
 
 		many("gpus", doctorGroupHardware, rt.doctorCheckGPUs),

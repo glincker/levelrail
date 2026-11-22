@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 import { BrandTile } from './BrandLogoBadge'
+import { useRegistryCredentialFields } from '../queries/useBackupTargetFields'
 import { ApiError } from '../lib/apiError'
 import { useBrand } from '../hooks/useBrand'
 import { useCreateRegistryCredential } from '../queries/registryCredentials'
@@ -110,6 +111,7 @@ const defaultValues: CreateRegistryCredentialFormValues = {
 // ability tier CreateBackupTargetDialog's own doc comment explains for
 // the identical reason (a live credential in the request body).
 export function CreateRegistryCredentialDialog() {
+  const fields = useRegistryCredentialFields()
   const brand = useBrand()
   const displayName = brand.ShortName || brand.Name
   const [open, setOpen] = useState(false)
@@ -230,7 +232,9 @@ export function CreateRegistryCredentialDialog() {
               className="space-y-4"
             >
               <Field>
-                <FieldLabel htmlFor="registry-credential-name">Name</FieldLabel>
+                <FieldLabel htmlFor="registry-credential-name">
+                  {fields.label('name', 'Name')}
+                </FieldLabel>
                 <Input
                   id="registry-credential-name"
                   placeholder="e.g. ghcr-bot"
@@ -241,7 +245,7 @@ export function CreateRegistryCredentialDialog() {
 
               <Field>
                 <FieldLabel htmlFor="registry-credential-host-preset">
-                  Registry host
+                  {fields.label('registry_host', 'Registry host')}
                 </FieldLabel>
                 <Select
                   value={hostPreset}
@@ -326,7 +330,7 @@ export function CreateRegistryCredentialDialog() {
 
               <Field>
                 <FieldLabel htmlFor="registry-credential-username">
-                  Username
+                  {fields.label('username', 'Username')}
                 </FieldLabel>
                 <Input
                   id="registry-credential-username"
@@ -340,10 +344,7 @@ export function CreateRegistryCredentialDialog() {
 
               <Field>
                 <FieldLabel htmlFor="registry-credential-password">
-                  Password{' '}
-                  <span className="text-muted-foreground">
-                    (or access token)
-                  </span>
+                  {fields.label('password', 'Password (or access token)')}
                 </FieldLabel>
                 <div className="relative">
                   <Input
@@ -374,8 +375,7 @@ export function CreateRegistryCredentialDialog() {
 
               <Field>
                 <FieldLabel htmlFor="registry-credential-expires-at">
-                  Expires{' '}
-                  <span className="text-muted-foreground">(optional)</span>
+                  {fields.label('expires_at', 'Expires (optional)')}
                 </FieldLabel>
                 <Input
                   id="registry-credential-expires-at"

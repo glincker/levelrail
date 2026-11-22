@@ -1,24 +1,6 @@
 // Package nodehealth implements the node health check: the
 // reconcile.Controller that converges a node's observed heartbeat
-// (internal/store's last_seen_at, kept fresh by internal/agent.Server's
-// periodic touch loop while a node's gRPC session stays open) against
-// its recorded Status, the same architectural pattern
-// internal/reconcile/application and internal/reconcile/database already
-// establish (level-triggered, a narrow store interface for testability,
-// one controller instance per resource), applied to a node instead of a
-// service or database.
-//
-// This exists specifically because internal/agent.Server.Session already
-// flips a node's Status to Offline synchronously when its gRPC stream
-// ends (a graceful disconnect), but a stream that never ends cleanly
-// (a hard process kill, a severed network link with no TCP FIN) leaves
-// Status stuck at Online forever with nothing to notice otherwise. This
-// controller is that "otherwise": every reconcile pass re-reads
-// LastSeenAt fresh from the store (never cached) and compares it against
-// a timeout, the same level-triggered principle required of every
-// controller in this codebase, so a hung connection is
-// discovered on the very next resync tick rather than staying silently
-// wrong until someone happens to look.
+// (internal/store's last_seen_at, kept fresh by internal/agent.Server's.
 package nodehealth
 
 import (

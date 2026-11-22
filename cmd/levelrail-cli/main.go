@@ -86,6 +86,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runNext(prog, args[1:], stdout, stderr, lookupEnv)
 	case "vm":
 		return runVM(prog, args[1:], stdout, stderr, lookupEnv)
+	case "launchd":
+		return runLaunchd(prog, args[1:], stdout, stderr, lookupEnv)
 	case "builders":
 		return runBuilders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "builder":
@@ -414,6 +416,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runCompletion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "settings":
 		return runSettings(prog, args[1:], stdout, stderr, lookupEnv)
+	case "fields":
+		return runFields(prog, args[1:], stdout, stderr, lookupEnv)
 	case "git-providers":
 		return runGitProviders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "github-app":
@@ -451,6 +455,7 @@ Usage:
   %[1]s dev [status|stop] [flags]    run a private instance on this machine, apps at <app>.localhost
   %[1]s vm init|start|stop|status|shell|set [flags]   run Levelrail in a private macOS VM (experimental, APP_VM_EXPERIMENTAL=on)
   %[1]s builders list|add|show|pause|resume|test|remove [flags]   manage build nodes from the control plane
+  %[1]s launchd install|uninstall|status|print <control-plane|agent>   per-user launchd units on macOS
   %[1]s builder join|start|stop|status|doctor|logout [flags]   use this Mac as a build-only node (experimental, APP_VM_EXPERIMENTAL=on)
   %[1]s backup <database> [--target ID] [flags]   back a database up now, same as backups trigger
   %[1]s restore <database> --latest --confirm NAME [flags]   restore a database, same as backups restore
@@ -636,6 +641,7 @@ Usage:
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
+  %[1]s fields [RESOURCE] [flags]                         list form field descriptors (types, flags, visibility) of a resource
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
   %[1]s github-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a GitHub App connection, browse and use its repos
   %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog

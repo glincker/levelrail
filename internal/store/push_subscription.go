@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -41,22 +42,69 @@ type PushSubscription struct {
 // no row matches (id, userID).
 var ErrPushSubscriptionNotFound = errors.New("store: push subscription not found")
 
-// SavePushSubscription inserts a new subscription, or replaces the
-// existing row for the same endpoint: a browser re-subscribing (a
-// permission reset, a cleared service worker) must overwrite its own
-// stale keys rather than accumulate a dead duplicate alongside them.
-func (db *DB) SavePushSubscription(ctx context.Context, s PushSubscription) error {
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, user_agent, created_at, last_used_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
-		ON CONFLICT (endpoint) DO UPDATE SET
-			user_id    = excluded.user_id,
-			p256dh     = excluded.p256dh,
-			auth       = excluded.auth,
-			user_agent = excluded.user_agent
-	`, s.ID, s.UserID, s.Endpoint, s.P256dh, s.Auth, s.UserAgent, formatTime(s.CreatedAt))
+// ErrPushSubscriptionOwned is returned by SavePushSubscription when the endpoint is registered to another account.
+var ErrPushSubscriptionOwned = errors.New("store: push subscription endpoint belongs to another user")
+
+// ErrPushSubscriptionLimit is returned by SavePushSubscription when the account is at its registration cap.
+var ErrPushSubscriptionLimit = errors.New("store: too many push subscriptions for this user")
+
+// SavePushSubscription inserts a new subscription, or replaces the account's
+// own row for the same endpoint: a browser re-subscribing must overwrite its
+// stale keys rather than accumulate a duplicate. An endpoint held by another
+// account is refused, and maxPerUser (when above zero) caps new rows.
+func (db *DB) SavePushSubscription(ctx context.Context, s PushSubscription, maxPerUser int) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: save push subscription %q: %w", s.ID, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var owner string
+	err = tx.QueryRowContext(ctx, `SELECT user_id FROM push_subscriptions WHERE endpoint = ?`, s.Endpoint).Scan(&owner)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		if maxPerUser > 0 {
+			var n int
+			if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM push_subscriptions WHERE user_id = ?`, s.UserID).Scan(&n); err != nil {
+				return fmt.Errorf("store: count push subscriptions: %w", err)
+			}
+			if n >= maxPerUser {
+				return ErrPushSubscriptionLimit
+			}
+		}
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, user_agent, created_at, last_used_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+		`, s.ID, s.UserID, s.Endpoint, s.P256dh, s.Auth, s.UserAgent, formatTime(s.CreatedAt))
+	case err != nil:
+		return fmt.Errorf("store: look up push subscription endpoint: %w", err)
+	case owner != s.UserID:
+		return ErrPushSubscriptionOwned
+	default:
+		_, err = tx.ExecContext(ctx, `
+			UPDATE push_subscriptions SET p256dh = ?, auth = ?, user_agent = ?
+			WHERE endpoint = ? AND user_id = ?
+		`, s.P256dh, s.Auth, s.UserAgent, s.Endpoint, s.UserID)
+	}
+	if err != nil {
+		if strings.Contains(strings.ToUpper(err.Error()), "UNIQUE") {
+			return ErrPushSubscriptionOwned
+		}
+		return fmt.Errorf("store: save push subscription %q: %w", s.ID, err)
+	}
+	if err := tx.Commit(); err != nil {
+		if strings.Contains(strings.ToUpper(err.Error()), "UNIQUE") {
+			return ErrPushSubscriptionOwned
+		}
+		return fmt.Errorf("store: save push subscription %q: %w", s.ID, err)
+	}
+	return nil
+}
+
+// DeletePushSubscriptionsForUser removes every subscription of userID.
+func (db *DB) DeletePushSubscriptionsForUser(ctx context.Context, userID string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM push_subscriptions WHERE user_id = ?`, userID); err != nil {
+		return fmt.Errorf("store: delete push subscriptions for user %q: %w", userID, err)
 	}
 	return nil
 }

@@ -39,9 +39,7 @@ type AppTypeCheckResult struct {
 
 // ListAppTypes calls GET /api/v1/app-types.
 func (c *Client) ListAppTypes(ctx context.Context) ([]AppTypeSummary, error) {
-	var out []AppTypeSummary
-	err := c.do(ctx, http.MethodGet, "/api/v1/app-types", nil, &out)
-	return out, err
+	return getJSON[[]AppTypeSummary](ctx, c, "/api/v1/app-types")
 }
 
 // SaveAppType calls POST /api/v1/app-types with a raw type document.

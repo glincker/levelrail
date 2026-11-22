@@ -113,6 +113,12 @@ type DeploymentPlan struct {
 	Warnings         []Warning `json:"warnings"`
 	// MissingRequiredEnv lists required variables with no value; deploy is blocked until each has one.
 	MissingRequiredEnv []string `json:"missing_required_env"`
+	// Resources, SecretRefs, Unsupported and Conflicts are filled for compose
+	// sources. SecretRefs hold "service/KEY" names only, never values.
+	Resources   []PlannedResource `json:"resources,omitempty"`
+	SecretRefs  []string          `json:"secret_refs,omitempty"`
+	Unsupported []Unsupported     `json:"unsupported,omitempty"`
+	Conflicts   []Conflict        `json:"conflicts,omitempty"`
 }
 
 // Input is the raw request to Classify and Plan.

@@ -27,7 +27,7 @@ func TestVendorEndpoint(t *testing.T) {
 		{store.ExportKindLogsDatadog, store.ExportOptions{}, "https://http-intake.logs.datadoghq.com/api/v2/logs", false},
 		{store.ExportKindLogsDatadog, store.ExportOptions{Site: "us5.datadoghq.com"}, "https://http-intake.logs.us5.datadoghq.com/api/v2/logs", false},
 		{store.ExportKindLogsDatadog, store.ExportOptions{Site: "evil.test/x"}, "", true},
-		{store.ExportKindLogsAxiom, store.ExportOptions{Dataset: "prod logs"}, "https://api.axiom.co/v1/datasets/prod%20logs/ingest", false},
+		{store.ExportKindLogsAxiom, store.ExportOptions{Dataset: "prod logs"}, "https://us-east-1.aws.edge.axiom.co/v1/ingest/prod%20logs", false},
 		{store.ExportKindLogsAxiom, store.ExportOptions{}, "", true},
 		{store.ExportKindLogsBetterStack, store.ExportOptions{}, "https://in.logs.betterstack.com", false},
 	}

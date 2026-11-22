@@ -192,6 +192,7 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 	if entry.Action != AuditActionMCPToolCall {
 		rt.emitAuditEvent(entry)
 	}
+	rt.recordConfigRevisionAfterWrite(ctx, r, actorType, actorName, status)
 }
 
 // auditLogEntryResource is GET /api/v1/audit-log's wire shape, mirroring

@@ -1,0 +1,535 @@
+{
+  "section": {
+    "title": "Cloud accounts",
+    "addOracle": "Add Oracle",
+    "addOracleTitle": "Add Oracle account",
+    "addOracleDescription": "Paste your OCI config and API key. A subnet is only needed to create servers, so it is optional here.",
+    "linkAws": "Link AWS",
+    "connectDigitalOcean": "Connect DigitalOcean",
+    "connectDigitalOceanHint": "Set the DigitalOcean OAuth client id and secret in runtime settings to connect with one click.",
+    "loading": "Loading cloud accounts",
+    "loadFailed": "Could not load cloud accounts.",
+    "empty": "No cloud accounts yet. Link an AWS account with a scoped role or add an Oracle API key.",
+    "verified": "Verified {{when}}",
+    "neverVerified": "Not verified yet"
+  },
+  "common": {
+    "retry": "Retry",
+    "backToIntegrations": "Back to Integrations"
+  },
+  "providers": {
+    "aws": "AWS",
+    "oracle": "Oracle Cloud",
+    "hetzner": "Hetzner",
+    "digitalocean": "DigitalOcean",
+    "vultr": "Vultr",
+    "azure": "Azure",
+    "gcp": "Google Cloud",
+    "linode": "Linode",
+    "akamai": "Akamai"
+  },
+  "status": {
+    "active": "Active",
+    "error": "Needs attention",
+    "disabled": "Disabled"
+  },
+  "capabilities": {
+    "inventory": {
+      "name": "Inventory",
+      "hint": "Read instances, volumes and networks."
+    },
+    "deploy": {
+      "name": "Deploy",
+      "hint": "Create and change compute resources."
+    },
+    "cost": {
+      "name": "Cost",
+      "hint": "Read spend from Cost Explorer."
+    },
+    "s3": {
+      "name": "S3",
+      "hint": "Manage buckets and objects."
+    },
+    "dns": {
+      "name": "DNS",
+      "hint": "Manage Route 53 records."
+    },
+    "destructive": {
+      "name": "Destructive",
+      "hint": "Terminate and delete. Off unless you need it."
+    }
+  },
+  "wizard": {
+    "title": "Link an AWS account",
+    "description": "Create a least privilege role in your account, then hand Levelrail its ARN. No access keys are stored.",
+    "steps": "Link steps",
+    "stepNames": {
+      "scope": "Scope",
+      "kit": "Create the role",
+      "connect": "Connect"
+    },
+    "back": "Back",
+    "generate": "Generate link kit",
+    "regenerate": "Regenerate link kit",
+    "openAccount": "Open account",
+    "needsAdmin": "Only an administrator can link a cloud account.",
+    "scope": {
+      "tiers": "What Levelrail may do",
+      "regions": "Allowed regions",
+      "regionsHint": "Comma separated. Leave empty for every region.",
+      "zones": "Hosted zone ids",
+      "zonesHint": "Route 53 zone ids, comma separated. Required for the dns and destructive tiers.",
+      "region": "Home region",
+      "principal": "Trusted principal ARN",
+      "principalHint": "The AWS identity Levelrail runs as. It is the only one allowed to assume the role.",
+      "guard": "Guard policy ARN (optional)",
+      "roleName": "Role name (optional)",
+      "roleNamePlaceholder": "Default name",
+      "principalPrefilled": "Prefilled from the identity Levelrail runs as (account {{account}}). You can edit it.",
+      "principalNotConfigured": "No AWS identity found. Run aws login or set AWS credentials for the Levelrail process, or paste the ARN."
+    },
+    "issues": {
+      "noCapabilities": "Pick at least one capability.",
+      "badRegions": "Use region ids such as eu-west-1.",
+      "needsZones": "Add the hosted zone ids the dns and destructive tiers may touch.",
+      "badZones": "Use zone ids such as Z0123ABCD.",
+      "badPrincipal": "Enter an IAM root, role or user ARN.",
+      "badGuard": "Enter an IAM policy ARN.",
+      "badRegion": "Use a region id such as us-east-1.",
+      "badAccountId": "Enter a 12 digit AWS account id.",
+      "badVaultAddress": "Enter an http or https Vault address.",
+      "badVaultRole": "Use letters, digits, dot, dash or underscore.",
+      "badVaultToken": "Enter a secret:// reference such as secret://vault/levelrail#token."
+    },
+    "kit": {
+      "readFirstTitle": "Read the policy first",
+      "readFirst": "Review the policy JSON before you create anything. The role can only do what it allows, and the external id guards against a confused deputy.",
+      "quickCreate": "Open CloudFormation quick create",
+      "noQuickCreate": "No quick create link without a template URL. Use the template or Terraform below.",
+      "externalId": "External id:",
+      "formats": "Link kit formats",
+      "policy": "Policy JSON",
+      "cloudformation": "CloudFormation",
+      "terraform": "Terraform",
+      "created": "I created the role"
+    },
+    "connect": {
+      "roleArn": "Role ARN",
+      "badArn": "Enter an IAM role ARN.",
+      "label": "Label",
+      "go": "Create and verify",
+      "retry": "Verify again",
+      "identity": "Account {{account}}."
+    },
+    "vault": {
+      "use": "Use Vault for short lived credentials",
+      "hint": "Levelrail reads temporary keys from your Vault aws secrets engine. No access keys are stored.",
+      "accountId": "AWS account id",
+      "address": "Vault address",
+      "mount": "Secrets engine mount",
+      "role": "Vault role",
+      "namespace": "Vault namespace (optional)",
+      "tokenRef": "Vault token reference",
+      "kitTitle": "Configure Vault first",
+      "kitHint": "Run the Vault commands, create the IAM role {{arn}} with the policy and trust policy, then connect.",
+      "kitFormats": "Vault kit formats",
+      "tabs": {
+        "commands": "Vault commands",
+        "vaultPolicy": "Vault policy",
+        "policy": "IAM policy",
+        "trust": "Trust policy"
+      }
+    }
+  },
+  "probe": {
+    "ok": "Allowed",
+    "missing": "Missing access",
+    "verified": "Confirmed by a real call",
+    "simulated": "Checked by policy simulation"
+  },
+  "detail": {
+    "loading": "Cloud account",
+    "notFound": "Cloud account not found",
+    "loadFailed": "Could not load this account.",
+    "tabs": "Account sections",
+    "overview": "Overview",
+    "access": "Access",
+    "method": "Method",
+    "lastVerified": "Last verified",
+    "defaultRegion": "Home region",
+    "credential": "Credential",
+    "stored": "Stored",
+    "missing": "Missing",
+    "verify": "Verify",
+    "probe": "Probe capabilities",
+    "delete": "Delete account",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteBody": "The stored credential is removed and grants stop working. Resources in the cloud account are not touched. Type the name to confirm.",
+    "regions": "Regions",
+    "regionsFailed": "Regions could not be listed.",
+    "instances": "Instances",
+    "services": "Services"
+  },
+  "access": {
+    "needsShare": "You need the share permission on this account to see who has access.",
+    "principalType": "Who",
+    "user": "User",
+    "team": "Team",
+    "principalId": "User or team id",
+    "expires": "Expires (optional)",
+    "actions": "Actions",
+    "add": "Add grant",
+    "loadFailed": "Could not load grants.",
+    "empty": "No grants yet. Only administrators can use this account.",
+    "expiresAt": "Expires {{when}}",
+    "noExpiry": "No expiry",
+    "revokeNamed": "Revoke access for {{name}}",
+    "revoke": "Revoke",
+    "action": {
+      "view": "View",
+      "operate": "Operate",
+      "view_spend": "View spend",
+      "manage_budget": "Manage budget",
+      "share": "Share"
+    }
+  },
+  "spend": {
+    "title": "Spend this month",
+    "estimated": "estimated",
+    "refresh": "Refresh",
+    "none": "No spend recorded yet.",
+    "monthToDate": "month to date ({{currency}})",
+    "stale": "This data is stale.",
+    "dataAge": "Data as of {{time}}",
+    "limited": "Refreshed recently. Try again later.",
+    "limitedIn": "Refreshed recently. Try again in {{seconds}} seconds.",
+    "usageLink": "Cloud account spend",
+    "state": {
+      "disabled": "Spend is turned off",
+      "tag_not_active": "Cost allocation tag is not active",
+      "data_unavailable": "Spend data is not available"
+    },
+    "hint": {
+      "disabled": "Turn on cloud spend in the runtime settings.",
+      "tag_not_active": "Activate the levelrail:project cost allocation tag in the billing console, then refresh.",
+      "data_unavailable": "Grant the account cost read access and refresh."
+    }
+  },
+  "instances": {
+    "noAccess": "You do not have access to list instances on this account.",
+    "empty": "No instances found.",
+    "cancel": "Cancel",
+    "managed": "Managed",
+    "unmanaged": "Unmanaged",
+    "col": {
+      "name": "Name",
+      "state": "State",
+      "size": "Size",
+      "region": "Region",
+      "ip": "Public IP",
+      "managed": "Managed",
+      "actions": "Actions"
+    },
+    "state": {
+      "pending": "Pending",
+      "running": "Running",
+      "stopping": "Stopping",
+      "stopped": "Stopped",
+      "terminating": "Terminating",
+      "terminated": "Terminated",
+      "unknown": "Unknown"
+    },
+    "action": {
+      "start": "Start",
+      "stop": "Stop",
+      "soft_stop": "Soft stop",
+      "reboot": "Reboot",
+      "soft_reboot": "Soft reboot"
+    },
+    "stop": {
+      "title": "Stop {{name}}?",
+      "body": "The instance goes offline until it is started again."
+    },
+    "resize": {
+      "open": "Resize",
+      "title": "Resize {{name}}",
+      "current": "Current size: {{shape}}",
+      "oracleReboot": "Resizing an Oracle instance reboots it.",
+      "type": "New instance type",
+      "ocpus": "OCPUs",
+      "memory": "Memory (GB)",
+      "confirm": "Resize"
+    },
+    "terminate": {
+      "open": "Terminate",
+      "title": "Terminate {{name}}?",
+      "body": "The instance is deleted at the provider and cannot be recovered. Type the name to confirm.",
+      "confirm": "Terminate",
+      "keepVolume": "Keep the boot volume"
+    },
+    "detail": {
+      "state": "State",
+      "shape": "Shape",
+      "region": "Region",
+      "zone": "Zone",
+      "publicIp": "Public IP",
+      "privateIp": "Private IP",
+      "image": "Image",
+      "bootVolume": "Boot volume",
+      "project": "Project",
+      "environment": "Environment",
+      "tags": "Tags",
+      "noTags": "No tags.",
+      "tagKey": "Tag key",
+      "tagValue": "Tag value",
+      "removeTag": "Remove",
+      "addTag": "Add tag",
+      "saveTags": "Save tags",
+      "readOnly": "Tags are read only for this instance.",
+      "saved": "Tags saved."
+    },
+    "events": {
+      "title": "Events",
+      "none": "No events in this window."
+    }
+  },
+  "services": {
+    "on": "On",
+    "off": "Off",
+    "toggle": "Enable {{name}}",
+    "copy": "Copy",
+    "copied": "Copied",
+    "disabled": "This service is off. A root user can enable it here or in runtime settings.",
+    "disabledRoot": "This service is off. Use the switch to enable it.",
+    "ecr": {
+      "title": "Container registry (ECR)",
+      "name": "Repository",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "Create",
+      "copyLogin": "Copy login command",
+      "empty": "No repositories."
+    },
+    "acm": {
+      "title": "Certificates (ACM)",
+      "domain": "Domain",
+      "request": "Request certificate",
+      "empty": "No certificates.",
+      "copyName": "Copy name",
+      "copyValue": "Copy value",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "Parameters (SSM)",
+      "name": "Name",
+      "value": "Value",
+      "overwrite": "Overwrite",
+      "put": "Save",
+      "redacted": "Hidden",
+      "empty": "No parameters.",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "Audit (CloudTrail)"
+    },
+    "audit": {
+      "resource": "Resource name",
+      "search": "Search",
+      "hint": "Enter a resource name to see its recent events.",
+      "empty": "No events.",
+      "time": "Time",
+      "event": "Event",
+      "user": "User"
+    },
+    "guard": {
+      "title": "Spend guard",
+      "cap": "Monthly cap",
+      "noCap": "none",
+      "mtd": "Month to date",
+      "unavailable": "unavailable",
+      "killSwitch": "Kill switch",
+      "rootOnly": "Only root can change this.",
+      "cleanup": "Cleanup plan",
+      "dryRun": "Dry run",
+      "loadPlan": "Load plan",
+      "resource": "Resource",
+      "reason": "Reason",
+      "expired": "Expired {{when}}",
+      "orphan": "Unattached {{kind}}:",
+      "nothing": "Nothing to clean up."
+    },
+    "rds": {
+      "title": "Databases (RDS and Aurora)",
+      "name": "Name",
+      "engine": "Engine",
+      "class": "Instance class",
+      "username": "Master username",
+      "multiAz": "Multi-AZ (higher cost)",
+      "create": "Create database",
+      "createTitle": "Create a managed database",
+      "createBody": "Created with encryption on, private access, a stop or teardown timer and tags. Needs the guard to allow the class and cost.",
+      "estimate": "About {{usd}} USD per month (instance only).",
+      "noEstimate": "No price estimate available.",
+      "classBlocked": "This class is not on the allowlist.",
+      "passwordNote": "The master password is generated by AWS and kept in Secrets Manager. Levelrail never stores it.",
+      "empty": "No databases in this region.",
+      "perMonth": "{{usd}} USD/mo",
+      "snapshot": "Snapshot",
+      "stop": "Stop",
+      "start": "Start",
+      "adopt": "Adopt",
+      "clusters": "Clusters",
+      "autoRestart": "Stopped, AWS restarts it after {{days}} days",
+      "deleteSnapshot": "Delete snapshot"
+    },
+    "elasticache": {
+      "title": "Caches (ElastiCache)",
+      "empty": "No caches in this region.",
+      "groups": "Replication groups",
+      "clusters": "Cache clusters",
+      "snapshot": "Snapshot",
+      "reboot": "Reboot",
+      "delete": "Delete",
+      "deleteTitle": "Delete this cache",
+      "deleteBody": "This removes the cache and its data. Type the name to confirm. A final snapshot keeps a copy.",
+      "finalSnapshot": "Final snapshot name (optional)"
+    },
+    "lightsail": {
+      "title": "Simple servers (Lightsail)",
+      "empty": "No Lightsail instances in this region.",
+      "start": "Start",
+      "stop": "Stop",
+      "reboot": "Reboot",
+      "snapshot": "Snapshot",
+      "delete": "Delete",
+      "deleteTitle": "Delete this server",
+      "deleteBody": "This removes the server and its disk. Type the name to confirm. Take a snapshot first to keep a copy."
+    },
+    "ebs": {
+      "title": "Volumes and snapshots (EBS)",
+      "target": "Instance or volume id",
+      "excludeBoot": "Skip boot volume",
+      "create": "Create snapshot",
+      "volumes": "Volumes",
+      "snapshots": "Snapshots",
+      "emptyVolumes": "No volumes in this region.",
+      "emptySnapshots": "No snapshots in this region.",
+      "size": "{{gb}} GB",
+      "expires": "expires {{when}}",
+      "delete": "Delete"
+    },
+    "cloudwatch": {
+      "title": "Metrics, logs and idle resources (CloudWatch)",
+      "instance": "Instance id",
+      "names": "Metric names, comma separated",
+      "load": "Load",
+      "noData": "No data points.",
+      "logs": "Log groups",
+      "prefix": "Group name prefix",
+      "filter": "Filter text",
+      "noGroups": "No log groups.",
+      "retention": "{{days}} days retention",
+      "retentionNever": "Keep forever",
+      "view": "View",
+      "noEvents": "No events in the last hour.",
+      "truncated": "Showing the newest events only.",
+      "idleTitle": "Idle resources",
+      "idleNote": "Suggestions only. Nothing is stopped, deleted or released by Levelrail.",
+      "idleEmpty": "No idle resources found.",
+      "idleResource": "Resource",
+      "idleKind": "Type",
+      "idleAction": "Suggested action",
+      "idleSaving": "USD/mo",
+      "idleTotal": "Possible saving: {{usd}} USD per month",
+      "kind": {
+        "ec2_low_cpu": "Low CPU instance",
+        "ebs_unattached": "Unattached volume",
+        "eip_unassociated": "Unassociated IP",
+        "alb_no_requests": "Load balancer, no requests",
+        "rds_stopped": "Stopped database",
+        "rds_cluster_restart": "Database restarts soon"
+      },
+      "action": {
+        "stop": "Stop",
+        "snapshot_delete": "Snapshot, then delete",
+        "release": "Release",
+        "delete": "Delete",
+        "restop": "Stop again"
+      }
+    },
+    "cloudfront": {
+      "title": "CDN (CloudFront)",
+      "empty": "No distributions.",
+      "disabled": "disabled",
+      "select": "Invalidate",
+      "paths": "Paths to invalidate on {{id}} (one per line)",
+      "pathsHint": "/index.html\n/assets/*",
+      "invalidate": "Invalidate",
+      "created": "Invalidation {{id}} created",
+      "invalidations": "Invalidations",
+      "noInvalidations": "No invalidations yet."
+    },
+    "ssm": {
+      "title": "Managed instances (Systems Manager)",
+      "empty": "No managed instances in this region.",
+      "runTitle": "Run command",
+      "instance": "Instance",
+      "command": "Command",
+      "run": "Run",
+      "session": "Start session",
+      "copyToken": "Copy session token",
+      "status": "Status",
+      "exit": "Exit",
+      "refresh": "Refresh"
+    }
+  },
+  "doctor": {
+    "title": "Readiness",
+    "ready": "Ready",
+    "notReady": "Not ready",
+    "rerun": "Run again",
+    "running": "Checking",
+    "deep": "Run deep check",
+    "deepRunning": "Deep checking",
+    "deepTitle": "Deep check",
+    "failed": "Could not run the readiness check.",
+    "fix": "Fix",
+    "status": {
+      "ok": "OK",
+      "warn": "Warning",
+      "fail": "Fail",
+      "skip": "Skipped"
+    }
+  },
+  "sso": {
+    "option": "Sign in with AWS SSO instead",
+    "back": "Use a role or Vault instead",
+    "title": "Sign in with AWS SSO",
+    "startUrl": "Identity Center start URL",
+    "region": "Identity Center region",
+    "start": "Start sign in",
+    "enterCode": "Open AWS and confirm this code:",
+    "openBrowser": "Open the AWS sign in page",
+    "waiting": "Waiting for you to approve in the browser.",
+    "pickRole": "Pick the account and role to link.",
+    "noAccounts": "This login has no accounts assigned.",
+    "label": "Label (optional)",
+    "link": "Link account",
+    "denied": "The sign in was refused or expired. Start again.",
+    "reloginDone": "Signed in again.",
+    "relogin": "Sign in again",
+    "reloginNeeded": "The AWS sign in ended. Sign in again to keep using this account.",
+    "startUrlExample": "https://d-1234567890.awsapps.com/start",
+    "regionExample": "eu-west-1",
+    "accountRegion": "Region for this account (optional, defaults to the sign in region)"
+  },
+  "relogin": {
+    "title": "Browser session",
+    "expires": "Session expires {{when}}.",
+    "expired": "Session expired or ends {{when}}. Log in again to keep using this account.",
+    "token": "Security token file contents",
+    "key": "Session private key file contents",
+    "submit": "Relogin",
+    "done": "Session replaced"
+  }
+}

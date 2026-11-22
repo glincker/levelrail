@@ -67,3 +67,18 @@ func TestTCPConfigValidate(t *testing.T) {
 		t.Fatal("tcp with path must be rejected")
 	}
 }
+
+type fakeRemote struct{ addr string }
+
+func (f *fakeRemote) CheckRemote(_ context.Context, addr string, _ Config) error {
+	f.addr = addr
+	return &Failure{Kind: FailureConnect, Reason: "remote said no"}
+}
+
+func TestAttemptDelegatesToRemoteChecker(t *testing.T) {
+	r := &fakeRemote{}
+	err := New(nil, nil, Limits{}).Check(context.Background(), Target{Addr: "127.0.0.1:1", Remote: r}, Config{TCP: true})
+	if r.addr != "127.0.0.1:1" || err == nil || err.Error() != "remote said no" {
+		t.Fatalf("addr %q err %v", r.addr, err)
+	}
+}

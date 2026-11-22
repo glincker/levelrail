@@ -156,5 +156,160 @@
         "hint": "Canaux pour alertes et événements"
       }
     }
+  },
+  "fields": {
+    "logDrain": {
+      "type": {
+        "label": "Type de destination",
+        "help": "Où partent les journaux : un point HTTP ou syslog."
+      },
+      "target_http": {
+        "label": "URL cible",
+        "help": "URL HTTP qui reçoit le flux de journaux."
+      },
+      "target_syslog": {
+        "label": "Cible",
+        "help": "Adresse syslog au format network://hôte:port. Laisser vide pour le syslog local."
+      },
+      "header_name": {
+        "label": "Nom de l'en-tête d'authentification",
+        "help": "En-tête facultatif envoyé avec chaque lot, par exemple Authorization ou X-Api-Key."
+      },
+      "header_value": {
+        "label": "Valeur de l'en-tête d'authentification",
+        "help": "Stockée chiffrée et jamais réaffichée. Laissez vide pour conserver la valeur enregistrée."
+      },
+      "enabled": {
+        "label": "Transfert",
+        "help": "Activer ou suspendre le transfert sans perdre les réglages."
+      }
+    },
+    "notificationChannel": {
+      "kind": {
+        "label": "Type de canal",
+        "help": "Destination de l'alerte ou de la notification de déploiement."
+      },
+      "name": {
+        "label": "Nom",
+        "help": "Nom affiché dans le tableau de bord et dans la CLI."
+      },
+      "notify_url_webhook": {
+        "label": "URL du webhook",
+        "help": "Envoyé : nom de l'app, image/tag, succès ou échec, et le message d'erreur en cas d'échec. Rien d'autre sur votre app."
+      },
+      "notify_url_email": {
+        "label": "Adresse e-mail de notification",
+        "help": "Envoyé : nom de l'app, image/tag, succès ou échec, et le message d'erreur en cas d'échec. Rien d'autre sur votre app."
+      },
+      "notify_url_ntfy": {
+        "label": "URL du topic",
+        "help": "Envoyé : nom de l'app, image/tag, succès ou échec, et le message d'erreur en cas d'échec. Rien d'autre sur votre app."
+      },
+      "notify_url_gotify": {
+        "label": "URL du point de terminaison des messages",
+        "help": "Envoyé : nom de l'app, image/tag, succès ou échec, et le message d'erreur en cas d'échec. Rien d'autre sur votre app."
+      },
+      "pushover_user_key": {
+        "label": "Clé utilisateur Pushover",
+        "help": "Votre clé utilisateur, visible dans le tableau de bord Pushover."
+      },
+      "pushover_api_token": {
+        "label": "Jeton API de l'application Pushover",
+        "help": "Envoyé : nom de l'app, image/tag, succès ou échec, et le message d'erreur en cas d'échec. Rien d'autre sur votre app."
+      },
+      "pagerduty_routing_key": {
+        "label": "Clé d'intégration / de routage",
+        "help": "Envoyé : nom de l'app, image/tag, succès ou échec, et le message d'erreur en cas d'échec. Rien d'autre sur votre app."
+      },
+      "resend_api_key": {
+        "label": "Clé API Resend",
+        "help": "Clé API autorisée à envoyer des e-mails."
+      },
+      "resend_to": {
+        "label": "Adresse e-mail de destination",
+        "help": "Adresse qui reçoit l'e-mail d'alerte."
+      },
+      "resend_from": {
+        "label": "Adresse d'expédition (facultatif)",
+        "help": "Expéditeur d'un domaine vérifié dans Resend. Si vide, onboarding@resend.dev est utilisé."
+      },
+      "opsgenie_api_key": {
+        "label": "Clé API Opsgenie",
+        "help": "Envoyé : nom de l'app, image/tag, succès ou échec, et le message d'erreur en cas d'échec. Rien d'autre sur votre app."
+      },
+      "enabled": {
+        "label": "Envoi",
+        "help": "Activer ou suspendre les notifications sans supprimer le canal."
+      },
+      "notify_device_login": {
+        "label": "Alertes de connexion par appareil",
+        "help": "Avis avec lien uniquement lorsqu'une connexion CLI attend une approbation. Le code n'est jamais inclus."
+      },
+      "notify_device_login_expired": {
+        "label": "Alertes de connexion par appareil expirée",
+        "help": "Avis avec lien uniquement lorsqu'une connexion CLI en attente expire sans approbation. Le code n'est jamais inclus."
+      }
+    },
+    "dnsProvider": {
+      "provider": {
+        "label": "Fournisseur",
+        "help": "Hébergeur DNS qui contient les enregistrements de votre domaine."
+      },
+      "cloudflare": {
+        "token": {
+          "label": "Jeton API Cloudflare",
+          "help": "Jeton API limité avec la permission Zone:DNS:Edit, pas la clé API globale."
+        }
+      },
+      "route53": {
+        "access_key_id": {
+          "label": "ID de clé d'accès AWS",
+          "help": "ID de clé d'accès d'un utilisateur IAM ayant accès à la zone hébergée."
+        },
+        "secret_access_key": {
+          "label": "Clé d'accès secrète AWS",
+          "help": "Stockée chiffrée et jamais réaffichée."
+        },
+        "region": {
+          "label": "Région (facultatif)",
+          "help": "Si vide, la chaîne de région par défaut du SDK AWS s'applique."
+        },
+        "hosted_zone_id": {
+          "label": "ID de la zone hébergée (facultatif)",
+          "help": "Si vide, la zone est trouvée à partir du domaine."
+        }
+      },
+      "googlecloud": {
+        "service_account_json": {
+          "label": "Clé JSON du compte de service",
+          "help": "Nécessite les droits d'administrateur Cloud DNS. Jamais réaffichée après l'enregistrement."
+        }
+      }
+    },
+    "registryCredential": {
+      "name": {
+        "label": "Nom",
+        "help": "Affiche dans les listes et reference par nom depuis app.yaml."
+      },
+      "registry_host": {
+        "label": "Hote du registre",
+        "help": "Nom d hote du registre, par exemple ghcr.io."
+      },
+      "username": {
+        "label": "Nom d'utilisateur",
+        "help": "Compte utilise pour recuperer les images privees."
+      },
+      "password": {
+        "label": "Mot de passe (ou jeton d'acces)",
+        "help": "Stocke chiffre et jamais reaffiche."
+      },
+      "expires_at": {
+        "label": "Expire (facultatif)",
+        "help": "Seulement si vous connaissez deja l'expiration. Elle ne peut pas etre detectee automatiquement."
+      }
+    }
+  },
+  "logDrain": {
+    "advanced": "Avancé"
   }
 }

@@ -53,9 +53,7 @@ func (c *Client) ExploreCosts(ctx context.Context, q CostExploreQuery) (CostExpl
 	if v := q.values(); len(v) > 0 {
 		path += "?" + v.Encode()
 	}
-	var out CostExploration
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[CostExploration](ctx, c, path)
 }
 
 // CostBudgetStatus is one named budget with its month to date position.
@@ -83,9 +81,7 @@ type CostBudgets struct {
 
 // ListCostBudgets calls GET /api/v1/costs/budgets.
 func (c *Client) ListCostBudgets(ctx context.Context) (CostBudgets, error) {
-	var out CostBudgets
-	err := c.do(ctx, http.MethodGet, "/api/v1/costs/budgets", nil, &out)
-	return out, err
+	return getJSON[CostBudgets](ctx, c, "/api/v1/costs/budgets")
 }
 
 // CreateCostBudget calls POST /api/v1/costs/budgets.
@@ -104,5 +100,5 @@ func (c *Client) UpdateCostBudget(ctx context.Context, id string, body map[strin
 
 // DeleteCostBudget calls DELETE /api/v1/costs/budgets/{id}.
 func (c *Client) DeleteCostBudget(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/costs/budgets/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/costs/budgets/"+PathEscape(id))
 }

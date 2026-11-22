@@ -30,9 +30,7 @@ type RevokeAgentTokensResource struct {
 
 // GetAIControl calls GET /api/v1/settings/ai-control.
 func (c *Client) GetAIControl(ctx context.Context) (AIControlResource, error) {
-	var out AIControlResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ai-control", nil, &out)
-	return out, err
+	return getJSON[AIControlResource](ctx, c, "/api/v1/settings/ai-control")
 }
 
 // UpdateAIControl calls PUT /api/v1/settings/ai-control.

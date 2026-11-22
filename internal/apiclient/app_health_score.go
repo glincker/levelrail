@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -26,7 +25,5 @@ type AppHealthScoreResource struct {
 // synthesis of deploy, security, resilience, and observability signals
 // into one pass/warn/fail verdict per category.
 func (c *Client) GetAppHealthScore(ctx context.Context, name string) (AppHealthScoreResource, error) {
-	var out AppHealthScoreResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/health-score", nil, &out)
-	return out, err
+	return getJSON[AppHealthScoreResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/health-score")
 }

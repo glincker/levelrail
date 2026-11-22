@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
@@ -148,11 +149,11 @@ func (rt *Router) doctorCheckDiskSpace() doctorCheckResource {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "data directory not configured"}
 	}
 
-	var stat syscall.Statfs_t
-	if err := syscall.Statfs(rt.dataDir, &stat); err != nil {
+	stat, err := diskfree.Stat(rt.dataDir)
+	if err != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: fmt.Sprintf("could not read disk usage: %s", err)}
 	}
-	freeBytes := int64(stat.Bavail) * int64(stat.Bsize) //nolint:gosec // statfs fields are always non-negative in practice
+	freeBytes := stat.Free
 
 	threshold := rt.doctorDiskWarningBytes
 	if threshold <= 0 {

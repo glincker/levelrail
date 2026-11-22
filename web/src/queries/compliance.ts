@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 // Access reviews and evidence packs (internal/api/compliance.go).
 
@@ -135,28 +136,22 @@ export function useEvidencePacks() {
 }
 
 export function useStartAccessReview() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (req: {
-      name: string
-      due_days: number
-      repeat_days: number
-    }) => send<AccessReview>('POST', `${BASE}/access-reviews`, req),
-    onSuccess: () => qc.invalidateQueries({ queryKey: complianceKeys.reviews }),
+  return useApiMutation({
+    fn: (req: { name: string; due_days: number; repeat_days: number }) =>
+      send<AccessReview>('POST', `${BASE}/access-reviews`, req),
+    invalidate: [complianceKeys.reviews],
   })
 }
 
 export function useDecideItem(reviewId: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (v: { item: string; decision: AccessDecision }) =>
+  return useApiMutation({
+    fn: (v: { item: string; decision: AccessDecision }) =>
       send<void>(
         'PUT',
         `${BASE}/access-reviews/${encodeURIComponent(reviewId)}/items/${encodeURIComponent(v.item)}`,
         { decision: v.decision },
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: complianceKeys.review(reviewId) }),
+    invalidate: [complianceKeys.review(reviewId)],
   })
 }
 
@@ -176,11 +171,10 @@ export function useCompleteReview(reviewId: string) {
 }
 
 export function useCreatePack() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (range: { from: string; to: string }) =>
+  return useApiMutation({
+    fn: (range: { from: string; to: string }) =>
       send<EvidencePack>('POST', `${BASE}/evidence-packs`, range),
-    onSuccess: () => qc.invalidateQueries({ queryKey: complianceKeys.packs }),
+    invalidate: [complianceKeys.packs],
   })
 }
 

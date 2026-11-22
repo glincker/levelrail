@@ -34,21 +34,6 @@ export function healthCheckFrom(
   }
 }
 
-export interface HealthPathPreset {
-  id: string
-  path: string
-}
-
-// Same preset ids as the CLI's "apps health set --preset" (apps_health.go)
-// so the two surfaces offer identical shortcuts.
-export const HEALTH_CHECK_PATH_PRESETS: HealthPathPreset[] = [
-  { id: 'healthz', path: '/healthz' },
-  { id: 'health', path: '/health' },
-  { id: 'api-health', path: '/api/health' },
-  { id: 'ping', path: '/ping' },
-  { id: 'status', path: '/status' },
-]
-
 export interface ProbeTimingDefaults {
   intervalSeconds: string
   timeoutSeconds: string

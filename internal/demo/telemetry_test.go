@@ -181,9 +181,10 @@ func TestSeedAlertsAndOps(t *testing.T) {
 	ctx := context.Background()
 	s := seedStores(t, liveAnchor)
 
+	defaultSpecs := alerting.DefaultRuleSpecs(alerting.DefaultsConfig{CertExpiryDays: alerting.DefaultCertExpiryDays})
 	rules, err := s.Alerting.ListRules(ctx)
-	if err != nil || len(rules) != 10 {
-		t.Fatalf("rules = %d, err = %v, want 10", len(rules), err)
+	if err != nil || len(rules) != 10+len(defaultSpecs) {
+		t.Fatalf("rules = %d, err = %v, want %d", len(rules), err, 10+len(defaultSpecs))
 	}
 	var firing int
 	for _, r := range rules {

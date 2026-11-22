@@ -18,6 +18,7 @@ export PATH="$tmp/bin:$PATH" FAKE_ASSETS="$tmp/assets"
 	for a in amd64 arm64; do
 		echo "levelrail-linux-$a"; echo "levelrail-agent-linux-$a"
 		echo "levelrail-agent-linux-$a.deb"; echo "levelrail-agent-linux-$a.rpm"
+		echo "levelrail-agent-darwin-$a"
 		echo "levelrail-cli-linux-$a"; echo "levelrail-cli-darwin-$a"; echo "levelrail-cli-windows-$a.exe"
 	done
 } >"$tmp/assets"
@@ -34,4 +35,22 @@ fi
 case "$out" in
 *checksums.txt.sigstore.json*) echo "ok: missing bundle reported" ;;
 *) echo "FAIL: wrong report: $out" >&2; exit 1 ;;
+esac
+
+# failed-jobs.sh lists failed jobs with a link and the failing step, and skips the rest.
+cat >"$tmp/bin/gh" <<'FAKE'
+#!/usr/bin/env bash
+cat "$FAKE_JOBS"
+FAKE
+cat >"$tmp/jobs.json" <<'JSON'
+{"jobs":[
+{"name":"Build","conclusion":"success","html_url":"https://x/1","steps":[]},
+{"name":"Merge and tag image","conclusion":"failure","html_url":"https://x/2","steps":[{"name":"Set up job","conclusion":"success"},{"name":"Log in","conclusion":"failure"}]},
+{"name":"Skipped","conclusion":"skipped","html_url":"https://x/3","steps":[]}
+]}
+JSON
+out="$(FAKE_JOBS="$tmp/jobs.json" "$root/scripts/release/failed-jobs.sh" 1 --repo o/r)"
+case "$out" in
+'- [Merge and tag image](https://x/2): failed at step "Log in"') echo "ok: failed job listed with step" ;;
+*) echo "FAIL: wrong failed-jobs output: $out" >&2; exit 1 ;;
 esac

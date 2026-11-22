@@ -2,13 +2,14 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -200,10 +201,10 @@ func (rt *Router) notifyDeviceLoginExpired() {
 			text += " " + base + deviceCLIPath
 		}
 		for _, c := range channels {
-			if !c.Enabled || !c.NotifyDeviceLoginExpired {
+			if !c.Enabled || !c.NotifyDeviceLoginExpired || c.ProjectID != "" {
 				continue
 			}
-			if err := rt.deviceNotifier.SendNotice(ctx, c, text); err != nil {
+			if err := rt.deviceNotifier.SendNotice(alerting.WithPushAudience(ctx, alerting.PushAudience{RootOnly: true}), c, text); err != nil {
 				rt.logger.Error("api: send device login expiry notice failed",
 					slog.String("channel_id", c.ID), slog.String("error", err.Error()))
 			}
@@ -281,7 +282,25 @@ func (rt *Router) handleDeviceActivity(w http.ResponseWriter, r *http.Request) {
 
 type attentionDismissRequest struct {
 	ItemKey string `json:"item_key"`
+	// ItemKeys dismisses several device logins in one call ("Dismiss all").
+	ItemKeys []string `json:"item_keys"`
 }
+
+// maxDismissBatch bounds one batched dismissal to the activity list size.
+const (
+	maxDismissBatch     = deviceActivityLimit
+	dismissBodyMaxBytes = 64 << 10
+)
+
+type dismissOutcome int
+
+const (
+	dismissDone dismissOutcome = iota
+	dismissBadKey
+	dismissMissing
+	dismissNotDismissible
+	dismissUnavailable
+)
 
 // handleAttentionDismiss handles POST /api/v1/attention/dismiss: a signed-in
 // operator clears an informational item for themselves. The audit log is not
@@ -292,9 +311,12 @@ func (rt *Router) handleAttentionDismiss(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
-	var req attentionDismissRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[attentionDismissRequest](w, r, dismissBodyMaxBytes)
+	if !ok {
+		return
+	}
+	if len(req.ItemKeys) > 0 {
+		rt.dismissDeviceLoginBatch(w, r, userID, req.ItemKeys)
 		return
 	}
 	parts := strings.Split(req.ItemKey, deviceLoginItemKeySep)
@@ -302,31 +324,74 @@ func (rt *Router) handleAttentionDismiss(w http.ResponseWriter, r *http.Request)
 		rt.dismissDataCopyItem(w, r, userID, req.ItemKey)
 		return
 	}
-	if len(parts) != deviceLoginItemKeyParts || parts[0] != store.AuditActionFamilyDeviceLogin {
+	switch out, err := rt.dismissDeviceLogin(r, userID, req.ItemKey); {
+	case err != nil:
+		rt.internalError(w, "api: dismiss attention item failed", err)
+	case out == dismissBadKey:
 		writeError(w, http.StatusBadRequest, "item_key is not a dismissible item")
+	case out == dismissMissing:
+		writeError(w, http.StatusNotFound, "no such item")
+	case out == dismissNotDismissible:
+		writeError(w, http.StatusConflict, "item is not in a dismissible state")
+	case out == dismissUnavailable:
+		writeError(w, http.StatusNotImplemented, "dismissal is not available")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// dismissDeviceLoginBatch clears many logins at once. A malformed key rejects
+// the whole call before any write; keys that went stale (pruned, or no longer
+// in that state) are skipped, since the goal is only that they stop showing.
+func (rt *Router) dismissDeviceLoginBatch(w http.ResponseWriter, r *http.Request, userID string, keys []string) {
+	if len(keys) > maxDismissBatch {
+		writeError(w, http.StatusBadRequest, "too many item_keys")
 		return
+	}
+	for _, k := range keys {
+		if p := strings.Split(k, deviceLoginItemKeySep); len(p) != deviceLoginItemKeyParts || p[0] != store.AuditActionFamilyDeviceLogin {
+			writeError(w, http.StatusBadRequest, "item_key is not a dismissible item")
+			return
+		}
+	}
+	for _, k := range keys {
+		out, err := rt.dismissDeviceLogin(r, userID, k)
+		if err != nil {
+			rt.internalError(w, "api: dismiss attention items failed", err)
+			return
+		}
+		if out == dismissUnavailable {
+			writeError(w, http.StatusNotImplemented, "dismissal is not available")
+			return
+		}
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// dismissDeviceLogin records one dismissal. The returned error is only for
+// storage failures, every client-caused refusal is a dismissOutcome.
+func (rt *Router) dismissDeviceLogin(r *http.Request, userID, itemKey string) (dismissOutcome, error) {
+	parts := strings.Split(itemKey, deviceLoginItemKeySep)
+	if len(parts) != deviceLoginItemKeyParts || parts[0] != store.AuditActionFamilyDeviceLogin {
+		return dismissBadKey, nil
 	}
 	requestID, state := parts[1], parts[2]
 	cur, err := rt.authLib.device.DeviceRequestByID(r.Context(), requestID, time.Now())
 	if err != nil {
-		writeError(w, http.StatusNotFound, "no such item")
-		return
+		return dismissMissing, nil
 	}
 	if cur.State == store.DeviceLoginStateWaiting || cur.State != state {
-		writeError(w, http.StatusConflict, "item is not in a dismissible state")
-		return
+		return dismissNotDismissible, nil
 	}
 	d, ok := rt.auditLog.(interface {
 		DismissAttentionItem(ctx context.Context, userID, itemKey string, at time.Time, entry *store.AuditEntry) (bool, error)
 	})
 	if !ok {
-		writeError(w, http.StatusNotImplemented, "dismissal is not available")
-		return
+		return dismissUnavailable, nil
 	}
 	id, err := store.NewAuditEntryID()
 	if err != nil {
-		rt.internalError(w, "api: dismiss attention item: audit id failed", err)
-		return
+		return dismissDone, fmt.Errorf("audit id: %w", err)
 	}
 	now := time.Now()
 	entry := store.AuditEntry{
@@ -335,9 +400,8 @@ func (rt *Router) handleAttentionDismiss(w http.ResponseWriter, r *http.Request)
 		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(now),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")), Action: store.AuditActionDeviceLoginDismissed,
 	}
-	if _, err := d.DismissAttentionItem(r.Context(), userID, req.ItemKey, now, &entry); err != nil {
-		rt.internalError(w, "api: dismiss attention item failed", err)
-		return
+	if _, err := d.DismissAttentionItem(r.Context(), userID, itemKey, now, &entry); err != nil {
+		return dismissDone, err
 	}
-	w.WriteHeader(http.StatusNoContent)
+	return dismissDone, nil
 }

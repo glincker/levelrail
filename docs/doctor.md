@@ -69,6 +69,7 @@ One or more checks failed. See above.
 | --- | --- | --- |
 | Container runtime | `docker` | Daemon reachable, engine version |
 | | `install_state` | Whether an upgrade is available, you are up to date, or this is a development build whose database is newer than every release |
+| | `update_available` | Warns when the cached latest stable release is newer than this build; reads the updates cache only, silent when none was fetched |
 | | `container_runtime`, `docker_privilege`, `docker_guard`, `container_hardening` | Engine kind, privileges, API guard, hardening |
 | | `network_pool` | Docker network address pool usage, with an auto fix for orphans |
 | | `docker_orphans` | Unreferenced images, build cache, anonymous volumes, orphan networks (`APP_DOCTOR_ORPHAN_WARN_BYTES`) |
@@ -90,7 +91,8 @@ One or more checks failed. See above.
 | Backups | `control_plane_backup`, `control_plane_dr` | Newest control plane snapshot and recovery readiness, with an auto snapshot fix |
 | | `backup_freshness` | Scheduled database backups that are overdue |
 | | `backup_drill` | The latest restore drill of every database and volume |
-| Nodes and mesh | `node_agent_*` | One per remote node: agent connected, last seen |
+| Nodes and mesh | `agent_version_skew` | Warns when agents run an older version than the control plane (database only) |
+| | `node_agent_*` | One per remote node: agent connected, last seen |
 | | `agent_version_skew` | Agents older than the minimum this control plane supports |
 | | `wireguard`, `udp_port`, `public_address` | Mesh readiness, only when a remote node exists |
 | Hardware | GPU and network share checks | GPU attach and placement, NAS client tools |

@@ -26,9 +26,7 @@ func gitSSHKeyPath(name string) string {
 
 // GetGitSSHKey calls GET /api/v1/apps/{name}/git-source/ssh-key.
 func (c *Client) GetGitSSHKey(ctx context.Context, name string) (GitSSHKeyResource, error) {
-	var out GitSSHKeyResource
-	err := c.do(ctx, http.MethodGet, gitSSHKeyPath(name), nil, &out)
-	return out, err
+	return getJSON[GitSSHKeyResource](ctx, c, gitSSHKeyPath(name))
 }
 
 // SetGitSSHKey calls POST: mints a fresh key (rotating any old one) and pins the host key.
@@ -40,5 +38,5 @@ func (c *Client) SetGitSSHKey(ctx context.Context, name string, req SetGitSSHKey
 
 // DeleteGitSSHKey calls DELETE on the app's deploy key and pinned host key.
 func (c *Client) DeleteGitSSHKey(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, gitSSHKeyPath(name), nil, nil)
+	return c.del(ctx, gitSSHKeyPath(name))
 }

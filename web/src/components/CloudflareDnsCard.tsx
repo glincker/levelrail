@@ -11,14 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import { FieldDescription } from '@/components/ui/field'
 import {
   SettingsEnabledRow,
   SettingsFormActions,
   SettingsFormAlerts,
   useTokenToggleForm,
 } from './SettingsCard'
+import { DnsProviderFields } from './dns/DnsProviderFields'
 import { DnsVerificationCallout } from './dns/DnsVerificationCallout'
 
 // Instance-level Cloudflare DNS-01 credential: GET/PUT/DELETE
@@ -81,31 +81,22 @@ export function CloudflareDnsCard({
             ariaLabel="Cloudflare DNS-01 enabled"
           />
 
-          <Field>
-            <FieldLabel htmlFor="cloudflare-dns-token">
-              Cloudflare API token
-            </FieldLabel>
-            <Input
-              id="cloudflare-dns-token"
-              type="password"
-              autoComplete="off"
-              value={token}
-              onChange={(e) => {
-                setToken(e.target.value)
-              }}
-              disabled={pending}
-              placeholder={
-                settings.has_token
-                  ? '••••••••••••'
-                  : 'Paste your Cloudflare API token'
-              }
-            />
-            <FieldDescription>
-              {settings.has_token
-                ? 'A token is already configured. Leave blank to keep it.'
-                : 'No token set yet. Needs Zone:DNS:Edit permission, not the global API key.'}
-            </FieldDescription>
-          </Field>
+          <DnsProviderFields
+            provider="cloudflare"
+            values={{ token }}
+            onChange={(_key, value) => {
+              setToken(value)
+            }}
+            idPrefix="cloudflare-dns"
+            hasSecret={settings.has_token}
+            fieldExtra={() => (
+              <FieldDescription>
+                {settings.has_token
+                  ? 'A token is already configured. Leave blank to keep it.'
+                  : 'No token set yet.'}
+              </FieldDescription>
+            )}
+          />
 
           <SettingsFormAlerts
             alerts={[

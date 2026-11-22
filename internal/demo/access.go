@@ -79,7 +79,7 @@ func (a Access) AppVisitors(_ context.Context, app string, o ingress.VisitorSumm
 		reqs = 400 + appFactor(app)
 	}
 	sum := ingress.VisitorSummary{
-		Requests: reqs, Visitors: reqs / 4, Status: map[string]int{"2xx": reqs * 93 / 100, "3xx": reqs * 4 / 100, "4xx": reqs * 3 / 100},
+		Requests: reqs, Visitors: reqs / 4, Status: map[string]int{"2xx": reqs * 93 / 100, "3xx": reqs * 4 / 100, "4xx": reqs * 3 / 100, "5xx": reqs / 100},
 		Classes:    ingress.ClassCounts{Page: reqs * 55 / 100, Asset: reqs * 35 / 100, Bot: reqs * 7 / 100, Other: reqs * 3 / 100},
 		TopRefs:    []ingress.CountedItem{{Label: "news.example.com", Count: reqs / 9}, {Label: "social.example.com", Count: reqs / 14}, {Label: "(direct)", Count: reqs / 3}},
 		SaltPeriod: "daily",

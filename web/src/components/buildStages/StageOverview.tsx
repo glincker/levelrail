@@ -6,14 +6,12 @@ import { useDeployDetailT } from '../deployDetail/useDeployDetailT'
 import {
   BUILD_STAGE_ORDER,
   failedStage,
-  runElapsedMs,
   type BuildStageName,
 } from '../../lib/buildStages'
-import { RunProgress } from './RunProgress'
-import { StageGraph } from './StageGraph'
+import { StageWaterfall } from './StageWaterfall'
 import { useBuildStages } from './useBuildStages'
 
-/** Stage graph with run progress, loading, error and empty states. */
+/** The one stage waterfall with loading, error and empty states. */
 export function StageOverview({
   appName,
   deployId,
@@ -33,10 +31,10 @@ export function StageOverview({
       <div
         aria-busy="true"
         aria-label={t('buildStages.loading')}
-        className="flex gap-2 overflow-x-auto"
+        className="space-y-1"
       >
         {BUILD_STAGE_ORDER.map((s) => (
-          <Skeleton key={s} className="h-16 w-28 shrink-0" />
+          <Skeleton key={s} className="h-6 w-full" />
         ))}
       </div>
     )
@@ -67,10 +65,9 @@ export function StageOverview({
   }
   const failed = failedStage(data)
   return (
-    <div className="space-y-3">
-      <RunProgress data={data} elapsedMs={runElapsedMs(data, nowMs)} />
-      <StageGraph
-        stages={data.stages}
+    <div className="space-y-2">
+      <StageWaterfall
+        data={data}
         nowMs={nowMs}
         selected={selected}
         onSelect={onSelect}

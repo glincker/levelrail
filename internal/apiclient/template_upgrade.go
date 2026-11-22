@@ -56,9 +56,7 @@ type TemplateUpgradeSvc struct {
 
 // GetTemplateUpgradePlan calls GET /api/v1/apps/{name}/template-upgrade.
 func (c *Client) GetTemplateUpgradePlan(ctx context.Context, name string) (TemplateUpgradePlan, error) {
-	var out TemplateUpgradePlan
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/template-upgrade", nil, &out)
-	return out, err
+	return getJSON[TemplateUpgradePlan](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/template-upgrade")
 }
 
 // TemplateUpgradeRun mirrors POST and GET /api/v1/apps/{name}/template-upgrade/run.
@@ -87,7 +85,5 @@ func (c *Client) ApplyTemplateUpgrade(ctx context.Context, name string, acceptRi
 
 // GetTemplateUpgradeRun calls GET /api/v1/apps/{name}/template-upgrade/run.
 func (c *Client) GetTemplateUpgradeRun(ctx context.Context, name string) (TemplateUpgradeRun, error) {
-	var out TemplateUpgradeRun
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/template-upgrade/run", nil, &out)
-	return out, err
+	return getJSON[TemplateUpgradeRun](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/template-upgrade/run")
 }

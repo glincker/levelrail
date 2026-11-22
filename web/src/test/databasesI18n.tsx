@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
+import commonEn from '../locales/en/common.json'
 import databasesEn from '../locales/en/databases.json'
 import databaseVersionsEn from '../locales/en/databaseVersions.json'
 import nodesEn from '../locales/en/nodes.json'
@@ -10,10 +11,11 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['databases', 'traffic', 'nodes', 'databaseVersions'],
+  ns: ['common', 'databases', 'traffic', 'nodes', 'databaseVersions'],
   defaultNS: 'databases',
   resources: {
     en: {
+      common: commonEn,
       databases: databasesEn,
       traffic: trafficEn,
       nodes: nodesEn,

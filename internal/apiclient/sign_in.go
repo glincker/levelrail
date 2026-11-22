@@ -68,9 +68,7 @@ type CodeLoginSettingsUpdate struct {
 // ListSignInRequests calls GET /api/v1/auth/sign-in-requests. A token must
 // belong to a user and hold write:sensitive or signin:approve.
 func (c *Client) ListSignInRequests(ctx context.Context) (SignInRequests, error) {
-	var out SignInRequests
-	err := c.do(ctx, http.MethodGet, "/api/v1/auth/sign-in-requests", nil, &out)
-	return out, err
+	return getJSON[SignInRequests](ctx, c, "/api/v1/auth/sign-in-requests")
 }
 
 // RevealLoginCode calls POST /api/v1/auth/sign-in-requests/codes/{id}/reveal.
@@ -106,14 +104,12 @@ func (c *Client) ListTrustedDevices(ctx context.Context) ([]TrustedDevice, error
 
 // RevokeTrustedDevice calls DELETE /api/v1/auth/trusted-devices/{id}.
 func (c *Client) RevokeTrustedDevice(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/auth/trusted-devices/"+url.PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/auth/trusted-devices/"+url.PathEscape(id))
 }
 
 // GetCodeLoginSettings calls GET /api/v1/settings/auth/code-login.
 func (c *Client) GetCodeLoginSettings(ctx context.Context) (CodeLoginSettings, error) {
-	var out CodeLoginSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/auth/code-login", nil, &out)
-	return out, err
+	return getJSON[CodeLoginSettings](ctx, c, "/api/v1/settings/auth/code-login")
 }
 
 // UpdateCodeLoginSettings calls PUT /api/v1/settings/auth/code-login (root).

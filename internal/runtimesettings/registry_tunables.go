@@ -19,6 +19,9 @@ const (
 	KeyNetworkGCMaxRemovals          = "network.gc_max_removals"
 	KeyMeshReadyRetrySeconds         = "mesh.ready_retry_seconds"
 	KeyAppsContainersInspectTimeout  = "apps.containers_inspect_timeout"
+	KeyAppsSummaryCacheSeconds       = "apps.summary_cache_seconds"
+	KeyAppsSummaryCacheMaxEntries    = "apps.summary_cache_max_entries"
+	KeyAppsSummaryTimeout            = "apps.summary_timeout"
 	KeyBackupsComposeRestoreTimeout  = "backups.compose_restore_timeout"
 	KeyBackupsScheduleRetainDefault  = "backups.schedule_retain_default"
 	KeyBackupsDrillIntervalHours     = "backups.drill_interval_hours"
@@ -78,6 +81,24 @@ func init() {
 		Env: "APP_CONTAINERS_INSPECT_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Second, 2*time.Minute),
 		Title:       "Container inspect timeout",
 		Description: "How long the app containers view waits for a node's live inspect (health, restarts, networks, mounts), from 1s to 2m. When it runs out the view still answers, with those fields marked unavailable. The next request uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyAppsSummaryCacheSeconds, Category: CategoryObservability, Kind: KindInt, Default: "30",
+		Env: "APP_APPS_SUMMARY_CACHE_SECONDS", Apply: ApplyLive, CheckValue: intRangeCheck(0, 3600),
+		Title:       "Apps list live signals cache",
+		Description: "How many seconds the apps list reuses the restart count and database size it read live from a node, from 0 to 3600. 0 turns the live signals off. The next list request uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyAppsSummaryCacheMaxEntries, Category: CategoryObservability, Kind: KindInt, Default: "500",
+		Env: "APP_APPS_SUMMARY_CACHE_MAX_ENTRIES", Apply: ApplyLive, CheckValue: intRangeCheck(10, 20000),
+		Title:       "Apps list live signals cache size",
+		Description: "The most apps whose live restart count and database size the apps list remembers, from 10 to 20000. The oldest entry is dropped first. The next list request uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyAppsSummaryTimeout, Category: CategoryObservability, Kind: KindDuration, Default: "800ms",
+		Env: "APP_APPS_SUMMARY_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(100*time.Millisecond, 10*time.Second),
+		Title:       "Apps list live signals timeout",
+		Description: "The longest the apps list waits for live restart counts and database sizes before answering without them, from 100ms to 10s. The next list request uses a changed value.",
 	})
 	Register(Definition{
 		Key: KeyMeshReadyRetrySeconds, Category: CategoryNetworking, Kind: KindInt, Default: "10",

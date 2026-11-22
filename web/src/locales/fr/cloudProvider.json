@@ -340,5 +340,29 @@
       "paste": "Le coller dans Connecter",
       "verify": "Levelrail le vérifie par un contrôle en lecture seule"
     }
+  },
+  "linkedAccounts": {
+    "title": "Comptes cloud",
+    "manage": "Gérer dans Comptes cloud",
+    "add": "Ajouter un compte",
+    "active": "Actif",
+    "attention": "À vérifier",
+    "relogin": "Reconnexion requise",
+    "managed": "Par défaut",
+    "legacyHint": "L'ancien identifiant unique ci-dessous est conservé pour la compatibilité ; gérez ce fournisseur via ses comptes.",
+    "manageShort": "Gérer",
+    "addAnother": "Ajouter un autre compte",
+    "verified": "Dernière vérification",
+    "useCredential": "Utiliser un identifiant unique"
+  },
+  "accountSection": {
+    "switch": "Compte",
+    "loading": "Chargement des données du compte",
+    "error": "Chargement impossible : {{message}}",
+    "retry": "Réessayer",
+    "verifyOk": "Identifiants vérifiés",
+    "verifyFail": "Échec de la vérification des identifiants",
+    "noProbe": "Aucune vérification d'accès pour ce type de compte.",
+    "check": "Vérifier l'accès"
   }
 }

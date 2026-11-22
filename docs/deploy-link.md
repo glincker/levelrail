@@ -65,6 +65,16 @@ levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 
 
 It validates the same rules as the form and prints the launcher link and the README Markdown. Add `--server https://levelrail.example.com` to also print the direct link for one specific server, or `--launcher URL` to point at a self-hosted copy of the launcher. See the [CLI reference](/cli-reference#deploy-link).
 
+## No server yet
+
+If the reader has no Levelrail server, one command installs it and prints the link that opens the new-app form on the template (use a catalog template id: lowercase letters, digits and hyphens, up to 64 characters):
+
+```bash
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --template <id>
+```
+
+The flag only changes the final message of the installer: it prints `<dashboard-url>/apps/new?deploy=1&template=<id>`, which the reader opens after creating the admin account. Nothing is deployed until they press Deploy. The same value can be set with `LEVELRAIL_TEMPLATE`.
+
 ## Self-hosting the launcher
 
 `deploy.html` and `deploy.js` are plain static files under `docs/public`. Copy both, plus `badges/`, to any static host and pass that host to `--launcher`.

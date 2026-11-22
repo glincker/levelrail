@@ -12,14 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import { FieldDescription } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import {
   SettingsEnabledRow,
   SettingsFormActions,
   SettingsFormAlerts,
 } from './SettingsCard'
+import { DnsProviderFields } from './dns/DnsProviderFields'
 import { DnsVerificationCallout } from './dns/DnsVerificationCallout'
 
 // Instance-level Route53 DNS-01 credential: GET/PUT/DELETE
@@ -122,86 +122,32 @@ export function Route53DnsCard({
             ariaLabel="Route53 DNS-01 enabled"
           />
 
-          <Field>
-            <FieldLabel htmlFor="route53-dns-access-key-id">
-              AWS access key ID
-            </FieldLabel>
-            <Input
-              id="route53-dns-access-key-id"
-              autoComplete="off"
-              value={accessKeyId}
-              onChange={(e) => {
-                setAccessKeyId(e.target.value)
-              }}
-              disabled={pending}
-              placeholder={hasCredentials ? '••••••••••••' : 'AKIA...'}
-            />
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="route53-dns-secret-access-key">
-              AWS secret access key
-            </FieldLabel>
-            <Input
-              id="route53-dns-secret-access-key"
-              type="password"
-              autoComplete="off"
-              value={secretAccessKey}
-              onChange={(e) => {
-                setSecretAccessKey(e.target.value)
-              }}
-              disabled={pending}
-              placeholder={
-                hasCredentials
-                  ? '••••••••••••'
-                  : 'Paste your AWS secret access key'
-              }
-            />
-            <FieldDescription>
-              {hasCredentials
-                ? 'Credentials are already configured. Leave both fields blank to keep them.'
-                : 'No credentials set yet.'}
-            </FieldDescription>
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="route53-dns-region">
-              Region (optional)
-            </FieldLabel>
-            <Input
-              id="route53-dns-region"
-              autoComplete="off"
-              value={region}
-              onChange={(e) => {
-                setRegion(e.target.value)
-              }}
-              disabled={pending}
-              placeholder="us-east-1"
-            />
-            <FieldDescription>
-              Left empty, the AWS SDK's own default region chain applies.
-            </FieldDescription>
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="route53-dns-hosted-zone-id">
-              Hosted zone ID (optional)
-            </FieldLabel>
-            <Input
-              id="route53-dns-hosted-zone-id"
-              autoComplete="off"
-              value={hostedZoneId}
-              onChange={(e) => {
-                setHostedZoneId(e.target.value)
-              }}
-              disabled={pending}
-              placeholder="Z1234567890ABC"
-            />
-            <FieldDescription>
-              Left empty, the zone is resolved by matching the domain against
-              the account's own hosted zones.
-            </FieldDescription>
-          </Field>
+          <DnsProviderFields
+            provider="route53"
+            values={{
+              access_key_id: accessKeyId,
+              secret_access_key: secretAccessKey,
+              region,
+              hosted_zone_id: hostedZoneId,
+            }}
+            onChange={(key, value) => {
+              if (key === 'access_key_id') setAccessKeyId(value)
+              else if (key === 'secret_access_key') setSecretAccessKey(value)
+              else if (key === 'region') setRegion(value)
+              else if (key === 'hosted_zone_id') setHostedZoneId(value)
+            }}
+            idPrefix="route53-dns"
+            hasSecret={hasCredentials}
+            fieldExtra={(id) =>
+              id === 'route53.secret_access_key' ? (
+                <FieldDescription>
+                  {hasCredentials
+                    ? 'Credentials are already configured. Leave both fields blank to keep them.'
+                    : 'No credentials set yet.'}
+                </FieldDescription>
+              ) : null
+            }
+          />
 
           <SettingsFormAlerts
             alerts={[

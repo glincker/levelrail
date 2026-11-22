@@ -56,7 +56,5 @@ func (c *Client) CancelOneShotJob(ctx context.Context, id string) (OneShotJob, e
 
 // GetOneShotJob calls GET /api/v1/jobs/runs/{id}.
 func (c *Client) GetOneShotJob(ctx context.Context, id string) (OneShotJob, error) {
-	var out OneShotJob
-	err := c.do(ctx, http.MethodGet, "/api/v1/jobs/runs/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[OneShotJob](ctx, c, "/api/v1/jobs/runs/"+PathEscape(id))
 }

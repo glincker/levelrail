@@ -127,6 +127,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSummary(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "changes":
 		return runAppsChanges(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "revert":
+		return runAppsRevert(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "timeline":
 		return runAppsTimeline(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "apply":
@@ -391,7 +393,8 @@ func appsUsage(prog string) string {
   %[1]s apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]   promote name's image onto a sibling app in another environment
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps summary [flags]                       fleet status counts: running, failing, deploying, stopped
-  %[1]s apps changes <name> [--window 1h] [flags]  recent deploy, config and env changes with the likely cause flagged
+  %[1]s apps changes <name> [--window 1h] [flags]  recent deploy, config and env changes with the likely cause flagged, plus config revisions
+  %[1]s apps revert <name> [--to N] [--yes] [flags]  put env, scale, resources, domains and health back to a revision (data and volumes untouched)
   %[1]s apps timeline <name> [--limit N] [flags]   what happened to an app: deploys, restarts, env, secret and config changes
   %[1]s apps apply <name> [flags]       restart an app so saved env, secret and config changes take effect
   %[1]s apps domains list|add|remove <name> [domain...] [flags]   show or change an app's domains

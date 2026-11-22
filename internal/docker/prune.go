@@ -17,54 +17,7 @@ import (
 
 // This file adds manual maintenance operations (disk usage reporting
 // and cleanup) on top of the Docker Engine API's own storage accounting
-// and prune endpoints. It is deliberately conservative: this platform
-// builds and redeploys images constantly (every deploy leaves the
-// previous image, and once superseded, the previous container, behind
-// on purpose), so an operator's "clean up now" action has real,
-// permanent consequences if it guesses wrong about what's actually safe
-// to remove.
-//
-// Every method here is intentionally narrower than what the raw Docker
-// Engine API prune endpoints (ContainersPrune, ImagesPrune,
-// VolumesPrune) would do by default, for two independent reasons:
-//
-//  1. This project's own rollback design keeps the previous N images
-//     pinned by tag so garbage collection cannot orphan a rollback
-//     target (levelrail's own architecture notes on Phase 1 rollback:
-//     "keep the previous N images pinned so garbage collection cannot
-//     orphan a rollback target"). An aggressive "remove every image not
-//     backing a container right now" prune would silently defeat that
-//     guarantee the moment an operator clicks a button, so image
-//     pruning here only ever touches dangling (untagged, unreferenced)
-//     images, never a tagged one, regardless of whether that tagged
-//     image currently backs a running container.
-//
-//  2. internal/reconcile/application.Controller's own ensureReplicaRunning
-//     restarts a crashed container in place by ID
-//     (c.runtime.Start(ctx, state.ID)) rather than always recreating
-//     one. That means a stopped container is not automatically garbage:
-//     it can be exactly the container the reconciler is about to
-//     restart the next time it runs. The Docker Engine API's own bulk
-//     ContainersPrune has no way to exclude a specific container by
-//     name (only by label or creation time), so this package never
-//     calls it directly for containers; PruneContainers below does the
-//     list-filter-remove sequence itself so a caller-supplied "keep"
-//     set can protect exactly the containers that are still desired,
-//     just not currently running.
-//
-// Named Docker volumes get an even simpler guarantee: this project's
-// own reconcilers (EnsureVolume in client.go; dataVolumeName in
-// internal/reconcile/database/controller.go) never create an unnamed
-// volume, so restricting volume pruning to Docker's own anonymous
-// (64-hex-character, daemon-generated) naming convention means a
-// database's data volume can never be a candidate, independent of
-// whether it currently looks "in use."
-//
-// keep-set computation (which container names are currently desired)
-// deliberately does not live in this package: internal/docker is kept
-// spec- and store-agnostic, the same convention ContainerSpec's own doc
-// comment already establishes, so that responsibility belongs to
-// internal/api, which has access to the store.
+// and prune endpoints. It is deliberately conservative: this platform.
 
 // DiskUsage is Docker's own storage accounting: space claimed by
 // images, containers, volumes, and BuildKit's build cache (BuildKit
@@ -271,56 +224,7 @@ func containerSummaryName(cs container.Summary) string {
 
 // PruneContainers stops and removes every non-running container on this
 // daemon whose name is not in keep, using a direct list-then-remove
-// sequence (each already-stopped container removed individually) rather
-// than the Docker Engine API's own bulk POST /containers/prune
-// (ContainersPrune in the SDK). See this file's own package doc comment
-// for why: that bulk endpoint cannot exclude specific containers by
-// name, and this project's reconciler can consider a stopped container
-// still desired (about to be restarted in place). keep must include
-// every container name the caller currently considers live, e.g. every
-// application replica's target container name plus every database's
-// container name, or this can race a reconcile pass that's about to
-// restart one of them.
-//
-// Only containers in Docker's "exited" or "created" state are
-// candidates, matching the scope Docker's own bulk container prune
-// targets. "paused" and "restarting" are transient, mid-lifecycle
-// states, never a stable "this is garbage" signal, so they're left
-// alone entirely; "dead", a rare failure state of Docker's own
-// container teardown, is left for an operator to investigate rather
-// than silently swept up.
-//
-// Since every candidate is already confirmed non-running by the status
-// filter, removal never needs Force: true (that flag exists to stop a
-// running container before removing it, not relevant here) and never
-// sets RemoveVolumes: cascading volume deletion through container
-// removal would bypass PruneAnonymousVolumes' own, more careful safety
-// checks; volume cleanup is that method's job alone.
-//
-// One narrow, self-healing race remains, worth naming rather than
-// treating as impossible: internal/reconcile/application's
-// createAndStart calls Create then Start as two separate steps, so a
-// container briefly exists in Docker's own "created" (not yet running)
-// state between them. The candidate filter above (status: exited or
-// created) matches that window on purpose, since a container that never
-// got past Create after a genuine failure is real cruft this should
-// still remove. But if the caller's own keep set was computed before
-// that exact container's name existed (a deploy landing in the same
-// instant a manual prune call is already mid-flight), this could remove
-// it. Level-triggered reconcile recovers on its own next pass (one
-// wasted create, a logged error, no data loss), the same tolerance this
-// codebase already extends to other narrow eventual-consistency windows
-// (see internal/docker/client_live_test.go's waitForStopped), so this
-// is accepted rather than solved with, e.g., a lock this package has no
-// good way to hold across a caller-supplied keep computation anyway.
-// Scoped to this Client's own instance label (WithInstanceLabel), when
-// configured: without it, a stopped container from a different control-
-// plane instance sharing this same Docker daemon would look identical
-// to genuine cruft (this method has no name/brand filter of its own to
-// begin with, only a status filter), and "not in my own keep list" would
-// wrongly include literally every container the caller doesn't already
-// know about, this instance's or not. See internal/spec.InstanceLabelKey's
-// own doc comment.
+// sequence (each already-stopped container removed individually) rather.
 func (c *Client) PruneContainers(ctx context.Context, keep []string) (PruneContainersResult, error) {
 	f := filters.NewArgs()
 	f.Add("status", "exited")
@@ -356,26 +260,7 @@ type PruneImagesResult struct {
 
 // PruneDanglingImages removes only dangling images: untagged and not
 // referenced by any container, Docker's own conservative default for
-// `docker image prune` (no -a flag). The "dangling" filter is set
-// explicitly here rather than relying on ImagesPrune's behavior with no
-// filter at all, so this scope is guaranteed regardless of daemon
-// version.
-//
-// This deliberately never touches a tagged image, even one currently
-// unreferenced by any container: this project's own rollback design
-// keeps the previous N images pinned by tag so garbage collection
-// cannot orphan a rollback target, and a tagged image sitting unused
-// right now is exactly what that design depends on staying in place.
-// The more aggressive "everything unused, tagged or not" cleanup
-// `docker image prune -a` offers has no equivalent here, on purpose.
-//
-// Deliberately not scoped by this Client's own instance label: a
-// dangling image, by Docker's own definition, has zero tags left, so an
-// instance label on it (even if one were set at build time) would say
-// nothing about who still needs it. What actually makes this safe on a
-// shared daemon is the Engine API's own ImagesPrune, which never removes
-// an image still referenced by any container regardless of which
-// control-plane instance owns that container.
+// `docker image prune` (no -a flag). The "dangling" filter is set.
 func (c *Client) PruneDanglingImages(ctx context.Context) (PruneImagesResult, error) {
 	f := filters.NewArgs()
 	f.Add("dangling", "true")
@@ -403,43 +288,7 @@ type PruneVolumesResult struct {
 
 // PruneAnonymousVolumes removes only anonymous volumes (Docker's own
 // randomly-generated 64-character hex name, assigned when a container
-// mounts a volume without one, e.g. a Dockerfile's own VOLUME
-// instruction with no matching app.yaml volume declaration) that are
-// not currently attached to any container, running or stopped.
-//
-// This project's own EnsureVolume always creates a caller-named volume;
-// internal/reconcile/database's dataVolumeName ("db-<name>-data") is the
-// only volume name this project's reconciler itself ever produces. So
-// restricting to the anonymous-name pattern is not merely mirroring the
-// Docker CLI's own conservative default (`docker volume prune` without
-// --all only removes anonymous volumes as of Engine API >= 1.42): it is
-// a second, independent, daemon-version-proof guarantee that this
-// method can never remove a database's data volume, because no name
-// this project creates can ever match the anonymous pattern. Named
-// volumes, even ones that look unused right now, are always left alone;
-// a named volume can look briefly unattached mid-replace during a
-// database engine version bump
-// (internal/reconcile/database.Controller.replaceContainer: stop,
-// remove, then create, strictly sequential) without actually being
-// abandoned.
-//
-// "Not currently attached to any container" is computed from a fresh
-// ContainerList across every container, running or stopped, rather than
-// trusting the Engine API's own dangling-volume filter, whose exact
-// semantics (does it count a stopped container's mounts as
-// still-attached?) are not something this method's safety should depend
-// on being right.
-//
-// Deliberately not scoped by this Client's own instance label
-// (WithInstanceLabel), unlike PruneContainers: an anonymous volume is,
-// by definition, Docker-generated and never passes through EnsureVolume,
-// so it can never carry that label regardless of which instance's
-// container triggered its creation. A label filter here would just make
-// this method a permanent no-op. The "not attached to any container,
-// any instance's or not" check above is what already makes this safe on
-// a Docker daemon shared by more than one control-plane instance:
-// mountedVolumeNames considers every container on the daemon, not just
-// this instance's own.
+// mounts a volume without one, e.g. a Dockerfile's own VOLUME.
 func (c *Client) PruneAnonymousVolumes(ctx context.Context) (PruneVolumesResult, error) {
 	dangling, err := c.ListDanglingAnonymousVolumes(ctx)
 	if err != nil {

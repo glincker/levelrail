@@ -34,9 +34,7 @@ type StaticRoutesLintResource struct {
 
 // GetStaticRoutes calls GET /api/v1/apps/{name}/static-routes.
 func (c *Client) GetStaticRoutes(ctx context.Context, name string) (StaticRoutesResource, error) {
-	var out StaticRoutesResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/static-routes", nil, &out)
-	return out, err
+	return getJSON[StaticRoutesResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/static-routes")
 }
 
 // TestStaticRoutes calls POST /api/v1/apps/{name}/static-routes/test.

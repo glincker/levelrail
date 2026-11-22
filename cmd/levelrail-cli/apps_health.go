@@ -10,6 +10,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/healthpreset"
 	"github.com/GLINCKER/levelrail/kit/probe"
 )
 
@@ -30,6 +31,8 @@ func runAppsHealth(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsHealthSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runAppsHealthClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "explain":
+		return runAppsHealthExplain(prog, args[1:], stdout, stderr, lookupEnv)
 	case "discover":
 		return runAppsHealthDiscover(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -44,6 +47,7 @@ func appsHealthUsage(prog string) string {
   %[1]s apps health get <name> [flags]                                    show an app's readiness and liveness probes
   %[1]s apps health set <name> --probe readiness|liveness [probe flags]   set one probe, keeping the other as-is
   %[1]s apps health clear <name> [--probe readiness|liveness]             remove one probe, or both
+  %[1]s apps health explain <name>                                       say why an app is red or amber and what to try next
   %[1]s apps health discover <name>                                      actively probe well-known paths, report what each one really did
 
 A probe is either an HTTP(S) check (--path, with --scheme, --host,
@@ -82,27 +86,6 @@ type probeFlags struct {
 	failures                                                                 int
 }
 
-// healthPresetPaths are the same preset ids as the frontend's preset picker
-// (web/src/lib/healthCheckDefaults.ts), so both surfaces offer identical
-// one-click shortcuts.
-var healthPresetPaths = map[string]string{
-	"healthz":    "/healthz",
-	"health":     "/health",
-	"api-health": "/api/health",
-	"ping":       "/ping",
-	"status":     "/status",
-}
-
-const healthPresetNames = "healthz, health, api-health, ping, status"
-
-// timeoutSeconds 0 means leave the field unset.
-func healthPresetTiming(which string) (intervalSeconds, timeoutSeconds, failures int) {
-	if which == "liveness" {
-		return 30, 0, 3
-	}
-	return 5, 2, 0
-}
-
 func (f *probeFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&f.which, "probe", "", "which probe to set: readiness or liveness (required)")
 	fs.StringVar(&f.path, "path", "", "HTTP path to request, e.g. /healthz")
@@ -116,20 +99,21 @@ func (f *probeFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&f.timeout, "timeout", "", "per-attempt timeout, e.g. 2s")
 	fs.IntVar(&f.failures, "failures", 0, "consecutive liveness failures before a restart")
 	fs.StringVar(&f.readyTimeout, "ready-timeout", "", "how long a deploy waits for readiness, e.g. 90s")
-	fs.StringVar(&f.preset, "preset", "", "fill path/interval/timeout/failures from a named preset ("+healthPresetNames+"); explicit flags always win")
+	fs.StringVar(&f.preset, "preset", "", "fill path/interval/timeout/failures from a named preset ("+healthpreset.Names()+"); explicit flags always win")
 }
 
 func (f probeFlags) toProbe() (serviceProbe, error) {
 	path, intervalStr, timeoutStr, failures := f.path, f.interval, f.timeout, f.failures
 	if f.preset != "" {
-		presetPath, ok := healthPresetPaths[f.preset]
+		preset, ok := healthpreset.Get(f.preset)
 		if !ok {
-			return serviceProbe{}, fmt.Errorf("--preset: unknown preset %q (want one of %s)", f.preset, healthPresetNames)
+			return serviceProbe{}, fmt.Errorf("--preset: unknown preset %q (want one of %s)", f.preset, healthpreset.Names())
 		}
 		if path == "" && f.exec == "" {
-			path = presetPath
+			path = preset.Path
 		}
-		intervalSeconds, timeoutSeconds, presetFailures := healthPresetTiming(f.which)
+		timing := healthpreset.TimingFor(f.which)
+		intervalSeconds, timeoutSeconds, presetFailures := timing.IntervalSeconds, timing.TimeoutSeconds, timing.Failures
 		if intervalStr == "" {
 			intervalStr = fmt.Sprintf("%ds", intervalSeconds)
 		}

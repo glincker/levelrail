@@ -15,9 +15,7 @@ type MePreference struct {
 
 // GetMeAppearance calls GET /api/v1/me/preferences/appearance.
 func (c *Client) GetMeAppearance(ctx context.Context) (MePreference, error) {
-	var out MePreference
-	err := c.do(ctx, http.MethodGet, meAppearancePath, nil, &out)
-	return out, err
+	return getJSON[MePreference](ctx, c, meAppearancePath)
 }
 
 // SetMeAppearance calls PUT /api/v1/me/preferences/appearance with a JSON object.

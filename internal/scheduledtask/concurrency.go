@@ -33,22 +33,6 @@ type inFlightRun struct {
 
 // beginRun registers this invocation as the in-flight run for taskID and
 // applies policy against whatever run (if any) is already registered:
-//
-//   - allow: always proceeds, registering itself alongside whatever else
-//     is in flight.
-//   - forbid: if a previous run is still in flight, skip is true and the
-//     caller must record ScheduledTaskStatusSkippedConcurrency instead of
-//     running anything.
-//   - queue: waits for the in-flight run to finish, then proceeds, so
-//     overlapping occurrences run one after another.
-//   - replace: cancels the in-flight run's context (its own select loop
-//     observes this via isReplaced and records ScheduledTaskStatusReplaced)
-//     and waits for it to finish cleaning up before this run proceeds, so
-//     the two runs' RecordScheduledTaskRun calls can never land out of
-//     order.
-//
-// The returned cleanup must run (via defer) once the caller's own Run
-// call is done, whatever the outcome; it never panics or blocks.
 func (r *Runner) beginRun(ctx context.Context, taskID, policy string) (runCtx context.Context, cleanup func(), skip bool) {
 	r.mu.Lock()
 	if r.inFlight == nil {

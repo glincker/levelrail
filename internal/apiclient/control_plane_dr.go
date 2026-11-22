@@ -107,9 +107,7 @@ const controlPlaneDRPath = "/api/v1/system/control-plane-dr"
 
 // GetControlPlaneDR calls GET /api/v1/system/control-plane-dr.
 func (c *Client) GetControlPlaneDR(ctx context.Context) (ControlPlaneDR, error) {
-	var out ControlPlaneDR
-	err := c.do(ctx, http.MethodGet, controlPlaneDRPath, nil, &out)
-	return out, err
+	return getJSON[ControlPlaneDR](ctx, c, controlPlaneDRPath)
 }
 
 // UpdateControlPlaneDR calls PUT /api/v1/system/control-plane-dr/settings.
@@ -121,9 +119,7 @@ func (c *Client) UpdateControlPlaneDR(ctx context.Context, s ControlPlaneDRSetti
 
 // ListControlPlaneOffboxBackups calls GET /api/v1/system/control-plane-dr/backups.
 func (c *Client) ListControlPlaneOffboxBackups(ctx context.Context) ([]ControlPlaneOffboxBackup, error) {
-	var out []ControlPlaneOffboxBackup
-	err := c.do(ctx, http.MethodGet, controlPlaneDRPath+"/backups", nil, &out)
-	return out, err
+	return getJSON[[]ControlPlaneOffboxBackup](ctx, c, controlPlaneDRPath+"/backups")
 }
 
 // RunControlPlaneOffboxBackup calls POST /api/v1/system/control-plane-dr/run.
@@ -184,7 +180,5 @@ type ControlPlaneRestorePlan struct {
 
 // GetControlPlaneRestorePlan calls GET /api/v1/system/control-plane-dr/restore-plan.
 func (c *Client) GetControlPlaneRestorePlan(ctx context.Context) (ControlPlaneRestorePlan, error) {
-	var out ControlPlaneRestorePlan
-	err := c.do(ctx, http.MethodGet, controlPlaneDRPath+"/restore-plan", nil, &out)
-	return out, err
+	return getJSON[ControlPlaneRestorePlan](ctx, c, controlPlaneDRPath+"/restore-plan")
 }

@@ -35,9 +35,7 @@ func logPipelinePath(app string) string {
 
 // GetLogPipeline calls GET /api/v1/apps/{name}/log-pipeline.
 func (c *Client) GetLogPipeline(ctx context.Context, app string) (LogPipeline, error) {
-	var out LogPipeline
-	err := c.do(ctx, http.MethodGet, logPipelinePath(app), nil, &out)
-	return out, err
+	return getJSON[LogPipeline](ctx, c, logPipelinePath(app))
 }
 
 // SetLogPipeline calls PUT /api/v1/apps/{name}/log-pipeline.
@@ -49,7 +47,7 @@ func (c *Client) SetLogPipeline(ctx context.Context, app string, rules []LogPipe
 
 // DeleteLogPipeline calls DELETE /api/v1/apps/{name}/log-pipeline.
 func (c *Client) DeleteLogPipeline(ctx context.Context, app string) error {
-	return c.do(ctx, http.MethodDelete, logPipelinePath(app), nil, nil)
+	return c.del(ctx, logPipelinePath(app))
 }
 
 // PreviewLogPipeline calls POST /api/v1/apps/{name}/log-pipeline/preview.

@@ -1,0 +1,26 @@
+{
+  "builder": {
+    "conditions": "Условия",
+    "if": "Если",
+    "and": "И",
+    "then": "Тогда",
+    "fieldLabel": "Поле условия {{n}}",
+    "nameLabel": "Название условия {{n}}",
+    "operatorLabel": "Оператор условия {{n}}",
+    "valueLabel": "Значение условия {{n}}",
+    "removeCondition": "Удалить условие {{n}}",
+    "addCondition": "И",
+    "maxConditions": "Не более {{count}} условий на правило.",
+    "actionLabel": "Действие",
+    "selectAction": "Выберите действие",
+    "ruleName": "Название",
+    "description": "Описание (необязательно)",
+    "cancel": "Отмена",
+    "viewCode": "Показать код",
+    "hideCode": "Скрыть код",
+    "copy": "Копировать",
+    "copied": "Скопировано",
+    "codeLabel": "Правило в сохранённом виде",
+    "codeHelp": "Именно это и сохраняется. Только для чтения."
+  }
+}

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CopyGlassIcon, ExternalLinkGlassIcon } from '@thesvg/ui-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
@@ -49,6 +50,9 @@ export default function DeployRowActions({
             <ExternalLinkGlassIcon aria-hidden="true" />
           </Button>
         </>
+      ) : null}
+      {promote.data === 'pending' ? (
+        <Badge variant="outline">{t('promote.pending')}</Badge>
       ) : null}
       {entry.promotable ? (
         <Button size="xs" variant="outline" onClick={() => setConfirming(true)}>

@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // AppVitalsStat mirrors internal/api's vitalsStat.
@@ -31,7 +30,5 @@ type AppVitalsResource struct {
 
 // GetAppVitals calls GET /api/v1/apps/{name}/vitals: p50, p75 and p95 per metric and route over the report window.
 func (c *Client) GetAppVitals(ctx context.Context, name string) (AppVitalsResource, error) {
-	var out AppVitalsResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/vitals", nil, &out)
-	return out, err
+	return getJSON[AppVitalsResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/vitals")
 }

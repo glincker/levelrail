@@ -280,7 +280,8 @@
     "removed": "仅对方有",
     "changed": "已更改",
     "missing": "未设置",
-    "secretMasked": "密钥值,已隐藏"
+    "secretMasked": "密钥值,已隐藏",
+    "preview": "此应用的预览覆盖"
   },
   "appSleep": {
     "title": "空闲休眠",
@@ -821,5 +822,11 @@
     "nodeNeeded": "指定构建节点时，需要先选择一个构建节点。",
     "modeTipLabel": "关于构建位置",
     "modeTip": "自动会遵循全局策略。仅控制面始终在此服务器上构建，从不使用构建节点。指定构建节点会使用你选择的节点，选择“仅此构建节点”可防止它回退到其他节点。"
+  },
+  "copyRow": {
+    "rolledBackTo": "已回滚到 {{id}}",
+    "rolledBack": "已回滚",
+    "promotedFrom": "已从 {{id}} 提升",
+    "promoted": "已提升"
   }
 }

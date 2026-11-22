@@ -152,6 +152,7 @@
     "empty": "No webhook subscribers yet.",
     "events": "Events",
     "eventsHint": "Leave all unchecked to receive every event. Only published incidents and public component names are ever sent.",
+    "fieldsFailed": "The form fields could not be loaded. Reload the page and try again.",
     "intro": "Signed webhooks tell your systems when an incident or component changes. Each request carries X-Signature and X-Timestamp headers; verify them with the secret shown once when you add the subscriber.",
     "label": "Label",
     "labelPlaceholder": "Label (optional)",
@@ -173,5 +174,18 @@
     "testFailed": "Test ping failed: {{error}}",
     "testOk": "Test ping delivered, receiver answered HTTP {{code}}.",
     "url": "Webhook URL"
+  },
+  "fields": {
+    "webhook": {
+      "url": {
+        "help": "HTTPS URL that receives the signed events."
+      },
+      "label": {
+        "help": "A short label for this subscriber."
+      },
+      "events": {
+        "help": "Leave all unchecked to receive every event."
+      }
+    }
   }
 }

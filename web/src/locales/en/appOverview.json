@@ -80,5 +80,87 @@
     "all": "All deploys",
     "logs": "Logs",
     "rollback": "Rollback"
+  },
+  "summary": {
+    "label": "App summary",
+    "noMessage": "No commit message",
+    "none": "Not deployed yet"
+  },
+  "state": {
+    "succeeded": "Succeeded",
+    "running": "Running",
+    "failed": "Failed",
+    "queued": "Queued",
+    "held": "Held",
+    "canceled": "Canceled",
+    "superseded": "Superseded",
+    "pending": "Pending",
+    "refused": "Refused",
+    "awaiting_approval": "Awaiting approval",
+    "unknown": "Unknown"
+  },
+  "duration": "{{minutes}}m {{seconds}}s",
+  "wiring": {
+    "title": "How this app is wired",
+    "domains": "Domains",
+    "noDomains": "No domain yet.",
+    "addDomain": "Add domain",
+    "more": "+{{count}} more",
+    "tls": {
+      "healthy": "TLS ok",
+      "expiring_soon": "TLS expiring",
+      "expired": "TLS expired",
+      "unknown": "TLS pending"
+    },
+    "storage": "Databases and storage",
+    "noStorage": "No database or volume linked.",
+    "addStorage": "Add volume",
+    "databases": "Databases",
+    "volumes": "Volumes",
+    "env": "Environment",
+    "noEnv": "No variables set.",
+    "addEnv": "Add variable",
+    "envSummary": "{{vars}} variables, {{secrets}} secrets",
+    "port": "Port {{port}}",
+    "strategy": "Strategy: {{strategy}}",
+    "noNode": "No node reported",
+    "offline": "offline",
+    "openSettings": "Deploy settings",
+    "outTitle": "Connects to",
+    "databasesOut": "Databases",
+    "none": "None",
+    "node": "Node",
+    "registry": "Registry",
+    "dependsOn": "Depends on",
+    "replicas_one": "{{count}} replica",
+    "replicas_other": "{{count}} replicas",
+    "buildGit": "Git build",
+    "buildImage": "Image",
+    "connected": "Connected"
+  },
+  "deploys": {
+    "title": "Deployments",
+    "viewAll": "View all",
+    "none": "No deploys yet.",
+    "col": {
+      "commit": "Commit",
+      "message": "Message",
+      "state": "State",
+      "branch": "Branch",
+      "author": "Author",
+      "when": "When",
+      "actions": "Actions"
+    },
+    "copySha": "Copy commit",
+    "copied": "Copied",
+    "live": "Live",
+    "rollback": "Rollback",
+    "logs": "Logs"
+  },
+  "previews": {
+    "title": "Recent previews",
+    "none": "No preview environments yet.",
+    "all": "All previews",
+    "pr": "PR #{{number}}"
   }
 }

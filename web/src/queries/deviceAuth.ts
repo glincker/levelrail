@@ -140,6 +140,32 @@ export function useDeviceActivity() {
   })
 }
 
+// Clears several resolved logins in one request ("Dismiss all").
+export function useDismissAttentionItems() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (itemKeys: string[]): Promise<void> => {
+      const res = await fetch('/api/v1/attention/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_keys: itemKeys }),
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `dismiss failed: ${res.status}`),
+        )
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: deviceAuthKeys.activity(),
+      })
+      void queryClient.invalidateQueries({ queryKey: ['attention-feed'] })
+    },
+  })
+}
+
 export function useDismissAttentionItem() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -1642,7 +1642,8 @@
         "aws": "AWS S3",
         "r2": "Cloudflare R2",
         "custom": "兼容 S3",
-        "local": "本地目录"
+        "local": "本地目录",
+        "sftp": "SFTP"
       },
       "status": "备份状态",
       "statusBody": "运行情况、覆盖范围和恢复演练位于“备份”页面。",

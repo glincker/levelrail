@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // NextAdvisorFinding is one check result from the Next.js advisor.
@@ -38,14 +37,10 @@ type NextBuildReport struct {
 
 // NextAdvisor returns the Next.js checks of an app's saved config.
 func (c *Client) NextAdvisor(ctx context.Context, app string) (NextAdvisorResult, error) {
-	var out NextAdvisorResult
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/next-advisor", nil, &out)
-	return out, err
+	return getJSON[NextAdvisorResult](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/next-advisor")
 }
 
 // NextBuildReport returns the route table and warnings parsed from one deploy's build log.
 func (c *Client) NextBuildReport(ctx context.Context, app, deployID string) (NextBuildReport, error) {
-	var out NextBuildReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/deploys/"+PathEscape(deployID)+"/build-report", nil, &out)
-	return out, err
+	return getJSON[NextBuildReport](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/deploys/"+PathEscape(deployID)+"/build-report")
 }

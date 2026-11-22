@@ -24,6 +24,9 @@ var (
 	}
 )
 
+// requireCloudAccess rides requireAbilityDecided at write:sensitive for every action above view.
+var restCloudAccessRe = regexp.MustCompile(`requireCloudAccess\(\w+,\s*"(?:share|operate|manage_budget|build|delete|view_spend)"`)
+
 type restRoute struct {
 	key, path, ability string
 }
@@ -78,6 +81,8 @@ func loadRESTMutatingRoutes(t *testing.T) []restRoute {
 				if ability == "AbilityRead" {
 					ability = AbilityRead
 				}
+			} else if restCloudAccessRe.MatchString(rest) {
+				ability = AbilityWriteSensitive
 			} else if f == "loki.go" && restLokiWrapRe.MatchString(rest) {
 				ability = AbilityRead
 			}
@@ -202,6 +207,7 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/mail/dns/plan",
 		"POST /api/v1/docker/lint",
 		"POST /api/v1/domains/{domain}/diagnose",
+		"POST /api/v1/domains/{domain}/dns-check",
 		"POST /api/v1/fixes/{id}/preview",
 		"POST /api/v1/iam/policies/validate",
 		"POST /api/v1/iam/policy-templates/{id}/render",

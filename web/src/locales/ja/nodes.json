@@ -134,7 +134,12 @@
     "errorTitle": "ドレインが停止しました",
     "failedHint": "ノードは隔離されたままです。失敗した移動に表示された原因を修正してから、もう一度ドレインするか、ノードの隔離を解除して、運用に戻してください。",
     "toNode": "{{node}}へ",
-    "toAuto": "自動で選ばれたノードへ"
+    "toAuto": "自動で選ばれたノードへ",
+    "progress": {
+      "summary": "{{total}} 件中 {{done}} 件を移動済み、失敗 {{failed}} 件",
+      "eta": "残り約 {{seconds}} 秒",
+      "stalled": "しばらく進捗がありません。ノードと下の移動を確認してください。"
+    }
   },
   "drains": {
     "title": "ドレイン",
@@ -966,7 +971,35 @@
       "saved": "{{provider}}の認証情報を保存しました。",
       "disconnect": "切断",
       "confirmDisconnect": "切断を確認",
-      "disconnected": "{{provider}}を切断しました。"
+      "disconnected": "{{provider}}を切断しました。",
+      "howTitle": "これらの値の入手方法",
+      "how1": "Oracleコンソールでプロフィール、APIキー、APIキーの追加の順に開きます。",
+      "how2": "秘密鍵をダウンロードし、最後に表示される設定スニペットをコピーします。",
+      "how3": "スニペットを下に貼り付け、鍵を読み込みます。専用ユーザーを使ってください。",
+      "configTitle": "OCI設定を貼り付け",
+      "configFile": "設定ファイルを読み込む",
+      "configHelp": "~/.oci/config の [DEFAULT] ブロックを貼り付けます。このブラウザ内でのみ読み取られます。",
+      "detected": "検出: テナンシー {{tenancy}}、リージョン {{region}}",
+      "edit": "編集",
+      "done": "完了",
+      "missing": "設定に見つかりません: {{fields}}",
+      "manualHelp": "下に値を入力してください。",
+      "keyFromConfig": "設定は {{path}} を指しています。そのファイルをここで読み込んでください。",
+      "advanced": "詳細設定",
+      "advancedHint": "コンパートメント(任意)",
+      "advancedHintServers": "コンパートメントとサブネット(サーバー作成にはサブネットが必要)",
+      "subnetHelp": "サーバーの作成に必要です。コンパートメント内のサブネットを使います。",
+      "subnetOptional": "任意。サーバーを作成するときのみ必要です。",
+      "subnetNeeded": "サーバーを作成するには詳細設定でサブネットを追加してください。",
+      "errors": {
+        "tenancy": "ocid1.tenancy で始まるIDが必要です。",
+        "user": "ocid1.user で始まるIDが必要です。",
+        "fingerprint": "aa:bb:cc:... の形式の16組の16進数が必要です。",
+        "region": "us-phoenix-1 のようなリージョンが必要です。",
+        "compartment": "ocid1.compartment で始まるIDが必要です。",
+        "subnet": "ocid1.subnet で始まるIDが必要です。",
+        "key": "PEM形式の秘密鍵が必要です。"
+      }
     },
     "wizard": {
       "title": "APIキーのガイド付き設定",
@@ -1007,6 +1040,23 @@
       "micro": "マイクロシェイプの上限を超えます。{{setting}} を引き上げてください。",
       "paidShape": "このシェイプは枠の上限の対象外で、課金される可能性があります。使うには {{setting}} をオンにしてください。",
       "unknownPrice": "Oracleがこのシェイプの価格を提供しないため、価格上限を確認できません。許可するには {{setting}}(または provision.allow_unknown_price)をオンにしてください。"
+    },
+    "session": {
+      "modeLabel": "認証情報の種類",
+      "modeKey": "APIキー",
+      "modeSession": "ブラウザセッション(テスト用、数時間で失効)",
+      "intro": "APIキーを作らず、ブラウザでログインします。セッションは数時間で切れるため、テスト専用です。",
+      "command": "お使いのコンピューターでこのコマンドを実行",
+      "commandHelp": "ブラウザでログインし、~/.oci にトークンファイルと秘密鍵ファイルを書き出します。",
+      "profile": "プロファイル設定(任意)",
+      "profileHelp": "~/.oci/config の tenancy と region の行を貼り付けます。それ以外は読み取りません。",
+      "token": "セキュリティトークンファイルの内容",
+      "key": "セッション秘密鍵ファイルの内容",
+      "keyHelp": "一度だけ送信され、暗号化して保存され、再表示されません。",
+      "check": "セッションを確認",
+      "connect": "接続",
+      "expires": "セッションの有効期限: {{when}}",
+      "saved": "{{provider}} をブラウザセッションで接続しました"
     }
   },
   "builderTrust": {
@@ -1128,6 +1178,87 @@
       "failed": "失敗",
       "agent": "エージェント {{value}}",
       "acceptsApps": "このノードはアプリも実行しているため、ここでは一時停止できません。"
+    }
+  },
+  "installAgent": {
+    "title": "別のマシンでビルドとアプリを実行する",
+    "description": "LinuxサーバーまたはMacにエージェントをインストールすると、1分ほどでこのコントロールプレーンに参加します。",
+    "cta": "サーバーを追加",
+    "dismiss": "このバナーを非表示にする",
+    "dialogTitle": "エージェントをインストール",
+    "dialogDescription": "追加したいマシンでコマンドを1つ実行してください。接続されるとこのページが検知します。",
+    "tabsLabel": "オペレーティングシステム",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "1回限りの参加コマンドを作成しています",
+    "mintFailed": "参加コマンドを作成できませんでした: {{message}}",
+    "linuxLabel": "サーバーで実行",
+    "linuxHint": "サーバーにDockerが必要です。このコマンドは1回限りで、{{time}}に期限切れになります。",
+    "macosLabel": "Macのターミナルで実行",
+    "macosHint": "1回限り、{{time}}に期限切れになります。",
+    "macosNote": "プレビュー版です。ワークロードはDocker Desktop、OrbStack、Limaを通じて実行され、Macのファイルを共有します。そのため、Macは本番アプリの置き場ではなくビルダーとして使うのが最適です。",
+    "waiting": "ノードの接続を待っています",
+    "connected": "接続しました: {{name}}"
+  },
+  "timeline": {
+    "title": "ヘルスタイムライン",
+    "window": "期間",
+    "windows": {
+      "24h": "24時間",
+      "168h": "7日間",
+      "720h": "30日間"
+    },
+    "loading": "ヘルスタイムラインを読み込み中",
+    "unavailable": "現在タイムラインを利用できません。",
+    "stripLabel": "オンラインとオフラインの期間",
+    "noUptime": "この期間にオンラインまたはオフラインの記録はありません。",
+    "summary_other": "稼働率 {{uptime}}%、変化 {{count}} 回"
+  },
+  "doctor": {
+    "title": "エージェント診断",
+    "run": "チェックを実行",
+    "hide": "チェックを隠す",
+    "running": "チェックを実行中",
+    "unavailable": "現在チェックを利用できません。",
+    "noReport": "エージェントがまだ事前チェックのレポートを送信していないため、Docker、ディスク、時計、ポートのチェックがありません。",
+    "status": {
+      "pass": "正常",
+      "warn": "警告",
+      "fail": "失敗",
+      "unknown": "不明"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "アーキテクチャ",
+      "disk": "ディスク",
+      "clock": "時計",
+      "wireguard": "WireGuard",
+      "mesh_port": "メッシュポート",
+      "firewall": "ファイアウォール",
+      "control_plane": "コントロールプレーン",
+      "cert": "証明書",
+      "heartbeat": "ハートビート",
+      "agent_version": "エージェントのバージョン",
+      "schedulable": "スケジューリング"
+    }
+  },
+  "skew": {
+    "title_other": "{{count}} 台のエージェントが {{version}} より古い状態です",
+    "description": "次の順に更新してください。まず隔離済みノード、次にオンラインのノード、最後にオフラインのノードです。",
+    "step": "{{from}} から {{to}}",
+    "notes": {
+      "cordoned": "隔離済み",
+      "offline": "オフライン"
+    },
+    "howTo": "各ノードで新しいエージェントのイメージまたはバイナリを取得し、再起動してください。登録済みの ID は保持されます。",
+    "autoUpdate": {
+      "on": "エージェントの自動更新は有効です。エージェントはコントロールプレーンのバージョンを自分でインストールします。",
+      "off": "エージェントの自動更新は無効です。ノードで levelrail-agent self-update --apply を実行するか、設定で nodes.agent_auto_update を有効にしてください。"
+    },
+    "updateAnyway": {
+      "action": "今すぐ更新",
+      "queued": "次のエージェント確認で実行します",
+      "disclaimer": "メンテナンスウィンドウと保留を無視します。更新は引き続き署名検証され、失敗時はロールバックされます。"
     }
   }
 }

@@ -574,33 +574,6 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 
 // validateEnv fails loudly rather than silently deploying a container
 // missing values it needs.
-//
-// { from: ... } (cross-resource references like "postgres.main.url",
-// parsed by parseFromRef) resolves against a real managed database's
-// desired state: the referenced database must already exist, and the
-// requested field must be one database.SupportsField's own engine-aware
-// rules allow (e.g. redis has no username/password). Both are checked
-// here, at deploy time, so a typo'd database name or an unsupported
-// field fails the deploy itself rather than only surfacing later as a
-// reconcile failure. The actual value (host/port/credentials) is
-// resolved later, by internal/reconcile/application's
-// resolveDatabaseField, immediately before container creation, the same
-// split { secret: true } already has between this existence check and
-// the application controller's own SecretResolver.Resolve call.
-//
-// { secret: true } is resolvable now that envelope-encrypted secret
-// storage exists, but only if this Pipeline has a SecretChecker configured
-// (WithSecretChecker); without one, secret-backed env vars are rejected
-// exactly like before, so a control plane running without a master key
-// configured fails a deploy clearly rather than silently starting a
-// container missing a variable it declared as required. When a checker
-// is configured, a { secret: true, required: true } var with no value
-// set yet still fails the deploy here, matching spec.EnvVar.Required's
-// documented meaning ("fail the deploy... rather than starting the
-// container with the variable unset"); an optional one with no value
-// set is allowed through; the application controller's own resolution
-// (internal/reconcile/application) simply omits it from the container's
-// environment if it's still unset by the time of a later reconcile.
 func (p *Pipeline) validateEnv(ctx context.Context, serviceName string, env map[string]spec.EnvVar) error {
 	for name, v := range env {
 		if v.From != "" {

@@ -12,6 +12,9 @@ import {
   invalidateChangeTopic,
 } from '../queries/changeTopics'
 import { appKeys } from '../queries/apps'
+import { projectTopologyKeys } from '../queries/projectTopology'
+import { composeKeys } from '../queries/composeStack'
+import { loadBalancerListKeys } from '../queries/loadBalancers'
 import { nodeKeys } from '../queries/nodes'
 import { domainKeys } from '../queries/domains'
 import { alertRuleKeys } from '../queries/alerts'
@@ -56,9 +59,31 @@ describe('useChangesStream', () => {
       appKeys.list(),
       [...appKeys.all, 'pages'],
       [...appKeys.all, 'summary'],
+      projectTopologyKeys.all,
+      composeKeys.stack('').slice(0, 2),
+      loadBalancerListKeys.all,
     ])
+    expect(CHANGE_TOPIC_KEYS.loadbalancers).toContainEqual(
+      loadBalancerListKeys.all,
+    )
+    expect(CHANGE_TOPIC_KEYS.compose).toContainEqual(composeKeys.all)
     expect(CHANGE_TOPIC_KEYS.nodes).toEqual([nodeKeys.list()])
     expect(CHANGE_TOPIC_KEYS.domains).toEqual([domainKeys.all])
+  })
+
+  it('invalidates compose and load balancer lists on their topics', () => {
+    const qc = new QueryClient()
+    qc.setQueryData(composeKeys.stack('shop'), {})
+    qc.setQueryData(loadBalancerListKeys.list({ search: '', state: '' }), [])
+    invalidateChangeTopic(qc, 'compose')
+    expect(qc.getQueryState(composeKeys.stack('shop'))?.isInvalidated).toBe(
+      true,
+    )
+    invalidateChangeTopic(qc, 'loadbalancers')
+    expect(
+      qc.getQueryState(loadBalancerListKeys.list({ search: '', state: '' }))
+        ?.isInvalidated,
+    ).toBe(true)
   })
 
   it('invalidates the mapped key and leaves others alone', () => {

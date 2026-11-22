@@ -1,0 +1,69 @@
+{
+  "title": "Динамический DNS",
+  "description": "Направляет DNS-запись на этот сервер при смене его публичного IP. Изменения применяются сразу.",
+  "status": {
+    "running": "Работает",
+    "failing": "Сбои",
+    "off": "Выключено",
+    "label": "Статус обновления"
+  },
+  "source": {
+    "stored": "Сохранено",
+    "default": "Значения по умолчанию"
+  },
+  "enabled": "Включено",
+  "provider": {
+    "label": "Провайдер",
+    "generic": "Произвольный URL",
+    "duckdns": "DuckDNS"
+  },
+  "domains": {
+    "label": "Домены DuckDNS",
+    "placeholder": "myhome,office"
+  },
+  "target": {
+    "labelGeneric": "URL обновления",
+    "labelDuckdns": "Токен DuckDNS",
+    "placeholder": "Вставьте, чтобы задать или заменить",
+    "configured": "Настроено ({{host}})",
+    "configuredNoHost": "Настроено",
+    "notConfigured": "Не настроено",
+    "clear": "Очистить",
+    "cleared": "Учетные данные удалены."
+  },
+  "advanced": {
+    "toggle": "Дополнительно",
+    "interval": "Проверять каждые (с)",
+    "timeout": "Таймаут (с)",
+    "minGap": "Мин. интервал между обновлениями (с)",
+    "reassert": "Повторно отправлять каждые (с)",
+    "failAlertAfter": "Оповещать после сбоев",
+    "quorum": "Кворум проб",
+    "probeUrls": "URL проб (по одному в строке)",
+    "allowPrivate": "Разрешить приватные адреса",
+    "summary": "Каждые {{interval}} с, таймаут {{timeout}} с, кворум {{quorum}}, оповещение после {{failAlertAfter}} сбоев",
+    "allowInsecureHttp": "Разрешить обычный HTTP"
+  },
+  "last": {
+    "title": "Последняя проверка",
+    "never": "Проверок еще не было",
+    "ip": "IP {{ip}}",
+    "result": "Результат: {{result}}",
+    "check": "проверено {{when}}",
+    "change": "изменено {{when}}",
+    "failures": "Сбоев подряд: {{count}}",
+    "alert": "Оповещение активно"
+  },
+  "result": {
+    "ok": "ок",
+    "failing": "сбои",
+    "pending": "ожидание",
+    "not running": "не запущено"
+  },
+  "save": "Сохранить",
+  "saving": "Сохранение...",
+  "saved": "Динамический DNS сохранен.",
+  "error": {
+    "number": "Используйте целые числа от 1."
+  }
+}

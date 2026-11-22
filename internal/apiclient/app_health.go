@@ -13,9 +13,7 @@ type AppHealthResource struct {
 
 // GetAppHealth calls GET /api/v1/apps/{name}/health.
 func (c *Client) GetAppHealth(ctx context.Context, name string) (AppHealthResource, error) {
-	var out AppHealthResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/health", nil, &out)
-	return out, err
+	return getJSON[AppHealthResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/health")
 }
 
 // SetAppHealth calls PUT /api/v1/apps/{name}/health, replacing name's
@@ -28,5 +26,5 @@ func (c *Client) SetAppHealth(ctx context.Context, name string, health ServiceHe
 
 // ClearAppHealth calls DELETE /api/v1/apps/{name}/health.
 func (c *Client) ClearAppHealth(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/health", nil, nil)
+	return c.del(ctx, "/api/v1/apps/"+PathEscape(name)+"/health")
 }

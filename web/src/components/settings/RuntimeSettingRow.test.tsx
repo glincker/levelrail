@@ -82,6 +82,63 @@ describe('RuntimeSettingRow weakening reset', () => {
   })
 })
 
+describe('RuntimeSettingRow save confirmation', () => {
+  const windowSetting: RuntimeSetting = {
+    ...buildNetwork,
+    key: 'security.replay_window',
+    kind: 'int',
+    default: 600,
+    value: 600,
+    allowed_strings: undefined,
+  }
+
+  function renderRow() {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AllI18n>
+          <RuntimeSettingRow setting={windowSetting} canEdit />
+        </AllI18n>
+      </QueryClientProvider>,
+    )
+  }
+
+  it('saves straight away when the server does not flag a weakening', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(windowSetting), { status: 200 }),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderRow()
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '900' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('Lower this protection?')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('asks to confirm only when the server requires it', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ error: 'weakens', code: 'confirmation_required' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderRow()
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '900' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(await screen.findByText('Lower this protection?')).toBeTruthy()
+    vi.unstubAllGlobals()
+  })
+})
+
 describe('RuntimeSettingRow risk badge', () => {
   function renderRow(setting: RuntimeSetting) {
     render(
@@ -107,5 +164,57 @@ describe('RuntimeSettingRow risk badge', () => {
   it('shows no security badge on a normal risk setting', () => {
     renderRow({ ...buildNetwork, risk: 'normal' })
     expect(screen.queryByText('Security setting')).toBeNull()
+  })
+})
+
+describe('RuntimeSettingRow reset', () => {
+  it('drops an unsaved edit when the reset value equals the saved one', async () => {
+    const list: RuntimeSetting = {
+      ...buildNetwork,
+      key: 'security.allowed_hosts',
+      kind: 'string_list',
+      default: ['a.example'],
+      value: ['a.example'],
+      source: 'saved',
+      allowed_strings: undefined,
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ ...list, source: 'default' }), {
+            status: 200,
+          }),
+        ),
+      ),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AllI18n>
+          <RuntimeSettingRow setting={list} canEdit />
+        </AllI18n>
+      </QueryClientProvider>,
+    )
+    const box = screen.getByRole('textbox')
+    fireEvent.change(box, { target: { value: 'b.example' } })
+    expect((box as HTMLTextAreaElement).value).toBe('b.example')
+    fireEvent.click(screen.getByRole('button', { name: /reset/i }))
+    await waitFor(() =>
+      expect((box as HTMLTextAreaElement).value).toBe('a.example'),
+    )
+  })
+
+  it('shows the default value next to an overridden setting', () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AllI18n>
+          <RuntimeSettingRow
+            setting={{ ...buildNetwork, value: 'none', source: 'saved' }}
+            canEdit
+          />
+        </AllI18n>
+      </QueryClientProvider>,
+    )
+    expect(screen.getAllByText(/open/).length).toBeGreaterThan(0)
   })
 })

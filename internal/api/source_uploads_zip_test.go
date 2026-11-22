@@ -111,8 +111,8 @@ func TestUploadZip_Rejections(t *testing.T) {
 
 func TestUploadZip_OverZipSizeCap(t *testing.T) {
 	rt, _, _, cookie := newUploadRouter(t)
-	zb := zipBytes(t, []zipTestFile{{name: "index.html", body: strings.Repeat("x", 4000)}})
-	t.Setenv(envUploadMaxBytes, "100")
+	zb := zipBytes(t, []zipTestFile{{name: "index.html", body: noisyText(8000)}})
+	t.Setenv("APP_UPLOAD_MAX_BYTES", "1024")
 	if rec := postZip(rt, cookie, zb); rec.Code != http.StatusRequestEntityTooLarge {
 		t.Fatalf("status = %d, want 413; body = %s", rec.Code, rec.Body.String())
 	}

@@ -39,6 +39,7 @@ import { AddNodeMethodList } from './addNode/AddNodeMethodList'
 import { OracleFlexSizes } from './addNode/OracleFlexSizes'
 import { OracleGuardNotice } from './addNode/OracleGuardNotice'
 import { splitOracleSizes } from '../lib/oracleProvision'
+import { isProviderConnected } from '../lib/providerConnectionState'
 import { ProvisionProgress, StepShell } from './AddNodeWizardSteps'
 import {
   useCreateNodeProvision,
@@ -188,7 +189,7 @@ function WizardBody({
           connected={
             new Set(
               (providers.data ?? [])
-                .filter((x) => x.has_token)
+                .filter(isProviderConnected)
                 .map((x) => x.provider),
             )
           }

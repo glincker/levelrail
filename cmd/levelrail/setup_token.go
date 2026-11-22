@@ -84,10 +84,18 @@ func runSetupToken(ctx context.Context, stdout io.Writer, plain bool, openStore 
 		return nil
 	}
 	host := publicHost()
-	if host == "" {
-		host = "<server-ip>"
+	link := chooseSetupLink(SetupLinkInput{
+		PublicIP:      host,
+		IngressOwns:   ingressOwnsWebPorts(),
+		Coexist:       !ingressOwnsWebPorts(),
+		Cert:          probeCertState(ctx, db, sslipName(host)),
+		DashboardPort: dashboardPort(),
+		SetupPath:     setupURLPath(token),
+	})
+	_, _ = fmt.Fprintf(stdout, "open: %s\n%s\n", link.URL, token)
+	if link.Reason != "" {
+		_, _ = fmt.Fprintf(stdout, "note: %s\nnext: %s\n", link.Reason, link.Command)
 	}
-	_, _ = fmt.Fprintf(stdout, "open: http://%s%s\n%s\n", net.JoinHostPort(host, dashboardPort()), setupURLPath(token), token)
 	return nil
 }
 

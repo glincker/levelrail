@@ -57,9 +57,7 @@ type DDNSStatus struct {
 
 // GetDDNS calls GET /api/v1/settings/ddns.
 func (c *Client) GetDDNS(ctx context.Context) (DDNSResource, error) {
-	var out DDNSResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ddns", nil, &out)
-	return out, err
+	return getJSON[DDNSResource](ctx, c, "/api/v1/settings/ddns")
 }
 
 // UpdateDDNS calls PUT /api/v1/settings/ddns.
@@ -71,7 +69,5 @@ func (c *Client) UpdateDDNS(ctx context.Context, req DDNSUpdate) (DDNSResource, 
 
 // GetDDNSStatus calls GET /api/v1/settings/ddns/status.
 func (c *Client) GetDDNSStatus(ctx context.Context) (DDNSStatus, error) {
-	var out DDNSStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ddns/status", nil, &out)
-	return out, err
+	return getJSON[DDNSStatus](ctx, c, "/api/v1/settings/ddns/status")
 }

@@ -7,13 +7,14 @@
 // resource's other fields have different write (and read) paths"
 // reasoning tokens.go's plaintext-once token establishes elsewhere.
 
-export type BackupProvider = 'aws' | 'r2' | 'custom' | 'local'
+export type BackupProvider = 'aws' | 'r2' | 'custom' | 'local' | 'sftp'
 
 export const BACKUP_PROVIDERS: BackupProvider[] = [
   'aws',
   'r2',
   'custom',
   'local',
+  'sftp',
 ]
 
 export interface BackupTarget {
@@ -30,6 +31,8 @@ export interface BackupTarget {
   encrypt_dumps: boolean
   // Read-only APP_BACKUP_LOCAL_ROOT, set for local targets only.
   local_root?: string
+  // Pinned SSH host key of an sftp target (a public value).
+  host_key?: string
 }
 
 export interface BackupTargetEncryption {
@@ -53,4 +56,15 @@ export interface CreateBackupTargetRequest {
   secret_access_key: string
   // Omit to use the server default (on when a backup key exists).
   encrypt_dumps?: boolean
+  // sftp only: send secret_access_key (password) or private_key, never both.
+  private_key?: string
+  private_key_passphrase?: string
+  // sftp only: the pinned server key, required.
+  host_key?: string
+}
+
+export interface SftpHostKeyScan {
+  host_key: string
+  key_type: string
+  fingerprint: string
 }

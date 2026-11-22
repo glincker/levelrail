@@ -141,9 +141,7 @@ func (c *Client) TakeoverStatus(ctx context.Context, acceptUnmanaged bool) (Take
 	if acceptUnmanaged {
 		path += "?accept_unmanaged=true"
 	}
-	var out TakeoverStatus
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[TakeoverStatus](ctx, c, path)
 }
 
 // StartTakeover calls POST /api/v1/migration/takeover/runs.
@@ -164,9 +162,7 @@ func (c *Client) TakeoverRuns(ctx context.Context) ([]TakeoverRun, error) {
 
 // TakeoverRun calls GET /api/v1/migration/takeover/runs/{run}.
 func (c *Client) TakeoverRun(ctx context.Context, id string) (TakeoverRun, error) {
-	var out TakeoverRun
-	err := c.do(ctx, http.MethodGet, takeoverBase+"/runs/"+url.PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[TakeoverRun](ctx, c, takeoverBase+"/runs/"+url.PathEscape(id))
 }
 
 // RollbackTakeover calls POST /api/v1/migration/takeover/runs/{run}/rollback.

@@ -1658,7 +1658,8 @@
         "aws": "AWS S3",
         "r2": "Cloudflare R2",
         "custom": "S3-compatible",
-        "local": "Local directory"
+        "local": "Local directory",
+        "sftp": "SFTP"
       },
       "status": "Backup status",
       "statusBody": "Runs, coverage and restore drills live on the Backups page.",

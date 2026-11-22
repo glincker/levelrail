@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -29,7 +28,5 @@ type EgressReport struct {
 
 // AppEgressReport calls GET /api/v1/apps/{name}/egress-report.
 func (c *Client) AppEgressReport(ctx context.Context, name string) (EgressReport, error) {
-	var out EgressReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/egress-report", nil, &out)
-	return out, err
+	return getJSON[EgressReport](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/egress-report")
 }

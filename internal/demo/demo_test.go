@@ -30,8 +30,8 @@ func TestSeedCoreEntities(t *testing.T) {
 	db := seeded(t, 1)
 
 	svcs, err := db.ListDesiredServices(ctx)
-	if err != nil || len(svcs) != len(appSpecs) {
-		t.Fatalf("services = %d, err = %v, want %d", len(svcs), err, len(appSpecs))
+	if err != nil || len(svcs) != len(appSpecs)+len(pagesSites) {
+		t.Fatalf("services = %d, err = %v, want %d", len(svcs), err, len(appSpecs)+len(pagesSites))
 	}
 	dbs, err := db.ListDesiredDatabases(ctx)
 	if err != nil || len(dbs) != len(databaseSpecs) {
@@ -349,5 +349,29 @@ func TestSeedFleet(t *testing.T) {
 	tpls, err := db.ListCustomTemplates(ctx)
 	if err != nil || len(tpls) != len(customTemplates) {
 		t.Errorf("templates = %d, err = %v", len(tpls), err)
+	}
+}
+
+func TestSeedScreensHaveBackingData(t *testing.T) {
+	ctx := context.Background()
+	db := seeded(t, 1)
+	for _, site := range pagesSites {
+		svc, err := db.GetDesiredService(ctx, site.name)
+		if err != nil || svc.ProjectID == "" {
+			t.Errorf("static site %q has no backing service with a project: %v", site.name, err)
+		}
+	}
+	for _, a := range appSpecs {
+		svc, err := db.GetDesiredService(ctx, a.name)
+		if err != nil || svc.ProjectID != a.project || svc.EnvironmentID == "" {
+			t.Errorf("app %q project = %q env = %q err = %v", a.name, svc.ProjectID, svc.EnvironmentID, err)
+		}
+	}
+	g, err := db.GetGitSource(ctx, "storefront-web")
+	if err != nil || !g.PreviewEnabled {
+		t.Errorf("storefront-web git source previews on = %v, err = %v", g.PreviewEnabled, err)
+	}
+	if drills, err := db.ListBackupDrills(ctx, "", "", "pg-main", 10); err != nil || len(drills) == 0 {
+		t.Errorf("drills = %d, err = %v", len(drills), err)
 	}
 }

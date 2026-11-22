@@ -27,12 +27,17 @@ const denyMutate = vi.fn()
 let requests: DeviceAuthRequest[] | undefined
 let activity: DeviceActivityItem[] | undefined
 const dismissMutate = vi.fn()
+const dismissAllMutate = vi.fn()
 
 vi.mock('../../queries/deviceAuth', () => ({
   useLiveDeviceAuthRequests: () => ({ data: requests }),
   useDeviceActivity: () => ({ data: activity }),
   useDismissAttentionItem: () => ({
     mutate: dismissMutate,
+    isPending: false,
+  }),
+  useDismissAttentionItems: () => ({
+    mutate: dismissAllMutate,
     isPending: false,
   }),
   useApproveDeviceAuthRequest: () => ({
@@ -88,6 +93,7 @@ afterEach(() => {
   requests = undefined
   activity = undefined
   dismissMutate.mockReset()
+  dismissAllMutate.mockReset()
   approveMutate.mockReset()
   denyMutate.mockReset()
 })
@@ -150,7 +156,7 @@ describe('DeviceLoginBanner', () => {
     expect(denyMutate).toHaveBeenCalledTimes(1)
   })
 
-  it('shows an expired login as a dismissable strip with the start over command collapsed', () => {
+  it('shows an expired login as a dismissable strip with an inline copy button', () => {
     requests = []
     activity = [
       {
@@ -170,11 +176,47 @@ describe('DeviceLoginBanner', () => {
     ]
     renderBanner()
     expect(screen.getByText(/ci-box expired/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Copy command' })).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(dismissMutate.mock.calls[0]?.[0]).toBe('device_login:r1:expired')
+  })
+
+  it('collapses three or more resolved logins into two rows and one summary with dismiss all', () => {
+    requests = []
+    const at = Date.now()
+    activity = [1, 2, 3, 4].map((n) => ({
+      id: `r${n}`,
+      state: 'expired' as const,
+      client_name: 'rp',
+      requester_ip: '203.0.113.9',
+      user_agent: '',
+      created_at: new Date(at - 3_600_000).toISOString(),
+      expires_at: new Date(at - n * 1000).toISOString(),
+      ip_mismatch: false,
+      dismissible: true,
+      dismissed: false,
+      item_key: `device_login:r${n}:expired`,
+      audit_path: `/api/v1/auth/device/requests/r${n}`,
+    }))
+    renderBanner()
+    expect(screen.getAllByRole('button', { name: 'Dismiss' })).toHaveLength(2)
+    expect(
+      screen.getByText('4 CLI logins expired or were denied'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'View on Status page' }),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'How to fix' }))
     expect(
       screen.getByText('levelrail-cli auth login --device'),
     ).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
-    expect(dismissMutate.mock.calls[0]?.[0]).toBe('device_login:r1:expired')
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss all' }))
+    expect(dismissAllMutate.mock.calls[0]?.[0]).toEqual([
+      'device_login:r1:expired',
+      'device_login:r2:expired',
+      'device_login:r3:expired',
+      'device_login:r4:expired',
+    ])
   })
 
   it('hides a dismissed login and never shows approved ones', () => {

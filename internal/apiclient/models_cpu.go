@@ -132,9 +132,7 @@ func (c *Client) GetLocalModelCatalog(ctx context.Context, nodeID string) (Local
 	if nodeID != "" {
 		path += "?node_id=" + url.QueryEscape(nodeID)
 	}
-	var out LocalModelCatalog
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[LocalModelCatalog](ctx, c, path)
 }
 
 // CheckCPUModelFit calls POST /api/v1/models/fit in CPU mode.
@@ -179,9 +177,7 @@ type CreateModelDetailResponse struct {
 
 // GetModelDetail calls GET /api/v1/models/{name} and keeps the CPU fields.
 func (c *Client) GetModelDetail(ctx context.Context, name string) (ModelDetail, error) {
-	var out ModelDetail
-	err := c.do(ctx, http.MethodGet, "/api/v1/models/"+PathEscape(name), nil, &out)
-	return out, err
+	return getJSON[ModelDetail](ctx, c, "/api/v1/models/"+PathEscape(name))
 }
 
 // CreateModelDetail calls POST /api/v1/models and keeps the CPU fields.

@@ -136,7 +136,7 @@ func (c *Client) DeleteDatabaseAndData(ctx context.Context, name string, force b
 	if force {
 		q.Set("force", "true")
 	}
-	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"?"+q.Encode(), nil, nil)
+	return c.del(ctx, "/api/v1/databases/"+PathEscape(name)+"?"+q.Encode())
 }
 
 // DeleteAppAndData is DeleteAppResult with delete_data=true: the app's
@@ -156,9 +156,7 @@ func (c *Client) DeleteAppAndData(ctx context.Context, name string) (DeleteAppRe
 
 // BackupCoverage calls GET /api/v1/backups/coverage.
 func (c *Client) BackupCoverage(ctx context.Context) (BackupCoverageResponse, error) {
-	var out BackupCoverageResponse
-	err := c.do(ctx, http.MethodGet, "/api/v1/backups/coverage", nil, &out)
-	return out, err
+	return getJSON[BackupCoverageResponse](ctx, c, "/api/v1/backups/coverage")
 }
 
 // ProtectAll calls POST /api/v1/backups/protect-all; Apply false only plans.
@@ -170,9 +168,7 @@ func (c *Client) ProtectAll(ctx context.Context, req ProtectAllRequest) (Protect
 
 // ListStorageOrphans calls GET /api/v1/storage/orphans.
 func (c *Client) ListStorageOrphans(ctx context.Context) (StorageOrphansResponse, error) {
-	var out StorageOrphansResponse
-	err := c.do(ctx, http.MethodGet, "/api/v1/storage/orphans", nil, &out)
-	return out, err
+	return getJSON[StorageOrphansResponse](ctx, c, "/api/v1/storage/orphans")
 }
 
 // ReclaimStorageOrphan calls DELETE /api/v1/storage/orphans/{id}; confirm

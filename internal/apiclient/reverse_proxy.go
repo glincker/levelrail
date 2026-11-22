@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 )
 
@@ -62,7 +61,5 @@ func (c *Client) GetReverseProxyGuide(ctx context.Context, domain, proxy, app st
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out ReverseProxyGuide
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[ReverseProxyGuide](ctx, c, path)
 }

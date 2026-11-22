@@ -125,9 +125,7 @@ type VolumeRestoreToResponse struct {
 
 // BackupHealth calls GET /api/v1/backups/health.
 func (c *Client) BackupHealth(ctx context.Context) (BackupHealthResponse, error) {
-	var out BackupHealthResponse
-	err := c.do(ctx, http.MethodGet, "/api/v1/backups/health", nil, &out)
-	return out, err
+	return getJSON[BackupHealthResponse](ctx, c, "/api/v1/backups/health")
 }
 
 // ListBackupDrills calls GET /api/v1/backups/drills.
@@ -149,16 +147,12 @@ func (c *Client) ListBackupDrills(ctx context.Context, service, volume, database
 	if enc := q.Encode(); enc != "" {
 		path += "?" + enc
 	}
-	var out []BackupDrillResource
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]BackupDrillResource](ctx, c, path)
 }
 
 // GetBackupDrill calls GET /api/v1/backups/drills/{id}.
 func (c *Client) GetBackupDrill(ctx context.Context, id string) (BackupDrillResource, error) {
-	var out BackupDrillResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/backups/drills/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[BackupDrillResource](ctx, c, "/api/v1/backups/drills/"+PathEscape(id))
 }
 
 // StartBackupDrill calls POST /api/v1/backups/drills and returns the drill ID.
@@ -179,9 +173,7 @@ func (c *Client) RefreshBackupProtection(ctx context.Context, targetIDs []string
 
 // GetVolumeBackupPolicy calls GET /api/v1/apps/{name}/volumes/{volume}/backup-policy.
 func (c *Client) GetVolumeBackupPolicy(ctx context.Context, name, volume string) (VolumeBackupPolicyResource, error) {
-	var out VolumeBackupPolicyResource
-	err := c.do(ctx, http.MethodGet, volumePolicyPath(name, volume), nil, &out)
-	return out, err
+	return getJSON[VolumeBackupPolicyResource](ctx, c, volumePolicyPath(name, volume))
 }
 
 // SetVolumeBackupPolicy calls PUT /api/v1/apps/{name}/volumes/{volume}/backup-policy.
@@ -248,4 +240,36 @@ func (c *Client) ProbeBackupTarget(ctx context.Context, id string) (BackupTarget
 	var out BackupTargetProbe
 	err := c.do(ctx, http.MethodPost, "/api/v1/backup-targets/"+PathEscape(id)+"/probe", nil, &out)
 	return out, err
+}
+
+// ScanSFTPHostKey calls POST /api/v1/backup-targets/sftp-host-key: it reads the key a server offers, sending no credentials.
+func (c *Client) ScanSFTPHostKey(ctx context.Context, endpoint string) (SFTPHostKeyScan, error) {
+	var out SFTPHostKeyScan
+	err := c.do(ctx, http.MethodPost, "/api/v1/backup-targets/sftp-host-key", map[string]string{"endpoint": endpoint}, &out)
+	return out, err
+}
+
+// RestoreTestStartResource mirrors internal/api's restoreTestResource.
+type RestoreTestStartResource struct {
+	ID         string `json:"id"`
+	BackupID   string `json:"backup_id"`
+	Status     string `json:"status"`
+	Stage      string `json:"stage,omitempty"`
+	Bytes      int64  `json:"bytes,omitempty"`
+	DurationMS int64  `json:"duration_ms,omitempty"`
+	Error      string `json:"error,omitempty"`
+	StartedAt  string `json:"started_at,omitempty"`
+	FinishedAt string `json:"finished_at,omitempty"`
+}
+
+// StartDatabaseRestoreTest calls POST /api/v1/databases/{name}/restore-test.
+func (c *Client) StartDatabaseRestoreTest(ctx context.Context, name string) (RestoreTestStartResource, error) {
+	var out RestoreTestStartResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/restore-test", struct{}{}, &out)
+	return out, err
+}
+
+// GetDatabaseRestoreTest calls GET /api/v1/databases/{name}/restore-test.
+func (c *Client) GetDatabaseRestoreTest(ctx context.Context, name string) (RestoreTestStartResource, error) {
+	return getJSON[RestoreTestStartResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/restore-test")
 }

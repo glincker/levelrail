@@ -86,9 +86,7 @@ type NodeCleanupRunResource struct {
 
 // GetNodeCapacity calls GET /api/v1/nodes/{id}/capacity.
 func (c *Client) GetNodeCapacity(ctx context.Context, id string) (NodeCapacityResource, error) {
-	var out NodeCapacityResource
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/capacity", nil, &out)
-	return out, err
+	return getJSON[NodeCapacityResource](ctx, c, nodePath(id)+"/capacity")
 }
 
 // UpdateNodeGuardrails calls PUT /api/v1/nodes/{id}/guardrails.
@@ -108,7 +106,5 @@ func (c *Client) CleanupNode(ctx context.Context, id string, dryRun bool) (NodeC
 
 // ListNodeCleanupRuns calls GET /api/v1/nodes/{id}/cleanup-runs.
 func (c *Client) ListNodeCleanupRuns(ctx context.Context, id string) ([]NodeCleanupRunResource, error) {
-	var out []NodeCleanupRunResource
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/cleanup-runs", nil, &out)
-	return out, err
+	return getJSON[[]NodeCleanupRunResource](ctx, c, nodePath(id)+"/cleanup-runs")
 }

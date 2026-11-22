@@ -14,21 +14,21 @@ import (
 const (
 	goLiveStateLive   = "live"
 	goLiveStateFailed = "failed"
-	defaultGoLiveWait = 2 * time.Minute
-	defaultGoLivePoll = 3 * time.Second
+	// Fallbacks used only when the control plane cannot be asked for the settings.
+	fallbackGoLiveWait = 10 * time.Minute
+	fallbackGoLivePoll = 3 * time.Second
+	keyWaitTimeout     = "domains.wait_timeout"
+	keyWaitPoll        = "domains.wait_poll"
 )
 
-// goLiveSleep and goLivePollInterval are variables so tests do not wait.
-var (
-	goLiveSleep        = time.Sleep
-	goLivePollInterval = defaultGoLivePoll
-)
+// goLiveSleep is a variable so tests do not wait.
+var goLiveSleep = time.Sleep
 
 type goLiveResult = apiclient.GoLiveResult
 
 func domainsGoLiveUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s domains go-live <app> <domain> [--dns auto|off|preview] [--replace] [--plan] [--wait] [--timeout 2m] [flags]
+  %[1]s domains go-live <app> <domain> [--dns auto|off|preview] [--replace] [--plan] [--wait] [--timeout 10m] [--poll 3s] [flags]
   %[1]s domains go-live runs [--limit N] [flags]     recent automation runs
   %[1]s domains go-live undo <run-id> [flags]        undo what one run created
   %[1]s domains backfill-base-domain [--confirm] [flags]
@@ -63,12 +63,13 @@ func runGoLiveRun(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains go-live", "print the result as JSON to stdout and nothing else", stderr)
 	var dns string
 	var replace, plan, wait bool
-	var timeout time.Duration
+	var timeout, poll time.Duration
 	fs.StringVar(&dns, "dns", "", "automatic DNS: auto (default), off or preview")
 	fs.BoolVar(&replace, "replace", false, "overwrite a conflicting A/AAAA/CNAME record")
 	fs.BoolVar(&plan, "plan", false, "show the planned steps without changing anything")
 	fs.BoolVar(&wait, "wait", false, "keep polling until the domain is live")
-	fs.DurationVar(&timeout, "timeout", defaultGoLiveWait, "how long --wait polls")
+	fs.DurationVar(&timeout, "timeout", 0, "how long --wait polls (default: runtime setting domains.wait_timeout)")
+	fs.DurationVar(&poll, "poll", 0, "how often --wait polls (default: runtime setting domains.wait_poll)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsGoLiveUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -98,7 +99,7 @@ func runGoLiveRun(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("go-live for %q: %w", domain, err))
 	}
 	if wait {
-		res, err = waitGoLive(ctx, client, res, timeout, stdout, jsonOut)
+		res, err = waitGoLive(ctx, client, res, resolveWaitOptions(ctx, client, prog, timeout, poll), stdout, jsonOut)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
@@ -131,6 +132,9 @@ func printGoLiveStep(out io.Writer, s apiclient.GoLiveStep) {
 		line += " " + s.Detail
 	}
 	_, _ = fmt.Fprintln(out, line)
+	if r := s.Record; r != nil && s.State != "done" {
+		_, _ = fmt.Fprintf(out, "      create this record: %s  %s  %s\n", r.Type, r.Name, r.Value)
+	}
 	for _, r := range s.Resolvers {
 		answer := strings.Join(r.Addresses, ", ")
 		if answer == "" {
@@ -140,10 +144,44 @@ func printGoLiveStep(out io.Writer, s apiclient.GoLiveStep) {
 	}
 }
 
+// waitOptions is how long and how often a wait polls, plus the program name for next-step hints.
+type waitOptions struct {
+	timeout, poll time.Duration
+	prog          string
+}
+
+// resolveWaitOptions fills unset flags from the live runtime settings, falling back to built-in values.
+func resolveWaitOptions(ctx context.Context, client *Client, prog string, timeout, poll time.Duration) waitOptions {
+	if timeout <= 0 {
+		timeout = runtimeDuration(ctx, client, keyWaitTimeout, fallbackGoLiveWait)
+	}
+	if poll <= 0 {
+		poll = runtimeDuration(ctx, client, keyWaitPoll, fallbackGoLivePoll)
+	}
+	return waitOptions{timeout: timeout, poll: poll, prog: prog}
+}
+
+func runtimeDuration(ctx context.Context, client *Client, key string, fallback time.Duration) time.Duration {
+	st, err := client.GetRuntimeSetting(ctx, key)
+	if err != nil {
+		return fallback
+	}
+	raw, ok := st.Value.(string)
+	if !ok {
+		return fallback
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d <= 0 {
+		return fallback
+	}
+	return d
+}
+
 // waitGoLive polls GET .../go-live until the domain is live, a step failed,
-// or timeout passes, printing each step the first time its state changes.
-func waitGoLive(ctx context.Context, client *Client, res goLiveResult, timeout time.Duration, stdout io.Writer, quiet bool) (goLiveResult, error) {
-	deadline := time.Now().Add(timeout)
+// or the timeout passes, printing each step the first time its state changes
+// and ending with the live URL or the one blocker and its next step.
+func waitGoLive(ctx context.Context, client *Client, res goLiveResult, opts waitOptions, stdout io.Writer, quiet bool) (goLiveResult, error) {
+	deadline := time.Now().Add(opts.timeout)
 	seen := map[string]string{}
 	for {
 		if !quiet {
@@ -155,19 +193,14 @@ func waitGoLive(ctx context.Context, client *Client, res goLiveResult, timeout t
 				}
 			}
 		}
-		switch res.State {
-		case goLiveStateLive:
-			if !quiet && res.URL != "" {
-				_, _ = fmt.Fprintf(stdout, "live at %s\n", res.URL)
+		timedOut := !time.Now().Before(deadline)
+		if res.State == goLiveStateLive || res.State == goLiveStateFailed || timedOut {
+			if !quiet {
+				printGoLiveOutcome(stdout, res, timedOut, opts)
 			}
 			return res, nil
-		case goLiveStateFailed:
-			return res, nil
 		}
-		if !time.Now().Before(deadline) {
-			return res, nil
-		}
-		goLiveSleep(goLivePollInterval)
+		goLiveSleep(opts.poll)
 		next, err := client.GetGoLive(ctx, res.App, res.Domain)
 		if err != nil {
 			return res, fmt.Errorf("poll go-live for %q: %w", res.Domain, err)
@@ -175,6 +208,52 @@ func waitGoLive(ctx context.Context, client *Client, res goLiveResult, timeout t
 		next.RunID = res.RunID
 		res = next
 	}
+}
+
+// printGoLiveOutcome ends a wait with the live URL, or the first unfinished step and what to do about it.
+func printGoLiveOutcome(out io.Writer, res goLiveResult, timedOut bool, opts waitOptions) {
+	if res.State == goLiveStateLive {
+		url := res.URL
+		if url == "" {
+			url = "https://" + res.Domain
+		}
+		_, _ = fmt.Fprintf(out, "%s OK\n", url)
+		return
+	}
+	blocker, next := goLiveBlocker(res, opts.prog)
+	if timedOut {
+		_, _ = fmt.Fprintf(out, "not live after %s: %s\n", opts.timeout, blocker)
+	} else {
+		_, _ = fmt.Fprintf(out, "stopped: %s\n", blocker)
+	}
+	_, _ = fmt.Fprintf(out, "next: %s\n", next)
+}
+
+// goLiveBlocker names the first step that is not done and the single next action for it.
+func goLiveBlocker(res goLiveResult, prog string) (string, string) {
+	diagnose := fmt.Sprintf("run %s domains diagnose %s for the exact cause", prog, res.Domain)
+	for _, s := range res.Steps {
+		if s.State == "done" || s.State == "skipped" {
+			continue
+		}
+		what := s.ID
+		if s.Detail != "" {
+			what += " (" + s.Detail + ")"
+		}
+		lower := strings.ToLower(s.Detail)
+		switch {
+		case s.Record != nil && (s.ID == "dns" || s.ID == "propagation"):
+			return what, fmt.Sprintf("create %s %s -> %s at your DNS provider, then run %s domains wait %s", s.Record.Type, s.Record.Name, s.Record.Value, prog, res.Domain)
+		case strings.Contains(lower, "proxied") || strings.Contains(lower, "proxy") || strings.Contains(lower, "cdn"):
+			return what, "set the record to DNS only (turn off the CDN proxy) until the certificate is issued, then " + diagnose
+		case s.ID == "propagation" || s.ID == "dns":
+			return what, "DNS does not point here yet. Check the record at your DNS provider and wait for it to propagate, then " + diagnose
+		case s.ID == "certificate":
+			return what, "ports 80 and 443 must reach this server for the certificate, " + diagnose
+		}
+		return what, diagnose
+	}
+	return "waiting for the domain to go live", diagnose
 }
 
 func runGoLiveRuns(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

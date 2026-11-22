@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"strconv"
 )
@@ -51,9 +50,7 @@ func (c *Client) SimulatePlacement(ctx context.Context, cpuMilli, memoryMiB int6
 	if selector != "" {
 		q.Set("selector", selector)
 	}
-	var out PlacementSimulation
-	err := c.do(ctx, http.MethodGet, "/api/v1/nodes/placement-simulation?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[PlacementSimulation](ctx, c, "/api/v1/nodes/placement-simulation?"+q.Encode())
 }
 
 // SimulateFailure asks what would happen if a zone or one node were lost.
@@ -65,7 +62,5 @@ func (c *Client) SimulateFailure(ctx context.Context, zone, node string) (Failur
 	if node != "" {
 		q.Set("node", node)
 	}
-	var out FailureSimulation
-	err := c.do(ctx, http.MethodGet, "/api/v1/nodes/failure-simulation?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[FailureSimulation](ctx, c, "/api/v1/nodes/failure-simulation?"+q.Encode())
 }

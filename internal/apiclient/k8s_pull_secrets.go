@@ -37,5 +37,5 @@ func (c *Client) ListK8sPullSecrets(ctx context.Context, cluster string) ([]K8sP
 
 // RemoveK8sPullSecret calls DELETE /api/v1/clusters/{name}/pull-secrets/{secret}.
 func (c *Client) RemoveK8sPullSecret(ctx context.Context, cluster, name string) error {
-	return c.do(ctx, http.MethodDelete, k8sClusterPath(cluster)+"/pull-secrets/"+PathEscape(name), nil, nil)
+	return c.del(ctx, k8sClusterPath(cluster)+"/pull-secrets/"+PathEscape(name))
 }

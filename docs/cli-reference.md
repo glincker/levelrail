@@ -138,11 +138,11 @@ A command's own subject is a positional argument or `--name`. `--app` is a scope
 `levelrail-cli help` lists the 13 everyday verbs (`up`, `deploy`, `rollback`, `logs`, `env`, `domains`, `db`, `backup`, `restore`, `apps`, `status`, `open`, `login`). `levelrail-cli help advanced` lists everything else. There is one CLI: the simple verbs are shortcuts over the same commands, and every flag of the longer forms still works.
 
 ```
-levelrail-cli up [dir] [--name N] [--port P] [--domain D] [--with postgres,redis] [--replicas N] [--strategy S] [--memory 512Mi] [--cpu 0.5] [--repo URL] [--ref BRANCH] [--secret KEY=VALUE] [--allow-unpushed] [--no-wait] [--timeout D] [--dry-run] [--yes] [--dockerfile PATH] [--image X] [flags]
+levelrail-cli up [dir] [--name N] [--port P] [--domain D] [--with postgres,redis] [--replicas N] [--strategy S] [--memory 512Mi] [--cpu 0.5] [--repo URL] [--ref BRANCH] [--secret KEY=VALUE] [--allow-unpushed] [--no-upload] [--no-wait] [--timeout D] [--dry-run] [--yes] [--dockerfile PATH] [--image X] [flags]
 ```
 `--dockerfile` picks the Dockerfile relative to the project directory and overrides `levelrail-definition.json`. `--image` skips the definition file and uses detection; its value is not used as an image (use `deploy --image` for a prebuilt image).
 
-Deploy a directory with one command. See the [one command quickstart](/quickstart-one-command).
+Deploy a directory with one command. With no git remote, `up` uploads the folder (honoring `.gitignore`) and prints how many files and MB first; `--no-upload` refuses that. See the [one command quickstart](/quickstart-one-command).
 
 ```
 levelrail-cli deploy <name> --image IMAGE [flags]
@@ -433,7 +433,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps vitals` prints the 7 day p75 of LCP, INP, CLS, TTFB and FCP overall and per route.
 - `apps next-cache set NAME redis|none` sets where a Next.js app keeps its page cache. `redis` shares it across replicas through the linked Redis database and adds `LEVELRAIL_NEXT_CACHE_URL` on every path that saves the app, not only on a build deploy. Containers pick it up on the next restart or deploy.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
-- `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store.
+- `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store. An http drain can send one auth header: `--header-name NAME --header-value-file FILE`. The value is stored encrypted, never shown again, and a blank value on a later update keeps it.
 - `apps scheduled-tasks` runs a command inside the app's running container on a cron schedule. The command is a real argv with no shell; put `--` before it when the command takes flags.
 
 ### Health probes, volumes and storage
@@ -469,7 +469,7 @@ levelrail-cli apps build-limits show|set|reset
 levelrail-cli apps build-cache remove <name>|--global
 ```
 
-- `apps health set` sets one probe and keeps the other. A probe is an HTTP(S) check or a command run inside the container (exit 0 is healthy). `--preset` fills path, interval, timeout and failures from a shortcut (`healthz`, `health`, `api-health`, `ping`, `status`); explicit flags win. `apps health discover` probes well-known paths and reports what each one did.
+- `apps health set` sets one probe and keeps the other. A probe is an HTTP(S) check or a command run inside the container (exit 0 is healthy). `--preset` fills path, interval, timeout and failures from a shortcut (`healthz`, `health`, `api-health`, `ping`, `status`, `up`, `actuator`, `readyz`; the list is served by `GET /api/v1/health-presets`, which the dashboard buttons also read); explicit flags win. `apps health discover` probes well-known paths and reports what each one did.
 - `apps volumes` manages named Docker volumes outside a redeploy. The name is lowercase letters, numbers and hyphens starting with a letter; the path is where it mounts in the container.
 - `apps storage set` attaches a connected bucket as object storage and injects its credentials as `S3_*` env vars at container create time. See [Object storage](/object-storage).
 - `apps build-cache` configures the BuildKit remote cache on a storage destination. `--global` applies to every app without its own setting. `clear` is bounded per call; run it again while it reports more to delete. A cache problem never fails a build.
@@ -2483,6 +2483,7 @@ levelrail-cli vm init [--memory MiB] [--cpus N] [--disk GiB] [--dashboard-port P
 levelrail-cli vm start [--control-plane-bin PATH]
 levelrail-cli vm stop
 levelrail-cli vm status [--json]
+levelrail-cli vm logs [--lines N]
 levelrail-cli vm shell
 levelrail-cli vm set <memory|cpus|disk|dashboard-port|ingress-port> <value>
 levelrail-cli vm export [--encrypt AGE_RECIPIENT] <file>
@@ -2491,7 +2492,14 @@ levelrail-cli vm reset --yes [--keep-credentials]
 levelrail-cli vm uninstall --yes
 levelrail-cli vm token (--check | --exchange --cookie-jar PATH) [--json]
 ```
-Runs Levelrail in a private Linux VM on macOS with no host folders mounted. `vm shell` opens a guest shell where the VM user has passwordless sudo, so the VM is the boundary. Settings live in a host file, and the environment only seeds it at `init`. An export archive holds the control plane database and its secrets. Keep it private; without `--encrypt` it is clear text. See [Desktop runtime](/desktop-runtime).
+Runs Levelrail in a private Linux VM on macOS with no host folders mounted. `vm shell` opens a guest shell where the VM user has passwordless sudo, so the VM is the boundary. Settings live in a host file, and the environment only seeds it at `init`. An export archive holds the control plane database and its secrets. Keep it private; without `--encrypt` it is clear text. `vm logs` prints the control plane journal from the guest (`APP_VM_LOG_LINES`, default 200). See [Desktop runtime](/desktop-runtime) and [macOS runtime](/macos-runtime).
+
+```
+levelrail-cli doctor macos [--json]
+levelrail-cli launchd install|uninstall|print <control-plane|agent> --binary PATH [--arg A] [--env K=V]
+levelrail-cli launchd status [--json]
+```
+`doctor macos` is offline and checks Lima, virtualization support, macOS version, free disk and the VM loopback ports. `launchd` manages per-user units in `~/Library/LaunchAgents`; `print` only shows the plist. Secrets in `--env` are refused.
 
 The `up` and `deploy` inference reads an optional definition file (`levelrail-definition.json`, schemaVersion 2) with `dockerfilePath`; an explicit `--dockerfile` or `--image` wins.
 

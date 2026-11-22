@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ingressSettingsQueryOptions } from '../../queries/domains'
+import { InstallAgentBanner } from '../InstallAgentBanner'
 
 const STEPS = ['detect', 'review', 'deploy'] as const
 
@@ -15,6 +16,7 @@ export function NewAppAside({
   const domain = ingress?.primary_domain
   return (
     <>
+      <InstallAgentBanner />
       <section
         aria-labelledby="new-app-aside-title"
         className="space-y-3 rounded-container border border-border bg-card p-4 shadow-card"

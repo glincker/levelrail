@@ -47,9 +47,7 @@ type BuildCacheClearResult struct {
 
 // ListBuildCache calls GET /api/v1/build-cache.
 func (c *Client) ListBuildCache(ctx context.Context) ([]BuildCacheSetting, error) {
-	var out []BuildCacheSetting
-	err := c.do(ctx, http.MethodGet, "/api/v1/build-cache", nil, &out)
-	return out, err
+	return getJSON[[]BuildCacheSetting](ctx, c, "/api/v1/build-cache")
 }
 
 // SetBuildCache calls PUT /api/v1/build-cache.
@@ -61,14 +59,12 @@ func (c *Client) SetBuildCache(ctx context.Context, req BuildCacheRequest) (Buil
 
 // DeleteBuildCache calls DELETE /api/v1/build-cache. An empty app is the global default.
 func (c *Client) DeleteBuildCache(ctx context.Context, app string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/build-cache?app="+url.QueryEscape(app), nil, nil)
+	return c.del(ctx, "/api/v1/build-cache?app="+url.QueryEscape(app))
 }
 
 // GetBuildCacheStats calls GET /api/v1/build-cache/stats.
 func (c *Client) GetBuildCacheStats(ctx context.Context, app string) (BuildCacheStats, error) {
-	var out BuildCacheStats
-	err := c.do(ctx, http.MethodGet, "/api/v1/build-cache/stats?app="+url.QueryEscape(app), nil, &out)
-	return out, err
+	return getJSON[BuildCacheStats](ctx, c, "/api/v1/build-cache/stats?app="+url.QueryEscape(app))
 }
 
 // ClearBuildCache calls POST /api/v1/build-cache/clear.

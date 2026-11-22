@@ -21,7 +21,8 @@
     "cancel": "取消",
     "submit": "添加 Webhook",
     "submitting": "添加中",
-    "done": "完成"
+    "done": "完成",
+    "fieldsFailed": "无法加载表单字段。请刷新页面后重试。"
   },
   "card": {
     "allEvents": "所有事件",
@@ -58,6 +59,17 @@
       "pending": "待处理",
       "delivered": "已投递",
       "dead": "死信"
+    }
+  },
+  "fields": {
+    "name": {
+      "help": "此订阅方的简短名称。"
+    },
+    "url": {
+      "help": "接收已签名 POST 请求的 HTTPS 端点。"
+    },
+    "events": {
+      "help": "以逗号分隔的类型或系列，例如 apps.*。留空则接收所有事件。"
     }
   }
 }

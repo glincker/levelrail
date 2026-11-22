@@ -71,16 +71,12 @@ func builderPath(id string) string { return "/api/v1/builders/" + url.PathEscape
 
 // ListBuilders calls GET /api/v1/builders.
 func (c *Client) ListBuilders(ctx context.Context) (BuildersResponse, error) {
-	var out BuildersResponse
-	err := c.do(ctx, http.MethodGet, "/api/v1/builders", nil, &out)
-	return out, err
+	return getJSON[BuildersResponse](ctx, c, "/api/v1/builders")
 }
 
 // GetBuilder calls GET /api/v1/builders/{id}; id may be the builder name.
 func (c *Client) GetBuilder(ctx context.Context, id string) (BuilderDetailResource, error) {
-	var out BuilderDetailResource
-	err := c.do(ctx, http.MethodGet, builderPath(id), nil, &out)
-	return out, err
+	return getJSON[BuilderDetailResource](ctx, c, builderPath(id))
 }
 
 // PauseBuilder calls POST /api/v1/builders/{id}/pause.

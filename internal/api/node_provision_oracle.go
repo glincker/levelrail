@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/provision"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // oracleSettings reads the Oracle tunables live so a change applies to the
@@ -92,6 +93,12 @@ func oracleSizeShape(size string) (shape string, ocpu, memGB float64, err error)
 // limits. Usage counts instances Levelrail did not create. The caller takes
 // the live usage first (nil makes this fetch it) and holds nodeProvisionGuardMu.
 func (rt *Router) checkOracleAllowance(ctx context.Context, p NodeProvisioner, provider, region, size string, usage *provision.OracleUsage) (string, error) {
+	return rt.checkOracleAllowanceFor(ctx, p, provider, "", region, size, usage)
+}
+
+// checkOracleAllowanceFor counts pending creates of one account only, so two Oracle
+// accounts keep separate allowances. An empty accountID is the default account.
+func (rt *Router) checkOracleAllowanceFor(ctx context.Context, p NodeProvisioner, provider, accountID, region, size string, usage *provision.OracleUsage) (string, error) {
 	if provider != "oracle" {
 		return "", nil
 	}
@@ -118,7 +125,7 @@ func (rt *Router) checkOracleAllowance(ctx context.Context, p NodeProvisioner, p
 			return reason, nil
 		}
 	}
-	pending, err := rt.oraclePendingUse(ctx)
+	pending, err := rt.oraclePendingUse(ctx, accountID)
 	if err != nil {
 		return "", err
 	}
@@ -145,16 +152,24 @@ func (rt *Router) checkOracleAllowance(ctx context.Context, p NodeProvisioner, p
 	return "", nil
 }
 
+// oracleAccountKey maps the empty id of legacy rows to the default account.
+func oracleAccountKey(id string) string {
+	if id == "" {
+		return "oracle" + store.CloudAccountDefaultSuffix
+	}
+	return id
+}
+
 // oraclePendingUse sums Oracle rows that may not be visible to OCI yet
 // because no server id was recorded, so concurrent creates cannot both pass.
-func (rt *Router) oraclePendingUse(ctx context.Context) (provision.OracleUsage, error) {
+func (rt *Router) oraclePendingUse(ctx context.Context, accountID string) (provision.OracleUsage, error) {
 	var out provision.OracleUsage
 	rows, err := rt.nodeProvisions.ListNodeProvisions(ctx)
 	if err != nil {
 		return out, fmt.Errorf("list node provisions: %w", err)
 	}
 	for _, r := range rows {
-		if r.Provider != "oracle" || r.ProviderServerID != "" || !provisionCountsAgainstCap(r) {
+		if r.Provider != "oracle" || r.ProviderServerID != "" || !provisionCountsAgainstCap(r) || oracleAccountKey(r.AccountID) != oracleAccountKey(accountID) {
 			continue
 		}
 		shape, oc, mem, serr := oracleSizeShape(r.Size)
@@ -184,16 +199,23 @@ type oracleStoredCredential struct {
 	Region          string `json:"region"`
 	CompartmentOCID string `json:"compartment_ocid"`
 	SubnetOCID      string `json:"subnet_ocid"`
+	SessionToken    string `json:"session_token,omitempty"`
 }
 
 // oracleCredentialValue validates the API key fields with the cloud
 // connection validators (shapes, key strength, fingerprint recomputed from
 // the key) and returns the JSON to seal. Messages never echo input.
 func oracleCredentialValue(req setNodeProviderCredentialRequest) (value, msg string) {
+	return oracleCredentialValueOpt(req, true)
+}
+
+// oracleCredentialValueOpt lets a cloud account omit the subnet: reads and instance
+// actions need none, and a launch without one is refused with a clear message.
+func oracleCredentialValueOpt(req setNodeProviderCredentialRequest, requireSubnet bool) (value, msg string) {
 	if req.PrivateKeyPEM == "" || req.TenancyOCID == "" || req.UserOCID == "" || req.Fingerprint == "" || req.CompartmentOCID == "" || req.Region == "" {
 		return "", "tenancy_ocid, user_ocid, fingerprint, private_key_pem, region and compartment_ocid are required"
 	}
-	if !oracleSubnetOCIDRe.MatchString(req.SubnetOCID) {
+	if (requireSubnet || req.SubnetOCID != "") && !oracleSubnetOCIDRe.MatchString(req.SubnetOCID) {
 		return "", "subnet_ocid is required and must be a subnet OCID"
 	}
 	cred := cloudconn.OracleCredential{
@@ -203,7 +225,7 @@ func oracleCredentialValue(req setNodeProviderCredentialRequest) (value, msg str
 	if err := cloudconn.ValidateOracle(cred); err != nil {
 		return "", "the Oracle credential is not valid: " + sanitizeProviderErr(err)
 	}
-	encoded, err := json.Marshal(oracleStoredCredential{
+	encoded, err := json.Marshal(oracleStoredCredential{ //nolint:gosec // credential blob written to the encrypted store
 		TenancyOCID: req.TenancyOCID, UserOCID: req.UserOCID, Fingerprint: req.Fingerprint, PrivateKeyPEM: req.PrivateKeyPEM,
 		Region: req.Region, CompartmentOCID: req.CompartmentOCID, SubnetOCID: req.SubnetOCID,
 	}) //nolint:gosec // sealed by nodeProviderSecrets.SetValue, never logged or returned
@@ -222,7 +244,7 @@ func (rt *Router) newOracleProvisioner(token string) (NodeProvisioner, error) {
 	}
 	cred := provision.OracleCredential{
 		TenancyOCID: c.TenancyOCID, UserOCID: c.UserOCID, Fingerprint: c.Fingerprint, PrivateKeyPEM: c.PrivateKeyPEM,
-		CompartmentOCID: c.CompartmentOCID, SubnetOCID: c.SubnetOCID, Region: c.Region,
+		CompartmentOCID: c.CompartmentOCID, SubnetOCID: c.SubnetOCID, Region: c.Region, SessionToken: c.SessionToken,
 	}
 	settings := rt.oracleSettings(context.Background())
 	if rt.oracleTestBase != "" {

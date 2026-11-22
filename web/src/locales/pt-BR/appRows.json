@@ -61,12 +61,40 @@
   },
   "description": "Descrição: {{text}}",
   "card": {
-    "noPreview": "Sem prévia",
+    "noPreviewYet": "Ainda sem pré-visualização",
+    "previewQueued": "Pré-visualização na fila",
+    "previewRendering": "Gerando pré-visualização",
+    "previewFailed": "Prévia indisponível",
     "noDomain": "Sem domínio",
     "staticSite": "Site estático",
     "lastDeploy": "Implantado",
     "empty": "Nenhum app corresponde a estes filtros.",
     "listLabel": "Apps",
     "loading": "Carregando apps"
+  },
+  "kind": {
+    "badge": {
+      "api": "API",
+      "worker": "Worker",
+      "cron": "Cron",
+      "database": "Banco de dados"
+    },
+    "cardLabel": "Cartão {{kind}} de {{name}}",
+    "ready": {
+      "true": "Pronto",
+      "false": "Não pronto",
+      "unknown": "Prontidão desconhecida"
+    },
+    "neverDeployed": "Ainda não implantado",
+    "replicas_one": "{{count}} réplica",
+    "replicas_other": "{{count}} réplicas",
+    "nextRun": "Próxima execução",
+    "lastRun": "Última execução",
+    "notScheduled": "Não agendado",
+    "neverRan": "Nunca executou",
+    "restarts_one": "{{count}} reinício",
+    "restarts_other": "{{count}} reinícios",
+    "restartsRising": "O número de reinícios está aumentando",
+    "dbSize": "Tamanho do banco {{size}}"
   }
 }

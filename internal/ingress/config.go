@@ -526,26 +526,7 @@ func NewInternalIssuer() InternalIssuer {
 
 // ACMEIssuer is Caddy's "acme" TLS issuer (tls.issuance.acme): real ACME
 // issuance (Let's Encrypt or any RFC 8555-compatible CA), as opposed to
-// InternalIssuer's fully offline, self-signed certificates. Field names
-// and the "module" value ("acme", resolved within the tls.issuance
-// namespace the same way InternalIssuer's "internal" is, per
-// AutomationPolicy.Issuers' inline_key=module tag) are verified against
-// the vendored source for the pinned caddyserver/caddy/v2 version this
-// module uses (modules/caddytls/acmeissuer.go's ACMEIssuer struct and
-// its CaddyModule ID "tls.issuance.acme"), not guessed: this package
-// intentionally hand-rolls the wire-compatible subset of Caddy's own
-// config types rather than importing them directly (see this file's
-// package doc comment), and ACMEIssuer only needs the three fields an
-// operator-facing settings form actually collects (email, an optional
-// directory URL override, and the module discriminator), not the full
-// surface (challenges config, account key, EAB, and so on) Caddy's own
-// struct exposes for cases this codebase doesn't build a UI for yet.
-//
-// ADR 005's Verified section is explicit that only the internal issuer
-// path was proven end to end by that spike; this type exists to close
-// that named, expected gap (see internal/api/certificates.go's own doc
-// comment referencing the same open item), not to introduce a new
-// architecture decision.
+// InternalIssuer's fully offline, self-signed certificates. Field names.
 type ACMEIssuer struct {
 	Module string `json:"module"`
 	// Email is the ACME account contact address, Caddy's own "email"

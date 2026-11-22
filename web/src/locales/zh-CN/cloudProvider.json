@@ -340,5 +340,29 @@
       "paste": "粘贴到“连接”中",
       "verify": "Levelrail 用只读检查进行验证"
     }
+  },
+  "linkedAccounts": {
+    "title": "云账户",
+    "manage": "在云账户中管理",
+    "add": "添加账户",
+    "active": "正常",
+    "attention": "需要关注",
+    "relogin": "需要重新登录",
+    "managed": "默认",
+    "legacyHint": "下方较早的单一凭据为兼容而保留,请通过账户管理此提供商。",
+    "manageShort": "管理",
+    "addAnother": "添加其他账户",
+    "verified": "上次验证",
+    "useCredential": "改用单一凭据"
+  },
+  "accountSection": {
+    "switch": "账户",
+    "loading": "正在加载账户数据",
+    "error": "无法加载：{{message}}",
+    "retry": "重试",
+    "verifyOk": "凭据已验证",
+    "verifyFail": "凭据检查失败",
+    "noProbe": "此账户类型没有访问检查。",
+    "check": "检查访问"
   }
 }

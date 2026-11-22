@@ -248,6 +248,7 @@
         "hint": "Same machine, not safe"
       }
     },
+    "fieldsUnavailable": "The form fields could not be loaded. Reload the page and try again.",
     "localRootHint": "Stored under {{root}}. Enter a folder inside it.",
     "localWarning": "Backups stored on this machine's own disk are lost with the machine. They protect against a bad deploy or a deleted table, not against a dead disk, ransomware or a deleted server. Use this to try things out, then add an off-site destination.",
     "field": {
@@ -490,5 +491,136 @@
     "restoreCancel": "Cancel",
     "restoreClose": "Close",
     "restoreAccepted": "Restore started. Safety dump: {{id}}. It runs in the background, so check run history and the audit log for the outcome."
+  },
+  "sftpTarget": {
+    "host": "Server",
+    "path": "Remote directory",
+    "pathHint": "Relative paths start in the login directory of the SSH user. Paths containing .. are refused.",
+    "username": "SSH username",
+    "auth": "Authentication",
+    "authPassword": "Password",
+    "authKey": "Private key",
+    "password": "Password",
+    "privateKey": "Private key (PEM or OpenSSH format)",
+    "passphrase": "Key passphrase (optional)",
+    "hostKeyTitle": "Server host key",
+    "hostKeyHint": "Levelrail only connects to a server whose key matches the one you pin here. Fetch the key, then compare its fingerprint with one you got from the server owner.",
+    "fetchKey": "Fetch host key",
+    "fetching": "Fetching...",
+    "keyType": "Key type",
+    "fingerprint": "Fingerprint",
+    "confirm": "I checked this fingerprint against the server"
+  },
+  "fields": {
+    "backupTarget": {
+      "name": {
+        "label": "Name",
+        "help": "Display name shown in the dashboard and the CLI."
+      },
+      "provider": {
+        "label": "Provider",
+        "help": "Where the backups are stored."
+      },
+      "s3": {
+        "bucket": {
+          "label": "Bucket",
+          "help": "Name of the bucket that receives the backups."
+        },
+        "region": {
+          "label": "Region",
+          "help": "Region of the bucket. Custom providers require it."
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "help": "S3-compatible endpoint URL. R2 and custom providers require it."
+        },
+        "access_key_id": {
+          "label": "Access key ID",
+          "help": "Access key of the credentials."
+        },
+        "secret_access_key": {
+          "label": "Secret access key",
+          "help": "Stored encrypted and never shown again."
+        }
+      },
+      "custom": {
+        "region": {
+          "label": "Region",
+          "help": "Region of the bucket. Custom providers require it."
+        }
+      },
+      "local": {
+        "path": {
+          "label": "Directory",
+          "help": "Folder under the backup root of the control plane."
+        }
+      },
+      "webdav": {
+        "endpoint": {
+          "label": "Share URL",
+          "help": "https address of the WebDAV share."
+        },
+        "directory": {
+          "label": "Remote directory",
+          "help": "Directory on the share that receives the backups."
+        },
+        "username": {
+          "label": "Username",
+          "help": "Account name used to sign in."
+        },
+        "password": {
+          "label": "Password",
+          "help": "Stored encrypted and never shown again."
+        },
+        "ca_bundle": {
+          "label": "CA bundle",
+          "help": "Optional PEM certificates to trust. Stored encrypted and never shown again."
+        }
+      },
+      "sftp": {
+        "endpoint": {
+          "label": "Server",
+          "help": "Host or HOST:PORT of the SFTP server."
+        },
+        "path": {
+          "label": "Remote directory",
+          "help": "Relative paths start in the login directory. Paths containing .. are refused."
+        },
+        "username": {
+          "label": "Username",
+          "help": "Account name used to sign in."
+        },
+        "auth": {
+          "label": "Authentication",
+          "help": "Sign in with a password or a private key."
+        },
+        "password": {
+          "label": "Password",
+          "help": "Stored encrypted and never shown again."
+        },
+        "private_key": {
+          "label": "Private key",
+          "help": "PEM or OpenSSH key. Stored encrypted and never shown again."
+        },
+        "private_key_passphrase": {
+          "label": "Key passphrase",
+          "help": "Only needed for an encrypted key. Stored encrypted and never shown again."
+        },
+        "host_key": {
+          "label": "Host key",
+          "help": "Pinned server key. Compare its fingerprint with one from the server owner."
+        }
+      }
+    }
+  },
+  "restoreTest": {
+    "button": "Test restore",
+    "neverRun": "Last restore test: never run",
+    "running": "Restore test running",
+    "ok": "Last restore test: ok {{when}}, {{seconds}}s, {{size}}",
+    "failed": "Last restore test: failed {{when}}, {{seconds}}s",
+    "startedTitle": "Restore test started.",
+    "startedBody": "The result appears here once it finishes.",
+    "startFailed": "Could not start restore test."
   }
 }

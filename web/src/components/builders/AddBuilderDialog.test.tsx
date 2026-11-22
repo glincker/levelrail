@@ -63,7 +63,7 @@ describe('AddBuilderDialog', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Create token' }))
     await waitFor(() => {
       expect(screen.getByLabelText('Builder join command')).toHaveTextContent(
-        'levelrail builder join --server',
+        'levelrail-cli builder join --server',
       )
     })
     expect(screen.getByLabelText('Builder join command')).toHaveTextContent(

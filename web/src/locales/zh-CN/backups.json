@@ -247,6 +247,7 @@
         "hint": "同一台机器，不安全"
       }
     },
+    "fieldsUnavailable": "无法加载表单字段。请刷新页面后重试。",
     "localRootHint": "存放在 {{root}} 之下。请输入其中的一个文件夹。",
     "localWarning": "存放在这台机器自身磁盘上的备份会随机器一起丢失。它们能防范错误的部署或被删除的表，但无法防范磁盘损坏、勒索软件或被删除的服务器。请仅用于试用，之后再添加异地目标位置。",
     "field": {
@@ -481,5 +482,136 @@
     "restoreCancel": "取消",
     "restoreClose": "关闭",
     "restoreAccepted": "恢复已开始。安全转储：{{id}}。它在后台运行，请在运行历史和审计日志中查看结果。"
+  },
+  "sftpTarget": {
+    "host": "服务器",
+    "path": "远程目录",
+    "pathHint": "相对路径从 SSH 用户的登录目录开始。包含 .. 的路径会被拒绝。",
+    "username": "SSH 用户名",
+    "auth": "认证方式",
+    "authPassword": "密码",
+    "authKey": "私钥",
+    "password": "密码",
+    "privateKey": "私钥(PEM 或 OpenSSH 格式)",
+    "passphrase": "密钥口令(可选)",
+    "hostKeyTitle": "服务器主机密钥",
+    "hostKeyHint": "Levelrail 只会连接密钥与此处固定的密钥一致的服务器。请获取密钥,并将其指纹与服务器所有者提供的指纹进行比对。",
+    "fetchKey": "获取主机密钥",
+    "fetching": "获取中...",
+    "keyType": "密钥类型",
+    "fingerprint": "指纹",
+    "confirm": "我已与服务器核对此指纹"
+  },
+  "fields": {
+    "backupTarget": {
+      "name": {
+        "label": "名称",
+        "help": "在控制台和 CLI 中显示的名称。"
+      },
+      "provider": {
+        "label": "提供商",
+        "help": "备份的存储位置。"
+      },
+      "s3": {
+        "bucket": {
+          "label": "存储桶",
+          "help": "接收备份的存储桶名称。"
+        },
+        "region": {
+          "label": "区域",
+          "help": "存储桶所在区域。自定义提供商必须填写。"
+        },
+        "endpoint": {
+          "label": "端点",
+          "help": "兼容 S3 的端点 URL。R2 和自定义提供商必须填写。"
+        },
+        "access_key_id": {
+          "label": "访问密钥 ID",
+          "help": "凭据的访问密钥。"
+        },
+        "secret_access_key": {
+          "label": "机密访问密钥",
+          "help": "加密保存,之后不会再显示。"
+        }
+      },
+      "custom": {
+        "region": {
+          "label": "区域",
+          "help": "存储桶所在区域。自定义提供商必须填写。"
+        }
+      },
+      "local": {
+        "path": {
+          "label": "目录",
+          "help": "控制平面备份根目录下的文件夹。"
+        }
+      },
+      "webdav": {
+        "endpoint": {
+          "label": "共享地址",
+          "help": "WebDAV 共享的 https 地址。"
+        },
+        "directory": {
+          "label": "远程目录",
+          "help": "共享中接收备份的目录。"
+        },
+        "username": {
+          "label": "用户名",
+          "help": "用于登录的账户名。"
+        },
+        "password": {
+          "label": "密码",
+          "help": "加密保存,之后不会再显示。"
+        },
+        "ca_bundle": {
+          "label": "CA 证书包",
+          "help": "可选的受信任 PEM 证书。加密保存,之后不会再显示。"
+        }
+      },
+      "sftp": {
+        "endpoint": {
+          "label": "服务器",
+          "help": "SFTP 服务器的主机或 主机:端口。"
+        },
+        "path": {
+          "label": "远程目录",
+          "help": "相对路径从登录目录开始。包含 .. 的路径会被拒绝。"
+        },
+        "username": {
+          "label": "用户名",
+          "help": "用于登录的账户名。"
+        },
+        "auth": {
+          "label": "认证方式",
+          "help": "使用密码或私钥登录。"
+        },
+        "password": {
+          "label": "密码",
+          "help": "加密保存,之后不会再显示。"
+        },
+        "private_key": {
+          "label": "私钥",
+          "help": "PEM 或 OpenSSH 格式的密钥。加密保存,之后不会再显示。"
+        },
+        "private_key_passphrase": {
+          "label": "密钥口令",
+          "help": "仅加密密钥需要。加密保存,之后不会再显示。"
+        },
+        "host_key": {
+          "label": "主机密钥",
+          "help": "已固定的服务器密钥。请将其指纹与服务器所有者提供的核对。"
+        }
+      }
+    }
+  },
+  "restoreTest": {
+    "button": "测试恢复",
+    "neverRun": "上次恢复测试：从未运行",
+    "running": "恢复测试运行中",
+    "ok": "上次恢复测试：成功 {{when}}，{{seconds}} 秒，{{size}}",
+    "failed": "上次恢复测试：失败 {{when}}，{{seconds}} 秒",
+    "startedTitle": "恢复测试已开始。",
+    "startedBody": "完成后结果会显示在此处。",
+    "startFailed": "无法开始恢复测试。"
   }
 }

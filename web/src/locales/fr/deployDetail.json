@@ -368,6 +368,7 @@
     "nodeLabel": "{{stage}}, {{status}}, {{duration}}",
     "barLabel": "Barre {{stage}}, {{percent}} pour cent de la chronologie",
     "totals": "Durée totale {{wall}}, somme des étapes {{stages}}.",
+    "totalsRunning": "En cours depuis {{wall}}, étapes jusqu'ici {{stages}}.",
     "gap": {
       "outside": "{{time}} se sont écoulées entre les étapes ou en dehors.",
       "overlap": "Les étapes se sont chevauchées de {{time}}."

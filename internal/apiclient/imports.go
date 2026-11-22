@@ -66,16 +66,41 @@ type ImportService struct {
 
 // ImportPlan mirrors internal/importplan's DeploymentPlan.
 type ImportPlan struct {
-	Source             string          `json:"source"`
-	SuggestedName      string          `json:"suggested_name"`
-	Deploy             string          `json:"deploy"`
-	RepoURL            string          `json:"repo_url,omitempty"`
-	Ref                string          `json:"ref,omitempty"`
-	ComposeYAML        string          `json:"compose_yaml,omitempty"`
-	Services           []ImportService `json:"services"`
-	DomainSuggestion   string          `json:"domain_suggestion,omitempty"`
-	Warnings           []ImportWarning `json:"warnings"`
-	MissingRequiredEnv []string        `json:"missing_required_env"`
+	Source             string              `json:"source"`
+	SuggestedName      string              `json:"suggested_name"`
+	Deploy             string              `json:"deploy"`
+	RepoURL            string              `json:"repo_url,omitempty"`
+	Ref                string              `json:"ref,omitempty"`
+	ComposeYAML        string              `json:"compose_yaml,omitempty"`
+	Services           []ImportService     `json:"services"`
+	DomainSuggestion   string              `json:"domain_suggestion,omitempty"`
+	Warnings           []ImportWarning     `json:"warnings"`
+	MissingRequiredEnv []string            `json:"missing_required_env"`
+	Resources          []ImportResource    `json:"resources,omitempty"`
+	SecretRefs         []string            `json:"secret_refs,omitempty"`
+	Unsupported        []ImportUnsupported `json:"unsupported,omitempty"`
+	Conflicts          []ImportConflict    `json:"conflicts,omitempty"`
+}
+
+// ImportResource is one thing a plan would create.
+type ImportResource struct {
+	Kind   string `json:"kind"`
+	Name   string `json:"name"`
+	Detail string `json:"detail,omitempty"`
+}
+
+// ImportUnsupported is a source feature the import cannot carry over.
+type ImportUnsupported struct {
+	Service     string `json:"service,omitempty"`
+	Feature     string `json:"feature"`
+	Reason      string `json:"reason"`
+	Alternative string `json:"alternative,omitempty"`
+}
+
+// ImportConflict is a planned name that already exists.
+type ImportConflict struct {
+	Kind string `json:"kind"`
+	Name string `json:"name"`
 }
 
 // PlanImport calls POST /api/v1/imports/plan. It creates nothing.

@@ -236,7 +236,7 @@ jobs:
           retention-days: 1
 
   build-agent-binaries:
-    name: Build agent (linux/${{ matrix.goarch }})
+    name: Build agent (${{ matrix.goos }}/${{ matrix.goarch }})
     if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -245,6 +245,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        goos: [linux, darwin]
         goarch: [amd64, arm64]
     steps:
       - name: Checkout
@@ -259,16 +260,16 @@ jobs:
 
       - name: Build
         env:
-          GOOS: linux
+          GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
-        run: go build -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${{ env.RELEASE_TAG }}" -o "levelrail-agent-linux-${{ matrix.goarch }}" ./cmd/levelrail-agent
+        run: go build -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${{ env.RELEASE_TAG }}" -o "levelrail-agent-${{ matrix.goos }}-${{ matrix.goarch }}" ./cmd/levelrail-agent
 
       - name: Upload binary
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: agent-binary-${{ matrix.goarch }}
-          path: levelrail-agent-linux-${{ matrix.goarch }}
+          name: agent-binary-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: levelrail-agent-${{ matrix.goos }}-${{ matrix.goarch }}
           retention-days: 1
 
   build-agent-packages:
@@ -297,7 +298,7 @@ jobs:
       - name: Download agent binary
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: agent-binary-${{ matrix.goarch }}
+          name: agent-binary-linux-${{ matrix.goarch }}
           path: agent-bin
 
       # nfpm turns a prerelease like 0.2.0-beta.16 into 0.2.0~beta.16, so
@@ -482,7 +483,7 @@ jobs:
           fi
 
   publish-homebrew:
-    name: Publish CLI to Homebrew
+    name: Publish CLI and agent to Homebrew
     needs: release
     if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
@@ -518,11 +519,12 @@ jobs:
           git clone --depth 1 git@github.com:glincker/homebrew-tap.git tap
           mkdir -p tap/Formula
           scripts/render-homebrew-formula.sh "${{ env.RELEASE_TAG }}" dist/checksums.txt > tap/Formula/levelrail-cli.rb
+          scripts/render-homebrew-agent-formula.sh "${{ env.RELEASE_TAG }}" dist/checksums.txt > tap/Formula/levelrail-agent.rb
           cd tap
           git config user.name "levelrail release"
           git config user.email "support@levelrail.com"
-          git add Formula/levelrail-cli.rb
-          git diff --cached --quiet || git commit -m "levelrail-cli ${{ env.RELEASE_TAG }}"
+          git add Formula/levelrail-cli.rb Formula/levelrail-agent.rb
+          git diff --cached --quiet || git commit -m "levelrail-cli and levelrail-agent ${{ env.RELEASE_TAG }}"
           git push
           rm -f ~/.ssh/tap_key
 

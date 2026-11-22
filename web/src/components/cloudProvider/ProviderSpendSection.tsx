@@ -1,3 +1,5 @@
+import { providerAccounts } from '../../lib/providerConnectionState'
+import { AccountSpendSection } from './ProviderAccountSections'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -92,7 +94,7 @@ function Stat({
   )
 }
 
-export function ProviderSpendSection({
+function LegacyProviderSpendSection({
   provider,
   resource,
   labels,
@@ -199,5 +201,14 @@ export function ProviderSpendSection({
       <RefreshFeedback error={refresh.error} />
       {body}
     </section>
+  )
+}
+
+// Account-backed data wins whenever a cloud account exists; the credential reads are the fallback.
+export function ProviderSpendSection(props: SectionProps) {
+  return providerAccounts(props.resource).length > 0 ? (
+    <AccountSpendSection {...props} />
+  ) : (
+    <LegacyProviderSpendSection {...props} />
   )
 }

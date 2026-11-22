@@ -199,7 +199,7 @@ func (c *Client) UpdatePipeline(ctx context.Context, app, name string, req Pipel
 
 // DeletePipeline calls DELETE /api/v1/apps/{app}/pipelines/{name}.
 func (c *Client) DeletePipeline(ctx context.Context, app, name string) error {
-	return c.do(ctx, http.MethodDelete, pipelinePath(app, "pipelines", name), nil, nil)
+	return c.del(ctx, pipelinePath(app, "pipelines", name))
 }
 
 // ValidatePipeline calls POST /api/v1/pipelines/validate.

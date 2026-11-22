@@ -33,9 +33,7 @@ type HeartbeatUpdate struct {
 
 // GetHeartbeat calls GET /api/v1/settings/heartbeat.
 func (c *Client) GetHeartbeat(ctx context.Context) (HeartbeatResource, error) {
-	var out HeartbeatResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/heartbeat", nil, &out)
-	return out, err
+	return getJSON[HeartbeatResource](ctx, c, "/api/v1/settings/heartbeat")
 }
 
 // UpdateHeartbeat calls PUT /api/v1/settings/heartbeat.

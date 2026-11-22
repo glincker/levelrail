@@ -211,7 +211,8 @@
   "promote": {
     "action": "Mettre en ligne",
     "confirmTitle": "Mettre ce déploiement en ligne pour {{name}} ?",
-    "confirmBody": "Les domaines propres du site servent ce déploiement immédiatement. Son URL dédiée continue de fonctionner."
+    "confirmBody": "Les domaines propres du site servent ce déploiement immédiatement. Son URL dédiée continue de fonctionner.",
+    "pending": "Mise en ligne"
   },
   "deployUrl": {
     "copy": "Copier l'URL de déploiement",
@@ -317,7 +318,18 @@
     "title": "Déploiements récents",
     "viewAll": "Tout voir",
     "none": "Aucun déploiement pour l'instant.",
-    "live": "En ligne"
+    "live": "En ligne",
+    "copySha": "Copier le hash du commit",
+    "copied": "Hash du commit copié",
+    "col": {
+      "commit": "Commit",
+      "message": "Message",
+      "state": "Statut",
+      "branch": "Branche",
+      "author": "Auteur",
+      "when": "Quand",
+      "actions": "Actions de déploiement"
+    }
   },
   "routes": {
     "testTitle": "Tester une URL",
@@ -567,5 +579,69 @@
     "codes": "Codes de statut",
     "none": "Rien pour l'instant.",
     "privacy": "Calculé à partir du journal d'accès edge. Aucun cookie, adresse client ni chaîne de requête n'est stocké. Périodes jusqu'à {{days}} jours."
+  },
+  "overview": {
+    "strip": {
+      "label": "Dernier déploiement en production",
+      "noMessage": "Aucun message de commit",
+      "none": "Rien de déployé pour le moment"
+    },
+    "state": {
+      "succeeded": "Prêt",
+      "running": "En construction",
+      "failed": "Échec",
+      "queued": "En file d'attente",
+      "held": "En attente",
+      "canceled": "Annulé",
+      "superseded": "Remplacé",
+      "pending": "En attente",
+      "refused": "Refusé",
+      "awaiting_approval": "En attente d'approbation",
+      "unknown": "Inconnu"
+    },
+    "duration": "{{minutes}} min {{seconds}} s",
+    "wiring": {
+      "title": "Comment ce site est relié",
+      "domains": "Domaines",
+      "noDomains": "Aucun domaine pour le moment.",
+      "tls": {
+        "healthy": "TLS ok",
+        "expiring_soon": "TLS bientôt expiré",
+        "expired": "TLS expiré",
+        "unknown": "TLS en attente"
+      },
+      "more": "+{{count}} de plus",
+      "forms": "Formulaires",
+      "noForms": "Aucun envoi de formulaire pour le moment.",
+      "addForm": "Ajouter un formulaire",
+      "submissions": "Envois : {{count}}",
+      "routes": "Routes et règles",
+      "noRoutes": "Aucune règle pour le moment.",
+      "addRule": "Ajouter une règle",
+      "ruleSummary": "Règles {{rules}}, blocs d'en-têtes {{headers}}, apps proxifiées {{proxied}}",
+      "on": "Activé",
+      "off": "Désactivé",
+      "lastDeploy": "Dernier déploiement : {{state}}",
+      "noDeploy": "Pas encore déployé",
+      "password": "Protection par mot de passe",
+      "cleanUrls": "URL propres",
+      "spa": "Repli pour application monopage",
+      "openSettings": "Ouvrir les paramètres",
+      "outTitle": "Se connecte à",
+      "apps": "Apps proxifiées",
+      "noApps": "Aucune",
+      "repo": "Dépôt Git",
+      "notConnected": "Non connecté",
+      "hook": "Hook de déploiement",
+      "tokens": "Tokens de déploiement CI",
+      "tokensActive": "{{count}} actif(s)",
+      "none": "Aucun",
+      "connect": "Connecter",
+      "connected": "Connecté"
+    },
+    "previews": {
+      "title": "Previews récentes",
+      "none": "Aucune preview de branche pour le moment."
+    }
   }
 }

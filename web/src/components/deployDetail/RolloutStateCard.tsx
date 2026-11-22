@@ -53,10 +53,10 @@ export function RolloutStateCard({ appName }: { appName: string }) {
   return (
     <section
       aria-label={t('rolloutState.title')}
-      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border px-4 py-3"
+      className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border px-3 py-1.5"
     >
       <RotateCcwGlassIcon
-        className="size-5 shrink-0 text-muted-foreground"
+        className="size-4 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
       <h3 className="text-sm font-semibold text-foreground">

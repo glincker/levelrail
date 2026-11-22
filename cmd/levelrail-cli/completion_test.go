@@ -169,18 +169,61 @@ func extractDispatchedVerbs(t *testing.T) map[string]bool {
 			t.Fatalf("parse %s: %v", f, err)
 		}
 		ast.Inspect(file, func(n ast.Node) bool {
+			if fd, ok := n.(*ast.FuncDecl); ok && fd.Name.Name == "isCloudAWSService" {
+				ast.Inspect(fd, func(m ast.Node) bool {
+					if sw, ok := m.(*ast.SwitchStmt); ok {
+						collectCaseStrings(sw, found)
+					}
+					return true
+				})
+			}
+			if vs, ok := n.(*ast.ValueSpec); ok && len(vs.Names) == 1 && vs.Names[0].Name == "cloudPowerVerbs" && len(vs.Values) == 1 {
+				if cl, ok := vs.Values[0].(*ast.CompositeLit); ok {
+					collectAPICmdKeys(cl, found, true)
+				}
+			}
 			if cl, ok := n.(*ast.CompositeLit); ok {
-				collectAPICmdKeys(cl, found)
+				collectAPICmdKeys(cl, found, false)
 			}
 			sw, ok := n.(*ast.SwitchStmt)
-			if !ok || !isArgsZero(sw.Tag) {
+			if !ok {
 				return true
 			}
-			collectCaseStrings(sw, found)
+			if sw.Tag == nil {
+				collectVerbEqCases(sw, found)
+				return true
+			}
+			if isArgsZero(sw.Tag) {
+				collectCaseStrings(sw, found)
+			}
 			return true
 		})
 	}
 	return found
+}
+
+// collectVerbEqCases counts `case verb == "x"` clauses of a tagless switch, the nested cloud instances dispatch.
+func collectVerbEqCases(sw *ast.SwitchStmt, found map[string]bool) {
+	for _, stmt := range sw.Body.List {
+		cc, ok := stmt.(*ast.CaseClause)
+		if !ok {
+			continue
+		}
+		for _, expr := range cc.List {
+			be, ok := expr.(*ast.BinaryExpr)
+			if !ok || be.Op != token.EQL {
+				continue
+			}
+			if id, ok := be.X.(*ast.Ident); !ok || id.Name != "verb" {
+				continue
+			}
+			if lit, ok := be.Y.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+				if v, err := strconv.Unquote(lit.Value); err == nil {
+					found[v] = true
+				}
+			}
+		}
+	}
 }
 
 func isArgsZero(expr ast.Expr) bool {
@@ -223,12 +266,12 @@ func collectCaseStrings(sw *ast.SwitchStmt, found map[string]bool) {
 }
 
 // collectAPICmdKeys counts the keys of a map[string]apiCmd literal as dispatched verbs, since dispatchSub tables have no switch.
-func collectAPICmdKeys(cl *ast.CompositeLit, found map[string]bool) {
+func collectAPICmdKeys(cl *ast.CompositeLit, found map[string]bool, anyValue bool) {
 	mt, ok := cl.Type.(*ast.MapType)
 	if !ok {
 		return
 	}
-	if v, ok := mt.Value.(*ast.Ident); !ok || v.Name != "apiCmd" {
+	if v, ok := mt.Value.(*ast.Ident); !ok || !anyValue && v.Name != "apiCmd" {
 		return
 	}
 	for _, el := range cl.Elts {

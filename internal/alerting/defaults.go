@@ -24,11 +24,20 @@ type DefaultsConfig struct {
 	CertExpiryDays []int
 	// MonitorsEnabled adds the monitor_down default; the monitor engine is off unless APP_MONITORS_ENABLED is true.
 	MonitorsEnabled bool
+	// CrashloopRestarts and ErrorRatePercent seed the stored thresholds; live settings override them at evaluation.
+	CrashloopRestarts int
+	ErrorRatePercent  int
 }
 
 // DefaultsConfigFromEnv reads APP_DEFAULT_ALERT_CERT_DAYS (comma-separated days, e.g. "14,7,3,1"); bad or empty input keeps the defaults.
 func DefaultsConfigFromEnv(lookup func(string) string) DefaultsConfig {
-	cfg := DefaultsConfig{CertExpiryDays: DefaultCertExpiryDays}
+	cfg := DefaultsConfig{CertExpiryDays: DefaultCertExpiryDays, CrashloopRestarts: 3, ErrorRatePercent: 5}
+	if n, err := strconv.Atoi(strings.TrimSpace(lookup("APP_ALERTS_DEFAULT_CRASHLOOP_RESTARTS"))); err == nil && n >= 2 {
+		cfg.CrashloopRestarts = n
+	}
+	if n, err := strconv.Atoi(strings.TrimSpace(lookup("APP_ALERTS_DEFAULT_5XX_PERCENT"))); err == nil && n >= 1 && n <= 100 {
+		cfg.ErrorRatePercent = n
+	}
 	if days := parseDays(lookup("APP_DEFAULT_ALERT_CERT_DAYS")); len(days) > 0 {
 		cfg.CertExpiryDays = days
 	}
@@ -110,6 +119,23 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 			severity  string
 		}{"monitor-down", "An uptime monitor is down", KindMonitorDown, SeverityCritical})
 	}
+	restarts, pct := cfg.CrashloopRestarts, cfg.ErrorRatePercent
+	if restarts < 2 {
+		restarts = 3
+	}
+	if pct < 1 || pct > 100 {
+		pct = 5
+	}
+	specs = append(specs,
+		DefaultRuleSpec{Key: DefaultCrashloopRuleID, Rule: Rule{
+			Name: "An app is crash looping", Kind: KindCrashloop, Severity: SeverityCritical,
+			RestartCountThreshold: restarts, RestartWindow: 10 * time.Minute,
+		}},
+		DefaultRuleSpec{Key: DefaultErrorRateRuleID, Rule: Rule{
+			Name: "An app is returning many 5xx errors", Kind: KindThreshold, Severity: SeverityWarning,
+			Metric: MetricRequestErrorRate5xxPct, Comparator: GreaterOrEqual, Threshold: float64(pct), ForDuration: 5 * time.Minute,
+		}},
+	)
 	for _, p := range platform {
 		specs = append(specs, DefaultRuleSpec{Key: defaultRulePrefix + p.key, Rule: Rule{Name: p.name, Kind: p.kind, Severity: p.severity}})
 	}
@@ -152,6 +178,11 @@ func (db *DB) seedOne(ctx context.Context, spec DefaultRuleSpec) error {
 		return fmt.Errorf("alerting: record default seed %q: %w", spec.Key, err)
 	}
 	return nil
+}
+
+// SeedDefaultsFromEnv seeds any default rule that was never seeded, using env-seeded thresholds.
+func (db *DB) SeedDefaultsFromEnv(ctx context.Context) error {
+	return db.SeedDefaults(ctx, DefaultsConfigFromEnv(os.Getenv))
 }
 
 // ListDefaultRules returns the seeded rules that still exist.
@@ -210,4 +241,21 @@ func (db *DB) ResetDefaultRules(ctx context.Context) ([]Rule, error) {
 		return nil, err
 	}
 	return db.ListDefaultRules(ctx)
+}
+
+const digestSentPrefix = "digest-sent-"
+
+// WeeklyDigestSentOn reports whether the weekly digest already went out on day (YYYY-MM-DD).
+func (db *DB) WeeklyDigestSentOn(ctx context.Context, day string) bool {
+	var n int
+	if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM alert_default_seeds WHERE key = ?`, digestSentPrefix+day).Scan(&n); err != nil {
+		return false
+	}
+	return n > 0
+}
+
+// MarkWeeklyDigestSent records the send day so a restart inside the due hour never mails twice.
+func (db *DB) MarkWeeklyDigestSent(ctx context.Context, day string) {
+	_, _ = db.ExecContext(ctx, `INSERT OR IGNORE INTO alert_default_seeds (key, rule_id, seeded_at) VALUES (?, ?, ?)`,
+		digestSentPrefix+day, "", time.Now().UTC().Format(time.RFC3339Nano))
 }

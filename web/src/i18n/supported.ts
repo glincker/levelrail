@@ -7,4 +7,5 @@ export const SUPPORTED_LANGUAGES = [
   'pt-BR',
   'ja',
   'zh-CN',
+  'ru',
 ]

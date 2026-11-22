@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -21,6 +22,9 @@ type fakeChrome struct {
 	navError string
 	png      []byte
 	metrics  map[string]any
+	// paused URLs are sent as Fetch.requestPaused after navigate.
+	paused     []string
+	fetchCalls []string
 }
 
 func (f *fakeChrome) handler() http.Handler {
@@ -63,6 +67,11 @@ func (f *fakeChrome) handler() http.Handler {
 				_ = c.Write(ctx, websocket.MessageText, b)
 			}
 			switch req.Method {
+			case "Fetch.continueRequest", "Fetch.failRequest":
+				f.mu.Lock()
+				f.fetchCalls = append(f.fetchCalls, req.Method+":"+req.Params["requestId"].(string))
+				f.mu.Unlock()
+				reply(map[string]any{})
 			case "Target.createTarget":
 				reply(map[string]string{"targetId": "t1"})
 			case "Target.attachToTarget":
@@ -73,6 +82,9 @@ func (f *fakeChrome) handler() http.Handler {
 					continue
 				}
 				reply(map[string]string{"frameId": "f1"})
+				for i, u := range f.paused {
+					event("Fetch.requestPaused", map[string]any{"requestId": "p" + strconv.Itoa(i), "request": map[string]any{"url": u}})
+				}
 				event("Network.requestWillBeSent", map[string]any{"requestId": "r1"})
 				event("Network.responseReceived", map[string]any{"requestId": "r1", "frameId": "f1", "type": "Document", "response": map[string]any{"url": "http://web:3000/en", "status": f.status}})
 				event("Network.loadingFinished", map[string]any{"requestId": "r1"})

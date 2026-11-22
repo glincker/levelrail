@@ -47,6 +47,9 @@ vi.mock('../../queries/connections', () => ({
   useConnectionCatalog: () => ({ ...state.catalog, refetch: vi.fn() }),
 }))
 
+vi.mock('../cloudAccounts/CloudAccountsSection', () => ({
+  CloudAccountsSection: () => null,
+}))
 vi.mock('../../queries/clusters', () => ({
   useClusters: () => ({
     data: [{ name: 'k1' }, { name: 'k2' }],

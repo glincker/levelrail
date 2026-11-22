@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -54,7 +53,5 @@ func (c *Client) ListAccess(ctx context.Context, app string, o AccessOptions) ([
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out []AccessRecord
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]AccessRecord](ctx, c, path)
 }

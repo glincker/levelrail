@@ -38,6 +38,8 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return runDoctorCloud(prog, args[1:], stdout, stderr, hostprovider.SystemDeps())
 		case "reachability":
 			return runDoctorReachability(prog, args[1:], stdout, stderr, lookupEnv)
+		case "macos":
+			return runDoctorMacOS(prog, args[1:], stdout, stderr, lookupEnv)
 		case "explain":
 			return runDoctorExplain(prog, args[1:], stdout, stderr, lookupEnv)
 		}
@@ -188,6 +190,7 @@ func doctorUsage(prog string) string {
   %[1]s doctor paths [flags]
   %[1]s doctor reachability [flags]
   %[1]s doctor cloud [--json]
+  %[1]s doctor macos [--json]   (offline: Lima, virtualization, disk and ports for the macOS VM runtime)
   %[1]s doctor explain <check-id> [flags]
 
 Runs the control plane's health checks: Docker, disk and inodes, ports,

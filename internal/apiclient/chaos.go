@@ -16,9 +16,7 @@ type ResilienceReport struct {
 
 // GetResilienceReport calls GET /api/v1/resilience.
 func (c *Client) GetResilienceReport(ctx context.Context) (ResilienceReport, error) {
-	var out ResilienceReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/resilience", nil, &out)
-	return out, err
+	return getJSON[ResilienceReport](ctx, c, "/api/v1/resilience")
 }
 
 // RecordChaosResults calls POST /api/v1/resilience/results and returns the stored IDs.

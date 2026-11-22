@@ -1130,5 +1130,23 @@
     "optionalHint": "Serve TLS next to the plain private port so older clients can still connect. The database restarts.",
     "optionalToast": "TLS is now optional, the database will restart",
     "optionalFailed": "Could not switch TLS"
+  },
+  "wiring": {
+    "title": "How this database is wired",
+    "apps": "Connected apps",
+    "noApps": "No app is connected yet.",
+    "outTitle": "Where it runs and who can reach it",
+    "node": "Node",
+    "noNode": "No node",
+    "access": "Access",
+    "private": "Private",
+    "public": "Public",
+    "publicOn": "Public on port {{port}}",
+    "backups": "Backups",
+    "noBackups": "No backup schedule",
+    "project": "Project",
+    "noProject": "No project",
+    "on": "On",
+    "none": "None"
   }
 }

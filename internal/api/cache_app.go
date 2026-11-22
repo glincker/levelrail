@@ -220,9 +220,8 @@ func (rt *Router) handlePurgeAppCache(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var req purgeRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[purgeRequest](w, r, 8<<10)
+	if !ok {
 		return
 	}
 	if msg := validatePurge(req.Scope, req.Value); msg != "" {

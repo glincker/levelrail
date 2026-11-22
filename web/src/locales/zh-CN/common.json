@@ -9,7 +9,23 @@
   },
   "nodeSelect": {
     "auto": "自动（负载最低）",
-    "autoHint": "自动模式会把它放在负载最低的可用节点上。选择一个节点可将其固定在该节点。"
+    "autoHint": "自动模式会把它放在负载最低的可用节点上。选择一个节点可将其固定在该节点。",
+    "picker": {
+      "choose": "选择节点",
+      "cost": "{{amount}}/月",
+      "freeCpu": "可用 CPU {{value}}",
+      "freeMemory": "可用 {{value}}",
+      "search": "搜索节点",
+      "empty": "没有匹配的节点",
+      "local": "此服务器",
+      "unmanaged": "未托管",
+      "health": {
+        "healthy": "正常",
+        "offline": "离线",
+        "cordoned": "已隔离",
+        "pending": "待处理"
+      }
+    }
   },
   "draft": {
     "message": "你有一份 {{time}} 保存的未提交草稿。",
@@ -96,6 +112,19 @@
     "summary": "{{total}} 项检查中有 {{pass}} 项通过",
     "allClear": "所有检查均已通过。无需你处理。",
     "needsAction": "需要处理"
+  },
+  "healthExplain": {
+    "label": "原因",
+    "failingCheck": "检查 {{target}} 自 {{since}} 起失败",
+    "restarts": "重启次数：{{n}}",
+    "crashloop": "崩溃循环",
+    "lastDeploy": "最近一次部署：{{status}}",
+    "logError": "最近错误：{{line}}",
+    "next": {
+      "apply_preset": "尝试健康预设 {{preset}}",
+      "rollback": "回滚到上一次部署",
+      "view_logs": "查看日志"
+    }
   },
   "logs": {
     "previousContainerEnded": "上一个容器实例已结束",
@@ -547,7 +576,8 @@
       "resources": "资源",
       "security": "安全",
       "console": "控制台",
-      "integrations": "集成"
+      "integrations": "集成",
+      "integrations-aws-link": "关联 AWS 账号"
     },
     "quickNav": {
       "label": "快速导航（按住 L）"

@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -426,6 +427,9 @@ func (rt *Router) handleTestNotificationChannel(w http.ResponseWriter, r *http.R
 	// hang this goroutine indefinitely.
 	ctx, cancel := context.WithTimeout(r.Context(), notificationChannelTestTimeout)
 	defer cancel()
+	if typ, id, _, ok := rt.currentActor(r); ok && typ == store.PrincipalTypeUser {
+		ctx = alerting.WithPushAudience(ctx, alerting.PushAudience{UserID: id})
+	}
 	if err := rt.notificationChannelTester.SendTest(ctx, kind, req.NotifyURL); err != nil {
 		writeError(w, http.StatusBadGateway, fmt.Sprintf("test notification failed: %s", err.Error()))
 		return

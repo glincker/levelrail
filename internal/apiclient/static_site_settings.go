@@ -74,9 +74,7 @@ type StaticSiteRules struct {
 
 // GetStaticSiteSettings calls GET /api/v1/static-sites/{name}/settings.
 func (c *Client) GetStaticSiteSettings(ctx context.Context, name string) (StaticSiteSettings, error) {
-	var out StaticSiteSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/settings", nil, &out)
-	return out, err
+	return getJSON[StaticSiteSettings](ctx, c, "/api/v1/static-sites/"+PathEscape(name)+"/settings")
 }
 
 // PatchStaticSiteSettings calls PATCH /api/v1/static-sites/{name}/settings.
@@ -88,9 +86,7 @@ func (c *Client) PatchStaticSiteSettings(ctx context.Context, name string, p Sta
 
 // GetStaticSiteRules calls GET /api/v1/static-sites/{name}/rules.
 func (c *Client) GetStaticSiteRules(ctx context.Context, name string) (StaticSiteRules, error) {
-	var out StaticSiteRules
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/rules", nil, &out)
-	return out, err
+	return getJSON[StaticSiteRules](ctx, c, "/api/v1/static-sites/"+PathEscape(name)+"/rules")
 }
 
 // PutStaticSiteRules calls PUT /api/v1/static-sites/{name}/rules.

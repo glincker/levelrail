@@ -94,6 +94,14 @@
   "banner": {
     "description": "Una línea de tiempo de cada despliegue por app, con los fallos y los rollbacks marcados. Despliega una app y su carril aparecerá aquí."
   },
+  "revertConfig": {
+    "action": "Revertir la configuración a este punto",
+    "title": "Revertir la configuración a la revisión {{revision}}",
+    "disclaimer": "Solo cambian los ajustes de la app: entorno, escala, recursos, dominios y salud. Los datos de la base de datos y los volúmenes no se tocan, y los valores secretos no se restauran. Los cambios de entorno se aplican en el próximo reinicio o despliegue.",
+    "confirm": "Revertir",
+    "pending": "Revirtiendo",
+    "none": "Nada difiere de la configuración actual."
+  },
   "appHistory": {
     "title": "Historial",
     "managedBy": "Gestionado por el stack {{stack}}",

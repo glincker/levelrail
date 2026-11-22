@@ -41,6 +41,8 @@ type Options struct {
 	DomainSuffix string
 	// Scenario picks the storyline: ScenarioIncident (default) or ScenarioCalm.
 	Scenario string
+	// DataDir, when set, is where the Pages sites get a small real file tree so their size and file count are not zero.
+	DataDir string
 }
 
 const (
@@ -108,7 +110,7 @@ func Seed(ctx context.Context, db *store.DB, opts Options) (Manifest, error) {
 	}
 
 	s := &seeder{ctx: ctx, db: db, opts: opts, rng: newRNG(opts.Seed)}
-	steps := []func() error{s.users, s.organization, s.nodes, s.services, s.deploys, s.readiness, s.databases, s.audit, s.statusPage, s.teams, s.approvals, s.usage, s.fleetExtras, s.pages, s.backupExtras, s.previewSettings}
+	steps := []func() error{s.users, s.organization, s.nodes, s.services, s.deploys, s.readiness, s.databases, s.audit, s.statusPage, s.teams, s.approvals, s.usage, s.fleetExtras, s.pages, s.backupExtras, s.previewSettings, s.previewShots}
 	for _, step := range steps {
 		if err := step(); err != nil {
 			return Manifest{}, err

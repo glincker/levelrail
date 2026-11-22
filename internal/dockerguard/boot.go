@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,7 +43,20 @@ func SocketPath(lookup func(string) (string, bool), dataDir string) string {
 	if v, ok := envValue(lookup, EnvSocket); ok {
 		return v
 	}
-	return filepath.Join(dataDir, "guard", SocketName)
+	return defaultSocketPath(dataDir, runtime.GOOS, os.Getuid())
+}
+
+// maxSocketPathLen stays under macOS's 104 byte sun_path limit with headroom.
+const maxSocketPathLen = 100
+
+// defaultSocketPath uses a short per-user path on darwin when the data dir
+// path would overflow sun_path; privateDir then creates it as 0700.
+func defaultSocketPath(dataDir, goos string, uid int) string {
+	p := filepath.Join(dataDir, "guard", SocketName)
+	if goos == "darwin" && len(p) > maxSocketPathLen {
+		return filepath.Join("/tmp", "lr-"+strconv.Itoa(uid), SocketName)
+	}
+	return p
 }
 
 // Boot resolves the mode and, unless off, starts the guard in front of the

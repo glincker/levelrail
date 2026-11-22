@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { formatAge } from '../../lib/format'
@@ -26,9 +27,14 @@ export function RollbackCard({
           {formatAge(prev.finished_at ?? prev.started_at)}
         </span>
       </p>
-      <Button size="sm" variant="outline" onClick={() => setConfirming(true)}>
-        {t('rollback.action')}
-      </Button>
+      <div className="flex items-center gap-2">
+        {rollback.data?.serving === 'pending' ? (
+          <Badge variant="outline">{t('promote.pending')}</Badge>
+        ) : null}
+        <Button size="sm" variant="outline" onClick={() => setConfirming(true)}>
+          {t('rollback.action')}
+        </Button>
+      </div>
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}

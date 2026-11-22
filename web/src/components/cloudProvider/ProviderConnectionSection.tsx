@@ -2,16 +2,20 @@ import { useTranslation } from 'react-i18next'
 import { PlugGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { RelativeTime } from '../kit/RelativeTime'
+import { providerAccounts } from '../../lib/providerConnectionState'
+import { ProviderAccountsList } from './ProviderAccountsList'
 import type { SectionProps } from './sections'
 
 // Rail summary shown once a credential exists. Status itself lives in the
 // header pill, so this card only says who connected it and how to change it.
 export function ProviderConnectionSection({
+  provider,
   resource,
   connection,
 }: SectionProps) {
   const { t } = useTranslation('cloudProvider')
   const connected = resource.has_token
+  const hasAccounts = providerAccounts(resource).length > 0
   return (
     <section
       aria-labelledby="cp-connection"
@@ -20,6 +24,13 @@ export function ProviderConnectionSection({
       <h2 id="cp-connection" className="text-sm font-semibold">
         {t('connection.title')}
       </h2>
+      {hasAccounts ? (
+        <ProviderAccountsList
+          provider={provider}
+          resource={resource}
+          connection={connection}
+        />
+      ) : null}
       {connected ? (
         <dl className="space-y-0.5 text-xs text-muted-foreground">
           {resource.label ? (
@@ -47,7 +58,7 @@ export function ProviderConnectionSection({
             </div>
           ) : null}
         </dl>
-      ) : (
+      ) : hasAccounts ? null : (
         <p className="text-xs text-muted-foreground">
           {t('connection.manualHint')}
         </p>
@@ -55,12 +66,16 @@ export function ProviderConnectionSection({
       <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant={hasAccounts && !connected ? 'ghost' : 'outline'}
           size="sm"
           onClick={connection.openConnect}
         >
           <SettingsGlassIcon size="1.4em" aria-hidden="true" />
-          {connected ? t('connection.update') : t('connection.connect')}
+          {connected
+            ? t('connection.update')
+            : hasAccounts
+              ? t('linkedAccounts.useCredential')
+              : t('connection.connect')}
         </Button>
         {connected ? (
           <Button

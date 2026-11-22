@@ -152,6 +152,7 @@
     "empty": "Noch keine Webhook-Abonnenten.",
     "events": "Ereignisse",
     "eventsHint": "Lassen Sie alle abgewählt, um jedes Ereignis zu erhalten. Es werden nur veröffentlichte Vorfälle und öffentliche Komponentennamen gesendet.",
+    "fieldsFailed": "Die Formularfelder konnten nicht geladen werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
     "intro": "Signierte Webhooks melden Ihren Systemen, wenn sich ein Vorfall oder eine Komponente ändert. Jede Anfrage trägt die Header X-Signature und X-Timestamp; prüfen Sie sie mit dem Secret, das beim Hinzufügen des Abonnenten einmalig angezeigt wird.",
     "label": "Bezeichnung",
     "labelPlaceholder": "Bezeichnung (optional)",
@@ -173,5 +174,18 @@
     "testFailed": "Test-Ping fehlgeschlagen: {{error}}",
     "testOk": "Test-Ping zugestellt, der Empfänger antwortete mit HTTP {{code}}.",
     "url": "Webhook-URL"
+  },
+  "fields": {
+    "webhook": {
+      "url": {
+        "help": "HTTPS-URL, die die signierten Ereignisse erhält."
+      },
+      "label": {
+        "help": "Kurzer Name für diesen Abonnenten."
+      },
+      "events": {
+        "help": "Alle abgewählt lassen, um jedes Ereignis zu erhalten."
+      }
+    }
   }
 }

@@ -772,6 +772,11 @@
     "required": "Obligatorio antes de desplegar: {{keys}}",
     "back": "Atrás",
     "deploying": "Desplegando...",
+    "willCreate": "Se creará",
+    "secretRefs": "Los valores secretos no se muestran. Referencias secretas: {{keys}}",
+    "unsupported": "No se traslada",
+    "instead": "En su lugar: {{alternative}}",
+    "conflicts": "Nombre ya en uso",
     "deploy": "Desplegar"
   },
   "takeover": {

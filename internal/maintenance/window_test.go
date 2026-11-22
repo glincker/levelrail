@@ -114,11 +114,15 @@ func (f fakeChannels) ListNotificationChannels(context.Context) ([]alerting.Noti
 type fakeNotifier struct {
 	sent []string
 	fail bool
+	skip bool
 }
 
 func (f *fakeNotifier) SendNotice(_ context.Context, c alerting.NotificationChannel, _ string) error {
 	if f.fail {
 		return context.DeadlineExceeded
+	}
+	if f.skip {
+		return alerting.ErrNoticeSkipped
 	}
 	f.sent = append(f.sent, c.ID)
 	return nil
@@ -145,5 +149,25 @@ func TestAnnouncerTickSendsOnceAndRetriesOnFailure(t *testing.T) {
 	}
 	if len(st.marked) != 1 || len(n.sent) != 1 || n.sent[0] != "c1" {
 		t.Fatalf("marked=%v sent=%v, want one notice to enabled channel c1", st.marked, n.sent)
+	}
+}
+
+func TestAnnouncerTickSkippedNoticeIsNotCountedAsSent(t *testing.T) {
+	win := store.MaintenanceWindow{ID: "mw_1", Title: "x", StartsAt: t0.Add(30 * time.Minute),
+		EndsAt: t0.Add(time.Hour), AnnounceLeadMins: 60}
+	st := &fakeStore{windows: []store.MaintenanceWindow{win}}
+	n := &fakeNotifier{skip: true}
+	a := &Announcer{Store: st, Notifier: n, Now: func() time.Time { return t0 },
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Channels: fakeChannels{{ID: "scoped", Enabled: true, ProjectID: "proj_a"}}}
+
+	if err := a.Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.sent) != 0 {
+		t.Fatalf("sent = %v, want nothing delivered", n.sent)
+	}
+	if len(st.marked) != 1 {
+		t.Fatalf("marked = %v, want the window closed out once no channel can carry it", st.marked)
 	}
 }

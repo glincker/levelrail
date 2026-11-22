@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 )
 
@@ -28,7 +27,5 @@ func (c *Client) GetAppDiagnostic(ctx context.Context, name, view string, q url.
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out json.RawMessage
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[json.RawMessage](ctx, c, path)
 }

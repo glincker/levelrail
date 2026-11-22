@@ -54,6 +54,25 @@ type ServiceHooks struct {
 	PostDeploy string `json:"post_deploy,omitempty"`
 }
 
+// AppListSummary is the compact card data on GET /api/v1/apps. The server uses this same
+// struct, so the API, OpenAPI and CLI share one definition. Absent fields were not collected.
+type AppListSummary struct {
+	// Ready is "true", "false" or "unknown", from the Ready condition.
+	Ready        string     `json:"ready,omitempty"`
+	LastDeployAt *time.Time `json:"last_deploy_at,omitempty"`
+	Replicas     int        `json:"replicas,omitempty"`
+	Jobs         int        `json:"jobs,omitempty"`
+	NextRunAt    *time.Time `json:"next_run_at,omitempty"`
+	LastRunAt    *time.Time `json:"last_run_at,omitempty"`
+	LastRunState string     `json:"last_run_status,omitempty"`
+	// Restarts is Docker's restart count summed over replicas, read live through a bounded cache.
+	Restarts *int `json:"restarts,omitempty"`
+	// RestartsIncreasing is true when Restarts grew since the previous cached read.
+	RestartsIncreasing bool `json:"restarts_increasing,omitempty"`
+	// DBSizeBytes is the database size for database apps Levelrail runs.
+	DBSizeBytes *int64 `json:"db_size_bytes,omitempty"`
+}
+
 // AppResource mirrors internal/api's appResource (apps.go). Field order
 // and JSON tags match exactly, so a response decodes cleanly and a
 // request encodes into exactly what the server expects.
@@ -66,6 +85,13 @@ type AppResource struct {
 	RequireRefWarnings []string `json:"require_ref_warnings,omitempty"`
 	// TemplateID is the catalog template the app was deployed from, empty otherwise.
 	TemplateID string `json:"template_id,omitempty"`
+	// AppKind and KindSource come from the list and get payloads: card shape and how it was chosen.
+	AppKind    string `json:"app_kind,omitempty"`
+	KindSource string `json:"kind_source,omitempty"`
+	// Preview is the list endpoint's thumbnail card with its render state (none, queued, rendering, ready, failed).
+	Preview *AppPreviewCard `json:"preview,omitempty"`
+	// Summary is the list endpoint's compact card data; absent fields were not available.
+	Summary *AppListSummary `json:"summary,omitempty"`
 	// PendingImage is set while a rollout to a new image is in progress or
 	// failed; Image is then the last image confirmed serving.
 	PendingImage string `json:"pending_image,omitempty"`
@@ -316,6 +342,9 @@ type LogDrainResource struct {
 	Type    string `json:"type"`
 	Target  string `json:"target"`
 	Enabled bool   `json:"enabled"`
+	// HeaderName is returned; HeaderSet says a value is stored, the value is never returned.
+	HeaderName string `json:"header_name,omitempty"`
+	HeaderSet  bool   `json:"header_set,omitempty"`
 }
 
 // SetLogDrainRequest mirrors internal/api's setLogDrainRequest.
@@ -323,6 +352,9 @@ type SetLogDrainRequest struct {
 	Type    string `json:"type"`
 	Target  string `json:"target"`
 	Enabled bool   `json:"enabled"`
+	// HeaderValue is write only; empty keeps the stored value, empty HeaderName clears the header.
+	HeaderName  string `json:"header_name,omitempty"`
+	HeaderValue string `json:"header_value,omitempty"`
 }
 
 // BuildTriggerRequest mirrors internal/api's triggerBuildRequest
@@ -415,6 +447,8 @@ type DeployTriggerResult struct {
 	PendingApproval *DeployApprovalResource `json:"pending_approval,omitempty"`
 	// DeployID is the attempt this trigger created; empty from older servers.
 	DeployID string `json:"deploy_id,omitempty"`
+	// Serving is "live" or "pending" for a Pages rollback; empty for other deploys.
+	Serving string `json:"serving,omitempty"`
 }
 
 // DeployApprovalResource mirrors internal/api's deployApprovalResource
@@ -2581,6 +2615,8 @@ type BackupTargetResource struct {
 	EncryptDumps bool `json:"encrypt_dumps"`
 	// LocalRoot is the control plane APP_BACKUP_LOCAL_ROOT, set for local targets only.
 	LocalRoot string `json:"local_root,omitempty"`
+	// HostKey is the pinned SSH host key of an sftp target.
+	HostKey string `json:"host_key,omitempty"`
 }
 
 // BackupTargetEncryptionResource mirrors internal/api's backupTargetEncryptionResource.
@@ -2605,6 +2641,10 @@ type CreateBackupTargetRequest struct {
 	SecretAccessKey string `json:"secret_access_key"`
 	EncryptDumps    *bool  `json:"encrypt_dumps,omitempty"`
 	CABundle        string `json:"ca_bundle,omitempty"`
+	// Write-only sftp key credentials and the pinned server key.
+	PrivateKey           string `json:"private_key,omitempty"`
+	PrivateKeyPassphrase string `json:"private_key_passphrase,omitempty"`
+	HostKey              string `json:"host_key,omitempty"`
 }
 
 // UpdateBackupTargetRequest mirrors internal/api's
@@ -2620,6 +2660,17 @@ type UpdateBackupTargetRequest struct {
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
 	CABundle        string `json:"ca_bundle,omitempty"`
 	ClearCABundle   bool   `json:"clear_ca_bundle,omitempty"`
+	// Write-only sftp key credentials and the pinned server key.
+	PrivateKey           string `json:"private_key,omitempty"`
+	PrivateKeyPassphrase string `json:"private_key_passphrase,omitempty"`
+	HostKey              string `json:"host_key,omitempty"`
+}
+
+// SFTPHostKeyScan mirrors internal/api's sftpHostKeyResponse.
+type SFTPHostKeyScan struct {
+	HostKey     string `json:"host_key"`
+	KeyType     string `json:"key_type"`
+	Fingerprint string `json:"fingerprint"`
 }
 
 // RegistryCredentialResource mirrors internal/api's
@@ -4984,4 +5035,11 @@ type SetNodeFailureDomainRequest struct {
 	Region   *string `json:"region,omitempty"`
 	Provider *string `json:"provider,omitempty"`
 	Zone     *string `json:"zone,omitempty"`
+}
+
+// AppPreviewCard mirrors internal/api's previewCardResource: only the fields a script needs.
+type AppPreviewCard struct {
+	ImageURL string `json:"image_url,omitempty"`
+	State    string `json:"state,omitempty"`
+	Reason   string `json:"reason,omitempty"`
 }

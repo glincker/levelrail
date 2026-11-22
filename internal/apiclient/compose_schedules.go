@@ -71,7 +71,7 @@ func (c *Client) SetComposeScheduleEnabled(ctx context.Context, stack, service, 
 
 // DeleteComposeSchedule calls DELETE .../schedules/{id}.
 func (c *Client) DeleteComposeSchedule(ctx context.Context, stack, service, id string) error {
-	return c.do(ctx, http.MethodDelete, composeSchedulesPath(stack, service)+"/"+PathEscape(id), nil, nil)
+	return c.del(ctx, composeSchedulesPath(stack, service)+"/"+PathEscape(id))
 }
 
 // ListComposeScheduleRuns calls GET .../schedules/{id}/runs, newest first.

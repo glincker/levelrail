@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -198,9 +197,8 @@ func (rt *Router) handlePutSessionPolicy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "team not found")
 		return
 	}
-	var req sessionPolicyRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[sessionPolicyRequest](w, r, 64<<10)
+	if !ok {
 		return
 	}
 	p, err := parseSessionPolicyRequest(teamID, req)

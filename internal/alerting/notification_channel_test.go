@@ -59,6 +59,26 @@ func TestListNotificationChannels_OldestFirst(t *testing.T) {
 	}
 }
 
+func TestListNotificationChannels_SameTimestampOrdersByID(t *testing.T) {
+	db := newTestDeployNotifyDB(t)
+	ctx := context.Background()
+	for _, id := range []string{"chn_c", "chn_a", "chn_b"} {
+		if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: id, Name: id, Kind: NotifyGeneric, NotifyURL: "https://a.example.com", Enabled: true}); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE notification_channels SET created_at = '2026-01-01T00:00:00Z'`); err != nil {
+		t.Fatalf("pin timestamps: %v", err)
+	}
+	got, err := db.ListNotificationChannels(ctx)
+	if err != nil {
+		t.Fatalf("ListNotificationChannels() error = %v", err)
+	}
+	if len(got) != 3 || got[0].ID != "chn_a" || got[1].ID != "chn_b" || got[2].ID != "chn_c" {
+		t.Errorf("order = %+v, want id order on a timestamp tie", got)
+	}
+}
+
 func TestDeleteNotificationChannel_NotFound(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
 	if err := db.DeleteNotificationChannel(context.Background(), "ghost"); !errors.Is(err, ErrNotificationChannelNotFound) {

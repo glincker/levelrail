@@ -16,18 +16,28 @@ type Config struct {
 	SubscriptionID string `json:"subscription_id,omitempty"`
 	ResourceGroup  string `json:"resource_group,omitempty"`
 	OIDCAudience   string `json:"oidc_audience,omitempty"`
+	// Vault fields apply to the vault_aws method. The token comes from VaultTokenRef, a secret:// reference.
+	VaultAddress   string `json:"vault_address,omitempty"`
+	VaultMount     string `json:"vault_mount,omitempty"`
+	VaultRole      string `json:"vault_role,omitempty"`
+	VaultNamespace string `json:"vault_namespace,omitempty"`
+	VaultTokenRef  string `json:"vault_token_ref,omitempty"`
+	// SSO fields apply to aws_sso; tokens live only in the sealed bundle.
+	StartURL  string `json:"start_url,omitempty"`
+	SSORegion string `json:"sso_region,omitempty"`
+	RoleName  string `json:"role_name,omitempty"`
 }
 
-var validAuth = map[string]bool{AuthOIDCFederation: true, AuthRoleAssumption: true, AuthSecretRef: true, AuthStatic: true}
+var validAuth = map[string]bool{AuthOIDCFederation: true, AuthRoleAssumption: true, AuthSecretRef: true, AuthStatic: true, AuthVaultAWS: true, AuthOAuth: true, AuthOCISession: true, AuthAWSSSO: true}
 
 // authAllowed lists the methods each provider supports.
 var authAllowed = map[string][]string{
-	ProviderOracle:       {AuthOIDCFederation, AuthSecretRef, AuthStatic},
-	ProviderAWS:          {AuthOIDCFederation, AuthRoleAssumption, AuthSecretRef, AuthStatic},
+	ProviderOracle:       {AuthOIDCFederation, AuthSecretRef, AuthStatic, AuthOCISession},
+	ProviderAWS:          {AuthOIDCFederation, AuthRoleAssumption, AuthSecretRef, AuthStatic, AuthVaultAWS, AuthAWSSSO},
 	ProviderAzure:        {AuthOIDCFederation, AuthRoleAssumption, AuthSecretRef, AuthStatic},
 	ProviderGCP:          {AuthOIDCFederation, AuthSecretRef, AuthStatic},
 	ProviderHetzner:      {AuthSecretRef, AuthStatic},
-	ProviderDigitalOcean: {AuthSecretRef, AuthStatic},
+	ProviderDigitalOcean: {AuthSecretRef, AuthStatic, AuthOAuth},
 }
 
 func invalid(format string, a ...any) error {
@@ -73,6 +83,9 @@ func checkFields(cfg Config) error {
 	for k, v := range map[string]string{
 		"region": cfg.Region, "account_id": cfg.AccountID, "compartment": cfg.Compartment, "role_arn": cfg.RoleARN,
 		"subscription_id": cfg.SubscriptionID, "resource_group": cfg.ResourceGroup, "oidc_audience": cfg.OIDCAudience,
+		"vault_address": cfg.VaultAddress, "vault_mount": cfg.VaultMount, "vault_role": cfg.VaultRole,
+		"vault_namespace": cfg.VaultNamespace, "vault_token_ref": cfg.VaultTokenRef,
+		"start_url": cfg.StartURL, "sso_region": cfg.SSORegion, "role_name": cfg.RoleName,
 	} {
 		if len(v) > limit {
 			return invalid("%s is too long", k)
@@ -91,14 +104,18 @@ func validateCredentialRef(authMethod, ref string) error {
 		if ref != "" {
 			return invalid("oidc_federation takes no credential reference")
 		}
-	case AuthSecretRef, AuthRoleAssumption:
+	case AuthSecretRef, AuthRoleAssumption, AuthVaultAWS:
 		if ref == "" {
 			return invalid("%s needs a credential_ref such as secret://connection/path#key", authMethod)
 		}
 		if _, err := secretsource.ParseRef(ref); err != nil {
 			return invalid("credential_ref must be a valid secret:// reference")
 		}
-	case AuthStatic:
+	case AuthAWSSSO:
+		if ref != "" {
+			return invalid("aws_sso keeps its tokens sealed and takes no credential reference")
+		}
+	case AuthStatic, AuthOCISession:
 		ns, key, ok := strings.Cut(ref, "/")
 		if !ok || ns == "" || key == "" || strings.Contains(key, "/") || strings.HasPrefix(ref, "secret://") {
 			return invalid("static needs a credential_ref of the form NAMESPACE/KEY naming a stored secret")

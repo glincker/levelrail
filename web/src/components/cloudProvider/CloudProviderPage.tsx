@@ -17,6 +17,10 @@ import {
   useNodeProviders,
 } from '../../queries/nodeProvision'
 import type { NodeProviderResource } from '../../types/nodeProvision'
+import {
+  isProviderConnected,
+  providerStatus,
+} from '../../lib/providerConnectionState'
 import { CloudProvidersBreadcrumb } from './CloudProvidersBreadcrumb'
 import { ProviderLinks } from './ProviderLinks'
 import { ProviderOnboarding } from './ProviderOnboarding'
@@ -56,7 +60,7 @@ function ProviderLanding({
     (p) => p.provider === provider.id,
   ) ?? { provider: provider.id, has_token: false }
   const manual = provider.id === 'custom'
-  const connected = resource.has_token
+  const connected = isProviderConnected(resource)
   const regions = useNodeProviderRegions(
     provider.id,
     connected && provider.quickFactRegions,
@@ -64,7 +68,7 @@ function ProviderLanding({
   const canCreate =
     provider.features.includes('create') && (connected || manual)
   const connection = useProviderConnection(provider, resource, labels.name)
-  const failed = resource.status === 'test_failed'
+  const failed = providerStatus(resource) === 'test_failed'
   const sectionProps = { provider, resource, labels, connection }
   const render = (zone: 'rail' | 'main') =>
     SECTION_ORDER.filter(

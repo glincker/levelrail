@@ -376,6 +376,7 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: create scheduled task: save guards failed", err, slog.String("name", name))
 		return
 	}
+	rt.changes.Publish(changeScheduledTasks, name)
 	saved, err := rt.scheduledTasks.GetScheduledTask(r.Context(), id)
 	if err != nil {
 		writeJSON(w, http.StatusCreated, rt.jobResource(r.Context(), task))
@@ -542,6 +543,7 @@ func (rt *Router) handleUpdateScheduledTask(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: update scheduled task: reload failed", err, slog.String("id", existing.ID))
 		return
 	}
+	rt.changes.Publish(changeScheduledTasks, name)
 	writeJSON(w, http.StatusOK, rt.jobResource(r.Context(), reloaded))
 }
 
@@ -581,6 +583,7 @@ func (rt *Router) handleSetScheduledTaskEnabled(enabled bool) http.HandlerFunc {
 			rt.internalError(w, "api: toggle scheduled task failed", err, slog.String("id", existing.ID))
 			return
 		}
+		rt.changes.Publish(changeScheduledTasks, existing.ServiceName)
 		reloaded, err := rt.scheduledTasks.GetScheduledTask(r.Context(), existing.ID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "internal error")
@@ -611,6 +614,7 @@ func (rt *Router) handleDeleteScheduledTask(w http.ResponseWriter, r *http.Reque
 	if rt.jobPings != nil {
 		_ = rt.jobPings.Clear(r.Context(), existing.ID)
 	}
+	rt.changes.Publish(changeScheduledTasks, existing.ServiceName)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -752,6 +756,7 @@ func (rt *Router) handleRunScheduledTaskNow(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		resp.RunID = runID
+		rt.changes.Publish(changeScheduledTasks, name)
 		writeJSON(w, http.StatusAccepted, resp)
 		return
 	}

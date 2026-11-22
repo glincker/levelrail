@@ -68,6 +68,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerSecretProviderRoutes(mux)
 	rt.registerSecretConnectionRoutes(mux)
 	rt.registerCloudConnectionRoutes(mux)
+	rt.registerCloudAccountRoutes(mux)
 	rt.registerK8sRoutes(mux)
 	rt.registerConnectionRoutes(mux)
 	// Seal an uploaded OCI API key and create a static Oracle connection. Root only, preview gated, https required off loopback.

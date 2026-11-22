@@ -36,9 +36,7 @@ type UpdateMeshSettingsRequest struct {
 
 // GetMeshSettings calls GET /api/v1/mesh/settings.
 func (c *Client) GetMeshSettings(ctx context.Context) (MeshSettings, error) {
-	var out MeshSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/mesh/settings", nil, &out)
-	return out, err
+	return getJSON[MeshSettings](ctx, c, "/api/v1/mesh/settings")
 }
 
 // UpdateMeshSettings calls PUT /api/v1/mesh/settings.

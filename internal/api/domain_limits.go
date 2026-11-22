@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -100,9 +99,8 @@ func (rt *Router) handleSetDomainLimits(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	var req setDomainLimitsRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[setDomainLimitsRequest](w, r, 1<<16)
+	if !ok {
 		return
 	}
 	ctx := r.Context()

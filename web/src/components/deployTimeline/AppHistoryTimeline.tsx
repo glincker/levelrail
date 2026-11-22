@@ -20,6 +20,11 @@ import {
 } from '../../lib/appDeployHistory'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import type { TimelineEntry } from '../../queries/appTimeline'
+import {
+  revisionAt,
+  type ConfigRevision,
+} from '../../queries/appConfigRevisions'
+import { RevertConfigAction } from './RevertConfigAction'
 
 const KIND_ICON: Record<HistoryKind, UiIcon> = {
   deploy: RocketGlassIcon,
@@ -33,6 +38,8 @@ export interface AppHistoryTimelineProps {
   activity: readonly TimelineEntry[]
   /** Stack managing this app, shown as the source of its desired state. */
   managedByStack?: string
+  /** Config revisions, newest first; enables "Revert config to here". */
+  revisions?: readonly ConfigRevision[]
 }
 
 // One compact timeline of deploys, restarts and rollbacks for an app.
@@ -41,6 +48,7 @@ export function AppHistoryTimeline({
   attempts,
   activity,
   managedByStack,
+  revisions = [],
 }: Readonly<AppHistoryTimelineProps>) {
   const { t } = useTranslation('deployTimeline')
   const entries = mergeAppHistory(attempts, activity)
@@ -63,7 +71,12 @@ export function AppHistoryTimeline({
           className="divide-y divide-border rounded-lg border border-border"
         >
           {entries.map((e) => (
-            <HistoryRow key={e.id} entry={e} appName={appName} />
+            <HistoryRow
+              key={e.id}
+              entry={e}
+              appName={appName}
+              revisions={revisions}
+            />
           ))}
         </ol>
       </CardContent>
@@ -74,11 +87,18 @@ export function AppHistoryTimeline({
 function HistoryRow({
   entry,
   appName,
-}: Readonly<{ entry: HistoryEntry; appName: string }>) {
+  revisions,
+}: Readonly<{
+  entry: HistoryEntry
+  appName: string
+  revisions: readonly ConfigRevision[]
+}>) {
   const { t } = useTranslation('deployTimeline')
   const KindIcon = KIND_ICON[entry.kind]
   const duration =
     entry.durationMs === null ? null : formatDurationMs(entry.durationMs)
+  const target = revisionAt(revisions, entry.at)
+  const canRevert = target !== undefined && target.n !== revisions[0]?.n
   const status = t(`appHistory.status.${entry.statusKey}`)
   const kind = t(`appHistory.kind.${entry.kind}`)
 
@@ -116,6 +136,9 @@ function HistoryRow({
           <ClockGlassIcon className="size-5" aria-hidden="true" />
           {duration}
         </span>
+      ) : null}
+      {canRevert ? (
+        <RevertConfigAction appName={appName} revision={target.n} />
       ) : null}
       <span className="ml-auto text-muted-foreground">
         <RelativeTime at={entry.at} />

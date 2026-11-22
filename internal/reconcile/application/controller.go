@@ -1,23 +1,6 @@
 // Package application implements the declarative app spec's service
 // contract and the application controller: the
-// reconcile.Controller that converges a
-// real, store-backed desired service to a running container, replacing
-// nginxdemo's hardcoded desired state with the real thing.
-//
-// Deploy strategy: a container's name is derived deterministically from
-// its image (ContainerName), so the level-triggered check "does the
-// right container exist" needs no memory of past deploys beyond what's
-// queryable from Docker directly. When the desired image changes,
-// Reconcile creates a new, differently-named container alongside
-// whatever's already running, waits for it to pass its readiness probe,
-// then removes every other container for this service. Traffic
-// switching itself (updating Caddy to point at the new container) is
-// deliberately not this controller's job: this codebase's reconciler
-// pattern is a reconcile loop per resource type, and ingress is its own
-// resource type (not yet wired in). This controller's
-// contract with that future ingress controller is simple: whichever
-// container currently exists and is running for a service is the one
-// meant to receive traffic.
+// reconcile.Controller that converges a.
 package application
 
 import (
@@ -1593,71 +1576,7 @@ func (c *Controller) streamPortBindings(ctx context.Context, serviceName string)
 
 // resolveEnv merges desired.Env's literal values with each of
 // desired.SecretEnv's names, decrypted via the configured
-// SecretResolver. This is the only place in this controller a secret's
-// plaintext exists: it lives in this function's local env map only for
-// the moment between here and docker.Runtime.Create in createAndStart,
-// and is never written to the store, logged, or returned in a
-// reconcile.Result.
-//
-// An unset optional ({ secret: true, required: false }) secret is
-// silently omitted from the container's environment. A required one with
-// no value fails the pass: internal/deploy.Pipeline only checks at spec
-// deploy time, so a value deleted later, or an image-only deploy, would
-// otherwise start a container missing it.
-//
-// Precedence when the same key appears in both desired.Env and
-// desired.SecretEnv: the secret-resolved value always wins. The literal
-// values are copied into env first, then each resolved secret is
-// written into env afterward, unconditionally, so a colliding key ends
-// up holding the secret's value regardless of desired.Env's (map,
-// unordered) iteration order. This is deterministic by construction,
-// not an accident of that iteration order, because desired.SecretEnv is
-// a slice applied strictly after the literal copy completes, one
-// assignment per declared key. The precedence itself is a deliberate
-// default: if a service declares both, the secret is presumably the
-// more deliberate, more authoritative source, and letting it win
-// prevents a leftover plain-text duplicate from silently shadowing a
-// real secret.
-//
-// desired.StorageTargetID's resolved S3_* env vars (resolveStorageEnv)
-// are applied last, after both of the above: the identical "more
-// deliberate, more authoritative source wins" reasoning extended one
-// step further. An operator's own S3_ACCESS_KEY_ID (a literal env var,
-// or even a same-named secret) must never silently shadow the live
-// credential this app was actually attached to, so a storage target's
-// resolved values always take final precedence over anything else
-// declaring the same key, the same way a resolved secret already takes
-// precedence over a plain literal.
-//
-// desired.DatabaseEnv/desired.DatabaseAttachment's resolved values
-// (resolveDatabaseEnv) are applied last of all, after desired.
-// StorageTargetID's: the identical "more deliberate, more authoritative
-// source wins" reasoning extended one more step. A database connection
-// value is exactly as live/authoritative as a storage target's, so
-// neither should be able to silently shadow the other by accident; in
-// practice they almost never target the same env var name, so this
-// ordering mostly only matters for the (rare, deliberate) case of both
-// declaring the same key.
-//
-// desired.ProjectID's shared env vars (WithProjectEnv) are the opposite
-// end: applied first, as the base layer, so this service's own Env
-// (and everything above) freely overrides a same-named project default
-// rather than the other way around. desired.ProjectID's organization's
-// shared env vars (WithOrganizationEnv) sit one layer below even that:
-// applied before the project layer, so a project default overrides a
-// same-named organization default exactly the way this service's own
-// Env already overrides the project layer.
-//
-// desired.EnvironmentID's shared env vars (WithEnvironmentEnv) sit
-// between the project layer and this service's own Env: applied after
-// the project layer, so an environment default overrides a same-named
-// project default, and before this service's own Env, so the service
-// still overrides a same-named environment default.
-//
-// Attached internal/integrations (WithAppIntegrations) resolve at that
-// same "default the service's own Env can override" tier, applied last
-// among the shared-env-style layers, right before this service's own
-// Env.
+// SecretResolver. This is the only place in this controller a secret's.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
 	hasProjectEnv := desired.ProjectID != "" && c.projectEnv != nil
 	hasOrgEnv := desired.ProjectID != "" && c.orgEnv != nil
@@ -2174,24 +2093,7 @@ func (c *Controller) resolveRedisPassword(ctx context.Context, dbName string) (s
 
 // resolveDatabaseURL builds a full connection URL. Redis, KeyDB, and
 // Dragonfly all run passwordless (internal/reconcile/database's own
-// package doc comment) and share the Redis wire protocol, so all three
-// get a "redis://" URL with no userinfo, not their own engine name as
-// scheme: a Redis client library has no idea what "keydb://" or
-// "dragonfly://" mean. Every other engine's own scheme string is
-// identical to store's engine identifier (store.EnginePostgres is
-// "postgres", store.EngineMongoDB is "mongodb", and so on), so no
-// separate scheme mapping is needed there.
-//
-// tlsEnabled flips Redis's scheme to "rediss" (its own client-library
-// convention for "dial with TLS") and appends Postgres' own
-// "?sslmode=require" query param: both mean "encrypt, don't verify the
-// certificate's issuer" to mainstream client libraries with zero
-// additional app-side configuration, matching the self-signed,
-// no-shared-CA certificate database.WithTLS actually configures the
-// server with (see internal/reconcile/database's TLSMaterial doc
-// comment). databaseTLSEnabled only ever passes true for an engine
-// database.SupportsTLS agrees on, so no other engine reaches either
-// branch below with tlsEnabled set.
+// package doc comment) and share the Redis wire protocol, so all three.
 func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int, tlsEnabled bool) (string, error) {
 	if store.IsRedisFamily(engine) {
 		scheme := "redis"
@@ -2240,23 +2142,6 @@ func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, hos
 // resolveStorageEnv resolves targetID (store.DesiredService.StorageTargetID)
 // into the S3_* env vars an app's container needs to talk to its
 // attached bucket directly, with no AWS SDK config of its own required:
-// the same bucket connection store.BackupTarget already models for
-// database backups (internal/store/backup_target.go), reused here rather
-// than a second, parallel "storage target" concept.
-//
-// Names match the convention already common across self-hosted app
-// images and S3-compatible client libraries (S3_ENDPOINT/S3_BUCKET/
-// S3_REGION/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY), deliberately not
-// AWS's own generic AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_REGION:
-// those names are picked up by any AWS SDK's default credential chain
-// anywhere in the process, including unrelated AWS API calls the app
-// might make with its own separate credentials, which would silently
-// widen this bucket-scoped credential's reach beyond the one bucket it
-// was actually granted. S3_ENDPOINT/S3_REGION are only set when the
-// target actually has one (store.BackupTarget's own doc comment: the
-// "aws" provider leaves Endpoint empty on purpose, since the AWS SDK's
-// own per-region resolver already knows the right host), never written
-// as an empty string a client library might otherwise try to dial.
 const (
 	envKeyS3Endpoint  = "S3_ENDPOINT"
 	envKeyS3Bucket    = "S3_BUCKET"
@@ -2798,22 +2683,6 @@ func (c *Controller) filterStale(all []docker.ContainerState, keep []string) []d
 
 // ownsInstance reports whether cs was created by this same control-plane
 // instance, and so is safe for this Controller's own cleanup to remove.
-// No instanceID configured (WithInstanceID never called, every caller
-// before this guard existed) means no check at all: every name-matching
-// container is treated as owned, exactly this package's behavior before
-// cross-instance safety existed.
-//
-// A container with no instance label at all is also treated as owned,
-// not rejected: this label only exists on containers created by a
-// control-plane binary built after internal/spec.InstanceLabelKey did,
-// so treating "no label" as "foreign" would stop a fresh upgrade from
-// ever cleaning up its own pre-upgrade containers (they can never
-// acquire the label retroactively, and each redeploy's new,
-// content-hashed name means they'd never get superseded by name reuse
-// either). Only an explicit, different instance ID is treated as
-// foreign: a container's own instance label is the one signal a name
-// collision with another control-plane instance's identically-named
-// service cannot produce by accident.
 func (c *Controller) ownsInstance(cs docker.ContainerState) bool {
 	if c.instanceID == "" {
 		return true
@@ -2909,25 +2778,7 @@ const hashLen = 8
 
 // ContainerName derives a stable, unique-per-image name so the
 // level-triggered check "does the right container exist" needs no
-// memory beyond what Docker itself can answer. Two deploys of the same
-// image produce the same name (a genuine no-op redeploy correctly finds
-// nothing to do); two different images always produce different names
-// (so both can exist side by side during a cutover). Exported so the
-// ingress controller (internal/reconcile/ingress) can
-// derive the exact same name to find a service's currently active
-// container, without reimplementing this hash logic a second time and
-// risking the two drifting apart.
-//
-// restartNonce (store.DesiredService.RestartNonce) is folded into the
-// hash only when non-empty: an empty nonce, the state of every service
-// that has never been restarted, must produce byte-identical output to
-// before this parameter existed, so an upgrade never orphans an
-// already-running container under a name it no longer recognizes. Once
-// non-empty, changing it changes the name, which is what makes a restart
-// (RestartService) indistinguishable from an image change to this
-// controller's existing, already-tested blue-green/recreate cutover
-// logic: no new branch needed, restarting an app is just another kind of
-// desired-state change.
+// memory beyond what Docker itself can answer. Two deploys of the same.
 func ContainerName(serviceName, image, restartNonce string) string {
 	key := image
 	if restartNonce != "" {

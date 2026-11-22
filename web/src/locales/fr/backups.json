@@ -249,6 +249,7 @@
         "hint": "Même machine, pas sûr"
       }
     },
+    "fieldsUnavailable": "Les champs du formulaire n'ont pas pu être chargés. Rechargez la page et réessayez.",
     "localRootHint": "Stocké sous {{root}}. Saisissez un dossier à l'intérieur.",
     "localWarning": "Les sauvegardes stockées sur le disque de cette machine sont perdues avec elle. Elles protègent contre un mauvais déploiement ou une table supprimée, pas contre un disque mort, un ransomware ou un serveur supprimé. Utilisez-les pour essayer, puis ajoutez une destination hors site.",
     "field": {
@@ -499,5 +500,136 @@
     "restoreCancel": "Annuler",
     "restoreClose": "Fermer",
     "restoreAccepted": "Restauration démarrée. Dump de sécurité : {{id}}. Elle s'exécute en arrière-plan, consultez donc l'historique des exécutions et le journal d'audit pour le résultat."
+  },
+  "sftpTarget": {
+    "host": "Serveur",
+    "path": "Répertoire distant",
+    "pathHint": "Les chemins relatifs partent du répertoire de connexion de l'utilisateur SSH. Les chemins contenant .. sont refusés.",
+    "username": "Nom d'utilisateur SSH",
+    "auth": "Authentification",
+    "authPassword": "Mot de passe",
+    "authKey": "Clé privée",
+    "password": "Mot de passe",
+    "privateKey": "Clé privée (format PEM ou OpenSSH)",
+    "passphrase": "Phrase secrète de la clé (facultatif)",
+    "hostKeyTitle": "Clé d'hôte du serveur",
+    "hostKeyHint": "Levelrail ne se connecte qu'à un serveur dont la clé correspond à celle épinglée ici. Récupérez la clé, puis comparez son empreinte avec celle fournie par le propriétaire du serveur.",
+    "fetchKey": "Récupérer la clé d'hôte",
+    "fetching": "Récupération...",
+    "keyType": "Type de clé",
+    "fingerprint": "Empreinte",
+    "confirm": "J'ai vérifié cette empreinte auprès du serveur"
+  },
+  "fields": {
+    "backupTarget": {
+      "name": {
+        "label": "Nom",
+        "help": "Nom affiché dans le tableau de bord et la CLI."
+      },
+      "provider": {
+        "label": "Fournisseur",
+        "help": "Où les sauvegardes sont stockées."
+      },
+      "s3": {
+        "bucket": {
+          "label": "Bucket",
+          "help": "Nom du bucket qui reçoit les sauvegardes."
+        },
+        "region": {
+          "label": "Région",
+          "help": "Région du bucket. Les fournisseurs personnalisés l'exigent."
+        },
+        "endpoint": {
+          "label": "Point de terminaison",
+          "help": "URL compatible S3. R2 et les fournisseurs personnalisés l'exigent."
+        },
+        "access_key_id": {
+          "label": "ID de clé d'accès",
+          "help": "Clé d'accès des identifiants."
+        },
+        "secret_access_key": {
+          "label": "Clé d'accès secrète",
+          "help": "Stockée chiffrée et jamais réaffichée."
+        }
+      },
+      "custom": {
+        "region": {
+          "label": "Région",
+          "help": "Région du bucket. Les fournisseurs personnalisés l'exigent."
+        }
+      },
+      "local": {
+        "path": {
+          "label": "Répertoire",
+          "help": "Dossier sous la racine de sauvegarde du plan de contrôle."
+        }
+      },
+      "webdav": {
+        "endpoint": {
+          "label": "URL du partage",
+          "help": "Adresse https du partage WebDAV."
+        },
+        "directory": {
+          "label": "Répertoire distant",
+          "help": "Répertoire du partage qui reçoit les sauvegardes."
+        },
+        "username": {
+          "label": "Nom d'utilisateur",
+          "help": "Nom du compte utilisé pour se connecter."
+        },
+        "password": {
+          "label": "Mot de passe",
+          "help": "Stocké chiffré et jamais réaffiché."
+        },
+        "ca_bundle": {
+          "label": "Bundle CA",
+          "help": "Certificats PEM facultatifs à approuver. Stockés chiffrés et jamais réaffichés."
+        }
+      },
+      "sftp": {
+        "endpoint": {
+          "label": "Serveur",
+          "help": "Hôte ou HÔTE:PORT du serveur SFTP."
+        },
+        "path": {
+          "label": "Répertoire distant",
+          "help": "Les chemins relatifs partent du répertoire de connexion. Les chemins contenant .. sont refusés."
+        },
+        "username": {
+          "label": "Nom d'utilisateur",
+          "help": "Nom du compte utilisé pour se connecter."
+        },
+        "auth": {
+          "label": "Authentification",
+          "help": "Se connecter avec un mot de passe ou une clé privée."
+        },
+        "password": {
+          "label": "Mot de passe",
+          "help": "Stocké chiffré et jamais réaffiché."
+        },
+        "private_key": {
+          "label": "Clé privée",
+          "help": "Clé PEM ou OpenSSH. Stockée chiffrée et jamais réaffichée."
+        },
+        "private_key_passphrase": {
+          "label": "Phrase secrète de la clé",
+          "help": "Nécessaire seulement pour une clé chiffrée. Stockée chiffrée et jamais réaffichée."
+        },
+        "host_key": {
+          "label": "Clé d'hôte",
+          "help": "Clé du serveur épinglée. Comparez son empreinte avec celle du propriétaire du serveur."
+        }
+      }
+    }
+  },
+  "restoreTest": {
+    "button": "Tester la restauration",
+    "neverRun": "Dernier test de restauration : jamais exécuté",
+    "running": "Test de restauration en cours",
+    "ok": "Dernier test de restauration : réussi {{when}}, {{seconds}} s, {{size}}",
+    "failed": "Dernier test de restauration : échoué {{when}}, {{seconds}} s",
+    "startedTitle": "Test de restauration lancé.",
+    "startedBody": "Le résultat apparaît ici une fois terminé.",
+    "startFailed": "Impossible de lancer le test de restauration."
   }
 }

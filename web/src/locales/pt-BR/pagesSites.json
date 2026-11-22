@@ -213,7 +213,8 @@
   "promote": {
     "action": "Promover",
     "confirmTitle": "Tornar este deploy ativo para {{name}}?",
-    "confirmBody": "Os domínios próprios do site passam a servir este deploy imediatamente. A URL própria continua funcionando."
+    "confirmBody": "Os domínios próprios do site passam a servir este deploy imediatamente. A URL própria continua funcionando.",
+    "pending": "Publicando"
   },
   "deployUrl": {
     "copy": "Copiar URL do deploy",
@@ -321,7 +322,18 @@
     "title": "Deploys recentes",
     "viewAll": "Ver todos",
     "none": "Nenhum deploy ainda.",
-    "live": "Ao vivo"
+    "live": "Ao vivo",
+    "copySha": "Copiar hash do commit",
+    "copied": "Hash do commit copiado",
+    "col": {
+      "commit": "Commit",
+      "message": "Mensagem",
+      "state": "Status",
+      "branch": "Branch",
+      "author": "Autor",
+      "when": "Quando",
+      "actions": "Ações de deploy"
+    }
   },
   "routes": {
     "testTitle": "Testar uma URL",
@@ -571,5 +583,69 @@
     "codes": "Códigos de status",
     "none": "Nada ainda.",
     "privacy": "Gerado a partir do log de acesso da borda. Nenhum cookie, endereço de cliente ou query string é armazenado. Intervalos de até {{days}} dias."
+  },
+  "overview": {
+    "strip": {
+      "label": "Último deploy de produção",
+      "noMessage": "Sem mensagem de commit",
+      "none": "Nada foi publicado ainda"
+    },
+    "state": {
+      "succeeded": "Pronto",
+      "running": "Compilando",
+      "failed": "Falhou",
+      "queued": "Na fila",
+      "held": "Em espera",
+      "canceled": "Cancelado",
+      "superseded": "Substituído",
+      "pending": "Pendente",
+      "refused": "Recusado",
+      "awaiting_approval": "Aguardando aprovação",
+      "unknown": "Desconhecido"
+    },
+    "duration": "{{minutes}} min {{seconds}} s",
+    "wiring": {
+      "title": "Como este site está conectado",
+      "domains": "Domínios",
+      "noDomains": "Ainda não há domínio.",
+      "tls": {
+        "healthy": "TLS ok",
+        "expiring_soon": "TLS expirando",
+        "expired": "TLS expirado",
+        "unknown": "TLS pendente"
+      },
+      "more": "+{{count}} mais",
+      "forms": "Formulários",
+      "noForms": "Ainda não há envios de formulário.",
+      "addForm": "Adicionar um formulário",
+      "submissions": "Envios: {{count}}",
+      "routes": "Rotas e regras",
+      "noRoutes": "Ainda não há regras.",
+      "addRule": "Adicionar uma regra",
+      "ruleSummary": "Regras {{rules}}, blocos de cabeçalho {{headers}}, apps com proxy {{proxied}}",
+      "on": "Ligado",
+      "off": "Desligado",
+      "lastDeploy": "Último deploy: {{state}}",
+      "noDeploy": "Ainda sem deploy",
+      "password": "Proteção por senha",
+      "cleanUrls": "URLs limpas",
+      "spa": "Fallback de página única",
+      "openSettings": "Abrir configurações",
+      "outTitle": "Conecta-se a",
+      "apps": "Apps com proxy",
+      "noApps": "Nenhum",
+      "repo": "Repositório Git",
+      "notConnected": "Não conectado",
+      "hook": "Hook de deploy",
+      "tokens": "Tokens de deploy para CI",
+      "tokensActive": "{{count}} ativos",
+      "none": "Nenhum",
+      "connect": "Conectar",
+      "connected": "Conectado"
+    },
+    "previews": {
+      "title": "Previews recentes",
+      "none": "Ainda não há previews de branches."
+    }
   }
 }

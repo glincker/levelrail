@@ -59,9 +59,7 @@ func errorTrackingPath(app string) string {
 
 // GetErrorTracking calls GET /api/v1/apps/{name}/error-tracking.
 func (c *Client) GetErrorTracking(ctx context.Context, app string) (ErrorTrackingResource, error) {
-	var out ErrorTrackingResource
-	err := c.do(ctx, http.MethodGet, errorTrackingPath(app), nil, &out)
-	return out, err
+	return getJSON[ErrorTrackingResource](ctx, c, errorTrackingPath(app))
 }
 
 // EnableErrorTracking calls POST /api/v1/apps/{name}/error-tracking: creates
@@ -74,7 +72,7 @@ func (c *Client) EnableErrorTracking(ctx context.Context, app string) (ErrorTrac
 
 // DisableErrorTracking calls DELETE /api/v1/apps/{name}/error-tracking.
 func (c *Client) DisableErrorTracking(ctx context.Context, app string) error {
-	return c.do(ctx, http.MethodDelete, errorTrackingPath(app), nil, nil)
+	return c.del(ctx, errorTrackingPath(app))
 }
 
 // ListErrors calls GET /api/v1/apps/{name}/errors.
@@ -93,16 +91,12 @@ func (c *Client) ListErrors(ctx context.Context, app string, o ErrorListOptions)
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out []ErrorIssue
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]ErrorIssue](ctx, c, path)
 }
 
 // GetError calls GET /api/v1/apps/{name}/errors/{fingerprint}.
 func (c *Client) GetError(ctx context.Context, app, fingerprint string) (ErrorIssueDetail, error) {
-	var out ErrorIssueDetail
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/errors/"+PathEscape(fingerprint), nil, &out)
-	return out, err
+	return getJSON[ErrorIssueDetail](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/errors/"+PathEscape(fingerprint))
 }
 
 // SetErrorStatus calls PATCH /api/v1/apps/{name}/errors/{fingerprint}.

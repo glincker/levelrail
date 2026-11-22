@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -26,7 +25,5 @@ func (c *Client) VolumeSizeHistory(ctx context.Context, app, volume, from, to st
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out []VolumeSizePoint
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]VolumeSizePoint](ctx, c, path)
 }

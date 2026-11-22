@@ -49,9 +49,7 @@ type PostmortemEditRequest struct {
 
 // GetIncidentPostmortem calls GET /api/v1/incidents/{id}/postmortem.
 func (c *Client) GetIncidentPostmortem(ctx context.Context, id string) (IncidentPostmortem, error) {
-	var out IncidentPostmortem
-	err := c.do(ctx, http.MethodGet, incidentPath(id, "/postmortem"), nil, &out)
-	return out, err
+	return getJSON[IncidentPostmortem](ctx, c, incidentPath(id, "/postmortem"))
 }
 
 // DraftIncidentPostmortem calls POST /api/v1/incidents/{id}/postmortem/draft.

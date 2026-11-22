@@ -91,3 +91,21 @@ func TestHTTPSink_Send(t *testing.T) {
 		})
 	}
 }
+
+func TestHTTPSink_SendsAuthHeader(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("X-Api-Key")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	sink := NewHTTPSink(srv.URL, srv.Client())
+	sink.HeaderName, sink.HeaderValue = "X-Api-Key", "token-123"
+	if err := sink.Send(t.Context(), []LogEntry{{ResourceID: "service:web", Message: "hi"}}); err != nil {
+		t.Fatal(err)
+	}
+	if got != "token-123" {
+		t.Fatalf("header = %q", got)
+	}
+}

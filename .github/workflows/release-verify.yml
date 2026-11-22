@@ -27,6 +27,7 @@ jobs:
       EVENT: ${{ github.event_name }}
       RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
       RUN_URL: ${{ github.event.workflow_run.html_url }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
       RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
       RELEASE_TAG_EVENT: ${{ github.event.release.tag_name }}
     steps:
@@ -62,11 +63,26 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "ok=$([ $code -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
+      # The run can fail while every asset is present (an image or npm job), so
+      # the issue must name the failed jobs instead of only echoing the asset check.
+      - name: List failed jobs
+        id: jobs
+        if: github.event_name == 'workflow_run'
+        run: |
+          set +e
+          out="$(scripts/release/failed-jobs.sh "$RUN_ID" --repo "$REPO" 2>&1)"
+          {
+            echo "failed<<EOF"
+            echo "$out"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Open, update or close the issue
         env:
           TAG: ${{ steps.tag.outputs.tag }}
           OK: ${{ steps.verify.outputs.ok }}
           MISSING: ${{ steps.verify.outputs.missing }}
+          FAILED_JOBS: ${{ steps.jobs.outputs.failed }}
         run: |
           set -euo pipefail
           title="Release ${TAG} incomplete"
@@ -89,15 +105,34 @@ jobs:
           fi
 
           fence='```'
+          if [ "$OK" = "true" ]; then
+            asset_line="Asset check passed (${MISSING}). The failure is in the jobs below, not in the release assets."
+          else
+            asset_line="Asset check failed:"
+          fi
           body="$(
             echo "Release run: ${run_url}"
             echo
-            echo "Verification result:"
+            echo "$asset_line"
+            if [ "$OK" != "true" ]; then
+              echo "$fence"
+              echo "$MISSING"
+              echo "$fence"
+            fi
+            echo
+            if [ -n "${FAILED_JOBS:-}" ]; then
+              echo "Failed jobs:"
+              echo "$FAILED_JOBS"
+              echo
+            fi
+            echo "The GitHub release for ${TAG} may already be public; treat it as incomplete until this issue closes."
+            echo
+            echo "Rerun only the failed jobs (assets and signing are not rebuilt):"
             echo "$fence"
-            echo "$MISSING"
+            [ -n "${RUN_ID:-}" ] && echo "gh run rerun ${RUN_ID} --repo ${REPO} --failed"
             echo "$fence"
             echo
-            echo "Redispatch once the cause is fixed:"
+            echo "If the release itself is broken, redispatch once the cause is fixed:"
             echo "$fence"
             echo "gh workflow run release.yml --ref main -f tag=${TAG}"
             echo "$fence"

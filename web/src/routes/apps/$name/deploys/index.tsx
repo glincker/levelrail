@@ -7,6 +7,7 @@ import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../../hooks/useDeployProgress'
 import { useApp } from '../../../../queries/apps'
 import { useAppTimeline } from '../../../../queries/appTimeline'
+import { useConfigRevisions } from '../../../../queries/appConfigRevisions'
 import { AppHistoryTimeline } from '../../../../components/deployTimeline/AppHistoryTimeline'
 import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
 import { ScheduledDeploysList } from '../../../../components/deploy/ScheduledDeploysList'
@@ -50,6 +51,7 @@ function DeploysSection() {
 
   const { data: app } = useApp(name)
   const { data: activity } = useAppTimeline(name)
+  const { data: revisions } = useConfigRevisions(name)
 
   return (
     <div className="space-y-6">
@@ -59,6 +61,7 @@ function DeploysSection() {
         attempts={attempts}
         activity={activity ?? []}
         managedByStack={app.managed_by_stack}
+        revisions={revisions ?? []}
       />
       <DeployAttemptsList
         appName={name}

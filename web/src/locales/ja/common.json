@@ -9,7 +9,23 @@
   },
   "nodeSelect": {
     "auto": "自動 (負荷が最も低いノード)",
-    "autoHint": "自動にすると、対象となるノードのうち負荷が最も低いノードに配置します。ノードを選ぶと、そこに固定されます。"
+    "autoHint": "自動にすると、対象となるノードのうち負荷が最も低いノードに配置します。ノードを選ぶと、そこに固定されます。",
+    "picker": {
+      "choose": "ノードを選択",
+      "cost": "{{amount}}/月",
+      "freeCpu": "CPU 空き {{value}}",
+      "freeMemory": "空き {{value}}",
+      "search": "ノードを検索",
+      "empty": "一致するノードがありません",
+      "local": "このサーバー",
+      "unmanaged": "未管理",
+      "health": {
+        "healthy": "正常",
+        "offline": "オフライン",
+        "cordoned": "隔離中",
+        "pending": "保留中"
+      }
+    }
   },
   "draft": {
     "message": "{{time}}の未保存の下書きがあります。",
@@ -96,6 +112,19 @@
     "summary": "{{total}}件中{{pass}}件のチェックに合格",
     "allClear": "すべてのチェックに合格しました。対応が必要な項目はありません。",
     "needsAction": "要対応"
+  },
+  "healthExplain": {
+    "label": "理由",
+    "failingCheck": "チェック {{target}} が {{since}} から失敗しています",
+    "restarts": "再起動: {{n}}",
+    "crashloop": "クラッシュループ",
+    "lastDeploy": "直近のデプロイ: {{status}}",
+    "logError": "直近のエラー: {{line}}",
+    "next": {
+      "apply_preset": "ヘルスプリセット {{preset}} を試してください",
+      "rollback": "前のデプロイにロールバック",
+      "view_logs": "ログを確認"
+    }
   },
   "logs": {
     "previousContainerEnded": "前のコンテナインスタンスが終了しました",
@@ -547,7 +576,8 @@
       "resources": "リソース",
       "security": "セキュリティ",
       "console": "コンソール",
-      "integrations": "連携"
+      "integrations": "連携",
+      "integrations-aws-link": "AWSアカウントを連携"
     },
     "quickNav": {
       "label": "クイックナビゲーション (Lキーを長押し)"

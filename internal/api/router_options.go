@@ -590,6 +590,12 @@ func (rt *Router) SetMeshPaths(r meshpath.Resolver) {
 	rt.meshPaths = r
 }
 
+// SetAgentTunnels sets the check for nodes whose agent can carry ingress
+// tunnels, so a mesh-less node with the tunnel is not reported as blocked.
+func (rt *Router) SetAgentTunnels(capable func(nodeID string) bool) {
+	rt.agentTunnels = capable
+}
+
 // WithMasterKeyRotation enables POST
 // /api/v1/system/master-key/rotate and the doctor's rotation-age check.
 // masterKeyFilePath should be the on-disk path the running control plane

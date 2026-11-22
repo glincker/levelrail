@@ -1128,7 +1128,7 @@ levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 </Accordion>
 <Accordion title="Agent self-update">
 
-Upgrading an agent is still manual: stop it, replace the binary or image, start it again. The control plane only flags outdated agents.
+Agents can update themselves, and it is opt-in: turn on `nodes.agent_auto_update` in runtime settings. Updates are signature verified, roll back to the previous binary when the new one fails, and can be limited to a maintenance window (`nodes.agent_update_window`) or to patch releases (`nodes.agent_update_channel`). Hold a node with `levelrail nodes agent-update hold <id>`, or update anyway with `levelrail nodes agent-update apply <id> --force`. Package-managed installs are left to their package manager. This has been exercised on single hosts, not yet on a larger fleet.
 
 </Accordion>
 <Accordion title="Node-specific change history">

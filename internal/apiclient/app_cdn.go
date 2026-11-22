@@ -40,9 +40,7 @@ func appCDNPath(app string) string {
 
 // GetAppCDN calls GET /api/v1/apps/{name}/cdn.
 func (c *Client) GetAppCDN(ctx context.Context, app string) (AppCDN, error) {
-	var out AppCDN
-	err := c.do(ctx, http.MethodGet, appCDNPath(app), nil, &out)
-	return out, err
+	return getJSON[AppCDN](ctx, c, appCDNPath(app))
 }
 
 // SetAppCDN calls PUT /api/v1/apps/{name}/cdn; a nil proxied clears the override.

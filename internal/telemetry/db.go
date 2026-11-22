@@ -63,7 +63,10 @@ func Open(ctx context.Context, path string) (*DB, error) {
 
 func dsn(path string) string {
 	q := url.Values{}
+	// Only takes effect on a new file; existing databases are never vacuumed to switch it.
+	q.Add("_pragma", "auto_vacuum(INCREMENTAL)")
 	q.Add("_pragma", "busy_timeout(5000)")
 	q.Add("_pragma", "journal_mode(WAL)")
+	q.Add("_pragma", "synchronous(NORMAL)")
 	return "file:" + path + "?" + q.Encode()
 }

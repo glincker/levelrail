@@ -108,7 +108,5 @@ func (c *Client) StartAppImportVolumeCopy(ctx context.Context, id string, items 
 
 // AppImportVolumeCopyStatus calls GET .../sessions/{id}/volumes/copy.
 func (c *Client) AppImportVolumeCopyStatus(ctx context.Context, id string) (AppImportVolumeCopy, error) {
-	var out AppImportVolumeCopy
-	err := c.do(ctx, http.MethodGet, appImportVolumeCopyPath(id), nil, &out)
-	return out, err
+	return getJSON[AppImportVolumeCopy](ctx, c, appImportVolumeCopyPath(id))
 }

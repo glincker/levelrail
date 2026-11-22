@@ -213,6 +213,7 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 	if logger == nil {
 		logger = slog.Default()
 	}
+	logAgentCapabilities(logger, &capsLogOnce)
 
 	var cfg sessionConfig
 	for _, opt := range opts {
@@ -254,12 +255,16 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 	defer func() { _ = conn.Close() }()
 
 	client := agentpb.NewAgentServiceClient(conn)
+	ctx = withTunnels(ctx, client)
 	stream, err := client.Session(ctx)
 	if err != nil {
 		return fmt.Errorf("agent: open session: %w", err)
 	}
 	if err := stream.Send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Hello{Hello: LocalAgentInfo()}}); err != nil {
 		return fmt.Errorf("agent: send hello: %w", err)
+	}
+	if cfg.onStarted != nil {
+		cfg.onStarted()
 	}
 	var sessionStream agentClientStream = stream
 	if cfg.renewer != nil {
@@ -308,6 +313,7 @@ type sessionConfig struct {
 	onboardingProbe   OnboardingProbe
 	onboardingEvery   time.Duration
 	renewer           *Renewer
+	onStarted         func()
 	fileRoot          string
 	silence           *SilenceWatcher
 }
@@ -337,6 +343,12 @@ func WithMesh(nodeID string, mesh MeshApplier) SessionOption {
 	return func(c *sessionConfig) { c.meshNodeID, c.mesh = nodeID, mesh }
 }
 
+// WithSessionStarted calls fn once the control plane accepted the connection
+// and the hello went out, so callers can tell a real session from a failed dial.
+func WithSessionStarted(fn func()) SessionOption {
+	return func(c *sessionConfig) { c.onStarted = fn }
+}
+
 // WithHeartbeatInterval overrides the Heartbeat cadence; the env var is read by cmd/levelrail-agent, not here.
 func WithHeartbeatInterval(d time.Duration) SessionOption {
 	return func(c *sessionConfig) { c.heartbeatInterval = d }
@@ -351,13 +363,13 @@ func WithKeepalive(pingTime, timeout time.Duration) SessionOption {
 // Sends go through sendMu: a gRPC stream is not safe for concurrent Send.
 func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, mesh MeshApplier, meshNodeID string, heartbeatInterval time.Duration, gpuProbe GPUProbe, logger *slog.Logger, hostProbes ...HostProbe) error {
 	var sendMu sync.Mutex
-	send := func(msg *agentpb.AgentMessage) {
+	rawSend := func(msg *agentpb.AgentMessage) error {
 		sendMu.Lock()
 		defer sendMu.Unlock()
-		if err := stream.Send(msg); err != nil {
-			logger.Warn("agent: session: send failed", slog.String("error", err.Error()))
-		}
+		return stream.Send(msg)
 	}
+	send, replay := bufferedSend(offlineBufferFrom(ctx), rawSend, logger)
+	go replay()
 	emitEvent := func(ev *agentpb.ProxiedEvent) {
 		send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Event{Event: ev}})
 	}

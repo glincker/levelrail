@@ -69,9 +69,7 @@ func secretScanPath(name string) string { return "/api/v1/apps/" + PathEscape(na
 
 // GetSecretScan calls GET /api/v1/apps/{name}/secret-scan.
 func (c *Client) GetSecretScan(ctx context.Context, name string) (SecretScanSettings, error) {
-	var out SecretScanSettings
-	err := c.do(ctx, http.MethodGet, secretScanPath(name), nil, &out)
-	return out, err
+	return getJSON[SecretScanSettings](ctx, c, secretScanPath(name))
 }
 
 // SetSecretScanPolicy calls PUT /api/v1/apps/{name}/secret-scan.
@@ -97,12 +95,10 @@ func (c *Client) AllowSecretFingerprint(ctx context.Context, name, fingerprint, 
 
 // UnallowSecretFingerprint calls DELETE /api/v1/apps/{name}/secret-scan/allow/{fingerprint}.
 func (c *Client) UnallowSecretFingerprint(ctx context.Context, name, fingerprint string) error {
-	return c.do(ctx, http.MethodDelete, secretScanPath(name)+"/allow/"+PathEscape(fingerprint), nil, nil)
+	return c.del(ctx, secretScanPath(name)+"/allow/"+PathEscape(fingerprint))
 }
 
 // GetDeploymentSecretScan calls GET /api/v1/apps/{name}/deployments/{id}/secret-scan.
 func (c *Client) GetDeploymentSecretScan(ctx context.Context, name, id string) (SecretScanRun, error) {
-	var out SecretScanRun
-	err := c.do(ctx, http.MethodGet, deploymentPath(name, id, "secret-scan"), nil, &out)
-	return out, err
+	return getJSON[SecretScanRun](ctx, c, deploymentPath(name, id, "secret-scan"))
 }

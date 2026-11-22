@@ -43,12 +43,10 @@ func (c *Client) CreateInvite(ctx context.Context, req CreateInviteRequest) (Cre
 
 // ListInvites calls GET /api/v1/invites.
 func (c *Client) ListInvites(ctx context.Context) ([]InviteResource, error) {
-	var out []InviteResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/invites", nil, &out)
-	return out, err
+	return getJSON[[]InviteResource](ctx, c, "/api/v1/invites")
 }
 
 // RevokeInvite calls DELETE /api/v1/invites/{id}.
 func (c *Client) RevokeInvite(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/invites/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/invites/"+PathEscape(id))
 }

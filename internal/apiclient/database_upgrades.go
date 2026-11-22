@@ -113,9 +113,7 @@ type DBUpgradeSummary struct {
 
 // GetDatabaseUpgrades calls GET /api/v1/databases/{name}/upgrades.
 func (c *Client) GetDatabaseUpgrades(ctx context.Context, name string) (DBUpgradesResource, error) {
-	var out DBUpgradesResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/upgrades", nil, &out)
-	return out, err
+	return getJSON[DBUpgradesResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/upgrades")
 }
 
 // SetDatabaseUpgradePolicy calls PUT /api/v1/databases/{name}/upgrade-policy.
@@ -140,16 +138,12 @@ func (c *Client) UpgradeDatabaseNowWith(ctx context.Context, name, version, conf
 
 // DatabaseUpgradeSummary calls GET /api/v1/databases/upgrade-summary.
 func (c *Client) DatabaseUpgradeSummary(ctx context.Context) (DBUpgradeSummary, error) {
-	var out DBUpgradeSummary
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/upgrade-summary", nil, &out)
-	return out, err
+	return getJSON[DBUpgradeSummary](ctx, c, "/api/v1/databases/upgrade-summary")
 }
 
 // GetPlatformUpgradePolicy calls GET /api/v1/settings/database-upgrades.
 func (c *Client) GetPlatformUpgradePolicy(ctx context.Context) (DBUpgradePolicy, error) {
-	var out DBUpgradePolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/database-upgrades", nil, &out)
-	return out, err
+	return getJSON[DBUpgradePolicy](ctx, c, "/api/v1/settings/database-upgrades")
 }
 
 // SetPlatformUpgradePolicy calls PUT /api/v1/settings/database-upgrades.

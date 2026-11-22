@@ -153,9 +153,7 @@ type AppHookRunsResource struct {
 // (internal/api/apps_hooks.go's handleGetAppHookRuns): the most recent
 // outcome of each of name's pre/post-deploy hooks.
 func (c *Client) GetAppHookRuns(ctx context.Context, name string) (AppHookRunsResource, error) {
-	var out AppHookRunsResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/hook-runs", nil, &out)
-	return out, err
+	return getJSON[AppHookRunsResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/hook-runs")
 }
 
 // GetAppGroup calls GET /api/v1/apps/{name}/group
@@ -163,9 +161,7 @@ func (c *Client) GetAppHookRuns(ctx context.Context, name string) (AppHookRunsRe
 // services under the same store.App, one call whether name already has
 // siblings or is its own one-service group.
 func (c *Client) GetAppGroup(ctx context.Context, name string) (AppGroupResource, error) {
-	var out AppGroupResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/group", nil, &out)
-	return out, err
+	return getJSON[AppGroupResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/group")
 }
 
 // DeploySpec calls POST /api/v1/apps/{name}/deploy-spec

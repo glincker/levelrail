@@ -430,22 +430,7 @@ type RoutesOptions struct {
 	TLS bool
 	// ACMEEnabled, if true (and TLS is true and there's at least one
 	// host), scopes every routed host's single automation policy to a
-	// real ACME issuer (NewACMEIssuer) instead of Caddy's offline
-	// internal issuer. This is the operator-facing toggle
-	// internal/store.IngressSettings.ACMEEnabled drives
-	// (internal/reconcile/ingress reads that row fresh every reconcile
-	// pass and threads it straight through). False, the default,
-	// reproduces this package's original, ADR-005-verified behavior
-	// exactly: every route gets the internal issuer, byte-identical to
-	// before this field existed. There is deliberately no per-host mix
-	// of ACME and internal issuers in this pass: every currently-routed
-	// host shares one automation policy, either all-internal or
-	// all-ACME. Real per-domain granularity is genuine, existing Caddy
-	// capability (AutomationPolicy already supports an ordered list of
-	// policies, "the first policy whose Subjects match a given hostname
-	// wins," see that type's own doc comment) but is an explicit,
-	// deliberately out-of-scope v1 gap, not something this field's
-	// absence of a per-route override quietly forecloses.
+	// real ACME issuer (NewACMEIssuer) instead of Caddy's offline.
 	ACMEEnabled bool
 	// ACMEEmail is the ACME account contact address, passed straight
 	// through to NewACMEIssuer when ACMEEnabled is true. This package

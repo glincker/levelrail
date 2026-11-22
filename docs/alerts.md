@@ -58,18 +58,27 @@ A rule body carries `name`, `kind`, `channel_id`, `enabled`, `severity`, `labels
 
 ## Which alerts exist by default?
 
-A set of platform-wide rules is seeded on first boot, and you can turn each on or off. They include certificate expiry at 14, 7, 3 and 1 days (`APP_DEFAULT_ALERT_CERT_DAYS` changes the days), node offline, node disk space, control plane backup stale, restore drill failed, backup copy behind, export destination failing, log archive failing, registry credential refresh failing, outbound email failing, data cleanup failing, a failed deploy, a failed database backup, a stale database backup and a database down. A `monitor_down` default is added when `APP_MONITORS_ENABLED` is true.
+A set of platform-wide rules is seeded on first boot, and you can turn each on or off. They include certificate expiry at 14, 7, 3 and 1 days (`APP_DEFAULT_ALERT_CERT_DAYS` changes the days), node offline, node disk space, control plane backup stale, restore drill failed, backup copy behind, export destination failing, log archive failing, registry credential refresh failing, outbound email failing, data cleanup failing, a failed deploy, a failed database backup, a stale database backup, a database down, an app crash looping (3 restarts in 10 minutes) and an app returning many 5xx errors (5 percent or more over the request window). Existing installs get the two new rules once on upgrade; a rule you deleted or edited is never re-added or overwritten. A `monitor_down` default is added when `APP_MONITORS_ENABLED` is true.
 
 In the dashboard they are in **Alerts, Defaults**, with a switch per alert and a reset. From the CLI:
 
 ```bash
+levelrail-cli alerts defaults show
+levelrail-cli alerts defaults disable            # master switch for all default alerts
+levelrail-cli alerts defaults enable
 levelrail-cli alerts defaults list
 levelrail-cli alerts defaults disable ID
 levelrail-cli alerts defaults enable ID
 levelrail-cli alerts defaults reset
 ```
 
-API: `GET /api/v1/alert-defaults`, `PUT /api/v1/alert-defaults/{id}`, `POST /api/v1/alert-defaults/reset`.
+API: `GET /api/v1/alert-defaults`, `PUT /api/v1/alert-defaults/{id}`, `POST /api/v1/alert-defaults/reset`, `GET` and `PUT /api/v1/alert-defaults/settings`.
+
+Default alerts always reach the in-app inbox, and the admin email only when email is set up. The master switch is the `alerts.defaults_enabled` runtime setting, and the crash loop and 5xx thresholds are `alerts.default_crashloop_restarts`, `alerts.default_5xx_percent` and `alerts.default_5xx_min_requests`.
+
+## Weekly digest
+
+One plain text mail a week with apps, deploys, restarts, certificates, backups and disk use. It is off by default. Turn it on with the `alerts.digest_schedule` runtime setting (for example `mon@08`, UTC) or `levelrail-cli alerts digest schedule mon@08`. It is sent to the admin only when email is configured. See it first with `levelrail-cli alerts digest preview`.
 
 ## Where do I see what fired?
 
@@ -155,7 +164,7 @@ The code defines 18 kinds. Maturity is from [Feature status](/feature-status).
 | `googlechat` | Google Chat | beta |
 | `webpush` | Browser push | beta |
 
-Beta means tested against local fakes that check each vendor's documented payload shape, with no real vendor account accepting a send yet. `webpush` is tested with a recording sender only, and its destination is every registered browser subscription instead of a URL. `channels create` accepts every kind except `webpush`. For email providers see [Email notifications](/email-notifications).
+Beta means tested against local fakes that check each vendor's documented payload shape, with no real vendor account accepting a send yet. `webpush` is tested with a recording sender only, and its destination is the registered browser subscriptions instead of a URL. Only users who may see an event receive it: instance notices go to admins, and app events go to users who can read that app. `channels create` accepts every kind except `webpush`. For email providers see [Email notifications](/email-notifications).
 
 ## How does Levelrail avoid alert noise?
 

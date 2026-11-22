@@ -31,9 +31,7 @@ type DNSRegistrarHint struct {
 
 // GetDNSZoneDetail calls GET /api/v1/dns/zones/{provider}/{id}.
 func (c *Client) GetDNSZoneDetail(ctx context.Context, provider, id string) (DNSZone, error) {
-	var out DNSZone
-	err := c.do(ctx, http.MethodGet, "/api/v1/dns/zones/"+PathEscape(provider)+"/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[DNSZone](ctx, c, "/api/v1/dns/zones/"+PathEscape(provider)+"/"+PathEscape(id))
 }
 
 // DNSCapabilities mirrors internal/dnszones.Capabilities.
@@ -187,9 +185,7 @@ func zonePath(zone, suffix string) string { return "/zones/" + PathEscape(zone) 
 
 // ListDNSZones calls GET /api/v1/dns/zones.
 func (c *Client) ListDNSZones(ctx context.Context, provider string) (DNSZonesList, error) {
-	var out DNSZonesList
-	err := c.do(ctx, http.MethodGet, dnsPath(provider, "/zones", nil), nil, &out)
-	return out, err
+	return getJSON[DNSZonesList](ctx, c, dnsPath(provider, "/zones", nil))
 }
 
 // CreateDNSZone calls POST /api/v1/dns/zones.
@@ -215,9 +211,7 @@ func (c *Client) DNSZoneNameServers(ctx context.Context, provider, zone string) 
 
 // DNSZoneDelegation calls GET /api/v1/dns/zones/{zone}/delegation.
 func (c *Client) DNSZoneDelegation(ctx context.Context, provider, zone string) (DNSDelegation, error) {
-	var out DNSDelegation
-	err := c.do(ctx, http.MethodGet, dnsPath(provider, zonePath(zone, "/delegation"), nil), nil, &out)
-	return out, err
+	return getJSON[DNSDelegation](ctx, c, dnsPath(provider, zonePath(zone, "/delegation"), nil))
 }
 
 // ListDNSZoneRecords calls GET /api/v1/dns/zones/{zone}/records.
@@ -229,9 +223,7 @@ func (c *Client) ListDNSZoneRecords(ctx context.Context, provider, zone, typ, qu
 	if query != "" {
 		q.Set("q", query)
 	}
-	var out DNSRecordsList
-	err := c.do(ctx, http.MethodGet, dnsPath(provider, zonePath(zone, "/records"), q), nil, &out)
-	return out, err
+	return getJSON[DNSRecordsList](ctx, c, dnsPath(provider, zonePath(zone, "/records"), q))
 }
 
 // CreateDNSZoneRecord calls POST /api/v1/dns/zones/{zone}/records.
@@ -254,7 +246,7 @@ func (c *Client) DeleteDNSZoneRecord(ctx context.Context, provider, zone string,
 	if k.SetIdentifier != "" {
 		q.Set("set_identifier", k.SetIdentifier)
 	}
-	return c.do(ctx, http.MethodDelete, dnsPath(provider, zonePath(zone, "/records"), q), nil, nil)
+	return c.del(ctx, dnsPath(provider, zonePath(zone, "/records"), q))
 }
 
 // ImportDNSZoneRecords calls POST /api/v1/dns/zones/{zone}/records/import.
@@ -290,9 +282,7 @@ func (c *Client) ApplyDNSTemplate(ctx context.Context, provider, zone, id string
 
 // ListDNSHealthChecks calls GET /api/v1/dns/health-checks.
 func (c *Client) ListDNSHealthChecks(ctx context.Context) ([]DNSHealthCheck, error) {
-	var out []DNSHealthCheck
-	err := c.do(ctx, http.MethodGet, dnsPath("", "/health-checks", nil), nil, &out)
-	return out, err
+	return getJSON[[]DNSHealthCheck](ctx, c, dnsPath("", "/health-checks", nil))
 }
 
 // CreateDNSHealthCheck calls POST /api/v1/dns/health-checks.
@@ -304,7 +294,7 @@ func (c *Client) CreateDNSHealthCheck(ctx context.Context, hc DNSHealthCheck) (D
 
 // DeleteDNSHealthCheck calls DELETE /api/v1/dns/health-checks/{id}.
 func (c *Client) DeleteDNSHealthCheck(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, dnsPath("", "/health-checks/"+PathEscape(id), nil), nil, nil)
+	return c.del(ctx, dnsPath("", "/health-checks/"+PathEscape(id), nil))
 }
 
 // CheckDNS calls GET /api/v1/dns/check.
@@ -313,7 +303,5 @@ func (c *Client) CheckDNS(ctx context.Context, name, typ, zone string) (DNSPropa
 	if zone != "" {
 		q.Set("zone", zone)
 	}
-	var out DNSPropagation
-	err := c.do(ctx, http.MethodGet, dnsPath("", "/check", q), nil, &out)
-	return out, err
+	return getJSON[DNSPropagation](ctx, c, dnsPath("", "/check", q))
 }

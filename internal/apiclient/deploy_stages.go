@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -31,9 +30,7 @@ type DeployStages struct {
 
 // GetDeployStages calls GET /api/v1/apps/{name}/deploys/{deployID}/stages.
 func (c *Client) GetDeployStages(ctx context.Context, name, deployID string) (DeployStages, error) {
-	var out DeployStages
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/stages", nil, &out)
-	return out, err
+	return getJSON[DeployStages](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/deploys/"+PathEscape(deployID)+"/stages")
 }
 
 // StreamDeployStageLog tails one build stage's log lines of a deploy attempt.

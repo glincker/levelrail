@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '@/lib/pollTier'
+import { useApiMutation } from './useApiMutation'
 
 export type MaintenanceScope = 'all' | 'project' | 'app'
 export type MaintenanceState = 'scheduled' | 'active' | 'ended'
@@ -100,9 +101,8 @@ export function useCreateScheduledMaintenance() {
 }
 
 export function useDeleteScheduledMaintenance() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string): Promise<void> => {
+  return useApiMutation({
+    fn: async (id: string): Promise<void> => {
       const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
         method: 'DELETE',
       })
@@ -116,6 +116,6 @@ export function useDeleteScheduledMaintenance() {
         )
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: maintenanceKeys.all }),
+    invalidate: [maintenanceKeys.all],
   })
 }

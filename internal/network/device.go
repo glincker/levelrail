@@ -1,33 +1,6 @@
 package network
 
 // This file: the real Mesh, on wireguard-go (ADR 006's userspace path).
-//
-// Scope boundary, stated up front rather than discovered by a reader
-// halfway down: this type owns the WireGuard device, which means keys,
-// peers, the listen port, and the encrypted transport between nodes. It
-// does NOT assign the mesh IP to the interface or add routes for it.
-// That is a netlink operation on Linux and a route(8)/ioctl operation on
-// Darwin, it is what wg-quick(8) does around wireguard-go rather than
-// something wireguard-go does, and doing it properly means either a new
-// netlink dependency or a few hundred lines of platform-specific,
-// root-only, untestable syscall marshalling. Neither belongs in the same
-// change as the mesh's decision logic.
-//
-// So the seam is explicit: LinkConfigurator. Supply one and the device is
-// fully usable; supply none and the WireGuard device still comes up and
-// still handshakes, but nothing routes through it until the interface is
-// addressed externally, and the device says so loudly (once, at Warn,
-// naming the interface and the address it needs) instead of reporting a
-// success that is not one. An unaddressed interface that silently
-// reported healthy is exactly the class of failure that sets a deploy
-// platform's reputation: the ones a health check cannot catch because
-// it never looked.
-//
-// Both backends land here. The in-kernel path (BackendKernel) is
-// currently detected but not separately implemented: Detect will report
-// kernel, and this device runs wireguard-go anyway, which is correct but
-// slower than it needs to be. See NewDevice for why that is the honest
-// state rather than a claim of kernel support.
 
 import (
 	"context"

@@ -129,16 +129,12 @@ func (c *Client) ListBuilds(ctx context.Context, app, status string, limit int) 
 	if limit > 0 {
 		q.Set("limit", strconv.Itoa(limit))
 	}
-	var out BuildListResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/builds?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[BuildListResource](ctx, c, "/api/v1/builds?"+q.Encode())
 }
 
 // GetBuild calls GET /api/v1/builds/{id}.
 func (c *Client) GetBuild(ctx context.Context, id string) (BuildResource, error) {
-	var out BuildResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/builds/"+url.PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[BuildResource](ctx, c, "/api/v1/builds/"+url.PathEscape(id))
 }
 
 // CancelBuild calls POST /api/v1/apps/{app}/builds/{id}/cancel.
@@ -157,9 +153,7 @@ func (c *Client) RetryBuild(ctx context.Context, app, id string) (string, error)
 
 // GetBuildCache calls GET /api/v1/builds/cache.
 func (c *Client) GetBuildCache(ctx context.Context, node string) (BuildCacheResource, error) {
-	var out BuildCacheResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/builds/cache?"+url.Values{"node": {node}}.Encode(), nil, &out)
-	return out, err
+	return getJSON[BuildCacheResource](ctx, c, "/api/v1/builds/cache?"+url.Values{"node": {node}}.Encode())
 }
 
 // PruneBuildCache calls POST /api/v1/builds/cache/prune.
@@ -194,9 +188,7 @@ type BuildCacheQuota struct {
 
 // GetBuildCacheQuota calls GET /api/v1/builds/cache/quota.
 func (c *Client) GetBuildCacheQuota(ctx context.Context) (BuildCacheQuota, error) {
-	var out BuildCacheQuota
-	err := c.do(ctx, http.MethodGet, "/api/v1/builds/cache/quota", nil, &out)
-	return out, err
+	return getJSON[BuildCacheQuota](ctx, c, "/api/v1/builds/cache/quota")
 }
 
 // ReclaimAppBuildCache calls POST /api/v1/apps/{name}/build-cache/reclaim.
@@ -251,9 +243,7 @@ type KillAllBuildsItem struct {
 
 // GetBuildQueue calls GET /api/v1/builds/queue.
 func (c *Client) GetBuildQueue(ctx context.Context) (BuildQueue, error) {
-	var out BuildQueue
-	err := c.do(ctx, http.MethodGet, "/api/v1/builds/queue", nil, &out)
-	return out, err
+	return getJSON[BuildQueue](ctx, c, "/api/v1/builds/queue")
 }
 
 // SetBuildQueue calls POST /api/v1/builds/queue/{pause|resume|drain}.
@@ -302,9 +292,7 @@ type BuildRunners struct {
 
 // GetBuildRunners calls GET /api/v1/builds/runners.
 func (c *Client) GetBuildRunners(ctx context.Context) (BuildRunners, error) {
-	var out BuildRunners
-	err := c.do(ctx, http.MethodGet, "/api/v1/builds/runners", nil, &out)
-	return out, err
+	return getJSON[BuildRunners](ctx, c, "/api/v1/builds/runners")
 }
 
 // AppBuildRunner is an app's build placement from /api/v1/apps/{name}/build-runner.
@@ -326,9 +314,7 @@ type SetAppBuildRunnerRequest struct {
 
 // GetAppBuildRunner calls GET /api/v1/apps/{name}/build-runner.
 func (c *Client) GetAppBuildRunner(ctx context.Context, app string) (AppBuildRunner, error) {
-	var out AppBuildRunner
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+url.PathEscape(app)+"/build-runner", nil, &out)
-	return out, err
+	return getJSON[AppBuildRunner](ctx, c, "/api/v1/apps/"+url.PathEscape(app)+"/build-runner")
 }
 
 // SetAppBuildRunner calls PUT /api/v1/apps/{name}/build-runner.
@@ -351,7 +337,5 @@ type BuildRecordResource struct {
 
 // GetBuildRecord calls GET /api/v1/builds/{id}/record.
 func (c *Client) GetBuildRecord(ctx context.Context, id string) (BuildRecordResource, error) {
-	var out BuildRecordResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/builds/"+url.PathEscape(id)+"/record", nil, &out)
-	return out, err
+	return getJSON[BuildRecordResource](ctx, c, "/api/v1/builds/"+url.PathEscape(id)+"/record")
 }

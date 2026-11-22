@@ -120,9 +120,7 @@ func (c *Client) Probe(ctx context.Context, path string) error {
 
 // GetCPHealth calls GET /api/v1/system/control-plane-health.
 func (c *Client) GetCPHealth(ctx context.Context) (CPHealth, error) {
-	var out CPHealth
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/control-plane-health", nil, &out)
-	return out, err
+	return getJSON[CPHealth](ctx, c, "/api/v1/system/control-plane-health")
 }
 
 // FixCPHealth calls POST /api/v1/system/control-plane-health/fix.
@@ -134,7 +132,5 @@ func (c *Client) FixCPHealth(ctx context.Context, fix string) (CPHealth, error) 
 
 // GetIdleFootprint calls GET /api/v1/system/footprint.
 func (c *Client) GetIdleFootprint(ctx context.Context) (footprint.Assessment, error) {
-	var out footprint.Assessment
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/footprint", nil, &out)
-	return out, err
+	return getJSON[footprint.Assessment](ctx, c, "/api/v1/system/footprint")
 }

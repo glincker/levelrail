@@ -129,9 +129,7 @@ func (c *Client) ListAlertSilences(ctx context.Context, includeExpired bool) ([]
 	if includeExpired {
 		path += "?include_expired=true"
 	}
-	var out []SilenceResource
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]SilenceResource](ctx, c, path)
 }
 
 // CreateAlertSilence calls POST /api/v1/alert-silences.
@@ -158,9 +156,7 @@ func (c *Client) SilenceAlertRule(ctx context.Context, app, ruleID, duration, re
 
 // ListMaintenanceWindows calls GET /api/v1/alert-maintenance-windows.
 func (c *Client) ListMaintenanceWindows(ctx context.Context) ([]MaintenanceWindowResource, error) {
-	var out []MaintenanceWindowResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/alert-maintenance-windows", nil, &out)
-	return out, err
+	return getJSON[[]MaintenanceWindowResource](ctx, c, "/api/v1/alert-maintenance-windows")
 }
 
 // CreateMaintenanceWindow calls POST /api/v1/alert-maintenance-windows.
@@ -179,14 +175,12 @@ func (c *Client) UpdateMaintenanceWindow(ctx context.Context, id string, req Mai
 
 // DeleteMaintenanceWindow calls DELETE /api/v1/alert-maintenance-windows/{id}.
 func (c *Client) DeleteMaintenanceWindow(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/alert-maintenance-windows/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/alert-maintenance-windows/"+PathEscape(id))
 }
 
 // ListAlertHistory calls GET /api/v1/alert-history.
 func (c *Client) ListAlertHistory(ctx context.Context, q AlertHistoryQuery) ([]AlertHistoryEntry, error) {
-	var out []AlertHistoryEntry
-	err := c.do(ctx, http.MethodGet, "/api/v1/alert-history"+q.encode(), nil, &out)
-	return out, err
+	return getJSON[[]AlertHistoryEntry](ctx, c, "/api/v1/alert-history"+q.encode())
 }
 
 // StatusPageSettings mirrors internal/api's statusSettingsResource.
@@ -261,9 +255,7 @@ type StatusPageView struct {
 
 // GetStatusPage calls GET /api/v1/status-page.
 func (c *Client) GetStatusPage(ctx context.Context) (StatusPageSettings, error) {
-	var out StatusPageSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/status-page", nil, &out)
-	return out, err
+	return getJSON[StatusPageSettings](ctx, c, "/api/v1/status-page")
 }
 
 // PutStatusPage calls PUT /api/v1/status-page.
@@ -275,16 +267,12 @@ func (c *Client) PutStatusPage(ctx context.Context, s StatusPageSettings) (Statu
 
 // StatusPagePreview calls GET /api/v1/status-page/preview.
 func (c *Client) StatusPagePreview(ctx context.Context) (StatusPageView, error) {
-	var out StatusPageView
-	err := c.do(ctx, http.MethodGet, "/api/v1/status-page/preview", nil, &out)
-	return out, err
+	return getJSON[StatusPageView](ctx, c, "/api/v1/status-page/preview")
 }
 
 // ListStatusComponents calls GET /api/v1/status-page/components.
 func (c *Client) ListStatusComponents(ctx context.Context) ([]StatusComponent, error) {
-	var out []StatusComponent
-	err := c.do(ctx, http.MethodGet, "/api/v1/status-page/components", nil, &out)
-	return out, err
+	return getJSON[[]StatusComponent](ctx, c, "/api/v1/status-page/components")
 }
 
 // CreateStatusComponent calls POST /api/v1/status-page/components.
@@ -303,9 +291,7 @@ func (c *Client) UpdateStatusComponent(ctx context.Context, id string, comp Stat
 
 // ListStatusGroups calls GET /api/v1/status-page/groups.
 func (c *Client) ListStatusGroups(ctx context.Context) ([]StatusGroup, error) {
-	var out []StatusGroup
-	err := c.do(ctx, http.MethodGet, "/api/v1/status-page/groups", nil, &out)
-	return out, err
+	return getJSON[[]StatusGroup](ctx, c, "/api/v1/status-page/groups")
 }
 
 // CreateStatusGroup calls POST /api/v1/status-page/groups.
@@ -324,19 +310,17 @@ func (c *Client) UpdateStatusGroup(ctx context.Context, id string, g StatusGroup
 
 // DeleteStatusGroup calls DELETE /api/v1/status-page/groups/{id}.
 func (c *Client) DeleteStatusGroup(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/status-page/groups/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/status-page/groups/"+PathEscape(id))
 }
 
 // DeleteStatusComponent calls DELETE /api/v1/status-page/components/{id}.
 func (c *Client) DeleteStatusComponent(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/status-page/components/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/status-page/components/"+PathEscape(id))
 }
 
 // ListStatusIncidents calls GET /api/v1/status-page/incidents.
 func (c *Client) ListStatusIncidents(ctx context.Context) ([]StatusIncident, error) {
-	var out []StatusIncident
-	err := c.do(ctx, http.MethodGet, "/api/v1/status-page/incidents", nil, &out)
-	return out, err
+	return getJSON[[]StatusIncident](ctx, c, "/api/v1/status-page/incidents")
 }
 
 // CreateStatusIncident calls POST /api/v1/status-page/incidents.
@@ -355,5 +339,5 @@ func (c *Client) PostStatusIncidentUpdate(ctx context.Context, id string, u Stat
 
 // DeleteStatusIncident calls DELETE /api/v1/status-page/incidents/{id}.
 func (c *Client) DeleteStatusIncident(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/status-page/incidents/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/status-page/incidents/"+PathEscape(id))
 }

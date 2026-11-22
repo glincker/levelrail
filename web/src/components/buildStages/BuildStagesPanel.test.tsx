@@ -95,6 +95,41 @@ describe('BuildStagesPanel', () => {
     expect(streamUrls.at(-1)).toContain('/logs?stage=build')
   })
 
+  it('counts a running stage in the stages total instead of showing 0s', async () => {
+    const start = new Date(Date.now() - 20000).toISOString()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              deploy_id: 'd1',
+              status: 'running',
+              wall_ms: 0,
+              stages_ms: 0,
+              stages: [
+                {
+                  stage: 'detect',
+                  status: 'running',
+                  started_at: start,
+                  duration_ms: 0,
+                  vertices: 0,
+                  cached_vertices: 0,
+                  log_bytes: 0,
+                },
+              ],
+            }),
+          ),
+        ),
+      ),
+    )
+    renderPanel()
+    const totals = await screen.findByTestId('waterfall-totals')
+    expect(totals.textContent).toContain('Running for')
+    expect(totals.textContent).not.toContain('stages so far 0s')
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+  })
+
   it('shows an empty state for null stages and a 404', async () => {
     vi.stubGlobal(
       'fetch',

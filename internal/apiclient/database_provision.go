@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // ProvisionStepResource is one step of a database creation attempt.
@@ -39,7 +38,5 @@ type ProvisionAttemptResource struct {
 
 // GetDatabaseProvision calls GET /api/v1/databases/{name}/provision.
 func (c *Client) GetDatabaseProvision(ctx context.Context, name string) (ProvisionAttemptResource, error) {
-	var out ProvisionAttemptResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/provision", nil, &out)
-	return out, err
+	return getJSON[ProvisionAttemptResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/provision")
 }

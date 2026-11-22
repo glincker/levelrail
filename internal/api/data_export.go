@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -203,9 +202,8 @@ func (rt *Router) handleCreateExportDestination(w http.ResponseWriter, r *http.R
 	if !ok {
 		return
 	}
-	var req createExportDestinationRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[createExportDestinationRequest](w, r, 64<<10)
+	if !ok {
 		return
 	}
 	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, ""), appRefs(req.Apps)...) {
@@ -231,9 +229,8 @@ func (rt *Router) handleUpdateExportDestination(w http.ResponseWriter, r *http.R
 	if !ok {
 		return
 	}
-	var req updateExportDestinationRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[updateExportDestinationRequest](w, r, 64<<10)
+	if !ok {
 		return
 	}
 	if req.Apps != nil && !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, ""), appRefs(*req.Apps)...) {

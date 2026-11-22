@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -42,7 +41,5 @@ func (c *Client) DeployTimeline(ctx context.Context, q url.Values) (TimelinePage
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out TimelinePage
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[TimelinePage](ctx, c, path)
 }

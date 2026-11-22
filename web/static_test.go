@@ -1,6 +1,9 @@
 package web
 
 import (
+	"bytes"
+	"compress/gzip"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -117,5 +120,45 @@ func TestAcceptedEncodings(t *testing.T) {
 				t.Errorf("%q: %s = %v, want %v", tc.header, k, got[k], v)
 			}
 		}
+	}
+}
+
+func TestStaticFiles_GzipFallbackWithoutSibling(t *testing.T) {
+	raw := bytes.Repeat([]byte("levelrail dashboard asset "), 200)
+	fsys := fstest.MapFS{
+		"dist/index.html":                &fstest.MapFile{Data: []byte("<html></html>")},
+		"dist/assets/app-AbCd1234.js":    &fstest.MapFile{Data: raw},
+		"dist/assets/app-AbCd1234.js.br": &fstest.MapFile{Data: []byte("brotli")},
+	}
+	h := handlerFromFS(fsys, nil)
+	get := func(enc string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, "/assets/app-AbCd1234.js", nil)
+		if enc != "" {
+			req.Header.Set("Accept-Encoding", enc)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec
+	}
+	if rec := get("br, gzip"); rec.Header().Get("Content-Encoding") != "br" || rec.Body.String() != "brotli" {
+		t.Errorf("br client: enc=%q body=%q", rec.Header().Get("Content-Encoding"), rec.Body.String())
+	}
+	rec := get("gzip")
+	if rec.Header().Get("Content-Encoding") != "gzip" {
+		t.Fatalf("gzip client: enc=%q", rec.Header().Get("Content-Encoding"))
+	}
+	zr, err := gzip.NewReader(rec.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ := io.ReadAll(zr)
+	if !bytes.Equal(got, raw) {
+		t.Error("gzip body does not decompress to raw")
+	}
+	if rec.Header().Get("ETag") == "" || rec.Header().Get("Vary") == "" {
+		t.Error("gzip response missing ETag or Vary")
+	}
+	if rec := get(""); rec.Header().Get("Content-Encoding") != "" || !bytes.Equal(rec.Body.Bytes(), raw) {
+		t.Error("identity client should get raw")
 	}
 }

@@ -11,8 +11,7 @@ import {
 import { toast } from '@/components/ui/toast'
 import { DeleteBackupTargetDialog } from './DeleteBackupTargetDialog'
 import { PROVIDER_LABEL } from './backupTargetProvider'
-import { BrandTile } from './BrandLogoBadge'
-import { backupTargetBrand } from '../lib/providerBrands'
+import { BackupProviderTile } from './BackupProviderTile'
 import {
   DumpEncryptionBadge,
   EnableDumpEncryptionButton,
@@ -108,10 +107,10 @@ export function BackupTargetTable({
       priority: 2,
       cell: (target) => (
         <Badge variant="outline" className="gap-1.5">
-          <BrandTile
-            name={backupTargetBrand(target.provider, target.endpoint)}
+          <BackupProviderTile
+            provider={target.provider}
+            endpoint={target.endpoint}
             label={labelOf(PROVIDER_LABEL, target.provider)}
-            size="xs"
           />
           {labelOf(PROVIDER_LABEL, target.provider)}
         </Badge>

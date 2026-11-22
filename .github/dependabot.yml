@@ -17,6 +17,12 @@ updates:
       # Drop this once a caddy release supports it.
       - dependency-name: "github.com/google/cel-go"
         update-types: ["version-update:semver-minor"]
+      # saml v0.6.x fails the SAML sign-in tests and sqlite storage v0.3.x needs a newer
+      # theauth-go core than main pins. Bump them as their own reviewed changes.
+      - dependency-name: "github.com/crewjam/saml"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "github.com/glincker/theauth-go/storage/sqlite"
+        update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: "gomod"
     directory: "/tools"

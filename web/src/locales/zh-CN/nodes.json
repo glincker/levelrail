@@ -134,7 +134,12 @@
     "errorTitle": "排空已停止",
     "failedHint": "该节点保持隔离状态。请修复失败迁移上显示的原因，然后再次排空，或取消隔离该节点以使其重新参与调度。",
     "toNode": "到 {{node}}",
-    "toAuto": "到自动选择的节点"
+    "toAuto": "到自动选择的节点",
+    "progress": {
+      "summary": "已迁移 {{done}} / {{total}},失败 {{failed}}",
+      "eta": "约剩 {{seconds}} 秒",
+      "stalled": "已有一段时间没有进展。请检查节点和下方的迁移。"
+    }
   },
   "drains": {
     "title": "排空记录",
@@ -966,7 +971,35 @@
       "saved": "{{provider}} 凭据已保存。",
       "disconnect": "断开连接",
       "confirmDisconnect": "确认断开",
-      "disconnected": "{{provider}} 已断开。"
+      "disconnected": "{{provider}} 已断开。",
+      "howTitle": "如何获取这些值",
+      "how1": "在 Oracle 控制台打开你的个人资料,然后选择 API 密钥,再选择添加 API 密钥。",
+      "how2": "下载私钥,并复制最后显示的配置片段。",
+      "how3": "把片段粘贴到下方并加载密钥。请使用专用用户。",
+      "configTitle": "粘贴你的 OCI 配置",
+      "configFile": "加载配置文件",
+      "configHelp": "粘贴 ~/.oci/config 中的 [DEFAULT] 块。仅在此浏览器中读取。",
+      "detected": "已检测到:租户 {{tenancy}},区域 {{region}}",
+      "edit": "编辑",
+      "done": "完成",
+      "missing": "配置中未找到:{{fields}}",
+      "manualHelp": "请在下方填写这些值。",
+      "keyFromConfig": "你的配置指向 {{path}}。请在此加载该文件。",
+      "advanced": "高级",
+      "advancedHint": "隔间,可选",
+      "advancedHintServers": "隔间和子网(创建服务器需要子网)",
+      "subnetHelp": "创建服务器所需。请使用该隔间内的子网。",
+      "subnetOptional": "可选。仅在创建服务器时需要。",
+      "subnetNeeded": "请在高级中添加子网以创建服务器。",
+      "errors": {
+        "tenancy": "需要以 ocid1.tenancy 开头的 ID。",
+        "user": "需要以 ocid1.user 开头的 ID。",
+        "fingerprint": "需要 16 组十六进制,如 aa:bb:cc:...。",
+        "region": "需要类似 us-phoenix-1 的区域。",
+        "compartment": "需要以 ocid1.compartment 开头的 ID。",
+        "subnet": "需要以 ocid1.subnet 开头的 ID。",
+        "key": "需要 PEM 私钥。"
+      }
     },
     "wizard": {
       "title": "API密钥引导设置",
@@ -1007,6 +1040,23 @@
       "micro": "将超出 micro 规格上限。请提高 {{setting}}。",
       "paidShape": "此规格不在额度限制内,可能产生费用。开启 {{setting}} 才能使用。",
       "unknownPrice": "Oracle 未给出此规格的价格,无法检查价格上限。开启 {{setting}}(或 provision.allow_unknown_price)以允许。"
+    },
+    "session": {
+      "modeLabel": "凭据类型",
+      "modeKey": "API 密钥",
+      "modeSession": "浏览器会话(仅用于测试,数小时后过期)",
+      "intro": "通过浏览器登录,无需创建 API 密钥。会话只持续数小时,仅用于测试。",
+      "command": "在你的电脑上运行此命令",
+      "commandHelp": "它会打开浏览器登录,并在 ~/.oci 下写入令牌文件和私钥文件。",
+      "profile": "配置文件内容(可选)",
+      "profileHelp": "粘贴 ~/.oci/config 中的 tenancy 和 region 行,不会读取其他内容。",
+      "token": "安全令牌文件内容",
+      "key": "会话私钥文件内容",
+      "keyHelp": "只发送一次,加密保存,不再显示。",
+      "check": "检查会话",
+      "connect": "连接",
+      "expires": "会话将于 {{when}} 过期",
+      "saved": "{{provider}} 已通过浏览器会话连接"
     }
   },
   "builderTrust": {
@@ -1128,6 +1178,87 @@
       "failed": "失败",
       "agent": "代理 {{value}}",
       "acceptsApps": "此节点同时运行应用，因此不能在这里暂停。"
+    }
+  },
+  "installAgent": {
+    "title": "在另一台机器上运行构建和应用",
+    "description": "在 Linux 服务器或 Mac 上安装代理，一分钟内即可加入此控制平面。",
+    "cta": "添加服务器",
+    "dismiss": "隐藏此横幅",
+    "dialogTitle": "安装代理",
+    "dialogDescription": "在要添加的机器上运行一条命令。节点连接后，此页面会自动感知。",
+    "tabsLabel": "操作系统",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "正在创建一次性加入命令",
+    "mintFailed": "无法创建加入命令：{{message}}",
+    "linuxLabel": "在服务器上运行",
+    "linuxHint": "服务器上需要 Docker。该命令仅可使用一次，将于 {{time}} 过期。",
+    "macosLabel": "在 Mac 的终端中运行",
+    "macosHint": "仅可使用一次，将于 {{time}} 过期。",
+    "macosNote": "预览版。工作负载通过 Docker Desktop、OrbStack 或 Lima 运行，它们会共享你 Mac 上的文件，因此 Mac 更适合用作构建机，而不是运行生产应用。",
+    "waiting": "正在等待节点连接",
+    "connected": "已连接：{{name}}"
+  },
+  "timeline": {
+    "title": "健康时间线",
+    "window": "时间范围",
+    "windows": {
+      "24h": "24 小时",
+      "168h": "7 天",
+      "720h": "30 天"
+    },
+    "loading": "正在加载健康时间线",
+    "unavailable": "时间线暂时不可用。",
+    "stripLabel": "在线与离线时段",
+    "noUptime": "此时间范围内没有在线或离线记录。",
+    "summary_other": "在线率 {{uptime}}%，状态变化 {{count}} 次"
+  },
+  "doctor": {
+    "title": "代理诊断",
+    "run": "运行检查",
+    "hide": "隐藏检查",
+    "running": "正在运行检查",
+    "unavailable": "检查暂时不可用。",
+    "noReport": "代理尚未发送预检报告，因此缺少 Docker、磁盘、时钟和端口检查。",
+    "status": {
+      "pass": "通过",
+      "warn": "警告",
+      "fail": "失败",
+      "unknown": "未知"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "架构",
+      "disk": "磁盘",
+      "clock": "时钟",
+      "wireguard": "WireGuard",
+      "mesh_port": "网格端口",
+      "firewall": "防火墙",
+      "control_plane": "控制平面",
+      "cert": "证书",
+      "heartbeat": "心跳",
+      "agent_version": "代理版本",
+      "schedulable": "调度"
+    }
+  },
+  "skew": {
+    "title_other": "{{count}} 个代理落后于 {{version}}",
+    "description": "请按此顺序升级：先升级已隔离的节点，然后是在线节点，最后是离线节点。",
+    "step": "{{from}} 升级到 {{to}}",
+    "notes": {
+      "cordoned": "已隔离",
+      "offline": "离线"
+    },
+    "howTo": "在每个节点上拉取新的代理镜像或二进制文件并重启。已注册的身份会保留。",
+    "autoUpdate": {
+      "on": "代理自动更新已开启。代理会自行安装控制平面的版本。",
+      "off": "代理自动更新已关闭。请在节点上运行 levelrail-agent self-update --apply，或在设置中开启 nodes.agent_auto_update。"
+    },
+    "updateAnyway": {
+      "action": "仍然更新",
+      "queued": "已排队，将在代理下次检查时执行",
+      "disclaimer": "跳过维护窗口和暂停。更新仍会进行签名验证，失败时会回滚。"
     }
   }
 }

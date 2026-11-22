@@ -21,7 +21,8 @@
     "cancel": "Cancelar",
     "submit": "Adicionar webhook",
     "submitting": "Adicionando",
-    "done": "Concluir"
+    "done": "Concluir",
+    "fieldsFailed": "Não foi possível carregar os campos do formulário. Recarregue a página e tente novamente."
   },
   "card": {
     "allEvents": "Todos os eventos",
@@ -58,6 +59,17 @@
       "pending": "Pendente",
       "delivered": "Entregue",
       "dead": "Em dead letter"
+    }
+  },
+  "fields": {
+    "name": {
+      "help": "Um nome curto para este destinatário."
+    },
+    "url": {
+      "help": "Endpoint HTTPS que recebe as requisições POST assinadas."
+    },
+    "events": {
+      "help": "Tipos ou famílias separados por vírgula, como apps.*. Deixe vazio para receber todos os eventos."
     }
   }
 }

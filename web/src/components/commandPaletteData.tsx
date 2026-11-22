@@ -500,6 +500,11 @@ const EXTRA_PAGES: readonly {
     icon: <RocketGlassIcon size="1.4em" />,
   },
   {
+    id: 'integrations-aws-link',
+    to: registryPath('integrations-aws-link'),
+    icon: <CloudCheckGlassIcon size="1.4em" />,
+  },
+  {
     id: 'migrate',
     to: registryPath('migrate'),
     icon: <UploadGlassIcon size="1.4em" />,

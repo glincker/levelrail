@@ -9,7 +9,23 @@
   },
   "nodeSelect": {
     "auto": "Automático (menos carregado)",
-    "autoHint": "O automático o coloca no node elegível menos carregado. Escolha um node para fixá-lo lá."
+    "autoHint": "O automático o coloca no node elegível menos carregado. Escolha um node para fixá-lo lá.",
+    "picker": {
+      "choose": "Escolha um nó",
+      "cost": "{{amount}}/mês",
+      "freeCpu": "{{value}} CPU livres",
+      "freeMemory": "{{value}} livres",
+      "search": "Buscar nos",
+      "empty": "Nenhum no encontrado",
+      "local": "Este servidor",
+      "unmanaged": "Nao gerenciados",
+      "health": {
+        "healthy": "Saudavel",
+        "offline": "Offline",
+        "cordoned": "Isolado",
+        "pending": "Pendente"
+      }
+    }
   },
   "draft": {
     "message": "Você tem um rascunho não salvo de {{time}}.",
@@ -96,6 +112,19 @@
     "summary": "{{pass}} de {{total}} verificações passam",
     "allClear": "Todas as verificações passam. Nada requer a sua atenção.",
     "needsAction": "Requer ação"
+  },
+  "healthExplain": {
+    "label": "Por quê",
+    "failingCheck": "A verificação {{target}} falha desde {{since}}",
+    "restarts": "Reinícios: {{n}}",
+    "crashloop": "Loop de falhas",
+    "lastDeploy": "Último deploy: {{status}}",
+    "logError": "Último erro: {{line}}",
+    "next": {
+      "apply_preset": "Tente o preset de saúde {{preset}}",
+      "rollback": "Reverter para o deploy anterior",
+      "view_logs": "Verifique os logs"
+    }
   },
   "logs": {
     "previousContainerEnded": "A instância anterior do container terminou",
@@ -557,7 +586,8 @@
       "resources": "Recursos",
       "security": "Segurança",
       "console": "Console",
-      "integrations": "Integrações"
+      "integrations": "Integrações",
+      "integrations-aws-link": "Vincular conta AWS"
     },
     "quickNav": {
       "label": "Navegação rápida (segure L)"

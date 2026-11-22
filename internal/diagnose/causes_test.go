@@ -193,3 +193,69 @@ func TestAnalyzeImageEnvHint(t *testing.T) {
 		t.Fatalf("hostile value must fall back to input: %+v", got)
 	}
 }
+
+func TestAnalyzeFirstDeployFailures(t *testing.T) {
+	build := Facts{BuildFailed: true}
+	tests := []struct {
+		name      string
+		in        Input
+		wantCode  string
+		wantField string
+		wantTo    string
+		wantKind  string
+	}{
+		{"start script missing", Input{RecentLogLines: logs("npm ERR! Missing script: \"start\"\nnpm ERR! To see a list of scripts, run: npm run")}, CauseMissingStartCommand, CommandField, "", FixInput},
+		{"no start command", Input{RecentLogLines: logs("Error: No start command was found for this project")}, CauseMissingStartCommand, CommandField, "", FixInput},
+		{"engines yarn", Input{Facts: build, RecentLogLines: logs("error next@15.1.0: The engine \"node\" is incompatible with this module. Expected version \">=20.9.0\". Got \"18.17.1\"")}, CauseNodeVersion, "", "", FixManual},
+		{"engines next", Input{Facts: build, RecentLogLines: logs("You are using Node.js 18.17.1. For Next.js, Node.js version >=20.9.0 is required.")}, CauseNodeVersion, "", "", FixManual},
+		{"engines npm notsup", Input{Facts: build, RecentLogLines: logs("npm ERR! notsup Required: {\"node\":\">=18 <21\"}")}, CauseNodeVersion, "", "", FixManual},
+		{"engines caret", Input{Facts: build, RecentLogLines: logs("The engine \"node\" is incompatible with this module. Expected version \"^22.0.0\". Got \"20.1.0\"")}, CauseNodeVersion, "", "", FixManual},
+		{"next public missing", Input{Facts: build, RecentLogLines: logs("Error: NEXT_PUBLIC_API_URL is not defined\n    at build (next.config.js:4)")}, CauseBuildPublicEnv, "env.NEXT_PUBLIC_API_URL", "", FixInput},
+		{"vite public zod", Input{Facts: build, RecentLogLines: logs("Invalid environment variables: { VITE_API_BASE: [ 'Required' ] }")}, CauseBuildPublicEnv, "env.VITE_API_BASE", "", FixInput},
+		{"build oom heap", Input{Facts: build, RecentLogLines: logs("FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory")}, CauseBuildOOM, "", "", FixManual},
+		{"build oom killed", Input{Facts: build, RecentLogLines: logs("process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 137")}, CauseBuildOOM, "", "", FixManual},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			causes := Analyze(tc.in)
+			var got *Cause
+			for i := range causes {
+				if causes[i].Code == tc.wantCode {
+					got = &causes[i]
+				}
+			}
+			if got == nil {
+				t.Fatalf("causes %v lack %s", codes(causes), tc.wantCode)
+			}
+			if len(got.Evidence) == 0 || len(got.Fixes) == 0 || got.Fixes[0].Kind != tc.wantKind {
+				t.Fatalf("incomplete cause: %+v", got)
+			}
+			if tc.wantField != "" {
+				ch := got.Fixes[0].Changes[0]
+				if ch.Field != tc.wantField || (tc.wantTo != "" && ch.To != tc.wantTo) {
+					t.Fatalf("change %+v", ch)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildPublicEnvNotAlsoMissingEnv(t *testing.T) {
+	causes := Analyze(Input{Facts: Facts{BuildFailed: true}, RecentLogLines: logs("Error: NEXT_PUBLIC_API_URL is not defined")})
+	for _, c := range causes {
+		if c.Code == CauseMissingEnv || c.Code == CauseOOMKilled {
+			t.Fatalf("unexpected %s in %v", c.Code, codes(causes))
+		}
+	}
+}
+
+func TestFirstDeployEvidenceMasksSecrets(t *testing.T) {
+	causes := Analyze(Input{RecentLogLines: logs("npm ERR! Missing script: \"start\" token=ghp_abcdefghijklmnopqrstuvwxyz0123456789")})
+	for _, c := range causes {
+		for _, e := range c.Evidence {
+			if strings.Contains(e.Excerpt, "ghp_abcdefghijklmnopqrstuvwxyz") {
+				t.Fatalf("secret leaked: %s", e.Excerpt)
+			}
+		}
+	}
+}

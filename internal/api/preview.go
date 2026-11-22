@@ -7,10 +7,12 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/preview"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const previewBodyLimit = 4 << 10
@@ -261,9 +263,130 @@ func (rt *Router) handleGetPreviewImage(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: open preview image failed", err, slog.String("name", app), slog.String("deployment_id", id))
 		return
 	}
-	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Cache-Control", "private, max-age=86400")
-	http.ServeFile(w, r, path)
+	servePreviewImage(w, r, path)
+}
+
+const (
+	previewCacheVersioned = "private, max-age=31536000, immutable"
+	previewCacheDefault   = "private, max-age=86400, stale-while-revalidate=604800"
+)
+
+// servePreviewImage sends the thumbnail with a strong ETag, 304 and Range
+// support. The ?v= URL changes with every capture, so a versioned request is
+// immutable; the route is authenticated, hence always private.
+func servePreviewImage(w http.ResponseWriter, r *http.Request, path string) {
+	f, err := os.Open(path) //nolint:gosec // path comes from the preview FileStore, which validates app and deployment names
+	if err != nil {
+		writeError(w, http.StatusNotFound, "no preview for this deployment")
+		return
+	}
+	defer func() { _ = f.Close() }()
+	info, err := f.Stat()
+	if err != nil || info.IsDir() {
+		writeError(w, http.StatusNotFound, "no preview for this deployment")
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "image/jpeg")
+	h.Set("ETag", `"`+strconv.FormatInt(info.Size(), 16)+"-"+strconv.FormatInt(info.ModTime().UnixNano(), 16)+`"`)
+	if r.URL.Query().Get("v") != "" {
+		h.Set("Cache-Control", previewCacheVersioned)
+	} else {
+		h.Set("Cache-Control", previewCacheDefault)
+	}
+	http.ServeContent(w, r, "", info.ModTime(), f)
+}
+
+// RenderableApp reports whether an app's kind has a page worth rendering:
+// web and static only. API, worker, cron and database cards are type specific.
+func RenderableApp(svc store.DesiredService) bool {
+	kind, _ := classifyApp(kindInputFor(svc, false))
+	return kind == appKindWeb || kind == appKindStatic
+}
+
+// previewCardResource is the list-entry thumbnail: an image URL when a file
+// exists, card metadata otherwise, and State while a real render is pending.
+type previewCardResource struct {
+	ImageURL string            `json:"image_url,omitempty"`
+	Card     *preview.CardMeta `json:"card,omitempty"`
+	State    string            `json:"state,omitempty"`
+	Reason   string            `json:"reason,omitempty"`
+}
+
+// previewLatestLister is optional on PreviewService so one list request can
+// carry every card thumbnail without a query per app.
+type previewLatestLister interface {
+	LatestRenderable(ctx context.Context, apps []string) (map[string]preview.Record, error)
+}
+
+// previewCardStater is optional too: it adds the render state and queues a
+// background render for an app that has none, never waiting for it.
+type previewCardStater interface {
+	CardStates(ctx context.Context, apps []string) (map[string]preview.CardState, error)
+}
+
+// listPreviewCards returns the latest thumbnail per app, empty when the
+// service is absent or fails (cards then fall back to the placeholder). The
+// render state is reported only for web and static apps.
+func (rt *Router) listPreviewCards(ctx context.Context, svcs []store.DesiredService) map[string]previewCardResource {
+	if rt.preview == nil || len(svcs) == 0 {
+		return nil
+	}
+	apps := make([]string, 0, len(svcs))
+	renderable := make(map[string]bool, len(svcs))
+	for _, s := range svcs {
+		apps = append(apps, s.Name)
+		renderable[s.Name] = RenderableApp(s)
+	}
+	if cs, ok := rt.preview.(previewCardStater); ok {
+		return rt.cardsFromStates(ctx, cs, apps, renderable)
+	}
+	l, ok := rt.preview.(previewLatestLister)
+	if !ok {
+		return nil
+	}
+	recs, err := l.LatestRenderable(ctx, apps)
+	if err != nil {
+		rt.logger.Warn("api: latest previews for app list failed", slog.String("error", err.Error()))
+		return nil
+	}
+	out := make(map[string]previewCardResource, len(recs))
+	for app, rec := range recs {
+		res := toPreviewRecordResource(app, rec)
+		if res.ImageURL == "" && res.Meta == nil {
+			continue
+		}
+		out[app] = previewCardResource{ImageURL: res.ImageURL, Card: res.Meta}
+	}
+	return out
+}
+
+func (rt *Router) cardsFromStates(ctx context.Context, cs previewCardStater, apps []string, renderable map[string]bool) map[string]previewCardResource {
+	// Only web and static apps are asked for: asking also queues a render.
+	ask := make([]string, 0, len(apps))
+	for _, a := range apps {
+		if renderable[a] {
+			ask = append(ask, a)
+		}
+	}
+	states, err := cs.CardStates(ctx, ask)
+	if err != nil {
+		rt.logger.Warn("api: latest previews for app list failed", slog.String("error", err.Error()))
+		return nil
+	}
+	out := make(map[string]previewCardResource, len(states))
+	for app, st := range states {
+		card := previewCardResource{State: st.State, Reason: st.Reason}
+		if st.Record != nil {
+			res := toPreviewRecordResource(app, *st.Record)
+			card.ImageURL, card.Card = res.ImageURL, res.Meta
+		}
+		if card.ImageURL == "" && card.Card == nil && card.State == preview.StateNone {
+			continue
+		}
+		out[app] = card
+	}
+	return out
 }
 
 // previewImageURLs maps deployment IDs of app to their thumbnail URL. An

@@ -159,6 +159,16 @@ func patchField(app map[string]any, ch DiagnosisChange, to string) error {
 		}
 		probe["path"] = to
 		return nil
+	case ch.Field == "command":
+		if strings.TrimSpace(to) == "" {
+			return errors.New("a start command is required")
+		}
+		if cur, _ := app["command"].([]any); len(cur) > 0 {
+			return fmt.Errorf("%w: a start command is already set", ErrFixStale)
+		}
+		// Shell form so the user's own quoting and arguments work as typed.
+		app["command"] = []any{"sh", "-c", to}
+		return nil
 	case strings.HasPrefix(ch.Field, "env."):
 		env, _ := app["env"].(map[string]any)
 		if env == nil {

@@ -22,7 +22,7 @@ When the engine has no BuildKit of its own, Levelrail can start a managed builde
 
 The Docker guard forwards protocol-switching (`Upgrade`) requests and maps the stream media type Podman returns in its `101` reply back to the protocol the client asked for, so calls that switch protocols (attach, exec) work through the guard on Podman. Image-based deploys and compose are the expected path on Podman. Dockerfile and Railpack source builds are not verified on Podman yet: builds use a BuildKit that runs inside `dockerd`, and Podman has no embedded BuildKit. Build on another node or in CI and deploy the image.
 
-Server installs are Linux only. On a macOS laptop, `levelrail-cli dev` is the path; see [Local development](/local-development).
+Server installs are Linux only. On a macOS laptop, `levelrail-cli dev` is the path; see [Local development](/local-development). To add a Mac as an extra node, see [macOS node agent](/macos-agent).
 
 ## How the installer chooses
 

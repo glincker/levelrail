@@ -84,7 +84,5 @@ func (c *Client) ApplyNodePatch(ctx context.Context, id string, req NodePatchApp
 
 // ListNodePatchRuns calls GET /api/v1/nodes/{id}/patch/runs.
 func (c *Client) ListNodePatchRuns(ctx context.Context, id string) ([]NodePatchRun, error) {
-	var out []NodePatchRun
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/patch/runs", nil, &out)
-	return out, err
+	return getJSON[[]NodePatchRun](ctx, c, nodePath(id)+"/patch/runs")
 }

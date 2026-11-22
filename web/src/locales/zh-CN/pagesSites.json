@@ -209,7 +209,8 @@
   "promote": {
     "action": "设为线上版本",
     "confirmTitle": "让此部署成为 {{name}} 的线上版本？",
-    "confirmBody": "站点自己的域名会立即提供此部署，它自己的 URL 仍然有效。"
+    "confirmBody": "站点自己的域名会立即提供此部署，它自己的 URL 仍然有效。",
+    "pending": "生效中"
   },
   "deployUrl": {
     "copy": "复制部署 URL",
@@ -313,7 +314,18 @@
     "title": "最近部署",
     "viewAll": "查看全部",
     "none": "还没有部署。",
-    "live": "已上线"
+    "live": "已上线",
+    "copySha": "复制提交哈希",
+    "copied": "已复制提交哈希",
+    "col": {
+      "commit": "提交",
+      "message": "消息",
+      "state": "状态",
+      "branch": "分支",
+      "author": "作者",
+      "when": "时间",
+      "actions": "部署操作"
+    }
   },
   "routes": {
     "testTitle": "测试 URL",
@@ -563,5 +575,69 @@
     "codes": "状态码",
     "none": "暂无内容。",
     "privacy": "数据来自边缘访问日志。不存储 Cookie、客户端地址或查询字符串。最多可查看 {{days}} 天的范围。"
+  },
+  "overview": {
+    "strip": {
+      "label": "最新生产部署",
+      "noMessage": "无提交信息",
+      "none": "还没有部署任何内容"
+    },
+    "state": {
+      "succeeded": "就绪",
+      "running": "构建中",
+      "failed": "失败",
+      "queued": "排队中",
+      "held": "已暂缓",
+      "canceled": "已取消",
+      "superseded": "已被取代",
+      "pending": "待处理",
+      "refused": "已拒绝",
+      "awaiting_approval": "等待审批",
+      "unknown": "未知"
+    },
+    "duration": "{{minutes}} 分 {{seconds}} 秒",
+    "wiring": {
+      "title": "此站点的连接方式",
+      "domains": "域名",
+      "noDomains": "还没有域名。",
+      "tls": {
+        "healthy": "TLS 正常",
+        "expiring_soon": "TLS 即将过期",
+        "expired": "TLS 已过期",
+        "unknown": "TLS 待处理"
+      },
+      "more": "另有 {{count}} 项",
+      "forms": "表单",
+      "noForms": "还没有表单提交。",
+      "addForm": "添加表单",
+      "submissions": "提交数：{{count}}",
+      "routes": "路由和规则",
+      "noRoutes": "还没有规则。",
+      "addRule": "添加规则",
+      "ruleSummary": "规则 {{rules}}，响应头块 {{headers}}，代理应用 {{proxied}}",
+      "on": "开启",
+      "off": "关闭",
+      "lastDeploy": "上次部署：{{state}}",
+      "noDeploy": "尚未部署",
+      "password": "密码保护",
+      "cleanUrls": "简洁 URL",
+      "spa": "单页回退",
+      "openSettings": "打开设置",
+      "outTitle": "连接到",
+      "apps": "代理应用",
+      "noApps": "无",
+      "repo": "Git 仓库",
+      "notConnected": "未连接",
+      "hook": "部署钩子",
+      "tokens": "CI 部署令牌",
+      "tokensActive": "{{count}} 个有效",
+      "none": "无",
+      "connect": "连接",
+      "connected": "已连接"
+    },
+    "previews": {
+      "title": "最近的预览",
+      "none": "还没有分支预览。"
+    }
   }
 }

@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // StatusReason is one row of GET /api/v1/status-reasons.
@@ -15,7 +14,5 @@ type StatusReason struct {
 
 // ListStatusReasons calls GET /api/v1/status-reasons.
 func (c *Client) ListStatusReasons(ctx context.Context) ([]StatusReason, error) {
-	var out []StatusReason
-	err := c.do(ctx, http.MethodGet, "/api/v1/status-reasons", nil, &out)
-	return out, err
+	return getJSON[[]StatusReason](ctx, c, "/api/v1/status-reasons")
 }

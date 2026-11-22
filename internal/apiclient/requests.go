@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -53,7 +52,5 @@ func (c *Client) QueryAppRequests(ctx context.Context, name string, from, to tim
 	if step > 0 {
 		query.Set("step", step.String())
 	}
-	var out AppRequestsResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/requests?"+query.Encode(), nil, &out)
-	return out, err
+	return getJSON[AppRequestsResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/requests?"+query.Encode())
 }

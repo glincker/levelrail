@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 
 	"github.com/GLINCKER/levelrail/internal/mailrecords"
@@ -50,28 +49,20 @@ type MailDNSApplied struct {
 
 // DomainDNSProvider calls GET /api/v1/domains/dns-provider.
 func (c *Client) DomainDNSProvider(ctx context.Context, domain string) (DNSHostDetection, error) {
-	var out DNSHostDetection
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/dns-provider?"+url.Values{"domain": {domain}}.Encode(), nil, &out)
-	return out, err
+	return getJSON[DNSHostDetection](ctx, c, "/api/v1/domains/dns-provider?"+url.Values{"domain": {domain}}.Encode())
 }
 
 // MailDNSProvider calls GET /api/v1/mail/dns/provider.
 func (c *Client) MailDNSProvider(ctx context.Context, domain string) (DNSHostDetection, error) {
-	var out DNSHostDetection
-	err := c.do(ctx, http.MethodGet, mailDNSPath("/provider", "", url.Values{"domain": {domain}}), nil, &out)
-	return out, err
+	return getJSON[DNSHostDetection](ctx, c, mailDNSPath("/provider", "", url.Values{"domain": {domain}}))
 }
 
 // MailDNSDomains calls GET /api/v1/mail/dns/domains.
 func (c *Client) MailDNSDomains(ctx context.Context) (MailDNSDomains, error) {
-	var out MailDNSDomains
-	err := c.do(ctx, http.MethodGet, mailDNSPath("/domains", "", nil), nil, &out)
-	return out, err
+	return getJSON[MailDNSDomains](ctx, c, mailDNSPath("/domains", "", nil))
 }
 
 // MailDNSApplied calls GET /api/v1/mail/dns/applied.
 func (c *Client) MailDNSApplied(ctx context.Context, domain string) (MailDNSApplied, error) {
-	var out MailDNSApplied
-	err := c.do(ctx, http.MethodGet, mailDNSPath("/applied", "", url.Values{"domain": {domain}}), nil, &out)
-	return out, err
+	return getJSON[MailDNSApplied](ctx, c, mailDNSPath("/applied", "", url.Values{"domain": {domain}}))
 }

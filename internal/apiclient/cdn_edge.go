@@ -69,9 +69,7 @@ type CDNSetup struct {
 
 // GetAppEdge calls GET /api/v1/apps/{name}/edge.
 func (c *Client) GetAppEdge(ctx context.Context, app string) (AppEdge, error) {
-	var out AppEdge
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/edge", nil, &out)
-	return out, err
+	return getJSON[AppEdge](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/edge")
 }
 
 // SetupAppCDN calls POST /api/v1/apps/{name}/cdn/setup.

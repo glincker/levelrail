@@ -1,5 +1,6 @@
 import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   CirclePlusGlassIcon,
@@ -8,7 +9,6 @@ import {
 } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
 import {
   WEBHOOK_EVENTS,
@@ -20,6 +20,11 @@ import {
   useStatusWebhooks,
   useTestStatusWebhook,
 } from '../queries/statusPage'
+import {
+  FIELD_RESOURCES,
+  fieldDescriptorsQueryOptions,
+} from '../queries/fieldDescriptors'
+import { DescriptorFields } from './DescriptorFields'
 
 function SecretBanner({
   secret,
@@ -201,10 +206,18 @@ function WebhookRow({
 
 export function StatusWebhooksPanel() {
   const { t } = useTranslation('statusPage')
+  // Registry keys come from the server, so they cannot be checked at compile time.
+  const tKey = t as (key: string) => string
   const { data, isLoading, error } = useStatusWebhooks()
   const create = useCreateStatusWebhook()
-  const [url, setUrl] = useState('')
-  const [label, setLabel] = useState('')
+  const { data: descriptors } = useQuery({
+    ...fieldDescriptorsQueryOptions(FIELD_RESOURCES.statusWebhook),
+    retry: false,
+  })
+  const fields = descriptors?.fields ?? []
+  const [values, setValues] = useState<Record<string, string>>({})
+  const url = values.url ?? ''
+  const label = values.label ?? ''
   const [events, setEvents] = useState<string[]>([])
   const [secret, setSecret] = useState('')
 
@@ -223,8 +236,7 @@ export function StatusWebhooksPanel() {
       {
         onSuccess: (h) => {
           setSecret(h.signing_secret ?? '')
-          setUrl('')
-          setLabel('')
+          setValues({})
           setEvents([])
         },
       },
@@ -241,49 +253,52 @@ export function StatusWebhooksPanel() {
         onSubmit={submit}
         className="space-y-3 rounded-lg border border-border p-3"
       >
-        <div className="grid gap-3 sm:grid-cols-[2fr_1fr_auto]">
-          <Input
-            type="url"
-            required
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://example.com/hooks/status"
-            aria-label={t('webhooks.url')}
-          />
-          <Input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder={t('webhooks.labelPlaceholder')}
-            aria-label={t('webhooks.label')}
-            maxLength={80}
-          />
-          <Button
-            type="submit"
-            disabled={create.isPending || url.trim() === ''}
-          >
-            <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
-            {t('webhooks.add')}
-          </Button>
-        </div>
-        <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
-          <legend className="sr-only">{t('webhooks.events')}</legend>
-          {WEBHOOK_EVENTS.map((e) => (
-            <label
-              key={e}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground"
-            >
-              <input
-                type="checkbox"
-                checked={events.includes(e)}
-                onChange={() => toggle(e)}
-              />
-              {e}
-            </label>
-          ))}
-        </fieldset>
-        <p className="text-xs text-muted-foreground">
-          {t('webhooks.eventsHint')}
-        </p>
+        {fields.length === 0 ? (
+          <p role="alert" className="text-sm text-destructive">
+            {t('webhooks.fieldsFailed')}
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DescriptorFields
+              fields={fields}
+              values={values}
+              onChange={(key, value) => {
+                setValues((cur) => ({ ...cur, [key]: value }))
+              }}
+              idPrefix="status-webhook"
+              renderField={(f) =>
+                f.key === 'events' ? (
+                  <fieldset
+                    key={f.id}
+                    className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2"
+                  >
+                    <legend className="sr-only">{t('webhooks.events')}</legend>
+                    {WEBHOOK_EVENTS.map((e) => (
+                      <label
+                        key={e}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={events.includes(e)}
+                          onChange={() => toggle(e)}
+                        />
+                        {e}
+                      </label>
+                    ))}
+                    <p className="w-full text-xs text-muted-foreground">
+                      {tKey(f.help_key)}
+                    </p>
+                  </fieldset>
+                ) : undefined
+              }
+            />
+          </div>
+        )}
+        <Button type="submit" disabled={create.isPending || url.trim() === ''}>
+          <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
+          {t('webhooks.add')}
+        </Button>
         {create.isError ? (
           <p role="alert" className="text-sm text-destructive">
             {create.error.message}

@@ -1116,5 +1116,23 @@
     "optionalHint": "プライベートの平文ポートと並べてTLSを提供し、古いクライアントも接続できるようにします。データベースが再起動します。",
     "optionalToast": "TLSが任意になりました。データベースが再起動します",
     "optionalFailed": "TLSを切り替えられませんでした"
+  },
+  "wiring": {
+    "title": "このデータベースの接続関係",
+    "apps": "接続中のアプリ",
+    "noApps": "接続中のアプリはまだありません。",
+    "outTitle": "実行場所とアクセス範囲",
+    "node": "ノード",
+    "noNode": "ノードなし",
+    "access": "アクセス",
+    "private": "非公開",
+    "public": "公開",
+    "publicOn": "ポート {{port}} で公開",
+    "backups": "バックアップ",
+    "noBackups": "バックアップのスケジュールなし",
+    "project": "プロジェクト",
+    "noProject": "プロジェクトなし",
+    "on": "有効",
+    "none": "なし"
   }
 }

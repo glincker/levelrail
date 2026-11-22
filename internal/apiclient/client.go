@@ -1720,6 +1720,14 @@ func (c *Client) CheckDomain(ctx context.Context, name, domain string) (DomainCh
 	return out, err
 }
 
+// CheckDomainByName calls POST /api/v1/domains/{domain}/dns-check: a fresh DNS
+// lookup for a domain without naming its app.
+func (c *Client) CheckDomainByName(ctx context.Context, domain string) (DomainCheckResource, error) {
+	var out DomainCheckResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/domains/"+PathEscape(domain)+"/dns-check", nil, &out)
+	return out, err
+}
+
 // TriggerBackup calls POST /api/v1/databases/{name}/backups: starts a
 // real backup of name to targetID and returns as soon as the attempt is
 // recorded and under way, not once the dump and upload actually finish.

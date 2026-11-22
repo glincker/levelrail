@@ -31,6 +31,12 @@ func KeyID(tenancyOCID, userOCID, fingerprint string) string {
 	return tenancyOCID + "/" + userOCID + "/" + fingerprint
 }
 
+// SessionKeyID builds the keyId for a session token login: ST$ plus the JWT. The request
+// is then signed with the session private key, not an API key.
+func SessionKeyID(token string) string {
+	return "ST$" + token
+}
+
 func hasBody(method string) bool {
 	return method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch
 }
@@ -76,6 +82,9 @@ func SigningString(req *http.Request) string {
 func (s Signer) Sign(req *http.Request, body []byte) error {
 	if s.Key == nil || s.KeyID == "" {
 		return errors.New("ocisign: signer has no key")
+	}
+	if strings.ContainsAny(s.KeyID, "\",\\ \t\r\n") {
+		return errors.New("ocisign: key id has characters that are not allowed")
 	}
 	if req.URL == nil || (req.URL.Scheme != "https" && !s.AllowInsecure) {
 		return errors.New("ocisign: refusing to sign a non-HTTPS request")

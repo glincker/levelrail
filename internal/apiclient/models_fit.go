@@ -64,7 +64,5 @@ func (c *Client) CheckModelFit(ctx context.Context, req ModelFitRequest) (ModelF
 
 // GetModelFit calls GET /api/v1/models/{name}/fit.
 func (c *Client) GetModelFit(ctx context.Context, name string) (ModelFitReport, error) {
-	var out ModelFitReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/models/"+PathEscape(name)+"/fit", nil, &out)
-	return out, err
+	return getJSON[ModelFitReport](ctx, c, "/api/v1/models/"+PathEscape(name)+"/fit")
 }

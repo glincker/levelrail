@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -53,9 +52,7 @@ func (o NodeOnboarding) Done() bool { return o.Reported && !o.Stale }
 
 // GetNodeOnboarding calls GET /api/v1/nodes/{id}/onboarding.
 func (c *Client) GetNodeOnboarding(ctx context.Context, id string) (NodeOnboarding, error) {
-	var out NodeOnboarding
-	err := c.do(ctx, http.MethodGet, nodesCollectionPath()+"/"+url.PathEscape(id)+"/onboarding", nil, &out)
-	return out, err
+	return getJSON[NodeOnboarding](ctx, c, nodesCollectionPath()+"/"+url.PathEscape(id)+"/onboarding")
 }
 
 // NodeDomainGroup mirrors internal/placement.DomainGroup.
@@ -100,7 +97,5 @@ type NodeDomains struct {
 
 // GetNodeDomains calls GET /api/v1/nodes/domains.
 func (c *Client) GetNodeDomains(ctx context.Context) (NodeDomains, error) {
-	var out NodeDomains
-	err := c.do(ctx, http.MethodGet, nodesCollectionPath()+"/domains", nil, &out)
-	return out, err
+	return getJSON[NodeDomains](ctx, c, nodesCollectionPath()+"/domains")
 }

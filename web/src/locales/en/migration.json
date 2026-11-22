@@ -772,6 +772,11 @@
     "required": "Required before deploying: {{keys}}",
     "back": "Back",
     "deploying": "Deploying...",
+    "willCreate": "Will be created",
+    "secretRefs": "Secret values are not shown. Secret refs: {{keys}}",
+    "unsupported": "Not carried over",
+    "instead": "Instead: {{alternative}}",
+    "conflicts": "Name already in use",
     "deploy": "Deploy"
   },
   "takeover": {

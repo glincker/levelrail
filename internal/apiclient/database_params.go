@@ -55,9 +55,7 @@ func databaseParamsPath(name string) string {
 
 // GetDatabaseParams reads the parameter editor state.
 func (c *Client) GetDatabaseParams(ctx context.Context, name string) (DatabaseParams, error) {
-	var out DatabaseParams
-	err := c.do(ctx, http.MethodGet, databaseParamsPath(name), nil, &out)
-	return out, err
+	return getJSON[DatabaseParams](ctx, c, databaseParamsPath(name))
 }
 
 // StageDatabaseParams stages a change; nothing restarts.

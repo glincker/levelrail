@@ -53,9 +53,7 @@ type UpdateDockerGuardRequest struct {
 
 // GetDockerGuard calls GET /api/v1/system/docker-guard.
 func (c *Client) GetDockerGuard(ctx context.Context) (DockerGuardResource, error) {
-	var out DockerGuardResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/docker-guard", nil, &out)
-	return out, err
+	return getJSON[DockerGuardResource](ctx, c, "/api/v1/system/docker-guard")
 }
 
 // UpdateDockerGuard calls PUT /api/v1/system/docker-guard.

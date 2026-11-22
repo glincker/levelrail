@@ -34,11 +34,11 @@ func previousDeployImage(ctx context.Context, client *Client, name string) (stri
 	if err != nil {
 		return "", fmt.Errorf("list deploys for app %q: %w", name, err)
 	}
-	current := unpinnedImage(app.Image)
+	currentDigest := imageRefDigest(app.Image)
 	var newest *deployAttemptResource
 	for i := range attempts {
 		a := &attempts[i]
-		if a.Status != "succeeded" || a.Image == "" || unpinnedImage(a.Image) == current {
+		if a.Status != "succeeded" || a.Image == "" || sameDeployedImage(app.Image, currentDigest, a) {
 			continue
 		}
 		if newest == nil || a.StartedAt.After(newest.StartedAt) {
@@ -48,7 +48,31 @@ func previousDeployImage(ctx context.Context, client *Client, name string) (stri
 	if newest == nil {
 		return "", newValidationError("app %q has no earlier successful deploy to go back to; pass --image, see \"apps images %s\"", name, name)
 	}
+	if newest.ImageDigest != "" && !strings.Contains(newest.Image, "@") {
+		return unpinnedImage(newest.Image) + "@" + newest.ImageDigest, nil
+	}
 	return newest.Image, nil
+}
+
+// imageRefDigest is the digest part of a pinned reference, or "".
+func imageRefDigest(ref string) string {
+	if i := strings.LastIndex(ref, "@"); i > 0 {
+		return ref[i+1:]
+	}
+	return ""
+}
+
+// sameDeployedImage compares by digest when both sides have one, because digest-only
+// deploys of one repo all share the same unpinned form.
+func sameDeployedImage(currentRef, currentDigest string, a *deployAttemptResource) bool {
+	digest := a.ImageDigest
+	if digest == "" {
+		digest = imageRefDigest(a.Image)
+	}
+	if currentDigest != "" && digest != "" {
+		return currentDigest == digest
+	}
+	return unpinnedImage(a.Image) == unpinnedImage(currentRef)
 }
 
 // A history tag resolves to its recorded digest so the request names the exact image.

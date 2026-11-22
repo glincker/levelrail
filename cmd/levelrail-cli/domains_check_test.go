@@ -42,11 +42,11 @@ func TestRun_DomainsCheck_NotResolving(t *testing.T) {
 
 func TestRun_DomainsCheck_MissingArgs(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "check", "web"}, &stdout, &stderr, envMap())
+	got := run("levelrail-cli-test", []string{"domains", "check"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitUsage, stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "requires an app name and a domain") {
+	if !strings.Contains(stderr.String(), "requires a domain, or an app name and a domain") {
 		t.Errorf("stderr = %q, want a missing-args usage error", stderr.String())
 	}
 }

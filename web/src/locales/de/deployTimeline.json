@@ -94,6 +94,14 @@
   "banner": {
     "description": "Eine Zeitachse jedes Deploys pro App, mit markierten Fehlschlägen und Rollbacks. Deployen Sie eine App, und ihre Spur erscheint hier."
   },
+  "revertConfig": {
+    "action": "Konfiguration hierher zurücksetzen",
+    "title": "Konfiguration auf Revision {{revision}} zurücksetzen",
+    "disclaimer": "Es ändern sich nur App-Einstellungen: Umgebung, Skalierung, Ressourcen, Domains und Health. Datenbankdaten und Volumes bleiben unberührt, Secret-Werte werden nicht wiederhergestellt. Umgebungsänderungen gelten beim nächsten Neustart oder Deploy.",
+    "confirm": "Zurücksetzen",
+    "pending": "Setze zurück",
+    "none": "Nichts weicht von der aktuellen Konfiguration ab."
+  },
   "appHistory": {
     "title": "Verlauf",
     "managedBy": "Verwaltet vom Stack {{stack}}",

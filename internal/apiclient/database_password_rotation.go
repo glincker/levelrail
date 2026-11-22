@@ -36,9 +36,7 @@ func databasePasswordRotationPath(name string) string {
 
 // GetDatabasePasswordRotation calls GET /api/v1/databases/{name}/password-rotation.
 func (c *Client) GetDatabasePasswordRotation(ctx context.Context, name string) (DatabasePasswordRotation, error) {
-	var out DatabasePasswordRotation
-	err := c.do(ctx, http.MethodGet, databasePasswordRotationPath(name), nil, &out)
-	return out, err
+	return getJSON[DatabasePasswordRotation](ctx, c, databasePasswordRotationPath(name))
 }
 
 // PreviewDatabasePasswordRotation calls the rotation endpoint with dry_run,

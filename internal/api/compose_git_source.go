@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -282,9 +281,8 @@ func (rt *Router) handleSetComposeSource(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	name := r.PathValue("name")
-	var req setComposeSourceRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxDecodeBodyBytes)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[setComposeSourceRequest](w, r, maxDecodeBodyBytes)
+	if !ok {
 		return
 	}
 	if prev, err := rt.gitSources.GetGitSource(r.Context(), name); err == nil && prev.ComposePath == "" {

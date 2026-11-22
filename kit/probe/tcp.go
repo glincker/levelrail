@@ -21,7 +21,10 @@ func (p *Prober) tcpAttempt(ctx context.Context, addr string, timeout time.Durat
 	attemptCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var d net.Dialer
+	d := &net.Dialer{}
+	if p.loopbackOnly {
+		d = loopbackDialer()
+	}
 	conn, err := d.DialContext(attemptCtx, "tcp", addr)
 	if err != nil {
 		kind := FailureConnect

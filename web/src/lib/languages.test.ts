@@ -24,6 +24,7 @@ describe('supportedLanguages', () => {
     expect(name('ja')).toBe('日本語')
     expect(name('pt-BR')).toMatch(/portugu/i)
     expect(name('zh-CN')).toMatch(/中文/)
+    expect(name('ru')).toBe('Русский')
   })
 
   it('puts English first then sorts by native name', () => {

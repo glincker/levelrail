@@ -30,12 +30,10 @@ func (c *Client) CreateSiteDeployToken(ctx context.Context, site, label string, 
 
 // ListSiteDeployTokens lists the site's deploy tokens without secrets.
 func (c *Client) ListSiteDeployTokens(ctx context.Context, site string) ([]SiteDeployToken, error) {
-	var out []SiteDeployToken
-	err := c.do(ctx, http.MethodGet, siteTokensPath(site), nil, &out)
-	return out, err
+	return getJSON[[]SiteDeployToken](ctx, c, siteTokensPath(site))
 }
 
 // RevokeSiteDeployToken revokes one deploy token of the site.
 func (c *Client) RevokeSiteDeployToken(ctx context.Context, site, id string) error {
-	return c.do(ctx, http.MethodDelete, siteTokensPath(site)+"/"+PathEscape(id), nil, nil)
+	return c.del(ctx, siteTokensPath(site)+"/"+PathEscape(id))
 }

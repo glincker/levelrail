@@ -149,7 +149,12 @@ describe('nav registry', () => {
     const extra = NAV_REGISTRY.filter((e) => !listed.has(e.path)).map(
       (e) => e.id,
     )
-    expect(extra.sort()).toEqual(['get-started', 'migrate', 'welcome'])
+    expect(extra.sort()).toEqual([
+      'get-started',
+      'integrations-aws-link',
+      'migrate',
+      'welcome',
+    ])
   })
 
   it('has one Integrations sidebar row and no second settings entry', () => {

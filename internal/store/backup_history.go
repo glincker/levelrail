@@ -200,28 +200,7 @@ type PrunedBackup struct {
 
 // PruneBackupHistory deletes every succeeded backup_history row for
 // databaseName that violates either retention limit: beyond the newest
-// keep (ordered by started_at), or older than olderThan, and returns the
-// TargetID/ObjectKey of every row removed. Only BackupStatusSucceeded
-// rows are ever eligible: a running or failed attempt carries diagnostic
-// value a retention limit was never meant to bound (an operator who sets
-// retain: 7 wants "7 successful backups," not "7 attempts of any kind"),
-// so those are left untouched regardless of how old they are.
-//
-// keep <= 0 disables the count limit; a zero-value olderThan (the usual
-// Go zero value, IsZero()) disables the age limit. Both disabled deletes
-// nothing and returns (nil, nil) without issuing a query: this mirrors
-// store.DesiredDatabase.BackupRetain/BackupRetainDays's own "0 means no
-// limit for that dimension" meaning at the one call site that matters,
-// internal/backup.Scheduler, rather than making every caller remember to
-// guard the zero case itself.
-//
-// Runs as a SELECT of the rows about to be removed followed by a DELETE
-// in the same transaction, rather than a single DELETE ... RETURNING:
-// this codebase's SQLite driver (modernc.org/sqlite) is not used with
-// RETURNING anywhere else, so this avoids relying on unproven support.
-// The transaction ensures the two statements observe the identical row
-// set even though db.SetMaxOpenConns(1) (store.go) already serializes
-// writes against this *sql.DB.
+// keep (ordered by started_at), or older than olderThan, and returns the.
 func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep int, olderThan time.Time) ([]PrunedBackup, error) {
 	countActive := keep > 0
 	ageActive := !olderThan.IsZero()

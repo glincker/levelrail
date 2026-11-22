@@ -109,9 +109,7 @@ func movePath(kind, name string) string {
 
 // GetNodeMove calls GET /api/v1/node-moves/{id}.
 func (c *Client) GetNodeMove(ctx context.Context, id string) (NodeMoveResource, error) {
-	var out NodeMoveResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/node-moves/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[NodeMoveResource](ctx, c, "/api/v1/node-moves/"+PathEscape(id))
 }
 
 // ListNodeMoves calls GET /api/v1/node-moves with optional filters.
@@ -126,9 +124,7 @@ func (c *Client) ListNodeMoves(ctx context.Context, kind, resource, status strin
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out []NodeMoveResource
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]NodeMoveResource](ctx, c, path)
 }
 
 // StartNodeDrain calls POST /api/v1/nodes/{id}/drain and returns the drain job.
@@ -176,23 +172,17 @@ type NodeResources struct {
 
 // ListNodeResources calls GET /api/v1/nodes/{id}/resources.
 func (c *Client) ListNodeResources(ctx context.Context, id string) (NodeResources, error) {
-	var out NodeResources
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/resources", nil, &out)
-	return out, err
+	return getJSON[NodeResources](ctx, c, nodePath(id)+"/resources")
 }
 
 // GetNodeDrain calls GET /api/v1/node-drains/{id}.
 func (c *Client) GetNodeDrain(ctx context.Context, id string) (NodeDrainResource, error) {
-	var out NodeDrainResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/node-drains/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[NodeDrainResource](ctx, c, "/api/v1/node-drains/"+PathEscape(id))
 }
 
 // ListNodeDrains calls GET /api/v1/nodes/{id}/drains.
 func (c *Client) ListNodeDrains(ctx context.Context, nodeID string) ([]NodeDrainResource, error) {
-	var out []NodeDrainResource
-	err := c.do(ctx, http.MethodGet, nodePath(nodeID)+"/drains", nil, &out)
-	return out, err
+	return getJSON[[]NodeDrainResource](ctx, c, nodePath(nodeID)+"/drains")
 }
 
 // NodeLabels is the body of the node labels routes.
@@ -202,9 +192,7 @@ type NodeLabels struct {
 
 // GetNodeLabels calls GET /api/v1/nodes/{id}/labels.
 func (c *Client) GetNodeLabels(ctx context.Context, id string) (NodeLabels, error) {
-	var out NodeLabels
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/labels", nil, &out)
-	return out, err
+	return getJSON[NodeLabels](ctx, c, nodePath(id)+"/labels")
 }
 
 // SetNodeLabels calls PUT /api/v1/nodes/{id}/labels, replacing the set.
@@ -228,9 +216,7 @@ type NodeTaints struct {
 
 // GetNodeTaints calls GET /api/v1/nodes/{id}/taints.
 func (c *Client) GetNodeTaints(ctx context.Context, id string) (NodeTaints, error) {
-	var out NodeTaints
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/taints", nil, &out)
-	return out, err
+	return getJSON[NodeTaints](ctx, c, nodePath(id)+"/taints")
 }
 
 // SetNodeTaints calls PUT /api/v1/nodes/{id}/taints, replacing the set.
@@ -264,9 +250,7 @@ type PlacementResource struct {
 
 // GetPlacement calls GET /api/v1/{apps|databases}/{name}/placement.
 func (c *Client) GetPlacement(ctx context.Context, kind, name string) (PlacementResource, error) {
-	var out PlacementResource
-	err := c.do(ctx, http.MethodGet, movePath(kind, name)+"/placement", nil, &out)
-	return out, err
+	return getJSON[PlacementResource](ctx, c, movePath(kind, name)+"/placement")
 }
 
 // SetPlacement calls PUT /api/v1/{apps|databases}/{name}/placement.
@@ -328,7 +312,5 @@ type MeshConnectivity struct {
 
 // GetMeshConnectivity calls GET /api/v1/mesh/connectivity.
 func (c *Client) GetMeshConnectivity(ctx context.Context) (MeshConnectivity, error) {
-	var out MeshConnectivity
-	err := c.do(ctx, http.MethodGet, "/api/v1/mesh/connectivity", nil, &out)
-	return out, err
+	return getJSON[MeshConnectivity](ctx, c, "/api/v1/mesh/connectivity")
 }

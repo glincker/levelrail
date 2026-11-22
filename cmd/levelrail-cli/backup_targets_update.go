@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 )
 
 // Unlike create, omitted credentials keep the stored ones; given together they rotate them.
@@ -11,6 +12,10 @@ func runBackupTargetsUpdate(prog string, args []string, stdout, stderr io.Writer
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets update", "print the updated backup target as JSON to stdout and nothing else", stderr)
 	var name, provider, endpoint, region, bucket, accessKeyID, secretAccessKey string
 	var clearCABundle bool
+	var hostKey, privateKeyFile, passphrase string
+	fs.StringVar(&hostKey, "host-key", "", "pinned SSH host key (sftp; required for sftp targets, changing it needs new credentials)")
+	fs.StringVar(&privateKeyFile, "private-key-file", "", "new SSH private key file (sftp, with --access-key-id)")
+	fs.StringVar(&passphrase, "private-key-passphrase", "", "passphrase of the new private key (sftp)")
 	fs.StringVar(&name, "name", "", "display name for the backup target (required)")
 	fs.StringVar(&provider, "provider", "", "provider: aws, r2, or custom (required)")
 	fs.StringVar(&endpoint, "endpoint", "", "S3-compatible endpoint URL (required for r2 and custom, aws resolves its own default)")
@@ -37,18 +42,31 @@ func runBackupTargetsUpdate(prog string, args []string, stdout, stderr io.Writer
 	if provider == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
 	}
-	if bucket == "" {
+	if bucket == "" && provider != "sftp" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--bucket is required"))
 	}
-	if (accessKeyID == "") != (secretAccessKey == "") {
+	if provider == "sftp" {
+		if hostKey == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--host-key is required for sftp"))
+		}
+	} else if (accessKeyID == "") != (secretAccessKey == "") {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--access-key-id and --secret-access-key must be set together to rotate credentials"))
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	privateKey := ""
+	if privateKeyFile != "" {
+		raw, rerr := os.ReadFile(privateKeyFile) //nolint:gosec // operator chosen key path
+		if rerr != nil {
+			return reportError(stdout, stderr, jsonOut, newValidationError("read --private-key-file: %v", rerr))
+		}
+		privateKey = string(raw)
+	}
 
 	updated, err := client.UpdateBackupTarget(context.Background(), id, updateBackupTargetRequest{
 		Name: name, Provider: provider, Endpoint: endpoint, Region: region, Bucket: bucket,
 		AccessKeyID: accessKeyID, SecretAccessKey: secretAccessKey, ClearCABundle: clearCABundle,
+		PrivateKey: privateKey, PrivateKeyPassphrase: passphrase, HostKey: hostKey,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update backup target %q: %w", id, err))
@@ -79,6 +97,9 @@ Flags:
   --bucket string                 bucket name (required)
   --access-key-id string          new access key id, set together with --secret-access-key to rotate
   --secret-access-key string      new secret access key, set together with --access-key-id to rotate
+  --host-key string               pinned SSH host key (sftp, required)
+  --private-key-file string       new SSH private key file (sftp, with --access-key-id)
+  --private-key-passphrase string passphrase of the new private key (sftp)
   --clear-ca-bundle               drop the stored custom CA bundle of a WebDAV target
   --token string                 API token (default: %[2]s env var, then the credentials file)
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)

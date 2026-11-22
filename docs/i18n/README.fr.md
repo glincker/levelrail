@@ -25,7 +25,7 @@ Une plateforme de déploiement auto-hébergée dans un seul binaire Go. Le plan 
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a>
 </p>
 <!-- i18n-nav:start -->
-<p><a href="../../README.md">English</a> &middot; <a href="README.zh-Hans.md">简体中文</a> &middot; <a href="README.es.md">Español</a> &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; Français &middot; <a href="README.ja.md">日本語</a></p>
+<p><a href="../../README.md">English</a> &middot; <a href="README.zh-Hans.md">简体中文</a> &middot; <a href="README.es.md">Español</a> &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; Français &middot; <a href="README.ja.md">日本語</a> &middot; <a href="README.ru.md">Русский</a></p>
 <!-- i18n-nav:end -->
 <img src="../../docs/assets/demos/product-tour.gif" alt="Visite du dashboard Levelrail : vue d'ensemble du parc, liste des apps, historique des déploiements et métriques intégrées" width="880">
 </div>

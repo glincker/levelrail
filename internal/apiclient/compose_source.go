@@ -15,9 +15,7 @@ type SetComposeSourceRequest struct {
 
 // GetComposeSource calls GET /api/v1/apps/{name}/compose-source.
 func (c *Client) GetComposeSource(ctx context.Context, name string) (GitSourceResource, error) {
-	var out GitSourceResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/compose-source", nil, &out)
-	return out, err
+	return getJSON[GitSourceResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/compose-source")
 }
 
 // SetComposeSource calls PUT /api/v1/apps/{name}/compose-source; WebhookSecret is set only on create.

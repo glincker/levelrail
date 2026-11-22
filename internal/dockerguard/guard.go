@@ -13,6 +13,7 @@ import (
 	"net/http/httputil"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -31,6 +32,7 @@ type Guard struct {
 	recorder *recorder
 	stats    *Stats
 	logger   *slog.Logger
+	upstream upstreamLog
 }
 
 // Config is what New needs.
@@ -75,11 +77,14 @@ func New(cfg Config) *Guard {
 			pr.Out.URL.Host = "docker"
 			pr.Out.Host = "docker"
 		},
-		Transport:      transport,
-		ModifyResponse: normalizeUpgrade,
-		FlushInterval:  -1,
+		Transport: transport,
+		ModifyResponse: func(resp *http.Response) error {
+			g.upstream.ok(logger)
+			return normalizeUpgrade(resp)
+		},
+		FlushInterval: -1,
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
-			logger.Warn("dockerguard: upstream request failed", slog.String("method", r.Method), slog.String("path", r.URL.Path), slog.String("error", err.Error()))
+			g.upstream.fail(logger, r, err)
 			writeDockerError(w, http.StatusBadGateway, "docker guard: upstream docker daemon unreachable")
 		},
 	}
@@ -268,4 +273,49 @@ func normalizeUpgrade(res *http.Response) error {
 		res.Header.Set("Connection", "Upgrade")
 	}
 	return nil
+}
+
+// upstreamWarnInterval spaces repeated identical "daemon unreachable" warnings, so a Mac
+// with Docker switched off does not flood the service log with one line per poll.
+const upstreamWarnInterval = 5 * time.Minute
+
+// upstreamLog logs the first upstream failure, then at most one per interval, and a recovery line.
+type upstreamLog struct {
+	mu         sync.Mutex
+	failing    bool
+	lastWarn   time.Time
+	suppressed int
+	now        func() time.Time
+}
+
+func (u *upstreamLog) clock() time.Time {
+	if u.now != nil {
+		return u.now()
+	}
+	return time.Now()
+}
+
+func (u *upstreamLog) fail(logger *slog.Logger, r *http.Request, err error) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	now := u.clock()
+	if u.failing && now.Sub(u.lastWarn) < upstreamWarnInterval {
+		u.suppressed++
+		return
+	}
+	u.failing = true
+	u.lastWarn = now
+	logger.Warn("dockerguard: upstream request failed", slog.String("method", r.Method), slog.String("path", r.URL.Path), slog.String("error", err.Error()), slog.Int("suppressed", u.suppressed))
+	u.suppressed = 0
+}
+
+func (u *upstreamLog) ok(logger *slog.Logger) {
+	u.mu.Lock()
+	was := u.failing
+	u.failing = false
+	u.suppressed = 0
+	u.mu.Unlock()
+	if was {
+		logger.Info("dockerguard: upstream docker daemon reachable again")
+	}
 }

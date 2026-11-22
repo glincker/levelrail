@@ -126,9 +126,7 @@ func (c *Client) GetExposure(ctx context.Context, node string, probe bool) (Expo
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out ExposureReport
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[ExposureReport](ctx, c, path)
 }
 
 // PreviewExposureRestriction calls POST /api/v1/firewall/exposure/preview.
@@ -154,7 +152,7 @@ func (c *Client) ApplyExposureRestriction(ctx context.Context, req ExposureRestr
 
 // RemoveExposureRestriction calls DELETE .../exposure/restrictions/{protocol}/{port}.
 func (c *Client) RemoveExposureRestriction(ctx context.Context, protocol string, port int) error {
-	return c.do(ctx, http.MethodDelete, exposureRestrictionPath(protocol, port), nil, nil)
+	return c.del(ctx, exposureRestrictionPath(protocol, port))
 }
 
 // ConfirmExposureRestriction calls POST .../exposure/restrictions/{protocol}/{port}/confirm.

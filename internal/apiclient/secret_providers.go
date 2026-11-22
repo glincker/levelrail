@@ -56,7 +56,7 @@ func (c *Client) PutSecretProvider(ctx context.Context, name string, req PutSecr
 
 // DeleteSecretProvider calls DELETE /api/v1/settings/secret-providers/{name}.
 func (c *Client) DeleteSecretProvider(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/settings/secret-providers/"+url.PathEscape(name), nil, nil)
+	return c.del(ctx, "/api/v1/settings/secret-providers/"+url.PathEscape(name))
 }
 
 // TestSecretProvider calls POST /api/v1/settings/secret-providers/{name}/test.

@@ -38,9 +38,7 @@ func appAutoscalePath(app string) string {
 // GetAppAutoscale calls GET /api/v1/apps/{name}/autoscale; an app with no
 // policy fails with an APIError of status 404.
 func (c *Client) GetAppAutoscale(ctx context.Context, app string) (AppAutoscale, error) {
-	var out AppAutoscale
-	err := c.do(ctx, http.MethodGet, appAutoscalePath(app), nil, &out)
-	return out, err
+	return getJSON[AppAutoscale](ctx, c, appAutoscalePath(app))
 }
 
 // SetAppAutoscale calls PUT /api/v1/apps/{name}/autoscale.
@@ -52,12 +50,10 @@ func (c *Client) SetAppAutoscale(ctx context.Context, app string, u AppAutoscale
 
 // ClearAppAutoscale calls DELETE /api/v1/apps/{name}/autoscale.
 func (c *Client) ClearAppAutoscale(ctx context.Context, app string) error {
-	return c.do(ctx, http.MethodDelete, appAutoscalePath(app), nil, nil)
+	return c.del(ctx, appAutoscalePath(app))
 }
 
 // GetAppAutoscaleHistory calls GET /api/v1/apps/{name}/autoscale/history.
 func (c *Client) GetAppAutoscaleHistory(ctx context.Context, app string) (AppAutoscaleHistory, error) {
-	var out AppAutoscaleHistory
-	err := c.do(ctx, http.MethodGet, appAutoscalePath(app)+"/history", nil, &out)
-	return out, err
+	return getJSON[AppAutoscaleHistory](ctx, c, appAutoscalePath(app)+"/history")
 }

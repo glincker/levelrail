@@ -1,30 +1,6 @@
 // Package compose parses a Docker Compose file into Levelrail's own
 // desired-state model, in two shapes depending on the caller. The
-// direct-import path (ToDesiredServices, via Validate) is deliberately
-// narrow: every service needs a pre-built image (no build:), since
-// there is no build context to build one from (a pasted file, no git
-// checkout). The git-sourced expand path (ExpandBuildService, via
-// ValidateForBuild) allows build: for exactly that reason: it always
-// has a real checkout. Both paths share the same narrow scope
-// otherwise: environment/ports/volumes accept both Compose's short and
-// long forms (see yaml.go), but only the fields Levelrail's own model
-// has room for: no port ranges, no tmpfs/npipe mounts. A UDP port is
-// published straight on the host, never through the HTTP proxy.
-// restart: and networks: both parse and are surfaced as non-blocking
-// Notices instead of being silently dropped or translated: see Notices
-// for why neither has a real translation onto how Levelrail runs a
-// service. depends_on: parses into spec.Service.DependsOn / store.
-// DesiredService.DependsOn and IS enforced: internal/reconcile/
-// application.Controller waits for a dependency's container to start
-// before creating this service's own, real Docker Compose's own default
-// depends_on semantic (service_started, not service_healthy). command: and
-// entrypoint: both parse and translate into store.DesiredService's own
-// Command and Entrypoint fields. volumes: additionally accepts an
-// absolute host path on the left side as a bind mount (ValidateForBuild
-// rejects one; see that method's own doc comment for why), gated at the
-// HTTP layer to AbilityRoot and, even then, against
-// internal/bindmount's own forbidden-path list (see
-// validateBindMountHostPath).
+// direct-import path (ToDesiredServices, via Validate) is deliberately.
 package compose
 
 import (

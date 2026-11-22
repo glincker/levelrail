@@ -57,6 +57,29 @@ service AgentService {
   // for its node, without opening a Session. The agent uses it to test a
   // renewed certificate before discarding the old one.
   rpc CheckIdentity(CheckIdentityRequest) returns (CheckIdentityResponse);
+
+  // UpdateCheck tells the calling node which agent version it should run.
+  // The node is the one named by the mTLS client certificate and the request
+  // carries no node id, so a node can never read another node's answer.
+  rpc UpdateCheck(UpdateCheckRequest) returns (UpdateCheckResponse);
+
+  // Tunnel carries the bytes of one ingress tunnel, opened by the agent
+  // after a TunnelOpenRequest on Session. The first frame is a TunnelHello;
+  // authenticated by the same mTLS identity as Session. Sent only to agents
+  // advertising "ingress_tunnel".
+  rpc Tunnel(stream TunnelFrame) returns (stream TunnelFrame);
+}
+
+message UpdateCheckRequest {}
+
+message UpdateCheckResponse {
+  // action is none, update, rollback or hold (internal/nodeinsight).
+  string action = 1;
+  string channel = 2;
+  string target_version = 3;
+  string reason = 4;
+  // auto_apply mirrors the nodes.agent_auto_update runtime setting.
+  bool auto_apply = 5;
 }
 
 message EnrollRequest {
@@ -322,6 +345,13 @@ message AgentRequest {
     // InspectContainers reads live detail for this control plane's own
     // containers only. Sent only to agents advertising "container_inspect".
     InspectContainersRequest inspect_containers = 26;
+    // Probe runs one readiness attempt on the agent's own host, for nodes
+    // the control plane has no mesh route to. Sent only to agents
+    // advertising "host_probe".
+    ProbeRequest probe = 27;
+    // TunnelOpen asks the agent to open an ingress tunnel to one of its own
+    // service ports. Sent only to agents advertising "ingress_tunnel".
+    TunnelOpenRequest tunnel_open = 28;
   }
 }
 
@@ -354,7 +384,72 @@ message AgentResponse {
     ArchiveStat archive_stat = 15;
     LogsResponse logs = 16;
     InspectContainersResponse inspect_containers = 17;
+    ProbeResponse probe = 18;
+    TunnelOpenResponse tunnel_open = 19;
   }
+}
+
+// TunnelOpenRequest names the target by service and container port only.
+// The agent resolves the loopback host port itself and never accepts a host
+// or address from the wire.
+message TunnelOpenRequest {
+  // tunnel_id is 16 random bytes, single use.
+  bytes tunnel_id = 1;
+  string service = 2;
+  uint32 container_port = 3;
+  int64 deadline_ns = 4;
+}
+
+// TunnelOpenResponse acknowledges the open; failure_reason is empty when the
+// agent accepted it and will dial the Tunnel RPC.
+message TunnelOpenResponse {
+  string failure_reason = 1;
+}
+
+// TunnelHello is the first frame on the Tunnel RPC and binds it to a pending open.
+message TunnelHello {
+  bytes tunnel_id = 1;
+}
+
+// TunnelReset ends a tunnel with an error; reason is at most 256 bytes.
+message TunnelReset {
+  string reason = 1;
+}
+
+// TunnelFrame is one frame of a tunnel. data carries at most 32768 bytes; a
+// larger frame fails only its own tunnel.
+message TunnelFrame {
+  oneof frame {
+    TunnelHello hello = 1;
+    bytes data = 2;
+    // half_close means the sender will write no more data.
+    Empty half_close = 3;
+    TunnelReset reset = 4;
+  }
+}
+
+// ProbeRequest is one TCP or HTTP probe attempt. The agent dials addr from
+// its own host and refuses anything but a loopback address.
+message ProbeRequest {
+  string addr = 1;
+  bool tcp = 2;
+  string path = 3;
+  string scheme = 4;
+  string host = 5;
+  bool tls_skip_verify = 6;
+  // has_follow_redirects distinguishes an explicit false from unset.
+  bool has_follow_redirects = 7;
+  bool follow_redirects = 8;
+  string expected_status = 9;
+  int64 timeout_ns = 10;
+  // max_redirects is the control plane's resolved redirect bound; 0 keeps the agent default.
+  int32 max_redirects = 11;
+}
+
+// ProbeResponse carries the attempt outcome; failure_reason is empty on success.
+message ProbeResponse {
+  string failure_kind = 1;
+  string failure_reason = 2;
 }
 
 message LogsRequest {

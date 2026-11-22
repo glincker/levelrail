@@ -26,16 +26,26 @@ func runDomainsCheck(prog string, args []string, stdout, stderr io.Writer, looku
 	if cutover {
 		return runDomainsVerify(fs, stdout, stderr, verifyArgs{prog: prog, apiURL: apiURLFlag, token: tokenFlag, profile: profileFlag, jsonOut: jsonOut, of: of, expectIPs: expectIPs}, lookupEnv)
 	}
-	rest, ok := requireArgs(fs, stderr, prog, "domains check", "an app name and a domain", 2)
-	if !ok {
+	rest := fs.Args()
+	if len(rest) != 1 && len(rest) != 2 {
+		_, _ = fmt.Fprintf(stderr, "%s: domains check requires a domain, or an app name and a domain\n\n", prog)
+		fs.Usage()
 		return exitUsage
 	}
-	appName, domain := rest[0], rest[1]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	result, err := client.CheckDomain(context.Background(), appName, domain)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("check domain %q for app %q: %w", domain, appName, err))
+	var result apiclient.DomainCheckResource
+	var err error
+	if len(rest) == 1 {
+		result, err = client.CheckDomainByName(context.Background(), strings.ToLower(rest[0]))
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("check domain %q: %w", rest[0], err))
+		}
+	} else {
+		result, err = client.CheckDomain(context.Background(), rest[0], rest[1])
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("check domain %q for app %q: %w", rest[1], rest[0], err))
+		}
 	}
 
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printDomainCheckHuman(stdout, result) })
@@ -98,6 +108,7 @@ func printDomainDNSHuman(out io.Writer, r domainCheckResource) {
 
 func domainsCheckUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s domains check <domain> [flags]
   %[1]s domains check <app> <domain> [flags]
   %[1]s domains check --cutover <domain>... [--expect-ip <ip>]... [flags]
 

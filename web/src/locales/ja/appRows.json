@@ -61,12 +61,38 @@
   },
   "description": "説明: {{text}}",
   "card": {
-    "noPreview": "プレビューなし",
+    "noPreviewYet": "プレビューはまだありません",
+    "previewQueued": "プレビューは待機中です",
+    "previewRendering": "プレビューを生成中",
+    "previewFailed": "プレビューを表示できません",
     "noDomain": "ドメインなし",
     "staticSite": "静的サイト",
     "lastDeploy": "デプロイ",
     "empty": "これらのフィルターに一致するアプリはありません。",
     "listLabel": "アプリ",
     "loading": "アプリを読み込み中"
+  },
+  "kind": {
+    "badge": {
+      "api": "API",
+      "worker": "ワーカー",
+      "cron": "Cron",
+      "database": "データベース"
+    },
+    "cardLabel": "{{name}} の {{kind}} カード",
+    "ready": {
+      "true": "準備完了",
+      "false": "未準備",
+      "unknown": "準備状態は不明"
+    },
+    "neverDeployed": "未デプロイ",
+    "replicas_other": "レプリカ {{count}}",
+    "nextRun": "次回実行",
+    "lastRun": "前回実行",
+    "notScheduled": "未スケジュール",
+    "neverRan": "未実行",
+    "restarts_other": "再起動 {{count}} 回",
+    "restartsRising": "再起動回数が増えています",
+    "dbSize": "データベースサイズ {{size}}"
   }
 }

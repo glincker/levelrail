@@ -1,4 +1,9 @@
 import { useState } from 'react'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { ExternalLinkGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
@@ -7,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -20,6 +26,7 @@ import {
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { useClearLogDrain, useSetLogDrain } from '../queries/apps'
+import { useLogDrainFields } from '../queries/useBackupTargetFields'
 import type { AppDetail, LogDrainType } from '../types/appDetail'
 
 // Configure/remove card for PUT/DELETE /api/v1/apps/{name}/log-drain
@@ -28,8 +35,12 @@ import type { AppDetail, LogDrainType } from '../types/appDetail'
 // node-local log store (Logs tab), never a replacement for it.
 export function LogDrainCard({ app }: { app: AppDetail }) {
   const existing = app.log_drain
+  const fields = useLogDrainFields()
+  const { t: tp } = useTranslation('integrations')
   const [type, setType] = useState<LogDrainType>(existing?.type ?? 'http')
   const [target, setTarget] = useState(existing?.target ?? '')
+  const [headerName, setHeaderName] = useState(existing?.header_name ?? '')
+  const [headerValue, setHeaderValue] = useState('')
   const setLogDrain = useSetLogDrain()
   const clearLogDrain = useClearLogDrain()
   const pending = setLogDrain.isPending || clearLogDrain.isPending
@@ -44,9 +55,19 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
       return
     }
     setLogDrain.mutate(
-      { name: app.name, drain: { type, target: target.trim(), enabled } },
+      {
+        name: app.name,
+        drain: {
+          type,
+          target: target.trim(),
+          enabled,
+          header_name: type === 'http' ? headerName.trim() : '',
+          header_value: headerValue,
+        },
+      },
       {
         onSuccess: () => {
+          setHeaderValue('')
           toast.add({
             title: enabled ? 'Log drain saved.' : 'Log drain paused.',
             description: `${app.name}'s logs ${enabled ? 'now forward to' : 'are configured for, but not currently sent to,'} this sink.`,
@@ -68,6 +89,8 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
     clearLogDrain.mutate(app.name, {
       onSuccess: () => {
         setTarget('')
+        setHeaderName('')
+        setHeaderValue('')
         toast.add({
           title: 'Log drain removed.',
           description: `${app.name}'s logs are no longer forwarded externally.`,
@@ -139,7 +162,9 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
 
         <div className="space-y-3">
           <Field>
-            <FieldLabel htmlFor="log-drain-type">Sink type</FieldLabel>
+            <FieldLabel htmlFor="log-drain-type">
+              {fields.label('type', 'Sink type')}
+            </FieldLabel>
             <Select
               value={type}
               onValueChange={(value) => {
@@ -159,7 +184,9 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
           </Field>
           <Field>
             <FieldLabel htmlFor="log-drain-target">
-              {type === 'http' ? 'Endpoint URL' : 'Syslog address'}
+              {type === 'http'
+                ? fields.label('target_http', 'Endpoint URL')
+                : fields.label('target_syslog', 'Syslog address')}
             </FieldLabel>
             <Input
               id="log-drain-target"
@@ -180,6 +207,48 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
                 : 'network://host:port, e.g. udp://logs.example.com:514. Leave blank to write to this node’s local syslog daemon.'}
             </FieldDescription>
           </Field>
+          {type === 'http' ? (
+            <Collapsible>
+              <CollapsibleTrigger className="text-sm text-muted-foreground">
+                {tp('logDrain.advanced')}
+              </CollapsibleTrigger>
+              <CollapsiblePanel className="space-y-3 pt-3">
+                <Field>
+                  <FieldLabel htmlFor="log-drain-header-name">
+                    {fields.label('header_name', 'Auth header name')}
+                  </FieldLabel>
+                  <Input
+                    id="log-drain-header-name"
+                    placeholder="Authorization"
+                    value={headerName}
+                    onChange={(e) => {
+                      setHeaderName(e.target.value)
+                    }}
+                    disabled={pending}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="log-drain-header-value">
+                    {fields.label('header_value', 'Auth header value')}
+                  </FieldLabel>
+                  <Input
+                    id="log-drain-header-value"
+                    type="password"
+                    autoComplete="off"
+                    placeholder={existing?.header_set ? '********' : ''}
+                    value={headerValue}
+                    onChange={(e) => {
+                      setHeaderValue(e.target.value)
+                    }}
+                    disabled={pending || headerName.trim() === ''}
+                  />
+                  <FieldDescription>
+                    {fields.help('header_value', '')}
+                  </FieldDescription>
+                </Field>
+              </CollapsiblePanel>
+            </Collapsible>
+          ) : null}
           <div className="flex items-center gap-2">
             <Button
               type="button"

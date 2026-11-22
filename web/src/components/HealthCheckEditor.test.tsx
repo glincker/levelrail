@@ -36,13 +36,30 @@ function fakeApp(overrides: Partial<AppDetail> = {}): AppDetail {
   }
 }
 
+const PRESET_CATALOG = {
+  presets: [
+    { id: 'healthz', path: '/healthz', hint: '' },
+    { id: 'health', path: '/health', hint: '' },
+    { id: 'api-health', path: '/api/health', hint: '' },
+    { id: 'ping', path: '/ping', hint: '' },
+    { id: 'status', path: '/status', hint: '' },
+    { id: 'up', path: '/up', hint: 'Rails' },
+  ],
+  readiness: { interval_seconds: 5, timeout_seconds: 2, failures: 0 },
+  liveness: { interval_seconds: 30, timeout_seconds: 0, failures: 3 },
+}
+
 function renderEditor(app: AppDetail) {
   const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) =>
     Promise.resolve({
       ok: true,
       status: 200,
       json: () =>
-        Promise.resolve(JSON.parse((init?.body as string | undefined) ?? '{}')),
+        Promise.resolve(
+          init?.body === undefined
+            ? PRESET_CATALOG
+            : JSON.parse((init?.body as string | undefined) ?? '{}'),
+        ),
     } as unknown as Response),
   )
   vi.stubGlobal('fetch', fetchMock)
@@ -142,7 +159,9 @@ describe('HealthCheckEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Save health checks' }))
 
     expect(await screen.findByText(/runs backwards/)).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(
+      fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT'),
+    ).toBe(false)
   })
 
   it('round-trips an existing exec probe and keeps ready_timeout', async () => {
@@ -181,7 +200,7 @@ describe('HealthCheckEditor', () => {
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('switch', { name: 'Readiness probe' }))
-    await user.click(screen.getByRole('button', { name: '/healthz' }))
+    await user.click(await screen.findByRole('button', { name: '/healthz' }))
     await user.click(screen.getByRole('button', { name: 'Save health checks' }))
 
     await waitFor(() => {
@@ -199,7 +218,7 @@ describe('HealthCheckEditor', () => {
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('switch', { name: 'Readiness probe' }))
-    await user.click(screen.getByRole('button', { name: '/healthz' }))
+    await user.click(await screen.findByRole('button', { name: '/healthz' }))
     await user.click(screen.getByRole('button', { name: 'No health check' }))
     await user.click(screen.getByRole('button', { name: 'Save health checks' }))
 
@@ -216,7 +235,7 @@ describe('HealthCheckEditor', () => {
     expect(copyButton).toBeDisabled()
 
     await user.click(screen.getByRole('switch', { name: 'Readiness probe' }))
-    await user.click(screen.getByRole('button', { name: '/api/health' }))
+    await user.click(await screen.findByRole('button', { name: '/api/health' }))
     expect(copyButton).toBeEnabled()
     await user.click(copyButton)
     await user.click(screen.getByRole('button', { name: 'Save health checks' }))

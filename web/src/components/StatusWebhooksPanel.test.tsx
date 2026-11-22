@@ -13,6 +13,27 @@ function mockApi() {
     'fetch',
     vi.fn((input: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET'
+      if (input.includes('/field-descriptors/')) {
+        const f = (id: string, req: boolean) => ({
+          id,
+          key: id,
+          type: 'string',
+          label_key: `statusPage:webhooks.${id}`,
+          help_key: `statusPage:fields.webhook.${id}.help`,
+          required: req,
+          secret: false,
+          doc: id,
+        })
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              name: 'status-page-webhooks',
+              fields: [f('url', true), f('label', false), f('events', false)],
+            }),
+            { status: 200 },
+          ),
+        )
+      }
       if (method === 'POST' && input.endsWith('/webhooks')) {
         const body = JSON.parse(
           typeof init?.body === 'string' ? init.body : '{}',

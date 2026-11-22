@@ -7,6 +7,7 @@ import fr from '@thesvg/flags/svg/circle/fr.svg?url'
 import br from '@thesvg/flags/svg/circle/br.svg?url'
 import cn from '@thesvg/flags/svg/circle/cn.svg?url'
 import jp from '@thesvg/flags/svg/circle/jp.svg?url'
+import ru from '@thesvg/flags/svg/circle/ru.svg?url'
 
 export interface LanguageFlag {
   /** Circle flag image URL. */
@@ -31,6 +32,7 @@ export const LANGUAGE_FLAGS: Record<string, LanguageFlag> = {
   },
   ja: { flag: jp, native: '日本語', english: 'Japanese' },
   'zh-CN': { flag: cn, native: '中文 (简体)', english: 'Chinese (Simplified)' },
+  ru: { flag: ru, native: 'Русский', english: 'Russian' },
 }
 
 export function languageFlag(code: string): LanguageFlag | undefined {

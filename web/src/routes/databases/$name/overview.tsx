@@ -48,6 +48,7 @@ const ProvisioningPanel = lazy(() =>
     default: m.ProvisioningPanel,
   })),
 )
+import { DatabaseWiring } from '../../../components/databases/overview/DatabaseWiring'
 import { StatusHeader } from '../../../components/databases/overview/StatusHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { OptimiseHint } from '../../../components/resourceAdvisor/ResourceAdvisorTile'
@@ -80,6 +81,7 @@ function OverviewSection() {
         <ProvisioningPanel name={name} hideWhenReady />
       </Suspense>
       <StatusHeader database={database} conditions={conditions} />
+      <DatabaseWiring database={database} projectName={projectName} />
       <ResourceLabelsCard path="databases" name={name} />
       <Card>
         <CardHeader>

@@ -21,7 +21,8 @@
     "cancel": "Annuler",
     "submit": "Ajouter le webhook",
     "submitting": "Ajout",
-    "done": "Terminé"
+    "done": "Terminé",
+    "fieldsFailed": "Les champs du formulaire n'ont pas pu être chargés. Rechargez la page et réessayez."
   },
   "card": {
     "allEvents": "Tous les événements",
@@ -58,6 +59,17 @@
       "pending": "En attente",
       "delivered": "Livré",
       "dead": "En file morte"
+    }
+  },
+  "fields": {
+    "name": {
+      "help": "Un nom court pour ce destinataire."
+    },
+    "url": {
+      "help": "Point de terminaison HTTPS qui reçoit les requêtes POST signées."
+    },
+    "events": {
+      "help": "Types ou familles séparés par des virgules, comme apps.*. Laissez vide pour recevoir tous les événements."
     }
   }
 }

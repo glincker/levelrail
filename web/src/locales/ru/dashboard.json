@@ -1,0 +1,381 @@
+{
+  "needsAttention": {
+    "askAi": "Спросить ИИ",
+    "review": "Проверить",
+    "retryCopy": "Повторить копирование",
+    "openDatabase": "Открыть базу данных"
+  },
+  "fleet": {
+    "reserved": {
+      "title": "Зарезервировано и используется",
+      "subtitle": "Настроенные лимиты {{active}} работающих приложений и баз данных, включая реплики. Остановленные ({{suspended}}) не учитываются.",
+      "cpu": "CPU",
+      "memory": "Память",
+      "cores_one": "ядро",
+      "cores_few": "ядра",
+      "cores_many": "ядер",
+      "cores_other": "ядра",
+      "reserved": "Зарезервировано",
+      "used": "Используется сейчас",
+      "capacity": "Емкость",
+      "unknown": "Не сообщается",
+      "cpuCapacityScope": "Емкость CPU это ядра узла панели управления.",
+      "capacityPartial": "Емкость сообщили узлы: {{known}} из {{total}}.",
+      "reservedBar": "{{resource}}: зарезервировано",
+      "usedBar": "{{resource}}: используется",
+      "verdict": {
+        "overCommitted": "Перебор на {{amount}}",
+        "idle": "Зарезервировано, но простаивает",
+        "headroom": "Достаточный запас",
+        "noLimits": "Лимиты не заданы",
+        "unknownCapacity": "Емкость сообщена не полностью"
+      },
+      "noLimit": {
+        "cpu_one": "У {{count}} контейнера нет лимита CPU, он не учитывается.",
+        "cpu_few": "У {{count}} контейнеров нет лимита CPU, они не учитываются.",
+        "cpu_many": "У {{count}} контейнеров нет лимита CPU, они не учитываются.",
+        "cpu_other": "У {{count}} контейнеров нет лимита CPU, они не учитываются.",
+        "memory_one": "У {{count}} контейнера нет лимита памяти, он не учитывается.",
+        "memory_few": "У {{count}} контейнеров нет лимита памяти, они не учитываются.",
+        "memory_many": "У {{count}} контейнеров нет лимита памяти, они не учитываются.",
+        "memory_other": "У {{count}} контейнеров нет лимита памяти, они не учитываются."
+      },
+      "breakdown": "Резерв по группам",
+      "groupBy": "Группировать по",
+      "by": {
+        "project": "Проекту",
+        "environment": "Окружению"
+      },
+      "colReserved": "Резерв",
+      "colUsed": "Используется",
+      "pairHint": "Ядра CPU / память.",
+      "unsetInGroup_one": "{{count}} без лимита",
+      "unsetInGroup_few": "{{count}} без лимитов",
+      "unsetInGroup_many": "{{count}} без лимитов",
+      "unsetInGroup_other": "{{count}} без лимитов",
+      "noProject": "Без проекта",
+      "noEnvironment": "Без окружения",
+      "topReservers": "Крупнейшие резервы",
+      "noReservers": "Пока ни у одного ресурса нет лимита.",
+      "kind": {
+        "app": "Приложение",
+        "database": "База данных"
+      }
+    },
+    "storage": {
+      "title": "Хранилище",
+      "scope": "Размеры томов относятся к узлу панели управления. Размеры резервных копий относятся ко всем узлам.",
+      "databaseVolumes": "Тома баз данных",
+      "appVolumes": "Тома приложений",
+      "unknownSizes_one": "Размер {{count}} тома неизвестен",
+      "unknownSizes_few": "Размеры {{count}} томов неизвестны",
+      "unknownSizes_many": "Размеры {{count}} томов неизвестны",
+      "unknownSizes_other": "Размеры {{count}} тома неизвестны",
+      "backups": "Хранится резервных копий",
+      "backupCount_one": "{{count}} резервная копия",
+      "backupCount_few": "{{count}} резервные копии",
+      "backupCount_many": "{{count}} резервных копий",
+      "backupCount_other": "{{count}} резервной копии",
+      "total": "Всего",
+      "totalHint": "Тома плюс резервные копии.",
+      "largestVolumes": "Самые большие тома",
+      "largestBackups": "Самые большие наборы резервных копий",
+      "noVolumes": "Размеры томов не сообщены.",
+      "notReported": "Размер не сообщен.",
+      "noBackups": "Успешных резервных копий пока нет."
+    }
+  },
+  "status": {
+    "ok": "Все системы в норме",
+    "incidents_one": "{{count}} инцидент",
+    "incidents_few": "{{count}} инцидента",
+    "incidents_many": "{{count}} инцидентов",
+    "incidents_other": "{{count}} инцидента"
+  },
+  "tiles": {
+    "appsRunning": "Приложений работает",
+    "requests": "Запросы",
+    "errorRate": "Доля ошибок",
+    "noTraffic": "Нет трафика",
+    "deploys24h": "Деплоев за 24 ч",
+    "nodesOnline": "Узлов онлайн",
+    "lastHour": "Последний час, все приложения.",
+    "addDomain": "Добавить домен",
+    "deployApp": "Развернуть приложение",
+    "idle": "Простой"
+  },
+  "resources": {
+    "title": "Ресурсы",
+    "controlPlane": "Панель управления",
+    "cpu": "CPU",
+    "memory": "Память",
+    "disk": "Диск",
+    "cpuOfCores": "{{percent}}% от {{cores}} ядер",
+    "cpuContainers": "{{percent}}% по контейнерам",
+    "noReadings": "С этого узла пока нет показаний хоста.",
+    "memoryBreakdown": "Распределение памяти",
+    "segment": {
+      "levelrail": "{{brand}}",
+      "apps": "Приложения",
+      "databases": "Базы данных",
+      "other": "Прочие контейнеры",
+      "system": "Система",
+      "free": "Свободно"
+    },
+    "segmentHelp": {
+      "levelrail": "Панель управления и агент узла",
+      "apps": "Контейнеры ваших развернутых приложений",
+      "databases": "Контейнеры ваших управляемых баз данных",
+      "other": "Работают на этом сервере, но не управляются {{brand}}",
+      "system": "Ядро, кеш страниц и другие процессы",
+      "free": "Память, которая еще доступна"
+    },
+    "notManaged": "Не управляется {{brand}}",
+    "topConsumers": "Крупнейшие потребители",
+    "sortBy": "Сортировать по",
+    "sort": {
+      "memory": "Памяти",
+      "cpu": "CPU"
+    },
+    "kind": {
+      "app": "Приложение",
+      "database": "База данных",
+      "other": "Контейнер"
+    },
+    "requestTrend": "Динамика запросов {{name}}",
+    "viewAll_one": "Показать все ({{count}})",
+    "viewAll_few": "Показать все ({{count}})",
+    "viewAll_many": "Показать все ({{count}})",
+    "viewAll_other": "Показать все ({{count}})",
+    "showLess": "Показать меньше",
+    "databasesLine_one": "{{count}} база данных",
+    "databasesLine_few": "{{count}} базы данных",
+    "databasesLine_many": "{{count}} баз данных",
+    "databasesLine_other": "{{count}} базы данных"
+  },
+  "recommendations": {
+    "line_one": "{{count}} рекомендация",
+    "line_few": "{{count}} рекомендации",
+    "line_many": "{{count}} рекомендаций",
+    "line_other": "{{count}} рекомендации"
+  },
+  "usageDetails": {
+    "title": "Подробности использования"
+  },
+  "hero": {
+    "title": "Панель"
+  },
+  "banners": {
+    "httpsTitle": "Эта панель работает по обычному HTTP",
+    "httpsDetail": "Пароли и сессии передаются без шифрования. Включите HTTPS в один клик, DNS не нужен.",
+    "httpsAction": "Включить HTTPS",
+    "doctorTitle_one": "Doctor нашел {{count}} проблему",
+    "doctorTitle_few": "Doctor нашел {{count}} проблемы",
+    "doctorTitle_many": "Doctor нашел {{count}} проблем",
+    "doctorTitle_other": "Doctor нашел {{count}} проблемы",
+    "doctorDetail": "У каждой есть решение или следующий шаг.",
+    "doctorAction": "Открыть Doctor",
+    "nodesTitle_one": "{{count}} узел офлайн",
+    "nodesTitle_few": "{{count}} узла офлайн",
+    "nodesTitle_many": "{{count}} узлов офлайн",
+    "nodesTitle_other": "{{count}} узла офлайн",
+    "nodesDetail": "Приложения на офлайн-узле продолжают работать, но их нельзя менять, а их mesh-ingress недоступен.",
+    "nodesAction": "Показать узлы"
+  },
+  "nextSteps": {
+    "title": "Рекомендуемые следующие шаги",
+    "seeAll": "Страница статуса",
+    "continue": "Продолжить",
+    "setupProgress": "Настройка готова на {{percent}}%",
+    "quiet": "Ничего не требует вашего внимания. Работает приложений: {{running}} из {{total}}, деплоев за последние 24 часа: {{deploys}}.",
+    "group": {
+      "copy_one": "Не удалось скопировать данные в {{count}} базу данных",
+      "copy_few": "Не удалось скопировать данные в {{count}} базы данных",
+      "copy_many": "Не удалось скопировать данные в {{count}} баз данных",
+      "copy_other": "Не удалось скопировать данные в {{count}} базы данных",
+      "show_one": "Показать {{count}}",
+      "show_few": "Показать все {{count}}",
+      "show_many": "Показать все {{count}}",
+      "show_other": "Показать все {{count}}",
+      "hide": "Скрыть"
+    },
+    "review": "Проверить"
+  },
+  "deploys": {
+    "title": "Последние деплои",
+    "empty": "Деплоев пока нет. Сделайте push в подключенный репозиторий, и они появятся здесь.",
+    "emptyScoped": "Для приложений в этой области деплоев пока нет.",
+    "status": {
+      "succeeded": "Развернуто",
+      "failed": "Ошибка",
+      "running": "Выполняется",
+      "held": "Удержан",
+      "awaiting_approval": "Ждет подтверждения",
+      "superseded": "Заменен",
+      "queued": "В очереди",
+      "canceled": "Отменен",
+      "pending": "В очереди до возвращения узла",
+      "refused": "Отклонен"
+    }
+  },
+  "strip": {
+    "nodeOffline_one": "Узел {{names}} офлайн",
+    "nodeOffline_few": "Узлов офлайн: {{count}}: {{names}}",
+    "nodeOffline_many": "Узлов офлайн: {{count}}: {{names}}",
+    "nodeOffline_other": "Узлов офлайн: {{count}}: {{names}}",
+    "nodeOfflineSince": "с",
+    "nodeOfflineView": "Показать узел",
+    "ok_one": "Единственное приложение ({{count}}) в порядке",
+    "ok_few": "Все {{count}} приложения в порядке",
+    "ok_many": "Все {{count}} приложений в порядке",
+    "ok_other": "Все {{count}} приложения в порядке",
+    "issues_one": "{{count}} вопрос требует внимания",
+    "issues_few": "{{count}} вопроса требуют внимания",
+    "issues_many": "{{count}} вопросов требуют внимания",
+    "issues_other": "{{count}} вопроса требуют внимания",
+    "causes_one": "{{count}} проблема, первопричин: {{causes}}",
+    "causes_few": "{{count}} проблемы, первопричин: {{causes}}",
+    "causes_many": "{{count}} проблем, первопричин: {{causes}}",
+    "causes_other": "{{count}} проблемы, первопричин: {{causes}}",
+    "details": "Подробности",
+    "notices_one": "{{count}} уведомление",
+    "notices_few": "{{count}} уведомления",
+    "notices_many": "{{count}} уведомлений",
+    "notices_other": "{{count}} уведомления",
+    "showSnoozed_one": "Показать {{count}} отложенное",
+    "showSnoozed_few": "Показать {{count}} отложенных",
+    "showSnoozed_many": "Показать {{count}} отложенных",
+    "showSnoozed_other": "Показать {{count}} отложенных"
+  },
+  "scope": {
+    "label": "Показано: {{name}}",
+    "clear": "Сбросить область, показать все проекты",
+    "allProjects": "Все проекты",
+    "instanceWide": "Все проекты",
+    "instanceWideHint": "Для всего экземпляра. Не фильтруется по выбранному проекту или окружению."
+  },
+  "apps": {
+    "title": "Приложения",
+    "search": "Поиск приложений",
+    "none": "Подходящих приложений нет.",
+    "emptyScopedTitle": "В {{scope}} пока нет приложений",
+    "emptyScopedBody": "Разверните приложение здесь, и оно появится в этой области, или переключитесь на все проекты, чтобы увидеть все.",
+    "emptyScopedClear": "Показать все проекты",
+    "viewAll": "Показать все ({{count}})",
+    "view": {
+      "grid": "Сетка",
+      "list": "Список"
+    }
+  },
+  "widgets": {
+    "attention": "Нужно ваше внимание",
+    "apps": "Приложения",
+    "activity": "Последние деплои",
+    "fleet": "Парк",
+    "resources": "Ресурсы",
+    "advisor": "Советник по ресурсам",
+    "alerts": "Последние оповещения",
+    "usage": "Подробности использования"
+  },
+  "customize": {
+    "edit": "Настроить",
+    "done": "Готово",
+    "reset": "Сбросить раскладку",
+    "show": "Показать {{name}}",
+    "moveUp": "Переместить {{name}} вверх",
+    "moveDown": "Переместить {{name}} вниз",
+    "hide": "Скрыть {{name}}"
+  },
+  "newApp": {
+    "label": "Новое приложение",
+    "more": "Другие способы развертывания",
+    "items": {
+      "git": {
+        "title": "Из репозитория Git",
+        "hint": "Сборка и деплой при каждом push"
+      },
+      "image": {
+        "title": "Из образа Docker",
+        "hint": "Загрузить готовый образ"
+      },
+      "template": {
+        "title": "Из шаблона",
+        "hint": "n8n, Uptime Kuma, MinIO и другие"
+      },
+      "compose": {
+        "title": "Из Docker Compose",
+        "hint": "Развернуть все сервисы из файла"
+      },
+      "database": {
+        "title": "База данных",
+        "hint": "Postgres, MySQL, Redis и другие"
+      }
+    }
+  },
+  "copyRetry": {
+    "title": "Повторить копирование в {{name}}",
+    "description": "Предыдущий источник уже заполнен. Введите пароль еще раз, он нигде не сохраняется. Если источник требует шифрования, копирование автоматически повторится по TLS.",
+    "loading": "Загрузка предыдущей попытки...",
+    "missing": "У этой базы данных нет копирования для повтора."
+  },
+  "snooze": {
+    "label": "Отложить на день",
+    "done_one": "Отложено на день.",
+    "done_few": "Отложено на день: {{count}}.",
+    "done_many": "Отложено на день: {{count}}.",
+    "done_other": "Отложено на день: {{count}}.",
+    "undo": "Отменить"
+  },
+  "tabs": {
+    "label": "Виды панели",
+    "start": "Старт",
+    "metrics": "Метрики",
+    "more": "Другие виды",
+    "hiddenSuffix": "{{name}} (скрыто)",
+    "addTitle": "Новая панель",
+    "addDescription": "Начните с готовой панели или с пустой.",
+    "empty": "Пустая панель",
+    "metricsNote": "Итоги по всему парку. Настройте, чтобы получить собственную копию.",
+    "customize": "Настроить",
+    "emptyName": "Панель без названия",
+    "metricsEmptyTitle": "Метрик пока нет",
+    "metricsEmptyBody": "Метрики появятся, когда заработает первое приложение. Разверните его, чтобы увидеть здесь CPU, память и трафик.",
+    "metricsEmptyAction": "Развернуть первое приложение"
+  },
+  "manage": {
+    "label": "Управление",
+    "new": "Новая панель",
+    "starter": "Новая из заготовки",
+    "import": "Импортировать JSON",
+    "importFile": "JSON-файл панели",
+    "edit": "Изменить панель",
+    "doneEditing": "Закончить изменение",
+    "rename": "Переименовать",
+    "renameTitle": "Переименовать панель",
+    "name": "Название",
+    "export": "Экспортировать JSON",
+    "delete": "Удалить",
+    "deleteTitle": "Удалить {{name}}?",
+    "deleteBody": "Панель будет удалена для всех, кто ее видит. Экспортированные JSON-файлы не затрагиваются.",
+    "cancel": "Отмена",
+    "save": "Сохранить"
+  },
+  "updateStrip": {
+    "label": "Доступно обновление",
+    "to": "до",
+    "behind_one": "отставание на {{count}} релиз",
+    "behind_few": "отставание на {{count}} релиза",
+    "behind_many": "отставание на {{count}} релизов",
+    "behind_other": "отставание на {{count}} релиза",
+    "security": "Включает исправление безопасности",
+    "whatsNew": "Что нового",
+    "update": "Обновить",
+    "dismiss": "Скрыть {{version}} до следующего релиза"
+  },
+  "restoreDue": {
+    "title": "Проверьте восстановление",
+    "body": "Резервная копия есть, но восстановление еще не проверялось. Резервная копия, которую вы ни разу не восстанавливали, это лишь догадка.",
+    "action": "Проверить восстановление",
+    "dismiss": "Закрыть"
+  }
+}

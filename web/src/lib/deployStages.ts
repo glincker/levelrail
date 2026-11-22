@@ -284,7 +284,7 @@ const ROLLOUT_SUCCESS_REASONS = [
 const NOT_LATEST_ATTEMPT_DETAIL =
   "Not tracked for past attempts: reconcile status only reflects the app's current state."
 
-type RolloutSubStage = [DeployStage, DeployStage, DeployStage]
+export type RolloutSubStage = [DeployStage, DeployStage, DeployStage]
 
 function rolloutSubStageShells(
   status: DeployStageStatus,
@@ -295,6 +295,18 @@ function rolloutSubStageShells(
     { key: 'cutover', label: 'Cutover', status, detail },
     { key: 'cleanup', label: 'Cleanup', status, detail },
   ]
+}
+
+// A deploy the status card already calls live cannot still show a running
+// health check; the conditions may simply be gone by the time the page opens.
+export function settleRolloutSubStages(
+  subStages: RolloutSubStage,
+): RolloutSubStage {
+  return subStages.map((s) =>
+    s.status === 'running' || s.status === 'pending'
+      ? { ...s, status: 'done' as const }
+      : s,
+  ) as RolloutSubStage
 }
 
 // computeRolloutSubStages splits the single "Roll out" stage

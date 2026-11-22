@@ -88,6 +88,7 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	// app_health_score.go's own doc comment.
 	mux.HandleFunc("GET /api/v1/apps/{name}/containers", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppContainers))
 	mux.HandleFunc("GET /api/v1/apps/{name}/health-score", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealthScore))
+	mux.HandleFunc("GET /api/v1/apps/{name}/health-explain", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealthExplain))
 
 	// Scheduled jobs and one-off runs: access tiers live in routes_jobs.go.
 	rt.registerJobRoutes(mux)

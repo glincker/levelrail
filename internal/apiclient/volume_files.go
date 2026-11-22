@@ -42,14 +42,12 @@ func (c *Client) ListVolumeFiles(ctx context.Context, app, volume, dir string, l
 	if limit > 0 {
 		q.Set("limit", strconv.Itoa(limit))
 	}
-	var out VolumeFileListing
-	err := c.do(ctx, http.MethodGet, volumeFilesPath(app, volume)+"?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[VolumeFileListing](ctx, c, volumeFilesPath(app, volume)+"?"+q.Encode())
 }
 
 // DeleteVolumeFile removes one file from an app volume.
 func (c *Client) DeleteVolumeFile(ctx context.Context, app, volume, p string) error {
-	return c.do(ctx, http.MethodDelete, volumeFilesPath(app, volume)+"/content?"+url.Values{"path": {p}}.Encode(), nil, nil)
+	return c.del(ctx, volumeFilesPath(app, volume)+"/content?"+url.Values{"path": {p}}.Encode())
 }
 
 // RestoreVolumeFile copies one file out of a succeeded backup into the live volume.

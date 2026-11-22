@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { ChaosResult } from './resilience'
+import { useApiMutation } from './useApiMutation'
 
 export type BenchmarkGroup = 'failover' | 'deploy' | 'rollout' | 'throughput'
 
@@ -147,9 +148,8 @@ export function useBenchmarkComparison(
 }
 
 export function useDeleteBenchmark() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string): Promise<void> => {
+  return useApiMutation({
+    fn: async (id: string): Promise<void> => {
       const res = await fetch(`${URL}/${encodeURIComponent(id)}`, {
         method: 'DELETE',
       })
@@ -160,6 +160,6 @@ export function useDeleteBenchmark() {
         )
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    invalidate: [KEY],
   })
 }

@@ -34,6 +34,7 @@ type fakeEC2 struct {
 	deleteSGErr error
 
 	runOut *ec2.RunInstancesOutput
+	runIn  *ec2.RunInstancesInput
 	runErr error
 
 	describeOut *ec2.DescribeInstancesOutput
@@ -135,8 +136,9 @@ func (f *fakeEC2) DeleteSecurityGroup(context.Context, *ec2.DeleteSecurityGroupI
 	return &ec2.DeleteSecurityGroupOutput{}, nil
 }
 
-func (f *fakeEC2) RunInstances(context.Context, *ec2.RunInstancesInput, ...func(*ec2.Options)) (*ec2.RunInstancesOutput, error) {
+func (f *fakeEC2) RunInstances(_ context.Context, in *ec2.RunInstancesInput, _ ...func(*ec2.Options)) (*ec2.RunInstancesOutput, error) {
 	f.runCalls++
+	f.runIn = in
 	if f.authErr != nil {
 		return nil, f.authErr
 	}
@@ -179,6 +181,9 @@ func marshalAWSCreds(c AWSCredentials) (string, error) {
 func newTestAWS(fake *fakeEC2) *AWS {
 	a := NewAWS(AWSCredentials{AccessKeyID: "ak", SecretAccessKey: "sk", Region: "us-east-1"}, "app")
 	a.client = func(context.Context, string) (ec2API, error) { return fake, nil }
+	a.guard = func(_ context.Context, r EC2CreateRequest) (map[string]string, error) {
+		return map[string]string{"Name": r.Name}, nil
+	}
 	return a
 }
 

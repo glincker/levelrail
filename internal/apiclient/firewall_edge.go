@@ -116,23 +116,17 @@ func firewallQuery(scope, rng string) string {
 
 // FirewallEdgeStatus calls GET .../firewall/edge/status.
 func (c *Client) FirewallEdgeStatus(ctx context.Context, scope, rng string) (FirewallEdgeStatus, error) {
-	var out FirewallEdgeStatus
-	err := c.do(ctx, http.MethodGet, firewallEdgeBase+"/status"+firewallQuery(scope, rng), nil, &out)
-	return out, err
+	return getJSON[FirewallEdgeStatus](ctx, c, firewallEdgeBase+"/status"+firewallQuery(scope, rng))
 }
 
 // FirewallEdgeTraffic calls GET .../firewall/edge/traffic.
 func (c *Client) FirewallEdgeTraffic(ctx context.Context, scope string) (FirewallEdgeTraffic, error) {
-	var out FirewallEdgeTraffic
-	err := c.do(ctx, http.MethodGet, firewallEdgeBase+"/traffic"+firewallQuery(scope, ""), nil, &out)
-	return out, err
+	return getJSON[FirewallEdgeTraffic](ctx, c, firewallEdgeBase+"/traffic"+firewallQuery(scope, ""))
 }
 
 // ListFirewallEdgeRules calls GET .../firewall/edge/rules.
 func (c *Client) ListFirewallEdgeRules(ctx context.Context) ([]FirewallEdgeRule, error) {
-	var out []FirewallEdgeRule
-	err := c.do(ctx, http.MethodGet, firewallEdgeBase+"/rules", nil, &out)
-	return out, err
+	return getJSON[[]FirewallEdgeRule](ctx, c, firewallEdgeBase+"/rules")
 }
 
 // CreateFirewallEdgeRule calls POST .../firewall/edge/rules.
@@ -151,7 +145,7 @@ func (c *Client) UpdateFirewallEdgeRule(ctx context.Context, id string, r edgefw
 
 // DeleteFirewallEdgeRule calls DELETE .../firewall/edge/rules/{id}.
 func (c *Client) DeleteFirewallEdgeRule(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, firewallEdgeBase+"/rules/"+url.PathEscape(id), nil, nil)
+	return c.del(ctx, firewallEdgeBase+"/rules/"+url.PathEscape(id))
 }
 
 // ReorderFirewallEdgeRules calls POST .../firewall/edge/rules/order.
@@ -177,21 +171,17 @@ func (c *Client) AllowFirewallEdgeIP(ctx context.Context, e FirewallEdgeIPEntry)
 
 // ListFirewallEdgeBans calls GET .../firewall/edge/bans.
 func (c *Client) ListFirewallEdgeBans(ctx context.Context) ([]FirewallEdgeBan, error) {
-	var out []FirewallEdgeBan
-	err := c.do(ctx, http.MethodGet, firewallEdgeBase+"/bans", nil, &out)
-	return out, err
+	return getJSON[[]FirewallEdgeBan](ctx, c, firewallEdgeBase+"/bans")
 }
 
 // LiftFirewallEdgeBan calls DELETE .../firewall/edge/bans/{ip}.
 func (c *Client) LiftFirewallEdgeBan(ctx context.Context, ip string) error {
-	return c.do(ctx, http.MethodDelete, firewallEdgeBase+"/bans/"+url.PathEscape(ip), nil, nil)
+	return c.del(ctx, firewallEdgeBase+"/bans/"+url.PathEscape(ip))
 }
 
 // FirewallEdgeSettings calls GET .../firewall/edge/settings.
 func (c *Client) FirewallEdgeSettings(ctx context.Context) (FirewallEdgeSettings, error) {
-	var out FirewallEdgeSettings
-	err := c.do(ctx, http.MethodGet, firewallEdgeBase+"/settings", nil, &out)
-	return out, err
+	return getJSON[FirewallEdgeSettings](ctx, c, firewallEdgeBase+"/settings")
 }
 
 // SetFirewallEdgeSettings calls PUT .../firewall/edge/settings.

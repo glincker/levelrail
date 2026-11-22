@@ -64,9 +64,7 @@ func (c *Client) PluginPanelData(ctx context.Context, name, panel, appID string)
 	if appID != "" {
 		path += "?app_id=" + url.QueryEscape(appID)
 	}
-	var out PluginPanelView
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[PluginPanelView](ctx, c, path)
 }
 
 // PluginPanelAction calls POST /api/v1/plugins/{name}/panels/{panel}/actions/{action}.

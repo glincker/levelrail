@@ -92,9 +92,7 @@ type EvidenceVerifyReport struct {
 
 // ListAccessReviews calls GET /api/v1/compliance/access-reviews.
 func (c *Client) ListAccessReviews(ctx context.Context) ([]AccessReviewResource, error) {
-	var out []AccessReviewResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/compliance/access-reviews", nil, &out)
-	return out, err
+	return getJSON[[]AccessReviewResource](ctx, c, "/api/v1/compliance/access-reviews")
 }
 
 // CreateAccessReview calls POST /api/v1/compliance/access-reviews.
@@ -106,9 +104,7 @@ func (c *Client) CreateAccessReview(ctx context.Context, req CreateAccessReviewR
 
 // GetAccessReview calls GET /api/v1/compliance/access-reviews/{id}.
 func (c *Client) GetAccessReview(ctx context.Context, id string) (AccessReviewDetail, error) {
-	var out AccessReviewDetail
-	err := c.do(ctx, http.MethodGet, "/api/v1/compliance/access-reviews/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[AccessReviewDetail](ctx, c, "/api/v1/compliance/access-reviews/"+PathEscape(id))
 }
 
 // DecideAccessReviewItem calls PUT .../access-reviews/{id}/items/{item}.
@@ -126,9 +122,7 @@ func (c *Client) CompleteAccessReview(ctx context.Context, id string) (CompleteA
 
 // ListEvidencePacks calls GET /api/v1/compliance/evidence-packs.
 func (c *Client) ListEvidencePacks(ctx context.Context) ([]EvidencePackResource, error) {
-	var out []EvidencePackResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/compliance/evidence-packs", nil, &out)
-	return out, err
+	return getJSON[[]EvidencePackResource](ctx, c, "/api/v1/compliance/evidence-packs")
 }
 
 // CreateEvidencePack calls POST /api/v1/compliance/evidence-packs.
@@ -140,9 +134,7 @@ func (c *Client) CreateEvidencePack(ctx context.Context, from, to string) (Evide
 
 // GetEvidencePack calls GET /api/v1/compliance/evidence-packs/{id}.
 func (c *Client) GetEvidencePack(ctx context.Context, id string) (EvidencePackResource, error) {
-	var out EvidencePackResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/compliance/evidence-packs/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[EvidencePackResource](ctx, c, "/api/v1/compliance/evidence-packs/"+PathEscape(id))
 }
 
 // VerifyEvidencePack calls POST .../evidence-packs/{id}/verify.

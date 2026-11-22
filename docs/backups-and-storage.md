@@ -280,6 +280,40 @@ The **Local disk** preset points at an S3 server on this machine. Backups stored
 
 The card shows whether new volume backups are encrypted. The public key is never printed on the page: use **Copy public key** in the disclosure. The private key must be stored off this server, or encrypted backups cannot be restored after a disaster. Until you confirm that you did (`POST /api/v1/backups/encryption-key/ack`), the card keeps a warning. The confirmation is a statement from you, not something the control plane can verify, and it is tied to the public key, so rotating the key asks again.
 
+### SFTP target
+
+An `sftp` target stores backups on any server that offers SFTP over SSH, such as a NAS, a storage box or another VPS. Uploads, downloads, listing, retention pruning, the test connection and the restore drill work as with the other targets.
+
+```bash
+# 1. Read the key the server offers. Nothing is sent and nothing is stored.
+levelrail-cli backup-targets scan-host-key --endpoint backup.example.com:22
+
+# 2. Compare the fingerprint with one you got from the server owner, then pin it.
+levelrail-cli backup-targets create --name nas --provider sftp \
+  --endpoint backup.example.com:22 --path backups/levelrail \
+  --access-key-id backup-user --private-key-file ~/.ssh/levelrail_backup \
+  --host-key "ssh-ed25519 SHA256:..."
+```
+
+The dashboard does the same in two steps: **Fetch host key**, then tick that you checked the fingerprint. Pinning is always an explicit action. `--trust-new-host-key` pins whatever the server shows at that moment and prints it (trust on first use, only when you ask for it). Create and update refuse a target without a pinned key.
+
+What the SFTP target does:
+
+- **Host key pinning is required.** The connection is refused unless the server presents the pinned key type and SHA-256 fingerprint. A changed key fails with a clear error and is never accepted automatically. Re-pinning (`--host-key` on update, or the form) needs the credentials sent again in the same request.
+- **Credentials** are a password or a private key (with an optional passphrase). They are write-only, stored encrypted with the master key, and never returned by the API or written to logs. The pinned host key is public and is shown.
+- **Network policy.** Private, loopback and cloud metadata addresses are refused when connecting. The `backup.sftp_allow_private_networks` runtime setting allows private and loopback addresses (for a NAS on your LAN); metadata and link-local addresses stay refused either way.
+- **Remote path.** The path is the base directory. A path or object key containing `..` is refused, and every object is addressed under that base. Relative paths start in the SSH user's login directory.
+- **Limits.** Connect and idle timeouts, the number of simultaneous connections, and listing depth and size are runtime settings (`backup.sftp_*`, see [Runtime settings](/runtime-settings)). Nothing is run through a shell.
+- **Atomic writes.** Objects are written to a `.partial` name and renamed into place. Interrupted uploads are not retried automatically; the next backup run starts again.
+- **Test connection** writes, reads back and deletes a small probe object and reports latency. Free space is shown only when the server supports the `statvfs@openssh.com` extension.
+
+What is verified and what is not:
+
+- Verified by automated tests against an in-process SFTP server: upload, download, list, delete, the probe, password authentication, refusal of a changed host key, refusal of a missing pin, path traversal checks, private address refusal, and that credentials are not echoed.
+- Not verified in CI: private key authentication against a real OpenSSH server, servers that need keyboard-interactive or certificate authentication (not supported), very large transfers, chrooted or Windows servers, and servers that reject the `posix-rename` extension (a remove-then-rename fallback is used and has not been exercised against one).
+- Symbolic links on the server are not followed when listing. A link inside the base directory that points elsewhere could still be followed by the server on read or write, so give the SSH user a directory it owns, or a chroot, and do not rely on this client to contain it.
+- A target that lives on a machine you control is still a copy you must keep: test it with `backup-targets test` and a restore drill.
+
 ### Orphaned data
 
 Deleting a database or app does not delete its Docker volumes, so a mistaken delete never destroys data. Volumes this control plane created whose database or app no longer exists are listed under **Orphaned data** with size, age, which resource they belonged to, and the last backup of it (a volume with no backup is flagged).
@@ -443,6 +477,7 @@ Limits to know about:
 | `GET` | `/api/v1/backup-targets/{id}` | `read` |
 | `PUT` | `/api/v1/backup-targets/{id}` | `write:sensitive` |
 | `DELETE` | `/api/v1/backup-targets/{id}` | `write:sensitive` |
+| `POST` | `/api/v1/backup-targets/sftp-host-key` | `write:sensitive` |
 | `POST` | `/api/v1/backup-targets/{id}/test` | `write:sensitive` |
 | `POST` | `/api/v1/backup-targets/{id}/drill` | `write:sensitive` |
 | `GET` | `/api/v1/registry-credentials` | `read` |

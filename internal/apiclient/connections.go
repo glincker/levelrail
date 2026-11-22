@@ -69,9 +69,7 @@ func (c *Client) ListConnections(ctx context.Context, f ConnectionFilter) ([]Con
 
 // GetConnection calls GET /api/v1/connections/{ref}.
 func (c *Client) GetConnection(ctx context.Context, ref string) (Connection, error) {
-	var out Connection
-	err := c.do(ctx, http.MethodGet, "/api/v1/connections/"+PathEscape(ref), nil, &out)
-	return out, err
+	return getJSON[Connection](ctx, c, "/api/v1/connections/"+PathEscape(ref))
 }
 
 // ConnectionCatalog calls GET /api/v1/connections/catalog.
@@ -131,14 +129,12 @@ func (c *Client) BindAppConnection(ctx context.Context, app string, req BindConn
 
 // UnbindAppConnection calls DELETE /api/v1/apps/{name}/bindings/{id}.
 func (c *Client) UnbindAppConnection(ctx context.Context, app, id string) error {
-	return c.do(ctx, http.MethodDelete, appBindingsPath(app)+"/"+PathEscape(id), nil, nil)
+	return c.del(ctx, appBindingsPath(app)+"/"+PathEscape(id))
 }
 
 // ListAppConnectionBindings calls GET /api/v1/apps/{name}/bindings.
 func (c *Client) ListAppConnectionBindings(ctx context.Context, app string) (AppConnectionBindings, error) {
-	var out AppConnectionBindings
-	err := c.do(ctx, http.MethodGet, appBindingsPath(app), nil, &out)
-	return out, err
+	return getJSON[AppConnectionBindings](ctx, c, appBindingsPath(app))
 }
 
 // BindOrgConnection calls POST /api/v1/organizations/{id}/bindings.
@@ -150,7 +146,7 @@ func (c *Client) BindOrgConnection(ctx context.Context, org string, req BindConn
 
 // UnbindOrgConnection calls DELETE /api/v1/organizations/{id}/bindings/{bid}.
 func (c *Client) UnbindOrgConnection(ctx context.Context, org, id string) error {
-	return c.do(ctx, http.MethodDelete, orgBindingsPath(org)+"/"+PathEscape(id), nil, nil)
+	return c.del(ctx, orgBindingsPath(org)+"/"+PathEscape(id))
 }
 
 // ListOrgConnectionBindings calls GET /api/v1/organizations/{id}/bindings.

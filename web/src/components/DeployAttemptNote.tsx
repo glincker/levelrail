@@ -3,6 +3,7 @@ import type { DeployAttempt } from '../types/deployAttempt'
 import { InfoTip } from './kit'
 import { StatusReasonTip } from './StatusReasonTip'
 import { deployInterruption } from '../lib/deployInterruption'
+import { copyLabelKey, deployCopyOf } from '../lib/deployCopy'
 
 // The reason code a poll-started deploy carries; its label already says why.
 const POLLED_REASON = 'DetectedByPoll'
@@ -27,7 +28,13 @@ export function DeployAttemptNote({ attempt }: { attempt: DeployAttempt }) {
   const { t } = useTranslation('common')
   const { t: td } = useTranslation('deploys')
   const kind = deployInterruption(attempt.reason)
-  const note = kind ? td(`interruption.${kind}`) : attemptNote(attempt)
+  const copy = deployCopyOf(attempt)
+  const copyNote = copy
+    ? td(copyLabelKey(copy), { id: copy.target })
+    : undefined
+  const note = kind
+    ? td(`interruption.${kind}`)
+    : (copyNote ?? attemptNote(attempt))
   if (!note) return null
   return (
     <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">

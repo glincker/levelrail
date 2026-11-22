@@ -80,7 +80,7 @@ export function ReachHero({
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <StatusPill status={status} />
-        <code className="min-w-0 flex-1 break-all font-mono text-sm font-medium">
+        <code className="min-w-0 flex-[1_1_14rem] break-all font-mono text-sm font-medium">
           {addr.display}
         </code>
         <SecurityChip security={resolveSecurity(addr, probe)} />

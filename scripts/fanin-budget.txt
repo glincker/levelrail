@@ -27,6 +27,7 @@ internal/dockerguard 75
 internal/edgefw 21
 internal/email 35
 internal/envredact 76
+internal/experimental 32
 internal/extdb 36
 internal/footprint 203
 internal/frameworks 54
@@ -35,6 +36,7 @@ internal/gitsshkey 27
 internal/gpu 190
 internal/identity 190
 internal/loadbalancer 201
+internal/mailtemplates 21
 internal/meshpath 46
 internal/monitor 190
 internal/network 54
@@ -67,9 +69,10 @@ kit/ids 92
 kit/netguard 214
 kit/pathfilter 27
 kit/probe 201
-kit/semver 32
+kit/semver 40
 kit/ticker 35
 kit/timeutil 191
 kit/untrusted 41
 kit/upgrade 27
 registry 24
+internal/updatewindow 80

@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
@@ -42,6 +43,32 @@ var encodings = []encoding{{"br", ".br"}, {"gzip", ".gz"}}
 type staticFiles struct {
 	dist  fs.FS
 	etags sync.Map
+	// gz caches gzip bodies built from raw files when no .gz sibling is
+	// embedded, so gzip-only clients (plain http) still get compressed bytes.
+	gz sync.Map
+}
+
+type gzBody struct {
+	etag string
+	data []byte
+}
+
+func (s *staticFiles) gzipped(name string) (gzBody, bool) {
+	if v, ok := s.gz.Load(name); ok {
+		return v.(gzBody), true
+	}
+	raw, err := fs.ReadFile(s.dist, name)
+	if err != nil {
+		return gzBody{}, false
+	}
+	var buf bytes.Buffer
+	zw, _ := gzip.NewWriterLevel(&buf, gzip.BestCompression)
+	if _, err := zw.Write(raw); err != nil || zw.Close() != nil || buf.Len() >= len(raw) {
+		return gzBody{}, false
+	}
+	b := gzBody{etag: bodyETag(buf.Bytes()), data: buf.Bytes()}
+	s.gz.Store(name, b)
+	return b, true
 }
 
 func (s *staticFiles) isFile(name string) bool {
@@ -85,6 +112,7 @@ func (s *staticFiles) serve(w http.ResponseWriter, r *http.Request, name string)
 	h := w.Header()
 	ext := strings.ToLower(path.Ext(name))
 	file, enc := name, ""
+	var gzb *gzBody
 	if compressibleExt[ext] {
 		h.Add("Vary", "Accept-Encoding")
 		accepted := acceptedEncodings(r.Header.Get("Accept-Encoding"))
@@ -94,6 +122,25 @@ func (s *staticFiles) serve(w http.ResponseWriter, r *http.Request, name string)
 				break
 			}
 		}
+		if enc == "" && accepted["gzip"] && s.isFile(name) {
+			if b, ok := s.gzipped(name); ok {
+				gzb, enc = &b, "gzip"
+			}
+		}
+	}
+	if gzb != nil {
+		if typ := mime.TypeByExtension(ext); typ != "" {
+			h.Set("Content-Type", typ)
+		}
+		h.Set("Content-Encoding", enc)
+		h.Set("ETag", gzb.etag)
+		if strings.HasPrefix(name, assetsPrefix) && hashedAsset.MatchString(name) {
+			h.Set("Cache-Control", cacheImmutable)
+		} else {
+			h.Set("Cache-Control", cacheRevalidate)
+		}
+		http.ServeContent(w, r, name, time.Time{}, bytes.NewReader(gzb.data))
+		return
 	}
 	etag, rs, closeFn, err := s.open(file)
 	if err != nil {

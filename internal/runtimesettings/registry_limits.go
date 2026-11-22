@@ -15,6 +15,7 @@ const (
 	KeyAPIMaxBodyBytes         = "api.max_body_bytes"
 	KeyAssetsUploadMaxBytes    = "assets.upload_max_bytes"
 	KeyDeployMaxConcurrent     = "deploy.max_concurrent"
+	KeyUploadMaxBytes          = "deploy.upload_max_bytes"
 	KeyInlineSourceMaxBytes    = "deploy.inline_source_max_bytes"
 	KeyInlineSourceMaxFiles    = "deploy.inline_source_max_files"
 	KeyInlineSourceKeep        = "deploy.inline_source_keep"
@@ -24,6 +25,7 @@ const (
 	inlineSourceFilesCeiling   = 200
 	rateLimitCeiling           = 10_000_000
 	bodyLimitFloor             = 1 << 20
+	uploadBytesFloor           = 1 << 10
 	apiMaxBodyCeiling          = 1 << 30
 	assetsUploadCeiling        = 1 << 40
 	deployMaxConcurrentCeiling = 1000
@@ -114,6 +116,11 @@ func init() {
 		Title:       "Concurrent deploys",
 		Description: "How many deploys may run at once across all apps; extra deploys wait in the queue and start when one finishes. 0 means no limit. A change applies to the next queue decision.",
 	}, 0, deployMaxConcurrentCeiling)
+	registerLimit(Definition{
+		Key: KeyUploadMaxBytes, Category: CategoryDeploys, Default: strconv.Itoa(512 << 20), Env: "APP_UPLOAD_MAX_BYTES", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
+		Title:       "Source upload size limit",
+		Description: "Largest compressed source archive in bytes that a folder deploy (deploy, up without a git remote) may upload; a bigger one is refused with HTTP 413. Between 1 KiB and 1 TiB. A change applies to the next upload.",
+	}, uploadBytesFloor, assetsUploadCeiling)
 	registerLimit(Definition{
 		Key: KeyInlineSourceMaxBytes, Category: CategoryDeploys, Default: strconv.Itoa(256 << 10), Env: "APP_INLINE_SOURCE_MAX_BYTES", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
 		Title:       "Inline Dockerfile size limit",

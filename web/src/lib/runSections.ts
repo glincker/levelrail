@@ -1,10 +1,10 @@
 // Section ids, remembered open state and hash routing for the run page.
 
 export const RUN_SECTIONS = [
-  'summary',
-  'waterfall',
-  'rollout',
   'logs',
+  'waterfall',
+  'summary',
+  'rollout',
   'compare',
 ] as const
 

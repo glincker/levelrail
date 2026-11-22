@@ -46,5 +46,5 @@ func (c *Client) MailSuppressionAdd(ctx context.Context, email, reason string) (
 
 // MailSuppressionRemove calls DELETE /api/v1/mail/suppressions/{email}.
 func (c *Client) MailSuppressionRemove(ctx context.Context, email string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/mail/suppressions/"+url.PathEscape(email), nil, nil)
+	return c.del(ctx, "/api/v1/mail/suppressions/"+url.PathEscape(email))
 }

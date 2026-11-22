@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -15,19 +15,14 @@ import (
 
 // dirFreeBytes is the space an unprivileged writer can still use in dir.
 func dirFreeBytes(dir string) (int64, error) {
-	var st syscall.Statfs_t
-	if err := syscall.Statfs(dir, &st); err != nil {
-		return 0, err
-	}
-	return int64(st.Bavail) * int64(st.Bsize), nil //nolint:gosec // statfs fields are non-negative
+	info, err := diskfree.Stat(dir)
+	return info.Free, err
 }
 
 // hostDiskReport measures the data dir against what an upgrade keeps on disk.
 func hostDiskReport(dataDir, live, exe string) selfupgrade.DiskReport {
-	var st syscall.Statfs_t
-	err := syscall.Statfs(dataDir, &st)
-	free := int64(st.Bavail) * int64(st.Bsize) //nolint:gosec // statfs fields are non-negative
-	return selfupgrade.PlanDisk(free, err, fileSize(live), fileSize(exe), os.Getenv("APP_UPGRADE_MIN_FREE_BYTES"))
+	info, err := diskfree.Stat(dataDir)
+	return selfupgrade.PlanDisk(info.Free, err, fileSize(live), fileSize(exe), os.Getenv("APP_UPGRADE_MIN_FREE_BYTES"))
 }
 
 func fileSize(path string) int64 {

@@ -505,6 +505,8 @@ func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, 
 	}
 	if source.LogDrain != nil {
 		drain := *source.LogDrain
+		// The header value is a secret that is not copied, so the clone starts without the header.
+		drain.HeaderName = ""
 		if err := rt.apps.UpdateServiceLogDrain(ctx, newName, &drain); err != nil {
 			return store.DesiredService{}, fmt.Errorf("assign log drain: %w", err)
 		}

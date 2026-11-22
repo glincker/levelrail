@@ -90,7 +90,11 @@ type line struct {
 type rule func(in Input, lines []line) *Cause
 
 var rules = []rule{
+	ruleBuildOOM,
 	ruleOOMKilled,
+	rulePublicBuildEnv,
+	ruleNodeVersion,
+	ruleMissingStartCommand,
 	ruleMissingEnv,
 	ruleImageEnvHint,
 	ruleImagePull,

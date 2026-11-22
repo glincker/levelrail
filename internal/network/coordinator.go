@@ -1,35 +1,6 @@
 package network
 
 // This file: peer key distribution, control-plane side.
-//
-// The exchange, and why it is an exchange rather than a push:
-//
-// A node's private key must never leave that node. That is not a
-// convention this code follows, it is a property the protocol shape makes
-// impossible to violate: the control plane never generates a key, never
-// has a field to put one in (DeviceConfig.PrivateKey is zero on
-// everything that crosses the wire, see its doc comment), and never asks
-// for one. What it asks for is what only the node can supply, which is
-// its *public* key. Meanwhile the node cannot pick its own mesh address
-// without risking a collision with another node picking concurrently, so
-// the control plane supplies that.
-//
-// Each node therefore holds one half of its own configuration and the
-// control plane holds the other, which means one pass cannot possibly
-// complete the mesh for a brand new node: the control plane sends what it
-// has (an address, and every peer it already knows), the node applies it
-// and answers with its public key, and the *next* pass is the one where
-// that key reaches the other nodes. That is not a wart to be engineered
-// away with a bootstrap handshake; it is ordinary level-triggered
-// convergence, the same "it takes as many passes as it takes, and every
-// pass is safe to interrupt" property every reconciler here already has.
-// A node joining a fleet is fully meshed within two reconcile intervals.
-//
-// Scope, stated plainly: the ConfigSink interface below is the boundary,
-// and the gRPC implementation of it (a new op on the agent Session
-// stream) is deliberately not in this change. See ConfigSink's own doc
-// comment for exactly what that implementation needs and why it is
-// separated.
 
 import (
 	"context"
@@ -64,25 +35,6 @@ type NodeIdentity struct {
 
 // ConfigSink delivers one node's DeviceConfig to that node and returns
 // what the node reports back.
-//
-// An interface, and the only thing this package knows about transport,
-// because the real implementation belongs to the agent Session stream and
-// that stream's wire contract (proto/agent/v1/agent.proto) needs one
-// coherent mental model and a single reviewer end to end, not several
-// people each touching an uncoordinated slice of it. Extending it is a
-// small and
-// entirely mechanical change: one new arm on AgentRequest.op and one
-// on AgentResponse.result, carrying the fields of DeviceConfig (minus
-// PrivateKey, which never crosses) and NodeIdentity respectively, plus a
-// case in internal/agent.Execute that calls Mesh.Apply. It is left out of
-// this change so that it lands as its own reviewed diff against the
-// transport, rather than as a wire-contract change buried inside a
-// networking one.
-//
-// What ships here instead: this interface, an in-process implementation
-// (LocalSink) that is exactly what a single-node control plane needs and
-// what the reconcile path exercises today, and the full distribution
-// logic above it, all of it testable without a network.
 type ConfigSink interface {
 	// ApplyMesh sends cfg to nodeID and returns that node's reported
 	// identity. An error means this one node did not get its config;

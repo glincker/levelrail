@@ -61,12 +61,40 @@
   },
   "description": "Beschreibung: {{text}}",
   "card": {
-    "noPreview": "Keine Vorschau",
+    "noPreviewYet": "Noch keine Vorschau",
+    "previewQueued": "Vorschau in der Warteschlange",
+    "previewRendering": "Vorschau wird erstellt",
+    "previewFailed": "Vorschau nicht verfügbar",
     "noDomain": "Keine Domain",
     "staticSite": "Statische Seite",
     "lastDeploy": "Deployt",
     "empty": "Keine Apps passen zu diesen Filtern.",
     "listLabel": "Apps",
     "loading": "Apps werden geladen"
+  },
+  "kind": {
+    "badge": {
+      "api": "API",
+      "worker": "Worker",
+      "cron": "Cron",
+      "database": "Datenbank"
+    },
+    "cardLabel": "{{kind}}-Karte für {{name}}",
+    "ready": {
+      "true": "Bereit",
+      "false": "Nicht bereit",
+      "unknown": "Bereitschaft unbekannt"
+    },
+    "neverDeployed": "Noch nicht deployt",
+    "replicas_one": "{{count}} Replikat",
+    "replicas_other": "{{count}} Replikate",
+    "nextRun": "Nächster Lauf",
+    "lastRun": "Letzter Lauf",
+    "notScheduled": "Nicht geplant",
+    "neverRan": "Noch nie gelaufen",
+    "restarts_one": "{{count}} Neustart",
+    "restarts_other": "{{count}} Neustarts",
+    "restartsRising": "Neustart-Zähler steigt",
+    "dbSize": "Datenbankgröße {{size}}"
   }
 }

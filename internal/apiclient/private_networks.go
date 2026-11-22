@@ -85,9 +85,7 @@ const privateNetworksPath = "/api/v1/private-networks"
 
 // ListPrivateNetworks calls GET /api/v1/private-networks.
 func (c *Client) ListPrivateNetworks(ctx context.Context) (PrivateNetworkList, error) {
-	var out PrivateNetworkList
-	err := c.do(ctx, http.MethodGet, privateNetworksPath, nil, &out)
-	return out, err
+	return getJSON[PrivateNetworkList](ctx, c, privateNetworksPath)
 }
 
 // CreatePrivateNetwork calls POST /api/v1/private-networks.
@@ -127,9 +125,7 @@ func (c *Client) DeletePrivateNetworkRule(ctx context.Context, id string) (Priva
 
 // GetPrivateNetworkMap calls GET /api/v1/private-networks/map.
 func (c *Client) GetPrivateNetworkMap(ctx context.Context) (PrivateNetworkMap, error) {
-	var out PrivateNetworkMap
-	err := c.do(ctx, http.MethodGet, privateNetworksPath+"/map", nil, &out)
-	return out, err
+	return getJSON[PrivateNetworkMap](ctx, c, privateNetworksPath+"/map")
 }
 
 // ApplyPrivateNetworks calls POST /api/v1/private-networks/apply.

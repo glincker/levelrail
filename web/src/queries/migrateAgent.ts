@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { MigrateChecklist } from './migrateWizard'
+import { useApiMutation } from './useApiMutation'
 
 // Poll cadence while a run is in flight; settled state stops polling.
 const POLL_10000_MS = 10000
@@ -153,16 +154,14 @@ export function useAgentDetail(id: string | undefined) {
 }
 
 export function useCreateAgentSession() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (vars: { label: string }) =>
+  return useApiMutation({
+    fn: (vars: { label: string }) =>
       request<AgentCreated>(
         base,
         { method: 'POST', body: JSON.stringify(vars) },
         'create session',
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ['migrate-agent-sessions'] }),
+    invalidate: [['migrate-agent-sessions']],
   })
 }
 
@@ -197,9 +196,8 @@ export function useRevokeAgent() {
 }
 
 export function useVerifyAgent() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (vars: { id: string; app: string; ackEmpty?: boolean }) =>
+  return useApiMutation({
+    fn: (vars: { id: string; app: string; ackEmpty?: boolean }) =>
       request<AgentVerifyResult>(
         `${base}/${encodeURIComponent(vars.id)}/verify`,
         {
@@ -211,6 +209,6 @@ export function useVerifyAgent() {
         },
         'verification',
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['migrate-checklists'] }),
+    invalidate: [['migrate-checklists']],
   })
 }

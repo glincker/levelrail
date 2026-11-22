@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -14,6 +17,20 @@ import (
 // WireGuard path reaches it. blocked is false for a local app, an app with
 // no host to route, or a remote app whose mesh path is up.
 func (rt *Router) remoteIngressBlock(ctx context.Context, svc store.DesiredService) (hosts []string, why string, blocked bool) {
+	hosts, why, blocked = rt.meshIngressBlock(ctx, svc)
+	if blocked && rt.viaAgentTunnel(svc.NodeID) {
+		return nil, "", false
+	}
+	return hosts, why, blocked
+}
+
+// viaAgentTunnel is true when the flag is on and the node's agent can carry ingress tunnels.
+func (rt *Router) viaAgentTunnel(nodeID string) bool {
+	return rt.agentTunnels != nil && experimental.Enabled(experimental.AgentIngressTunnel) && rt.agentTunnels(nodeID)
+}
+
+// meshIngressBlock is the mesh-only verdict, before any tunnel fallback.
+func (rt *Router) meshIngressBlock(ctx context.Context, svc store.DesiredService) (hosts []string, why string, blocked bool) {
 	if rt.isLocalNode(svc.NodeID) {
 		return nil, "", false
 	}
@@ -29,7 +46,7 @@ func (rt *Router) remoteIngressBlock(ctx context.Context, svc store.DesiredServi
 	if rt.meshPaths == nil {
 		return hosts, "mesh networking is off on this control plane (set APP_MESH_ENABLED=1 and restart it)", true
 	}
-	path, err := rt.meshPaths.Path(ctx, svc.NodeID)
+	path, err := meshPathMemoFrom(ctx).resolve(ctx, rt.meshPaths, svc.NodeID)
 	if err != nil {
 		return hosts, fmt.Sprintf("the mesh path to the node could not be read: %s", err), true
 	}
@@ -91,9 +108,17 @@ func (rt *Router) doctorCheckCrossNodeIngress(ctx context.Context) []doctorCheck
 // for an app whose host is unreachable. Returns nil (clearing it) when the
 // app is local, has no host, or its mesh path is usable.
 func (rt *Router) crossNodeIngressAppCondition(ctx context.Context, svc store.DesiredService) *reconcile.Condition {
-	hosts, why, blocked := rt.remoteIngressBlock(ctx, svc)
+	hosts, why, blocked := rt.meshIngressBlock(ctx, svc)
 	if !blocked {
 		return nil
+	}
+	if rt.viaAgentTunnel(svc.NodeID) {
+		return &reconcile.Condition{
+			Type:    "CrossNodeIngress",
+			Status:  reconcile.ConditionTrue,
+			Reason:  "AgentTunnel",
+			Message: fmt.Sprintf("host(s) %s reach %q through the agent tunnel because the node has no usable mesh path", strings.Join(hosts, ", "), svc.Name),
+		}
 	}
 	return &reconcile.Condition{
 		Type:   "CrossNodeIngress",
@@ -121,4 +146,45 @@ func (rt *Router) doctorNodeNames(ctx context.Context) map[string]string {
 		names[n.ID] = n.Name
 	}
 	return names
+}
+
+type meshPathMemoKey struct{}
+
+// meshPathMemo remembers one mesh path answer per node for the life of a request,
+// so a list of many apps on one node resolves that node once.
+type meshPathMemo struct {
+	mu    sync.Mutex
+	paths map[string]meshPathAnswer
+}
+
+type meshPathAnswer struct {
+	path meshpath.Path
+	err  error
+}
+
+func withMeshPathMemo(ctx context.Context) context.Context {
+	return context.WithValue(ctx, meshPathMemoKey{}, &meshPathMemo{paths: map[string]meshPathAnswer{}})
+}
+
+func meshPathMemoFrom(ctx context.Context) *meshPathMemo {
+	m, _ := ctx.Value(meshPathMemoKey{}).(*meshPathMemo)
+	return m
+}
+
+// resolve falls through to the resolver when the request carries no memo.
+func (m *meshPathMemo) resolve(ctx context.Context, r meshpath.Resolver, nodeID string) (meshpath.Path, error) {
+	if m == nil {
+		return r.Path(ctx, nodeID)
+	}
+	m.mu.Lock()
+	a, ok := m.paths[nodeID]
+	m.mu.Unlock()
+	if ok {
+		return a.path, a.err
+	}
+	p, err := r.Path(ctx, nodeID)
+	m.mu.Lock()
+	m.paths[nodeID] = meshPathAnswer{path: p, err: err}
+	m.mu.Unlock()
+	return p, err
 }

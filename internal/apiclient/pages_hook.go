@@ -15,9 +15,7 @@ type StaticSiteHook struct {
 
 // GetStaticSiteHook reads the hook state of a site, never its secret.
 func (c *Client) GetStaticSiteHook(ctx context.Context, site string) (StaticSiteHook, error) {
-	var out StaticSiteHook
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(site)+"/hook", nil, &out)
-	return out, err
+	return getJSON[StaticSiteHook](ctx, c, "/api/v1/static-sites/"+PathEscape(site)+"/hook")
 }
 
 // PutStaticSiteHook creates the hook, or rotates its secret when rotate is set, and returns the one-time URL.
@@ -34,5 +32,5 @@ func (c *Client) PutStaticSiteHook(ctx context.Context, site string, rotate bool
 
 // DeleteStaticSiteHook revokes the hook.
 func (c *Client) DeleteStaticSiteHook(ctx context.Context, site string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/static-sites/"+PathEscape(site)+"/hook", nil, nil)
+	return c.del(ctx, "/api/v1/static-sites/"+PathEscape(site)+"/hook")
 }

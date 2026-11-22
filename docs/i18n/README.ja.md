@@ -22,7 +22,7 @@ Go 製の単一バイナリで動くセルフホスト型デプロイプラッ�
   <a href="https://github.com/glincker/levelrail/discussions">ディスカッション</a>
 </p>
 <!-- i18n-nav:start -->
-<p><a href="../../README.md">English</a> &middot; <a href="README.zh-Hans.md">简体中文</a> &middot; <a href="README.es.md">Español</a> &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; <a href="README.fr.md">Français</a> &middot; 日本語</p>
+<p><a href="../../README.md">English</a> &middot; <a href="README.zh-Hans.md">简体中文</a> &middot; <a href="README.es.md">Español</a> &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; <a href="README.fr.md">Français</a> &middot; 日本語 &middot; <a href="README.ru.md">Русский</a></p>
 <!-- i18n-nav:end -->
 <img src="../../docs/assets/demos/product-tour.gif" alt="Levelrail ダッシュボードのツアー：フリートの概要、アプリ一覧、デプロイ履歴、組み込みメトリクス" width="880">
 </div>

@@ -103,10 +103,11 @@ func (s *bootState) startTelemetry() {
 	// A pure extra consumer of the log stream: never touches logCollector or its store writes.
 	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, notifyClient, logger, b.ShortName)
 	go func() {
-		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db)); err != nil && !errors.Is(err, context.Canceled) {
+		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db, drainResolver(s.secretsManager))); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))
 		}
 	}()
+	s.startLocalOnboarding()
 }
 
 // startAlerting starts the alerting engine and its sweepers.
@@ -194,6 +195,17 @@ func (s *bootState) startAlerting() {
 		alertingEngine.SetDeployFailures(src)
 	}
 	routeDefaultAlerts(ctx, logger, alertingDB, db, emailSender)
+	if live := apiRouter.RuntimeSettings(); live != nil {
+		alertingEngine.SetDefaultAlerts(db, func(c context.Context) bool { return live.Bool(c, runtimesettings.KeyAlertsDefaultsEnabled) },
+			func(c context.Context) alerting.DefaultThresholds {
+				return alerting.DefaultThresholds{
+					CrashloopRestarts: live.Int(c, runtimesettings.KeyAlertsDefaultCrashLoop),
+					ErrorRatePercent:  float64(live.Int(c, runtimesettings.KeyAlertsDefault5xxPercent)),
+					MinRequests:       float64(live.Int(c, runtimesettings.KeyAlertsDefault5xxMinReqs)),
+				}
+			})
+	}
+	wireWeeklyDigest(ctx, logger, apiRouter, alertingDB, db, alertingFederator, restartTracker, emailSender, apiRouter.RuntimeSettings())
 	go func() {
 		if err := apiRouter.RunRegistryRefresher(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("registry credential refresh stopped", slog.String("error", err.Error()))

@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -87,7 +89,7 @@ func TestUploadSource_StoresDedupesAndBuilds(t *testing.T) {
 
 func TestUploadSource_RejectsBadInput(t *testing.T) {
 	rt, _, _, cookie := newUploadRouter(t)
-	t.Setenv(envUploadMaxBytes, "200")
+	t.Setenv("APP_UPLOAD_MAX_BYTES", "1024")
 	tests := []struct {
 		name   string
 		body   []byte
@@ -96,7 +98,7 @@ func TestUploadSource_RejectsBadInput(t *testing.T) {
 		{"not an archive", []byte("hello"), http.StatusBadRequest},
 		{"path traversal", uploadArchive(t, map[string]string{"../evil": "x"}), http.StatusBadRequest},
 		{"absolute path", uploadArchive(t, map[string]string{"/etc/x": "x"}), http.StatusBadRequest},
-		{"over the size cap", uploadArchive(t, map[string]string{"a": strings.Repeat("abcdefghij", 5000)}), http.StatusRequestEntityTooLarge},
+		{"over the size cap", uploadArchive(t, map[string]string{"a": noisyText(20000)}), http.StatusRequestEntityTooLarge},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -176,4 +178,15 @@ func TestUploadSource_RetentionCleanupAndListing(t *testing.T) {
 	if len(lr.Items) != 0 {
 		t.Fatalf("expired upload still listed: %+v", lr)
 	}
+}
+
+// noisyText is incompressible enough that a small byte cap is still exceeded after gzip.
+func noisyText(n int) string {
+	var b strings.Builder
+	sum := sha256.Sum256([]byte("seed"))
+	for b.Len() < n {
+		b.WriteString(hex.EncodeToString(sum[:]))
+		sum = sha256.Sum256(sum[:])
+	}
+	return b.String()[:n]
 }

@@ -42,6 +42,9 @@ type DrainConfig struct {
 	Type       DrainSinkType
 	Target     string
 	Enabled    bool
+	// HeaderName and HeaderValue add one request header on http delivery. HeaderValue is a secret.
+	HeaderName  string
+	HeaderValue string
 }
 
 // DrainSink is the narrow surface a log drain forwarder needs from a
@@ -88,7 +91,12 @@ func NewDrainForwarder(broadcaster *LogBroadcaster, httpClient *http.Client, log
 // exactly (same active-map/start/cancel pattern) so the two collectors
 // read as one family even though they serve different consumers.
 func (f *DrainForwarder) Run(ctx context.Context, resync time.Duration, configFunc func(context.Context) ([]DrainConfig, error)) error {
-	active := make(map[string]context.CancelFunc) // keyed by ResourceID
+	// keyed by ResourceID; cfg is kept so a target or header edit restarts the forwarder.
+	type activeDrain struct {
+		cancel context.CancelFunc
+		cfg    DrainConfig
+	}
+	active := make(map[string]activeDrain)
 
 	reconcile := func() {
 		configs, err := configFunc(ctx)
@@ -104,9 +112,9 @@ func (f *DrainForwarder) Run(ctx context.Context, resync time.Duration, configFu
 			}
 		}
 
-		for id, cancel := range active {
-			if _, ok := wanted[id]; !ok {
-				cancel()
+		for id, a := range active {
+			if w, ok := wanted[id]; !ok || w != a.cfg {
+				a.cancel()
 				delete(active, id)
 			}
 		}
@@ -116,7 +124,7 @@ func (f *DrainForwarder) Run(ctx context.Context, resync time.Duration, configFu
 				continue
 			}
 			drainCtx, cancel := context.WithCancel(ctx) //nolint:gosec // cancel is stored in active and called from the two loops above, gosec's static check can't trace a func value stored in a map
-			active[id] = cancel
+			active[id] = activeDrain{cancel: cancel, cfg: cfg}
 			go f.forwardOne(drainCtx, cfg)
 		}
 	}
@@ -128,8 +136,8 @@ func (f *DrainForwarder) Run(ctx context.Context, resync time.Duration, configFu
 	for {
 		select {
 		case <-ctx.Done():
-			for _, cancel := range active {
-				cancel()
+			for _, a := range active {
+				a.cancel()
 			}
 			return ctx.Err()
 		case <-ticker.C:
@@ -201,7 +209,9 @@ func buildDrainSink(cfg DrainConfig, httpClient *http.Client, programTag string)
 		if cfg.Target == "" {
 			return nil, errors.New("telemetry: http log drain requires a target URL")
 		}
-		return NewHTTPSink(cfg.Target, httpClient), nil
+		sink := NewHTTPSink(cfg.Target, httpClient)
+		sink.HeaderName, sink.HeaderValue = cfg.HeaderName, cfg.HeaderValue
+		return sink, nil
 	case DrainSinkSyslog:
 		return newSyslogSink(cfg.Target, programTag)
 	default:

@@ -39,7 +39,7 @@ func runAppsChanges(prog string, args []string, stdout, stderr io.Writer, lookup
 	var window string
 	fs.StringVar(&window, "window", "", "look-back window as a duration from 1s to 24h (default: server setting)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps changes <name> [--window 1h] [flags]\n\nLists deploys, config, env, secret and scaling changes in the recent window,\nmarking the likely cause of a regression.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps changes <name> [--window 1h] [flags]\n\nLists deploys, config, env, secret and scaling changes in the recent window,\nmarking the likely cause of a regression, then the config revisions that\n\"apps revert\" can return to. Secret values are never shown.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps changes", "app name"}, lookupEnv)
@@ -54,6 +54,7 @@ func runAppsChanges(prog string, args []string, stdout, stderr io.Writer, lookup
 }
 
 func printAppChangesHuman(out io.Writer, res *apiclient.RecentChangesResource) {
+	printConfigRevisions(out, res.Revisions)
 	if len(res.Changes) == 0 {
 		_, _ = fmt.Fprintln(out, "no changes in the window")
 		return

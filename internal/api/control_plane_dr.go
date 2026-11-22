@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -98,9 +97,8 @@ func (rt *Router) handleUpdateControlPlaneDR(w http.ResponseWriter, r *http.Requ
 	if !ok {
 		return
 	}
-	var req controlPlaneDRSettingsRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[controlPlaneDRSettingsRequest](w, r, 1<<16)
+	if !ok {
 		return
 	}
 	err := dr.UpdateConfig(r.Context(), cpbackup.ConfigUpdate{
@@ -172,9 +170,8 @@ func (rt *Router) handleControlPlaneDREscrow(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusNotImplemented, "no master key is available to escrow")
 		return
 	}
-	var req controlPlaneDREscrowRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[controlPlaneDREscrowRequest](w, r, 1<<16)
+	if !ok {
 		return
 	}
 	material, err := rt.cpDRMaterial()

@@ -174,6 +174,9 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// handleListStaticSites already draw between visibility and mutation.
 	mux.HandleFunc("GET /api/v1/backup-targets", rt.requireAbility(AbilityRead, rt.handleListBackupTargets))
 	mux.HandleFunc("POST /api/v1/backup-targets", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateBackupTarget))
+	mux.HandleFunc("GET /api/v1/backup-targets/field-descriptors", rt.requireAbility(AbilityRead, rt.handleGetBackupTargetFields))
+	mux.HandleFunc("GET /api/v1/field-descriptors/{resource}", rt.requireAbility(AbilityRead, rt.handleGetFieldDescriptors))
+	mux.HandleFunc("POST /api/v1/backup-targets/sftp-host-key", rt.requireAbility(AbilityWriteSensitive, rt.handleScanSFTPHostKey))
 	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
 	mux.HandleFunc("PUT /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateBackupTarget))
 	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))

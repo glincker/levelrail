@@ -13,6 +13,7 @@ const (
 	KeyCutoverVerifyHSTSMinAge   = "cutover.verify_hsts_min_age"
 	KeyCutoverVerifyTimeout      = "cutover.verify_timeout"
 	KeyCutoverVerifyMinInterval  = "cutover.verify_min_interval"
+	KeySetupHTTPSIssuingWindow   = "setup.https_issuing_window_minutes"
 )
 
 const (
@@ -25,6 +26,12 @@ const (
 )
 
 func init() {
+	Register(Definition{
+		Key: KeySetupHTTPSIssuingWindow, Category: CategoryNetworking, Kind: KindInt, Default: "15",
+		Env: "APP_SETUP_ISSUING_MINUTES", Apply: ApplyLive, CheckValue: intRangeCheck(1, 240),
+		Title:       "Setup link: HTTPS issuing window",
+		Description: "Minutes after a certificate request starts during which the setup link reports it as still being issued, from 1 to 240. The next setup-token run uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyCutoverVerifyCertWarnDays, Category: CategoryNetworking, Kind: KindInt, Default: "21",
 		Env: "APP_CUTOVER_VERIFY_CERT_WARN_DAYS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 365),

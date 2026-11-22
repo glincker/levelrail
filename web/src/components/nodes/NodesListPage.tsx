@@ -2,6 +2,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PendingJoinTokensCard } from '../../components/nodes/PendingJoinTokensCard'
+import { NodeVersionSkewCard } from './NodeVersionSkewCard'
 import { ServerGlassIcon } from '@thesvg/ui-react'
 import { nodePagesQueryOptions } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
@@ -95,6 +96,7 @@ export function NodeListView({
       ) : null}
       <BuildersSection />
       <PendingJoinTokensCard />
+      <NodeVersionSkewCard />
       <BuildStrainSuggestion nodes={nodes} />
       {nodes.length > 0 ? (
         <>

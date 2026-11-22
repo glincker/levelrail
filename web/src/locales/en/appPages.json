@@ -49,7 +49,9 @@
     "fail": "Failing",
     "unavailable": "No health data yet",
     "setUp": "Set up probes",
-    "reference": "Health check reference"
+    "reference": "Health check reference",
+    "morePresets": "More paths",
+    "fewerPresets": "Fewer paths"
   },
   "quick": {
     "label": "App status shortcuts",

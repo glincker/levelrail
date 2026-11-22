@@ -172,25 +172,7 @@ var ErrNoBuildNodeAvailable = errors.New("build: no build-capable node is curren
 
 // SelectBuildNode picks which node a build should run on, given every
 // known node. AcceptsBuildWorkloads is a routing preference, not a hard
-// requirement: a build is never failed just because the node an operator
-// would rather use is unavailable right now.
-//
-//   - No node in nodes has AcceptsBuildWorkloads set: returns "" (this
-//     control plane's own local node), matching the "" == local
-//     convention migrations/0009_node_placement.sql established for
-//     service and database placement. This is also what a single-node
-//     deployment sees unchanged.
-//   - At least one node has AcceptsBuildWorkloads set and is Online: the
-//     Online one with the lexicographically smallest ID is selected, a
-//     deterministic, easy-to-reason-about tie-break rather than
-//     anything load-aware; real load-based scheduling is explicitly out
-//     of scope, this project's stated non-goal against building a
-//     scheduler with bin-packing, affinity rules, or autoscaling in v1,
-//     and this is the build-node equivalent of that same non-goal.
-//   - At least one node has AcceptsBuildWorkloads set but none is
-//     Online: falls back to "" (local) rather than failing the build,
-//     since a build routing preference blipping offline should never be
-//     the reason a deploy fails.
+// requirement: a build is never failed just because the node an operator.
 func SelectBuildNode(nodes []NodeInfo) string {
 	candidates := make([]NodeInfo, 0, len(nodes))
 	for _, n := range nodes {

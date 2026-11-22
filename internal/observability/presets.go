@@ -188,6 +188,13 @@ func expand(tpl string, vars map[string]string) (string, error) {
 		if parts[0] == "basic" && len(parts) == 3 {
 			return base64.StdEncoding.EncodeToString([]byte(vars[parts[1]] + ":" + vars[parts[2]]))
 		}
+		if parts[0] == "authbasic" && len(parts) == 3 {
+			// Blank user and token mean no Authorization header at all.
+			if vars[parts[1]] == "" && vars[parts[2]] == "" {
+				return ""
+			}
+			return "Basic " + base64.StdEncoding.EncodeToString([]byte(vars[parts[1]]+":"+vars[parts[2]]))
+		}
 		if len(parts) != 1 {
 			bad = fmt.Errorf("unknown template function %q", m)
 			return ""

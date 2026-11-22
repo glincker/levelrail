@@ -113,9 +113,7 @@ type DeployEventComparison struct {
 
 // DeployEventTimeline calls GET /api/v1/deployments/{id}/timeline.
 func (c *Client) DeployEventTimeline(ctx context.Context, id string) (DeployEventTimeline, error) {
-	var out DeployEventTimeline
-	err := c.do(ctx, http.MethodGet, "/api/v1/deployments/"+PathEscape(id)+"/timeline", nil, &out)
-	return out, err
+	return getJSON[DeployEventTimeline](ctx, c, "/api/v1/deployments/"+PathEscape(id)+"/timeline")
 }
 
 // StreamDeployEventTimeline calls GET /api/v1/deployments/{id}/timeline/stream

@@ -134,7 +134,12 @@
     "errorTitle": "Drenagem interrompida",
     "failedHint": "O node continua isolado. Corrija a causa exibida na movimentação que falhou e drene novamente, ou remova o isolamento do node para colocá-lo de volta em rotação.",
     "toNode": "para {{node}}",
-    "toAuto": "para um node escolhido automaticamente"
+    "toAuto": "para um node escolhido automaticamente",
+    "progress": {
+      "summary": "{{done}} de {{total}} movidos, {{failed}} com falha",
+      "eta": "cerca de {{seconds}} s restantes",
+      "stalled": "Sem progresso há algum tempo. Verifique o node e as movimentações abaixo."
+    }
   },
   "drains": {
     "title": "Drenagens",
@@ -994,7 +999,35 @@
       "saved": "Credencial de {{provider}} salva.",
       "disconnect": "Desconectar",
       "confirmDisconnect": "Confirmar desconexão",
-      "disconnected": "{{provider}} desconectado."
+      "disconnected": "{{provider}} desconectado.",
+      "howTitle": "Como obter estes valores",
+      "how1": "No console da Oracle abra seu perfil, depois Chaves de API e Adicionar chave de API.",
+      "how2": "Baixe a chave privada e copie o trecho de configuração exibido ao final.",
+      "how3": "Cole o trecho abaixo e carregue a chave. Use um usuário dedicado.",
+      "configTitle": "Cole sua configuração OCI",
+      "configFile": "Carregar arquivo de configuração",
+      "configHelp": "Cole o bloco [DEFAULT] de ~/.oci/config. Ele é lido apenas neste navegador.",
+      "detected": "Detectado: tenancy {{tenancy}}, região {{region}}",
+      "edit": "Editar",
+      "done": "Concluído",
+      "missing": "Não encontrado na configuração: {{fields}}",
+      "manualHelp": "Informe os valores abaixo.",
+      "keyFromConfig": "Sua configuração aponta para {{path}}. Carregue esse arquivo aqui.",
+      "advanced": "Avançado",
+      "advancedHint": "Compartimento, opcional",
+      "advancedHintServers": "Compartimento e sub-rede (sub-rede necessária para servidores)",
+      "subnetHelp": "Necessária para criar servidores. Use uma sub-rede do compartimento.",
+      "subnetOptional": "Opcional. Necessária apenas para criar servidores.",
+      "subnetNeeded": "Adicione a sub-rede em Avançado para criar servidores.",
+      "errors": {
+        "tenancy": "Esperado um ID começando com ocid1.tenancy.",
+        "user": "Esperado um ID começando com ocid1.user.",
+        "fingerprint": "Esperados 16 pares hex como aa:bb:cc:...",
+        "region": "Esperada uma região como us-phoenix-1.",
+        "compartment": "Esperado um ID começando com ocid1.compartment.",
+        "subnet": "Esperado um ID começando com ocid1.subnet.",
+        "key": "Esperada uma chave privada PEM."
+      }
     },
     "wizard": {
       "title": "Configuracao guiada da chave de API",
@@ -1035,6 +1068,23 @@
       "micro": "O limite de shapes micro seria excedido. Aumente {{setting}}.",
       "paidShape": "Este shape não é coberto pelos limites de cota e pode gerar cobrança. Ative {{setting}} para usá-lo.",
       "unknownPrice": "A Oracle não informa preço para este shape, então o teto de preço não pode ser verificado. Ative {{setting}} (ou provision.allow_unknown_price) para permitir."
+    },
+    "session": {
+      "modeLabel": "Tipo de credencial",
+      "modeKey": "Chave de API",
+      "modeSession": "Sessão do navegador (teste, expira em horas)",
+      "intro": "Entre pelo navegador em vez de criar uma chave de API. A sessão dura poucas horas, use apenas para testes.",
+      "command": "Execute este comando no seu computador",
+      "commandHelp": "Ele abre um login no navegador e grava um arquivo de token e um arquivo de chave privada em ~/.oci.",
+      "profile": "Configuração do perfil (opcional)",
+      "profileHelp": "Cole as linhas tenancy e region de ~/.oci/config. Nada mais é lido.",
+      "token": "Conteúdo do arquivo do token de segurança",
+      "key": "Conteúdo do arquivo da chave privada da sessão",
+      "keyHelp": "Enviada uma vez, armazenada criptografada e nunca mais exibida.",
+      "check": "Verificar sessão",
+      "connect": "Conectar",
+      "expires": "A sessão expira {{when}}",
+      "saved": "{{provider}} conectado com uma sessão do navegador"
     }
   },
   "allowedBuilders": {
@@ -1157,5 +1207,88 @@
     "tip": "Um builder executa os builds de imagem deste servidor para que os deploys fiquem leves. Escolha qual builder cada app usa nas configurações de build do app.",
     "tipLabel": "Sobre builders",
     "title": "Builders"
+  },
+  "installAgent": {
+    "title": "Execute builds e apps em outra máquina",
+    "description": "Instale o agente em um servidor Linux ou em um Mac e ele entra neste plano de controle em um minuto.",
+    "cta": "Adicionar um servidor",
+    "dismiss": "Ocultar este banner",
+    "dialogTitle": "Instalar o agente",
+    "dialogDescription": "Execute um comando na máquina que você quer adicionar. Esta página percebe quando ela se conecta.",
+    "tabsLabel": "Sistema operacional",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "Criando um comando de entrada de uso único",
+    "mintFailed": "Não foi possível criar um comando de entrada: {{message}}",
+    "linuxLabel": "Execute no servidor",
+    "linuxHint": "Requer Docker no servidor. O comando é de uso único e expira às {{time}}.",
+    "macosLabel": "Execute no Terminal do Mac",
+    "macosHint": "Uso único, expira às {{time}}.",
+    "macosNote": "Prévia. As cargas de trabalho rodam via Docker Desktop, OrbStack ou Lima, que compartilham os arquivos do seu Mac, então um Mac é mais indicado como builder do que como lugar para apps de produção.",
+    "waiting": "Aguardando o nó se conectar",
+    "connected": "Conectado: {{name}}"
+  },
+  "timeline": {
+    "title": "Histórico de saúde",
+    "window": "Janela de tempo",
+    "windows": {
+      "24h": "24 horas",
+      "168h": "7 dias",
+      "720h": "30 dias"
+    },
+    "loading": "Carregando o histórico de saúde",
+    "unavailable": "O histórico não está disponível agora.",
+    "stripLabel": "Períodos online e offline",
+    "noUptime": "Nenhum tempo online ou offline registrado nesta janela.",
+    "summary_one": "{{uptime}}% de disponibilidade, {{count}} mudança",
+    "summary_other": "{{uptime}}% de disponibilidade, {{count}} mudanças"
+  },
+  "doctor": {
+    "title": "Doutor do agente",
+    "run": "Executar verificações",
+    "hide": "Ocultar verificações",
+    "running": "Executando verificações",
+    "unavailable": "As verificações não estão disponíveis agora.",
+    "noReport": "O agente ainda não enviou um relatório prévio, então faltam as verificações de Docker, disco, relógio e portas.",
+    "status": {
+      "pass": "OK",
+      "warn": "Aviso",
+      "fail": "Falha",
+      "unknown": "Desconhecido"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Arquitetura",
+      "disk": "Disco",
+      "clock": "Relógio",
+      "wireguard": "WireGuard",
+      "mesh_port": "Porta da malha",
+      "firewall": "Firewall",
+      "control_plane": "Plano de controle",
+      "cert": "Certificado",
+      "heartbeat": "Heartbeat",
+      "agent_version": "Versão do agente",
+      "schedulable": "Agendamento"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} agente está atrás de {{version}}",
+    "title_other": "{{count}} agentes estão atrás de {{version}}",
+    "description": "Atualize nesta ordem: primeiro os nós isolados, depois os nós online e por último os nós offline.",
+    "step": "{{from}} para {{to}}",
+    "notes": {
+      "cordoned": "isolado",
+      "offline": "offline"
+    },
+    "howTo": "Baixe a nova imagem ou o novo binário do agente em cada nó e reinicie-o. A identidade registrada é mantida.",
+    "autoUpdate": {
+      "on": "As atualizações automáticas do agente estão ativadas. Os agentes instalam sozinhos a versão do plano de controle.",
+      "off": "As atualizações automáticas do agente estão desativadas. Execute levelrail-agent self-update --apply em um nó ou ative nodes.agent_auto_update nas configurações."
+    },
+    "updateAnyway": {
+      "action": "Atualizar mesmo assim",
+      "queued": "Na fila para a próxima verificação do agente",
+      "disclaimer": "Ignora a janela de manutenção e a retenção. A atualização continua verificada por assinatura e é revertida em caso de falha."
+    }
   }
 }

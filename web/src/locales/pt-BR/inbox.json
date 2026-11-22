@@ -17,7 +17,13 @@
       "info": "Info",
       "warning": "Aviso",
       "critical": "Crítico"
-    }
+    },
+    "master": "Alertas padrão",
+    "masterHint": "Loops de falha, discos cheios, certificados expirando, erros 5xx e backups com falha. Sempre no app, por e-mail se configurado.",
+    "masterError": "Não foi possível atualizar os alertas padrão.",
+    "digest": "Resumo semanal",
+    "digestHint": "Segunda 08:00 UTC: apps, deploys, reinícios, certificados, backups e disco. Requer e-mail.",
+    "digestError": "Não foi possível atualizar o resumo semanal."
   },
   "tab": "Caixa de entrada",
   "title": "Caixa de entrada de alertas",

@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -270,11 +269,7 @@ func HostProbes() Probes {
 			return st.Mode().Perm(), nil
 		},
 		DiskFreeGB: func(path string) (float64, error) {
-			var st syscall.Statfs_t
-			if err := syscall.Statfs(path, &st); err != nil {
-				return 0, err
-			}
-			return float64(st.Bavail) * float64(st.Bsize) / (1 << 30), nil //nolint:gosec // statfs fields are non-negative
+			return diskFreeGB(path)
 		},
 		MemoryMB: memoryMB,
 		LookupHost: func(ctx context.Context, host string) ([]string, error) {

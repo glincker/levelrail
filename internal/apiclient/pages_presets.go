@@ -30,9 +30,7 @@ func (c *Client) ListPagesPresets(ctx context.Context) ([]PagesPreset, error) {
 
 // GetStaticSitePreset calls GET /api/v1/static-sites/{name}/preset.
 func (c *Client) GetStaticSitePreset(ctx context.Context, name string) (PagesPresetChoice, error) {
-	var out PagesPresetChoice
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/preset", nil, &out)
-	return out, err
+	return getJSON[PagesPresetChoice](ctx, c, "/api/v1/static-sites/"+PathEscape(name)+"/preset")
 }
 
 // SetStaticSitePreset calls PUT /api/v1/static-sites/{name}/preset; "" clears it.

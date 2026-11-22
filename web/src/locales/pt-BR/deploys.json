@@ -284,7 +284,8 @@
     "removed": "Somente lá",
     "changed": "Alterado",
     "missing": "não definido",
-    "secretMasked": "Valor de segredo, oculto"
+    "secretMasked": "Valor de segredo, oculto",
+    "preview": "Overrides de preview deste app"
   },
   "appSleep": {
     "title": "Hibernar quando inativo",
@@ -836,5 +837,11 @@
     "pickNode": "Escolha um builder",
     "prodTip": "Ambientes de produção nunca fazem build em um builder pessoal, a menos que o ambiente permita. Nesse caso, o build passa para outro builder ou para o plano de controle.",
     "prodTipLabel": "Sobre builds de produção"
+  },
+  "copyRow": {
+    "rolledBackTo": "Revertido para {{id}}",
+    "rolledBack": "Revertido",
+    "promotedFrom": "Promovido de {{id}}",
+    "promoted": "Promovido"
   }
 }

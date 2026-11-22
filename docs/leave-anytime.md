@@ -91,3 +91,16 @@ levelrail volumes import web data --in web-data.tar.gz
 
 - [Migrate to Levelrail](/migrate-to-levelrail)
 - [Environment variables](/environment-variables)
+
+## Remove Levelrail from the host
+
+After exporting, preview the removal with `--dry-run`. It prints what `uninstall` removes, what it keeps and what `--purge` would delete, exits 0, needs no root and changes nothing.
+
+```bash
+sh install.sh uninstall --dry-run
+sh install.sh uninstall --purge --dry-run
+sudo sh install.sh uninstall           # keeps the data directory and Docker
+```
+
+`--purge` also deletes the data directory, including the master key. Export first. See [Installing](/installing).
+

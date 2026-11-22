@@ -67,14 +67,29 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUDIT_ANCHOR_WEBHOOK_URL` | [`audit.anchor_webhook_url`](/runtime-settings#security) | empty |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL` | [`auth.engine_rate_limit_per_email`](/runtime-settings#security) | `60` |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
+| `APP_BACKUP_SFTP_ALLOW_PRIVATE_NETWORKS` | [`backup.sftp_allow_private_networks`](/runtime-settings#security) | `false` |
 | `APP_BACKUP_WEBDAV_ALLOW_PRIVATE_NETWORKS` | [`backup.webdav_allow_private_networks`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_CHECKSUM_ONLY` | [`cloud.allow_checksum_only`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
+| `APP_CLOUD_AWS_SSO_MAX_ACCOUNTS` | [`cloud.aws.sso.max_accounts`](/runtime-settings#security) | `100` |
+| `APP_CLOUD_AWS_MAX_RESPONSE_BYTES` | [`cloud.aws.sso.max_response_bytes`](/runtime-settings#security) | `4194304` |
+| `APP_CLOUD_AWS_SSO_MAX_SESSIONS` | [`cloud.aws.sso.max_sessions`](/runtime-settings#security) | `20` |
+| `APP_CLOUD_AWS_SSO_RENEW_PERCENT` | [`cloud.aws.sso.renew_percent`](/runtime-settings#security) | `80` |
+| `APP_CLOUD_AWS_SSO_TIMEOUT_SECONDS` | [`cloud.aws.sso.timeout_seconds`](/runtime-settings#security) | `15` |
+| `APP_CLOUD_AWS_SSO_TOKEN_SKEW_SECONDS` | [`cloud.aws.sso.token_skew_seconds`](/runtime-settings#security) | `60` |
 | `APP_CLOUD_ENGINE_DENY_ADDRESSES` | [`cloud.engine_deny_addresses`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_IMAGE` | [`cloud.engine_image`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_NETWORK` | [`cloud.engine_network`](/runtime-settings#security) | empty |
 | `APP_CLOUD_ENGINE_USER` | [`cloud.engine_user`](/runtime-settings#security) | `65532:65532` |
+| `APP_CLOUD_OAUTH_DIGITALOCEAN_CLIENT_ID` | [`cloud.oauth.digitalocean.client_id`](/runtime-settings#security) | empty |
+| `APP_CLOUD_OAUTH_DIGITALOCEAN_CLIENT_SECRET` | [`cloud.oauth.digitalocean.client_secret`](/runtime-settings#security) | empty |
+| `APP_CLOUD_OAUTH_DIGITALOCEAN_REFRESH_LEAD_SECONDS` | [`cloud.oauth.digitalocean.refresh_lead_seconds`](/runtime-settings#security) | `300` |
+| `APP_CLOUD_OAUTH_DIGITALOCEAN_TIMEOUT_SECONDS` | [`cloud.oauth.digitalocean.timeout_seconds`](/runtime-settings#security) | `15` |
 | `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
+| `APP_CLOUD_VAULT_AUTH_METHOD` | [`cloud.vault.auth_method`](/runtime-settings#security) | `connection` |
+| `APP_CLOUD_VAULT_AWS_AUTH_MOUNT` | [`cloud.vault.aws_auth_mount`](/runtime-settings#security) | `aws` |
+| `APP_CLOUD_VAULT_AWS_AUTH_ROLE` | [`cloud.vault.aws_auth_role`](/runtime-settings#security) | empty |
+| `APP_CLOUD_VAULT_SERVER_ID_HEADER` | [`cloud.vault.server_id_header`](/runtime-settings#security) | empty |
 | `APP_CONNECTION_BINDING_RULE_VALUE_MAX_LEN` | [`connections.binding_rule_value_max_len`](/runtime-settings#security) | `512` |
 | `APP_CONNECTION_BINDING_RULES_MAX_BYTES` | [`connections.binding_rules_max_bytes`](/runtime-settings#security) | `4096` |
 | `APP_CONNECTION_EXPIRY_WARN` | [`connections.expiry_warn`](/runtime-settings#security) | `336h` |
@@ -178,6 +193,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DOMAIN_TUNING_MAX_STREAM_SECONDS` | [`domains.tuning_max_stream_seconds`](/runtime-settings#networking) | `86400` |
 | `APP_DOMAIN_TUNING_MAX_TIMEOUT_SECONDS` | [`domains.tuning_max_timeout_seconds`](/runtime-settings#networking) | `600` |
 | `APP_DOMAIN_TUNING_MIN_TIMEOUT_SECONDS` | [`domains.tuning_min_timeout_seconds`](/runtime-settings#networking) | `1` |
+| `APP_DOMAINS_WAIT_POLL` | [`domains.wait_poll`](/runtime-settings#networking) | `3s` |
+| `APP_DOMAINS_WAIT_TIMEOUT` | [`domains.wait_timeout`](/runtime-settings#networking) | `10m` |
 | `APP_DOMAINS_WWW_MODE` | [`domains.www_mode`](/runtime-settings#networking) | `both` |
 | `APP_GAME_STATUS_CACHE` | [`games.status_cache`](/runtime-settings#networking) | `5s` |
 | `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |
@@ -220,6 +237,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
+| `APP_SETUP_ISSUING_MINUTES` | [`setup.https_issuing_window_minutes`](/runtime-settings#networking) | `15` |
 | `APP_SHELL_SECTION_TIMEOUT` | [`shell.section_timeout`](/runtime-settings#networking) | `2s` |
 | `APP_TEMPLATE_IMPORT_MAX_BYTES` | [`templates.import_max_bytes`](/runtime-settings#networking) | `262144` |
 | `APP_TEMPLATE_IMPORT_TIMEOUT` | [`templates.import_timeout`](/runtime-settings#networking) | `10s` |
@@ -234,6 +252,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SLEEP_MAX_WAITERS` | [`appsleep.max_waiters`](/runtime-settings#deploys) | `200` |
 | `APP_SLEEP_WAKE_WAIT_SECONDS` | [`appsleep.wake_wait_seconds`](/runtime-settings#deploys) | `0` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
+| `APP_BACKUP_SFTP_CONNECT_TIMEOUT` | [`backup.sftp_connect_timeout`](/runtime-settings#deploys) | `15s` |
+| `APP_BACKUP_SFTP_IDLE_TIMEOUT` | [`backup.sftp_idle_timeout`](/runtime-settings#deploys) | `1m` |
+| `APP_BACKUP_SFTP_MAX_CONNECTIONS` | [`backup.sftp_max_connections`](/runtime-settings#deploys) | `4` |
+| `APP_BACKUP_SFTP_MAX_DEPTH` | [`backup.sftp_max_depth`](/runtime-settings#deploys) | `8` |
+| `APP_BACKUP_SFTP_MAX_ENTRIES` | [`backup.sftp_max_entries`](/runtime-settings#deploys) | `20000` |
+| `APP_BACKUP_SFTP_SCAN_PER_MINUTE` | [`backup.sftp_scan_per_minute`](/runtime-settings#deploys) | `10` |
 | `APP_BACKUP_WEBDAV_HEADER_TIMEOUT` | [`backup.webdav_header_timeout`](/runtime-settings#deploys) | `30s` |
 | `APP_BACKUP_WEBDAV_IDLE_TIMEOUT` | [`backup.webdav_idle_timeout`](/runtime-settings#deploys) | `1m` |
 | `APP_BACKUP_WEBDAV_MAX_DEPTH` | [`backup.webdav_max_depth`](/runtime-settings#deploys) | `8` |
@@ -284,6 +308,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_FETCH_TIMEOUT_SECONDS` | [`cloud.fetch_timeout_seconds`](/runtime-settings#deploys) | `300` |
 | `APP_CLOUD_MAX_CONCURRENT_PLANS` | [`cloud.max_concurrent_plans`](/runtime-settings#deploys) | `2` |
 | `APP_CLOUD_MAX_DESTROYS` | [`cloud.max_destroys`](/runtime-settings#deploys) | `0` |
+| `APP_CLOUD_OCI_SESSION_MIN_SECONDS` | [`cloud.oracle.session_min_seconds`](/runtime-settings#deploys) | `300` |
 | `APP_CLOUD_PLAN_JOB_RETENTION_HOURS` | [`cloud.plan_job_retention_hours`](/runtime-settings#deploys) | `24` |
 | `APP_CLOUD_PLAN_MAX_AGE_MINUTES` | [`cloud.plan_max_age_minutes`](/runtime-settings#deploys) | `60` |
 | `APP_CLOUD_STATE_MAX_KB` | [`cloud.state_max_kb`](/runtime-settings#deploys) | `1024` |
@@ -324,6 +349,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RESTART_SCHEDULE_MAX_PER_SWEEP` | [`deploy.restart_schedule_max_per_sweep`](/runtime-settings#deploys) | `5` |
 | `APP_RESTART_SCHEDULE_MIN_INTERVAL` | [`deploy.restart_schedule_min_interval`](/runtime-settings#deploys) | `1h0m0s` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
+| `APP_UPLOAD_MAX_BYTES` | [`deploy.upload_max_bytes`](/runtime-settings#deploys) | `536870912` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
 | `APP_DEPLOY_COALESCE_WINDOW` | [`deploys.coalesce_window`](/runtime-settings#deploys) | `15s` |
 | `APP_REGISTRY_PUSH_DEBOUNCE` | [`deploys.registry_push_debounce`](/runtime-settings#deploys) | `30s` |
@@ -364,8 +390,16 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_JOBS_TIMEOUT_MIN_SECONDS` | [`jobs.timeout_min_seconds`](/runtime-settings#deploys) | `1` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PAGES_PREVIEW_MAX_PER_SITE` | [`pages.preview_max_per_site`](/runtime-settings#deploys) | `20` |
+| `APP_PAGES_SERVING_WAIT` | [`pages.serving_wait`](/runtime-settings#deploys) | `8s` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
+| `APP_PREVIEW_BROWSER_CPU_MILLIS` | [`preview.browser_cpu_millis`](/runtime-settings#deploys) | `1000` |
+| `APP_PREVIEW_MEMORY_MB` | [`preview.browser_memory_mb`](/runtime-settings#deploys) | `512` |
+| `APP_PREVIEW_DEFAULT_MODE` | [`preview.default_mode`](/runtime-settings#deploys) | `screenshot` |
+| `APP_PREVIEW_IDLE_STOP_SECONDS` | [`preview.idle_stop_seconds`](/runtime-settings#deploys) | `120` |
+| `APP_PREVIEW_MAX_CONCURRENT` | [`preview.max_concurrent`](/runtime-settings#deploys) | `1` |
+| `APP_PREVIEW_MIN_INTERVAL_SECONDS` | [`preview.min_interval_seconds`](/runtime-settings#deploys) | `3600` |
+| `APP_PREVIEW_RENDER_TIMEOUT_SECONDS` | [`preview.render_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_PREVIEW_MIGRATE_TIMEOUT` | [`previews.migrate_timeout`](/runtime-settings#deploys) | `10m` |
 | `APP_PREVIEW_MIGRATE_WAIT` | [`previews.migrate_wait`](/runtime-settings#deploys) | `2m` |
 | `APP_PROJECT_ARCHIVE_MAX_ENTRIES` | [`projects.archive_max_entries`](/runtime-settings#deploys) | `4096` |
@@ -425,6 +459,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
 | `APP_ALERTS_ADVISORY_MIN_SEVERITY` | [`alerts.advisory_min_severity`](/runtime-settings#observability) | `high` |
 | `APP_ALERTS_ADVISORY_NOTIFY` | [`alerts.advisory_notify`](/runtime-settings#observability) | `false` |
+| `APP_ALERTS_DEFAULT_5XX_MIN_REQUESTS` | [`alerts.default_5xx_min_requests`](/runtime-settings#observability) | `20` |
+| `APP_ALERTS_DEFAULT_5XX_PERCENT` | [`alerts.default_5xx_percent`](/runtime-settings#observability) | `5` |
+| `APP_ALERTS_DEFAULT_CRASHLOOP_RESTARTS` | [`alerts.default_crashloop_restarts`](/runtime-settings#observability) | `3` |
+| `APP_ALERTS_DEFAULTS_ENABLED` | [`alerts.defaults_enabled`](/runtime-settings#observability) | `true` |
+| `APP_ALERTS_DIGEST_SCHEDULE` | [`alerts.digest_schedule`](/runtime-settings#observability) | `off` |
 | `APP_ALERTS_NOTIFY_ON_SLEEP` | [`alerts.notify_on_sleep`](/runtime-settings#observability) | `false` |
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
@@ -439,8 +478,56 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_APP_METRICS_SCRAPE_TIMEOUT` | [`app_metrics.scrape_timeout`](/runtime-settings#observability) | `5s` |
 | `APP_APP_METRICS_SCRAPE_WORKERS` | [`app_metrics.scrape_workers`](/runtime-settings#observability) | `4` |
 | `APP_CONTAINERS_INSPECT_TIMEOUT` | [`apps.containers_inspect_timeout`](/runtime-settings#observability) | `5s` |
+| `APP_APPS_SUMMARY_CACHE_MAX_ENTRIES` | [`apps.summary_cache_max_entries`](/runtime-settings#observability) | `500` |
+| `APP_APPS_SUMMARY_CACHE_SECONDS` | [`apps.summary_cache_seconds`](/runtime-settings#observability) | `30` |
+| `APP_APPS_SUMMARY_TIMEOUT` | [`apps.summary_timeout`](/runtime-settings#observability) | `800ms` |
 | `APP_AUTOSCALE_GAUGE_MAX_BYTES` | [`autoscale.gauge_max_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
+| `APP_CLOUD_AWS_NAME_PREFIX` | [`cloud.aws.name_prefix`](/runtime-settings#observability) | `levelrail` |
+| `APP_CLOUD_CLOUDFRONT_MAX_INVALIDATION_PATHS` | [`cloud.cloudfront.max_invalidation_paths`](/runtime-settings#observability) | `50` |
+| `APP_CLOUD_DOCTOR_DEEP_MIN_INTERVAL_SECONDS` | [`cloud.doctor.deep_min_interval_seconds`](/runtime-settings#observability) | `10` |
+| `APP_CLOUD_DOCTOR_DEEP_PARALLEL` | [`cloud.doctor.deep_parallel`](/runtime-settings#observability) | `4` |
+| `APP_CLOUD_DOCTOR_DEEP_TIMEOUT_SECONDS` | [`cloud.doctor.deep_timeout_seconds`](/runtime-settings#observability) | `15` |
+| `APP_CLOUD_GUARD_ACCOUNT_CAPS` | [`cloud.guard.account_caps`](/runtime-settings#observability) | empty |
+| `APP_CLOUD_GUARD_DEFAULT_EXPIRES_HOURS` | [`cloud.guard.default_expires_hours`](/runtime-settings#observability) | `168` |
+| `APP_CLOUD_GUARD_IDLE_ALB_MONTH_CENTS` | [`cloud.guard.idle.alb_month_cents`](/runtime-settings#observability) | `1643` |
+| `APP_CLOUD_GUARD_IDLE_CPU_PERCENT` | [`cloud.guard.idle.cpu_percent`](/runtime-settings#observability) | `5` |
+| `APP_CLOUD_GUARD_IDLE_DAYS` | [`cloud.guard.idle.days`](/runtime-settings#observability) | `7` |
+| `APP_CLOUD_GUARD_IDLE_EBS_GB_MONTH_CENTS` | [`cloud.guard.idle.ebs_gb_month_cents`](/runtime-settings#observability) | `8` |
+| `APP_CLOUD_GUARD_IDLE_EIP_MONTH_CENTS` | [`cloud.guard.idle.eip_month_cents`](/runtime-settings#observability) | `365` |
+| `APP_CLOUD_GUARD_IDLE_RESTOP_LEAD_HOURS` | [`cloud.guard.idle.restop_lead_hours`](/runtime-settings#observability) | `24` |
+| `APP_CLOUD_GUARD_INSTANCE_TYPES` | [`cloud.guard.instance_types`](/runtime-settings#observability) | empty |
+| `APP_CLOUD_GUARD_KILL_SWITCH` | [`cloud.guard.kill_switch`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_LIGHTSAIL_BUNDLES` | [`cloud.guard.lightsail.bundles`](/runtime-settings#observability) | empty |
+| `APP_CLOUD_GUARD_LIGHTSAIL_MAX_INSTANCES` | [`cloud.guard.lightsail.max_instances`](/runtime-settings#observability) | `3` |
+| `APP_CLOUD_GUARD_MONTHLY_CAP_USD` | [`cloud.guard.monthly_cap_usd`](/runtime-settings#observability) | `0` |
+| `APP_CLOUD_GUARD_PER_CREATE_MAX_USD` | [`cloud.guard.per_create_max_usd`](/runtime-settings#observability) | `0` |
+| `APP_CLOUD_GUARD_POLICY_ARN` | [`cloud.guard.policy_arn`](/runtime-settings#observability) | empty |
+| `APP_CLOUD_GUARD_ACM` | [`cloud.guard.service.acm`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_CLOUDFRONT` | [`cloud.guard.service.cloudfront`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_CLOUDTRAIL` | [`cloud.guard.service.cloudtrail`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_CLOUDWATCH` | [`cloud.guard.service.cloudwatch`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_EBS` | [`cloud.guard.service.ebs`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_ECR` | [`cloud.guard.service.ecr`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_ELASTICACHE` | [`cloud.guard.service.elasticache`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_LIGHTSAIL` | [`cloud.guard.service.lightsail`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_PARAMS` | [`cloud.guard.service.parameters`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_RDS` | [`cloud.guard.service.rds`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_SSM` | [`cloud.guard.service.ssm`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_SSM_RUN` | [`cloud.guard.service.ssm_run`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_SNAPSHOT_KEEP_DAILY` | [`cloud.guard.snapshot.keep_daily`](/runtime-settings#observability) | `7` |
+| `APP_CLOUD_GUARD_SNAPSHOT_KEEP_WEEKLY` | [`cloud.guard.snapshot.keep_weekly`](/runtime-settings#observability) | `4` |
+| `APP_CLOUD_INSTANCES_CACHE_TTL_SECONDS` | [`cloud.instances.cache_ttl_seconds`](/runtime-settings#observability) | `30` |
+| `APP_CLOUD_INSTANCES_EVENTS_WINDOW_DAYS` | [`cloud.instances.events_window_days`](/runtime-settings#observability) | `7` |
+| `APP_CLOUD_SPEND_AWS_COST_EXPLORER` | [`cloud.spend.aws_cost_explorer`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_SPEND_CACHE_TTL_MINUTES` | [`cloud.spend.cache_ttl_minutes`](/runtime-settings#observability) | `15` |
+| `APP_CLOUD_SPEND_ENABLED` | [`cloud.spend.enabled`](/runtime-settings#observability) | `true` |
+| `APP_CLOUD_SPEND_MAX_PAGES` | [`cloud.spend.max_pages`](/runtime-settings#observability) | `5` |
+| `APP_CLOUD_SPEND_REFRESH_MIN_INTERVAL_MINUTES` | [`cloud.spend.refresh_min_interval_minutes`](/runtime-settings#observability) | `5` |
+| `APP_CLOUD_SPEND_REFRESH_PER_USER_PER_HOUR` | [`cloud.spend.refresh_per_user_per_hour`](/runtime-settings#observability) | `6` |
+| `APP_CLOUD_SPEND_STALE_AFTER_HOURS` | [`cloud.spend.stale_after_hours`](/runtime-settings#observability) | `72` |
+| `APP_CLOUD_SSM_COMMAND_ALLOWLIST` | [`cloud.ssm.command_allowlist`](/runtime-settings#observability) | empty |
+| `APP_CLOUD_SSM_COMMAND_TIMEOUT_SECONDS` | [`cloud.ssm.command_timeout_seconds`](/runtime-settings#observability) | `60` |
 | `APP_DB_QUERY_MAX_BYTES` | [`database_viewer.max_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_DB_QUERY_MAX_CELL_BYTES` | [`database_viewer.max_cell_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_MAX_ROWS` | [`database_viewer.max_rows`](/runtime-settings#observability) | `1000` |
@@ -510,10 +597,19 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
 | `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
+| `APP_NODE_AGENT_AUTO_UPDATE` | [`nodes.agent_auto_update`](/runtime-settings#observability) | `false` |
+| `APP_NODE_AGENT_BUFFER_MAX_BYTES` | [`nodes.agent_buffer_max_bytes`](/runtime-settings#observability) | `4194304` |
+| `APP_NODE_AGENT_BUFFER_MAX_ITEMS` | [`nodes.agent_buffer_max_items`](/runtime-settings#observability) | `2000` |
+| `APP_NODE_AGENT_UPDATE_CHANNEL` | [`nodes.agent_update_channel`](/runtime-settings#observability) | `stable` |
+| `APP_NODE_AGENT_UPDATE_FORCE_NODES` | [`nodes.agent_update_force_nodes`](/runtime-settings#observability) | empty |
+| `APP_NODE_AGENT_UPDATE_HEALTH_FAILURES` | [`nodes.agent_update_health_failures`](/runtime-settings#observability) | `3` |
+| `APP_NODE_AGENT_UPDATE_HELD_NODES` | [`nodes.agent_update_held_nodes`](/runtime-settings#observability) | empty |
+| `APP_NODE_AGENT_UPDATE_WINDOW` | [`nodes.agent_update_window`](/runtime-settings#observability) | empty |
 | `APP_ALERT_NODE_CPU_PERCENT` | [`nodes.alert_cpu_percent`](/runtime-settings#observability) | `85` |
 | `APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT` | [`nodes.alert_disk_percent`](/runtime-settings#observability) | `90` |
 | `APP_ALERT_NODE_MEMORY_PERCENT` | [`nodes.alert_memory_percent`](/runtime-settings#observability) | `90` |
 | `APP_ALERT_NODE_SUSTAINED_INTERVALS` | [`nodes.alert_sustained_intervals`](/runtime-settings#observability) | `3` |
+| `APP_NODE_DRAIN_STALL_SECONDS` | [`nodes.drain_stall_seconds`](/runtime-settings#observability) | `600` |
 | `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
 | `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |
@@ -526,6 +622,13 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
 | `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
+| `APP_SIZING_CPU_MARGIN_PCT` | [`sizing.cpu_margin_pct`](/runtime-settings#observability) | `130` |
+| `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | [`sizing.lookback`](/runtime-settings#observability) | `168h` |
+| `APP_SIZING_LOWER_AT_PCT` | [`sizing.lower_at_pct`](/runtime-settings#observability) | `40` |
+| `APP_SIZING_MEMORY_MARGIN_PCT` | [`sizing.memory_margin_pct`](/runtime-settings#observability) | `130` |
+| `APP_SIZING_MIN_COVERAGE` | [`sizing.min_coverage`](/runtime-settings#observability) | `6h` |
+| `APP_SIZING_MIN_SAMPLES` | [`sizing.min_samples`](/runtime-settings#observability) | `20` |
+| `APP_SIZING_RAISE_AT_PCT` | [`sizing.raise_at_pct`](/runtime-settings#observability) | `85` |
 | `APP_STACK_DRIFT_SUMMARY_MAX` | [`stacks.drift_summary_max`](/runtime-settings#observability) | `50` |
 | `APP_STATUS_TEMPLATES_MAX` | [`status_page.templates_max`](/runtime-settings#observability) | `50` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
@@ -667,6 +770,14 @@ These variables now take a whole number of seconds. The old duration-valued name
 | `APP_HF_TIMEOUT_SECONDS` | `APP_HF_TIMEOUT` (`10s`, now `10`) | `models.hf_timeout_seconds` |
 
 If you set an old name in your environment, switch to the new one and write the value in seconds.
+
+## Browser push
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_WEBPUSH_ALLOWED_HOSTS` | Google FCM, Mozilla autopush, Windows WNS and Apple web push hosts | Comma separated push service hosts a browser may register (`*.example.com` matches subdomains). Setting it replaces the defaults. Control plane. |
+| `APP_WEBPUSH_SEND_TIMEOUT` | `10s` | Time limit for delivering one notification to all browsers. Control plane. |
+| `APP_WEBPUSH_MAX_SUBSCRIPTIONS_PER_USER` | `20` | Most browsers one account may register. Control plane. |
 
 ## Sessions and cookies
 
@@ -1084,6 +1195,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_AGENT_ADDR` | computed | Address the agent gRPC listener binds to. Unset binds to loopback only on the minimal profile until a remote node exists. Control plane. |
 | `APP_AGENT_ADVERTISE_HOST` | ``127.0.0.1`` | Host name or IP agents dial for the gRPC server. It must match the server's TLS certificate, so the default only works on one machine. Control plane. |
 | `APP_AGENT_IDENTITY_FILE` | ``./levelrail-agent-identity.json`` | File where the agent stores its enrolled identity. Agent. |
+| `APP_LOG_LEVEL` | ``info`` | Log level of the node agent: `debug`, `info`, `warn` or `error`, case-insensitive. An unknown value logs one warning and keeps `info`. Debug adds one line per readiness probe attempt. Agent. |
 | `APP_AGENT_LOG_BATCH_MAX` | ``5000`` | Most log lines the agent sends in one relay batch. Agent. |
 | `APP_AGENT_INSPECT_MAX_CONTAINERS` | ``50`` | Most containers the agent returns from one live container inspect, whatever the control plane asks for. Agent. |
 | `APP_AGENT_INSPECT_MAX_BYTES` | ``262144`` | Largest live container inspect answer, in bytes, capped at 1048576; containers past it are left out and the answer is marked truncated. Agent. |

@@ -80,5 +80,87 @@
     "all": "Alle Deploys",
     "logs": "Logs",
     "rollback": "Rollback"
+  },
+  "summary": {
+    "label": "App-Zusammenfassung",
+    "noMessage": "Keine Commit-Nachricht",
+    "none": "Noch nicht deployt"
+  },
+  "state": {
+    "succeeded": "Erfolgreich",
+    "running": "Läuft",
+    "failed": "Fehlgeschlagen",
+    "queued": "In Warteschlange",
+    "held": "Angehalten",
+    "canceled": "Abgebrochen",
+    "superseded": "Ersetzt",
+    "pending": "Ausstehend",
+    "refused": "Abgelehnt",
+    "awaiting_approval": "Wartet auf Freigabe",
+    "unknown": "Unbekannt"
+  },
+  "duration": "{{minutes}} Min. {{seconds}} Sek.",
+  "wiring": {
+    "title": "So ist diese App verbunden",
+    "domains": "Domains",
+    "noDomains": "Noch keine Domain.",
+    "addDomain": "Domain hinzufügen",
+    "more": "+{{count}} weitere",
+    "tls": {
+      "healthy": "TLS ok",
+      "expiring_soon": "TLS läuft bald ab",
+      "expired": "TLS abgelaufen",
+      "unknown": "TLS ausstehend"
+    },
+    "storage": "Datenbanken und Speicher",
+    "noStorage": "Keine Datenbank oder kein Volume verknüpft.",
+    "addStorage": "Volume hinzufügen",
+    "databases": "Datenbanken",
+    "volumes": "Volumes",
+    "env": "Umgebung",
+    "noEnv": "Keine Variablen gesetzt.",
+    "addEnv": "Variable hinzufügen",
+    "envSummary": "{{vars}} Variablen, {{secrets}} Secrets",
+    "port": "Port {{port}}",
+    "strategy": "Strategie: {{strategy}}",
+    "noNode": "Kein Node gemeldet",
+    "offline": "offline",
+    "openSettings": "Deploy-Einstellungen",
+    "outTitle": "Verbindet sich mit",
+    "databasesOut": "Datenbanken",
+    "none": "Keine",
+    "node": "Node",
+    "registry": "Registry",
+    "dependsOn": "Abhängig von",
+    "replicas_one": "{{count}} Replikat",
+    "replicas_other": "{{count}} Replikate",
+    "buildGit": "Git-Build",
+    "buildImage": "Image",
+    "connected": "Verbunden"
+  },
+  "deploys": {
+    "title": "Deployments",
+    "viewAll": "Alle anzeigen",
+    "none": "Noch keine Deploys.",
+    "col": {
+      "commit": "Commit",
+      "message": "Nachricht",
+      "state": "Status",
+      "branch": "Branch",
+      "author": "Autor",
+      "when": "Zeitpunkt",
+      "actions": "Aktionen"
+    },
+    "copySha": "Commit kopieren",
+    "copied": "Kopiert",
+    "live": "Live",
+    "rollback": "Rollback",
+    "logs": "Logs"
+  },
+  "previews": {
+    "title": "Letzte Previews",
+    "none": "Noch keine Preview-Umgebungen.",
+    "all": "Alle Previews",
+    "pr": "PR #{{number}}"
   }
 }

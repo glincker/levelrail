@@ -189,9 +189,8 @@ func (rt *Router) handleUpdateDomainAutomation(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusNotImplemented, "domain automation is not supported by this store")
 		return
 	}
-	var ov domainAutomationOverride
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, domainAutomationMaxBody)).Decode(&ov); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	ov, ok := decodeJSON[domainAutomationOverride](w, r, domainAutomationMaxBody)
+	if !ok {
 		return
 	}
 	if msg := ov.validate(); msg != "" {

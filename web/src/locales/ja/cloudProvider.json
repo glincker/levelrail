@@ -340,5 +340,29 @@
       "paste": "「接続」に貼り付け",
       "verify": "Levelrail が読み取り専用の確認で検証"
     }
+  },
+  "linkedAccounts": {
+    "title": "クラウドアカウント",
+    "manage": "クラウドアカウントで管理",
+    "add": "アカウントを追加",
+    "active": "有効",
+    "attention": "要確認",
+    "relogin": "再ログインが必要",
+    "managed": "既定",
+    "legacyHint": "下の旧来の単一認証情報は互換性のために残されています。このプロバイダーはアカウントで管理してください。",
+    "manageShort": "管理",
+    "addAnother": "別のアカウントを追加",
+    "verified": "最終確認",
+    "useCredential": "代わりに単一の認証情報を使う"
+  },
+  "accountSection": {
+    "switch": "アカウント",
+    "loading": "アカウントデータを読み込み中",
+    "error": "読み込めませんでした: {{message}}",
+    "retry": "再試行",
+    "verifyOk": "認証情報を確認しました",
+    "verifyFail": "認証情報の確認に失敗しました",
+    "noProbe": "このアカウント種別にはアクセス確認がありません。",
+    "check": "アクセスを確認"
   }
 }

@@ -30,9 +30,7 @@ type SetAppBuildSettingsRequest struct {
 
 // GetAppBuildSettings calls GET /api/v1/apps/{name}/build-settings.
 func (c *Client) GetAppBuildSettings(ctx context.Context, app string) (AppBuildSettings, error) {
-	var out AppBuildSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+url.PathEscape(app)+"/build-settings", nil, &out)
-	return out, err
+	return getJSON[AppBuildSettings](ctx, c, "/api/v1/apps/"+url.PathEscape(app)+"/build-settings")
 }
 
 // SetAppBuildSettings calls PUT /api/v1/apps/{name}/build-settings.

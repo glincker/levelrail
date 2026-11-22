@@ -8,6 +8,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/rollbackref"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -57,13 +58,15 @@ func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request)
 		if _, ok := rt.freezeGate(w, r, target.ServiceName, req.freezeOverride); !ok {
 			return
 		}
+		mark := ingress.PassMark()
 		status, msg, cdnWarning := rt.rollbackStatic(r.Context(), *target)
 		if status != 0 {
 			writeError(w, status, msg)
 			return
 		}
+		serving := rt.waitStaticServing(r.Context(), mark)
 		res := toAppResource(*existing)
-		writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res, CDNWarning: cdnWarning})
+		writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res, CDNWarning: cdnWarning, Serving: serving})
 		return
 	}
 	pin := rt.rollbackPin(r.Context(), *target)

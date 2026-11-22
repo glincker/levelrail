@@ -17,6 +17,7 @@ import type {
   AppListEntry,
   DeployStrategy,
   LogDrain,
+  LogDrainInput,
   ServiceHealth,
 } from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
@@ -473,11 +474,13 @@ export interface LogDrainResource {
   type: LogDrain['type']
   target: string
   enabled: boolean
+  header_name?: string
+  header_set?: boolean
 }
 
 export async function setLogDrain(
   name: string,
-  drain: LogDrain,
+  drain: LogDrainInput,
 ): Promise<LogDrainResource> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(name)}/log-drain`,
@@ -499,7 +502,7 @@ export async function setLogDrain(
 export function useSetLogDrain() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ name, drain }: { name: string; drain: LogDrain }) =>
+    mutationFn: ({ name, drain }: { name: string; drain: LogDrainInput }) =>
       setLogDrain(name, drain),
     onSuccess: (result) => {
       queryClient.setQueryData(
@@ -511,6 +514,8 @@ export function useSetLogDrain() {
               type: result.type,
               target: result.target,
               enabled: result.enabled,
+              header_name: result.header_name,
+              header_set: result.header_set,
             },
           },
       )

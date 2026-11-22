@@ -1,0 +1,535 @@
+{
+  "section": {
+    "title": "クラウドアカウント",
+    "addOracle": "Oracleを追加",
+    "addOracleTitle": "Oracle アカウントを追加",
+    "addOracleDescription": "OCI 設定と API キーを貼り付けます。サブネットはサーバー作成時のみ必要なため、ここでは任意です。",
+    "linkAws": "AWSを連携",
+    "connectDigitalOcean": "DigitalOceanに接続",
+    "connectDigitalOceanHint": "ランタイム設定にDigitalOceanのOAuthクライアントIDとシークレットを設定すると、ワンクリックで接続できます。",
+    "loading": "クラウドアカウントを読み込み中",
+    "loadFailed": "クラウドアカウントを読み込めませんでした。",
+    "empty": "クラウドアカウントはまだありません。権限を絞ったロールでAWSアカウントを連携するか、Oracle APIキーを追加してください。",
+    "verified": "{{when}}に確認済み",
+    "neverVerified": "未確認"
+  },
+  "common": {
+    "retry": "再試行",
+    "backToIntegrations": "連携に戻る"
+  },
+  "providers": {
+    "aws": "AWS",
+    "oracle": "Oracle Cloud",
+    "hetzner": "Hetzner",
+    "digitalocean": "DigitalOcean",
+    "vultr": "Vultr",
+    "azure": "Azure",
+    "gcp": "Google Cloud",
+    "linode": "Linode",
+    "akamai": "Akamai"
+  },
+  "status": {
+    "active": "有効",
+    "error": "要確認",
+    "disabled": "無効"
+  },
+  "capabilities": {
+    "inventory": {
+      "name": "インベントリ",
+      "hint": "インスタンス、ボリューム、ネットワークを読み取ります。"
+    },
+    "deploy": {
+      "name": "デプロイ",
+      "hint": "コンピュートリソースを作成・変更します。"
+    },
+    "cost": {
+      "name": "コスト",
+      "hint": "Cost Explorerから費用を読み取ります。"
+    },
+    "s3": {
+      "name": "S3",
+      "hint": "バケットとオブジェクトを管理します。"
+    },
+    "dns": {
+      "name": "DNS",
+      "hint": "Route 53のレコードを管理します。"
+    },
+    "destructive": {
+      "name": "破壊的操作",
+      "hint": "終了と削除。必要な場合のみ有効にしてください。"
+    }
+  },
+  "wizard": {
+    "title": "AWSアカウントを連携",
+    "description": "アカウントに最小権限のロールを作成し、そのARNをLevelrailに渡します。アクセスキーは保存されません。",
+    "steps": "連携の手順",
+    "stepNames": {
+      "scope": "範囲",
+      "kit": "ロールを作成",
+      "connect": "接続"
+    },
+    "back": "戻る",
+    "generate": "連携キットを生成",
+    "regenerate": "連携キットを再生成",
+    "openAccount": "アカウントを開く",
+    "needsAdmin": "クラウドアカウントを連携できるのは管理者のみです。",
+    "scope": {
+      "tiers": "Levelrailに許可する操作",
+      "regions": "許可するリージョン",
+      "regionsHint": "カンマ区切り。空欄ですべてのリージョン。",
+      "zones": "ホストゾーンID",
+      "zonesHint": "Route 53のゾーンIDをカンマ区切りで入力。dnsとdestructiveの階層では必須です。",
+      "region": "ホームリージョン",
+      "principal": "信頼するプリンシパルのARN",
+      "principalHint": "LevelrailがAWSで使うID。このIDだけがロールを引き受けられます。",
+      "guard": "ガードポリシーのARN(任意)",
+      "roleName": "ロール名(任意)",
+      "roleNamePlaceholder": "既定の名前",
+      "principalPrefilled": "Levelrail の実行 ID から自動入力しました(アカウント {{account}})。編集できます。",
+      "principalNotConfigured": "AWS の ID が見つかりません。aws login を実行するか、Levelrail プロセスに AWS 認証情報を設定するか、ARN を貼り付けてください。"
+    },
+    "issues": {
+      "noCapabilities": "機能を1つ以上選んでください。",
+      "badRegions": "eu-west-1のようなリージョンIDを使ってください。",
+      "needsZones": "dnsとdestructiveが操作できるホストゾーンIDを追加してください。",
+      "badZones": "Z0123ABCDのようなゾーンIDを使用してください。",
+      "badPrincipal": "IAMのroot、ロール、ユーザーのARNを入力してください。",
+      "badGuard": "IAMポリシーのARNを入力してください。",
+      "badRegion": "us-east-1のようなリージョンIDを使ってください。",
+      "badAccountId": "12 桁の AWS アカウント ID を入力してください。",
+      "badVaultAddress": "http または https の Vault アドレスを入力してください。",
+      "badVaultRole": "英数字、ドット、ハイフン、アンダースコアを使用してください。",
+      "badVaultToken": "secret://vault/levelrail#token のような secret:// 参照を入力してください。"
+    },
+    "kit": {
+      "readFirstTitle": "先にポリシーを読む",
+      "readFirst": "何かを作成する前にポリシーJSONを確認してください。ロールはポリシーで許可された操作しかできず、external idは混乱した代理人攻撃を防ぎます。",
+      "quickCreate": "CloudFormationクイック作成を開く",
+      "noQuickCreate": "テンプレートURLがないとクイック作成リンクは使えません。下のテンプレートかTerraformを使ってください。",
+      "externalId": "External id:",
+      "formats": "キットの形式",
+      "policy": "ポリシーJSON",
+      "cloudformation": "CloudFormation",
+      "terraform": "Terraform",
+      "created": "ロールを作成しました"
+    },
+    "connect": {
+      "roleArn": "ロールARN",
+      "badArn": "IAMロールのARNを入力してください。",
+      "label": "ラベル",
+      "go": "作成して確認",
+      "retry": "もう一度確認",
+      "identity": "アカウント{{account}}。"
+    },
+    "vault": {
+      "use": "短期認証情報に Vault を使う",
+      "hint": "Levelrail は Vault の aws シークレットエンジンから一時キーを読み取ります。アクセスキーは保存されません。",
+      "accountId": "AWS アカウント ID",
+      "address": "Vault のアドレス",
+      "mount": "シークレットエンジンのマウント",
+      "role": "Vault ロール",
+      "namespace": "Vault 名前空間 (任意)",
+      "tokenRef": "Vault トークン参照",
+      "kitTitle": "先に Vault を設定してください",
+      "kitHint": "Vault コマンドを実行し、ポリシーと信頼ポリシーで IAM ロール {{arn}} を作成してから接続します。",
+      "kitFormats": "Vault キットの形式",
+      "tabs": {
+        "commands": "Vault コマンド",
+        "vaultPolicy": "Vault ポリシー",
+        "policy": "IAM ポリシー",
+        "trust": "信頼ポリシー"
+      }
+    }
+  },
+  "probe": {
+    "ok": "許可",
+    "missing": "アクセス不足",
+    "verified": "実際の呼び出しで確認済み",
+    "simulated": "ポリシーシミュレーションで確認"
+  },
+  "detail": {
+    "loading": "クラウドアカウント",
+    "notFound": "クラウドアカウントが見つかりません",
+    "loadFailed": "このアカウントを読み込めませんでした。",
+    "tabs": "アカウントのセクション",
+    "overview": "概要",
+    "access": "アクセス",
+    "method": "方式",
+    "lastVerified": "最終確認",
+    "defaultRegion": "ホームリージョン",
+    "credential": "認証情報",
+    "stored": "保存済み",
+    "missing": "なし",
+    "verify": "確認",
+    "probe": "機能をテスト",
+    "delete": "アカウントを削除",
+    "deleteTitle": "{{name}}を削除しますか?",
+    "deleteBody": "保存された認証情報が削除され、付与された権限は使えなくなります。クラウド側のリソースには触れません。確認のため名前を入力してください。",
+    "regions": "リージョン",
+    "regionsFailed": "リージョンを取得できませんでした。",
+    "instances": "インスタンス",
+    "services": "サービス"
+  },
+  "access": {
+    "needsShare": "アクセスを確認するには、このアカウントの共有権限が必要です。",
+    "principalType": "対象",
+    "user": "ユーザー",
+    "team": "チーム",
+    "principalId": "ユーザーまたはチームID",
+    "expires": "有効期限(任意)",
+    "actions": "操作",
+    "add": "権限を追加",
+    "loadFailed": "権限を読み込めませんでした。",
+    "empty": "権限はまだありません。このアカウントを使えるのは管理者のみです。",
+    "expiresAt": "{{when}}に期限切れ",
+    "noExpiry": "期限なし",
+    "revokeNamed": "{{name}}のアクセスを取り消す",
+    "revoke": "取り消す",
+    "action": {
+      "view": "表示",
+      "operate": "操作",
+      "view_spend": "費用を表示",
+      "manage_budget": "予算を管理",
+      "share": "共有"
+    }
+  },
+  "spend": {
+    "title": "今月の利用額",
+    "estimated": "推定",
+    "refresh": "更新",
+    "none": "利用額はまだ記録されていません。",
+    "monthToDate": "月初から({{currency}})",
+    "stale": "このデータは古くなっています。",
+    "dataAge": "データ時点: {{time}}",
+    "limited": "最近更新されました。後でもう一度お試しください。",
+    "limitedIn": "最近更新されました。{{seconds}} 秒後にもう一度お試しください。",
+    "usageLink": "クラウドアカウントの利用額",
+    "state": {
+      "disabled": "利用額の取得はオフです",
+      "tag_not_active": "コスト配分タグが有効ではありません",
+      "data_unavailable": "利用額データを取得できません"
+    },
+    "hint": {
+      "disabled": "ランタイム設定でクラウド利用額を有効にしてください。",
+      "tag_not_active": "請求コンソールでコスト配分タグ levelrail:project を有効にしてから更新してください。",
+      "data_unavailable": "アカウントにコストの読み取り権限を付与してから更新してください。"
+    }
+  },
+  "instances": {
+    "noAccess": "このアカウントのインスタンスを一覧する権限がありません。",
+    "empty": "インスタンスが見つかりません。",
+    "cancel": "キャンセル",
+    "managed": "管理対象",
+    "unmanaged": "管理対象外",
+    "col": {
+      "name": "名前",
+      "state": "状態",
+      "size": "サイズ",
+      "region": "リージョン",
+      "ip": "パブリック IP",
+      "managed": "管理",
+      "actions": "操作"
+    },
+    "state": {
+      "pending": "保留中",
+      "running": "実行中",
+      "stopping": "停止中",
+      "stopped": "停止済み",
+      "terminating": "終了中",
+      "terminated": "終了済み",
+      "unknown": "不明"
+    },
+    "action": {
+      "start": "開始",
+      "stop": "停止",
+      "soft_stop": "通常停止",
+      "reboot": "再起動",
+      "soft_reboot": "通常再起動"
+    },
+    "stop": {
+      "title": "{{name}} を停止しますか?",
+      "body": "再び開始するまでインスタンスはオフラインになります。"
+    },
+    "resize": {
+      "open": "サイズ変更",
+      "title": "{{name}} のサイズ変更",
+      "current": "現在のサイズ: {{shape}}",
+      "oracleReboot": "Oracle インスタンスのサイズを変更すると再起動されます。",
+      "type": "新しいインスタンスタイプ",
+      "ocpus": "OCPU",
+      "memory": "メモリ (GB)",
+      "confirm": "サイズ変更"
+    },
+    "terminate": {
+      "open": "終了",
+      "title": "{{name}} を終了しますか?",
+      "body": "インスタンスはプロバイダー側で削除され、元に戻せません。確認のため名前を入力してください。",
+      "confirm": "終了",
+      "keepVolume": "ブートボリュームを残す"
+    },
+    "detail": {
+      "state": "状態",
+      "shape": "シェイプ",
+      "region": "リージョン",
+      "zone": "ゾーン",
+      "publicIp": "パブリック IP",
+      "privateIp": "プライベート IP",
+      "image": "イメージ",
+      "bootVolume": "ブートボリューム",
+      "project": "プロジェクト",
+      "environment": "環境",
+      "tags": "タグ",
+      "noTags": "タグはありません。",
+      "tagKey": "タグキー",
+      "tagValue": "タグ値",
+      "removeTag": "削除",
+      "addTag": "タグを追加",
+      "saveTags": "タグを保存",
+      "readOnly": "このインスタンスのタグは読み取り専用です。",
+      "saved": "タグを保存しました。"
+    },
+    "events": {
+      "title": "イベント",
+      "none": "この期間のイベントはありません。"
+    }
+  },
+  "services": {
+    "on": "オン",
+    "off": "オフ",
+    "toggle": "{{name}}を有効にする",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "disabled": "このサービスはオフです。rootユーザーがここまたはランタイム設定で有効にできます。",
+    "disabledRoot": "このサービスはオフです。スイッチで有効にします。",
+    "ecr": {
+      "title": "コンテナレジストリ (ECR)",
+      "name": "リポジトリ",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "作成",
+      "copyLogin": "ログインコマンドをコピー",
+      "empty": "リポジトリはありません。"
+    },
+    "acm": {
+      "title": "証明書 (ACM)",
+      "domain": "ドメイン",
+      "request": "証明書をリクエスト",
+      "empty": "証明書はありません。",
+      "copyName": "名前をコピー",
+      "copyValue": "値をコピー",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "パラメータ (SSM)",
+      "name": "名前",
+      "value": "値",
+      "overwrite": "上書き",
+      "put": "保存",
+      "redacted": "非表示",
+      "empty": "パラメータはありません。",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "監査 (CloudTrail)"
+    },
+    "audit": {
+      "resource": "リソース名",
+      "search": "検索",
+      "hint": "リソース名を入力すると最近のイベントを表示します。",
+      "empty": "イベントはありません。",
+      "time": "時刻",
+      "event": "イベント",
+      "user": "ユーザー"
+    },
+    "guard": {
+      "title": "支出ガード",
+      "cap": "月間上限",
+      "noCap": "なし",
+      "mtd": "当月累計",
+      "unavailable": "取得不可",
+      "killSwitch": "緊急停止",
+      "rootOnly": "rootのみ変更できます。",
+      "cleanup": "クリーンアッププラン",
+      "dryRun": "ドライラン",
+      "loadPlan": "プランを読み込む",
+      "resource": "リソース",
+      "reason": "理由",
+      "expired": "期限切れ {{when}}",
+      "orphan": "未接続の{{kind}}:",
+      "nothing": "整理する対象はありません。"
+    },
+    "rds": {
+      "title": "データベース (RDS と Aurora)",
+      "name": "名前",
+      "engine": "エンジン",
+      "class": "インスタンスクラス",
+      "username": "マスターユーザー名",
+      "multiAz": "マルチ AZ (高コスト)",
+      "create": "データベースを作成",
+      "createTitle": "管理対象のデータベースを作成",
+      "createBody": "暗号化、非公開アクセス、停止または削除タイマー、タグ付きで作成します。ガードがクラスとコストを許可する必要があります。",
+      "estimate": "月額およそ {{usd}} USD (インスタンスのみ)。",
+      "noEstimate": "価格の見積もりはありません。",
+      "classBlocked": "このクラスは許可リストにありません。",
+      "passwordNote": "マスターパスワードは AWS が生成し Secrets Manager に保管します。Levelrail は保存しません。",
+      "empty": "このリージョンにデータベースはありません。",
+      "perMonth": "{{usd}} USD/月",
+      "snapshot": "スナップショット",
+      "stop": "停止",
+      "start": "開始",
+      "adopt": "取り込む",
+      "clusters": "クラスター",
+      "autoRestart": "停止中、{{days}}日後にAWSが再起動します",
+      "deleteSnapshot": "スナップショットを削除"
+    },
+    "elasticache": {
+      "title": "キャッシュ (ElastiCache)",
+      "empty": "このリージョンにキャッシュはありません。",
+      "groups": "レプリケーショングループ",
+      "clusters": "キャッシュクラスター",
+      "snapshot": "スナップショット",
+      "reboot": "再起動",
+      "delete": "削除",
+      "deleteTitle": "このキャッシュを削除",
+      "deleteBody": "キャッシュとそのデータを削除します。確認のため名前を入力してください。最終スナップショットでコピーを残せます。",
+      "finalSnapshot": "最終スナップショット名 (任意)"
+    },
+    "lightsail": {
+      "title": "シンプルサーバー (Lightsail)",
+      "empty": "このリージョンに Lightsail インスタンスはありません。",
+      "start": "開始",
+      "stop": "停止",
+      "reboot": "再起動",
+      "snapshot": "スナップショット",
+      "delete": "削除",
+      "deleteTitle": "このサーバーを削除",
+      "deleteBody": "サーバーとそのディスクを削除します。確認のため名前を入力してください。コピーを残すには先にスナップショットを作成してください。"
+    },
+    "ebs": {
+      "title": "ボリュームとスナップショット (EBS)",
+      "target": "インスタンスIDまたはボリュームID",
+      "excludeBoot": "ブートボリュームを除外",
+      "create": "スナップショットを作成",
+      "volumes": "ボリューム",
+      "snapshots": "スナップショット",
+      "emptyVolumes": "このリージョンにボリュームはありません。",
+      "emptySnapshots": "このリージョンにスナップショットはありません。",
+      "size": "{{gb}} GB",
+      "expires": "有効期限 {{when}}",
+      "delete": "削除"
+    },
+    "cloudwatch": {
+      "title": "メトリクス、ログ、未使用リソース (CloudWatch)",
+      "instance": "インスタンスID",
+      "names": "メトリクス名 (カンマ区切り)",
+      "load": "読み込み",
+      "noData": "データポイントがありません。",
+      "logs": "ロググループ",
+      "prefix": "グループ名の接頭辞",
+      "filter": "フィルターテキスト",
+      "noGroups": "ロググループがありません。",
+      "retention": "保持期間 {{days}} 日",
+      "retentionNever": "無期限",
+      "view": "表示",
+      "noEvents": "直近1時間のイベントはありません。",
+      "truncated": "最新のイベントのみ表示しています。",
+      "idleTitle": "未使用リソース",
+      "idleNote": "提案のみです。Levelrailは停止、削除、解放を一切行いません。",
+      "idleEmpty": "未使用リソースは見つかりませんでした。",
+      "idleResource": "リソース",
+      "idleKind": "種類",
+      "idleAction": "推奨アクション",
+      "idleSaving": "USD/月",
+      "idleTotal": "削減可能額: 月 {{usd}} USD",
+      "kind": {
+        "ec2_low_cpu": "CPU使用率の低いインスタンス",
+        "ebs_unattached": "未接続のボリューム",
+        "eip_unassociated": "未関連付けのIP",
+        "alb_no_requests": "リクエストのないロードバランサー",
+        "rds_stopped": "停止中のデータベース",
+        "rds_cluster_restart": "まもなく自動再起動するデータベース"
+      },
+      "action": {
+        "stop": "停止",
+        "snapshot_delete": "スナップショット後に削除",
+        "release": "解放",
+        "delete": "削除",
+        "restop": "再度停止"
+      }
+    },
+    "cloudfront": {
+      "title": "CDN (CloudFront)",
+      "empty": "ディストリビューションはありません。",
+      "disabled": "無効",
+      "select": "無効化",
+      "paths": "{{id}} で無効化するパス (1行に1つ)",
+      "pathsHint": "/index.html\n/assets/*",
+      "invalidate": "無効化",
+      "created": "無効化 {{id}} を作成しました",
+      "invalidations": "無効化履歴",
+      "noInvalidations": "無効化はまだありません。"
+    },
+    "ssm": {
+      "title": "管理対象インスタンス (Systems Manager)",
+      "empty": "このリージョンに管理対象インスタンスはありません。",
+      "runTitle": "コマンドを実行",
+      "instance": "インスタンス",
+      "command": "コマンド",
+      "run": "実行",
+      "session": "セッションを開始",
+      "copyToken": "セッショントークンをコピー",
+      "status": "ステータス",
+      "exit": "終了コード",
+      "refresh": "更新"
+    }
+  },
+  "doctor": {
+    "title": "準備状況",
+    "ready": "準備完了",
+    "notReady": "未完了",
+    "rerun": "再実行",
+    "running": "確認中",
+    "deep": "詳細チェックを実行",
+    "deepRunning": "詳細チェック中",
+    "deepTitle": "詳細チェック",
+    "failed": "準備状況の確認を実行できませんでした。",
+    "fix": "対処",
+    "status": {
+      "ok": "OK",
+      "warn": "警告",
+      "fail": "失敗",
+      "skip": "スキップ"
+    }
+  },
+  "sso": {
+    "option": "代わりに AWS SSO でサインイン",
+    "back": "ロールまたは Vault を使う",
+    "title": "AWS SSO でサインイン",
+    "startUrl": "Identity Center の開始 URL",
+    "region": "Identity Center のリージョン",
+    "start": "サインインを開始",
+    "enterCode": "AWS を開いてこのコードを確認してください:",
+    "openBrowser": "AWS のサインインページを開く",
+    "waiting": "ブラウザでの承認を待っています。",
+    "pickRole": "リンクするアカウントとロールを選択してください。",
+    "noAccounts": "このログインに割り当てられたアカウントはありません。",
+    "label": "ラベル (任意)",
+    "link": "アカウントをリンク",
+    "denied": "サインインは拒否または期限切れになりました。もう一度開始してください。",
+    "reloginDone": "再度サインインしました。",
+    "relogin": "再度サインイン",
+    "reloginNeeded": "AWS のサインインが終了しました。このアカウントを使い続けるには再度サインインしてください。",
+    "startUrlExample": "https://d-1234567890.awsapps.com/start",
+    "regionExample": "eu-west-1",
+    "accountRegion": "このアカウントのリージョン(任意、未指定ならサインインのリージョン)"
+  },
+  "relogin": {
+    "title": "ブラウザセッション",
+    "expires": "セッションの有効期限: {{when}}。",
+    "expired": "セッションは失効済みか {{when}} に終了します。このアカウントを使い続けるには再ログインしてください。",
+    "token": "セキュリティトークンファイルの内容",
+    "key": "セッション秘密鍵ファイルの内容",
+    "submit": "再ログイン",
+    "done": "セッションを置き換えました"
+  }
+}

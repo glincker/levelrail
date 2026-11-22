@@ -329,6 +329,7 @@ func newHarness(t *testing.T, mutate func(*Config)) *harness {
 		return "", false
 	}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	cfg.DefaultMode = ModeOff
+	cfg.MinInterval, cfg.IdleStop = 0, 0
 	if mutate != nil {
 		mutate(&cfg)
 	}

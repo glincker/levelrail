@@ -68,11 +68,15 @@ func ValidateWebDAVHost(ctx context.Context, endpoint string) error {
 	if err != nil || u.Hostname() == "" {
 		return ErrWebDAVBadEndpoint
 	}
-	host := strings.ToLower(u.Hostname())
-	if WebDAVAllowPrivate() {
+	return validateEndpointHost(ctx, strings.ToLower(u.Hostname()), WebDAVAllowPrivate(), "WebDAV")
+}
+
+// validateEndpointHost applies the private network policy to a host name or literal address.
+func validateEndpointHost(ctx context.Context, host string, allowPrivate bool, label string) error {
+	if allowPrivate {
 		return validateAlwaysBlockedHost(ctx, host)
 	}
-	blocked := fmt.Errorf("%w: %s (enable the WebDAV private network setting to allow it)", netguard.ErrBlockedAddress, host)
+	blocked := fmt.Errorf("%w: %s (enable the %s private network setting to allow it)", netguard.ErrBlockedAddress, host, label)
 	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
 		return blocked
 	}
@@ -96,12 +100,25 @@ func ValidateWebDAVHost(ctx context.Context, endpoint string) error {
 	return blocked
 }
 
+var nat64 = netip.MustParsePrefix("64:ff9b::/96")
+
 // alwaysBlockedWebDAV covers link-local and cloud metadata ranges that stay
 // refused even when the private network opt-in is on.
 func alwaysBlockedWebDAV(ip netip.Addr) bool {
 	ip = ip.Unmap().WithZone("")
-	return ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
-		ip == netip.MustParseAddr("fd00:ec2::254") || (ip.Is4() && ip.As4()[0] == 0)
+	// An IPv4 address carried inside IPv6 (NAT64, 6to4) is judged as that IPv4 address.
+	if ip.Is6() {
+		b := ip.As16()
+		if nat64.Contains(ip) {
+			return alwaysBlockedWebDAV(netip.AddrFrom4([4]byte{b[12], b[13], b[14], b[15]}))
+		}
+		if b[0] == 0x20 && b[1] == 0x02 {
+			return alwaysBlockedWebDAV(netip.AddrFrom4([4]byte{b[2], b[3], b[4], b[5]}))
+		}
+	}
+	return ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() ||
+		ip == netip.MustParseAddr("fd00:ec2::254") || ip == netip.MustParseAddr("100.100.100.200") ||
+		(ip.Is4() && ip.As4()[0] == 0)
 }
 
 func validateAlwaysBlockedHost(ctx context.Context, host string) error {

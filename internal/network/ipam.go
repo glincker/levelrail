@@ -1,24 +1,6 @@
 package network
 
 // This file: mesh address allocation.
-//
-// The rejected alternative is worth writing down because it is the one
-// that looks free: derive each node's mesh address by hashing its node
-// ID into the mesh CIDR, so no allocation state has to be persisted at
-// all. That breaks on collisions, and not rarely: by the birthday bound,
-// hashing into a /24's 253 usable hosts gives a better-than-even chance
-// of a collision at only 19 nodes, and two nodes sharing a mesh address
-// is the ErrDuplicateAddress failure ValidateInventory exists to catch,
-// except that with hashing it is unfixable without renaming a node. A
-// /16 pushes the number out but does not change the shape of the
-// problem.
-//
-// So allocation is stateful: the control plane assigns an address once,
-// persists it, and never reassigns it while the node exists. What is
-// kept pure and testable here is the decision itself, a function from
-// (CIDR, already-taken set) to the next address. Persistence is the
-// caller's, which is why this takes a slice rather than reaching for a
-// store.
 
 import (
 	"encoding/binary"

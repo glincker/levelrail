@@ -75,16 +75,12 @@ func (c *Client) ListIncidents(ctx context.Context, state string) ([]Incident, e
 	if state != "" {
 		path += "?state=" + url.QueryEscape(state)
 	}
-	var out []Incident
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]Incident](ctx, c, path)
 }
 
 // GetIncident calls GET /api/v1/incidents/{id}.
 func (c *Client) GetIncident(ctx context.Context, id string) (Incident, error) {
-	var out Incident
-	err := c.do(ctx, http.MethodGet, incidentPath(id, ""), nil, &out)
-	return out, err
+	return getJSON[Incident](ctx, c, incidentPath(id, ""))
 }
 
 // PromoteIncident calls POST /api/v1/incidents for a firing alert rule.

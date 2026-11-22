@@ -82,7 +82,5 @@ func (c *Client) uploadArchive(ctx context.Context, name string, archive io.Read
 
 // ListSourceUploads calls GET /api/v1/apps/{name}/uploads.
 func (c *Client) ListSourceUploads(ctx context.Context, name string) (SourceUploadList, error) {
-	var out SourceUploadList
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/uploads", nil, &out)
-	return out, err
+	return getJSON[SourceUploadList](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/uploads")
 }

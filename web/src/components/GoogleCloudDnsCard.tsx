@@ -15,10 +15,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { Textarea } from '@/components/ui/textarea'
+import { FieldDescription } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { Switch } from '@/components/ui/switch'
+import { DnsProviderFields } from './dns/DnsProviderFields'
 import { SettingsFormAlerts } from './SettingsCard'
 import { DnsVerificationCallout } from './dns/DnsVerificationCallout'
 
@@ -113,33 +113,22 @@ export function GoogleCloudDnsCard() {
             </dl>
           ) : null}
 
-          <Field>
-            <FieldLabel htmlFor="google-cloud-dns-key">
-              {t('googleCloudDns.keyLabel')}
-            </FieldLabel>
-            <Textarea
-              id="google-cloud-dns-key"
-              autoComplete="off"
-              spellCheck={false}
-              rows={4}
-              className="font-mono"
-              value={keyJson}
-              onChange={(e) => {
-                setKeyJson(e.target.value)
-              }}
-              disabled={pending}
-              placeholder={
-                settings.has_key
-                  ? t('googleCloudDns.keyPlaceholderSaved')
-                  : t('googleCloudDns.keyPlaceholder')
-              }
-            />
-            <FieldDescription>
-              {settings.has_key
-                ? t('googleCloudDns.keySaved')
-                : t('googleCloudDns.keyNone')}
-            </FieldDescription>
-          </Field>
+          <DnsProviderFields
+            provider="googlecloud"
+            values={{ service_account_json: keyJson }}
+            onChange={(_key, value) => {
+              setKeyJson(value)
+            }}
+            idPrefix="google-cloud-dns"
+            hasSecret={settings.has_key}
+            fieldExtra={() => (
+              <FieldDescription>
+                {settings.has_key
+                  ? t('googleCloudDns.keySaved')
+                  : t('googleCloudDns.keyNone')}
+              </FieldDescription>
+            )}
+          />
 
           <SettingsFormAlerts
             alerts={[

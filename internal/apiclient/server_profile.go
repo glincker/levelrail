@@ -50,9 +50,7 @@ type UpdateServerProfileRequest struct {
 
 // GetServerProfile calls GET /api/v1/settings/server-profile.
 func (c *Client) GetServerProfile(ctx context.Context) (ServerProfile, error) {
-	var out ServerProfile
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/server-profile", nil, &out)
-	return out, err
+	return getJSON[ServerProfile](ctx, c, "/api/v1/settings/server-profile")
 }
 
 // SetServerProfile calls PUT /api/v1/settings/server-profile.

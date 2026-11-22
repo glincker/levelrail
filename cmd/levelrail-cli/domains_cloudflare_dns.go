@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 // domainsCloudflareDNSJSONUsage is every domains cloudflare-dns
@@ -82,8 +84,7 @@ func runDomainsCloudflareDNSGet(prog string, args []string, stdout, stderr io.Wr
 
 func runDomainsCloudflareDNSSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains cloudflare-dns set", domainsCloudflareDNSJSONUsage, stderr)
-	var cfAPITokenFlag string
-	fs.StringVar(&cfAPITokenFlag, "cf-api-token", "", "Cloudflare API token, Zone:DNS:Edit scope (required; distinct from --token, this CLI's own bearer auth flag)")
+	descFlags := registerDescriptorFlagsWhen(fs, fielddesc.DNSProvider, map[string]string{"provider": "cloudflare"})
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains cloudflare-dns set --cf-api-token TOKEN [flags]\n\nConfigures and enables Cloudflare DNS-01 for wildcard domains.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -94,6 +95,7 @@ func runDomainsCloudflareDNSSet(prog string, args []string, stdout, stderr io.Wr
 		return exitCode
 	}
 
+	cfAPITokenFlag := *descFlags["cf-api-token"]
 	if cfAPITokenFlag == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: domains cloudflare-dns set requires --cf-api-token\n\n", prog)
 		fs.Usage()

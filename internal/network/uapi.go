@@ -27,26 +27,6 @@ import (
 
 // EncodeUAPI renders cfg as a UAPI "set" payload, given the set of peer
 // public keys the device currently has.
-//
-// current is what makes this a converging apply rather than a destructive
-// one. The obvious encoding is to emit replace_peers=true and let the
-// device discard everything it had, which is correct in the level-
-// triggered sense and one line shorter. It is rejected here because
-// wireguard-go's replace_peers destroys and rebuilds every Peer object,
-// discarding the established session keys with them, so every reconcile
-// tick would force a fresh handshake with every node in the fleet. On a
-// 15-second resync that is a mesh that never finishes handshaking.
-//
-// Instead: peers in current but not in cfg are explicitly removed, and
-// peers in cfg are upserted. An upsert of an unchanged peer leaves its
-// session untouched, so a reconcile pass that changes nothing costs
-// nothing, which is the property level-triggered reconcile design
-// depends on to be run repeatedly and safely.
-//
-// The private key is written first and only when set. A zero PrivateKey
-// is skipped rather than written as 32 zero bytes: writing zeros would
-// tell the device to discard its identity, which is the opposite of
-// "this field is not being changed."
 func EncodeUAPI(cfg DeviceConfig, current []Key) string {
 	var b strings.Builder
 

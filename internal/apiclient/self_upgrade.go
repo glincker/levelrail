@@ -155,9 +155,7 @@ type RestoreStarted struct {
 
 // ListRestorePoints calls GET /api/v1/updates/restore-points.
 func (c *Client) ListRestorePoints(ctx context.Context) (RestorePoints, error) {
-	var out RestorePoints
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/restore-points", nil, &out)
-	return out, err
+	return getJSON[RestorePoints](ctx, c, "/api/v1/updates/restore-points")
 }
 
 // RestoreRestorePoint calls POST /api/v1/updates/restore-points/{id}/restore.
@@ -204,9 +202,7 @@ func (c *Client) StartSelfUpgrade(ctx context.Context, target string, ack []stri
 
 // ListSelfUpgradeAttempts calls GET /api/v1/updates/self-upgrade/attempts.
 func (c *Client) ListSelfUpgradeAttempts(ctx context.Context) (SelfUpgradeAttempts, error) {
-	var out SelfUpgradeAttempts
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/self-upgrade/attempts", nil, &out)
-	return out, err
+	return getJSON[SelfUpgradeAttempts](ctx, c, "/api/v1/updates/self-upgrade/attempts")
 }
 
 // SelfUpgradeStatus is GET /api/v1/updates/self-upgrade/status' response.
@@ -249,9 +245,7 @@ func (c *Client) CancelSelfUpgradeAttempt(ctx context.Context, id string) (SelfU
 
 // GetSelfUpgradeStatus calls GET /api/v1/updates/self-upgrade/status.
 func (c *Client) GetSelfUpgradeStatus(ctx context.Context) (SelfUpgradeStatus, error) {
-	var out SelfUpgradeStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/self-upgrade/status", nil, &out)
-	return out, err
+	return getJSON[SelfUpgradeStatus](ctx, c, "/api/v1/updates/self-upgrade/status")
 }
 
 // MigrationDryRun is POST /api/v1/updates/migration-dry-run's response.

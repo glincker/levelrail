@@ -1,7 +1,6 @@
 import {
   BanGlassIcon,
   CheckGlassIcon,
-  DownloadGlassIcon,
   LinkGlassIcon,
   RefreshCwGlassIcon,
   RotateCcwGlassIcon,
@@ -17,7 +16,6 @@ import {
 import { toast } from '@/components/ui/toast'
 import { CancelDeployDialog } from '../CancelDeployDialog'
 import type { DeployAttempt } from '../../types/deployAttempt'
-import { deployLogDownloadURL } from '../../queries/deployLogs'
 import { useRollbackToDeploy } from '../../queries/deployControl'
 import { useTriggerDeploy } from '../../queries/deploys'
 import { useDeployDetailT } from './useDeployDetailT'
@@ -54,7 +52,7 @@ function Tip({
   )
 }
 
-/** Top-right actions of the run page: stop, retry, roll back, share, download. */
+/** Top-right actions of the run page: stop, retry, roll back, share. */
 export function DeployRunActions({
   appName,
   attempt,
@@ -137,25 +135,21 @@ export function DeployRunActions({
 
   return (
     <>
-      <Tip
-        shortcut="Shift+X"
-        reason={
-          cancelable ? t('runActions.cancelWhy') : t('runActions.cancelOff')
-        }
-      >
-        <Button
-          variant="destructive"
-          size="sm"
-          writeAction
-          disabled={!cancelable}
-          onClick={() => {
-            setCancelOpen(true)
-          }}
-        >
-          <BanGlassIcon className="size-5" data-icon="inline-start" />
-          {t('runActions.cancel')}
-        </Button>
-      </Tip>
+      {cancelable ? (
+        <Tip shortcut="Shift+X" reason={t('runActions.cancelWhy')}>
+          <Button
+            variant="destructive"
+            size="sm"
+            writeAction
+            onClick={() => {
+              setCancelOpen(true)
+            }}
+          >
+            <BanGlassIcon className="size-5" data-icon="inline-start" />
+            {t('runActions.cancel')}
+          </Button>
+        </Tip>
+      ) : null}
       <Tip
         shortcut="Shift+R"
         reason={
@@ -206,15 +200,6 @@ export function DeployRunActions({
           {t(linkCopied ? 'runActions.copied' : 'runActions.copyLink')}
         </Button>
       </Tip>
-      <Button
-        variant="outline"
-        size="sm"
-        nativeButton={false}
-        render={<a href={deployLogDownloadURL(appName, attempt.id)} download />}
-      >
-        <DownloadGlassIcon className="size-5" data-icon="inline-start" />
-        {t('runActions.download')}
-      </Button>
       {cancelable ? (
         <CancelDeployDialog
           appName={appName}

@@ -364,6 +364,7 @@
     "nodeLabel": "{{stage}}, {{status}}, {{duration}}",
     "barLabel": "{{stage}} bar, {{percent}} percent of the timeline",
     "totals": "Wall time {{wall}}, stages total {{stages}}.",
+    "totalsRunning": "Running for {{wall}}, stages so far {{stages}}.",
     "gap": {
       "outside": "{{time}} passed between or outside stages.",
       "overlap": "Stages overlapped by {{time}}."

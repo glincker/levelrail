@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
+	"github.com/GLINCKER/levelrail/internal/healthpreset"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -1138,7 +1139,7 @@ func registerCreateHealthFlags(fs *flag.FlagSet, f *createFlags) {
 		pf.which = p.which
 		fs.StringVar(&pf.path, p.which+"-path", "", "HTTP path for the "+p.which+" probe, e.g. /healthz")
 		fs.StringVar(&pf.exec, p.which+"-exec", "", "command for the "+p.which+" probe, run through /bin/sh -c; exit 0 means healthy")
-		fs.StringVar(&pf.preset, p.which+"-preset", "", "fill the "+p.which+" probe from a named preset ("+healthPresetNames+")")
+		fs.StringVar(&pf.preset, p.which+"-preset", "", "fill the "+p.which+" probe from a named preset ("+healthpreset.Names()+")")
 		fs.StringVar(&pf.interval, p.which+"-interval", "", p.which+" probe interval, e.g. 5s")
 		fs.StringVar(&pf.timeout, p.which+"-timeout", "", p.which+" probe per-attempt timeout, e.g. 2s")
 		fs.StringVar(&pf.expectedStatus, p.which+"-expected-status", "", p.which+" probe accepted status codes, e.g. 200-399")

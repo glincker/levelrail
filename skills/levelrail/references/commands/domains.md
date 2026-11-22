@@ -250,7 +250,7 @@ Subcommands: runs, undo
 
 ```
 Usage:
-  levelrail-cli domains go-live <app> <domain> [--dns auto|off|preview] [--replace] [--plan] [--wait] [--timeout 2m] [flags]
+  levelrail-cli domains go-live <app> <domain> [--dns auto|off|preview] [--replace] [--plan] [--wait] [--timeout 10m] [--poll 3s] [flags]
   levelrail-cli domains go-live runs [--limit N] [flags]     recent automation runs
   levelrail-cli domains go-live undo <run-id> [flags]        undo what one run created
   levelrail-cli domains backfill-base-domain [--confirm] [flags]

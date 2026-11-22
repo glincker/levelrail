@@ -115,7 +115,7 @@ func (c *Client) DeleteStorageBucket(ctx context.Context, id string, purge bool)
 	if purge {
 		path += "?purge=true"
 	}
-	return c.do(ctx, http.MethodDelete, path, nil, nil)
+	return c.del(ctx, path)
 }
 
 // BindAppBucket calls PUT /api/v1/apps/{name}/buckets/{id}.
@@ -128,7 +128,7 @@ func (c *Client) BindAppBucket(ctx context.Context, app, id, envPrefix string) (
 
 // UnbindAppBucket calls DELETE /api/v1/apps/{name}/buckets/{id}.
 func (c *Client) UnbindAppBucket(ctx context.Context, app, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(app)+"/buckets/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/apps/"+PathEscape(app)+"/buckets/"+PathEscape(id))
 }
 
 // ListBucketObjects calls GET /api/v1/storage/buckets/{id}/objects.
@@ -141,9 +141,7 @@ func (c *Client) ListBucketObjects(ctx context.Context, id, prefix, token string
 
 // BucketUsage calls GET /api/v1/storage/buckets/{id}/usage.
 func (c *Client) BucketUsage(ctx context.Context, id string) (BucketUsage, error) {
-	var out BucketUsage
-	err := c.do(ctx, http.MethodGet, bucketPath(id)+"/usage", nil, &out)
-	return out, err
+	return getJSON[BucketUsage](ctx, c, bucketPath(id)+"/usage")
 }
 
 // DownloadBucketObject calls GET /api/v1/storage/buckets/{id}/objects/download.
@@ -153,7 +151,7 @@ func (c *Client) DownloadBucketObject(ctx context.Context, id, key string) ([]by
 
 // DeleteBucketObject calls DELETE /api/v1/storage/buckets/{id}/objects.
 func (c *Client) DeleteBucketObject(ctx context.Context, id, key string) error {
-	return c.do(ctx, http.MethodDelete, bucketPath(id)+"/objects?"+url.Values{"key": {key}}.Encode(), nil, nil)
+	return c.del(ctx, bucketPath(id)+"/objects?"+url.Values{"key": {key}}.Encode())
 }
 
 // PresignBucketObject calls POST /api/v1/storage/buckets/{id}/presign.

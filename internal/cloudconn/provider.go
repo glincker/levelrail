@@ -22,6 +22,9 @@ const (
 	AuthRoleAssumption = "role_assumption"
 	AuthSecretRef      = "secret_ref"
 	AuthStatic         = "static"
+	AuthVaultAWS       = "vault_aws"
+	AuthOAuth          = "oauth"
+	AuthAWSSSO         = "aws_sso"
 )
 
 // Health classes. A check reports one of these and nothing from the provider's own output.
@@ -77,6 +80,7 @@ func DefaultRegistry() Registry {
 	for _, n := range []string{ProviderOracle, ProviderAWS, ProviderAzure, ProviderGCP, ProviderHetzner, ProviderDigitalOcean} {
 		r[n] = notImplemented{name: n}
 	}
+	r[ProviderAWS] = NewAWSProvider(AWSOptions{})
 	return r
 }
 

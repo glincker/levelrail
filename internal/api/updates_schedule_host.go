@@ -101,6 +101,9 @@ func (f channelFanout) Notify(ctx context.Context, ids []string, text string) er
 			continue
 		}
 		if err := f.sender.SendNotice(ctx, ch, text); err != nil {
+			if errors.Is(err, alerting.ErrNoticeSkipped) {
+				continue
+			}
 			errs = append(errs, fmt.Errorf("channel %q: %w", ch.ID, err))
 		}
 	}

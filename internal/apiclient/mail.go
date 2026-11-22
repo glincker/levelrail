@@ -126,9 +126,7 @@ func (c *Client) ListMailTemplates(ctx context.Context) ([]MailTemplate, error) 
 
 // GetMailTemplate calls GET /api/v1/mail/templates/{key}.
 func (c *Client) GetMailTemplate(ctx context.Context, key string) (MailTemplate, error) {
-	var out MailTemplate
-	err := c.do(ctx, http.MethodGet, "/api/v1/mail/templates/"+PathEscape(key), nil, &out)
-	return out, err
+	return getJSON[MailTemplate](ctx, c, "/api/v1/mail/templates/"+PathEscape(key))
 }
 
 // SetMailTemplate calls PUT /api/v1/mail/templates/{key}.
@@ -169,9 +167,7 @@ type MailGroupDetail struct {
 
 // GetMailGroup calls GET /api/v1/mail/groups/{id}; id may be the group name.
 func (c *Client) GetMailGroup(ctx context.Context, id string) (MailGroupDetail, error) {
-	var out MailGroupDetail
-	err := c.do(ctx, http.MethodGet, "/api/v1/mail/groups/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[MailGroupDetail](ctx, c, "/api/v1/mail/groups/"+PathEscape(id))
 }
 
 // CreateMailGroup calls POST /api/v1/mail/groups.
@@ -183,7 +179,7 @@ func (c *Client) CreateMailGroup(ctx context.Context, name, description string, 
 
 // DeleteMailGroup calls DELETE /api/v1/mail/groups/{id}.
 func (c *Client) DeleteMailGroup(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/mail/groups/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/mail/groups/"+PathEscape(id))
 }
 
 // CreateMailBroadcast calls POST /api/v1/mail/broadcasts for a real send.

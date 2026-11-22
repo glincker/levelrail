@@ -198,6 +198,49 @@ describe('CloudProviderPage', () => {
     expect(screen.queryByRole('button', { name: 'Create server' })).toBeNull()
   })
 
+  it('is connected through a cloud account alone and lists it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify(
+              url.endsWith('/node-providers')
+                ? [
+                    {
+                      provider: 'hetzner',
+                      has_token: false,
+                      connected: true,
+                      accounts: [
+                        {
+                          id: 'acc1',
+                          label: 'hz-test',
+                          status: 'active',
+                          auth_method: 'api_token',
+                          region: 'fsn1',
+                          needs_relogin: false,
+                          managed: false,
+                        },
+                      ],
+                    },
+                  ]
+                : [],
+            ),
+            { status: 200 },
+          ),
+        ),
+      ),
+    )
+    renderPage('hetzner')
+    expect(await screen.findByText('hz-test')).toBeTruthy()
+    expect(screen.getByText('Connected')).toBeTruthy()
+    expect(screen.queryByText('Not connected')).toBeNull()
+    expect(screen.getByText('Add another account')).toBeTruthy()
+    expect(
+      screen.queryByRole('heading', { name: 'Connect Hetzner Cloud' }),
+    ).toBeNull()
+  })
+
   it('shows a not found state for an unknown provider', () => {
     renderPage('nope')
     expect(screen.getByText('Unknown provider')).toBeTruthy()

@@ -27,16 +27,12 @@ type AnalysisReport struct {
 
 // ListAnalysisReports calls GET /api/v1/apps/{name}/analysis/reports.
 func (c *Client) ListAnalysisReports(ctx context.Context, app string) ([]AnalysisReportSummary, error) {
-	var out []AnalysisReportSummary
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/analysis/reports", nil, &out)
-	return out, err
+	return getJSON[[]AnalysisReportSummary](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/analysis/reports")
 }
 
 // GetAnalysisReport calls GET /api/v1/analysis/reports/{id}.
 func (c *Client) GetAnalysisReport(ctx context.Context, id string) (AnalysisReport, error) {
-	var out AnalysisReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/analysis/reports/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[AnalysisReport](ctx, c, "/api/v1/analysis/reports/"+PathEscape(id))
 }
 
 // RunAnalysis calls POST /api/v1/apps/{name}/analysis/reports and returns the new report.

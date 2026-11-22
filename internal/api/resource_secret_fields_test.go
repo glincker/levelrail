@@ -33,6 +33,7 @@ var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names a
 	"databaseRevealResponse.Password":                   "owner-only reveal behind step-up, audited, no-store",
 	"k8sPullSecretListResponse.PullSecrets":             "names and registry hosts only, never credentials",
 	"appResource.SecretEnv":                             "names of secret-backed vars, never values",
+	"envDiffResource.SecretUnknown":                     "count of secret-backed keys not compared, no values",
 	"appResource.Secrets":                               "write-only on create, toAppResource never sets it",
 	"branchEnvOverrideResource.Secret":                  "bool flag",
 	"appFileResource.Secret":                            "bool flag marking a secret-backed file, never its content",

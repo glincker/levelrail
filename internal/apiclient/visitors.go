@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -71,9 +70,7 @@ func (c *Client) GetVisitors(ctx context.Context, app, domain, window string) (V
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out Visitors
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[Visitors](ctx, c, path)
 }
 
 // ExportVisitorsCSV calls GET /api/v1/apps/{name}/visitors/export and returns the CSV bytes.

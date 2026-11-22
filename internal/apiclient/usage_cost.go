@@ -81,9 +81,7 @@ func (c *Client) GetUsageReport(ctx context.Context, q UsageReportQuery) (UsageR
 	if v := q.values(); len(v) > 0 {
 		path += "?" + v.Encode()
 	}
-	var out UsageReport
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[UsageReport](ctx, c, path)
 }
 
 // DownloadUsageReportCSV calls GET /api/v1/usage/report?format=csv.
@@ -95,9 +93,7 @@ func (c *Client) DownloadUsageReportCSV(ctx context.Context, q UsageReportQuery)
 
 // GetUsageSettings calls GET /api/v1/usage/settings.
 func (c *Client) GetUsageSettings(ctx context.Context) (UsageSettings, error) {
-	var out UsageSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/usage/settings", nil, &out)
-	return out, err
+	return getJSON[UsageSettings](ctx, c, "/api/v1/usage/settings")
 }
 
 // UpdateUsageSettings calls PUT /api/v1/usage/settings.
@@ -109,9 +105,7 @@ func (c *Client) UpdateUsageSettings(ctx context.Context, u UsageSettingsUpdate)
 
 // ListUsageBudgets calls GET /api/v1/usage/budgets.
 func (c *Client) ListUsageBudgets(ctx context.Context) (UsageBudgets, error) {
-	var out UsageBudgets
-	err := c.do(ctx, http.MethodGet, "/api/v1/usage/budgets", nil, &out)
-	return out, err
+	return getJSON[UsageBudgets](ctx, c, "/api/v1/usage/budgets")
 }
 
 // SetUsageBudget calls PUT /api/v1/usage/budgets.
@@ -127,5 +121,5 @@ func (c *Client) SetUsageBudget(ctx context.Context, scope, scopeID string, mont
 
 // DeleteUsageBudget calls DELETE /api/v1/usage/budgets/{id}.
 func (c *Client) DeleteUsageBudget(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/usage/budgets/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/usage/budgets/"+PathEscape(id))
 }

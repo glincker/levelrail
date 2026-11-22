@@ -174,6 +174,7 @@
       "settings-backup-targets": "Dónde se guardan las copias de seguridad.",
       "settings-storage": "Destinos de almacenamiento de objetos.",
       "nav-integrations": "Todos los servicios conectados, su estado y caducidad, y dónde añadir más.",
+      "nav-integrations-aws-link": "Vincula una cuenta de AWS con un rol de mínimo privilegio.",
       "settings-git-connections": "Conecta GitHub, GitLab y otros hosts de git.",
       "settings-notification-channels": "Alertas por Slack, Discord, correo y webhook.",
       "settings-users": "Las personas que pueden iniciar sesión y sus roles.",

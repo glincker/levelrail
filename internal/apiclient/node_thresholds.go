@@ -23,9 +23,7 @@ type NodeThresholds struct {
 
 // GetNodeThresholds calls GET /api/v1/nodes/{id}/thresholds.
 func (c *Client) GetNodeThresholds(ctx context.Context, id string) (NodeThresholds, error) {
-	var out NodeThresholds
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/thresholds", nil, &out)
-	return out, err
+	return getJSON[NodeThresholds](ctx, c, nodePath(id)+"/thresholds")
 }
 
 // SetNodeThresholds calls PUT /api/v1/nodes/{id}/thresholds; the body replaces the whole override.

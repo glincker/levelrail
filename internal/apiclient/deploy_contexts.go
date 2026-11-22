@@ -42,9 +42,7 @@ type EffectiveConfig struct {
 
 // ListAppContexts calls GET /api/v1/apps/{name}/contexts.
 func (c *Client) ListAppContexts(ctx context.Context, name string) ([]AppContextConfig, error) {
-	var out []AppContextConfig
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/contexts", nil, &out)
-	return out, err
+	return getJSON[[]AppContextConfig](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/contexts")
 }
 
 // SetAppContext calls PUT /api/v1/apps/{name}/contexts: it replaces one context's overrides.
@@ -56,7 +54,7 @@ func (c *Client) SetAppContext(ctx context.Context, name string, cfg AppContextC
 
 // ClearAppContext calls DELETE /api/v1/apps/{name}/contexts?context=.
 func (c *Client) ClearAppContext(ctx context.Context, name, contextName string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/contexts?context="+url.QueryEscape(contextName), nil, nil)
+	return c.del(ctx, "/api/v1/apps/"+PathEscape(name)+"/contexts?context="+url.QueryEscape(contextName))
 }
 
 // GetEffectiveConfig calls GET /api/v1/apps/{name}/effective-config.
@@ -68,7 +66,5 @@ func (c *Client) GetEffectiveConfig(ctx context.Context, name, contextName, bran
 	if branch != "" {
 		q.Set("branch", branch)
 	}
-	var out EffectiveConfig
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/effective-config?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[EffectiveConfig](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/effective-config?"+q.Encode())
 }

@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -117,7 +116,5 @@ func (c *Client) GetAppTraffic(ctx context.Context, name, window string) (AppTra
 	if window != "" {
 		query.Set("window", window)
 	}
-	var out AppTrafficResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/traffic?"+query.Encode(), nil, &out)
-	return out, err
+	return getJSON[AppTrafficResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/traffic?"+query.Encode())
 }

@@ -22,9 +22,7 @@ func protectionPath(name string) string {
 
 // GetAppProtection reads the app's protection state.
 func (c *Client) GetAppProtection(ctx context.Context, name string) (AppProtection, error) {
-	var out AppProtection
-	err := c.do(ctx, http.MethodGet, protectionPath(name), nil, &out)
-	return out, err
+	return getJSON[AppProtection](ctx, c, protectionPath(name))
 }
 
 // ProtectApp protects the app with a reason.

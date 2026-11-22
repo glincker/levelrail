@@ -127,9 +127,7 @@ type UpgradeBackupNowResult struct {
 
 // GetUpgradeSchedule calls GET /api/v1/updates/schedule.
 func (c *Client) GetUpgradeSchedule(ctx context.Context) (UpgradeScheduleStatus, error) {
-	var out UpgradeScheduleStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/schedule", nil, &out)
-	return out, err
+	return getJSON[UpgradeScheduleStatus](ctx, c, "/api/v1/updates/schedule")
 }
 
 // CreateUpgradeSchedule calls POST /api/v1/updates/schedule.
@@ -148,9 +146,7 @@ func (c *Client) CancelUpgradeSchedule(ctx context.Context) (UpgradeSchedule, er
 
 // GetUpgradePolicy calls GET /api/v1/updates/auto.
 func (c *Client) GetUpgradePolicy(ctx context.Context) (UpgradePolicy, error) {
-	var out UpgradePolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/auto", nil, &out)
-	return out, err
+	return getJSON[UpgradePolicy](ctx, c, "/api/v1/updates/auto")
 }
 
 // SetUpgradePolicy calls PUT /api/v1/updates/auto.

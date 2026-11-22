@@ -74,7 +74,5 @@ func (c *Client) RunRehydrate(ctx context.Context, allowStale bool) (RehydrateRe
 
 // GetRehydrateReport calls GET /api/v1/control-plane/rehydrate/report.
 func (c *Client) GetRehydrateReport(ctx context.Context) (RehydrateReport, error) {
-	var out RehydrateReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/control-plane/rehydrate/report", nil, &out)
-	return out, err
+	return getJSON[RehydrateReport](ctx, c, "/api/v1/control-plane/rehydrate/report")
 }

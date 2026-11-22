@@ -58,9 +58,7 @@ type PolicyCheckRequest struct {
 
 // ListDeployPolicies calls GET /api/v1/deploy-policies.
 func (c *Client) ListDeployPolicies(ctx context.Context) ([]DeployPolicy, error) {
-	var out []DeployPolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/deploy-policies", nil, &out)
-	return out, err
+	return getJSON[[]DeployPolicy](ctx, c, "/api/v1/deploy-policies")
 }
 
 // SetDeployPolicy calls PUT /api/v1/deploy-policies/{scope}/{id}.
@@ -75,7 +73,7 @@ func (c *Client) SetDeployPolicy(ctx context.Context, scope, id string, rules ma
 
 // DeleteDeployPolicy calls DELETE /api/v1/deploy-policies/{scope}/{id}.
 func (c *Client) DeleteDeployPolicy(ctx context.Context, scope, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/deploy-policies/"+PathEscape(scope)+"/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/deploy-policies/"+PathEscape(scope)+"/"+PathEscape(id))
 }
 
 // CheckDeployPolicy calls POST /api/v1/deploy-policies/check.

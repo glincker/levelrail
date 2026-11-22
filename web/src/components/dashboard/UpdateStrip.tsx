@@ -60,7 +60,7 @@ export function UpdateStripView({
       aria-label={t('updateStrip.label')}
       data-tone={tone}
       className={cn(
-        'flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-4 py-2',
+        'flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2 sm:px-4',
         TONE[tone].soft,
         TONE[tone].border,
       )}
@@ -89,7 +89,7 @@ export function UpdateStripView({
           {t('updateStrip.security')}
         </span>
       ) : null}
-      <span className="ml-auto flex items-center gap-1.5">
+      <span className="flex w-full flex-wrap items-center justify-end gap-1.5 sm:ml-auto sm:w-auto">
         {releaseHref ? (
           <a
             href={releaseHref}

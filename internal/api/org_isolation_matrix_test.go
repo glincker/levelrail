@@ -78,6 +78,8 @@ type orgFixture struct {
 // default org and org A, and seeds org B objects across the tenant lists.
 func newOrgFixture(t *testing.T) *orgFixture {
 	t.Helper()
+	// The probes hit gated routes (environments, mail); do not rely on state an earlier test left.
+	enableAllExperimental()
 	f := &orgFixture{teamFixture: newTeamFixture(t)}
 	ctx := context.Background()
 	// Doctor checks must not touch the real network or resolver, or a slow CI host times the run out.
@@ -197,12 +199,12 @@ func orgProbe(rt *Router, paths []string, mutate func(*http.Request)) map[string
 var orgInstanceFamilies = strings.Fields(`
 ai alert-defaults alert-history alert-maintenance-windows alert-silences alert-templates analysis app-types apply apps
 apps-metrics apps-summary archives assets audit-log backup-targets backups benchmarks bitbucket-app build build-cache builders
-build-limits builds cdn certificates changelog cleanup clusters compliance compose connections control-plane costs dashboards database-catalog
-database-engines database-versions databases deploy-policies deployments deploys diagnose dns dockerhub doctor domains
-environments event-webhook-deliveries event-webhook-types event-webhooks export external-databases firewall
+build-limits builds cdn certificates changelog cleanup cloud-accounts clusters compliance compose connections control-plane costs dashboards database-catalog
+database-engines database-versions databases deploy-policies deploy-targets deployments deploys diagnose dns dockerhub doctor domains
+environments event-webhook-deliveries event-webhook-types event-webhooks export external-databases field-descriptors firewall
 firewall-rules fixes flags forgejo-app frameworks function-invocations function-kv functions git git-connections
-git-providers git-sources gitea-app github-app gitlab-app go-live gpus iam images import imports inbox incidents ingress
-instance integrations invites jobs loadbalancers local-mode log-archive logs mail maintenance mcp me mesh migration migrations
+git-providers git-sources gitea-app github-app gitlab-app go-live gpus health-presets iam images import imports inbox incidents ingress
+instance integrations invites jobs loadbalancers local-mode log-archive log-drains logs mail maintenance mcp me mesh migration migrations
 mobile model-cache model-catalog model-endpoints models monitors network network-shares node-drains node-moves
 node-providers node-provisions nodes notification-channels observability onboarding openapi.json organizations package-registries pages
 pipeline-runs pipelines plugin-keys plugin-marketplace plugin-panels plugins preflight previews private-networks

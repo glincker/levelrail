@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/netip"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,10 +61,18 @@ type Manager struct {
 
 	mu      sync.Mutex
 	queue   []job
-	running bool
+	workers int
 	active  map[string]bool
 	seen    map[string]string
 	baseCtx context.Context
+	// lastRun and stale rate-limit automatic renders per app; both are
+	// memory only, so a restart merely allows one more render.
+	lastRun map[string]time.Time
+	stale   map[string]bool
+
+	liveSrc LiveSource
+	pool    *browserPool
+	lookup  func(ctx context.Context, host string) ([]netip.Addr, error)
 
 	opMu sync.Mutex
 }
@@ -71,6 +81,9 @@ type job struct {
 	app   string
 	image string
 	force bool
+	// auto marks a render the platform asked for (deploy or first view), which
+	// the per-app minimum interval governs; a manual capture ignores it.
+	auto bool
 }
 
 // Option adjusts a Manager, mainly for tests.
@@ -102,7 +115,13 @@ func New(cfg Config, deps Deps, opts ...Option) *Manager {
 		diskFree: diskspace.Free,
 		active:   map[string]bool{},
 		seen:     map[string]string{},
+		lastRun:  map[string]time.Time{},
+		stale:    map[string]bool{},
+		pool:     newBrowserPool(),
 		baseCtx:  context.Background(),
+		lookup: func(ctx context.Context, host string) ([]netip.Addr, error) {
+			return net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+		},
 	}
 	for _, o := range opts {
 		o(m)
@@ -130,7 +149,24 @@ func (m *Manager) NotifyReady(app, image, runningImageID string) {
 	}
 	m.seen[app] = release
 	m.mu.Unlock()
-	m.enqueue(job{app: app, image: image})
+	m.clearFail(m.baseCtx, app)
+	if !m.intervalOK(app) {
+		m.mu.Lock()
+		m.stale[app] = true
+		m.mu.Unlock()
+		return
+	}
+	m.enqueue(job{app: app, image: image, auto: true})
+}
+
+// intervalOK reports whether app may be rendered again without breaking the
+// per-app minimum interval (a redeploy storm must not re-render each time).
+func (m *Manager) intervalOK(app string) bool {
+	gap := m.live(m.baseCtx).MinInterval
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	last, ok := m.lastRun[app]
+	return !ok || gap <= 0 || m.now().Sub(last) >= gap
 }
 
 // Capture queues a manual recapture of app's current release.
@@ -165,6 +201,7 @@ func (m *Manager) Capturing(app string) bool {
 }
 
 func (m *Manager) enqueue(j job) {
+	conc := m.live(m.baseCtx).MaxConcurrent
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	kept := m.queue[:0]
@@ -178,22 +215,33 @@ func (m *Manager) enqueue(j job) {
 		m.queue = m.queue[1:]
 	}
 	m.queue = append(m.queue, j)
-	if !m.running {
-		m.running = true
+	if m.workers < conc {
+		m.workers++
 		go m.drain()
 	}
+}
+
+// next pops the first job whose app is not already rendering, so two workers
+// never render the same app at once.
+func (m *Manager) next() (job, bool) {
+	for i, q := range m.queue {
+		if !m.active[q.app] {
+			m.queue = append(m.queue[:i:i], m.queue[i+1:]...)
+			return q, true
+		}
+	}
+	return job{}, false
 }
 
 func (m *Manager) drain() {
 	for {
 		m.mu.Lock()
-		if len(m.queue) == 0 {
-			m.running = false
+		j, ok := m.next()
+		if !ok {
+			m.workers--
 			m.mu.Unlock()
 			return
 		}
-		j := m.queue[0]
-		m.queue = m.queue[1:]
 		m.active[j.app] = true
 		m.mu.Unlock()
 
@@ -223,24 +271,60 @@ func (m *Manager) process(ctx context.Context, j job) {
 		m.processMeta(ctx, settings, j)
 		return
 	}
+	if j.auto && !m.renderable(ctx, j.app) {
+		return
+	}
 	target, err := m.deps.Resolver.Resolve(ctx, j.app, j.image)
 	var skip *SkipError
 	switch {
 	case errors.As(err, &skip):
 		if skip.DeploymentID != "" {
+			m.setFail(ctx, j.app, skip.Reason)
 			m.commit(ctx, captured{rec: Record{DeploymentID: skip.DeploymentID, App: j.app, Path: settings.Path, Status: StatusSkipped, Reason: skip.Reason, Detail: skip.Detail}})
 		}
 		return
 	case err != nil:
 		m.log.Warn("preview: resolve target failed", slog.String("app", j.app), slog.String("error", err.Error()))
+		// Back off like a render so every list read does not retry a failing resolve.
+		m.mu.Lock()
+		m.lastRun[j.app] = m.now()
+		m.mu.Unlock()
 		return
 	}
 	if !j.force {
-		if existing, gerr := m.deps.Store.GetPreviewRecord(ctx, target.DeploymentID); gerr == nil && existing != nil {
+		// A text card or site image from the metadata tier does not count: the
+		// owner asked for a real render.
+		if existing, gerr := m.deps.Store.GetPreviewRecord(ctx, target.DeploymentID); gerr == nil && existing != nil &&
+			(existing.Status != StatusOK || existing.Source == SourceScreenshot) {
 			return
 		}
 	}
-	m.commit(ctx, m.capture(ctx, settings, target))
+	m.mu.Lock()
+	m.lastRun[j.app] = m.now()
+	delete(m.stale, j.app)
+	m.mu.Unlock()
+	c := m.capture(ctx, settings, target)
+	if c.rec.Status == StatusOK {
+		m.clearFail(ctx, j.app)
+	} else {
+		m.setFail(ctx, j.app, c.rec.Reason)
+	}
+	m.commit(ctx, c)
+}
+
+// renderable is false for apps whose kind has no page worth rendering. A
+// failing gate means no render, never a guess.
+func (m *Manager) renderable(ctx context.Context, app string) bool {
+	g, ok := m.deps.Resolver.(RenderGate)
+	if !ok {
+		return true
+	}
+	ok, err := g.Renderable(ctx, app)
+	if err != nil {
+		m.log.Warn("preview: kind check failed", slog.String("app", app), slog.String("error", err.Error()))
+		return false
+	}
+	return ok
 }
 
 // captured is a capture attempt's outcome: a record, plus the thumbnail when
@@ -322,19 +406,33 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) captured
 		return fail(StatusSkipped, ReasonImageUnusable, "could not pull or find the browser image")
 	}
 
-	deadline := time.Now().Add(m.cfg.Timeout)
+	lv := m.live(ctx)
+	deadline := time.Now().Add(lv.RenderTimeout)
 	runCtx, cancel := context.WithDeadline(ctx, deadline)
 	defer cancel()
-	browser, err := m.deps.Runner.StartBrowser(runCtx, m.browserSpec(t))
+	shotURL, network, extra, onlyHost := appURL(t, s.Path), t.Network, []string(nil), ""
+	if t.PublicURL != "" {
+		u, args, perr := m.publicTarget(runCtx, t.PublicURL, s.Path)
+		if perr != nil {
+			m.log.Warn("preview: public render target refused", slog.String("app", s.App), slog.String("error", perr.Error()))
+			return fail(StatusFailed, ReasonBlockedTarget, "the public address is not an allowed render target")
+		}
+		shotURL, network, extra = u, publicNetwork, args
+		if pu, e := url.Parse(u); e == nil {
+			onlyHost = strings.ToLower(pu.Hostname())
+		}
+	}
+	browser, release, err := m.acquireBrowser(runCtx, m.browserSpec(t, lv, network, extra), lv.IdleStop)
 	if err != nil {
 		m.log.Warn("preview: start browser failed", slog.String("app", s.App), slog.String("error", err.Error()))
 		return fail(StatusFailed, ReasonCaptureFailed, "the capture browser could not start")
 	}
-	defer browser.Close()
+	reuse := false
+	defer func() { release(reuse) }()
 
 	settle := maxSettle + time.Duration(s.WaitMS)*time.Millisecond
 	res, err := m.shooter.Shoot(runCtx, browser.Endpoint(), ShotRequest{
-		URL:   appURL(t, s.Path),
+		URL: shotURL, OnlyHost: onlyHost,
 		Width: m.cfg.ViewportW, Height: m.cfg.ViewportH,
 		Settle:   min(settle, time.Until(deadline)-startupReserve/2),
 		Deadline: deadline,
@@ -345,6 +443,10 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) captured
 		}
 		m.log.Warn("preview: capture failed", slog.String("app", s.App), slog.String("error", err.Error()))
 		return fail(StatusFailed, ReasonCaptureFailed, "the browser could not capture the page")
+	}
+	reuse = true
+	if t.PublicURL != "" && !sameHostURL(res.FinalURL, shotURL) {
+		return fail(StatusSkipped, ReasonRedirect, "the page redirects away from the app")
 	}
 	rec.HTTPStatus = res.HTTPStatus
 	if reason, detail := res.Classify(s.Path); reason != "" {
@@ -369,22 +471,22 @@ func appURL(t Target, path string) string {
 	return base.String() + path
 }
 
-func (m *Manager) browserSpec(t Target) docker.BrowserSpec {
+func (m *Manager) browserSpec(t Target, lv Live, network string, extra []string) docker.BrowserSpec {
 	suffix := make([]byte, 4)
 	_, _ = rand.Read(suffix)
 	return docker.BrowserSpec{
 		Name:    m.deps.Namespace + "-preview-" + hex.EncodeToString(suffix),
 		Image:   m.cfg.Image,
-		Command: []string{"--hide-scrollbars", "--user-data-dir=/tmp/profile"},
+		Command: append([]string{"--hide-scrollbars", "--user-data-dir=/tmp/profile"}, extra...),
 		Env:     map[string]string{"HOME": "/tmp"},
 		Labels: map[string]string{
 			m.roleLabel():                            roleValue,
 			m.deps.Namespace + deploymentLabelSuffix: t.DeploymentID,
 		},
-		Network:     t.Network,
+		Network:     network,
 		User:        "nobody",
-		MemoryBytes: m.cfg.MemoryMB << 20,
-		NanoCPUs:    int64(m.cfg.CPUs * 1e9),
+		MemoryBytes: lv.MemoryMB << 20,
+		NanoCPUs:    int64(lv.CPUs * 1e9),
 		PidsLimit:   capturePidsLimit,
 		ShmBytes:    captureShmBytes,
 		Tmpfs:       map[string]string{"/tmp": "rw,nosuid,size=" + strconv.Itoa(captureTmpBytes>>20) + "m,mode=1777"},

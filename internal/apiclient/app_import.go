@@ -166,9 +166,7 @@ func (c *Client) CreateAppImportSession(ctx context.Context, req AppImportReques
 
 // GetAppImportSession calls GET /api/v1/migration/apps/sessions/{id}.
 func (c *Client) GetAppImportSession(ctx context.Context, id string) (AppImportView, error) {
-	var out AppImportView
-	err := c.do(ctx, http.MethodGet, appImportPath+"/sessions/"+url.PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[AppImportView](ctx, c, appImportPath+"/sessions/"+url.PathEscape(id))
 }
 
 // AppImportPlanUpdate is the body of PUT .../sessions/{id}/plan. Nil
@@ -215,7 +213,5 @@ func (c *Client) RollbackAppImport(ctx context.Context, id string, items []strin
 
 // AppImportReceipt calls GET .../sessions/{id}/receipt and returns the JSON as is.
 func (c *Client) AppImportReceipt(ctx context.Context, id string) (json.RawMessage, error) {
-	var out json.RawMessage
-	err := c.do(ctx, http.MethodGet, appImportPath+"/sessions/"+url.PathEscape(id)+"/receipt", nil, &out)
-	return out, err
+	return getJSON[json.RawMessage](ctx, c, appImportPath+"/sessions/"+url.PathEscape(id)+"/receipt")
 }

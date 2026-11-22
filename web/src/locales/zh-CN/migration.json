@@ -770,6 +770,11 @@
     "required": "部署前必填：{{keys}}",
     "back": "返回",
     "deploying": "部署中...",
+    "willCreate": "将创建",
+    "secretRefs": "不显示密钥值。密钥引用：{{keys}}",
+    "unsupported": "不会迁移",
+    "instead": "替代方案：{{alternative}}",
+    "conflicts": "名称已被使用",
     "deploy": "部署"
   },
   "takeover": {

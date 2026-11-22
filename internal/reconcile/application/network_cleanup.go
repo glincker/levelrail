@@ -21,24 +21,7 @@ type AppLister interface {
 
 // NetworkCleanupController reconciles the whole fleet's per-app Docker
 // networks in a single pass, the same "all of them, not one resource at
-// a time" shape internal/reconcile/ingress's own controller already
-// establishes for an analogous whole-fleet concern (that package's own
-// doc comment explains why: there's no per-network incremental update
-// primitive to converge one at a time against). Every network this
-// codebase creates is created by name (NetworkName's own doc comment)
-// only when a service's Controller actually needs one
-// (createAndStart); nothing ever proactively deletes one, so this
-// controller is the only place that ever does: it diffs Docker's own
-// observed networks under prefix against store.App rows that still
-// exist, and removes any network whose app is gone.
-//
-// Deliberately store-App-driven, not service-count-driven: a
-// zero-service App (every service under it deleted individually, not
-// via DeleteApp) still keeps its network, since a later deploy reusing
-// that same app name is expected to find it again. Only an App row's
-// own absence, from store.DeleteApp (internal/api's handleDeleteApp
-// deletes it once removing a service leaves the App with no other
-// members) or its cascade, means the network is actually orphaned.
+// a time" shape internal/reconcile/ingress's own controller already.
 type NetworkCleanupController struct {
 	apps       AppLister
 	runtime    docker.Runtime

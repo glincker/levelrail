@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 	"path/filepath"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -98,10 +100,30 @@ func (rt *Router) handlePromoteStaticSiteDeploy(w http.ResponseWriter, r *http.R
 	if _, ok := rt.freezeGate(w, r, target.ServiceName, freezeOverride{}); !ok {
 		return
 	}
+	mark := ingress.PassMark()
 	status, msg, cdnWarning := rt.rollbackStatic(r.Context(), *target)
 	if status != 0 {
 		writeError(w, status, msg)
 		return
 	}
-	writeJSON(w, http.StatusAccepted, map[string]string{"status": "promoted", "deploy_id": target.ID, "cdn_warning": cdnWarning})
+	serving := rt.waitStaticServing(r.Context(), mark)
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": "promoted", "deploy_id": target.ID, "cdn_warning": cdnWarning, "serving": serving})
+}
+
+// waitStaticServing waits, bounded by the pages.serving_wait setting, for an ingress pass that began
+// after the promote to apply. It returns "live" or "pending"; pending is not a failure.
+func (rt *Router) waitStaticServing(ctx context.Context, mark uint64) string {
+	if rt.runtimeSettings == nil || rt.reconcileNudger == nil {
+		return "pending"
+	}
+	wait := rt.runtimeSettings.PagesServingWait(ctx)
+	if wait <= 0 {
+		return "pending"
+	}
+	wctx, cancel := context.WithTimeout(ctx, wait)
+	defer cancel()
+	if ingress.WaitApplied(wctx, mark) {
+		return "live"
+	}
+	return "pending"
 }

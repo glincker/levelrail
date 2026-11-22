@@ -134,7 +134,12 @@
     "errorTitle": "Drain gestoppt",
     "failedHint": "Der Node bleibt gesperrt. Beheben Sie die beim fehlgeschlagenen Verschieben gezeigte Ursache und drainen Sie dann erneut, oder entsperren Sie den Node, um ihn wieder in die Rotation zu nehmen.",
     "toNode": "nach {{node}}",
-    "toAuto": "auf einen automatisch gewählten Node"
+    "toAuto": "auf einen automatisch gewählten Node",
+    "progress": {
+      "summary": "{{done}} von {{total}} verschoben, {{failed}} fehlgeschlagen",
+      "eta": "noch etwa {{seconds}} s",
+      "stalled": "Seit einer Weile kein Fortschritt. Prüfe den Node und die Verschiebungen unten."
+    }
   },
   "drains": {
     "title": "Drains",
@@ -980,7 +985,35 @@
       "saved": "{{provider}}-Zugangsdaten gespeichert.",
       "disconnect": "Trennen",
       "confirmDisconnect": "Trennen bestätigen",
-      "disconnected": "{{provider}} getrennt."
+      "disconnected": "{{provider}} getrennt.",
+      "howTitle": "So erhalten Sie diese Werte",
+      "how1": "Öffnen Sie in der Oracle-Konsole Ihr Profil, dann API-Schlüssel, dann API-Schlüssel hinzufügen.",
+      "how2": "Laden Sie den privaten Schlüssel herunter und kopieren Sie das Konfigurationsfragment am Ende.",
+      "how3": "Fügen Sie das Fragment unten ein und laden Sie den Schlüssel. Nutzen Sie einen eigenen Benutzer.",
+      "configTitle": "OCI-Konfiguration einfügen",
+      "configFile": "Konfigurationsdatei laden",
+      "configHelp": "Fügen Sie den [DEFAULT]-Block aus ~/.oci/config ein. Er wird nur in diesem Browser gelesen.",
+      "detected": "Erkannt: Tenancy {{tenancy}}, Region {{region}}",
+      "edit": "Bearbeiten",
+      "done": "Fertig",
+      "missing": "In der Konfiguration nicht gefunden: {{fields}}",
+      "manualHelp": "Geben Sie die Werte unten ein.",
+      "keyFromConfig": "Ihre Konfiguration verweist auf {{path}}. Laden Sie diese Datei hier.",
+      "advanced": "Erweitert",
+      "advancedHint": "Compartment, optional",
+      "advancedHintServers": "Compartment und Subnetz (Subnetz für Server nötig)",
+      "subnetHelp": "Zum Erstellen von Servern nötig. Nutzen Sie ein Subnetz im Compartment.",
+      "subnetOptional": "Optional. Nur zum Erstellen von Servern nötig.",
+      "subnetNeeded": "Tragen Sie das Subnetz unter Erweitert ein, um Server zu erstellen.",
+      "errors": {
+        "tenancy": "Erwartet wird eine ID mit ocid1.tenancy.",
+        "user": "Erwartet wird eine ID mit ocid1.user.",
+        "fingerprint": "Erwartet werden 16 Hex-Paare wie aa:bb:cc:...",
+        "region": "Erwartet wird eine Region wie us-phoenix-1.",
+        "compartment": "Erwartet wird eine ID mit ocid1.compartment.",
+        "subnet": "Erwartet wird eine ID mit ocid1.subnet.",
+        "key": "Erwartet wird ein privater PEM-Schlüssel."
+      }
     },
     "wizard": {
       "title": "Gefuehrte API-Schluessel-Einrichtung",
@@ -1021,6 +1054,23 @@
       "micro": "Das Limit für Micro-Shapes würde überschritten. Erhöhe {{setting}}.",
       "paidShape": "Dieses Shape ist nicht durch die Kontingentgrenzen gedeckt und kann Kosten verursachen. Schalte {{setting}} ein, um es zu nutzen.",
       "unknownPrice": "Oracle nennt keinen Preis für dieses Shape, die Preisgrenze kann nicht geprüft werden. Schalte {{setting}} (oder provision.allow_unknown_price) ein, um es zu erlauben."
+    },
+    "session": {
+      "modeLabel": "Zugangsart",
+      "modeKey": "API-Schlüssel",
+      "modeSession": "Browser-Sitzung (zum Testen, läuft nach Stunden ab)",
+      "intro": "Melde dich im Browser an, statt einen API-Schlüssel zu erstellen. Die Sitzung hält einige Stunden, nutze sie nur zum Testen.",
+      "command": "Führe diesen Befehl auf deinem Rechner aus",
+      "commandHelp": "Er öffnet eine Browser-Anmeldung und schreibt eine Token-Datei und eine Schlüsseldatei unter ~/.oci.",
+      "profile": "Profilkonfiguration (optional)",
+      "profileHelp": "Füge die Zeilen tenancy und region aus ~/.oci/config ein. Mehr wird nicht gelesen.",
+      "token": "Inhalt der Security-Token-Datei",
+      "key": "Inhalt der privaten Sitzungsschlüssel-Datei",
+      "keyHelp": "Wird einmal gesendet, verschlüsselt gespeichert und nie wieder angezeigt.",
+      "check": "Sitzung prüfen",
+      "connect": "Verbinden",
+      "expires": "Sitzung läuft {{when}} ab",
+      "saved": "{{provider}} mit einer Browser-Sitzung verbunden"
     }
   },
   "builderTrust": {
@@ -1142,6 +1192,89 @@
       "failed": "Fehlgeschlagen",
       "agent": "Agent {{value}}",
       "acceptsApps": "Dieser Node betreibt auch Apps und kann hier nicht pausiert werden."
+    }
+  },
+  "installAgent": {
+    "title": "Builds und Apps auf einem anderen Rechner ausführen",
+    "description": "Installieren Sie den Agent auf einem Linux-Server oder einem Mac, und er tritt dieser Control Plane innerhalb einer Minute bei.",
+    "cta": "Server hinzufügen",
+    "dismiss": "Diesen Hinweis ausblenden",
+    "dialogTitle": "Agent installieren",
+    "dialogDescription": "Führen Sie einen Befehl auf dem Rechner aus, den Sie hinzufügen möchten. Diese Seite erkennt, wann er sich verbindet.",
+    "tabsLabel": "Betriebssystem",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "Einmaliger Beitrittsbefehl wird erstellt",
+    "mintFailed": "Beitrittsbefehl konnte nicht erstellt werden: {{message}}",
+    "linuxLabel": "Auf dem Server ausführen",
+    "linuxHint": "Benötigt Docker auf dem Server. Der Befehl ist nur einmal verwendbar und läuft um {{time}} ab.",
+    "macosLabel": "Im Terminal auf dem Mac ausführen",
+    "macosHint": "Nur einmal verwendbar, läuft um {{time}} ab.",
+    "macosNote": "Vorschau. Workloads laufen über Docker Desktop, OrbStack oder Lima, die die Dateien Ihres Macs teilen. Ein Mac eignet sich daher am besten als Builder und nicht als Ort für Produktions-Apps.",
+    "waiting": "Warten auf die Verbindung des Nodes",
+    "connected": "Verbunden: {{name}}"
+  },
+  "timeline": {
+    "title": "Gesundheitsverlauf",
+    "window": "Zeitfenster",
+    "windows": {
+      "24h": "24 Stunden",
+      "168h": "7 Tage",
+      "720h": "30 Tage"
+    },
+    "loading": "Gesundheitsverlauf wird geladen",
+    "unavailable": "Der Verlauf ist gerade nicht verfügbar.",
+    "stripLabel": "Online- und Offline-Zeiträume",
+    "noUptime": "In diesem Zeitfenster wurde keine Online- oder Offline-Zeit erfasst.",
+    "summary_one": "{{uptime}} % Verfügbarkeit, {{count}} Wechsel",
+    "summary_other": "{{uptime}} % Verfügbarkeit, {{count}} Wechsel"
+  },
+  "doctor": {
+    "title": "Agent-Doktor",
+    "run": "Prüfungen starten",
+    "hide": "Prüfungen ausblenden",
+    "running": "Prüfungen laufen",
+    "unavailable": "Die Prüfungen sind gerade nicht verfügbar.",
+    "noReport": "Der Agent hat noch keinen Preflight-Bericht gesendet, daher fehlen die Prüfungen für Docker, Speicherplatz, Uhr und Ports.",
+    "status": {
+      "pass": "OK",
+      "warn": "Warnung",
+      "fail": "Fehler",
+      "unknown": "Unbekannt"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Architektur",
+      "disk": "Speicherplatz",
+      "clock": "Uhr",
+      "wireguard": "WireGuard",
+      "mesh_port": "Mesh-Port",
+      "firewall": "Firewall",
+      "control_plane": "Control Plane",
+      "cert": "Zertifikat",
+      "heartbeat": "Heartbeat",
+      "agent_version": "Agent-Version",
+      "schedulable": "Planung"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} Agent liegt hinter {{version}}",
+    "title_other": "{{count}} Agents liegen hinter {{version}}",
+    "description": "Aktualisieren Sie in dieser Reihenfolge: zuerst gesperrte Nodes, dann Online-Nodes, Offline-Nodes zuletzt.",
+    "step": "{{from}} auf {{to}}",
+    "notes": {
+      "cordoned": "gesperrt",
+      "offline": "offline"
+    },
+    "howTo": "Laden Sie auf jedem Node das neue Agent-Image oder die Binärdatei und starten Sie den Agent neu. Die registrierte Identität bleibt erhalten.",
+    "autoUpdate": {
+      "on": "Automatische Agent-Updates sind aktiv. Agents installieren die Version der Steuerungsebene selbst.",
+      "off": "Automatische Agent-Updates sind aus. Führen Sie auf einem Node levelrail-agent self-update --apply aus oder aktivieren Sie nodes.agent_auto_update in den Einstellungen."
+    },
+    "updateAnyway": {
+      "action": "Trotzdem aktualisieren",
+      "queued": "Für die nächste Agent-Prüfung vorgemerkt",
+      "disclaimer": "Überspringt Wartungsfenster und Sperre. Das Update wird weiterhin per Signatur geprüft und bei einem Fehler zurückgerollt."
     }
   }
 }

@@ -340,5 +340,29 @@
       "paste": "Paste it in Connect",
       "verify": "Levelrail verifies it with a read-only check"
     }
+  },
+  "linkedAccounts": {
+    "title": "Cloud accounts",
+    "manage": "Manage in Cloud accounts",
+    "add": "Add account",
+    "active": "Active",
+    "attention": "Needs attention",
+    "relogin": "Needs re-login",
+    "managed": "Default",
+    "legacyHint": "The older single credential below is kept for compatibility; manage this provider through its accounts.",
+    "manageShort": "Manage",
+    "addAnother": "Add another account",
+    "verified": "Last verified",
+    "useCredential": "Use a single credential instead"
+  },
+  "accountSection": {
+    "switch": "Account",
+    "loading": "Loading account data",
+    "error": "Could not load: {{message}}",
+    "retry": "Retry",
+    "verifyOk": "Credential verified",
+    "verifyFail": "Credential check failed",
+    "noProbe": "No access checks for this account type.",
+    "check": "Check access"
   }
 }

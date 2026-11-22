@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/diskhistory"
@@ -27,7 +26,5 @@ func (c *Client) GetDiskHistory(ctx context.Context, days int) (DiskHistory, err
 	if days > 0 {
 		path += "?days=" + strconv.Itoa(days)
 	}
-	var out DiskHistory
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[DiskHistory](ctx, c, path)
 }

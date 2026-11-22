@@ -793,6 +793,9 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleClearAppBuildRunner |
 | PUT | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handlePinDeploy |
 | DELETE | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handleUnpinDeploy |
+| GET | /api/v1/apps/{name}/health-explain | AbilityRead | handleGetAppHealthExplain |
+| GET | /api/v1/apps/{name}/env-diff | AbilityRead | handleEnvDiff |
+| POST | /api/v1/apps/{name}/revert | AbilityWrite | handleRevertApp |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -1009,6 +1012,8 @@ Endpoints for:
 | DELETE | /api/v1/databases/{name}/params/pending | AbilityWrite | handleDiscardDatabaseParams |
 | POST | /api/v1/databases/{name}/params/apply | AbilityWriteSensitive | handleApplyDatabaseParams |
 | GET | /api/v1/databases/{name}/logs/download | AbilityRead | handleDownloadDatabaseLogs |
+| POST | /api/v1/databases/{name}/restore-test | AbilityWriteSensitive | handleStartDatabaseRestoreTest |
+| GET | /api/v1/databases/{name}/restore-test | AbilityRead | handleGetDatabaseRestoreTest |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 
@@ -1157,6 +1162,13 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleGetNodeThresholds |
 | PUT | /api/v1/nodes/{id}/thresholds | AbilityRoot | handleSetNodeThresholds |
 | PUT | /api/v1/nodes/{id}/build-trust | AbilityRoot | handleSetNodeBuildTrust |
+| GET | /api/v1/nodes/{id}/timeline | AbilityRoot | handleNodeTimeline |
+| GET | /api/v1/nodes/{id}/doctor | AbilityRoot | handleNodeDoctor |
+| GET | /api/v1/nodes/version-skew | AbilityRoot | handleNodeVersionSkew |
+| GET | /api/v1/nodes/{id}/agent-update | AbilityRoot | handleNodeAgentUpdate |
+| POST | /api/v1/nodes/{id}/agent-update/hold | AbilityRoot | handleNodeAgentUpdateControl |
+| DELETE | /api/v1/nodes/{id}/agent-update/hold | AbilityRoot | handleNodeAgentUpdateControl |
+| POST | /api/v1/nodes/{id}/agent-update/override | AbilityRoot | handleNodeAgentUpdateControl |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1405,6 +1417,10 @@ Endpoints for:
 | GET | /api/v1/static-sites/{name}/preset | AbilityRead | handleGetStaticSitePreset |
 | PUT | /api/v1/static-sites/{name}/preset | AbilityWrite | handlePutStaticSitePreset |
 | POST | /api/v1/backup-targets/{id}/drill | AbilityWriteSensitive | handleDrillBackupTarget |
+| POST | /api/v1/backup-targets/sftp-host-key | AbilityWriteSensitive | handleScanSFTPHostKey |
+| GET | /api/v1/backup-targets/field-descriptors | AbilityRead | handleGetBackupTargetFields |
+| GET | /api/v1/domains/{domain}/dns-check | AbilityRead | handleDomainDNSCheck |
+| POST | /api/v1/domains/{domain}/dns-check | AbilityRead | handleDomainDNSCheck |
 
 ## Built-in Container Registry
 
@@ -2479,6 +2495,113 @@ Routes that do not fit an existing group.
 | POST | /api/v1/status-page/incident-templates | AbilityWrite | handleCreateStatusTemplate |
 | PUT | /api/v1/status-page/incident-templates/{id} | AbilityWrite | handleUpdateStatusTemplate |
 | DELETE | /api/v1/status-page/incident-templates/{id} | AbilityWrite | handleDeleteStatusTemplate |
+| GET | /api/v1/cloud-accounts | AbilityRead | handleListCloudAccounts |
+| POST | /api/v1/cloud-accounts | AbilityRoot | handleCreateCloudAccount |
+| POST | /api/v1/cloud-accounts/aws/link-kit | AbilityRoot | handleAWSLinkKit |
+| GET | /api/v1/cloud-accounts/{id} | Public | handleGetCloudAccount |
+| PATCH | /api/v1/cloud-accounts/{id} | AbilityRoot | handleUpdateCloudAccount |
+| DELETE | /api/v1/cloud-accounts/{id} | AbilityRoot | handleDeleteCloudAccount |
+| POST | /api/v1/cloud-accounts/{id}/verify | AbilityRoot | handleVerifyCloudAccount |
+| GET | /api/v1/cloud-accounts/{id}/regions | Public | handleCloudAccountRegions |
+| POST | /api/v1/cloud-accounts/{id}/probe | AbilityRoot | handleProbeCloudAccount |
+| GET | /api/v1/cloud-accounts/{id}/grants | Public | handleListCloudGrants |
+| POST | /api/v1/cloud-accounts/{id}/grants | Public | handleCreateCloudGrant |
+| PATCH | /api/v1/cloud-accounts/{id}/grants/{gid} | Public | handleUpdateCloudGrant |
+| DELETE | /api/v1/cloud-accounts/{id}/grants/{gid} | Public | handleDeleteCloudGrant |
+| GET | /api/v1/cloud-accounts/{id}/instances | Public | handleListCloudInstances |
+| GET | /api/v1/cloud-accounts/{id}/instances/{iid} | Public | handleGetCloudInstance |
+| POST | /api/v1/cloud-accounts/{id}/instances/{iid}/actions | Public | handleCloudInstanceAction |
+| PUT | /api/v1/cloud-accounts/{id}/instances/{iid}/tags | Public | handleCloudInstanceTags |
+| POST | /api/v1/cloud-accounts/{id}/instances/{iid}/resize | Public | handleCloudInstanceResize |
+| DELETE | /api/v1/cloud-accounts/{id}/instances/{iid} | Public | handleCloudInstanceTerminate |
+| GET | /api/v1/cloud-accounts/{id}/spend | Public | handleGetCloudSpend |
+| POST | /api/v1/cloud-accounts/{id}/spend/refresh | Public | handleRefreshCloudSpend |
+| GET | /api/v1/cloud-accounts/{id}/spend/estimate | Public | handleCloudSpendEstimate |
+| GET | /api/v1/cloud-accounts/aws/control-identity | AbilityRoot | handleAWSControlIdentity |
+| GET | /api/v1/me/cloud-access | Public | handleMeCloudAccess |
+| POST | /api/v1/cloud-accounts/oracle/policy-kit | AbilityRoot | handleOraclePolicyKit |
+| GET | /api/v1/cloud-accounts/{id}/instances/{iid}/events | Public | handleCloudInstanceEvents |
+| GET | /api/v1/deploy-targets | AbilityRoot | handleListDeployTargets |
+| GET | /api/v1/cloud-accounts/{id}/aws/ecr/repositories | Public | handleAWSECRList |
+| POST | /api/v1/cloud-accounts/{id}/aws/ecr/repositories | Public | handleAWSECRCreate |
+| POST | /api/v1/cloud-accounts/{id}/aws/ecr/login-token | Public | handleAWSECRLoginToken |
+| GET | /api/v1/cloud-accounts/{id}/aws/acm/certificates | Public | handleAWSACMList |
+| POST | /api/v1/cloud-accounts/{id}/aws/acm/certificates | Public | handleAWSACMRequest |
+| GET | /api/v1/cloud-accounts/{id}/aws/secrets | Public | handleAWSSecretsList |
+| POST | /api/v1/cloud-accounts/{id}/aws/secrets | Public | handleAWSSecretsPut |
+| POST | /api/v1/cloud-accounts/{id}/aws/secrets/reveal | Public | handleAWSSecretsReveal |
+| GET | /api/v1/cloud-accounts/{id}/aws/audit | Public | handleAWSAudit |
+| GET | /api/v1/cloud-accounts/{id}/aws/guard | Public | handleAWSGuardStatus |
+| POST | /api/v1/cloud-accounts/{id}/aws/guard/kill-switch | AbilityRoot | handleAWSKillSwitch |
+| GET | /api/v1/cloud-accounts/{id}/aws/cleanup/plan | Public | handleAWSCleanupPlan |
+| GET | /api/v1/log-drains/field-descriptors | AbilityRead | handleGetLogDrainFields |
+| POST | /api/v1/cloud-accounts/aws/vault-kit | AbilityRoot | handleAWSVaultKit |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/instances | Public | handleRDSList |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/clusters | Public | handleRDSClusters |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/estimate | Public | handleRDSEstimate |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/snapshots | Public | handleRDSSnapshots |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/rds/snapshots/{sid} | Public | handleRDSSnapshotDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid} | Public | handleRDSGet |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}/actions | Public | handleRDSAction |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/instances/{rid}/connect-as-database | Public | handleRDSConnectAsDatabase |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/instances | Public | handleRDSCreate |
+| GET | /api/v1/cloud-accounts/{id}/aws/ebs/volumes | Public | handleEBSVolumes |
+| GET | /api/v1/cloud-accounts/{id}/aws/ebs/snapshots | Public | handleEBSSnapshots |
+| POST | /api/v1/cloud-accounts/{id}/aws/ebs/snapshots | Public | handleEBSSnapshotCreate |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/ebs/snapshots/{sid} | Public | handleEBSSnapshotDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudwatch/metrics | Public | handleCloudWatchMetrics |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudwatch/log-groups | Public | handleCloudWatchLogGroups |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudwatch/log-events | Public | handleCloudWatchLogEvents |
+| GET | /api/v1/cloud-accounts/{id}/aws/idle | Public | handleAWSIdle |
+| GET | /api/v1/cloud-accounts/doctor/preflight | AbilityRoot | handleCloudDoctorPreflight |
+| GET | /api/v1/cloud-accounts/{id}/doctor | Public | handleCloudAccountDoctor |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudfront/distributions | Public | handleAWSCFList |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did} | Public | handleAWSCFGet |
+| GET | /api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did}/invalidations | Public | handleAWSCFInvalidations |
+| POST | /api/v1/cloud-accounts/{id}/aws/cloudfront/distributions/{did}/invalidations | Public | handleAWSCFInvalidate |
+| GET | /api/v1/cloud-accounts/{id}/aws/ssm/instances | Public | handleAWSSSMInstances |
+| POST | /api/v1/cloud-accounts/{id}/aws/ssm/commands | AbilityRoot | handleAWSSSMSend |
+| POST | /api/v1/cloud-accounts/{id}/aws/ssm/commands/{cid}/invocation | AbilityRoot | handleAWSSSMInvocation |
+| POST | /api/v1/cloud-accounts/{id}/aws/ssm/sessions | AbilityRoot | handleAWSSSMSession |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups | Public | handleElastiCacheGroups |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups/{rid} | Public | handleElastiCacheGroup |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/elasticache/replication-groups/{rid} | Public | handleElastiCacheGroupDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters | Public | handleElastiCacheClusters |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid} | Public | handleElastiCacheCluster |
+| POST | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid}/reboot | Public | handleElastiCacheReboot |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/elasticache/clusters/{cid} | Public | handleElastiCacheClusterDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/elasticache/snapshots | Public | handleElastiCacheSnapshots |
+| POST | /api/v1/cloud-accounts/{id}/aws/elasticache/snapshots | Public | handleElastiCacheSnapshotCreate |
+| POST | /api/v1/cloud-accounts/{id}/aws/rds/clusters/{cid}/actions | Public | handleRDSClusterAction |
+| GET | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots | Public | handleRDSClusterSnapshots |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid} | Public | handleRDSClusterSnapshotDelete |
+| GET | /api/v1/health-presets | AbilityRead | handleGetHealthPresets |
+| GET | /api/v1/field-descriptors/{resource} | AbilityRead | handleGetFieldDescriptors |
+| POST | /api/v1/cloud-accounts/aws/sso/start | AbilityRoot | handleAWSSSOStart |
+| POST | /api/v1/cloud-accounts/aws/sso/poll | AbilityRoot | handleAWSSSOPoll |
+| POST | /api/v1/cloud-accounts/aws/sso/select | AbilityRoot | handleAWSSSOSelect |
+| POST | /api/v1/cloud-accounts/aws/sso/relogin | AbilityRoot | handleAWSSSORelogin |
+| GET | /api/v1/cloud-accounts/oauth/digitalocean/status | AbilityRoot | handleDOOAuthStatus |
+| GET | /api/v1/cloud-accounts/oauth/digitalocean/start | AbilityRoot | handleDOOAuthStart |
+| GET | /api/v1/cloud-accounts/oauth/digitalocean/callback | AbilityRoot | handleDOOAuthCallback |
+| POST | /api/v1/cloud-accounts/oracle/session-import | AbilityRoot | handleOracleSessionImport |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/instances | Public | handleLightsailInstances |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name} | Public | handleLightsailInstance |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/instances | Public | handleLightsailCreate |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/start | Public | handleLightsailStart |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/stop | Public | handleLightsailStop |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/reboot | Public | handleLightsailReboot |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name} | Public | handleLightsailDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/bundles | Public | handleLightsailBundles |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/blueprints | Public | handleLightsailBlueprints |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/regions | Public | handleLightsailRegions |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/static-ips | Public | handleLightsailStaticIPs |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots | Public | handleLightsailSnapshots |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots | Public | handleLightsailSnapshotCreate |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots/{name} | Public | handleLightsailSnapshotDelete |
+| GET | /api/v1/alert-defaults/settings | AbilityRead | handleGetAlertDefaultsSettings |
+| PUT | /api/v1/alert-defaults/settings | AbilityWrite | handlePutAlertDefaultsSettings |
+| GET | /api/v1/alert-defaults/digest-preview | AbilityRead | handleAlertDigestPreview |
 | POST | /mcp | Public |  |
 
 ## See also

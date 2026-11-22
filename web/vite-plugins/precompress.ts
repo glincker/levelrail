@@ -1,6 +1,6 @@
-// Writes .br and .gz siblings next to compressible build output so the Go
-// server (web/static.go) serves them without compressing per request.
-import { brotliCompressSync, constants, gzipSync } from 'node:zlib'
+// Writes .br siblings next to compressible build output so the Go
+// server (web/static.go) serves them; gzip is built lazily to keep the binary small.
+import { brotliCompressSync, constants } from 'node:zlib'
 import {
   existsSync,
   readdirSync,
@@ -59,9 +59,7 @@ export function precompressPlugin(): Plugin {
               [constants.BROTLI_PARAM_SIZE_HINT]: data.length,
             },
           })
-          const gz = gzipSync(data, { level: 9 })
           if (br.length < data.length) writeFileSync(`${file}.br`, br)
-          if (gz.length < data.length) writeFileSync(`${file}.gz`, gz)
         }
       },
     },

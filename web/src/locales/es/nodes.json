@@ -134,7 +134,12 @@
     "errorTitle": "El drenaje se detuvo",
     "failedHint": "El nodo sigue acordonado. Corrige la causa que se muestra en el movimiento fallido y vuelve a drenar, o desacordona el nodo para devolverlo a la rotación.",
     "toNode": "a {{node}}",
-    "toAuto": "a un nodo elegido automáticamente"
+    "toAuto": "a un nodo elegido automáticamente",
+    "progress": {
+      "summary": "{{done}} de {{total}} movidos, {{failed}} con error",
+      "eta": "unos {{seconds}} s restantes",
+      "stalled": "Sin avance desde hace un rato. Revisa el nodo y los movimientos de abajo."
+    }
   },
   "drains": {
     "title": "Drenajes",
@@ -980,7 +985,35 @@
       "saved": "Credencial de {{provider}} guardada.",
       "disconnect": "Desconectar",
       "confirmDisconnect": "Confirmar desconexión",
-      "disconnected": "{{provider}} desconectado."
+      "disconnected": "{{provider}} desconectado.",
+      "howTitle": "Cómo obtener estos valores",
+      "how1": "En la consola de Oracle abra su perfil, luego Claves de API y Agregar clave de API.",
+      "how2": "Descargue la clave privada y copie el fragmento de configuración que aparece al final.",
+      "how3": "Pegue el fragmento abajo y cargue la clave. Use un usuario dedicado.",
+      "configTitle": "Pegue su configuración OCI",
+      "configFile": "Cargar archivo de configuración",
+      "configHelp": "Pegue el bloque [DEFAULT] de ~/.oci/config. Solo se lee en este navegador.",
+      "detected": "Detectado: tenancy {{tenancy}}, región {{region}}",
+      "edit": "Editar",
+      "done": "Listo",
+      "missing": "No encontrado en la configuración: {{fields}}",
+      "manualHelp": "Introduzca los valores abajo.",
+      "keyFromConfig": "Su configuración apunta a {{path}}. Cargue ese archivo aquí.",
+      "advanced": "Avanzado",
+      "advancedHint": "Compartimento, opcional",
+      "advancedHintServers": "Compartimento y subred (la subred es necesaria para crear servidores)",
+      "subnetHelp": "Necesaria para crear servidores. Use una subred del compartimento.",
+      "subnetOptional": "Opcional. Solo necesaria para crear servidores.",
+      "subnetNeeded": "Añada la subred en Avanzado para crear servidores.",
+      "errors": {
+        "tenancy": "Se espera un ID que empiece por ocid1.tenancy.",
+        "user": "Se espera un ID que empiece por ocid1.user.",
+        "fingerprint": "Se esperan 16 pares hex como aa:bb:cc:...",
+        "region": "Se espera una región como us-phoenix-1.",
+        "compartment": "Se espera un ID que empiece por ocid1.compartment.",
+        "subnet": "Se espera un ID que empiece por ocid1.subnet.",
+        "key": "Se espera una clave privada PEM."
+      }
     },
     "wizard": {
       "title": "Configuracion guiada de la clave de API",
@@ -1021,6 +1054,23 @@
       "micro": "Se superaría el límite de formas micro. Sube {{setting}} para permitir otra.",
       "paidShape": "Esta forma no está cubierta por los límites de asignación y puede facturarse. Activa {{setting}} para usarla.",
       "unknownPrice": "Oracle no indica precio para esta forma, así que no se puede comprobar el tope. Activa {{setting}} (o provision.allow_unknown_price) para permitirla."
+    },
+    "session": {
+      "modeLabel": "Tipo de credencial",
+      "modeKey": "Clave de API",
+      "modeSession": "Sesión del navegador (pruebas, caduca en horas)",
+      "intro": "Inicia sesión con el navegador en lugar de crear una clave de API. La sesión dura unas horas, úsala solo para pruebas.",
+      "command": "Ejecuta este comando en tu equipo",
+      "commandHelp": "Abre un inicio de sesión en el navegador y escribe un archivo de token y un archivo de clave privada en ~/.oci.",
+      "profile": "Configuración del perfil (opcional)",
+      "profileHelp": "Pega las líneas tenancy y region de ~/.oci/config. No se lee nada más.",
+      "token": "Contenido del archivo del token de seguridad",
+      "key": "Contenido del archivo de clave privada de la sesión",
+      "keyHelp": "Se envía una vez, se guarda cifrada y no se vuelve a mostrar.",
+      "check": "Comprobar sesión",
+      "connect": "Conectar",
+      "expires": "La sesión caduca {{when}}",
+      "saved": "{{provider}} conectado con una sesión del navegador"
     }
   },
   "builderTrust": {
@@ -1142,6 +1192,89 @@
       "failed": "Fallida",
       "agent": "Agente {{value}}",
       "acceptsApps": "Este nodo también ejecuta apps, así que no se puede pausar aquí."
+    }
+  },
+  "installAgent": {
+    "title": "Ejecuta compilaciones y apps en otra máquina",
+    "description": "Instala el agente en un servidor Linux o en un Mac y se une a este plano de control en un minuto.",
+    "cta": "Añadir un servidor",
+    "dismiss": "Ocultar este banner",
+    "dialogTitle": "Instalar el agente",
+    "dialogDescription": "Ejecuta un comando en la máquina que quieras añadir. Esta página detecta cuándo se conecta.",
+    "tabsLabel": "Sistema operativo",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "Creando un comando de unión de un solo uso",
+    "mintFailed": "No se pudo crear un comando de unión: {{message}}",
+    "linuxLabel": "Ejecutar en el servidor",
+    "linuxHint": "Requiere Docker en el servidor. El comando es de un solo uso y caduca a las {{time}}.",
+    "macosLabel": "Ejecutar en Terminal en el Mac",
+    "macosHint": "Un solo uso, caduca a las {{time}}.",
+    "macosNote": "Vista previa. Las cargas de trabajo se ejecutan con Docker Desktop, OrbStack o Lima, que comparten los archivos de tu Mac, así que un Mac se usa mejor como builder que como lugar para apps de producción.",
+    "waiting": "Esperando a que el nodo se conecte",
+    "connected": "Conectado: {{name}}"
+  },
+  "timeline": {
+    "title": "Historial de salud",
+    "window": "Ventana de tiempo",
+    "windows": {
+      "24h": "24 horas",
+      "168h": "7 días",
+      "720h": "30 días"
+    },
+    "loading": "Cargando el historial de salud",
+    "unavailable": "El historial no está disponible en este momento.",
+    "stripLabel": "Periodos en línea y fuera de línea",
+    "noUptime": "No se registró tiempo en línea ni fuera de línea en esta ventana.",
+    "summary_one": "{{uptime}} % de disponibilidad, {{count}} cambio",
+    "summary_other": "{{uptime}} % de disponibilidad, {{count}} cambios"
+  },
+  "doctor": {
+    "title": "Doctor del agente",
+    "run": "Ejecutar comprobaciones",
+    "hide": "Ocultar comprobaciones",
+    "running": "Ejecutando comprobaciones",
+    "unavailable": "Las comprobaciones no están disponibles en este momento.",
+    "noReport": "El agente aún no ha enviado un informe previo, por lo que faltan las comprobaciones de Docker, disco, reloj y puertos.",
+    "status": {
+      "pass": "Correcto",
+      "warn": "Aviso",
+      "fail": "Error",
+      "unknown": "Desconocido"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Arquitectura",
+      "disk": "Disco",
+      "clock": "Reloj",
+      "wireguard": "WireGuard",
+      "mesh_port": "Puerto de malla",
+      "firewall": "Cortafuegos",
+      "control_plane": "Plano de control",
+      "cert": "Certificado",
+      "heartbeat": "Latido",
+      "agent_version": "Versión del agente",
+      "schedulable": "Planificación"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} agente va por detrás de {{version}}",
+    "title_other": "{{count}} agentes van por detrás de {{version}}",
+    "description": "Actualice en este orden: primero los nodos acordonados, luego los nodos en línea y al final los nodos fuera de línea.",
+    "step": "{{from}} a {{to}}",
+    "notes": {
+      "cordoned": "acordonado",
+      "offline": "fuera de línea"
+    },
+    "howTo": "Descargue la nueva imagen o el nuevo binario del agente en cada nodo y reinícielo. La identidad registrada se conserva.",
+    "autoUpdate": {
+      "on": "Las actualizaciones automáticas del agente están activadas. Los agentes instalan por sí mismos la versión del plano de control.",
+      "off": "Las actualizaciones automáticas del agente están desactivadas. Ejecute levelrail-agent self-update --apply en un nodo o active nodes.agent_auto_update en los ajustes."
+    },
+    "updateAnyway": {
+      "action": "Actualizar igualmente",
+      "queued": "En cola para la próxima comprobación del agente",
+      "disclaimer": "Omite la ventana de mantenimiento y la retención. La actualización sigue verificándose por firma y se revierte si falla."
     }
   }
 }

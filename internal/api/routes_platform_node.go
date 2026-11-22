@@ -12,6 +12,7 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// AbilityWriteSensitive already applies one level down at the
 	// per-app layer.
 	mux.HandleFunc("GET /api/v1/nodes", rt.requireAbility(AbilityRoot, rt.handleListNodes))
+	mux.HandleFunc("GET /api/v1/deploy-targets", rt.requireAbility(AbilityRoot, rt.handleListDeployTargets))
 	mux.HandleFunc("GET /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNode))
 	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/workloads", rt.requireAbility(AbilityRoot, rt.handleSetNodeWorkloads))
@@ -98,6 +99,14 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/nodes/{id}/patch/apply", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodePatchApply))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch/runs", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleListNodePatchRuns))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/events", rt.requireAbility(AbilityRoot, rt.handleListNodeEvents))
+	// Health timeline, doctor checks and fleet version skew (node_insight.go).
+	mux.HandleFunc("GET /api/v1/nodes/{id}/timeline", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeTimeline))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/doctor", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeDoctor))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/agent-update", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdate))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/agent-update/hold", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdateControl("hold")))
+	mux.HandleFunc("DELETE /api/v1/nodes/{id}/agent-update/hold", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdateControl("unhold")))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/agent-update/override", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeAgentUpdateControl("override")))
+	mux.HandleFunc("GET /api/v1/nodes/version-skew", rt.requireAbility(AbilityRoot, rt.handleNodeVersionSkew))
 	// Rough disk/memory exhaustion projection (node_capacity_forecast.go),
 	// a read-and-suggest layer over the same host samples
 	// patch-status/metrics above read, same AbilityRoot boundary and

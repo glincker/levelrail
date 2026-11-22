@@ -21,35 +21,7 @@ func (u UnresolvedVar) String() string {
 
 // ResolveMagicVars scans every service's environment and command for
 // SERVICE_ placeholders, mutating f in place: a token with a bash-style
-// default substitutes that default as a literal value; a generatable
-// token (PASSWORD/USER/BASE64/HEX/REALBASE64/BASE64BYTES) found in Environment is
-// removed from it entirely and returned via secretEnv instead, since its
-// real value belongs in secret storage, not a literal desired-state
-// column. Command has no equivalent secret-storage indirection (a
-// Command entry can't be swapped for a decrypted-at-create-time secret
-// the way an env var can), so a generatable token found there is always
-// reported as unresolved instead, same as a default-less non-generatable
-// token.
-//
-// generate is called once per unique (kind, key) pair even when
-// referenced by several services, so they all resolve to the same
-// value (e.g. an app service's DB_PASSWORD and its sibling postgres
-// service's own POSTGRES_PASSWORD both referencing SERVICE_PASSWORD_DB).
-// persist is then called once per (service, env key) that ended up
-// secret-backed, since secret storage is keyed per real service, not
-// per magic-var key: the caller is expected to write that same value
-// into whichever per-service secret store its later container-create
-// step reads from.
-//
-// A magic-var token embedded inside a larger string (not the entire env
-// value, e.g. a composite DATABASE_URL) can still splice in a
-// generated value: the whole assembled string is then secret-backed
-// (persisted and added to secretEnv), the same as a whole-value
-// generatable token, since it now contains one. A default-less,
-// non-generatable token in that position is unresolved.
-//
-// "$$" in command, entrypoint and healthcheck.test becomes a literal "$"
-// (Compose's escape); those fields never receive magic-var secrets.
+// default substitutes that default as a literal value; a generatable.
 func ResolveMagicVars(
 	f *File,
 	generate func(kind, key string, length int) (string, error),

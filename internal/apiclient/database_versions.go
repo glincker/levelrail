@@ -56,9 +56,7 @@ type DBCatalogStatus struct {
 
 // DatabaseVersions calls GET /api/v1/database-versions?engine=.
 func (c *Client) DatabaseVersions(ctx context.Context, engine string) (DBVersions, error) {
-	var out DBVersions
-	err := c.do(ctx, http.MethodGet, "/api/v1/database-versions?engine="+url.QueryEscape(engine), nil, &out)
-	return out, err
+	return getJSON[DBVersions](ctx, c, "/api/v1/database-versions?engine="+url.QueryEscape(engine))
 }
 
 // RefreshDatabaseVersions calls POST /api/v1/database-versions/refresh?engine=.
@@ -70,9 +68,7 @@ func (c *Client) RefreshDatabaseVersions(ctx context.Context, engine string) (DB
 
 // DatabaseCatalogStatus calls GET /api/v1/database-catalog.
 func (c *Client) DatabaseCatalogStatus(ctx context.Context) (DBCatalogStatus, error) {
-	var out DBCatalogStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/database-catalog", nil, &out)
-	return out, err
+	return getJSON[DBCatalogStatus](ctx, c, "/api/v1/database-catalog")
 }
 
 // RefreshDatabaseCatalog calls POST /api/v1/database-catalog/refresh.

@@ -24,9 +24,16 @@ const (
 	KeyCloudPlanMaxAgeMinutes     = "cloud.plan_max_age_minutes"
 	KeyCloudMaxConcurrentPlans    = "cloud.max_concurrent_plans"
 	KeyCloudPlanJobRetentionHours = "cloud.plan_job_retention_hours"
+	KeyCloudOracleSessionMinSecs  = "cloud.oracle.session_min_seconds"
 )
 
 func init() {
+	Register(Definition{
+		Key: KeyCloudOracleSessionMinSecs, Category: CategoryDeploys, Kind: KindInt, Default: "300", Env: "APP_CLOUD_OCI_SESSION_MIN_SECONDS", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(0, 3600),
+		Title:       "Oracle browser session relogin window",
+		Description: "Seconds before an Oracle browser session expires when the account is marked as needing a relogin, from 0 to 3600. The next Oracle call uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyCloudMaxConcurrentPlans, Category: CategoryDeploys, Kind: KindInt, Default: "2", Env: "APP_CLOUD_MAX_CONCURRENT_PLANS", Apply: ApplyLive,
 		CheckValue:  intRangeCheck(1, 64),

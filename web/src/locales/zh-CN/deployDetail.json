@@ -360,6 +360,7 @@
     "nodeLabel": "{{stage}},{{status}},{{duration}}",
     "barLabel": "{{stage}}条形,占时间线的百分之{{percent}}",
     "totals": "总耗时 {{wall}},各阶段合计 {{stages}}。",
+    "totalsRunning": "已运行 {{wall}},目前各阶段合计 {{stages}}。",
     "gap": {
       "outside": "阶段之间或阶段之外经过了{{time}}。",
       "overlap": "各阶段重叠了{{time}}。"

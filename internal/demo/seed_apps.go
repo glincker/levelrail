@@ -65,6 +65,13 @@ func (s *seeder) services() error {
 		if err := s.db.SaveDesiredService(s.ctx, svc); err != nil {
 			return fmt.Errorf("demo: save service %q: %w", a.name, err)
 		}
+		// SaveDesiredService does not persist the project or environment, so the sidebar tree needs these.
+		if err := s.db.UpdateServiceProject(s.ctx, a.name, a.project); err != nil {
+			return fmt.Errorf("demo: assign project for %q: %w", a.name, err)
+		}
+		if err := s.db.SetServiceEnvironment(s.ctx, a.name, envID(a.project, "production")); err != nil {
+			return fmt.Errorf("demo: assign environment for %q: %w", a.name, err)
+		}
 		if a.suspended {
 			if err := s.db.UpdateServiceSuspended(s.ctx, a.name, true); err != nil {
 				return fmt.Errorf("demo: suspend service %q: %w", a.name, err)

@@ -70,9 +70,7 @@ type ArchiveRows struct {
 
 // ListArchives calls GET /api/v1/archives.
 func (c *Client) ListArchives(ctx context.Context) (ArchiveList, error) {
-	var out ArchiveList
-	err := c.do(ctx, http.MethodGet, "/api/v1/archives", nil, &out)
-	return out, err
+	return getJSON[ArchiveList](ctx, c, "/api/v1/archives")
 }
 
 // CreateArchive calls POST /api/v1/archives. An empty kind runs the whole policy.
@@ -99,7 +97,7 @@ func (c *Client) VerifyArchive(ctx context.Context, id string) (ArchiveVerifyRes
 
 // DeleteArchive calls DELETE /api/v1/archives/{id}.
 func (c *Client) DeleteArchive(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/archives/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/archives/"+PathEscape(id))
 }
 
 // DownloadArchive calls GET /api/v1/archives/{id}/download and returns the zstd bundle.
@@ -117,9 +115,7 @@ func (c *Client) BrowseArchive(ctx context.Context, id, table string, offset, li
 
 // GetArchivePolicy calls GET /api/v1/archives/policy.
 func (c *Client) GetArchivePolicy(ctx context.Context) (ArchivePolicy, error) {
-	var out ArchivePolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/archives/policy", nil, &out)
-	return out, err
+	return getJSON[ArchivePolicy](ctx, c, "/api/v1/archives/policy")
 }
 
 // SetArchivePolicy calls PUT /api/v1/archives/policy.

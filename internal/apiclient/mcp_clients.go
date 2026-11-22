@@ -30,12 +30,10 @@ func (c *Client) CreateMCPClient(ctx context.Context, in MCPClientCreate) (MCPCl
 
 // ListMCPClients calls GET /api/v1/mcp/oauth/clients.
 func (c *Client) ListMCPClients(ctx context.Context) ([]MCPClient, error) {
-	var out []MCPClient
-	err := c.do(ctx, http.MethodGet, "/api/v1/mcp/oauth/clients", nil, &out)
-	return out, err
+	return getJSON[[]MCPClient](ctx, c, "/api/v1/mcp/oauth/clients")
 }
 
 // DeleteMCPClient calls DELETE /api/v1/mcp/oauth/clients/{id}, which also revokes its tokens.
 func (c *Client) DeleteMCPClient(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/mcp/oauth/clients/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/mcp/oauth/clients/"+PathEscape(id))
 }

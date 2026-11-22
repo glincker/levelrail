@@ -10,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/importplan"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // importPlanBodyLimit bounds the pasted input, compose files included.
@@ -42,6 +43,7 @@ func (rt *Router) handleImportPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.resolveImportRef(r.Context(), plan)
+	rt.markImportConflicts(r, plan)
 	writeJSON(w, http.StatusOK, plan)
 }
 
@@ -81,4 +83,28 @@ func (rt *Router) importDetect(ctx context.Context, repoURL, ref string) (string
 		return "", nil
 	}
 	return res.Provider, nil
+}
+
+// markImportConflicts flags planned names that already exist, limited to the
+// apps the caller may see so another team's names are not revealed.
+func (rt *Router) markImportConflicts(r *http.Request, plan *importplan.DeploymentPlan) {
+	fs, ok := rt.apps.(appFilterStore)
+	if !ok || len(plan.Resources) == 0 {
+		return
+	}
+	canRead, _, err := rt.callerAppVisibility(r)
+	if err != nil {
+		return
+	}
+	names, err := fs.ListAppNamesFiltered(r.Context(), store.AppListFilter{})
+	if err != nil {
+		return
+	}
+	existing := make(map[string]bool, len(names))
+	for _, n := range names {
+		if canRead(n) {
+			existing[n] = true
+		}
+	}
+	plan.MarkConflicts(existing)
 }

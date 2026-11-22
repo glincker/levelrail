@@ -2,10 +2,13 @@ import { CommitGraphGlassIcon, GitBranchGlassIcon } from '@thesvg/ui-react'
 import type { DeployAttempt } from '../types/deployAttempt'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { DEPLOY_ATTEMPT_SOURCE_LABEL } from '../lib/deployAttemptPresentation'
+import { deployCopyOf } from '../lib/deployCopy'
 import { RelativeTime } from './kit'
 import { RolloutChip } from './DeployDigestChips'
 
 function durationSuffix(attempt: DeployAttempt): string {
+  // A promote or rollback copies a finished build, so it has no duration of its own.
+  if (deployCopyOf(attempt)) return ''
   if (attempt.finished_at) {
     const ms =
       new Date(attempt.finished_at).getTime() -

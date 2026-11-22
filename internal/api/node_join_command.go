@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"github.com/GLINCKER/levelrail/internal/cloudmeta"
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
 	"net"
@@ -91,6 +92,22 @@ type joinCommands struct {
 	// Podman runs the agent container against the rootful podman.socket.
 	Podman string `json:"podman"`
 	Binary string `json:"binary"`
+	// MacOS is only set while the macos-agent feature is on, so a UI never
+	// shows an install command for an agent that is not shipped yet.
+	MacOS string `json:"macos,omitempty"`
+}
+
+// macOSEnv is the join env the macOS agent needs: the same inputs as the
+// binary form without the Linux identity path or the mesh settings.
+func macOSEnv(addr, token, caFingerprint, nodeName string) []string {
+	env := []string{"APP_CONTROL_PLANE_ADDR=" + addr, "APP_JOIN_TOKEN=" + token}
+	if caFingerprint != "" {
+		env = append(env, "APP_CA_FINGERPRINT="+caFingerprint)
+	}
+	if nodeName != "" {
+		env = append(env, "APP_NODE_NAME="+nodeName)
+	}
+	return env
 }
 
 // defaultControlPlaneAddr is where agents dial, from APP_AGENT_ADVERTISE_HOST, or "".
@@ -143,9 +160,14 @@ func (rt *Router) buildJoinCommands(ctx context.Context, addr, token, caFingerpr
 	}
 	podman = append(podman, image)
 
-	return joinCommands{
+	out := joinCommands{
 		Docker: strings.Join(docker, " "),
 		Podman: strings.Join(podman, " "),
 		Binary: "sudo " + strings.Join(env, " ") + " " + agent,
 	}
+	if experimental.Enabled(experimental.MacOSAgent) {
+		// No sudo and no container-only env: the macOS agent runs as the user.
+		out.MacOS = "brew install glincker/tap/" + agent + "\n" + strings.Join(macOSEnv(addr, token, caFingerprint, nodeName), " ") + " " + agent
+	}
+	return out
 }

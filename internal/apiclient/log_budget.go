@@ -34,9 +34,7 @@ type LogBudget struct {
 
 // GetLogUsage calls GET /api/v1/logs/usage.
 func (c *Client) GetLogUsage(ctx context.Context) (LogUsage, error) {
-	var out LogUsage
-	err := c.do(ctx, http.MethodGet, "/api/v1/logs/usage", nil, &out)
-	return out, err
+	return getJSON[LogUsage](ctx, c, "/api/v1/logs/usage")
 }
 
 func logBudgetPath(app string) string {
@@ -45,9 +43,7 @@ func logBudgetPath(app string) string {
 
 // GetLogBudget calls GET /api/v1/apps/{name}/log-budget.
 func (c *Client) GetLogBudget(ctx context.Context, app string) (LogBudget, error) {
-	var out LogBudget
-	err := c.do(ctx, http.MethodGet, logBudgetPath(app), nil, &out)
-	return out, err
+	return getJSON[LogBudget](ctx, c, logBudgetPath(app))
 }
 
 // SetLogBudget calls PUT /api/v1/apps/{name}/log-budget.
@@ -61,7 +57,7 @@ func (c *Client) SetLogBudget(ctx context.Context, app string, maxMB int64) (Log
 
 // DeleteLogBudget calls DELETE /api/v1/apps/{name}/log-budget.
 func (c *Client) DeleteLogBudget(ctx context.Context, app string) error {
-	return c.do(ctx, http.MethodDelete, logBudgetPath(app), nil, nil)
+	return c.del(ctx, logBudgetPath(app))
 }
 
 // LogTrimResult is the response of POST /api/v1/apps/{name}/log-budget/trim.

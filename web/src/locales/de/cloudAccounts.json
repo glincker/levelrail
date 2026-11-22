@@ -1,0 +1,535 @@
+{
+  "section": {
+    "title": "Cloud-Konten",
+    "addOracle": "Oracle hinzufügen",
+    "addOracleTitle": "Oracle-Konto hinzufügen",
+    "addOracleDescription": "OCI-Konfiguration und API-Schlüssel einfügen. Ein Subnetz wird nur zum Erstellen von Servern benötigt und ist hier optional.",
+    "linkAws": "AWS verknüpfen",
+    "connectDigitalOcean": "DigitalOcean verbinden",
+    "connectDigitalOceanHint": "Hinterlege Client-ID und Secret der DigitalOcean-OAuth-App in den Laufzeiteinstellungen, um mit einem Klick zu verbinden.",
+    "loading": "Cloud-Konten werden geladen",
+    "loadFailed": "Cloud-Konten konnten nicht geladen werden.",
+    "empty": "Noch keine Cloud-Konten. Verknüpfe ein AWS-Konto mit einer eng gefassten Rolle oder füge einen Oracle-API-Schlüssel hinzu.",
+    "verified": "Geprüft {{when}}",
+    "neverVerified": "Noch nicht geprüft"
+  },
+  "common": {
+    "retry": "Erneut versuchen",
+    "backToIntegrations": "Zurück zu Integrationen"
+  },
+  "providers": {
+    "aws": "AWS",
+    "oracle": "Oracle Cloud",
+    "hetzner": "Hetzner",
+    "digitalocean": "DigitalOcean",
+    "vultr": "Vultr",
+    "azure": "Azure",
+    "gcp": "Google Cloud",
+    "linode": "Linode",
+    "akamai": "Akamai"
+  },
+  "status": {
+    "active": "Aktiv",
+    "error": "Braucht Aufmerksamkeit",
+    "disabled": "Deaktiviert"
+  },
+  "capabilities": {
+    "inventory": {
+      "name": "Inventar",
+      "hint": "Instanzen, Volumes und Netzwerke lesen."
+    },
+    "deploy": {
+      "name": "Deploy",
+      "hint": "Compute-Ressourcen anlegen und ändern."
+    },
+    "cost": {
+      "name": "Kosten",
+      "hint": "Ausgaben aus Cost Explorer lesen."
+    },
+    "s3": {
+      "name": "S3",
+      "hint": "Buckets und Objekte verwalten."
+    },
+    "dns": {
+      "name": "DNS",
+      "hint": "Route-53-Einträge verwalten."
+    },
+    "destructive": {
+      "name": "Destruktiv",
+      "hint": "Beenden und löschen. Aus, solange du es nicht brauchst."
+    }
+  },
+  "wizard": {
+    "title": "AWS-Konto verknüpfen",
+    "description": "Lege in deinem Konto eine Rolle mit minimalen Rechten an und gib Levelrail ihre ARN. Es werden keine Zugriffsschlüssel gespeichert.",
+    "steps": "Verknüpfungsschritte",
+    "stepNames": {
+      "scope": "Umfang",
+      "kit": "Rolle anlegen",
+      "connect": "Verbinden"
+    },
+    "back": "Zurück",
+    "generate": "Verknüpfungspaket erzeugen",
+    "regenerate": "Verknüpfungspaket neu erzeugen",
+    "openAccount": "Konto öffnen",
+    "needsAdmin": "Nur Administratoren können ein Cloud-Konto verknüpfen.",
+    "scope": {
+      "tiers": "Was Levelrail darf",
+      "regions": "Erlaubte Regionen",
+      "regionsHint": "Kommagetrennt. Leer lassen für alle Regionen.",
+      "zones": "Hosted-Zone-IDs",
+      "zonesHint": "Route-53-Zonen-IDs, kommagetrennt. Für die Stufen dns und destructive erforderlich.",
+      "region": "Heimatregion",
+      "principal": "ARN des vertrauten Principals",
+      "principalHint": "Die AWS-Identität, als die Levelrail läuft. Nur sie darf die Rolle übernehmen.",
+      "guard": "ARN der Guard-Richtlinie (optional)",
+      "roleName": "Rollenname (optional)",
+      "roleNamePlaceholder": "Standardname",
+      "principalPrefilled": "Aus der Identität übernommen, unter der Levelrail läuft (Konto {{account}}). Du kannst sie ändern.",
+      "principalNotConfigured": "Keine AWS-Identität gefunden. Führe aws login aus oder setze AWS-Zugangsdaten für den Levelrail-Prozess, oder füge den ARN ein."
+    },
+    "issues": {
+      "noCapabilities": "Wähle mindestens eine Fähigkeit.",
+      "badRegions": "Nutze Regions-IDs wie eu-west-1.",
+      "needsZones": "Gib die Hosted-Zone-IDs an, die dns und destructive berühren dürfen.",
+      "badZones": "Verwende Zonen-IDs wie Z0123ABCD.",
+      "badPrincipal": "Gib eine IAM-Root-, Rollen- oder Benutzer-ARN ein.",
+      "badGuard": "Gib eine IAM-Richtlinien-ARN ein.",
+      "badRegion": "Nutze eine Regions-ID wie us-east-1.",
+      "badAccountId": "Gib eine 12-stellige AWS-Konto-ID ein.",
+      "badVaultAddress": "Gib eine http- oder https-Vault-Adresse ein.",
+      "badVaultRole": "Nutze Buchstaben, Ziffern, Punkt, Bindestrich oder Unterstrich.",
+      "badVaultToken": "Gib eine secret://-Referenz wie secret://vault/levelrail#token ein."
+    },
+    "kit": {
+      "readFirstTitle": "Richtlinie zuerst lesen",
+      "readFirst": "Prüfe das Richtlinien-JSON, bevor du etwas anlegst. Die Rolle darf nur, was die Richtlinie erlaubt, und die External-ID schützt vor einem Confused-Deputy-Angriff.",
+      "quickCreate": "CloudFormation-Schnellerstellung öffnen",
+      "noQuickCreate": "Ohne Template-URL gibt es keinen Schnellerstellungs-Link. Nutze unten das Template oder Terraform.",
+      "externalId": "External-ID:",
+      "formats": "Formate des Verknüpfungspakets",
+      "policy": "Richtlinien-JSON",
+      "cloudformation": "CloudFormation",
+      "terraform": "Terraform",
+      "created": "Ich habe die Rolle angelegt"
+    },
+    "connect": {
+      "roleArn": "Rollen-ARN",
+      "badArn": "Gib eine IAM-Rollen-ARN ein.",
+      "label": "Bezeichnung",
+      "go": "Anlegen und prüfen",
+      "retry": "Erneut prüfen",
+      "identity": "Konto {{account}}."
+    },
+    "vault": {
+      "use": "Vault für kurzlebige Zugangsdaten verwenden",
+      "hint": "Levelrail liest temporäre Schlüssel aus deiner Vault-AWS-Secrets-Engine. Es werden keine Zugriffsschlüssel gespeichert.",
+      "accountId": "AWS-Konto-ID",
+      "address": "Vault-Adresse",
+      "mount": "Mount der Secrets Engine",
+      "role": "Vault-Rolle",
+      "namespace": "Vault-Namespace (optional)",
+      "tokenRef": "Vault-Token-Referenz",
+      "kitTitle": "Zuerst Vault konfigurieren",
+      "kitHint": "Führe die Vault-Befehle aus, erstelle die IAM-Rolle {{arn}} mit Richtlinie und Vertrauensrichtlinie und verbinde dann.",
+      "kitFormats": "Vault-Kit-Formate",
+      "tabs": {
+        "commands": "Vault-Befehle",
+        "vaultPolicy": "Vault-Richtlinie",
+        "policy": "IAM-Richtlinie",
+        "trust": "Vertrauensrichtlinie"
+      }
+    }
+  },
+  "probe": {
+    "ok": "Erlaubt",
+    "missing": "Zugriff fehlt",
+    "verified": "Durch echten Aufruf bestätigt",
+    "simulated": "Per Richtliniensimulation geprüft"
+  },
+  "detail": {
+    "loading": "Cloud-Konto",
+    "notFound": "Cloud-Konto nicht gefunden",
+    "loadFailed": "Dieses Konto konnte nicht geladen werden.",
+    "tabs": "Kontobereiche",
+    "overview": "Übersicht",
+    "access": "Zugriff",
+    "method": "Methode",
+    "lastVerified": "Zuletzt geprüft",
+    "defaultRegion": "Heimatregion",
+    "credential": "Zugangsdaten",
+    "stored": "Gespeichert",
+    "missing": "Fehlt",
+    "verify": "Prüfen",
+    "probe": "Fähigkeiten testen",
+    "delete": "Konto löschen",
+    "deleteTitle": "{{name}} löschen?",
+    "deleteBody": "Die gespeicherten Zugangsdaten werden entfernt und Freigaben funktionieren nicht mehr. Ressourcen im Cloud-Konto bleiben unberührt. Tippe den Namen zur Bestätigung.",
+    "regions": "Regionen",
+    "regionsFailed": "Regionen konnten nicht aufgelistet werden.",
+    "instances": "Instanzen",
+    "services": "Dienste"
+  },
+  "access": {
+    "needsShare": "Du brauchst die Freigabe-Berechtigung für dieses Konto, um den Zugriff zu sehen.",
+    "principalType": "Wer",
+    "user": "Benutzer",
+    "team": "Team",
+    "principalId": "Benutzer- oder Team-ID",
+    "expires": "Läuft ab (optional)",
+    "actions": "Aktionen",
+    "add": "Freigabe hinzufügen",
+    "loadFailed": "Freigaben konnten nicht geladen werden.",
+    "empty": "Noch keine Freigaben. Nur Administratoren können dieses Konto nutzen.",
+    "expiresAt": "Läuft ab {{when}}",
+    "noExpiry": "Kein Ablauf",
+    "revokeNamed": "Zugriff für {{name}} entziehen",
+    "revoke": "Entziehen",
+    "action": {
+      "view": "Ansehen",
+      "operate": "Bedienen",
+      "view_spend": "Ausgaben sehen",
+      "manage_budget": "Budget verwalten",
+      "share": "Teilen"
+    }
+  },
+  "spend": {
+    "title": "Kosten diesen Monat",
+    "estimated": "geschätzt",
+    "refresh": "Aktualisieren",
+    "none": "Noch keine Kosten erfasst.",
+    "monthToDate": "seit Monatsbeginn ({{currency}})",
+    "stale": "Diese Daten sind veraltet.",
+    "dataAge": "Datenstand {{time}}",
+    "limited": "Erst kürzlich aktualisiert. Versuche es später erneut.",
+    "limitedIn": "Erst kürzlich aktualisiert. Versuche es in {{seconds}} Sekunden erneut.",
+    "usageLink": "Kosten der Cloud-Konten",
+    "state": {
+      "disabled": "Kostenabfrage ist ausgeschaltet",
+      "tag_not_active": "Kostenzuordnungs-Tag ist nicht aktiv",
+      "data_unavailable": "Kostendaten sind nicht verfügbar"
+    },
+    "hint": {
+      "disabled": "Aktiviere die Cloud-Kosten in den Laufzeiteinstellungen.",
+      "tag_not_active": "Aktiviere das Kostenzuordnungs-Tag levelrail:project in der Abrechnungskonsole und aktualisiere dann.",
+      "data_unavailable": "Gib dem Konto Lesezugriff auf Kosten und aktualisiere."
+    }
+  },
+  "instances": {
+    "noAccess": "Du darfst die Instanzen dieses Kontos nicht auflisten.",
+    "empty": "Keine Instanzen gefunden.",
+    "cancel": "Abbrechen",
+    "managed": "Verwaltet",
+    "unmanaged": "Nicht verwaltet",
+    "col": {
+      "name": "Name",
+      "state": "Status",
+      "size": "Größe",
+      "region": "Region",
+      "ip": "Öffentliche IP",
+      "managed": "Verwaltet",
+      "actions": "Aktionen"
+    },
+    "state": {
+      "pending": "Ausstehend",
+      "running": "Läuft",
+      "stopping": "Wird gestoppt",
+      "stopped": "Gestoppt",
+      "terminating": "Wird beendet",
+      "terminated": "Beendet",
+      "unknown": "Unbekannt"
+    },
+    "action": {
+      "start": "Starten",
+      "stop": "Stoppen",
+      "soft_stop": "Sanft stoppen",
+      "reboot": "Neustarten",
+      "soft_reboot": "Sanft neustarten"
+    },
+    "stop": {
+      "title": "{{name}} stoppen?",
+      "body": "Die Instanz ist offline, bis sie wieder gestartet wird."
+    },
+    "resize": {
+      "open": "Größe ändern",
+      "title": "Größe von {{name}} ändern",
+      "current": "Aktuelle Größe: {{shape}}",
+      "oracleReboot": "Beim Ändern der Größe einer Oracle-Instanz wird sie neu gestartet.",
+      "type": "Neuer Instanztyp",
+      "ocpus": "OCPUs",
+      "memory": "Speicher (GB)",
+      "confirm": "Größe ändern"
+    },
+    "terminate": {
+      "open": "Beenden",
+      "title": "{{name}} beenden?",
+      "body": "Die Instanz wird beim Anbieter gelöscht und lässt sich nicht wiederherstellen. Gib zur Bestätigung den Namen ein.",
+      "confirm": "Beenden",
+      "keepVolume": "Boot-Volume behalten"
+    },
+    "detail": {
+      "state": "Status",
+      "shape": "Größe",
+      "region": "Region",
+      "zone": "Zone",
+      "publicIp": "Öffentliche IP",
+      "privateIp": "Private IP",
+      "image": "Image",
+      "bootVolume": "Boot-Volume",
+      "project": "Projekt",
+      "environment": "Umgebung",
+      "tags": "Tags",
+      "noTags": "Keine Tags.",
+      "tagKey": "Tag-Schlüssel",
+      "tagValue": "Tag-Wert",
+      "removeTag": "Entfernen",
+      "addTag": "Tag hinzufügen",
+      "saveTags": "Tags speichern",
+      "readOnly": "Die Tags dieser Instanz sind schreibgeschützt.",
+      "saved": "Tags gespeichert."
+    },
+    "events": {
+      "title": "Ereignisse",
+      "none": "Keine Ereignisse in diesem Zeitraum."
+    }
+  },
+  "services": {
+    "on": "An",
+    "off": "Aus",
+    "toggle": "{{name}} aktivieren",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "disabled": "Dieser Dienst ist aus. Ein Root-Nutzer kann ihn hier oder in den Laufzeiteinstellungen aktivieren.",
+    "disabledRoot": "Dieser Dienst ist aus. Mit dem Schalter aktivieren.",
+    "ecr": {
+      "title": "Container-Registry (ECR)",
+      "name": "Repository",
+      "namePlaceholder": "my-app",
+      "uri": "URI",
+      "create": "Erstellen",
+      "copyLogin": "Login-Befehl kopieren",
+      "empty": "Keine Repositories."
+    },
+    "acm": {
+      "title": "Zertifikate (ACM)",
+      "domain": "Domain",
+      "request": "Zertifikat anfordern",
+      "empty": "Keine Zertifikate.",
+      "copyName": "Name kopieren",
+      "copyValue": "Wert kopieren",
+      "domainPlaceholder": "app.example.com"
+    },
+    "secrets": {
+      "title": "Parameter (SSM)",
+      "name": "Name",
+      "value": "Wert",
+      "overwrite": "Überschreiben",
+      "put": "Speichern",
+      "redacted": "Verborgen",
+      "empty": "Keine Parameter.",
+      "namePlaceholder": "/app/key"
+    },
+    "cloudtrail": {
+      "title": "Audit (CloudTrail)"
+    },
+    "audit": {
+      "resource": "Ressourcenname",
+      "search": "Suchen",
+      "hint": "Ressourcennamen eingeben, um die letzten Ereignisse zu sehen.",
+      "empty": "Keine Ereignisse.",
+      "time": "Zeit",
+      "event": "Ereignis",
+      "user": "Nutzer"
+    },
+    "guard": {
+      "title": "Ausgabenschutz",
+      "cap": "Monatslimit",
+      "noCap": "keins",
+      "mtd": "Bisher im Monat",
+      "unavailable": "nicht verfügbar",
+      "killSwitch": "Notaus",
+      "rootOnly": "Nur Root kann das ändern.",
+      "cleanup": "Bereinigungsplan",
+      "dryRun": "Probelauf",
+      "loadPlan": "Plan laden",
+      "resource": "Ressource",
+      "reason": "Grund",
+      "expired": "Abgelaufen {{when}}",
+      "orphan": "Nicht angehängt {{kind}}:",
+      "nothing": "Nichts zu bereinigen."
+    },
+    "rds": {
+      "title": "Datenbanken (RDS und Aurora)",
+      "name": "Name",
+      "engine": "Engine",
+      "class": "Instanzklasse",
+      "username": "Master-Benutzername",
+      "multiAz": "Multi-AZ (höhere Kosten)",
+      "create": "Datenbank erstellen",
+      "createTitle": "Verwaltete Datenbank erstellen",
+      "createBody": "Wird verschlüsselt, privat und mit Stopp- oder Abbau-Timer und Tags erstellt. Die Schutzregel muss Klasse und Kosten erlauben.",
+      "estimate": "Etwa {{usd}} USD pro Monat (nur Instanz).",
+      "noEstimate": "Keine Preisschätzung verfügbar.",
+      "classBlocked": "Diese Klasse steht nicht auf der Zulassungsliste.",
+      "passwordNote": "Das Master-Passwort erzeugt AWS und liegt im Secrets Manager. Levelrail speichert es nie.",
+      "empty": "Keine Datenbanken in dieser Region.",
+      "perMonth": "{{usd}} USD/Monat",
+      "snapshot": "Snapshot",
+      "stop": "Stoppen",
+      "start": "Starten",
+      "adopt": "Übernehmen",
+      "clusters": "Cluster",
+      "autoRestart": "Gestoppt, AWS startet es nach {{days}} Tagen neu",
+      "deleteSnapshot": "Snapshot löschen"
+    },
+    "elasticache": {
+      "title": "Caches (ElastiCache)",
+      "empty": "Keine Caches in dieser Region.",
+      "groups": "Replikationsgruppen",
+      "clusters": "Cache-Cluster",
+      "snapshot": "Snapshot",
+      "reboot": "Neu starten",
+      "delete": "Löschen",
+      "deleteTitle": "Diesen Cache löschen",
+      "deleteBody": "Das entfernt den Cache und seine Daten. Zur Bestätigung den Namen eingeben. Ein finaler Snapshot behält eine Kopie.",
+      "finalSnapshot": "Name des finalen Snapshots (optional)"
+    },
+    "lightsail": {
+      "title": "Einfache Server (Lightsail)",
+      "empty": "Keine Lightsail-Instanzen in dieser Region.",
+      "start": "Starten",
+      "stop": "Stoppen",
+      "reboot": "Neu starten",
+      "snapshot": "Snapshot",
+      "delete": "Löschen",
+      "deleteTitle": "Diesen Server löschen",
+      "deleteBody": "Das entfernt den Server und seine Festplatte. Zur Bestätigung den Namen eingeben. Vorher einen Snapshot erstellen, um eine Kopie zu behalten."
+    },
+    "ebs": {
+      "title": "Volumes und Snapshots (EBS)",
+      "target": "Instanz- oder Volume-ID",
+      "excludeBoot": "Boot-Volume überspringen",
+      "create": "Snapshot erstellen",
+      "volumes": "Volumes",
+      "snapshots": "Snapshots",
+      "emptyVolumes": "Keine Volumes in dieser Region.",
+      "emptySnapshots": "Keine Snapshots in dieser Region.",
+      "size": "{{gb}} GB",
+      "expires": "läuft ab {{when}}",
+      "delete": "Löschen"
+    },
+    "cloudwatch": {
+      "title": "Metriken, Logs und ungenutzte Ressourcen (CloudWatch)",
+      "instance": "Instanz-ID",
+      "names": "Metriknamen, durch Komma getrennt",
+      "load": "Laden",
+      "noData": "Keine Datenpunkte.",
+      "logs": "Loggruppen",
+      "prefix": "Gruppenpräfix",
+      "filter": "Filtertext",
+      "noGroups": "Keine Loggruppen.",
+      "retention": "{{days}} Tage Aufbewahrung",
+      "retentionNever": "Unbegrenzt",
+      "view": "Anzeigen",
+      "noEvents": "Keine Ereignisse in der letzten Stunde.",
+      "truncated": "Es werden nur die neuesten Ereignisse gezeigt.",
+      "idleTitle": "Ungenutzte Ressourcen",
+      "idleNote": "Nur Vorschläge. Levelrail stoppt, löscht oder gibt nichts frei.",
+      "idleEmpty": "Keine ungenutzten Ressourcen gefunden.",
+      "idleResource": "Ressource",
+      "idleKind": "Typ",
+      "idleAction": "Vorgeschlagene Aktion",
+      "idleSaving": "USD/Monat",
+      "idleTotal": "Mögliche Ersparnis: {{usd}} USD pro Monat",
+      "kind": {
+        "ec2_low_cpu": "Instanz mit geringer CPU-Last",
+        "ebs_unattached": "Nicht angehängtes Volume",
+        "eip_unassociated": "Nicht zugeordnete IP",
+        "alb_no_requests": "Load Balancer ohne Anfragen",
+        "rds_stopped": "Gestoppte Datenbank",
+        "rds_cluster_restart": "Datenbank startet bald neu"
+      },
+      "action": {
+        "stop": "Stoppen",
+        "snapshot_delete": "Snapshot, dann löschen",
+        "release": "Freigeben",
+        "delete": "Löschen",
+        "restop": "Erneut stoppen"
+      }
+    },
+    "cloudfront": {
+      "title": "CDN (CloudFront)",
+      "empty": "Keine Distributionen.",
+      "disabled": "deaktiviert",
+      "select": "Invalidieren",
+      "paths": "Pfade zum Invalidieren auf {{id}} (einer pro Zeile)",
+      "pathsHint": "/index.html\n/assets/*",
+      "invalidate": "Invalidieren",
+      "created": "Invalidierung {{id}} erstellt",
+      "invalidations": "Invalidierungen",
+      "noInvalidations": "Noch keine Invalidierungen."
+    },
+    "ssm": {
+      "title": "Verwaltete Instanzen (Systems Manager)",
+      "empty": "Keine verwalteten Instanzen in dieser Region.",
+      "runTitle": "Befehl ausführen",
+      "instance": "Instanz",
+      "command": "Befehl",
+      "run": "Ausführen",
+      "session": "Sitzung starten",
+      "copyToken": "Sitzungstoken kopieren",
+      "status": "Status",
+      "exit": "Exit",
+      "refresh": "Aktualisieren"
+    }
+  },
+  "doctor": {
+    "title": "Bereitschaft",
+    "ready": "Bereit",
+    "notReady": "Nicht bereit",
+    "rerun": "Erneut prüfen",
+    "running": "Prüfung läuft",
+    "deep": "Tiefenprüfung starten",
+    "deepRunning": "Tiefenprüfung läuft",
+    "deepTitle": "Tiefenprüfung",
+    "failed": "Die Bereitschaftsprüfung konnte nicht laufen.",
+    "fix": "Lösung",
+    "status": {
+      "ok": "OK",
+      "warn": "Warnung",
+      "fail": "Fehler",
+      "skip": "Übersprungen"
+    }
+  },
+  "sso": {
+    "option": "Stattdessen mit AWS SSO anmelden",
+    "back": "Stattdessen Rolle oder Vault nutzen",
+    "title": "Mit AWS SSO anmelden",
+    "startUrl": "Start-URL des Identity Center",
+    "region": "Region des Identity Center",
+    "start": "Anmeldung starten",
+    "enterCode": "AWS öffnen und diesen Code bestätigen:",
+    "openBrowser": "AWS-Anmeldeseite öffnen",
+    "waiting": "Warte auf deine Freigabe im Browser.",
+    "pickRole": "Konto und Rolle zum Verknüpfen wählen.",
+    "noAccounts": "Dieser Login hat keine zugewiesenen Konten.",
+    "label": "Bezeichnung (optional)",
+    "link": "Konto verknüpfen",
+    "denied": "Die Anmeldung wurde abgelehnt oder ist abgelaufen. Starte neu.",
+    "reloginDone": "Erneut angemeldet.",
+    "relogin": "Erneut anmelden",
+    "reloginNeeded": "Die AWS-Anmeldung ist abgelaufen. Melde dich erneut an, um das Konto weiter zu nutzen.",
+    "startUrlExample": "https://d-1234567890.awsapps.com/start",
+    "regionExample": "eu-west-1",
+    "accountRegion": "Region für dieses Konto (optional, Standard ist die Anmelderegion)"
+  },
+  "relogin": {
+    "title": "Browser-Sitzung",
+    "expires": "Sitzung läuft {{when}} ab.",
+    "expired": "Sitzung abgelaufen oder endet {{when}}. Melde dich erneut an, um dieses Konto weiter zu nutzen.",
+    "token": "Inhalt der Security-Token-Datei",
+    "key": "Inhalt der privaten Sitzungsschlüssel-Datei",
+    "submit": "Erneut anmelden",
+    "done": "Sitzung ersetzt"
+  }
+}

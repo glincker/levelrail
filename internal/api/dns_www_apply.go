@@ -75,9 +75,8 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var req wwwApplyRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[wwwApplyRequest](w, r, 8<<10)
+	if !ok {
 		return
 	}
 	if !rt.callerIsRoot(r) {

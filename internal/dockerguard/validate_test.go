@@ -183,3 +183,13 @@ func TestReviewTierCapsInsideHardeningProfile(t *testing.T) {
 		}
 	}
 }
+
+func TestEngineDeclaredCapsNeedDeclaration(t *testing.T) {
+	p := testPolicy(t)
+	if vs := p.checkCaps([]string{"SETPCAP"}, docker.CreateDeclaration{}); len(vs) == 0 {
+		t.Error("SETPCAP allowed without a declaration")
+	}
+	if vs := p.checkCaps([]string{"CAP_SETPCAP"}, docker.CreateDeclaration{CapAdd: []string{"SETPCAP"}}); len(vs) != 0 {
+		t.Errorf("declared SETPCAP denied: %v", vs)
+	}
+}

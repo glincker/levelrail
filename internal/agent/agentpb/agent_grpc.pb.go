@@ -45,6 +45,8 @@ const (
 	AgentService_Renew_FullMethodName         = "/levelrail.agent.v1.AgentService/Renew"
 	AgentService_Reenroll_FullMethodName      = "/levelrail.agent.v1.AgentService/Reenroll"
 	AgentService_CheckIdentity_FullMethodName = "/levelrail.agent.v1.AgentService/CheckIdentity"
+	AgentService_UpdateCheck_FullMethodName   = "/levelrail.agent.v1.AgentService/UpdateCheck"
+	AgentService_Tunnel_FullMethodName        = "/levelrail.agent.v1.AgentService/Tunnel"
 )
 
 // AgentServiceClient is the client API for AgentService service.
@@ -77,6 +79,15 @@ type AgentServiceClient interface {
 	// for its node, without opening a Session. The agent uses it to test a
 	// renewed certificate before discarding the old one.
 	CheckIdentity(ctx context.Context, in *CheckIdentityRequest, opts ...grpc.CallOption) (*CheckIdentityResponse, error)
+	// UpdateCheck tells the calling node which agent version it should run.
+	// The node is the one named by the mTLS client certificate and the request
+	// carries no node id, so a node can never read another node's answer.
+	UpdateCheck(ctx context.Context, in *UpdateCheckRequest, opts ...grpc.CallOption) (*UpdateCheckResponse, error)
+	// Tunnel carries the bytes of one ingress tunnel, opened by the agent
+	// after a TunnelOpenRequest on Session. The first frame is a TunnelHello;
+	// authenticated by the same mTLS identity as Session. Sent only to agents
+	// advertising "ingress_tunnel".
+	Tunnel(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TunnelFrame, TunnelFrame], error)
 }
 
 type agentServiceClient struct {
@@ -140,6 +151,29 @@ func (c *agentServiceClient) CheckIdentity(ctx context.Context, in *CheckIdentit
 	return out, nil
 }
 
+func (c *agentServiceClient) UpdateCheck(ctx context.Context, in *UpdateCheckRequest, opts ...grpc.CallOption) (*UpdateCheckResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateCheckResponse)
+	err := c.cc.Invoke(ctx, AgentService_UpdateCheck_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) Tunnel(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TunnelFrame, TunnelFrame], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &AgentService_ServiceDesc.Streams[1], AgentService_Tunnel_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[TunnelFrame, TunnelFrame]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AgentService_TunnelClient = grpc.BidiStreamingClient[TunnelFrame, TunnelFrame]
+
 // AgentServiceServer is the server API for AgentService service.
 // All implementations must embed UnimplementedAgentServiceServer
 // for forward compatibility.
@@ -170,6 +204,15 @@ type AgentServiceServer interface {
 	// for its node, without opening a Session. The agent uses it to test a
 	// renewed certificate before discarding the old one.
 	CheckIdentity(context.Context, *CheckIdentityRequest) (*CheckIdentityResponse, error)
+	// UpdateCheck tells the calling node which agent version it should run.
+	// The node is the one named by the mTLS client certificate and the request
+	// carries no node id, so a node can never read another node's answer.
+	UpdateCheck(context.Context, *UpdateCheckRequest) (*UpdateCheckResponse, error)
+	// Tunnel carries the bytes of one ingress tunnel, opened by the agent
+	// after a TunnelOpenRequest on Session. The first frame is a TunnelHello;
+	// authenticated by the same mTLS identity as Session. Sent only to agents
+	// advertising "ingress_tunnel".
+	Tunnel(grpc.BidiStreamingServer[TunnelFrame, TunnelFrame]) error
 	mustEmbedUnimplementedAgentServiceServer()
 }
 
@@ -194,6 +237,12 @@ func (UnimplementedAgentServiceServer) Reenroll(context.Context, *ReenrollReques
 }
 func (UnimplementedAgentServiceServer) CheckIdentity(context.Context, *CheckIdentityRequest) (*CheckIdentityResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CheckIdentity not implemented")
+}
+func (UnimplementedAgentServiceServer) UpdateCheck(context.Context, *UpdateCheckRequest) (*UpdateCheckResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateCheck not implemented")
+}
+func (UnimplementedAgentServiceServer) Tunnel(grpc.BidiStreamingServer[TunnelFrame, TunnelFrame]) error {
+	return status.Error(codes.Unimplemented, "method Tunnel not implemented")
 }
 func (UnimplementedAgentServiceServer) mustEmbedUnimplementedAgentServiceServer() {}
 func (UnimplementedAgentServiceServer) testEmbeddedByValue()                      {}
@@ -295,6 +344,31 @@ func _AgentService_CheckIdentity_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AgentService_UpdateCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCheckRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).UpdateCheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_UpdateCheck_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).UpdateCheck(ctx, req.(*UpdateCheckRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_Tunnel_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AgentServiceServer).Tunnel(&grpc.GenericServerStream[TunnelFrame, TunnelFrame]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AgentService_TunnelServer = grpc.BidiStreamingServer[TunnelFrame, TunnelFrame]
+
 // AgentService_ServiceDesc is the grpc.ServiceDesc for AgentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -318,11 +392,21 @@ var AgentService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "CheckIdentity",
 			Handler:    _AgentService_CheckIdentity_Handler,
 		},
+		{
+			MethodName: "UpdateCheck",
+			Handler:    _AgentService_UpdateCheck_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Session",
 			Handler:       _AgentService_Session_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "Tunnel",
+			Handler:       _AgentService_Tunnel_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

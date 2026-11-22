@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 // domainsRoute53DNSJSONUsage is every domains route53-dns subcommand's
@@ -62,11 +64,7 @@ func runDomainsRoute53DNSGet(prog string, args []string, stdout, stderr io.Write
 
 func runDomainsRoute53DNSSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains route53-dns set", domainsRoute53DNSJSONUsage, stderr)
-	var accessKeyIDFlag, secretAccessKeyFlag, regionFlag, hostedZoneIDFlag string
-	fs.StringVar(&accessKeyIDFlag, "aws-access-key-id", "", "AWS IAM access key ID (required)")
-	fs.StringVar(&secretAccessKeyFlag, "aws-secret-access-key", "", "AWS IAM secret access key (required)")
-	fs.StringVar(&regionFlag, "aws-region", "", "AWS region (optional; libdns/route53 resolves it itself when empty)")
-	fs.StringVar(&hostedZoneIDFlag, "hosted-zone-id", "", "Route53 hosted zone ID (optional; resolved by matching the domain when empty)")
+	descFlags := registerDescriptorFlagsWhen(fs, fielddesc.DNSProvider, map[string]string{"provider": "route53"})
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains route53-dns set --aws-access-key-id ID --aws-secret-access-key KEY [flags]\n\nConfigures and enables Route53 DNS-01 for wildcard domains.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -77,6 +75,8 @@ func runDomainsRoute53DNSSet(prog string, args []string, stdout, stderr io.Write
 		return exitCode
 	}
 
+	accessKeyIDFlag, secretAccessKeyFlag := *descFlags["aws-access-key-id"], *descFlags["aws-secret-access-key"]
+	regionFlag, hostedZoneIDFlag := *descFlags["aws-region"], *descFlags["hosted-zone-id"]
 	if accessKeyIDFlag == "" || secretAccessKeyFlag == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: domains route53-dns set requires --aws-access-key-id and --aws-secret-access-key\n\n", prog)
 		fs.Usage()

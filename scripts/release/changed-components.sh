@@ -33,7 +33,7 @@ cli)
 	;;
 agent)
 	cmd=./cmd/levelrail-agent
-	extra=(deploy/packaging/nfpm/ deploy/docker/Dockerfile.levelrail-agent)
+	extra=(deploy/packaging/nfpm/ deploy/packaging/homebrew/ deploy/packaging/launchd/ scripts/render-homebrew-agent-formula.sh deploy/docker/Dockerfile.levelrail-agent)
 	;;
 terraform)
 	extra=(integrations/terraform-provider/)

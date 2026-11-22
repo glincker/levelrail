@@ -134,7 +134,12 @@
     "errorTitle": "Drain stopped",
     "failedHint": "The node stays cordoned. Fix the cause shown on the failed move, then drain again, or uncordon the node to put it back in rotation.",
     "toNode": "to {{node}}",
-    "toAuto": "to an automatically chosen node"
+    "toAuto": "to an automatically chosen node",
+    "progress": {
+      "summary": "{{done}} of {{total}} moved, {{failed}} failed",
+      "eta": "about {{seconds}} s left",
+      "stalled": "No progress for a while. Check the node and the moves below."
+    }
   },
   "drains": {
     "title": "Drains",
@@ -980,7 +985,35 @@
       "saved": "{{provider}} credential saved.",
       "disconnect": "Disconnect",
       "confirmDisconnect": "Confirm disconnect",
-      "disconnected": "{{provider}} disconnected."
+      "disconnected": "{{provider}} disconnected.",
+      "howTitle": "How to get these",
+      "how1": "In the Oracle console open your profile, then API keys, then Add API key.",
+      "how2": "Download the private key and copy the config snippet shown at the end.",
+      "how3": "Paste the snippet below and load the key. Use a dedicated user.",
+      "configTitle": "Paste your OCI config",
+      "configFile": "Load config file",
+      "configHelp": "Paste the [DEFAULT] block of ~/.oci/config. It is read in this browser only.",
+      "detected": "Detected: tenancy {{tenancy}}, region {{region}}",
+      "edit": "Edit",
+      "done": "Done",
+      "missing": "Not found in the config: {{fields}}",
+      "manualHelp": "Enter the values below.",
+      "keyFromConfig": "Your config points at {{path}}. Load that file here.",
+      "advanced": "Advanced",
+      "advancedHint": "Compartment, optional",
+      "advancedHintServers": "Compartment and subnet (subnet needed for servers)",
+      "subnetHelp": "Needed to create servers. Use a subnet in the compartment.",
+      "subnetOptional": "Optional. Only needed to create servers.",
+      "subnetNeeded": "Add the subnet under Advanced to create servers.",
+      "errors": {
+        "tenancy": "Expected an ID starting with ocid1.tenancy.",
+        "user": "Expected an ID starting with ocid1.user.",
+        "fingerprint": "Expected 16 hex pairs like aa:bb:cc:...",
+        "region": "Expected a region like us-phoenix-1.",
+        "compartment": "Expected an ID starting with ocid1.compartment.",
+        "subnet": "Expected an ID starting with ocid1.subnet.",
+        "key": "Expected a PEM private key."
+      }
     },
     "wizard": {
       "title": "Guided API key setup",
@@ -1021,6 +1054,23 @@
       "micro": "The micro shape limit would be exceeded. Raise {{setting}} to allow another.",
       "paidShape": "This shape is not covered by the allowance limits and may bill. Turn on {{setting}} to use it.",
       "unknownPrice": "Oracle lists no price for this shape, so the price cap cannot be checked. Turn on {{setting}} (or provision.allow_unknown_price) to allow it."
+    },
+    "session": {
+      "modeLabel": "Credential type",
+      "modeKey": "API key",
+      "modeSession": "Browser session (testing, expires in hours)",
+      "intro": "Log in with your browser instead of creating an API key. The session lasts a few hours, so use it for testing only.",
+      "command": "Run this command on your computer",
+      "commandHelp": "It opens a browser login and writes a security token file and a private key file under ~/.oci.",
+      "profile": "Profile config (optional)",
+      "profileHelp": "Paste the tenancy and region lines from ~/.oci/config. Nothing else is read.",
+      "token": "Security token file contents",
+      "key": "Session private key file contents",
+      "keyHelp": "Sent once, stored encrypted and never shown again.",
+      "check": "Check session",
+      "connect": "Connect",
+      "expires": "Session expires {{when}}",
+      "saved": "{{provider}} connected with a browser session"
     }
   },
   "builderTrust": {
@@ -1142,6 +1192,89 @@
       "failed": "Failed",
       "agent": "Agent {{value}}",
       "acceptsApps": "This node also runs apps, so it cannot be paused here."
+    }
+  },
+  "installAgent": {
+    "title": "Run builds and apps on another machine",
+    "description": "Install the agent on a Linux server or a Mac and it joins this control plane in a minute.",
+    "cta": "Add a server",
+    "dismiss": "Hide this banner",
+    "dialogTitle": "Install the agent",
+    "dialogDescription": "Run one command on the machine you want to add. This page notices when it connects.",
+    "tabsLabel": "Operating system",
+    "linux": "Linux",
+    "macos": "macOS",
+    "minting": "Creating a single-use join command",
+    "mintFailed": "Could not create a join command: {{message}}",
+    "linuxLabel": "Run on the server",
+    "linuxHint": "Needs Docker on the server. The command is single use and expires at {{time}}.",
+    "macosLabel": "Run in Terminal on the Mac",
+    "macosHint": "Single use, expires at {{time}}.",
+    "macosNote": "Preview. Workloads run through Docker Desktop, OrbStack or Lima, which share your Mac's files, so a Mac is best used as a builder rather than a place for production apps.",
+    "waiting": "Waiting for the node to connect",
+    "connected": "Connected: {{name}}"
+  },
+  "timeline": {
+    "title": "Health timeline",
+    "window": "Time window",
+    "windows": {
+      "24h": "24 hours",
+      "168h": "7 days",
+      "720h": "30 days"
+    },
+    "loading": "Loading health timeline",
+    "unavailable": "The timeline is unavailable right now.",
+    "stripLabel": "Online and offline periods",
+    "noUptime": "No online or offline time recorded in this window.",
+    "summary_one": "{{uptime}}% uptime, {{count}} change",
+    "summary_other": "{{uptime}}% uptime, {{count}} changes"
+  },
+  "doctor": {
+    "title": "Agent doctor",
+    "run": "Run checks",
+    "hide": "Hide checks",
+    "running": "Running checks",
+    "unavailable": "The checks are unavailable right now.",
+    "noReport": "The agent has not sent a preflight report yet, so docker, disk, clock and port checks are missing.",
+    "status": {
+      "pass": "Pass",
+      "warn": "Warn",
+      "fail": "Fail",
+      "unknown": "Unknown"
+    },
+    "checks": {
+      "docker": "Docker",
+      "architecture": "Architecture",
+      "disk": "Disk",
+      "clock": "Clock",
+      "wireguard": "WireGuard",
+      "mesh_port": "Mesh port",
+      "firewall": "Firewall",
+      "control_plane": "Control plane",
+      "cert": "Certificate",
+      "heartbeat": "Heartbeat",
+      "agent_version": "Agent version",
+      "schedulable": "Scheduling"
+    }
+  },
+  "skew": {
+    "title_one": "{{count}} agent is behind {{version}}",
+    "title_other": "{{count}} agents are behind {{version}}",
+    "description": "Upgrade in this order: cordoned nodes first, then online nodes, offline nodes last.",
+    "step": "{{from}} to {{to}}",
+    "notes": {
+      "cordoned": "cordoned",
+      "offline": "offline"
+    },
+    "howTo": "Pull the new agent image or binary on each node and restart it. The enrolled identity is kept.",
+    "autoUpdate": {
+      "on": "Automatic agent updates are on. Agents install the control plane version themselves.",
+      "off": "Automatic agent updates are off. Run levelrail-agent self-update --apply on a node, or turn on nodes.agent_auto_update in settings."
+    },
+    "updateAnyway": {
+      "action": "Update anyway",
+      "queued": "Queued for the next agent check",
+      "disclaimer": "Skips the maintenance window and hold. The update is still signature verified and rolls back on failure."
     }
   }
 }

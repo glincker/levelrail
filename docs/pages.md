@@ -157,6 +157,8 @@ levelrail pages promote docs DEPLOY_ID
 
 `GET /api/v1/static-sites/{name}/deploys` lists the deploys with `url`, `live` and `promotable`. `POST /api/v1/static-sites/{name}/deploys/{deployId}/promote` makes one live: it needs the same permission as a rollback, checks that the files still match the recorded content digest, and answers 410 when they were pruned.
 
+Rollback and promote follow the production history, not the order of the deploy list. A promote or rollback adds a new deploy marked live that serves the chosen deploy's files. `pages rollback <site>` with no id goes back to the production deploy that was live before the current one became live, so after promoting an older deploy it restores the version you had before the promote. Run it again and it returns to the deploy you rolled back from. With an explicit id it restores exactly that deploy.
+
 ## Resize images on request
 
 When `pages.image_resize` is on, a request for a JPEG or PNG file with a `w` query value is answered at that width, keeping the aspect ratio, for example `/img/hero.jpg?w=640`. It is off by default, because decoding images uses memory. Other file types, a missing or non-numeric `w`, an image already smaller than the width, and files over the limits below are served unchanged. Resized copies are cached in memory, oldest dropped first. All keys are runtime settings and apply on the next request (see [runtime settings](/runtime-settings)).

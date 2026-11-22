@@ -23,9 +23,7 @@ type RevokeJoinTokensResponse struct {
 
 // ListPendingJoinTokens calls GET /api/v1/nodes/join-tokens.
 func (c *Client) ListPendingJoinTokens(ctx context.Context) ([]PendingJoinToken, error) {
-	var out []PendingJoinToken
-	err := c.do(ctx, http.MethodGet, nodesCollectionPath()+"/join-tokens", nil, &out)
-	return out, err
+	return getJSON[[]PendingJoinToken](ctx, c, nodesCollectionPath()+"/join-tokens")
 }
 
 // RevokeJoinTokens calls DELETE /api/v1/nodes/join-tokens, or .../{id} when id is set.

@@ -168,16 +168,12 @@ func (c *Client) StartHostedImport(ctx context.Context, name string, req HostedI
 
 // GetDatabaseDataCopy calls GET /api/v1/imports/platform/databases/{name}.
 func (c *Client) GetDatabaseDataCopy(ctx context.Context, name string) (DataCopyStatus, error) {
-	var out DataCopyStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/imports/platform/databases/"+url.PathEscape(name), nil, &out)
-	return out, err
+	return getJSON[DataCopyStatus](ctx, c, "/api/v1/imports/platform/databases/"+url.PathEscape(name))
 }
 
 // ListDatabaseDataCopies calls GET /api/v1/imports/platform/databases.
 func (c *Client) ListDatabaseDataCopies(ctx context.Context) ([]DataCopyStatus, error) {
-	var out []DataCopyStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/imports/platform/databases", nil, &out)
-	return out, err
+	return getJSON[[]DataCopyStatus](ctx, c, "/api/v1/imports/platform/databases")
 }
 
 // CutoverReport calls GET /api/v1/migration/cutover, or its /verify form.
@@ -196,9 +192,7 @@ func (c *Client) CutoverReport(ctx context.Context, app, targetIP string, verify
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out CutoverReport
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[CutoverReport](ctx, c, path)
 }
 
 // MigrationVolumeGuide calls GET /api/v1/migration/volumes.
@@ -207,7 +201,5 @@ func (c *Client) MigrationVolumeGuide(ctx context.Context, source, app string) (
 	if app != "" {
 		q.Set("app", app)
 	}
-	var out VolumeGuideResponse
-	err := c.do(ctx, http.MethodGet, "/api/v1/migration/volumes?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[VolumeGuideResponse](ctx, c, "/api/v1/migration/volumes?"+q.Encode())
 }

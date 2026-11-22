@@ -39,9 +39,7 @@ func (c *Client) ListInbox(ctx context.Context, unreadOnly bool, limit int) ([]I
 	if len(v) > 0 {
 		path += "?" + v.Encode()
 	}
-	var out []InboxItem
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]InboxItem](ctx, c, path)
 }
 
 // InboxUnreadCount calls GET /api/v1/inbox/unread-count.
@@ -67,9 +65,7 @@ type InboxState struct {
 
 // GetInboxState calls GET /api/v1/inbox/state.
 func (c *Client) GetInboxState(ctx context.Context) (InboxState, error) {
-	var out InboxState
-	err := c.do(ctx, http.MethodGet, "/api/v1/inbox/state", nil, &out)
-	return out, err
+	return getJSON[InboxState](ctx, c, "/api/v1/inbox/state")
 }
 
 // ArchiveInbox calls POST /api/v1/inbox/archive; restore undoes an archive.
@@ -80,9 +76,7 @@ func (c *Client) ArchiveInbox(ctx context.Context, ids []string, restore bool) e
 
 // GetInboxPrefs calls GET /api/v1/inbox/preferences.
 func (c *Client) GetInboxPrefs(ctx context.Context) (InboxPrefs, error) {
-	var out InboxPrefs
-	err := c.do(ctx, http.MethodGet, "/api/v1/inbox/preferences", nil, &out)
-	return out, err
+	return getJSON[InboxPrefs](ctx, c, "/api/v1/inbox/preferences")
 }
 
 // SetInboxPrefs calls PUT /api/v1/inbox/preferences.

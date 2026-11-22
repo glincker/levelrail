@@ -162,6 +162,7 @@ var readOnlyMayMutate = map[string]string{ //nolint:gosec // route paths and rea
 	"POST /api/v1/apps/{name}/domains/{domain}/policies/preview": "explains a draft traffic policy, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/doctor":           "runs read-only diagnostics against this server and public DNS, persists nothing",
 	"POST /api/v1/domains/{domain}/diagnose":                     "same read-only diagnostics addressed by domain, persists nothing",
+	"POST /api/v1/domains/{domain}/dns-check":                    "fresh DNS lookup addressed by domain, persists nothing",
 	"POST /api/v1/apps/{name}/static-routes/test":                "runs one request through the published rules and files, persists nothing",
 	"POST /api/v1/apps/{name}/static-routes/lint":                "parses submitted _redirects and _headers text, persists nothing",
 	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",

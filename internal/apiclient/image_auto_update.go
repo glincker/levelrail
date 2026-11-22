@@ -20,9 +20,7 @@ type ImageAutoUpdateResource struct {
 
 // GetImageAutoUpdate calls GET /api/v1/apps/{name}/auto-update.
 func (c *Client) GetImageAutoUpdate(ctx context.Context, appName string) (ImageAutoUpdateResource, error) {
-	var out ImageAutoUpdateResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/auto-update", nil, &out)
-	return out, err
+	return getJSON[ImageAutoUpdateResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/auto-update")
 }
 
 // SetImageAutoUpdate calls PUT /api/v1/apps/{name}/auto-update.

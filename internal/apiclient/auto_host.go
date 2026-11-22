@@ -23,9 +23,7 @@ type CertBudget struct {
 
 // GetAutoHost calls GET /api/v1/apps/{name}/auto-host.
 func (c *Client) GetAutoHost(ctx context.Context, app string) (AutoHost, error) {
-	var out AutoHost
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/auto-host", nil, &out)
-	return out, err
+	return getJSON[AutoHost](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/auto-host")
 }
 
 // SetAutoHost calls PUT /api/v1/apps/{name}/auto-host.
@@ -37,7 +35,5 @@ func (c *Client) SetAutoHost(ctx context.Context, app string, enabled bool) (Aut
 
 // GetCertBudget calls GET /api/v1/certificates/budget.
 func (c *Client) GetCertBudget(ctx context.Context) (CertBudget, error) {
-	var out CertBudget
-	err := c.do(ctx, http.MethodGet, "/api/v1/certificates/budget", nil, &out)
-	return out, err
+	return getJSON[CertBudget](ctx, c, "/api/v1/certificates/budget")
 }

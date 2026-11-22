@@ -74,9 +74,7 @@ func (c *Client) ConnectK8sCluster(ctx context.Context, req ConnectK8sClusterReq
 
 // GetK8sCluster calls GET /api/v1/clusters/{name}.
 func (c *Client) GetK8sCluster(ctx context.Context, name string) (K8sClusterResource, error) {
-	var out K8sClusterResource
-	err := c.do(ctx, http.MethodGet, k8sClusterPath(name), nil, &out)
-	return out, err
+	return getJSON[K8sClusterResource](ctx, c, k8sClusterPath(name))
 }
 
 // TestK8sCluster calls POST /api/v1/clusters/{name}/test.
@@ -106,7 +104,7 @@ func (c *Client) ListK8sNamespaces(ctx context.Context, name string) ([]K8sNames
 
 // DisconnectK8sCluster calls DELETE /api/v1/clusters/{name}.
 func (c *Client) DisconnectK8sCluster(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, k8sClusterPath(name), nil, nil)
+	return c.del(ctx, k8sClusterPath(name))
 }
 
 // K8sDeployRequest is the body of POST /clusters/{name}/deployments.
@@ -195,7 +193,5 @@ func (c *Client) ListK8sDeployments(ctx context.Context, name string) ([]K8sDepl
 
 // GetK8sDeploymentStatus calls GET /api/v1/clusters/{name}/deployments/{app}.
 func (c *Client) GetK8sDeploymentStatus(ctx context.Context, name, app string) (K8sDeploymentStatus, error) {
-	var out K8sDeploymentStatus
-	err := c.do(ctx, http.MethodGet, k8sClusterPath(name)+"/deployments/"+PathEscape(app), nil, &out)
-	return out, err
+	return getJSON[K8sDeploymentStatus](ctx, c, k8sClusterPath(name)+"/deployments/"+PathEscape(app))
 }

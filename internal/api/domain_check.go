@@ -383,3 +383,18 @@ func (rt *Router) handleCheckDomain(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) CheckDomainStatus(ctx context.Context, domain string) (string, error) {
 	return rt.runDomainCheck(ctx, domain, rt.publicHost, false).Status, nil
 }
+
+// handleDomainDNSCheck handles GET and POST /api/v1/domains/{domain}/dns-check:
+// the same lookup as the per-app check, addressed by domain alone. POST skips
+// the short result cache. Only the safe resolver runs, never an HTTP fetch.
+func (rt *Router) handleDomainDNSCheck(w http.ResponseWriter, r *http.Request) {
+	app, domain := rt.diagnoseOwner(w, r)
+	if app == "" {
+		return
+	}
+	refresh := r.Method == http.MethodPost || r.URL.Query().Get("refresh") == "true"
+	expectedHost, inferred := advertisedHost(r, rt.advertisedPublicHost(r.Context()))
+	resp := rt.runDomainCheckOpts(r.Context(), domain, expectedHost, inferred, refresh)
+	rt.enrichDomainCheck(r.Context(), &resp)
+	writeJSON(w, http.StatusOK, resp)
+}

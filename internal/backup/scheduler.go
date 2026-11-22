@@ -90,51 +90,7 @@ const ScheduledVerificationCheckedBy = "scheduler"
 
 // Scheduler periodically checks which databases have a due cron
 // schedule (store.DesiredDatabase's BackupSchedule/BackupTargetID/
-// BackupRetain, migrations/0023_scheduled_backups.sql) and runs a
-// backup through the same Runner the manual trigger path
-// (internal/api's handleTriggerBackup) uses, recording the attempt in
-// store.BackupHistory exactly like a manual trigger does, since both
-// paths call the identical Runner.RunBackup.
-//
-// Tick's own shape (list what to evaluate, act, persist any resulting
-// state, join and return errors rather than stopping at the first one)
-// deliberately mirrors internal/alerting.Engine.Tick: that is this
-// codebase's own established shape for "evaluate every enabled X on an
-// interval, one broken X must never block the rest," and a cron
-// schedule check is exactly that same shape applied to a different
-// resource. Run's own ticker loop is the identical pattern
-// internal/alerting.Engine.Run, internal/telemetry.Collector.Run, and
-// every other periodic loop in cmd/levelrail/main.go already use.
-//
-// Unlike alerting.Engine.Tick's own per-rule dispatch, a due backup runs
-// synchronously inside Tick, not fired off into its own goroutine the
-// way internal/api's handleTriggerBackup dispatches one: that handler's
-// goroutine exists specifically because an HTTP response must return in
-// milliseconds, a constraint that does not apply to a background ticker
-// loop already running off the request path. Running sequentially here
-// also means a database's backup finishing (or failing) is fully
-// resolved, including its retention prune, before Tick moves on to
-// evaluate the next database, which keeps this method's own control flow
-// as a flat, easy-to-reason-about loop instead of needing a WaitGroup or
-// a results channel to know when a tick's work is actually done.
-//
-// Missed-schedule handling is a known, deliberate, and documented gap,
-// not an oversight: Scheduler tracks each database's next fire time
-// purely in memory (nextRun below), armed fresh the first tick a
-// schedule is observed rather than reconstructed from
-// store.BackupHistory on startup. A schedule that should have fired
-// while the control plane was down does not "catch up" the moment it
-// restarts; it simply waits for its next naturally occurring occurrence.
-// This mirrors the honesty this codebase already extends to a related
-// gap on the record-keeping side (store.BackupHistory's own status
-// constants doc comment: "nothing currently sweeps a stuck running row
-// back to failed... a known, honest gap for the eventual scheduler to
-// close alongside its own retry logic, not invented speculatively
-// here"). Building real catch-up/retry semantics is a materially bigger
-// feature (it needs to decide how many missed runs to catch up on, how
-// to avoid a thundering herd of backups firing at once after a long
-// outage, and how that interacts with retention) than this task's scope
-// asked for, so it is left as a follow-up rather than guessed at here.
+// BackupRetain, migrations/0023_scheduled_backups.sql) and runs a.
 type Scheduler struct {
 	Store  ScheduleStore
 	Runner ScheduledBackupRunner

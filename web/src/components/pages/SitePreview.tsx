@@ -94,8 +94,19 @@ export function SitePreview({ name }: Readonly<{ name: string }>) {
       aria-label={t('preview.title')}
       className="space-y-2 rounded-lg border border-border bg-card p-3"
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold">{t('preview.title')}</h2>
+        <div className="flex items-center gap-1">
+          <Button
+            size="xs"
+            variant={missing ? 'secondary' : 'ghost'}
+            aria-pressed={missing}
+            disabled={!base}
+            onClick={() => setMissing((v) => !v)}
+          >
+            {t('preview.notFoundToggle')}
+          </Button>
+        </div>
         <SegmentedControl
           aria-label={t('preview.device')}
           value={device}
@@ -106,18 +117,7 @@ export function SitePreview({ name }: Readonly<{ name: string }>) {
           ]}
         />
       </div>
-      <div className="flex justify-end">
-        <Button
-          size="xs"
-          variant={missing ? 'secondary' : 'ghost'}
-          aria-pressed={missing}
-          disabled={!base}
-          onClick={() => setMissing((v) => !v)}
-        >
-          {t('preview.notFoundToggle')}
-        </Button>
-      </div>
-      <div className="flex justify-center rounded-md bg-muted/40 p-2">
+      <div className="flex justify-center rounded-md bg-muted/40 p-1.5">
         <div
           data-testid="preview-frame"
           className={`relative overflow-hidden rounded-md border border-border bg-background ${FRAME[device].box}`}

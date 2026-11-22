@@ -1,7 +1,10 @@
 package demo
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -39,12 +42,41 @@ func (s *seeder) pages() error {
 }
 
 func (s *seeder) pagesSite(site pagesSiteSpec, r *rng) error {
-	ss := store.StaticSite{
-		Name: site.name, Domains: []string{site.host + "." + s.opts.DomainSuffix},
-		RootDir: "/var/lib/levelrail/static/" + site.name + "/current", UpdatedAt: s.at(1, 2*time.Hour),
+	domains := []string{site.host + "." + s.opts.DomainSuffix}
+	root := "/var/lib/levelrail/static/" + site.name + "/current"
+	if s.opts.DataDir != "" {
+		root = filepath.Join(s.opts.DataDir, "demo-static", site.name, "current")
+		if err := writeDemoTree(root, site.name); err != nil {
+			return err
+		}
 	}
+	ss := store.StaticSite{Name: site.name, Domains: domains, RootDir: root, UpdatedAt: s.at(1, 2*time.Hour)}
 	if err := s.db.SaveStaticSite(s.ctx, ss); err != nil {
 		return fmt.Errorf("demo: save static site %q: %w", site.name, err)
+	}
+	// A static site is backed by a placeholder app, the same shape the create route makes;
+	// its domains live on the static site row, which refuses a domain a service already holds.
+	svc := store.DesiredService{
+		Name: site.name, Image: site.name + ":pending", Port: 80,
+		Strategy: "recreate", Replicas: 1, NodeID: "node_edge_fra_1",
+		ProjectID: "proj_platform", EnvironmentID: envID("proj_platform", "production"),
+	}
+	if err := s.db.SaveDesiredService(s.ctx, svc); err != nil {
+		return fmt.Errorf("demo: save static site service %q: %w", site.name, err)
+	}
+	if err := s.db.UpdateServiceProject(s.ctx, site.name, svc.ProjectID); err != nil {
+		return fmt.Errorf("demo: assign project for %q: %w", site.name, err)
+	}
+	if err := s.db.SetServiceEnvironment(s.ctx, site.name, svc.EnvironmentID); err != nil {
+		return fmt.Errorf("demo: assign environment for %q: %w", site.name, err)
+	}
+	// Written directly: the claim check above would refuse the same domain on two tables, yet the app detail reads it from the service.
+	dj, err := json.Marshal(domains)
+	if err != nil {
+		return fmt.Errorf("demo: encode domains for %q: %w", site.name, err)
+	}
+	if _, err := s.db.ExecContext(s.ctx, `UPDATE desired_services SET domains = ? WHERE name = ?`, string(dj), site.name); err != nil {
+		return fmt.Errorf("demo: set service domains for %q: %w", site.name, err)
 	}
 	spa, clean := site.spa, true
 	settings := store.StaticSiteSettings{OutputDir: "dist", BuildCommand: "npm run build", SPAFallback: &spa, CleanURLs: &clean, NotFoundPage: "404.html"}
@@ -195,6 +227,16 @@ func (s *seeder) backupExtras() error {
 
 // previewSettings gives the storefront a real preview policy so the settings page is not empty.
 func (s *seeder) previewSettings() error {
+	g := store.GitSource{ServiceName: "storefront-web", RepoURL: "https://git.example.com/acme/storefront-web.git", Branch: "main", BuildType: "dockerfile", BuildPath: "Dockerfile"}
+	if err := s.db.SaveGitSource(s.ctx, g); err != nil {
+		return fmt.Errorf("demo: save git source: %w", err)
+	}
+	if err := s.db.SetGitSourcePreviewEnabled(s.ctx, g.ServiceName, true); err != nil {
+		return fmt.Errorf("demo: enable previews: %w", err)
+	}
+	if err := s.db.SetGitSourcePostPRComments(s.ctx, g.ServiceName, true); err != nil {
+		return fmt.Errorf("demo: enable PR comments: %w", err)
+	}
 	err := s.db.SavePreviewAppSettings(s.ctx, store.PreviewAppSettings{
 		AppName: "storefront-web", OnLimit: store.PreviewOnLimitEvictOldest, TTLHours: 72, MaxPreviews: 4,
 		DatabaseStrategy: store.PreviewDatabaseStrategyFresh, RequireLabel: "preview", ExcludeServices: "worker,cache",
@@ -208,4 +250,28 @@ func (s *seeder) previewSettings() error {
 		Branch: "feat/cart-estimate", HeadSHA: "c0ffee1", Domain: "pr-212.shop." + s.opts.DomainSuffix,
 		Status: store.PreviewStatusActive, CreatedAt: at, UpdatedAt: at,
 	})
+}
+
+// writeDemoTree writes a few small fictional files so the Pages size and file count read plausibly.
+func writeDemoTree(root, name string) error {
+	page := func(title string) string {
+		return "<!doctype html><html><head><title>" + title + "</title></head><body><h1>" + title + "</h1></body></html>\n"
+	}
+	files := map[string]string{
+		"index.html":         page(name),
+		"404.html":           page("Not found"),
+		"pricing/index.html": page("Pricing"),
+		"assets/app.css":     "body{font-family:system-ui,sans-serif;margin:2rem}\n",
+		"assets/app.js":      "document.documentElement.dataset.ready='1'\n",
+	}
+	for rel, body := range files {
+		p := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
+			return fmt.Errorf("demo: create static tree: %w", err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			return fmt.Errorf("demo: write static tree: %w", err)
+		}
+	}
+	return nil
 }

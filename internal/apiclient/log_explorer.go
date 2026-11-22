@@ -108,9 +108,7 @@ func (c *Client) GetLogSignatures(ctx context.Context, app string, s LogSignatur
 	if s.Baseline {
 		q.Set("baseline", "true")
 	}
-	var out LogSignatures
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/logs/signatures?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[LogSignatures](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/logs/signatures?"+q.Encode())
 }
 
 // ListSavedLogQueries calls GET /api/v1/logs/queries.
@@ -135,5 +133,5 @@ func (c *Client) CreateSavedLogQuery(ctx context.Context, req SavedLogQueryReque
 
 // DeleteSavedLogQuery calls DELETE /api/v1/logs/queries/{id}.
 func (c *Client) DeleteSavedLogQuery(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/logs/queries/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/logs/queries/"+PathEscape(id))
 }

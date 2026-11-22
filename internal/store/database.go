@@ -626,24 +626,7 @@ var ErrPublicPortRangeExhausted = errors.New("store: no free public port availab
 
 // SetDatabasePublicAccess is DesiredDatabase's counterpart to
 // SetDatabaseBackupSchedule: its own endpoint
-// (PUT/DELETE /api/v1/databases/{name}/public-access), its own store
-// method, same separation-from-ordinary-update reasoning. Disabling
-// (enabled=false) always clears public_port and public_bind_address
-// back to NULL regardless of requestedPort/requestedBindAddress.
-// Enabling with requestedPort 0 auto-assigns the lowest free port in
-// [PublicPortRangeStart, PublicPortRangeEnd]; a non-zero requestedPort is
-// used as-is if no other database already claims it. requestedBindAddress
-// empty resolves to DefaultBindAddress ("private"), the same "resolve
-// and always persist a concrete value" treatment SaveDesiredService
-// gives BindAddress. Returns the port actually assigned (0 when
-// disabling).
-//
-// Runs inside a transaction so "is this port free" and "claim it" are
-// atomic: db.SetMaxOpenConns(1) (store.go) already serializes every
-// write against this same *sql.DB, so this is a correctness backstop
-// against nothing racing it today, not a fix for an observed bug, the
-// same reasoning claimServiceDomains (service.go) already applies to
-// domain claims.
+// (PUT/DELETE /api/v1/databases/{name}/public-access), its own store.
 func (db *DB) SetDatabasePublicAccess(ctx context.Context, name string, enabled bool, requestedPort int, requestedBindAddress string) (int, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {

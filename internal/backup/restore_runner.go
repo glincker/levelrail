@@ -78,25 +78,7 @@ func (r *RestoreRunner) now() time.Time {
 
 // RunRestore downloads the object recorded by backupHistoryID and
 // applies it to containerName (running engine) as databaseName's new
-// contents, recording the attempt in store.RestoreHistory throughout: a
-// running row before any work starts, then succeeded or failed once it's
-// done. historyID is minted by the caller (internal/api), the same
-// "generate the ID before the first write" convention RunBackup's own
-// doc comment describes; RunRestore is expected to run in a goroutine
-// the caller has already detached, for the same reason RunBackup is, see
-// internal/api's handleTriggerRestore.
-//
-// RunRestore refuses to proceed, failing the history row rather than
-// attempting anything, if the named backup's own Status is not
-// store.BackupStatusSucceeded: restoring from a backup that was still
-// running (and so has no complete, consistent object at its recorded key
-// yet) or that already failed (and so may have no object there at all,
-// or a partial one) is not a smaller version of a real restore, it is a
-// data-loss-shaped mistake this function refuses to make even if a
-// caller's own validation (internal/api's handleTriggerRestore does the
-// identical check before ever calling this, so a caller going through
-// the ordinary API path never reaches this branch) somehow let it
-// through.
+// contents, recording the attempt in store.RestoreHistory throughout: a.
 func (r *RestoreRunner) RunRestore(ctx context.Context, historyID, databaseName, backupHistoryID, engine, containerName string) error {
 	if err := checkDiskSpace(resolveWorkDir(r.WorkDir)); err != nil {
 		return err

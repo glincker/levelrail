@@ -53,9 +53,7 @@ type IntegrityRestore struct {
 
 // GetIntegrity calls GET /api/v1/system/integrity.
 func (c *Client) GetIntegrity(ctx context.Context) (Integrity, error) {
-	var out Integrity
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/integrity", nil, &out)
-	return out, err
+	return getJSON[Integrity](ctx, c, "/api/v1/system/integrity")
 }
 
 // CheckIntegrity calls POST /api/v1/system/integrity/check.
@@ -78,5 +76,5 @@ func (c *Client) RestoreIntegrity(ctx context.Context, name string, proof *StepU
 
 // CancelIntegrityRestore calls DELETE /api/v1/system/integrity/restore.
 func (c *Client) CancelIntegrityRestore(ctx context.Context) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/system/integrity/restore", nil, nil)
+	return c.del(ctx, "/api/v1/system/integrity/restore")
 }

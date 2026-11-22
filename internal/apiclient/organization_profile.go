@@ -49,9 +49,7 @@ type OrganizationSummary struct {
 
 // GetOrganizationSummary calls GET /api/v1/organizations/{id}/summary.
 func (c *Client) GetOrganizationSummary(ctx context.Context, id string) (OrganizationSummary, error) {
-	var out OrganizationSummary
-	err := c.do(ctx, http.MethodGet, organizationPath(id)+"/summary", nil, &out)
-	return out, err
+	return getJSON[OrganizationSummary](ctx, c, organizationPath(id)+"/summary")
 }
 
 // PatchOrganization calls PATCH /api/v1/organizations/{id} with the given fields only.
@@ -82,5 +80,5 @@ func (c *Client) SetOrganizationAvatar(ctx context.Context, id string, image []b
 
 // DeleteOrganizationAvatar calls DELETE /api/v1/organizations/{id}/avatar.
 func (c *Client) DeleteOrganizationAvatar(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, organizationPath(id)+"/avatar", nil, nil)
+	return c.del(ctx, organizationPath(id)+"/avatar")
 }

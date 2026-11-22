@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -17,6 +18,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -78,6 +80,8 @@ type backupTargetResource struct {
 	EncryptDumps bool `json:"encrypt_dumps"`
 	// LocalRoot is the read-only APP_BACKUP_LOCAL_ROOT a local target lives under; empty for other providers.
 	LocalRoot string `json:"local_root,omitempty"`
+	// HostKey is the pinned SSH host key ("type SHA256:...") of an sftp target; public, never a secret.
+	HostKey string `json:"host_key,omitempty"`
 }
 
 // backupProviderLocal is the API-only provider name for a host directory target.
@@ -85,6 +89,69 @@ const backupProviderLocal = "local"
 
 // backupProviderWebDAV is the API-only provider name for a WebDAV share; stored as custom with a dav+ endpoint.
 const backupProviderWebDAV = "webdav"
+
+// backupProviderSFTP is the API-only provider name for an SFTP server; stored as custom with an sftp+ endpoint.
+const backupProviderSFTP = "sftp"
+
+// sftpKeyAuthMarker fills the password secret of a key-auth target so the shared resolvers keep working.
+const sftpKeyAuthMarker = "private-key"
+
+// validateSFTPTarget checks host, remote path and the pinned host key. Pinning is never implicit:
+// host_key must come from the user, typically after reviewing the scan result.
+func validateSFTPTarget(ctx context.Context, name, endpoint, dir, hostKey string) error {
+	if name == "" {
+		return errors.New("name is required")
+	}
+	if _, _, err := backup.SFTPHostPort(endpoint); err != nil {
+		return err
+	}
+	if err := backup.ValidateSFTPHost(ctx, endpoint); err != nil {
+		return err
+	}
+	if _, err := backup.SFTPBasePath(dir); err != nil {
+		return err
+	}
+	if _, _, err := backup.ParseSFTPHostKey(hostKey); err != nil {
+		return errors.New("host_key is required: scan the server, check the fingerprint and pass it as \"ssh-ed25519 SHA256:...\"")
+	}
+	return nil
+}
+
+// validateSFTPAuth needs a username plus exactly one of password or private key.
+func validateSFTPAuth(user, password, privateKey, passphrase string) error {
+	if user == "" {
+		return errors.New("access_key_id (the SSH username) is required")
+	}
+	if (password == "") == (privateKey == "") {
+		return errors.New("set exactly one of secret_access_key (password) or private_key")
+	}
+	if privateKey != "" {
+		return backup.ValidateSFTPPrivateKey(privateKey, passphrase)
+	}
+	return nil
+}
+
+// sftpStored maps an API sftp target onto the stored custom provider shape; the pinned key rides in region.
+func sftpStored(t *store.BackupTarget, endpoint, dir, hostKey string) {
+	base, _ := backup.SFTPBasePath(dir)
+	host, port, _ := backup.SFTPHostPort(endpoint)
+	algo, fp, _ := backup.ParseSFTPHostKey(hostKey)
+	t.Provider, t.Endpoint, t.Region, t.Bucket = store.BackupProviderCustom, store.SFTPEndpointScheme+net.JoinHostPort(host, port), algo+" "+fp, base
+}
+
+// setSFTPSecrets stores the credential set, blanking the half that is not in use.
+func (rt *Router) setSFTPSecrets(ctx context.Context, id, user, password, privateKey, passphrase string) error {
+	if privateKey != "" {
+		password = sftpKeyAuthMarker
+	}
+	key := store.BackupTargetSecretsKey(id)
+	for _, kv := range [][2]string{{"private_key", privateKey}, {"key_passphrase", passphrase}, {"access_key_id", user}, {"secret_access_key", password}} {
+		if err := rt.backupSecrets.SetValue(ctx, key, kv[0], kv[1]); err != nil {
+			return fmt.Errorf("set %s: %w", kv[0], err)
+		}
+	}
+	return nil
+}
 
 // validateWebDAVTarget checks the https endpoint (private hosts only when the WebDAV private network setting is on)
 // and the directory path. username and password reuse the access key fields.
@@ -117,7 +184,10 @@ func webDAVStored(t *store.BackupTarget, endpoint, dir string) {
 }
 
 func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
-	provider, endpoint, localRoot := t.Provider, t.Endpoint, ""
+	provider, endpoint, localRoot, region, hostKey := t.Provider, t.Endpoint, "", t.Region, ""
+	if strings.HasPrefix(t.Endpoint, store.SFTPEndpointScheme) {
+		provider, endpoint, region, hostKey = backupProviderSFTP, strings.TrimPrefix(t.Endpoint, store.SFTPEndpointScheme), "", t.Region
+	}
 	if strings.HasPrefix(t.Endpoint, store.WebDAVEndpointScheme) {
 		provider, endpoint = backupProviderWebDAV, strings.TrimPrefix(t.Endpoint, store.WebDAVEndpointScheme)
 	}
@@ -130,11 +200,12 @@ func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
 		Name:         t.Name,
 		Provider:     provider,
 		Endpoint:     endpoint,
-		Region:       t.Region,
+		Region:       region,
 		Bucket:       t.Bucket,
 		CreatedAt:    t.CreatedAt,
 		EncryptDumps: t.EncryptDumps,
 		LocalRoot:    localRoot,
+		HostKey:      hostKey,
 	}
 }
 
@@ -153,6 +224,10 @@ type createBackupTargetRequest struct {
 	EncryptDumps *bool `json:"encrypt_dumps,omitempty"`
 	// CABundle is an optional write-only PEM bundle for webdav targets, stored as a secret.
 	CABundle string `json:"ca_bundle,omitempty"`
+	// PrivateKey and PrivateKeyPassphrase are write-only sftp key credentials; HostKey is the pinned server key.
+	PrivateKey           string `json:"private_key,omitempty"`
+	PrivateKeyPassphrase string `json:"private_key_passphrase,omitempty"`
+	HostKey              string `json:"host_key,omitempty"`
 }
 
 // validateCreateBackupTargetRequest checks everything except whether the
@@ -182,7 +257,7 @@ func validateBackupTargetFields(name, provider, endpoint, region, bucket string)
 	}
 	// Internal forms are only produced server side by the matching provider paths.
 	low := strings.ToLower(strings.TrimSpace(endpoint))
-	for _, internal := range []string{store.WebDAVEndpointScheme, store.LocalEndpointScheme, store.AgentEndpointScheme} {
+	for _, internal := range []string{store.WebDAVEndpointScheme, store.LocalEndpointScheme, store.AgentEndpointScheme, store.SFTPEndpointScheme} {
 		if strings.HasPrefix(low, internal) {
 			return errors.New("endpoint must be an http or https URL")
 		}
@@ -198,9 +273,12 @@ func validateBackupTargetFields(name, provider, endpoint, region, bucket string)
 
 // backupTargetDestination reduces a stored target to the parts that decide where its
 // credentials are sent: provider kind, scheme, host and effective port.
-func backupTargetDestination(provider, endpoint string) string {
+func backupTargetDestination(provider, endpoint, region string) string {
 	kind, raw := provider, endpoint
 	switch {
+	case strings.HasPrefix(endpoint, store.SFTPEndpointScheme):
+		host, port, _ := backup.SFTPHostPort(endpoint)
+		return backupProviderSFTP + "|" + strings.ToLower(host) + "|" + port + "|" + region
 	case strings.HasPrefix(endpoint, store.WebDAVEndpointScheme):
 		kind, raw = backupProviderWebDAV, strings.TrimPrefix(endpoint, store.WebDAVEndpointScheme)
 	case strings.HasPrefix(endpoint, store.LocalEndpointScheme):
@@ -219,7 +297,37 @@ func backupTargetDestination(provider, endpoint string) string {
 	return kind + "|" + strings.ToLower(u.Scheme) + "|" + strings.ToLower(u.Hostname()) + "|" + port
 }
 
+// descriptorProblem runs the shared field registry over the request values so required
+// and select errors read the same on every surface. Skipped keys are optional credentials.
+func descriptorProblem(values map[string]string, skip ...string) error {
+	res, ok := fielddesc.Get(fielddesc.BackupTarget)
+	if !ok {
+		return nil
+	}
+	if values["private_key"] != "" {
+		values["auth"] = "key"
+	} else {
+		values["auth"] = "password"
+	}
+	if msg := fielddesc.FirstProblem(res.ValidateExcept(values, skip...)); msg != "" {
+		return errors.New(msg)
+	}
+	return nil
+}
+
 func validateCreateBackupTargetRequest(ctx context.Context, req createBackupTargetRequest) error {
+	if err := descriptorProblem(map[string]string{
+		"name": req.Name, "provider": req.Provider, "endpoint": req.Endpoint, "region": req.Region, "bucket": req.Bucket,
+		"access_key_id": req.AccessKeyID, "secret_access_key": req.SecretAccessKey, "private_key": req.PrivateKey, "host_key": req.HostKey,
+	}); err != nil {
+		return err
+	}
+	if req.Provider == backupProviderSFTP {
+		if err := validateSFTPTarget(ctx, req.Name, req.Endpoint, req.Bucket, req.HostKey); err != nil {
+			return err
+		}
+		return validateSFTPAuth(req.AccessKeyID, req.SecretAccessKey, req.PrivateKey, req.PrivateKeyPassphrase)
+	}
 	if req.Provider == backupProviderWebDAV {
 		if err := validateWebDAVTarget(ctx, req.Name, req.Endpoint, req.Bucket, req.CABundle); err != nil {
 			return err
@@ -268,9 +376,31 @@ type updateBackupTargetRequest struct {
 	CABundle        string `json:"ca_bundle,omitempty"`
 	// ClearCABundle drops the stored bundle; ca_bundle is write-only so it cannot be sent empty.
 	ClearCABundle bool `json:"clear_ca_bundle,omitempty"`
+	// Write-only sftp credentials and the pinned host key, see createBackupTargetRequest.
+	PrivateKey           string `json:"private_key,omitempty"`
+	PrivateKeyPassphrase string `json:"private_key_passphrase,omitempty"`
+	HostKey              string `json:"host_key,omitempty"`
 }
 
 func validateUpdateBackupTargetRequest(ctx context.Context, req updateBackupTargetRequest) error {
+	if err := descriptorProblem(map[string]string{
+		"name": req.Name, "provider": req.Provider, "endpoint": req.Endpoint, "region": req.Region, "bucket": req.Bucket,
+		"private_key": req.PrivateKey, "host_key": req.HostKey,
+	}, "access_key_id", "secret_access_key", "private_key"); err != nil {
+		return err
+	}
+	if req.Provider == backupProviderSFTP {
+		if err := validateSFTPTarget(ctx, req.Name, req.Endpoint, req.Bucket, req.HostKey); err != nil {
+			return err
+		}
+		if req.AccessKeyID == "" && (req.SecretAccessKey != "" || req.PrivateKey != "") {
+			return errors.New("access_key_id (the SSH username) must be sent with new credentials")
+		}
+		if req.AccessKeyID != "" {
+			return validateSFTPAuth(req.AccessKeyID, req.SecretAccessKey, req.PrivateKey, req.PrivateKeyPassphrase)
+		}
+		return nil
+	}
 	if req.Provider == backupProviderWebDAV {
 		if err := validateWebDAVTarget(ctx, req.Name, req.Endpoint, req.Bucket, req.CABundle); err != nil {
 			return err
@@ -393,10 +523,17 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
 		EncryptDumps: encryptDumps,
 	}
-	if req.Provider == backupProviderLocal {
+	switch req.Provider {
+	case backupProviderLocal:
 		clean, _ := backup.CleanLocalPath(req.Bucket)
 		target.Provider, target.Endpoint, target.Region, target.Bucket = store.BackupProviderCustom, store.LocalEndpointScheme, "", clean
-	} else {
+	case backupProviderSFTP:
+		sftpStored(&target, req.Endpoint, req.Bucket, req.HostKey)
+		if err := rt.setSFTPSecrets(r.Context(), id, req.AccessKeyID, req.SecretAccessKey, req.PrivateKey, req.PrivateKeyPassphrase); err != nil {
+			rt.internalError(w, "api: create backup target: set sftp credentials failed", err, slog.String("id", id))
+			return
+		}
+	default:
 		if req.Provider == backupProviderWebDAV {
 			webDAVStored(&target, req.Endpoint, req.Bucket)
 		}
@@ -457,8 +594,13 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 		webDAVStored(&t, req.Endpoint, req.Bucket)
 		provider, endpoint, region, bucket = t.Provider, t.Endpoint, t.Region, t.Bucket
 	}
+	if req.Provider == backupProviderSFTP {
+		var t store.BackupTarget
+		sftpStored(&t, req.Endpoint, req.Bucket, req.HostKey)
+		provider, endpoint, region, bucket = t.Provider, t.Endpoint, t.Region, t.Bucket
+	}
 	// Stored credentials only follow an unchanged destination; a new one needs its own.
-	if req.AccessKeyID == "" && backupTargetDestination(current.Provider, current.Endpoint) != backupTargetDestination(provider, endpoint) {
+	if req.AccessKeyID == "" && backupTargetDestination(current.Provider, current.Endpoint, current.Region) != backupTargetDestination(provider, endpoint, region) {
 		writeError(w, http.StatusBadRequest, "changing the provider or endpoint requires access_key_id and secret_access_key in the same request")
 		return
 	}
@@ -478,7 +620,16 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 			}
 		}
 	}
-	if req.AccessKeyID != "" {
+	if req.AccessKeyID != "" && req.Provider == backupProviderSFTP {
+		if rt.backupSecrets == nil {
+			writeError(w, http.StatusNotImplemented, "backup targets are not configured on this control plane (no master key set)")
+			return
+		}
+		if err := rt.setSFTPSecrets(r.Context(), id, req.AccessKeyID, req.SecretAccessKey, req.PrivateKey, req.PrivateKeyPassphrase); err != nil {
+			rt.internalError(w, "api: update backup target: set sftp credentials failed", err, slog.String("id", id))
+			return
+		}
+	} else if req.AccessKeyID != "" {
 		if rt.backupSecrets == nil {
 			writeError(w, http.StatusNotImplemented, "backup targets are not configured on this control plane (no master key set)")
 			return
@@ -564,6 +715,58 @@ func (rt *Router) auditBackupTargetDeleted(r *http.Request, id string, res store
 	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
 		rt.logger.Warn("api: backup target delete audit save failed", slog.String("error", err.Error()))
 	}
+}
+
+type sftpHostKeyRequest struct {
+	Endpoint string `json:"endpoint"`
+}
+
+type sftpHostKeyResponse struct {
+	HostKey     string `json:"host_key"`
+	KeyType     string `json:"key_type"`
+	Fingerprint string `json:"fingerprint"`
+}
+
+// handleScanSFTPHostKey handles POST /api/v1/backup-targets/sftp-host-key: it reads the key a server
+// offers so the user can verify it out of band and pin it. It sends no credentials and stores nothing.
+func (rt *Router) handleScanSFTPHostKey(w http.ResponseWriter, r *http.Request) {
+	if hidden, err := rt.backupTargetsHidden(r); err != nil {
+		rt.internalError(w, "api: scan sftp host key: resolve caller", err)
+		return
+	} else if hidden {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return
+	}
+	var req sftpHostKeyRequest
+	if !decodeReq(w, r, &req) {
+		return
+	}
+	if _, _, err := backup.SFTPHostPort(req.Endpoint); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !rt.allowSFTPScan(r) {
+		writeError(w, http.StatusTooManyRequests, "too many host key scans, try again in a minute")
+		return
+	}
+	// One answer for every failure, so the endpoint cannot be used to map internal networks.
+	fail := func(err error) {
+		rt.logger.Debug("api: sftp host key scan failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusBadGateway, sftpScanFailed)
+	}
+	if err := backup.ValidateSFTPHost(r.Context(), req.Endpoint); err != nil {
+		fail(err)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), backupTargetTestTimeout)
+	defer cancel()
+	key, err := backup.ScanSFTPHostKey(ctx, req.Endpoint)
+	if err != nil {
+		fail(err)
+		return
+	}
+	algo, fp, _ := backup.ParseSFTPHostKey(key)
+	writeJSON(w, http.StatusOK, sftpHostKeyResponse{HostKey: key, KeyType: algo, Fingerprint: fp})
 }
 
 // handleTestBackupTarget handles POST /api/v1/backup-targets/{id}/test:
@@ -665,4 +868,15 @@ func randomBackupTargetID() (string, error) {
 		return "", fmt.Errorf("api: generate backup target id: %w", err)
 	}
 	return "bkt_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// handleGetBackupTargetFields handles GET /api/v1/backup-targets/field-descriptors: the one field
+// registry the CLI, the dashboard form and the docs are built from.
+func (rt *Router) handleGetBackupTargetFields(w http.ResponseWriter, _ *http.Request) {
+	res, ok := fielddesc.Get(fielddesc.BackupTarget)
+	if !ok {
+		rt.internalError(w, "field descriptors", errors.New("field descriptors unavailable"))
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }

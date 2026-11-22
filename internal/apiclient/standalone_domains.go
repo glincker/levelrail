@@ -50,9 +50,7 @@ type StandaloneDomainRequest struct {
 
 // ListStandaloneDomains calls GET /api/v1/domains/standalone.
 func (c *Client) ListStandaloneDomains(ctx context.Context) ([]StandaloneDomain, error) {
-	var out []StandaloneDomain
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/standalone", nil, &out)
-	return out, err
+	return getJSON[[]StandaloneDomain](ctx, c, "/api/v1/domains/standalone")
 }
 
 // CreateStandaloneDomain calls POST /api/v1/domains/standalone.
@@ -71,7 +69,7 @@ func (c *Client) UpdateStandaloneDomain(ctx context.Context, domain string, req 
 
 // DeleteStandaloneDomain calls DELETE /api/v1/domains/standalone/{domain}.
 func (c *Client) DeleteStandaloneDomain(ctx context.Context, domain string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/domains/standalone/"+url.PathEscape(domain), nil, nil)
+	return c.del(ctx, "/api/v1/domains/standalone/"+url.PathEscape(domain))
 }
 
 // DNSRecordSuggestion is one record to create so a domain reaches this server.
@@ -110,9 +108,7 @@ func (c *Client) GetServerAddress(ctx context.Context, domain string) (ServerAdd
 	if domain != "" {
 		path += "?domain=" + url.QueryEscape(domain)
 	}
-	var out ServerAddress
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[ServerAddress](ctx, c, path)
 }
 
 // SetServerAddress calls PUT /api/v1/system/server-address; both empty clears the override.

@@ -155,9 +155,7 @@ func (c *Client) PreflightModel(ctx context.Context, req ModelPreflightRequest) 
 
 // ListModelCache calls GET /api/v1/model-cache.
 func (c *Client) ListModelCache(ctx context.Context) (ModelCacheReport, error) {
-	var out ModelCacheReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/model-cache", nil, &out)
-	return out, err
+	return getJSON[ModelCacheReport](ctx, c, "/api/v1/model-cache")
 }
 
 // PruneModelCache calls POST /api/v1/model-cache/prune.

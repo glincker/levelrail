@@ -32,9 +32,7 @@ func domainLimitsPath(name, domain string) string {
 
 // GetDomainLimits calls GET .../domains/{domain}/limits.
 func (c *Client) GetDomainLimits(ctx context.Context, name, domain string) (DomainLimitsResource, error) {
-	var out DomainLimitsResource
-	err := c.do(ctx, http.MethodGet, domainLimitsPath(name, domain), nil, &out)
-	return out, err
+	return getJSON[DomainLimitsResource](ctx, c, domainLimitsPath(name, domain))
 }
 
 // SetDomainLimits calls PUT .../domains/{domain}/limits.

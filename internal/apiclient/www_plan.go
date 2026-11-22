@@ -58,9 +58,7 @@ func (c *Client) DomainWWWPlan(ctx context.Context, app, domain, mode, canonical
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out WWWPlan
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[WWWPlan](ctx, c, path)
 }
 
 // WWWApplyRecord is one record's outcome of an apex and www apply.

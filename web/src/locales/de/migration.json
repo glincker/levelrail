@@ -772,6 +772,11 @@
     "required": "Vor dem Deployen erforderlich: {{keys}}",
     "back": "Zurück",
     "deploying": "Wird deployt...",
+    "willCreate": "Wird erstellt",
+    "secretRefs": "Geheime Werte werden nicht angezeigt. Secret-Referenzen: {{keys}}",
+    "unsupported": "Nicht übernommen",
+    "instead": "Stattdessen: {{alternative}}",
+    "conflicts": "Name bereits vergeben",
     "deploy": "Deployen"
   },
   "takeover": {

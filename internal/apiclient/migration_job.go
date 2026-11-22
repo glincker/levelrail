@@ -88,9 +88,7 @@ func (c *Client) TestMigrationSource(ctx context.Context, req AppImportRequest) 
 
 // MigrationJob calls GET .../sessions/{id}/progress.
 func (c *Client) MigrationJob(ctx context.Context, id string) (MigrationJob, error) {
-	var out MigrationJob
-	err := c.do(ctx, http.MethodGet, appImportPath+"/sessions/"+url.PathEscape(id)+"/progress", nil, &out)
-	return out, err
+	return getJSON[MigrationJob](ctx, c, appImportPath+"/sessions/"+url.PathEscape(id)+"/progress")
 }
 
 // StageAppImportItems calls POST .../sessions/{id}/stage for the named items only, which is how one failed item is retried.

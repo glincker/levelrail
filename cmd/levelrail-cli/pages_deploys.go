@@ -51,10 +51,19 @@ func runPagesPromote(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	name, id := fs.Arg(0), fs.Arg(1)
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	if err := client.PromoteStaticSiteDeploy(context.Background(), name, id); err != nil {
+	res, err := client.PromoteStaticSiteDeploy(context.Background(), name, id)
+	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote deploy %q of site %q: %w", id, name, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, map[string]any{"site": name, "promoted": id}, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]any{"site": name, "promoted": id, "serving": res.Serving}, func() {
 		_, _ = fmt.Fprintf(stdout, "site %q now serves deploy %s\n", name, id)
+		printPagesServingNote(stdout, res.Serving)
 	})
+}
+
+// printPagesServingNote tells the operator when the route is still switching over.
+func printPagesServingNote(stdout io.Writer, serving string) {
+	if serving == "pending" {
+		_, _ = fmt.Fprintln(stdout, "the route is still switching over; it should serve the new files within moments")
+	}
 }

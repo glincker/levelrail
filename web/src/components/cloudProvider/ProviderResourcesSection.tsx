@@ -1,3 +1,5 @@
+import { providerAccounts } from '../../lib/providerConnectionState'
+import { AccountResourcesSection } from './ProviderAccountSections'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -49,7 +51,7 @@ function totalByCurrency(rows: readonly ProviderResource[]): string[] {
   return [...sums].map(([cur, sum]) => formatMoney(sum, cur))
 }
 
-export function ProviderResourcesSection({
+function LegacyProviderResourcesSection({
   provider,
   resource,
   labels,
@@ -265,5 +267,14 @@ export function ProviderResourcesSection({
         </p>
       ) : null}
     </section>
+  )
+}
+
+// Account-backed data wins whenever a cloud account exists; the credential reads are the fallback.
+export function ProviderResourcesSection(props: SectionProps) {
+  return providerAccounts(props.resource).length > 0 ? (
+    <AccountResourcesSection {...props} />
+  ) : (
+    <LegacyProviderResourcesSection {...props} />
   )
 }

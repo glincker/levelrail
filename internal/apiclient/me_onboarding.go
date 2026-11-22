@@ -21,9 +21,7 @@ type MeOnboarding struct {
 
 // GetMeOnboarding calls GET /api/v1/me/onboarding.
 func (c *Client) GetMeOnboarding(ctx context.Context) (MeOnboarding, error) {
-	var out MeOnboarding
-	err := c.do(ctx, http.MethodGet, "/api/v1/me/onboarding", nil, &out)
-	return out, err
+	return getJSON[MeOnboarding](ctx, c, "/api/v1/me/onboarding")
 }
 
 // SetMeOnboarding calls PUT /api/v1/me/onboarding; step may be empty to keep the current one.

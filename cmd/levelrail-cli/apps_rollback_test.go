@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestRun_AppsRollback checks the wire request matches a deploy's, since rollback posts to /deploys too.
@@ -186,5 +187,23 @@ func TestRun_AppsRollback_KnownImagesOnly(t *testing.T) {
 				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tt.wantStderr)
 			}
 		})
+	}
+}
+
+// Digest-only deploys of one repo share an unpinned form, so rollback must tell them apart by digest.
+func TestRun_AppsRollback_DigestOnlyDeploysPickPreviousDigest(t *testing.T) {
+	t0 := time.Now()
+	bodies := map[string][]byte{}
+	srv := routeServer(t, map[string]any{
+		"GET /api/v1/apps/web": appResource{Name: "web", Image: "r/web@sha256:bbb", Port: 80},
+		"GET /api/v1/apps/web/deploy-attempts": []deployAttemptResource{
+			{ID: "2", Image: "r/web", ImageDigest: "sha256:bbb", Status: "succeeded", StartedAt: t0},
+			{ID: "1", Image: "r/web", ImageDigest: "sha256:aaa", Status: "succeeded", StartedAt: t0.Add(-time.Minute)},
+		},
+		"POST /api/v1/apps/web/deploys": appResource{Name: "web", Image: "r/web@sha256:aaa"},
+	}, bodies)
+	runCLIExpectOK(t, cliArgs(srv, "rollback", "web"))
+	if !strings.Contains(string(bodies["POST /api/v1/apps/web/deploys"]), "r/web@sha256:aaa") {
+		t.Errorf("deploy body = %s, want the previous digest", bodies["POST /api/v1/apps/web/deploys"])
 	}
 }

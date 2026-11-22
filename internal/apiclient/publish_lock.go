@@ -27,9 +27,7 @@ func publishLockPath(appName string) string {
 
 // GetPublishLock calls GET /api/v1/apps/{name}/publish-lock.
 func (c *Client) GetPublishLock(ctx context.Context, appName string) (PublishLockResource, error) {
-	var out PublishLockResource
-	err := c.do(ctx, http.MethodGet, publishLockPath(appName), nil, &out)
-	return out, err
+	return getJSON[PublishLockResource](ctx, c, publishLockPath(appName))
 }
 
 // LockPublishing calls PUT /api/v1/apps/{name}/publish-lock.

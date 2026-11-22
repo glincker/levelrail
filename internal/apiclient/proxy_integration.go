@@ -120,9 +120,7 @@ type ProxySetupRequest struct {
 
 // GetProxyIntegration returns detection, settings and per-domain status.
 func (c *Client) GetProxyIntegration(ctx context.Context) (ProxyIntegration, error) {
-	var out ProxyIntegration
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/proxy-integration", nil, &out)
-	return out, err
+	return getJSON[ProxyIntegration](ctx, c, "/api/v1/system/proxy-integration")
 }
 
 // SetupProxyIntegration runs setup; without Confirm it is a dry run.

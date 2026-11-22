@@ -43,9 +43,7 @@ func notWritableReason(dir string, err error) string {
 	uid, gid := os.Geteuid(), os.Getegid()
 	owner := ""
 	if fi, statErr := os.Stat(dir); statErr == nil {
-		if st, ok := fi.Sys().(*syscall.Stat_t); ok {
-			owner = fmt.Sprintf(", the directory is owned by uid %d gid %d with mode %s", st.Uid, st.Gid, fi.Mode().Perm())
-		}
+		owner = ownerNote(fi)
 	}
 	switch {
 	case errors.Is(err, syscall.EROFS):

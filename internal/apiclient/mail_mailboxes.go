@@ -143,7 +143,7 @@ func (c *Client) AddMailAlias(ctx context.Context, address string, targets []str
 
 // RemoveMailAlias calls DELETE /api/v1/mail/aliases/{address}.
 func (c *Client) RemoveMailAlias(ctx context.Context, address string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/mail/aliases/"+url.PathEscape(address), nil, nil)
+	return c.del(ctx, "/api/v1/mail/aliases/"+url.PathEscape(address))
 }
 
 // MailQueueList calls GET /api/v1/mail/queue.

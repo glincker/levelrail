@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"net/url"
+	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/coder/websocket"
 )
 
@@ -25,6 +28,9 @@ type ShotRequest struct {
 	Height   int
 	Settle   time.Duration
 	Deadline time.Time
+	// OnlyHost, when set, makes the browser load nothing but that host
+	// (public renders), so a redirect or subresource cannot reach elsewhere.
+	OnlyHost string
 }
 
 // ShotResult is what the browser saw and captured.
@@ -220,7 +226,17 @@ func (CDPShooter) Shoot(ctx context.Context, addr string, req ShotRequest) (*Sho
 	}
 
 	tracker := &pageTracker{}
-	raw, err = s.call(ctx, "Page.navigate", map[string]any{"url": req.URL}, true, tracker.observe)
+	onEvent := tracker.observe
+	if req.OnlyHost != "" {
+		if _, err := s.call(ctx, "Fetch.enable", map[string]any{"patterns": []map[string]string{{"urlPattern": "*"}}}, true, nil); err != nil {
+			return nil, err
+		}
+		onEvent = func(m cdpMessage) {
+			s.intercept(ctx, req.OnlyHost, m)
+			tracker.observe(m)
+		}
+	}
+	raw, err = s.call(ctx, "Page.navigate", map[string]any{"url": req.URL}, true, onEvent)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +251,7 @@ func (CDPShooter) Shoot(ctx context.Context, addr string, req ShotRequest) (*Sho
 		return &ShotResult{}, nil
 	}
 	tracker.frameID = nav.FrameID
-	if err := s.settle(ctx, tracker, req.Settle); err != nil {
+	if err := s.settle(ctx, tracker, req.Settle, onEvent); err != nil {
 		return nil, err
 	}
 
@@ -296,7 +312,7 @@ func (t *pageTracker) observe(m cdpMessage) {
 
 // settle waits for the load event, then for the network to stay quiet for
 // cdpNetworkQuiet, but never longer than limit overall.
-func (s *cdpSession) settle(ctx context.Context, t *pageTracker, limit time.Duration) error {
+func (s *cdpSession) settle(ctx context.Context, t *pageTracker, limit time.Duration, onEvent func(cdpMessage)) error {
 	deadline := time.NewTimer(limit)
 	defer deadline.Stop()
 	quiet := time.NewTimer(cdpNetworkQuiet)
@@ -310,7 +326,7 @@ func (s *cdpSession) settle(ctx context.Context, t *pageTracker, limit time.Dura
 		case <-deadline.C:
 			return nil
 		case m := <-s.msgs:
-			t.observe(m)
+			onEvent(m)
 			if !quiet.Stop() {
 				select {
 				case <-quiet.C:
@@ -325,4 +341,47 @@ func (s *cdpSession) settle(ctx context.Context, t *pageTracker, limit time.Dura
 			quiet.Reset(cdpNetworkQuiet)
 		}
 	}
+}
+
+// requestAllowed reports whether a render may load rawURL: only the pinned
+// host, or inline schemes that touch no network. Anything else, including a
+// redirect to an internal address, is refused.
+func requestAllowed(onlyHost, rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	switch u.Scheme {
+	case "data", "blob", "about":
+		return true
+	case "http", "https":
+	default:
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	if ip, perr := netip.ParseAddr(host); perr == nil && netguard.IsBlocked(ip) && !netguard.AllowPrivate() {
+		return false
+	}
+	return host != "" && host == strings.ToLower(onlyHost)
+}
+
+// intercept answers a paused request: continue when allowed, fail otherwise.
+func (s *cdpSession) intercept(ctx context.Context, onlyHost string, m cdpMessage) {
+	if m.Method != "Fetch.requestPaused" {
+		return
+	}
+	var p struct {
+		RequestID string `json:"requestId"`
+		Request   struct {
+			URL string `json:"url"`
+		} `json:"request"`
+	}
+	if json.Unmarshal(m.Params, &p) != nil || p.RequestID == "" {
+		return
+	}
+	if requestAllowed(onlyHost, p.Request.URL) {
+		_, _ = s.send(ctx, "Fetch.continueRequest", map[string]any{"requestId": p.RequestID}, true)
+		return
+	}
+	_, _ = s.send(ctx, "Fetch.failRequest", map[string]any{"requestId": p.RequestID, "errorReason": "BlockedByClient"}, true)
 }

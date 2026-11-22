@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -57,7 +56,5 @@ func (c *Client) ListLoadBalancers(ctx context.Context, p LoadBalancerListParams
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out LoadBalancerList
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[LoadBalancerList](ctx, c, path)
 }

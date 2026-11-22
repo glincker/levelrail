@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"strings"
 	"testing"
 )
@@ -26,5 +27,30 @@ func TestBuildJoinCommandsRegistryMirror(t *testing.T) {
 				t.Error("unexpected mirror in command")
 			}
 		})
+	}
+}
+
+func TestBuildJoinCommandsMacOSFlag(t *testing.T) {
+	// Restore the package default (all on), not an empty set, or later tests see gated routes off.
+	t.Cleanup(enableAllExperimental)
+	rt, _ := newTestRouter(t)
+
+	experimental.Set()
+	if got := rt.buildJoinCommands(context.Background(), "cp:9443", "tok", "fp", "n1", false, joinDomain{}).MacOS; got != "" {
+		t.Errorf("flag off: macos command %q, want empty", got)
+	}
+
+	experimental.Set(experimental.MacOSAgent)
+	got := rt.buildJoinCommands(context.Background(), "cp:9443", "tok", "fp", "n1", false, joinDomain{}).MacOS
+	if !strings.HasPrefix(got, "brew install glincker/tap/") {
+		t.Errorf("macos command %q lacks brew line", got)
+	}
+	for _, want := range []string{"APP_CONTROL_PLANE_ADDR=cp:9443", "APP_JOIN_TOKEN=tok", "APP_CA_FINGERPRINT=fp"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("macos command %q lacks %q", got, want)
+		}
+	}
+	if strings.Contains(got, "sudo") {
+		t.Error("macos command must not use sudo")
 	}
 }

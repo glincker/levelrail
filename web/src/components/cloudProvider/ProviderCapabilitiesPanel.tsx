@@ -1,3 +1,5 @@
+import { providerAccounts } from '../../lib/providerConnectionState'
+import { AccountCapabilitiesPanel } from './ProviderAccountSections'
 import { useTranslation } from 'react-i18next'
 import {
   CircleCheckGlassIcon,
@@ -131,7 +133,7 @@ function CapabilityDetails({ caps }: Readonly<{ caps: ProviderCapability[] }>) {
   )
 }
 
-export function ProviderCapabilitiesPanel({
+function LegacyProviderCapabilitiesPanel({
   provider,
   resource,
   labels,
@@ -278,5 +280,14 @@ function Note({ title, text }: Readonly<{ title: string; text: string }>) {
       <p className="text-sm font-medium">{title}</p>
       <p className="text-xs text-muted-foreground">{text}</p>
     </div>
+  )
+}
+
+// Account-backed data wins whenever a cloud account exists; the credential reads are the fallback.
+export function ProviderCapabilitiesPanel(props: SectionProps) {
+  return providerAccounts(props.resource).length > 0 ? (
+    <AccountCapabilitiesPanel {...props} />
+  ) : (
+    <LegacyProviderCapabilitiesPanel {...props} />
   )
 }

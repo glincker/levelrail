@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"sync"
 	"time"
 
@@ -18,6 +19,9 @@ import (
 type GRPCTransport struct {
 	mux  *mux
 	caps *capSet
+	// tunnels and nodeID are set by the server for a live session; nil in tests that do not tunnel.
+	tunnels *tunnelHub
+	nodeID  string
 }
 
 // capSet holds what an agent advertised in its hello. It is shared with the
@@ -35,6 +39,18 @@ func (c *capSet) store(caps []string) {
 	c.mu.Lock()
 	c.set = m
 	c.mu.Unlock()
+}
+
+// list returns the advertised names, sorted.
+func (c *capSet) list() []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	out := make([]string, 0, len(c.set))
+	for name := range c.set {
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // has fails closed: before the hello arrives nothing is advertised.

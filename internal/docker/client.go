@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	goruntime "runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -104,7 +105,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	switch {
 	case c.host != "":
 		dockerOpts = append(dockerOpts, dockerclient.WithHost(c.host))
-	case runtime.Source == envRuntimeSocket:
+	case ConnectHost(runtime, goruntime.GOOS) != "":
 		dockerOpts = append(dockerOpts, dockerclient.WithHost(runtime.Host))
 	}
 	probe, err := dockerclient.NewClientWithOpts(dockerOpts...)
@@ -371,6 +372,7 @@ func toContainerState(s container.Summary) *ContainerState {
 		ImageID:  s.ImageID,
 		Created:  created,
 		Running:  s.State == "running",
+		Health:   healthFromStatus(s.Status),
 		Ports:    observedPorts(s.Ports),
 		Labels:   s.Labels,
 		Networks: summaryNetworks(s),
@@ -1395,4 +1397,17 @@ func mapAction(a events.Action) EventAction {
 	default:
 		return ""
 	}
+}
+
+// healthFromStatus reads the healthcheck state out of a container list Status text such as "Up 2 minutes (healthy)".
+func healthFromStatus(status string) string {
+	switch {
+	case strings.Contains(status, "(unhealthy)"):
+		return "unhealthy"
+	case strings.Contains(status, "(healthy)"):
+		return "healthy"
+	case strings.Contains(status, "(health: starting)"):
+		return "starting"
+	}
+	return ""
 }

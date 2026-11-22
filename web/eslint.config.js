@@ -4,6 +4,15 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import prettierConfig from 'eslint-config-prettier'
+import { readFileSync } from 'node:fs'
+
+// Files that predate useApiMutation; this list may only shrink.
+const useMutationAllowlist = JSON.parse(
+  readFileSync(
+    new URL('./eslint-usemutation-allowlist.json', import.meta.url),
+    'utf8',
+  ),
+)
 
 export default tseslint.config(
   {
@@ -41,6 +50,25 @@ export default tseslint.config(
   },
   // TanStack Router's file-based routing convention has every route file
   // export a non-component `Route` object alongside its `component`.
+  // New query modules use useApiMutation instead of raw useMutation.
+  {
+    files: ['src/queries/**/*.ts'],
+    ignores: [
+      'src/queries/**/*.test.ts',
+      'src/queries/useApiMutation.ts',
+      ...useMutationAllowlist,
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='useMutation']",
+          message:
+            'Use useApiMutation from ./useApiMutation in new query files.',
+        },
+      ],
+    },
+  },
   // react-refresh/only-export-components does not know that pattern and
   // flags it as a fast-refresh hazard; the router's own Vite plugin
   // handles route file HMR, so the rule does not apply here.

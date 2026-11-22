@@ -67,6 +67,10 @@ func SeedAlerting(ctx context.Context, adb *alerting.DB, opts Options) error {
 			return fmt.Errorf("demo: save channel %q: %w", c.ID, err)
 		}
 	}
+	// The Defaults tab lists these; the seeded rules above are separate custom rules.
+	if err := adb.SeedDefaults(ctx, alerting.DefaultsConfig{CertExpiryDays: alerting.DefaultCertExpiryDays}); err != nil {
+		return fmt.Errorf("demo: seed default alerts: %w", err)
+	}
 	specs := alertRules()
 	for _, s := range specs {
 		rule := s.rule

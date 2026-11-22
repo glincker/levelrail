@@ -229,7 +229,7 @@ func (c *Client) UpdateAssetBucket(ctx context.Context, id string, req AssetBuck
 
 // DeleteAssetBucket calls DELETE /api/v1/assets/buckets/{id}; objects stay at the provider.
 func (c *Client) DeleteAssetBucket(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, assetsPath(id), nil, nil)
+	return c.del(ctx, assetsPath(id))
 }
 
 // ProbeAssetBucket calls POST .../probe. An empty origin lets the server use the dashboard URL.
@@ -371,5 +371,5 @@ func (c *Client) AssetURLs(ctx context.Context, id, key string, expiresSeconds i
 
 // DeleteAsset calls DELETE .../objects?key=.
 func (c *Client) DeleteAsset(ctx context.Context, id, key string) error {
-	return c.do(ctx, http.MethodDelete, assetsPath(id, "objects")+"?key="+url.QueryEscape(key), nil, nil)
+	return c.del(ctx, assetsPath(id, "objects")+"?key="+url.QueryEscape(key))
 }

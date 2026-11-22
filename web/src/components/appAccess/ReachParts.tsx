@@ -48,7 +48,10 @@ export function SecurityChip({ security }: { security: ReachSecurity }) {
         ? 'warning'
         : 'outline'
   return (
-    <Badge variant={variant} className="whitespace-normal text-left">
+    <Badge
+      variant={variant}
+      className="h-auto min-h-(--glinr-badge-h) max-w-full py-0.5 text-left whitespace-normal"
+    >
       <Icon size="1.4em" aria-hidden="true" />
       {t(`security.${security}`)}
     </Badge>

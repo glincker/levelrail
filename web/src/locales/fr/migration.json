@@ -774,6 +774,11 @@
     "required": "Requis avant de deployer : {{keys}}",
     "back": "Retour",
     "deploying": "Deploy en cours...",
+    "willCreate": "Sera créé",
+    "secretRefs": "Les valeurs secrètes ne sont pas affichées. Références secrètes : {{keys}}",
+    "unsupported": "Non repris",
+    "instead": "À la place : {{alternative}}",
+    "conflicts": "Nom déjà utilisé",
     "deploy": "Deployer"
   },
   "takeover": {

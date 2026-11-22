@@ -51,6 +51,14 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesPatch(prog, rest, stdout, stderr, lookupEnv)
 	case "events":
 		return runNodesEvents(prog, rest, stdout, stderr, lookupEnv)
+	case "doctor":
+		return runNodesDoctor(prog, rest, stdout, stderr, lookupEnv)
+	case "timeline":
+		return runNodesTimeline(prog, rest, stdout, stderr, lookupEnv)
+	case "agent-update":
+		return runNodesAgentUpdate(prog, rest, stdout, stderr, lookupEnv)
+	case "version-skew":
+		return runNodesVersionSkew(prog, rest, stdout, stderr, lookupEnv)
 	case "metrics":
 		return runNodesMetrics(prog, rest, stdout, stderr, lookupEnv)
 	case "thresholds":
@@ -107,6 +115,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesGroups(prog, rest, stdout, stderr, lookupEnv)
 	case "labels":
 		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
+	case "targets":
+		return runNodesTargets(prog, rest, stdout, stderr, lookupEnv)
 	case "zones":
 		return runNodesZones(prog, rest, stdout, stderr, lookupEnv)
 	case "domains":
@@ -160,6 +170,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
   %[1]s nodes taint <id> [key[=value]:Effect ...] [--clear]          show or replace the taints that keep workloads off a node
   %[1]s nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
+  %[1]s nodes targets [flags]                                        deploy targets grouped by cloud account
   %[1]s nodes zones [flags]                                          failure domains with their nodes and workloads
   %[1]s nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
   %[1]s nodes failure --zone Z | --node ID                           dry run: where workloads go if a zone or node dies
@@ -175,6 +186,9 @@ func nodesUsage(prog string) string {
   %[1]s nodes patch-status <id> [flags]                              show a node's latest available-OS-updates reading
   %[1]s nodes patch preview|apply|runs <id> [flags]                    preview, install and list OS package updates
   %[1]s nodes events <id> [--limit N] [flags]                        show a node's recent online/offline/cordon transitions
+  %[1]s nodes timeline <id> [--window 24h] [flags]                  show time online and offline with an uptime figure
+  %[1]s nodes doctor <id> [flags]                                   run docker, disk, clock, port, cert, heartbeat and version checks
+  %[1]s nodes version-skew [flags]                                  compare agent versions with the control plane and print an upgrade order
   %[1]s nodes metrics <id> --metric NAME [flags]                     query a node's metric time series
   %[1]s nodes resource-usage [flags]                                 show every node's latest CPU/memory/disk usage, plus a fleet rollup
   %[1]s nodes capacity-forecast <id> [flags]                        project disk/memory usage forward, roughly how many days until full

@@ -47,16 +47,12 @@ func (c *Client) ListBenchmarks(ctx context.Context, limit int) (BenchmarkList, 
 	if limit > 0 {
 		path += "?limit=" + strconv.Itoa(limit)
 	}
-	var out BenchmarkList
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[BenchmarkList](ctx, c, path)
 }
 
 // GetBenchmark calls GET /api/v1/benchmarks/{id}.
 func (c *Client) GetBenchmark(ctx context.Context, id string) (BenchmarkRun, error) {
-	var out BenchmarkRun
-	err := c.do(ctx, http.MethodGet, "/api/v1/benchmarks/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[BenchmarkRun](ctx, c, "/api/v1/benchmarks/"+PathEscape(id))
 }
 
 // CompareBenchmarks calls GET /api/v1/benchmarks/compare.
@@ -76,5 +72,5 @@ func (c *Client) UploadBenchmark(ctx context.Context, file []byte) (BenchmarkRun
 
 // DeleteBenchmark calls DELETE /api/v1/benchmarks/{id}.
 func (c *Client) DeleteBenchmark(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/benchmarks/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/benchmarks/"+PathEscape(id))
 }

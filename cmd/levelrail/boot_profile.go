@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/profile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -30,11 +30,11 @@ func resolveServerProfile(ctx context.Context, db *store.DB, logger *slog.Logger
 }
 
 func diskTotalBytes(dir string) int64 {
-	var st syscall.Statfs_t
-	if err := syscall.Statfs(dir, &st); err != nil {
+	info, err := diskfree.Stat(dir)
+	if err != nil {
 		return 0
 	}
-	return int64(st.Blocks) * int64(st.Bsize) //nolint:gosec // block counts of a real filesystem fit int64
+	return info.Total
 }
 
 // agentListenAddr binds the agent listener to loopback on minimal until a

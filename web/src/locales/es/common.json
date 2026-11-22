@@ -79,6 +79,19 @@
     "allClear": "Todas las comprobaciones se superan. Nada requiere tu atención.",
     "needsAction": "Requiere acción"
   },
+  "healthExplain": {
+    "label": "Por qué",
+    "failingCheck": "La comprobación {{target}} falla desde {{since}}",
+    "restarts": "Reinicios: {{n}}",
+    "crashloop": "Bucle de fallos",
+    "lastDeploy": "Último despliegue: {{status}}",
+    "logError": "Último error: {{line}}",
+    "next": {
+      "apply_preset": "Prueba el preajuste de salud {{preset}}",
+      "rollback": "Volver al despliegue anterior",
+      "view_logs": "Revisa los registros"
+    }
+  },
   "logs": {
     "previousContainerEnded": "La instancia anterior del contenedor terminó",
     "copyLineAria": "Copiar esta línea del registro",
@@ -416,7 +429,8 @@
       "security": "Centro de seguridad",
       "console": "Consola",
       "inbox": "Bandeja de entrada",
-      "integrations": "Integraciones"
+      "integrations": "Integraciones",
+      "integrations-aws-link": "Vincular cuenta AWS"
     },
     "quickNav": {
       "label": "Navegación rápida (mantén L)"
@@ -1314,7 +1328,23 @@
   },
   "nodeSelect": {
     "auto": "Automático (el menos cargado)",
-    "autoHint": "Automático la coloca en el nodo elegible con menos carga. Elige un nodo para fijarla ahí."
+    "autoHint": "Automático la coloca en el nodo elegible con menos carga. Elige un nodo para fijarla ahí.",
+    "picker": {
+      "choose": "Elige un nodo",
+      "cost": "{{amount}}/mes",
+      "freeCpu": "{{value}} CPU libres",
+      "freeMemory": "{{value}} libres",
+      "search": "Buscar nodos",
+      "empty": "Ningun nodo coincide",
+      "local": "Este servidor",
+      "unmanaged": "Sin gestionar",
+      "health": {
+        "healthy": "Sano",
+        "offline": "Sin conexion",
+        "cordoned": "Acordonado",
+        "pending": "Pendiente"
+      }
+    }
   },
   "pinnedDigest": {
     "copied": "Digest de la imagen copiado",

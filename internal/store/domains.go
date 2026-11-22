@@ -45,3 +45,15 @@ func domainOwner(ctx context.Context, tx *sql.Tx, domain string) (owner string, 
 
 	return "", false, nil
 }
+
+// DomainAppOwnerOf names the app that serves domain through service_domains
+// only. Static sites, standalone and parked claims are not apps, so they never
+// resolve here, even when a static site shares an app's name.
+func (db *DB) DomainAppOwnerOf(ctx context.Context, domain string) (app string, found bool, err error) {
+	if err := db.QueryRowContext(ctx, `SELECT service_name FROM service_domains WHERE domain = ?`, domain).Scan(&app); err == nil {
+		return app, true, nil
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return "", false, fmt.Errorf("store: domain app owner %q: %w", domain, err)
+	}
+	return "", false, nil
+}

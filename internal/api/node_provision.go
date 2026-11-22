@@ -300,25 +300,7 @@ func toNodeProviderSizeResources(sizes []provision.Size) []nodeProviderSizeResou
 // NodeProvisioner from it, or reports the HTTP status/message a caller
 // should return.
 func (rt *Router) resolveNodeProvisioner(ctx context.Context, providerName string) (p NodeProvisioner, ok bool, status int, msg string) {
-	if !isKnownNodeProvider(providerName) {
-		return nil, false, http.StatusNotFound, "unknown provider"
-	}
-	if rt.nodeProviderSecrets == nil {
-		return nil, false, http.StatusNotImplemented, "node provisioning is not configured on this control plane (no master key set)"
-	}
-	token, err := rt.nodeProviderSecrets.Resolve(ctx, store.NodeProviderSecretsKey(providerName), store.NodeProviderTokenEnvKey)
-	if err != nil {
-		return nil, false, http.StatusBadRequest, "no credential is stored for this provider yet"
-	}
-	factory := rt.nodeProvisionerFactory
-	if factory == nil {
-		factory = rt.defaultNodeProvisionerFactory
-	}
-	provisioner, err := factory(providerName, token)
-	if err != nil {
-		return nil, false, http.StatusInternalServerError, "internal error"
-	}
-	return provisioner, true, 0, ""
+	return rt.resolveNodeProvisionerForAccount(ctx, providerName, "")
 }
 
 // nodeProvisionResource is the wire shape for a node provision.
@@ -362,6 +344,8 @@ type createNodeProvisionRequest struct {
 	// AllowSSHInbound is aws-only (provision.CreateOpts.AllowSSHInbound):
 	// other providers ignore it. Off by default.
 	AllowSSHInbound bool `json:"allow_ssh_inbound,omitempty"`
+	// AccountID names the cloud account whose credential builds the VM; empty uses the provider default.
+	AccountID string `json:"account_id,omitempty"`
 	// BootstrapScriptID optionally names a saved bootstrap script run after the built-in bootstrap.
 	BootstrapScriptID string `json:"bootstrap_script_id,omitempty"`
 }
@@ -407,9 +391,14 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	provisioner, ok, status, msg := rt.resolveNodeProvisioner(r.Context(), req.Provider)
+	provisioner, ok, status, msg := rt.resolveNodeProvisionerForAccount(r.Context(), req.Provider, req.AccountID)
 	if !ok {
 		writeError(w, status, msg)
+		return
+	}
+
+	if sa, isSession := provisioner.(interface{ SessionAuth() bool }); isSession && sa.SessionAuth() {
+		writeError(w, http.StatusBadRequest, "creating nodes needs an Oracle API key account; a browser session account can only read and manage instances")
 		return
 	}
 
@@ -423,6 +412,11 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	} else if reason != "" {
 		writeError(w, http.StatusConflict, reason)
+		return
+	}
+
+	if status, msg := preflightEC2Create(r.Context(), provisioner, provision.CreateOpts{Region: req.Region, Size: req.Size, Name: req.Name}); status != 0 {
+		writeError(w, status, msg)
 		return
 	}
 
@@ -480,7 +474,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 	// Live OCI counts are taken before the lock; only pending rows are rechecked under it.
 	oracleUsage := rt.prefetchOracleUsage(r.Context(), provisioner, req.Provider, req.Region, req.Size)
 	nodeProvisionGuardMu.Lock()
-	reason, err := rt.checkOracleAllowance(r.Context(), provisioner, req.Provider, req.Region, req.Size, oracleUsage)
+	reason, err := rt.checkOracleAllowanceFor(r.Context(), provisioner, req.Provider, req.AccountID, req.Region, req.Size, oracleUsage)
 	if err == nil && reason == "" {
 		reason, err = rt.checkProvisionServerCap(r.Context())
 	}
@@ -504,6 +498,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 	rec := store.NodeProvision{
 		ID: id, Provider: req.Provider, Region: req.Region, Size: req.Size, Name: req.Name, Role: role,
 		Status: store.NodeProvisionStatusCreating, CreatedAt: now, UpdatedAt: now,
+		AccountID: req.AccountID, CreatedBy: rt.nodeProviderActor(r),
 	}
 	saveErr := rt.nodeProvisions.SaveNodeProvision(r.Context(), rec)
 	nodeProvisionGuardMu.Unlock()

@@ -45,9 +45,7 @@ type SystemNetworksPrune struct {
 
 // GetSystemNetworks calls GET /api/v1/system/networks.
 func (c *Client) GetSystemNetworks(ctx context.Context) (SystemNetworks, error) {
-	var out SystemNetworks
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/networks", nil, &out)
-	return out, err
+	return getJSON[SystemNetworks](ctx, c, "/api/v1/system/networks")
 }
 
 // PruneSystemNetworks calls POST /api/v1/system/networks/prune.

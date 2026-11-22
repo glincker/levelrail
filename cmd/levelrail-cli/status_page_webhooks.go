@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 func statusWebhookSubs() map[string]apiCmd {
@@ -47,19 +48,19 @@ func statusWebhooksListCommand() apiCmd {
 }
 
 func statusWebhookAddCommand() apiCmd {
-	var (
-		url, label string
-		events     stringList
-	)
+	var descFlags map[string]*string
 	return apiCmd{label: "status-page webhooks add", usage: statusPageUsage,
 		setup: func(fs *flag.FlagSet) {
-			fs.StringVar(&url, "url", "", "https URL that receives the signed events (required)")
-			fs.StringVar(&label, "label", "", "short name for this subscriber")
-			fs.Var(&events, "event", "event to send, repeatable: incident_opened, incident_updated, incident_resolved, component_changed, maintenance_scheduled, maintenance_updated, maintenance_completed (default: all)")
+			descFlags = registerDescriptorFlags(fs, fielddesc.StatusWebhook)
 		},
 		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
+			url, label := *descFlags["url"], *descFlags["label"]
 			if url == "" {
 				return nil, nil, newValidationError("--url is required")
+			}
+			var events []string
+			if v := *descFlags["event"]; v != "" {
+				events = strings.Split(v, ",")
 			}
 			h, err := c.CreateStatusWebhook(ctx, apiclientWebhook(url, label, events))
 			return h, func(w io.Writer) {

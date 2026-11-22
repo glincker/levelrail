@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"syscall"
 
+	"github.com/GLINCKER/levelrail/internal/diskfree"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
@@ -33,12 +33,15 @@ func (rt *Router) doctorCheckDiskHygiene(ctx context.Context) doctorCheckResourc
 	var parts []string
 	low := false
 	note := func(label, path string) {
-		var st syscall.Statfs_t
-		if path == "" || syscall.Statfs(path, &st) != nil || st.Blocks == 0 {
+		if path == "" {
 			return
 		}
-		free := int64(st.Bavail) * int64(st.Bsize) //nolint:gosec // statfs fields are non-negative
-		pct := int64(st.Bavail * 100 / st.Blocks)  //nolint:gosec // percent is at most 100
+		st, err := diskfree.Stat(path)
+		if err != nil || st.Total == 0 {
+			return
+		}
+		free := st.Free
+		pct := free * 100 / st.Total
 		parts = append(parts, fmt.Sprintf("%s %s free (%d%%)", label, diskspace.HumanBytes(free), pct))
 		if pct < warnPct {
 			low = true

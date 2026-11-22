@@ -2,9 +2,10 @@ package apiclient
 
 import (
 	"context"
-	"github.com/GLINCKER/levelrail/internal/experimental"
 	"net/http"
 	"net/url"
+
+	"github.com/GLINCKER/levelrail/internal/experimental"
 
 	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
 )
@@ -72,16 +73,12 @@ func (c *Client) ListAdvisorFindings(ctx context.Context, q AdvisorFindingQuery)
 	if len(v) > 0 {
 		path += "?" + v.Encode()
 	}
-	var out AdvisorFindings
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[AdvisorFindings](ctx, c, path)
 }
 
 // GetAdvisorSummary calls GET /api/v1/resource-advisor/summary.
 func (c *Client) GetAdvisorSummary(ctx context.Context) (AdvisorSummary, error) {
-	var out AdvisorSummary
-	err := c.do(ctx, http.MethodGet, "/api/v1/resource-advisor/summary", nil, &out)
-	return out, err
+	return getJSON[AdvisorSummary](ctx, c, "/api/v1/resource-advisor/summary")
 }
 
 // ApplyAdvisorFinding previews (confirm false) or applies a finding's action.
@@ -121,9 +118,7 @@ type BetaFeature struct {
 
 // ListBetaFeatures calls GET /api/v1/settings/beta-features.
 func (c *Client) ListBetaFeatures(ctx context.Context) ([]BetaFeature, error) {
-	var out []BetaFeature
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/beta-features", nil, &out)
-	return out, err
+	return getJSON[[]BetaFeature](ctx, c, "/api/v1/settings/beta-features")
 }
 
 // SetBetaFeature calls PUT /api/v1/settings/beta-features/{feature}.

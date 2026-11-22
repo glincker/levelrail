@@ -62,9 +62,7 @@ const policyTemplatesPath = "/api/v1/iam/policy-templates"
 
 // ListPolicyTemplates calls GET /api/v1/iam/policy-templates.
 func (c *Client) ListPolicyTemplates(ctx context.Context) (PolicyTemplateList, error) {
-	var out PolicyTemplateList
-	err := c.do(ctx, http.MethodGet, policyTemplatesPath, nil, &out)
-	return out, err
+	return getJSON[PolicyTemplateList](ctx, c, policyTemplatesPath)
 }
 
 // ApplyPolicyTemplate calls POST /api/v1/iam/policy-templates/{id}/apply.

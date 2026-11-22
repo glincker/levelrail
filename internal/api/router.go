@@ -83,6 +83,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/hostpressure"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
+	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -173,6 +174,7 @@ type Router struct {
 	doctorLookupHost       func(ctx context.Context, host string) ([]string, error) // nil uses the system resolver
 	agentCAFingerprint     string                                                   // empty: join tokens are returned without a CA pin
 	nodeCerts              nodeCertConfig
+	agentVersions          nodeinsight.VersionTracker  // rollback target per node, see handleNodeAgentUpdate
 	packageRegistries      PackageRegistryStore        // always set, private package registry rows and registry credential usage
 	nodeProviderConns      NodeProviderConnectionStore // always set, connection metadata for node providers
 	nodeProvisions         NodeProvisionStore          // always set, same "core Store interface" shape as cloudflareDNS above
@@ -224,6 +226,7 @@ type Router struct {
 	iac                     iacDeps             // zero value is valid: lazily builds the in-process handler apply calls
 	alertNoise              AlertNoise          // nil is valid: silence, maintenance window and alert history routes return 501
 	alertDefaults           AlertDefaults       // nil is valid: default alert routes return 501
+	alertDigestPreview      AlertDigestPreview  // nil is valid: preview returns 501
 	inbox                   InboxStore          // nil is valid: notification inbox routes return 501
 	statusPage              StatusPageStore     // nil is valid: status page routes return 501 and the public page stays off
 	statusView              StatusPageViewer
@@ -829,6 +832,7 @@ type Router struct {
 	jobPings                     *heartbeat.JobPinger             // nil rejects per-job heartbeat URLs
 	monitors                     MonitorService                   // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
 	parkedRetention              parkedRetentionState             // last retention run, for the dry run's next_run
+	appSummaryCache              summaryCache                     // live restarts and db size for the apps list
 	runtimeSettings              *runtimesettings.Service         // nil only in unit tests of other packages; nil serves env then default
 	changes                      changeBus                        // topic nudges for GET /api/v1/events/changes; the zero value is ready
 	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
@@ -888,6 +892,8 @@ type Router struct {
 	// meshPaths reports whether a remote node is reachable over the mesh,
 	// set via SetMeshPaths. nil reads as "mesh networking is off".
 	meshPaths meshpath.Resolver
+	// agentTunnels says whether a node's agent advertises ingress tunnels; nil means none.
+	agentTunnels func(nodeID string) bool
 	// meshHubResolver turns a hostname advertise host into the mesh endpoint IP; nil keeps the IP-only rule.
 	meshHubResolver *meshnet.HubHostResolver
 	// dnsQueryLog is nil when mesh DNS query visibility is not wired; the routes then report disabled.

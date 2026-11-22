@@ -4,7 +4,10 @@ description: "How to roll the control plane back to a previous release: what the
 "og:url": "https://docs.levelrail.com/rollback"
 ---
 
-"Rollback" means different things in Levelrail. This page covers rolling the control plane back to an earlier release. To put an older image back on one app, see [Roll back an app](/deploying-apps#roll-back).
+"Rollback" means different things in Levelrail. This page covers rolling the control plane back to an earlier release (platform upgrade rollback). There are two other kinds:
+
+- **App rollback (image):** put an older image back on one app, see [Roll back an app](/deploying-apps#roll-back).
+- **Config revert:** undo an env, scale, resources, domains or health change with `levelrail-cli apps changes <name>` to list revisions and `levelrail-cli apps revert <name> [--to N]` to return to one. It never touches database data, volumes or the image, and secret values are not restored from history. Env changes apply on the next restart or deploy.
 
 ## Which rollback command do I use?
 

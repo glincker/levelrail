@@ -51,9 +51,7 @@ func composeDBServicePath(app, service string) string {
 
 // ListComposeDBServices calls GET /api/v1/apps/{name}/compose-db-services.
 func (c *Client) ListComposeDBServices(ctx context.Context, app string) ([]ComposeDBServiceResource, error) {
-	var out []ComposeDBServiceResource
-	err := c.do(ctx, http.MethodGet, composeDBServicesPath(app), nil, &out)
-	return out, err
+	return getJSON[[]ComposeDBServiceResource](ctx, c, composeDBServicesPath(app))
 }
 
 // SetComposeDBBackupSchedule calls PUT .../compose-db-services/{service}/backup-schedule.
@@ -65,7 +63,7 @@ func (c *Client) SetComposeDBBackupSchedule(ctx context.Context, app, service st
 
 // DeleteComposeDBBackupSchedule calls DELETE .../compose-db-services/{service}/backup-schedule.
 func (c *Client) DeleteComposeDBBackupSchedule(ctx context.Context, app, service string) error {
-	return c.do(ctx, http.MethodDelete, composeDBServicePath(app, service)+"/backup-schedule", nil, nil)
+	return c.del(ctx, composeDBServicePath(app, service)+"/backup-schedule")
 }
 
 // PauseComposeDBBackupSchedule calls POST .../backup-schedule/pause or /resume.
@@ -81,9 +79,7 @@ func (c *Client) PauseComposeDBBackupSchedule(ctx context.Context, app, service 
 
 // ListComposeDBBackupRuns calls GET .../compose-db-services/{service}/backups.
 func (c *Client) ListComposeDBBackupRuns(ctx context.Context, app, service string) ([]ComposeDBBackupRunResource, error) {
-	var out []ComposeDBBackupRunResource
-	err := c.do(ctx, http.MethodGet, composeDBServicePath(app, service)+"/backups", nil, &out)
-	return out, err
+	return getJSON[[]ComposeDBBackupRunResource](ctx, c, composeDBServicePath(app, service)+"/backups")
 }
 
 // TriggerComposeDBBackup calls POST .../compose-db-services/{service}/backups.

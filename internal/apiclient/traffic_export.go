@@ -73,16 +73,12 @@ func trafficExportSinkPath(id string) string {
 
 // ListTrafficExportSinks calls GET /api/v1/settings/traffic-export/sinks.
 func (c *Client) ListTrafficExportSinks(ctx context.Context) (TrafficExportSinkList, error) {
-	var out TrafficExportSinkList
-	err := c.do(ctx, http.MethodGet, trafficExportBase+"/sinks", nil, &out)
-	return out, err
+	return getJSON[TrafficExportSinkList](ctx, c, trafficExportBase+"/sinks")
 }
 
 // GetTrafficExportSink calls GET /api/v1/settings/traffic-export/sinks/{id}.
 func (c *Client) GetTrafficExportSink(ctx context.Context, id string) (TrafficExportSink, error) {
-	var out TrafficExportSink
-	err := c.do(ctx, http.MethodGet, trafficExportSinkPath(id), nil, &out)
-	return out, err
+	return getJSON[TrafficExportSink](ctx, c, trafficExportSinkPath(id))
 }
 
 // CreateTrafficExportSink calls POST /api/v1/settings/traffic-export/sinks.
@@ -101,7 +97,7 @@ func (c *Client) UpdateTrafficExportSink(ctx context.Context, id string, req Tra
 
 // DeleteTrafficExportSink calls DELETE /api/v1/settings/traffic-export/sinks/{id}.
 func (c *Client) DeleteTrafficExportSink(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, trafficExportSinkPath(id), nil, nil)
+	return c.del(ctx, trafficExportSinkPath(id))
 }
 
 // TestTrafficExportSink calls POST /api/v1/settings/traffic-export/sinks/{id}/test.
@@ -113,7 +109,5 @@ func (c *Client) TestTrafficExportSink(ctx context.Context, id string) (TrafficE
 
 // GetTrafficExportStatus calls GET /api/v1/settings/traffic-export/status.
 func (c *Client) GetTrafficExportStatus(ctx context.Context) (TrafficExportStatus, error) {
-	var out TrafficExportStatus
-	err := c.do(ctx, http.MethodGet, trafficExportBase+"/status", nil, &out)
-	return out, err
+	return getJSON[TrafficExportStatus](ctx, c, trafficExportBase+"/status")
 }

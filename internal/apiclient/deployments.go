@@ -141,9 +141,7 @@ func (c *Client) ListDeployments(ctx context.Context, opts DeploymentListOptions
 	if q := opts.Values().Encode(); q != "" {
 		path += "?" + q
 	}
-	var out DeploymentList
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[DeploymentList](ctx, c, path)
 }
 
 // GetDeploymentsSummary calls GET /api/v1/deployments/summary; window is a
@@ -153,9 +151,7 @@ func (c *Client) GetDeploymentsSummary(ctx context.Context, window string) (Depl
 	if window != "" {
 		path += "?window=" + url.QueryEscape(window)
 	}
-	var out DeploymentSummary
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[DeploymentSummary](ctx, c, path)
 }
 
 // StreamDeployments calls GET /api/v1/deployments/stream and invokes onEvent

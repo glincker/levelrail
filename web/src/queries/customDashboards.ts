@@ -1,9 +1,4 @@
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type {
   CustomDashboard,
@@ -11,6 +6,7 @@ import type {
   DashboardTemplate,
   DashboardWrite,
 } from '../types/dashboards'
+import { useApiMutation } from './useApiMutation'
 
 export const dashboardKeys = {
   all: ['custom-dashboards'] as const,
@@ -73,53 +69,49 @@ export function useDashboardTemplates() {
 }
 
 export function useCreateDashboard() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (body: DashboardWrite) =>
+  return useApiMutation({
+    fn: (body: DashboardWrite) =>
       request<CustomDashboard>(
         '/api/v1/dashboards',
         jsonInit('POST', body),
         'create dashboard',
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: dashboardKeys.list() }),
+    invalidate: [dashboardKeys.list()],
   })
 }
 
 export function useUpdateDashboard() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: DashboardWrite }) =>
+  return useApiMutation({
+    fn: ({ id, body }: { id: string; body: DashboardWrite }) =>
       request<CustomDashboard>(
         `/api/v1/dashboards/${encodeURIComponent(id)}`,
         jsonInit('PUT', body),
         'save dashboard',
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: dashboardKeys.list() }),
+    invalidate: [dashboardKeys.list()],
   })
 }
 
 export function useDeleteDashboard() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) =>
+  return useApiMutation({
+    fn: (id: string) =>
       request<void>(
         `/api/v1/dashboards/${encodeURIComponent(id)}`,
         { method: 'DELETE' },
         'delete dashboard',
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: dashboardKeys.list() }),
+    invalidate: [dashboardKeys.list()],
   })
 }
 
 export function useImportDashboard() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (doc: DashboardDoc) =>
+  return useApiMutation({
+    fn: (doc: DashboardDoc) =>
       request<CustomDashboard>(
         '/api/v1/dashboards/import',
         jsonInit('POST', doc),
         'import dashboard',
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: dashboardKeys.list() }),
+    invalidate: [dashboardKeys.list()],
   })
 }

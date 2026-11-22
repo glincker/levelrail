@@ -49,5 +49,5 @@ func (c *Client) SaveView(ctx context.Context, in SavedViewInput) (SavedView, er
 
 // DeleteSavedView calls DELETE /api/v1/saved-views/{id}.
 func (c *Client) DeleteSavedView(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/saved-views/"+url.PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/saved-views/"+url.PathEscape(id))
 }

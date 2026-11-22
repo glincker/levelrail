@@ -2,7 +2,10 @@ package docker
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -184,5 +187,93 @@ func TestSupportFor(t *testing.T) {
 		if got != tt.want || reason == "" {
 			t.Errorf("%+v on %s: %s %q, want %s", tt.info, tt.goos, got, reason, tt.want)
 		}
+	}
+}
+
+func TestDetectRuntimeSocket_LimaOnlyOnDarwin(t *testing.T) {
+	home := t.TempDir()
+	sock := filepath.Join(home, ".lima", "default", "sock", "docker.sock")
+	if err := os.MkdirAll(filepath.Dir(sock), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sock, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := lookupFrom(map[string]string{"HOME": home})
+	got := detectRuntimeSocketOS(env, socketExists, "darwin")
+	if got.Kind != RuntimeKindLima || got.Host != "unix://"+sock {
+		t.Errorf("darwin got %+v, want lima socket", got)
+	}
+	if got := detectRuntimeSocketOS(env, socketExists, "linux"); got.Kind == RuntimeKindLima {
+		t.Errorf("linux must ignore lima, got %+v", got)
+	}
+}
+
+func TestDetectRuntimeSocket_DockerHostWinsOnDarwin(t *testing.T) {
+	home := t.TempDir()
+	env := lookupFrom(map[string]string{"HOME": home, "DOCKER_HOST": "unix:///custom.sock"})
+	got := detectRuntimeSocketOS(env, func(string) bool { return true }, "darwin")
+	if got.Source != "DOCKER_HOST" || got.Host != "unix:///custom.sock" {
+		t.Errorf("got %+v", got)
+	}
+}
+
+func TestConnectHost(t *testing.T) {
+	detected := RuntimeInfo{Source: "detected", Host: "unix:///h/.orbstack/run/docker.sock"}
+	if got := ConnectHost(detected, "darwin"); got != detected.Host {
+		t.Errorf("darwin detected = %q", got)
+	}
+	if got := ConnectHost(detected, "linux"); got != "" {
+		t.Errorf("linux detected must stay on the SDK default, got %q", got)
+	}
+	if got := ConnectHost(RuntimeInfo{Source: "DOCKER_HOST", Host: "tcp://x"}, "darwin"); got != "" {
+		t.Errorf("DOCKER_HOST is read by the SDK, got %q", got)
+	}
+	if got := ConnectHost(RuntimeInfo{Source: envRuntimeSocket, Host: "unix:///p"}, "linux"); got != "unix:///p" {
+		t.Errorf("pinned socket = %q", got)
+	}
+}
+
+func TestDetectRuntimeSocketSkipsDeadSocket(t *testing.T) {
+	home := t.TempDir()
+	dead := filepath.Join(home, ".docker", "run", "docker.sock")
+	if err := os.MkdirAll(filepath.Dir(dead), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dead, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := func(k string) (string, bool) {
+		if k == "HOME" {
+			return home, true
+		}
+		return "", false
+	}
+	probe := func(os string) RuntimeInfo {
+		// Only paths under the temp home count, so a real daemon on this host cannot leak in.
+		inHome := func(p string) bool { return strings.HasPrefix(p, home) }
+		exists := func(p string) bool { return inHome(p) && socketExists(p) }
+		dial := func(p string) bool { return inHome(p) && dialableSocket(p) }
+		return detectRuntimeSocketProbe(env, exists, dial, os)
+	}
+
+	// Only a dead candidate: keep the first existing one.
+	if got := probe("darwin"); got.Host != "unix://"+dead || got.Source != "detected" {
+		t.Fatalf("none live fallback = %+v", got)
+	}
+
+	live := filepath.Join(home, ".lima", "default", "sock", "docker.sock")
+	if err := os.MkdirAll(filepath.Dir(live), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	ln, err := net.Listen("unix", live)
+	if err != nil {
+		t.Skipf("unix listener unavailable: %v", err)
+	}
+	defer func() { _ = ln.Close() }()
+
+	got := probe("darwin")
+	if got.Host != "unix://"+live || got.Kind != RuntimeKindLima {
+		t.Fatalf("live candidate not chosen: %+v", got)
 	}
 }

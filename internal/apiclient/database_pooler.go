@@ -23,9 +23,7 @@ type DatabasePoolerResource struct {
 
 // GetDatabasePooler calls GET /api/v1/databases/{name}/pooler.
 func (c *Client) GetDatabasePooler(ctx context.Context, name string) (DatabasePoolerResource, error) {
-	var out DatabasePoolerResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/pooler", nil, &out)
-	return out, err
+	return getJSON[DatabasePoolerResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/pooler")
 }
 
 // SetDatabasePooler calls POST (enable) or DELETE (disable) on .../pooler.

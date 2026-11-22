@@ -15,6 +15,7 @@ import { useNodeProviders } from '../../queries/nodeProvision'
 import type { NodeProviderStatus } from '../../types/nodeProvision'
 import { CardGrid, ObjectCard } from '../cards/ObjectCard'
 import { ConnectionGlyph } from './ConnectionGlyph'
+import { providerStatus } from '../../lib/providerConnectionState'
 
 const PROVIDER_TONE = {
   connected: 'success',
@@ -97,8 +98,7 @@ export function InfraGroups() {
           </h3>
           <CardGrid min="md">
             {(providers.data ?? []).map((p) => {
-              const status =
-                p.status ?? (p.has_token ? 'connected' : 'not_connected')
+              const status = providerStatus(p)
               const name = t(`infra.providers.${p.provider}`, {
                 defaultValue: p.label ?? p.provider,
               })

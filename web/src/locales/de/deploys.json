@@ -282,7 +282,8 @@
     "removed": "Nur dort",
     "changed": "Geändert",
     "missing": "nicht gesetzt",
-    "secretMasked": "Secret-Wert, verborgen"
+    "secretMasked": "Secret-Wert, verborgen",
+    "preview": "Preview-Overrides dieser App"
   },
   "appSleep": {
     "title": "Ruhezustand bei Leerlauf",
@@ -830,5 +831,11 @@
     "nodeNeeded": "Ein bestimmter Builder braucht einen gewählten Builder.",
     "modeTipLabel": "Info zur Build-Platzierung",
     "modeTip": "Automatisch folgt der globalen Strategie. Nur Control Plane baut immer auf diesem Server, nie auf einem Builder. Bestimmter Builder nutzt den gewählten Builder, und Nur dieser Builder verhindert das Ausweichen auf einen anderen Node."
+  },
+  "copyRow": {
+    "rolledBackTo": "Zurückgesetzt auf {{id}}",
+    "rolledBack": "Zurückgesetzt",
+    "promotedFrom": "Hochgestuft von {{id}}",
+    "promoted": "Hochgestuft"
   }
 }

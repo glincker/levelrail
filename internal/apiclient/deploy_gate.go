@@ -108,9 +108,7 @@ type AppWatchResource struct {
 
 // GetAppWatch calls GET /api/v1/apps/{name}/watch.
 func (c *Client) GetAppWatch(ctx context.Context, appName string) (AppWatchResource, error) {
-	var out AppWatchResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/watch", nil, &out)
-	return out, err
+	return getJSON[AppWatchResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/watch")
 }
 
 // StopAppWatch calls POST /api/v1/apps/{name}/watch/stop.
@@ -122,16 +120,12 @@ func (c *Client) StopAppWatch(ctx context.Context, appName string) (AppWatchReso
 
 // GetDeployGate calls GET /api/v1/apps/{name}/deploys/{deployId}/gate.
 func (c *Client) GetDeployGate(ctx context.Context, appName, deployID string) (DeployGateResource, error) {
-	var out DeployGateResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/gate", nil, &out)
-	return out, err
+	return getJSON[DeployGateResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/gate")
 }
 
 // GetDeploySafety calls GET /api/v1/apps/{name}/deploy-safety.
 func (c *Client) GetDeploySafety(ctx context.Context, appName string) (DeploySafetyResource, error) {
-	var out DeploySafetyResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/deploy-safety", nil, &out)
-	return out, err
+	return getJSON[DeploySafetyResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/deploy-safety")
 }
 
 // SetDeploySafety calls PUT /api/v1/apps/{name}/deploy-safety, replacing every override.

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/forms"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -69,7 +70,14 @@ func (n formNotifier) Notify(ctx context.Context, f store.Form, s store.FormSubm
 		if !c.Enabled {
 			continue
 		}
-		if err := n.rt.deviceNotifier.SendNotice(ctx, *c, text); err != nil {
+		if ok, err := n.rt.channelServesApp(ctx, c, f.AppName); err != nil || !ok {
+			continue
+		}
+		sendCtx := alerting.WithPushAudience(ctx, alerting.PushAudience{AppName: f.AppName, AdminOnly: true, ProjectID: c.ProjectID})
+		if err := n.rt.deviceNotifier.SendNotice(sendCtx, *c, text); err != nil {
+			if errors.Is(err, alerting.ErrNoticeSkipped) {
+				continue
+			}
 			errs = append(errs, fmt.Errorf("channel %s: %w", id, err))
 		}
 	}

@@ -53,3 +53,39 @@ func TestListDeployAttempts_OnlyNewestSucceededIsLive(t *testing.T) {
 		t.Errorf("triggers = %v, a manual deploy of an older tag is not a rollback", trig)
 	}
 }
+
+func TestListDeployAttempts_StaticPromoteCopyIsLive(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "site", Image: "site:v2", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	base := time.Now().UTC().Truncate(time.Millisecond)
+	seed := []store.DeployAttempt{
+		{ID: "v1", Image: "site:v1", StartedAt: base},
+		{ID: "v2", Image: "site:v2", StartedAt: base.Add(time.Minute)},
+		{ID: "c1", Image: "site:v1", StartedAt: base.Add(2 * time.Minute), Reason: "RollbackTo: v1"},
+	}
+	for _, a := range seed {
+		a.ServiceName, a.Source, a.Status = "site", store.DeployAttemptSourceManual, store.DeployAttemptStatusSucceeded
+		a.DigestReason = store.DigestReasonStaticTree
+		if err := db.SaveDeployAttempt(ctx, a); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/site/deploy-attempts", ""))
+	var got []deployAttemptResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	live := map[string]bool{}
+	for _, r := range got {
+		live[r.ID] = r.Live
+	}
+	if !live["c1"] || live["v1"] || live["v2"] {
+		t.Errorf("live = %v, want only the promote copy c1", live)
+	}
+}

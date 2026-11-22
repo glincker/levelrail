@@ -340,5 +340,29 @@
       "paste": "Pégalo en Conectar",
       "verify": "Levelrail lo verifica con una comprobación de solo lectura"
     }
+  },
+  "linkedAccounts": {
+    "title": "Cuentas cloud",
+    "manage": "Gestionar en Cuentas cloud",
+    "add": "Añadir cuenta",
+    "active": "Activa",
+    "attention": "Requiere atención",
+    "relogin": "Requiere nuevo inicio de sesión",
+    "managed": "Predeterminada",
+    "legacyHint": "La credencial única anterior de abajo se mantiene por compatibilidad; gestiona este proveedor desde sus cuentas.",
+    "manageShort": "Gestionar",
+    "addAnother": "Añadir otra cuenta",
+    "verified": "Última verificación",
+    "useCredential": "Usar una credencial única"
+  },
+  "accountSection": {
+    "switch": "Cuenta",
+    "loading": "Cargando datos de la cuenta",
+    "error": "No se pudo cargar: {{message}}",
+    "retry": "Reintentar",
+    "verifyOk": "Credencial verificada",
+    "verifyFail": "Falló la comprobación de la credencial",
+    "noProbe": "No hay comprobaciones de acceso para este tipo de cuenta.",
+    "check": "Comprobar acceso"
   }
 }

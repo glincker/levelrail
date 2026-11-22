@@ -7,11 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/GLINCKER/levelrail/internal/cloudmeta"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -22,6 +25,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -40,8 +44,59 @@ const (
 	buildKitConnectTimeout = 10 * time.Second
 )
 
+const usageText = `levelrail-agent: Levelrail node agent
+
+Usage: levelrail-agent [--help | --version | reenroll | doctor | self-update [--check|--apply [--force-target <tag>] [--allow-package-managed]]]
+
+Environment:
+  APP_CONTROL_PLANE_ADDR       host:port of the control plane agent listener (required)
+  APP_JOIN_TOKEN               one-time join token, only for the first enrolment
+  APP_CA_FINGERPRINT           control plane CA fingerprint to pin
+  APP_AGENT_IDENTITY_FILE      where the enrolled identity is stored
+  APP_LOG_LEVEL                debug, info (default), warn or error
+  APP_AGENT_SERVICE_NAME       service to restart after an update (default levelrail-agent)
+
+self-update refuses (exit code 3) when the binary is package managed: under
+/usr/bin, /usr/local/Cellar or /opt/homebrew/Cellar, owned by dpkg or rpm, or
+marked "package" in the install-source file of the data directory. Update it
+with the package manager, or pass --allow-package-managed to --apply. A failed or held
+target is retried with --apply --force-target <tag>. dev and main-<sha> builds are never update targets.
+`
+
+// handleInfoArgs answers version and help before any config is read.
+func handleInfoArgs(args []string, out io.Writer) bool {
+	if len(args) == 0 {
+		return false
+	}
+	switch args[0] {
+	case "--version", "-version", "version":
+		_, _ = fmt.Fprintln(out, version.Version)
+		return true
+	case "--help", "-h", "help":
+		_, _ = fmt.Fprint(out, usageText)
+		return true
+	}
+	return false
+}
+
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	if len(os.Args) > 1 && os.Args[1] == "doctor" {
+		os.Exit(runDoctor(os.Stdout))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "self-update" {
+		os.Exit(runSelfUpdate(os.Args[2:], os.Stdout, os.Stderr, os.LookupEnv))
+	}
+	if handleInfoArgs(os.Args[1:], os.Stdout) {
+		return
+	}
+	raw := os.Getenv(envLogLevel)
+	level, levelOK := parseLogLevel(raw)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	// Probe and other deep packages log through the default logger.
+	slog.SetDefault(logger)
+	if !levelOK {
+		logger.Warn("unknown log level, using info", slog.String("variable", envLogLevel), slog.String("value", raw))
+	}
 	if err := run(logger); err != nil {
 		logger.Error("exited with error", slog.String("error", err.Error()))
 		os.Exit(1)
@@ -62,6 +117,7 @@ func run(logger *slog.Logger) error {
 	}
 
 	logger.Info("starting", slog.String("version", version.Version))
+	logPlatformLimits(logger, runtime.GOOS)
 
 	id, err := loadOrEnroll(ctx, addr, identityFilePath(), logger)
 	if err != nil {
@@ -117,6 +173,8 @@ func loadBuildRunner(ctx context.Context, logger *slog.Logger, guardHost string)
 	rawOpts := []dockerclient.Opt{dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation()}
 	if guardHost != "" {
 		rawOpts = append(rawOpts, dockerclient.WithHost(guardHost))
+	} else if h := docker.ConnectHost(docker.DetectRuntimeSocket(os.LookupEnv), runtime.GOOS); h != "" {
+		rawOpts = append(rawOpts, dockerclient.WithHost(h))
 	}
 	rawDockerCli, err := dockerclient.NewClientWithOpts(rawOpts...)
 	if err != nil {
@@ -179,6 +237,11 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		opts = append(opts, agent.WithKeepalive(t, timeout))
 	}
 
+	ctx = agent.WithOfflineBuffer(ctx, agent.OfflineBufferFromEnv(os.LookupEnv))
+	health := newHealthTracker(agentDataDir(), version.Version, agent.StableSessionSeconds(os.LookupEnv), os.LookupEnv, logger)
+
+	go autoUpdateLoop(ctx, os.LookupEnv, logger)
+
 	delay := reconnectBaseDelay
 	for {
 		if ctx.Err() != nil {
@@ -186,15 +249,21 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		}
 
 		var err error
+		var handshook atomic.Bool
 		sessionStart := time.Now()
 		if holder.Current().Expired(time.Now()) && !adoptIdentityFromDisk(holder, file, logger) {
 			err = errors.New("certificate expired")
 			delay = reconnectMaxDelay
 		} else {
-			err = agent.RunSession(ctx, addr, holder.Current(), rt, logger, opts...)
+			err = agent.RunSession(ctx, addr, holder.Current(), rt, logger, append(opts, agent.WithSessionStarted(func() { handshook.Store(true) }))...)
 		}
 		if ctx.Err() != nil {
 			return // shutting down: the session ending is expected, not a failure
+		}
+		if d := health.sessionEnded(time.Since(sessionStart), handshook.Load() && !agent.IsAuthRejection(err)); d.Action == nodeinsight.UpdateRollback {
+			logger.Error("this agent version keeps failing; returning to the previous binary",
+				slog.String("last_good", d.Target), slog.String("running", version.Version))
+			rollbackToPrev(ctx, os.LookupEnv, logger, agentDataDir())
 		}
 		if agent.IsAuthRejection(err) || holder.Current().Expired(time.Now()) {
 			if adoptIdentityFromDisk(holder, file, logger) {

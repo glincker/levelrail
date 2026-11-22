@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -84,9 +83,8 @@ func (rt *Router) handleSetAppImportVolume(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	var req setAppImportVolumeRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxAppImportBody)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[setAppImportVolumeRequest](w, r, maxAppImportBody)
+	if !ok {
 		return
 	}
 	idx := findItem(items, r.PathValue("item"))
@@ -260,9 +258,8 @@ func (rt *Router) handleRouteAppImport(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var req routeAppImportRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxAppImportBody)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[routeAppImportRequest](w, r, maxAppImportBody)
+	if !ok {
 		return
 	}
 	idx := findItem(items, r.PathValue("item"))

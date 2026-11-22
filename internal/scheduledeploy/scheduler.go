@@ -41,33 +41,6 @@ type Trigger interface {
 
 // Scheduler periodically checks which app schedules are due and fires
 // them through Trigger.
-//
-// Catch-up semantics: every enabled schedule persists its own next fire
-// time (store.AppSchedule.NextFireAt) rather than keeping it only in an
-// in-memory position. A schedule seen for the first time (NextFireAt
-// nil) is armed to its next real occurrence and does not fire
-// immediately, the same "no fire on sight" rule internal/scheduledtask.
-// Scheduler and internal/backup.Scheduler already apply to a freshly
-// observed schedule. Once armed, Tick re-arms NextFireAt to the next
-// occurrence strictly after now *before* calling Trigger: if the process
-// is killed between that arm and Trigger returning, the missed firing is
-// not retried on the next tick, and it is never fired twice either.
-//
-// Because the armed time is persisted rather than kept in memory, a
-// schedule that missed one or more occurrences entirely while the
-// control plane was down still fires exactly once the next time it is
-// checked, for the most recent due occurrence, never once per missed
-// occurrence, then resumes its normal cadence from now. This is a
-// deliberate difference from its sibling schedulers
-// (internal/scheduledtask, internal/backup), whose in-memory position is
-// lost on restart and which therefore never catch up a missed occurrence
-// at all: a missed scheduled deploy is worth catching up once, a missed
-// backup or task run is not, matching how this codebase already treats
-// each.
-//
-// A schedule due during an active deploy freeze window is skipped, not
-// forced: it is recorded in history with a reason and re-armed for its
-// next natural occurrence, never queued to run once the freeze lifts.
 type Scheduler struct {
 	Store   ScheduleStore
 	Freeze  deploy.FreezeStore

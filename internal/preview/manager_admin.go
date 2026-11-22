@@ -21,7 +21,7 @@ func (m *Manager) Settings(ctx context.Context, app string) (AppSettings, error)
 		return AppSettings{}, fmt.Errorf("preview: load settings for %q: %w", app, err)
 	}
 	s.App = app
-	s.Normalize(m.cfg.DefaultMode, s.Mode != "")
+	s.Normalize(m.live(ctx).DefaultMode, s.Mode != "")
 	if s.Path == "" {
 		s.Path = DefaultPath
 	}
@@ -69,6 +69,29 @@ func (m *Manager) List(ctx context.Context, app string) ([]Record, error) {
 		return nil, fmt.Errorf("preview: list records for %q: %w", app, err)
 	}
 	return recs, nil
+}
+
+// LatestRenderable returns, per requested app, the newest successful record
+// that can draw a card (a file or text card metadata), in one store read.
+func (m *Manager) LatestRenderable(ctx context.Context, apps []string) (map[string]Record, error) {
+	recs, err := m.deps.Store.ListAllPreviewRecords(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("preview: list latest records: %w", err)
+	}
+	want := make(map[string]bool, len(apps))
+	for _, a := range apps {
+		want[a] = true
+	}
+	out := make(map[string]Record, len(apps))
+	for _, r := range recs {
+		if !want[r.App] || r.Status != StatusOK || (!r.HasFile() && r.Meta == "") {
+			continue
+		}
+		if cur, ok := out[r.App]; !ok || r.CapturedAt.After(cur.CapturedAt) {
+			out[r.App] = r
+		}
+	}
+	return out, nil
 }
 
 // OpenImage returns the file path of an app's stored thumbnail. It marks the
@@ -420,7 +443,7 @@ func (m *Manager) pruneImage(ctx context.Context) error {
 func (m *Manager) busy() bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.running
+	return m.workers > 0
 }
 
 // ensureImage makes the browser image available, recording it for later
@@ -452,6 +475,7 @@ func (m *Manager) Start(ctx context.Context) {
 	m.baseCtx = ctx
 	m.mu.Unlock()
 	go func() {
+		defer m.pool.closeAll()
 		m.Sweep(ctx)
 		t := time.NewTicker(m.cfg.SweepInterval)
 		defer t.Stop()

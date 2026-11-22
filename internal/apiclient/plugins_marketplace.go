@@ -93,9 +93,7 @@ type marketplaceSourceInput struct {
 
 // MarketplaceCatalog calls GET /api/v1/plugin-marketplace.
 func (c *Client) MarketplaceCatalog(ctx context.Context) (MarketplaceCatalog, error) {
-	var out MarketplaceCatalog
-	err := c.do(ctx, http.MethodGet, "/api/v1/plugin-marketplace", nil, &out)
-	return out, err
+	return getJSON[MarketplaceCatalog](ctx, c, "/api/v1/plugin-marketplace")
 }
 
 // RefreshMarketplace calls POST /api/v1/plugin-marketplace/refresh. An empty sourceID refreshes every source.
@@ -121,9 +119,7 @@ func (c *Client) InstallMarketplacePlugin(ctx context.Context, in MarketplaceIns
 
 // ListMarketplaceSources calls GET /api/v1/plugin-marketplace/sources.
 func (c *Client) ListMarketplaceSources(ctx context.Context) ([]MarketplaceSource, error) {
-	var out []MarketplaceSource
-	err := c.do(ctx, http.MethodGet, "/api/v1/plugin-marketplace/sources", nil, &out)
-	return out, err
+	return getJSON[[]MarketplaceSource](ctx, c, "/api/v1/plugin-marketplace/sources")
 }
 
 // AddMarketplaceSource calls POST /api/v1/plugin-marketplace/sources.
@@ -135,5 +131,5 @@ func (c *Client) AddMarketplaceSource(ctx context.Context, name, url, rootKey st
 
 // RemoveMarketplaceSource calls DELETE /api/v1/plugin-marketplace/sources/{id}.
 func (c *Client) RemoveMarketplaceSource(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/plugin-marketplace/sources/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/plugin-marketplace/sources/"+PathEscape(id))
 }

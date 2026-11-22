@@ -64,9 +64,7 @@ func splitPath(appName string) string { return "/api/v1/apps/" + PathEscape(appN
 
 // GetSplit calls GET /api/v1/apps/{name}/split.
 func (c *Client) GetSplit(ctx context.Context, appName string) (SplitTest, error) {
-	var out SplitTest
-	err := c.do(ctx, http.MethodGet, splitPath(appName), nil, &out)
-	return out, err
+	return getJSON[SplitTest](ctx, c, splitPath(appName))
 }
 
 // StartSplit calls POST /api/v1/apps/{name}/split.

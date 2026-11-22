@@ -31,6 +31,10 @@ Domains and TLS, managed databases, and git provider setup have their own pages:
 - **One mutation changes the image.** `POST /api/v1/apps/{name}/deploys` points the app at a tag and returns immediately. A rollback is the same call with an older tag. `apps rollback`, the dashboard rollback button, and automatic rollback on a crashloop all use it, so there is no second code path that can drift.
 - **Traffic only moves once the new container is ready.** The readiness probe has to pass before the old container is drained. If it never passes, the old container keeps serving and the deploy fails with a reason. The exception is a single-replica app with a writable volume and a fixed host port or stream port: it cannot run two copies, so the old container is stopped first and restarted if the new one fails (see [Pinned host ports](/deploy-safety#pinned-host-ports)). Set `strategy: recreate` for any other app that needs a single writer on its data.
 
+## App kinds
+
+`GET /api/v1/apps` and `GET /api/v1/apps/{name}` return `app_kind` (`web`, `api`, `worker`, `cron`, `database` or `static`) and `kind_source` (`spec`, `probe` or `heuristic`) so a client can pick a card that fits. An app with scheduled jobs and no port or domain is `cron`, one with neither port nor domain is `worker`, a database image with no domain is `database`, a `build.type: static` app is `static`. Anything that serves is `web`, or `api` when its readiness path starts with `/api`, `/v1`, `/graphql` and similar, or when it is a port-only service with a bare health path. The kind is a hint: no probe content type is stored today, so `probe` is reserved and `heuristic` means a guess from names and paths. The list also carries a small `summary` (readiness, last deploy time, replicas, and for cron apps the job count, next run and last run status) built from data already loaded. It may also carry `restarts` (Docker restart count summed over replicas), `restarts_increasing` and, for SQL databases Levelrail runs, `db_size_bytes`. Those are read live from the node only for the apps on the requested page, cached for `apps.summary_cache_seconds` (default 30, 0 turns them off), bounded by `apps.summary_cache_max_entries` and `apps.summary_timeout`, and left out when the node does not answer in time.
+
 ## Create an app
 
 There are four ways to create one. All four accept inline secret values (`--secret KEY=VALUE` on the CLI) that are encrypted as part of the same call, so a `{ secret: true }` variable declared in the spec needs no follow-up call.
@@ -824,3 +828,7 @@ For every failure code, see [Deploy failures](/deploy-failures). Run `levelrail-
   <Card title="Managing databases" href="/managing-databases">Attach Postgres, MySQL, Redis, and others.</Card>
   <Card title="CLI reference" href="/cli-reference">Every command, flag, and exit code.</Card>
 </CardGroup>
+
+### Cards for apps without a visual UI
+
+In card view, apps classified as `api`, `worker`, `cron` or `database` get a compact service card in the preview area instead of a thumbnail. It shows readiness, replicas, the last deploy age, and for APIs the readiness path when one is set. Cron cards show the next and last run with the last run status, and database cards show the engine from the image name. Only data already in the apps list is used, so no latency, uptime or restart figures appear. The table view shows the same kind as a small chip next to the name.

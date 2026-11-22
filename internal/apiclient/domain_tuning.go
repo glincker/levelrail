@@ -43,9 +43,7 @@ func domainTuningPath(name, domain string) string {
 
 // GetDomainTuning calls GET .../domains/{domain}/tuning.
 func (c *Client) GetDomainTuning(ctx context.Context, name, domain string) (DomainTuningResource, error) {
-	var out DomainTuningResource
-	err := c.do(ctx, http.MethodGet, domainTuningPath(name, domain), nil, &out)
-	return out, err
+	return getJSON[DomainTuningResource](ctx, c, domainTuningPath(name, domain))
 }
 
 // SetDomainTuning calls PUT .../domains/{domain}/tuning.

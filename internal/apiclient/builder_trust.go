@@ -28,9 +28,7 @@ func (c *Client) SetNodeBuildTrust(ctx context.Context, id, tier string) (NodeBu
 
 // GetEnvironmentBuilders calls GET /api/v1/environments/{id}/builders.
 func (c *Client) GetEnvironmentBuilders(ctx context.Context, id string) (EnvironmentBuildersResource, error) {
-	var out EnvironmentBuildersResource
-	err := c.do(ctx, http.MethodGet, environmentPath(id)+"/builders", nil, &out)
-	return out, err
+	return getJSON[EnvironmentBuildersResource](ctx, c, environmentPath(id)+"/builders")
 }
 
 // SetEnvironmentBuilders calls PUT /api/v1/environments/{id}/builders; an empty list restores the default policy.

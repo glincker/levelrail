@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -33,7 +32,5 @@ type DeployPhases struct {
 
 // GetDeployPhases calls GET /api/v1/deployments/{id}/phases.
 func (c *Client) GetDeployPhases(ctx context.Context, deployID string) (DeployPhases, error) {
-	var out DeployPhases
-	err := c.do(ctx, http.MethodGet, "/api/v1/deployments/"+PathEscape(deployID)+"/phases", nil, &out)
-	return out, err
+	return getJSON[DeployPhases](ctx, c, "/api/v1/deployments/"+PathEscape(deployID)+"/phases")
 }

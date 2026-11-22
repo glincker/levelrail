@@ -51,6 +51,30 @@ func TestPreviousPagesDeploy(t *testing.T) {
 	}
 }
 
+func TestPreviousPagesDeploy_AfterPromote(t *testing.T) {
+	now := time.Now()
+	hist := func(live bool) []deployAttemptResource {
+		return []deployAttemptResource{
+			{ID: "v1", Status: "succeeded", StartedAt: now.Add(-3 * time.Hour)},
+			{ID: "v2", Status: "succeeded", StartedAt: now.Add(-2 * time.Hour)},
+			{ID: "copy1", Status: "succeeded", Live: live, Reason: "RollbackTo: v1", StartedAt: now.Add(-time.Hour)},
+		}
+	}
+	for _, live := range []bool{true, false} {
+		if got := previousPagesDeploy(hist(live)); got != "v2" {
+			t.Errorf("live flag %v: got %q, want v2 (production before the promote)", live, got)
+		}
+	}
+	// A rollback is itself a copy: the next one goes back to what was live before it.
+	h := append(hist(false), deployAttemptResource{ID: "copy2", Status: "succeeded", Live: true, Reason: "RollbackTo: v2", StartedAt: now})
+	if got := previousPagesDeploy(h); got != "v1" {
+		t.Errorf("second rollback: got %q, want v1", got)
+	}
+	if got := previousPagesDeploy(h[:1]); got != "" {
+		t.Errorf("single deploy: got %q, want empty", got)
+	}
+}
+
 func TestRun_Pages_DomainsAddAndShow(t *testing.T) {
 	var paths []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

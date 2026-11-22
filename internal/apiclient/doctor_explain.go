@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 )
 
@@ -18,7 +17,5 @@ type DoctorExplanation struct {
 
 // GetDoctorExplanation reads GET /api/v1/doctor/explain?id=<check-id>.
 func (c *Client) GetDoctorExplanation(ctx context.Context, id string) (DoctorExplanation, error) {
-	var out DoctorExplanation
-	err := c.do(ctx, http.MethodGet, "/api/v1/doctor/explain?id="+url.QueryEscape(id), nil, &out)
-	return out, err
+	return getJSON[DoctorExplanation](ctx, c, "/api/v1/doctor/explain?id="+url.QueryEscape(id))
 }

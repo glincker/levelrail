@@ -41,21 +41,15 @@ func (c *Client) ListRepoBranches(ctx context.Context, repoURL string) (RepoBran
 
 // ListRestores calls GET /api/v1/databases/{name}/restores.
 func (c *Client) ListRestores(ctx context.Context, name string) ([]RestoreHistoryResource, error) {
-	var out []RestoreHistoryResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/restores", nil, &out)
-	return out, err
+	return getJSON[[]RestoreHistoryResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/restores")
 }
 
 // ListVolumeRestores calls GET /api/v1/apps/{name}/volumes/{volume}/restores.
 func (c *Client) ListVolumeRestores(ctx context.Context, name, volume string) ([]RestoreHistoryResource, error) {
-	var out []RestoreHistoryResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/volumes/"+PathEscape(volume)+"/restores", nil, &out)
-	return out, err
+	return getJSON[[]RestoreHistoryResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/volumes/"+PathEscape(volume)+"/restores")
 }
 
 // ListPITRRestores calls GET /api/v1/databases/{name}/pitr-restores.
 func (c *Client) ListPITRRestores(ctx context.Context, name string) ([]PITRRestoreHistoryResource, error) {
-	var out []PITRRestoreHistoryResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/pitr-restores", nil, &out)
-	return out, err
+	return getJSON[[]PITRRestoreHistoryResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/pitr-restores")
 }

@@ -21,6 +21,7 @@ import {
 import type {
   BackupTarget,
   CreateBackupTargetRequest,
+  SftpHostKeyScan,
 } from '../types/backupTarget'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
@@ -160,5 +161,30 @@ export async function testBackupTarget(id: string): Promise<void> {
 export function useTestBackupTarget() {
   return useMutation<void, ApiError, string>({
     mutationFn: testBackupTarget,
+  })
+}
+
+// POST /api/v1/backup-targets/sftp-host-key (handleScanSFTPHostKey): reads the key a server
+// offers, sends no credentials and stores nothing. The user must still confirm it.
+export async function scanSftpHostKey(
+  endpoint: string,
+): Promise<SftpHostKeyScan> {
+  const res = await fetch('/api/v1/backup-targets/sftp-host-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `scan host key failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as SftpHostKeyScan
+}
+
+export function useScanSftpHostKey() {
+  return useMutation<SftpHostKeyScan, ApiError, string>({
+    mutationFn: scanSftpHostKey,
   })
 }

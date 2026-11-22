@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // AppGameStatus is the response of GET /api/v1/apps/{name}/game-status.
@@ -24,7 +23,5 @@ type AppGameStatus struct {
 
 // GetAppGameStatus calls GET /api/v1/apps/{name}/game-status.
 func (c *Client) GetAppGameStatus(ctx context.Context, app string) (AppGameStatus, error) {
-	var out AppGameStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/game-status", nil, &out)
-	return out, err
+	return getJSON[AppGameStatus](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/game-status")
 }

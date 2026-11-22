@@ -99,16 +99,12 @@ func observabilityExportPath(id string) string {
 
 // ListObservabilityPresets calls GET /api/v1/observability/presets.
 func (c *Client) ListObservabilityPresets(ctx context.Context) (ObservabilityPresetCatalog, error) {
-	var out ObservabilityPresetCatalog
-	err := c.do(ctx, http.MethodGet, "/api/v1/observability/presets", nil, &out)
-	return out, err
+	return getJSON[ObservabilityPresetCatalog](ctx, c, "/api/v1/observability/presets")
 }
 
 // ListObservabilityExports calls GET /api/v1/observability/exports.
 func (c *Client) ListObservabilityExports(ctx context.Context) ([]ObservabilityExport, error) {
-	var out []ObservabilityExport
-	err := c.do(ctx, http.MethodGet, "/api/v1/observability/exports", nil, &out)
-	return out, err
+	return getJSON[[]ObservabilityExport](ctx, c, "/api/v1/observability/exports")
 }
 
 // CreateObservabilityExport calls POST /api/v1/observability/exports.
@@ -127,5 +123,5 @@ func (c *Client) TestObservabilityExport(ctx context.Context, id string) (Observ
 
 // DeleteObservabilityExport calls DELETE /api/v1/observability/exports/{id}.
 func (c *Client) DeleteObservabilityExport(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, observabilityExportPath(id), nil, nil)
+	return c.del(ctx, observabilityExportPath(id))
 }
