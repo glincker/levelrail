@@ -53,9 +53,16 @@ import {
 } from './providers'
 
 // Fields joined with ":" into the one credential the backend parses for each provider.
+type TokenFieldLabel =
+  | 'field.godaddyKey'
+  | 'field.godaddySecret'
+  | 'field.namecheapUser'
+  | 'field.namecheapKey'
+  | 'field.namecheapIp'
+
 const TOKEN_FIELDS: Record<
   TokenProviderId,
-  { key: string; label: string; secret: boolean }[]
+  { key: string; label: TokenFieldLabel; secret: boolean }[]
 > = {
   godaddy: [
     { key: 'key', label: 'field.godaddyKey', secret: false },
@@ -169,7 +176,7 @@ function ProviderForm({
 
   const tokenCredential = (pid: TokenProviderId) =>
     TOKEN_FIELDS[pid].every((f) => parts[f.key]?.trim())
-      ? TOKEN_FIELDS[pid].map((f) => parts[f.key].trim()).join(':')
+      ? TOKEN_FIELDS[pid].map((f) => (parts[f.key] ?? '').trim()).join(':')
       : ''
   const tokenFilled = isTokenProviderId(id)
     ? TOKEN_FIELDS[id].filter((f) => parts[f.key]?.trim()).length
