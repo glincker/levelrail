@@ -303,7 +303,8 @@ func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog stri
 		query = fieldsQueryPrefix + jsonFields
 		format = outputJSON
 	}
-	return *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut || jsonFields != "", outputFlags{format, query}, 0, true
+	// --output json must report errors as JSON exactly like --json does.
+	return *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut || jsonFields != "" || format == outputJSON, outputFlags{format, query}, 0, true
 }
 
 // dryRunRequested is set by the shared --dry-run flag and read when the API client is built.

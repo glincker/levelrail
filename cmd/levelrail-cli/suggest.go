@@ -218,12 +218,39 @@ func errorNextStep(status int) string {
 	switch status {
 	case http.StatusUnauthorized:
 		return cliProg + " login, or pass --token"
+	case http.StatusForbidden:
+		return "this token lacks the ability named above; use a token that has it, " + cliProg + " whoami shows what the current one can do"
 	case http.StatusNotFound:
 		return "check the name with the list verb, for example " + cliProg + " apps list"
 	case http.StatusUnprocessableEntity, http.StatusBadRequest:
 		return "fix the flagged input and retry, see the verb's --help"
 	}
 	return ""
+}
+
+// errorNextStepFor narrows the 404 advice to the resource named in the error text,
+// so a missing template or node does not point at the apps list.
+func errorNextStepFor(status int, msg string) string {
+	if status == http.StatusNotFound {
+		switch {
+		case strings.Contains(msg, "template"):
+			return "check the name with " + cliProg + " templates list"
+		case strings.Contains(msg, "zone"):
+			return "check the zone with " + cliProg + " nodes zones"
+		case strings.Contains(msg, "node"):
+			return "check the node id with " + cliProg + " nodes list"
+		}
+	}
+	return errorNextStep(status)
+}
+
+// splitInlineNext separates a trailing ". next: ..." step from an error message
+// so it prints on its own line like every other next step.
+func splitInlineNext(msg string) (string, string) {
+	if i := strings.Index(msg, ". next: "); i >= 0 {
+		return msg[:i], msg[i+len(". next: "):]
+	}
+	return msg, ""
 }
 
 // errorHasGuidance reports whether the error text already says what to do,

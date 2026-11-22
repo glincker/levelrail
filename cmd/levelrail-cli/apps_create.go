@@ -1019,7 +1019,8 @@ func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 		_, _ = fmt.Fprintln(stderr, dry)
 		return exitOK
 	}
-	_, _ = fmt.Fprintln(stderr, err)
+	msg, inlineNext := splitInlineNext(err.Error())
+	_, _ = fmt.Fprintln(stderr, msg)
 	var apiErr *apiError
 	if errors.As(err, &apiErr) {
 		if apiErr.Fix != "" {
@@ -1033,9 +1034,13 @@ func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 		if apiErr.RequestID != "" {
 			_, _ = fmt.Fprintf(stderr, "request id: %s\n", apiErr.RequestID)
 		}
-		if next := errorNextStep(apiErr.StatusCode); next != "" && !jsonOut && apiErr.Fix == "" && !errorHasGuidance(err.Error()) {
+		if inlineNext != "" {
+			_, _ = fmt.Fprintf(stderr, "next: %s\n", inlineNext)
+		} else if next := errorNextStepFor(apiErr.StatusCode, err.Error()); next != "" && !jsonOut && apiErr.Fix == "" && !errorHasGuidance(err.Error()) {
 			_, _ = fmt.Fprintf(stderr, "next: %s\n", next)
 		}
+	} else if inlineNext != "" {
+		_, _ = fmt.Fprintf(stderr, "next: %s\n", inlineNext)
 	}
 	if jsonOut {
 		if jerr := writeJSONError(stdout, err); jerr != nil {

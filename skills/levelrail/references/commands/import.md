@@ -12,6 +12,7 @@ Usage:
   levelrail-cli import -f compose.yaml|Dockerfile [flags]
   levelrail-cli import plan <compose.yaml|dir> [--json]               dry run: what would be created, what is unsupported, name conflicts
   levelrail-cli import --docker-run "docker run -p 80:80 nginx:1" [flags]
+  levelrail-cli import fly fly.toml|netlify netlify.toml [--write DIR]  offline: emit documents from a fly.toml or netlify.toml, see "levelrail-cli import fly -h"
   levelrail-cli import k8s -f <file|-> [--dry-run] [--force]          convert Kubernetes manifests into apps, see "levelrail-cli import k8s -h"
   levelrail-cli import config [dir] [--out FILE] [--strict]            offline preview of Procfile, app.json and vercel.json as an app spec
   levelrail-cli import config|platform ... --emit stack --out DIR   write Stack, App, Database and Domain documents plus a secrets checklist for review

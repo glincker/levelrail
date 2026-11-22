@@ -109,7 +109,12 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		}
 		printRebuildHint(hintOut, prog, name, rebuildKeys, gitApp)
 		if len(plan.New) > 0 || len(plan.Changed) > 0 {
-			printEnvUndoHint(hintOut, prog, name, plan)
+			// Hints go to stderr so stdout stays the result only.
+			undoOut := io.Writer(stderr)
+			if hintOut == io.Discard {
+				undoOut = io.Discard
+			}
+			printEnvUndoHint(undoOut, prog, name, plan)
 		}
 		doApply, reason := resolveEnvApply(ctx, client, apply, noApply)
 		if applyCode := afterConfigWriteReason(ctx, client, prog, name, doApply, reason, hintOut, stderr); code == exitOK {
