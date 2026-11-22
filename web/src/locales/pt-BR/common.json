@@ -118,6 +118,8 @@
     "failingCheck": "A verificação {{target}} falha desde {{since}}",
     "restarts": "Reinícios: {{n}}",
     "crashloop": "Loop de falhas",
+    "backoff": "Reiniciado {{n}} vezes, próxima reinicialização em {{seconds}} s (às {{at}})",
+    "stopRetrying": "Parar de tentar",
     "lastDeploy": "Último deploy: {{status}}",
     "logError": "Último erro: {{line}}",
     "next": {

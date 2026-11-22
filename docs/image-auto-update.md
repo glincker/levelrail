@@ -24,6 +24,12 @@ A check is skipped, with the reason recorded, when the app:
 - is in a protected environment (deploy it manually so it gets approved)
 - already has a deploy running
 
+## Reviewing what changed
+
+Each automatic redeploy records the old and new digest in its deploy history
+reason, with a link to the registry page for the image (Docker Hub or ghcr.io)
+where its tags and release notes are listed.
+
 ## Turn it on
 
 Dashboard: open the app, then **Deploys**, and switch on **Redeploy

@@ -118,6 +118,8 @@
     "failingCheck": "Check {{target}} failing since {{since}}",
     "restarts": "Restarts: {{n}}",
     "crashloop": "Crashloop",
+    "backoff": "Restarted {{n}} times, next restart in {{seconds}}s (at {{at}})",
+    "stopRetrying": "Stop retrying",
     "lastDeploy": "Last deploy: {{status}}",
     "logError": "Last error: {{line}}",
     "next": {

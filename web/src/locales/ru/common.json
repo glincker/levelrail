@@ -118,6 +118,8 @@
     "failingCheck": "Проверка {{target}} не проходит с {{since}}",
     "restarts": "Перезапуски: {{n}}",
     "crashloop": "Цикл падений",
+    "backoff": "Перезапусков: {{n}}, следующий через {{seconds}} с (в {{at}})",
+    "stopRetrying": "Прекратить повторы",
     "lastDeploy": "Последний деплой: {{status}}",
     "logError": "Последняя ошибка: {{line}}",
     "next": {

@@ -118,6 +118,8 @@
     "failingCheck": "チェック {{target}} が {{since}} から失敗しています",
     "restarts": "再起動: {{n}}",
     "crashloop": "クラッシュループ",
+    "backoff": "{{n}} 回再起動しました。次の再起動は {{seconds}} 秒後 ({{at}})",
+    "stopRetrying": "再試行を停止",
     "lastDeploy": "直近のデプロイ: {{status}}",
     "logError": "直近のエラー: {{line}}",
     "next": {

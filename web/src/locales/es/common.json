@@ -84,6 +84,8 @@
     "failingCheck": "La comprobación {{target}} falla desde {{since}}",
     "restarts": "Reinicios: {{n}}",
     "crashloop": "Bucle de fallos",
+    "backoff": "Reiniciada {{n}} veces, próximo reinicio en {{seconds}} s (a las {{at}})",
+    "stopRetrying": "Dejar de reintentar",
     "lastDeploy": "Último despliegue: {{status}}",
     "logError": "Último error: {{line}}",
     "next": {

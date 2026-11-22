@@ -1,4 +1,8 @@
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
+import { useStopApp } from '../queries/apps'
+import { useAppStatus } from '../queries/appStatus'
 import { useAppHealthExplain } from '../queries/healthExplain'
 
 // One compact line under the health summary: the last failing check, restarts,
@@ -6,6 +10,9 @@ import { useAppHealthExplain } from '../queries/healthExplain'
 export function AppHealthExplainLine({ appName }: { appName: string }) {
   const { t } = useTranslation('common')
   const { data } = useAppHealthExplain(appName)
+  const { data: status } = useAppStatus(appName)
+  const stopApp = useStopApp()
+  const backoff = status?.backoff
   if (!data || data.state === 'healthy') return null
 
   const parts: string[] = []
@@ -40,6 +47,31 @@ export function AppHealthExplainLine({ appName }: { appName: string }) {
     >
       <span className="font-medium">{t('healthExplain.label')}: </span>
       {parts.join(' · ')}
+      {backoff ? (
+        <span className="ml-2 inline-flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground" data-testid="restart-backoff">
+            {t('healthExplain.backoff', {
+              n: backoff.restarts,
+              seconds: backoff.retry_in_seconds,
+              at: new Date(backoff.next_restart_at).toLocaleTimeString(),
+            })}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={stopApp.isPending}
+            onClick={() => {
+              stopApp.mutate(appName, {
+                onError: (error) => {
+                  toast.add({ title: error.message, type: 'error' })
+                },
+              })
+            }}
+          >
+            {t('healthExplain.stopRetrying')}
+          </Button>
+        </span>
+      ) : null}
       {nextText ? (
         <span className="text-muted-foreground">
           {' → '}
