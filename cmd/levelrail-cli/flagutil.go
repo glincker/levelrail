@@ -258,6 +258,9 @@ func requireOneArg(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argLabel 
 		if name, _ := linkedAppName(); name != "" {
 			return name, true
 		}
+		if name, ok := pickAppForArg(fs, stderr, prog); ok {
+			return name, true
+		}
 	}
 	rest, ok := requireArgs(fs, stderr, prog, cmdLabel, "exactly one "+argLabel, 1)
 	if !ok {

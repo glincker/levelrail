@@ -21,12 +21,22 @@ const (
 	kindProjects = "projects"
 	kindEnvs     = "environments"
 	kindProfiles = "profiles"
+	// kindEnum is followed by the flag whose fixed values are offered.
+	kindEnum = "enum:"
 )
 
 // Flags whose value is a server name worth completing.
 var completeFlagKinds = map[string]string{
 	"--profile": kindProfiles, "--project": kindProjects,
 	"--env": kindEnvs, "--environment": kindEnvs, "--app": kindApps,
+}
+
+// Flags whose value comes from a fixed list, offered without asking the server.
+var completeFlagEnums = map[string][]string{
+	"--output":  {"json", "yaml", "table", "wide", "name"},
+	"--status":  {"open", "resolved", "ignored", "succeeded", "failed", "running", "rolled_back", "pending", "fired", "canceled"},
+	"--kind":    {"threshold", "crashloop", "cert_expiry", "node_offline", "slo_burn", "backup_missing", "domain_health", "audit", "deploys", "pipelines"},
+	"--context": {"production", "deploy-preview", "branch-deploy"},
 }
 
 // Verb paths whose first positional argument is an app name.
@@ -42,6 +52,7 @@ var completeAppVerbs = map[string]bool{
 var completeValueFlags = map[string]bool{
 	"--profile": true, "--project": true, "--env": true, "--environment": true, "--app": true,
 	"--api-url": true, "--token": true, "--output": true, "--query": true,
+	"--status": true, "--kind": true, "--context": true,
 }
 
 // completionKindFor decides which server names fit the cursor position, or "" to let the static completion answer.
@@ -53,6 +64,9 @@ func completionKindFor(words []string) (kind, cur string) {
 	cur = words[len(words)-1]
 	before := words[:len(words)-1]
 	if len(before) > 0 {
+		if _, ok := completeFlagEnums[before[len(before)-1]]; ok {
+			return kindEnum + before[len(before)-1], cur
+		}
 		if k, ok := completeFlagKinds[before[len(before)-1]]; ok {
 			return k, cur
 		}
@@ -117,7 +131,12 @@ func runHiddenComplete(prog string, args []string, stdout io.Writer, lookupEnv f
 	if kind == "" {
 		return exitOK
 	}
-	fetch := func(k string) []string { return cachedNames(prog, k, lookupEnv) }
+	fetch := func(k string) []string {
+		if flagName, ok := strings.CutPrefix(k, kindEnum); ok {
+			return completeFlagEnums[flagName]
+		}
+		return cachedNames(prog, k, lookupEnv)
+	}
 	for _, n := range completeNames(kind, cur, fetch) {
 		_, _ = io.WriteString(stdout, n+"\n")
 	}

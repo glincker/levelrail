@@ -44,3 +44,15 @@ func TestHiddenComplete_FiltersByPrefix(t *testing.T) {
 		t.Errorf("code=%d out=%q, want a silent success", code, out.String())
 	}
 }
+
+func TestCompletionFlagEnums(t *testing.T) {
+	kind, cur := completionKindFor([]string{"apps", "list", "--output", "j"})
+	if kind != kindEnum+"--output" || cur != "j" {
+		t.Fatalf("got (%q, %q)", kind, cur)
+	}
+	var out bytes.Buffer
+	runHiddenComplete("levelrail-cli", []string{"apps", "list", "--output", "y"}, &out, func(string) (string, bool) { return "", false })
+	if out.String() != "yaml\n" {
+		t.Fatalf("got %q", out.String())
+	}
+}
