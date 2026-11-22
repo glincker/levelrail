@@ -218,6 +218,14 @@
       "title": "Neustartrichtlinie für Container",
       "description": "Docker-Neustartrichtlinie für langlaufende App-Container, damit Apps nach einem Host-Neustart oder Docker-Neustart zurückkehren. Gilt für Container, die beim nächsten Deploy oder Neuerstellen erzeugt werden; bestehende Container behalten ihre alte Richtlinie."
     },
+    "buildReuseUnchanged": {
+      "title": "Image bei unverändertem Commit wiederverwenden",
+      "description": "Wird derselbe Commit mit denselben Build-Einstellungen erneut ausgerollt, wird das bereits auf diesem Node gebaute Image wiederverwendet, statt neu zu bauen. Builds ohne Cache, mit Secrets oder mit Attestierung bauen immer neu. Der nächste Deploy nutzt einen geänderten Wert."
+    },
+    "buildRunnerMinDisk": {
+      "title": "Mindestens freier Speicher für Build-Runner",
+      "description": "Ein Build-Node, der weniger als diese Anzahl MiB freien Speicher meldet, wird für neue Builds übersprungen und im Runner-Panel als übersprungen angezeigt. 0 schaltet die Prüfung aus. Der nächste Build nutzt einen geänderten Wert."
+    },
     "backupLocalRoot": {
       "title": "Lokale Backup-Wurzel",
       "description": "Absolutes Verzeichnis auf der Control Plane, das lokale Backup-Ziele eingrenzt. Leer verwendet backups/ im Datenverzeichnis. Das nächste Backup oder die nächste Wiederherstellung verwendet einen geänderten Wert; Zielpfade bleiben relativ dazu und können es nicht verlassen."

@@ -218,6 +218,14 @@
       "title": "Política de reinício de containers",
       "description": "Política de reinício do Docker para containers de apps de longa duração, para que os apps voltem após a reinicialização do host ou do Docker. Aplica-se aos containers criados no próximo deploy ou recriação; os containers existentes mantêm a política antiga."
     },
+    "buildReuseUnchanged": {
+      "title": "Reutilizar a imagem para um commit sem mudanças",
+      "description": "Reimplantar o mesmo commit com as mesmas configurações de build reutiliza a imagem já construída neste nó em vez de reconstruir. Builds sem cache, com segredos ou com atestação sempre reconstroem. O próximo deploy usa o valor alterado."
+    },
+    "buildRunnerMinDisk": {
+      "title": "Disco livre mínimo do runner de build",
+      "description": "Um nó de build que informa menos MiB de disco livre do que este valor é ignorado em novos builds e aparece como ignorado no painel de runners. 0 desativa a verificação. O próximo build usa o valor alterado."
+    },
     "backupLocalRoot": {
       "title": "Raiz de backups locais",
       "description": "Diretório absoluto no control plane que confina os destinos de backup locais. Vazio usa backups/ dentro do diretório de dados. O próximo backup ou restauração usa um valor alterado; os caminhos dos destinos continuam relativos a ele e não podem sair dele."

@@ -793,6 +793,7 @@
     "capacityLabel": "Vagas de build em uso em {{name}}",
     "labels": "Rótulos",
     "lastBuild": "Último build:",
+    "skipped": "Ignorado para novos builds: {{reason}}",
     "noBuilds": "Nenhum build ainda",
     "cache": "Cache de build {{size}}",
     "builtOn": "Compilado em {{name}}",

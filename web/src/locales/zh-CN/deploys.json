@@ -778,6 +778,7 @@
     "capacityLabel": "{{name}} 上已用的构建槽位",
     "labels": "标签",
     "lastBuild": "最近构建:",
+    "skipped": "已跳过新构建：{{reason}}",
     "noBuilds": "暂无构建",
     "cache": "构建缓存 {{size}}",
     "builtOn": "构建于 {{name}}",

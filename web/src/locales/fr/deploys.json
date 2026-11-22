@@ -793,6 +793,7 @@
     "capacityLabel": "Emplacements de build utilisés sur {{name}}",
     "labels": "Étiquettes",
     "lastBuild": "Dernier build :",
+    "skipped": "Ignoré pour les nouveaux builds : {{reason}}",
     "noBuilds": "Aucun build pour l’instant",
     "cache": "Cache de build {{size}}",
     "builtOn": "Compilé sur {{name}}",

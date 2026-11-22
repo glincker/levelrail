@@ -787,6 +787,7 @@
     "capacityLabel": "Belegte Build-Slots auf {{name}}",
     "labels": "Labels",
     "lastBuild": "Letzter Build:",
+    "skipped": "Für neue Builds übersprungen: {{reason}}",
     "noBuilds": "Noch keine Builds",
     "cache": "Build-Cache {{size}}",
     "builtOn": "Gebaut auf {{name}}",

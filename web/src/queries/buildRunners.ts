@@ -37,6 +37,7 @@ export interface BuildRunner {
   last_build_status?: string
   cache_bytes?: number
   trust?: string
+  skip_reason?: string
 }
 
 export interface BuildRunnersView {

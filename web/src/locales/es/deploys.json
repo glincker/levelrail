@@ -787,6 +787,7 @@
     "capacityLabel": "Ranuras de build en uso en {{name}}",
     "labels": "Etiquetas",
     "lastBuild": "Último build:",
+    "skipped": "Omitido para nuevas compilaciones: {{reason}}",
     "noBuilds": "Aún no hay builds",
     "cache": "Caché de build {{size}}",
     "builtOn": "Compilado en {{name}}",

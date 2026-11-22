@@ -203,6 +203,7 @@ type Request struct {
 // writes the result as that service's new desired state.
 type Pipeline struct {
 	builder ImageBuilder
+	reuse   reuseLedger
 	store   ServiceStore
 	secrets SecretChecker        // nil is valid: secret-backed env vars are rejected without one
 	vault   VaultConfigChecker   // nil is valid: vault-backed env vars are rejected without one
@@ -378,11 +379,20 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		cacheDone()
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
+	settings := buildSettingsHash("dockerfile", dfPath, req.Target, sortedPairs(buildArgs))
+	if res, ok := p.reusableBuild(ctx, tag, settings, req.NoCache, len(req.Service.Build.Secrets) > 0); ok {
+		cacheDone()
+		if progress != nil {
+			progress(build.ProgressEvent{Step: "builder", Log: "reusing the image built earlier for this commit and build settings", Stream: "stderr"})
+		}
+		return p.finishDeploy(ctx, req, res)
+	}
 	res, err := p.builder.Build(ctx, buildReq, progress)
 	cacheDone()
 	if err != nil {
 		return "", buildFailure(req.ServiceName, err)
 	}
+	p.rememberBuild(ctx, res, settings)
 
 	return p.finishDeploy(ctx, req, res)
 }

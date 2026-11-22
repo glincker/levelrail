@@ -65,6 +65,14 @@ export function RunnerCard({ runner }: Readonly<{ runner: BuildRunner }>) {
           label={t('runners.capacityLabel', { name: runner.name })}
         />
       </div>
+      {runner.skip_reason ? (
+        <p
+          data-testid="runner-skip-reason"
+          className="text-xs text-muted-foreground"
+        >
+          {t('runners.skipped', { reason: runner.skip_reason })}
+        </p>
+      ) : null}
       {labels.length > 0 ? (
         <ul aria-label={t('runners.labels')} className="flex flex-wrap gap-1.5">
           {labels.map((l) => (

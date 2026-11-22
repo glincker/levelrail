@@ -778,6 +778,7 @@
     "capacityLabel": "{{name}} で使用中のビルドスロット",
     "labels": "ラベル",
     "lastBuild": "直近のビルド:",
+    "skipped": "新しいビルドでは除外中: {{reason}}",
     "noBuilds": "まだビルドがありません",
     "cache": "ビルドキャッシュ {{size}}",
     "builtOn": "{{name}} でビルド",
