@@ -1019,6 +1019,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/logs/download | AbilityRead | handleDownloadDatabaseLogs |
 | POST | /api/v1/databases/{name}/restore-test | AbilityWriteSensitive | handleStartDatabaseRestoreTest |
 | GET | /api/v1/databases/{name}/restore-test | AbilityRead | handleGetDatabaseRestoreTest |
+| GET | /api/v1/databases/{name}/restore-preview | AbilityRead | handleDatabaseRestorePreview |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

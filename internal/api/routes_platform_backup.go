@@ -14,6 +14,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// Restore test: newest backup into a throwaway container, result kept in the drill history.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-test", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleStartDatabaseRestoreTest))
 	mux.HandleFunc("GET /api/v1/databases/{name}/restore-test", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabaseRestoreTest))
+	// Restore preview: read-only size, age, target and overwrite scope of one restore.
+	mux.HandleFunc("GET /api/v1/databases/{name}/restore-preview", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDatabaseRestorePreview))
 
 	// Instance-wide backup history across every database and app volume,
 	// the aggregated counterpart of the per-resource routes above and

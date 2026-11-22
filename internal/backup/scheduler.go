@@ -417,6 +417,11 @@ func (s *Scheduler) tickServiceVolumes(ctx context.Context, now time.Time) error
 // reasoning Engine.dispatch's own doc comment applies to a notification
 // failing after a rule's state was already persisted successfully.
 func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) error {
+	// A dump taken mid-import or mid-restore would capture a half-written database.
+	if CheckNoImport(DatabaseBusyKey(d.Name)) != nil {
+		s.log().Info("backup: scheduled run skipped, an import or restore is running", slog.String("database", d.Name))
+		return nil
+	}
 	historyID, err := randomScheduledBackupHistoryID()
 	if err != nil {
 		return fmt.Errorf("generate history id: %w", err)

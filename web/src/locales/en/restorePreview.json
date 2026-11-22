@@ -1,0 +1,14 @@
+{
+  "title": "What this restore does",
+  "loading": "Checking the backup...",
+  "loadFailed": "Could not preview this restore: {{error}}",
+  "size": "Backup size",
+  "age": "Taken",
+  "target": "Stored on",
+  "encrypted": "Sealed with the instance key",
+  "overwrites": "Overwrites",
+  "safety": "Fallback if this is wrong",
+  "safetyNamed": "{{id}}, taken {{age}}",
+  "safetyNone": "None. This is the only succeeded backup, so nothing can undo this restore.",
+  "busy": "An import or restore is already running on this database. Wait for it to finish."
+}

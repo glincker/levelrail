@@ -191,6 +191,7 @@ export const NAMESPACES = [
   'buildLogs',
   'storageParts',
   'installCard',
+  'restorePreview',
 ] as const
 
 void i18n

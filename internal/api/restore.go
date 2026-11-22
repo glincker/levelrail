@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	backupbusy "github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -147,7 +148,10 @@ func (rt *Router) handleTriggerRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	containerName := databaseContainerName(name)
+	// Marked before the goroutine starts so a scheduled backup cannot slip in between.
+	clearBusy := backupbusy.MarkImport(backupbusy.DatabaseBusyKey(name))
 	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the restore within microseconds of starting it, the same reasoning handleTriggerBackup's own goroutine gives
+		defer clearBusy()
 		if err := rt.restoreRunner.RunRestore(context.Background(), historyID, name, req.BackupID, db.Engine, containerName); err != nil {
 			rt.logger.Error("api: restore run failed", slog.String("error", err.Error()), slog.String("id", historyID), slog.String("database", name))
 		}

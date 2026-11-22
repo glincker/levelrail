@@ -180,6 +180,8 @@ func (rt *Router) handleDatabaseImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer release()
+	// Scheduled backups skip this database until the import ends.
+	defer backup.MarkImport(backup.DatabaseBusyKey(name))()
 
 	holds, err := databaseHoldsDataNow(r.Context(), db, runtime)
 	if err != nil {

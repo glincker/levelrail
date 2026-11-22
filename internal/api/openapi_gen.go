@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2376 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2377 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -868,6 +868,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseQueryHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/query/write", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseQueryWrite", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseResourceRecommendation", Description: "Resource right-sizing, the database counterpart to GET /apps/{name}/resource-recommendation above (database_resource_recommendation.go)."},
+	{Method: "GET", Path: "/api/v1/databases/{name}/restore-preview", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseRestorePreview", Description: "Restore preview: read-only size, age, target and overwrite scope of one restore."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/restore-test", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseRestoreTest", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/restore-test", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleStartDatabaseRestoreTest", Description: "Restore test: newest backup into a throwaway container, result kept in the drill history."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/saved-queries", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseSavedQueries", Description: ""},

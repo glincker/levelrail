@@ -38,3 +38,7 @@ func CheckNoImport(app string) error {
 	}
 	return nil
 }
+
+// DatabaseBusyKey is the MarkImport key for a managed database, kept apart from
+// app names so a database and an app sharing a name never block each other.
+func DatabaseBusyKey(name string) string { return "db:" + name }

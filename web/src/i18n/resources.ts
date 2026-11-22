@@ -95,6 +95,7 @@ import type previews from '../locales/en/previews.json'
 import type delivery from '../locales/en/delivery.json'
 import type branchDeploys from '../locales/en/branchDeploys.json'
 import type deployContexts from '../locales/en/deployContexts.json'
+import type restorePreview from '../locales/en/restorePreview.json'
 import type backups from '../locales/en/backups.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type forms from '../locales/en/forms.json'
@@ -259,6 +260,7 @@ declare module 'i18next' {
       branchDeploys: typeof branchDeploys
       deployContexts: typeof deployContexts
       backups: typeof backups
+      restorePreview: typeof restorePreview
       sleepHistory: typeof sleepHistory
       forms: typeof forms
       splitTesting: typeof splitTesting

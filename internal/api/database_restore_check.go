@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -87,5 +88,79 @@ func (rt *Router) handleGetDatabaseRestoreTest(w http.ResponseWriter, r *http.Re
 	}
 	d := drills[0]
 	out := restoreTestResource{ID: d.ID, BackupID: d.BackupHistoryID, Status: d.Status, Stage: d.Stage, Bytes: d.Bytes, DurationMS: d.DurationMS, Error: d.Error, StartedAt: d.StartedAt, FinishedAt: d.FinishedAt}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// restorePreviewResource is what a restore would do, read without changing anything.
+type restorePreviewResource struct {
+	Database   string `json:"database"`
+	BackupID   string `json:"backup_id"`
+	Engine     string `json:"engine"`
+	SizeBytes  int64  `json:"size_bytes"`
+	TakenAt    string `json:"taken_at"`
+	AgeSeconds int64  `json:"age_seconds"`
+	TargetID   string `json:"target_id"`
+	TargetName string `json:"target_name,omitempty"`
+	Encrypted  bool   `json:"encrypted"`
+	// Overwrites names what the restore replaces: the live data of Database, in place.
+	Overwrites string `json:"overwrites"`
+	// SafetyBackupID is the newest other succeeded backup, the way back if this restore is wrong.
+	SafetyBackupID string `json:"safety_backup_id,omitempty"`
+	SafetyTakenAt  string `json:"safety_taken_at,omitempty"`
+	// Busy is set while an import or restore already runs on the database.
+	Busy bool `json:"busy"`
+}
+
+// handleDatabaseRestorePreview handles GET /api/v1/databases/{name}/restore-preview?backup_id=:
+// size, age, target and overwrite scope of a restore, with the fallback backup named.
+func (rt *Router) handleDatabaseRestorePreview(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if _, ok := rt.loadDatabaseForRunner(w, r, name, "api: restore preview: load database failed"); !ok {
+		return
+	}
+	backupID := r.URL.Query().Get("backup_id")
+	if backupID == "" {
+		writeError(w, http.StatusBadRequest, "backup_id is required")
+		return
+	}
+	bh, err := rt.backupHistory.GetBackupHistory(r.Context(), backupID)
+	if errors.Is(err, store.ErrBackupHistoryNotFound) || (err == nil && bh.DatabaseName != name) {
+		writeError(w, http.StatusNotFound, "backup not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: restore preview: load backup failed", err, slog.String("backup_id", backupID))
+		return
+	}
+	if bh.Status != store.BackupStatusSucceeded {
+		writeError(w, http.StatusConflict, "only a succeeded backup can be restored from")
+		return
+	}
+	db, _ := rt.databases.GetDesiredDatabase(r.Context(), name)
+	out := restorePreviewResource{
+		Database:   name,
+		BackupID:   bh.ID,
+		Engine:     db.Engine,
+		SizeBytes:  bh.SizeBytes,
+		TakenAt:    bh.StartedAt,
+		TargetID:   bh.TargetID,
+		Encrypted:  strings.Contains(bh.Codec, "age"),
+		Overwrites: "all current data in database " + name,
+		Busy:       backup.CheckNoImport(backup.DatabaseBusyKey(name)) != nil,
+	}
+	if t, terr := time.Parse(time.RFC3339, bh.StartedAt); terr == nil {
+		out.AgeSeconds = int64(time.Since(t).Seconds())
+	}
+	if t, terr := rt.backupTargets.GetBackupTarget(r.Context(), bh.TargetID); terr == nil {
+		out.TargetName = t.Name
+	}
+	if rows, lerr := rt.backupHistory.ListBackupHistory(r.Context(), name, restoreTestScanLimit, nil); lerr == nil {
+		for i := range rows {
+			if rows[i].Status == store.BackupStatusSucceeded && rows[i].ID != bh.ID {
+				out.SafetyBackupID, out.SafetyTakenAt = rows[i].ID, rows[i].StartedAt
+				break
+			}
+		}
+	}
 	writeJSON(w, http.StatusOK, out)
 }
