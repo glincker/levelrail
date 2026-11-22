@@ -1,6 +1,6 @@
 ---
 title: "Framework presets"
-description: "Deploy Next.js, Go, React/Vite, Spring Boot and eight more frameworks with the right port, health path, storage and env hints already filled in."
+description: "Deploy Next.js, Go, React/Vite, Spring Boot and many more frameworks with the right port, health path, storage and env hints already filled in."
 "og:url": "https://docs.levelrail.com/frameworks"
 ---
 
@@ -36,6 +36,15 @@ levelrail-cli apps create --name api --repo https://github.com/you/api.git \
 | Hugo | none | `/` | static | static files |
 | Jekyll | none | `/` | static | static files |
 | Eleventy | none | `/` | static | static files |
+| Angular | none | `/` | static | static files |
+| Vue CLI | none | `/` | static | static files |
+| SolidStart (static) | none | `/` | static | static files |
+| Qwik (static) | none | `/` | static | static files |
+| VitePress | none | `/` | static | static files |
+| Gatsby | none | `/` | static | static files |
+| MkDocs | none | `/` | static | static files |
+| Zola | none | `/` | static | static files |
+| Phoenix (Elixir) | 4000 | `/` | Railpack | mix release |
 | Nuxt | 3000 | `/` | Railpack | Nitro server |
 | Remix | 3000 | `/` | Railpack | remix-serve |
 | SvelteKit | 3000 | `/` | Railpack | adapter-node server |
@@ -85,6 +94,18 @@ Static output is the default and is served directly. With `output: 'server'` and
 ### Hugo, Jekyll and Eleventy
 
 These generators build on the control plane as a static site: set `build.command` and `build.publish` as described in [Pages](/pages). The presets fill `hugo --minify` with `public`, `bundle exec jekyll build` with `_site`, and `npx @11ty/eleventy` with `_site`. The build image needs the generator installed (Hugo binary, Ruby with the Gemfile gems, or the npm dependencies).
+
+### Angular, Vue CLI, SolidStart and Qwik
+
+Static single page builds. Angular publishes `dist/<project>/browser`: the detector fills the project name when `angular.json` has exactly one project, otherwise set `build.publish` yourself. Vue CLI publishes `dist`, SolidStart (with the static preset in `app.config.ts`) publishes `.output/public`, and Qwik (with the static adapter) publishes `dist`.
+
+### VitePress, MkDocs, Zola and Gatsby
+
+Docs and blog generators served as static sites. VitePress publishes `.vitepress/dist`, MkDocs `site` (detected from `mkdocs.yml`), Zola `public` (detected from `config.toml` with `base_url`) and Gatsby `public`. The build image needs the generator installed, as for Hugo.
+
+### Phoenix
+
+Detected from a `mix.exs` that lists `:phoenix`. The preset builds a release with `mix release` and starts `bin/server` (generate it with `mix phx.gen.release`) on port 4000. Set `PHX_SERVER=true` and `SECRET_KEY_BASE` (from `mix phx.gen.secret`), and `PHX_HOST` to your public host name. Phoenix has no built-in health route, so the preset checks `/`; add a `/health` route when you have one.
 
 ### NestJS
 

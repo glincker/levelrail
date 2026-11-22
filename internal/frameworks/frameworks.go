@@ -137,6 +137,51 @@ var presets = []Preset{
 		HealthPath: "/", BuildCommand: "npx @11ty/eleventy", PublishDir: "_site", OwnBuild: true, DocsAnchor: "eleventy",
 	},
 	{
+		ID: "angular", Name: "Angular", Runtime: "node", Icon: "angular", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "ng build", PublishDir: "dist", DocsAnchor: "angular-vue-cli-solidstart-and-qwik",
+		EnvHints: []EnvHint{{Key: "NG_CLI_ANALYTICS", Description: "Set to false so the build never prompts for analytics.", Default: "false"}},
+	},
+	{
+		ID: "vue-cli", Name: "Vue CLI", Runtime: "node", Icon: "vue", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "vue-cli-service build", PublishDir: "dist", DocsAnchor: "angular-vue-cli-solidstart-and-qwik",
+		EnvHints: []EnvHint{{Key: "VUE_APP_API_URL", Description: "Variables prefixed VUE_APP_ are inlined at build time."}},
+	},
+	{
+		ID: "solidstart", Name: "SolidStart (static)", Runtime: "node", Icon: "solidjs", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "vinxi build", PublishDir: ".output/public", DocsAnchor: "angular-vue-cli-solidstart-and-qwik",
+	},
+	{
+		ID: "qwik", Name: "Qwik (static)", Runtime: "node", Icon: "qwik", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "qwik build", PublishDir: "dist", DocsAnchor: "angular-vue-cli-solidstart-and-qwik",
+	},
+	{
+		ID: "vitepress", Name: "VitePress", Runtime: "node", Icon: "vitepress", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "vitepress build", PublishDir: ".vitepress/dist", DocsAnchor: "vitepress-mkdocs-zola-and-gatsby",
+	},
+	{
+		ID: "gatsby", Name: "Gatsby", Runtime: "node", Icon: "gatsby", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "gatsby build", PublishDir: "public", DocsAnchor: "vitepress-mkdocs-zola-and-gatsby",
+		EnvHints: []EnvHint{{Key: "GATSBY_API_URL", Description: "Variables prefixed GATSBY_ are inlined at build time."}},
+	},
+	{
+		ID: "mkdocs", Name: "MkDocs", Runtime: "python", Icon: "mkdocs", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "mkdocs build", PublishDir: "site", OwnBuild: true, DocsAnchor: "vitepress-mkdocs-zola-and-gatsby",
+	},
+	{
+		ID: "zola", Name: "Zola", Runtime: "rust", Icon: "zola", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "zola build", PublishDir: "public", OwnBuild: true, DocsAnchor: "vitepress-mkdocs-zola-and-gatsby",
+	},
+	{
+		ID: "phoenix", Name: "Phoenix (Elixir)", Runtime: "elixir", Icon: "phoenix", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 4000, HealthPath: "/", BuildCommand: "mix release", StartCommand: "bin/server", ReadyTimeout: "60s", DocsAnchor: "phoenix",
+		EnvHints: []EnvHint{
+			{Key: "PHX_SERVER", Description: "Starts the endpoint when the release boots; without it the release exits immediately.", Required: true, Default: "true"},
+			{Key: "SECRET_KEY_BASE", Description: "Signs cookies; generate with mix phx.gen.secret.", Required: true, Secret: true},
+			{Key: "PHX_HOST", Description: "Public host name used when generating URLs."},
+			{Key: "PORT", Description: "The release endpoint listens on this port; keep it equal to the app port.", Default: "4000"},
+		},
+	},
+	{
 		ID: "nestjs", Name: "NestJS", Runtime: "node", Icon: "nestjs", BuildType: BuildRailpack, OutputMode: OutputServer,
 		Port: 3000, HealthPath: "/", BuildCommand: "nest build", StartCommand: "node dist/main", DocsAnchor: "nestjs",
 		EnvHints: []EnvHint{{Key: "PORT", Description: "Pass it to app.listen(process.env.PORT); NestJS defaults to 3000 when it is unset.", Default: "3000"}},

@@ -87,3 +87,14 @@ func TestDetectRemixBeatsVite(t *testing.T) {
 		}
 	}
 }
+
+func TestDetectAngularPublishDir(t *testing.T) {
+	files := map[string]string{
+		"package.json": `{"dependencies":{"@angular/core":"18"},"devDependencies":{"vite":"5"}}`,
+		"angular.json": `{"projects":{"shop":{}}}`,
+	}
+	m, ok := Detect(func(rel string) (string, bool) { v, ok := files[rel]; return v, ok })
+	if !ok || m.Preset.ID != "angular" || m.Preset.PublishDir != "dist/shop/browser" {
+		t.Fatalf("got %q %q ok=%v", m.Preset.ID, m.Preset.PublishDir, ok)
+	}
+}
