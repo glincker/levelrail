@@ -95,8 +95,14 @@
     "error": {
       "replicas": "Geben Sie ganze Replikatzahlen ein, wobei das Maximum mindestens dem Minimum entspricht.",
       "target": "Geben Sie ein Ziel größer als null ein (bis 100 für CPU und Arbeitsspeicher).",
-      "advanced": "Prüfen Sie die erweiterten Felder: Verwenden Sie ganze Zahlen und Minuten von mindestens 1 Sekunde."
-    }
+      "advanced": "Prüfen Sie die erweiterten Felder: Verwenden Sie ganze Zahlen und Minuten von mindestens 1 Sekunde.",
+      "gauge": "Gib einen einfachen Gauge-Namen wie queue_depth ein."
+    },
+    "metricGauge": "App-Gauge",
+    "metricGaugeHelp": "Liest einen Gauge, den deine App auf ihrem Metrikpfad bereitstellt.",
+    "gaugeName": "Gauge-Name",
+    "gaugeNameHelp": "Der Metrikname, den deine App bereitstellt, z. B. queue_depth.",
+    "gaugeUnit": "Einheiten"
   },
   "remove": {
     "title": "Diese Richtlinie entfernen?",

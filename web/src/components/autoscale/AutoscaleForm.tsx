@@ -4,11 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type {
-  Autoscale,
-  AutoscaleMetric,
-  AutoscalePolicyFields,
-} from '../../queries/autoscale'
+import type { Autoscale, AutoscalePolicyFields } from '../../queries/autoscale'
 import { AutoscaleSchedules } from './AutoscaleSchedules'
 import {
   buildSchedules,
@@ -16,21 +12,28 @@ import {
   type ScheduleDraft,
 } from './scheduleDrafts'
 
-const METRICS: AutoscaleMetric[] = [
+type MetricKind =
+  'cpu_percent' | 'memory_percent' | 'requests_per_replica' | 'gauge'
+const METRICS: MetricKind[] = [
   'cpu_percent',
   'memory_percent',
   'requests_per_replica',
+  'gauge',
 ]
+const GAUGE_PREFIX = 'gauge:'
+const GAUGE_NAME = /^[a-zA-Z_:][a-zA-Z0-9_:]{0,127}$/
 const METRIC_KEYS = {
   cpu_percent: ['form.metricCpu', 'form.metricCpuHelp'],
   memory_percent: ['form.metricMemory', 'form.metricMemoryHelp'],
   requests_per_replica: ['form.metricRequests', 'form.metricRequestsHelp'],
+  gauge: ['form.metricGauge', 'form.metricGaugeHelp'],
 } as const
 
 interface Draft {
   min: string
   max: string
-  metric: AutoscaleMetric
+  metric: MetricKind
+  gaugeName: string
   target: string
   upTolerance: string
   downTolerance: string
@@ -63,6 +66,7 @@ function toDraft(policy: Autoscale | null): Draft {
       min: '1',
       max: '5',
       metric: 'cpu_percent',
+      gaugeName: '',
       target: '60',
       ...emptyAdvanced,
     }
@@ -70,7 +74,10 @@ function toDraft(policy: Autoscale | null): Draft {
   return {
     min: String(policy.min_replicas),
     max: String(policy.max_replicas),
-    metric: policy.metric,
+    metric: policy.metric.startsWith(GAUGE_PREFIX) ? 'gauge' : policy.metric,
+    gaugeName: policy.metric.startsWith(GAUGE_PREFIX)
+      ? policy.metric.slice(GAUGE_PREFIX.length)
+      : '',
     target: String(policy.target),
     upTolerance: String(policy.scale_up_tolerance_pct),
     downTolerance: String(policy.scale_down_tolerance_pct),
@@ -98,14 +105,18 @@ function toSeconds(raw: string): number | null {
 
 type Build =
   | { fields: AutoscalePolicyFields }
-  | { error: 'replicas' | 'target' | 'advanced' | 'schedules' }
+  | { error: 'replicas' | 'target' | 'gauge' | 'advanced' | 'schedules' }
 
 function build(d: Draft): Build {
   const min = whole(d.min, 1, 1000)
   const max = whole(d.max, 1, 1000)
   if (!min || !max || max < min) return { error: 'replicas' }
   const target = Number(d.target)
-  const limit = d.metric === 'requests_per_replica' ? Infinity : 100
+  const unbounded = d.metric === 'requests_per_replica' || d.metric === 'gauge'
+  const limit = unbounded ? Infinity : 100
+  if (d.metric === 'gauge' && !GAUGE_NAME.test(d.gaugeName)) {
+    return { error: 'gauge' }
+  }
   if (!Number.isFinite(target) || target <= 0 || target > limit) {
     return { error: 'target' }
   }
@@ -134,7 +145,7 @@ function build(d: Draft): Build {
       ...(schedules.length > 0 ? { schedules } : {}),
       min_replicas: min,
       max_replicas: max,
-      metric: d.metric,
+      metric: d.metric === 'gauge' ? `${GAUGE_PREFIX}${d.gaugeName}` : d.metric,
       target,
       scale_up_tolerance_pct: upTol,
       scale_down_tolerance_pct: downTol,
@@ -219,7 +230,11 @@ export function AutoscaleForm({
 
   const shown = error ?? serverError
   const unit =
-    draft.metric === 'requests_per_replica' ? t('form.perSecond') : '%'
+    draft.metric === 'requests_per_replica'
+      ? t('form.perSecond')
+      : draft.metric === 'gauge'
+        ? t('form.gaugeUnit')
+        : '%'
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -240,7 +255,7 @@ export function AutoscaleForm({
       </div>
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">{t('form.metric')}</legend>
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {METRICS.map((m) => (
             <label
               key={m}
@@ -266,6 +281,17 @@ export function AutoscaleForm({
           ))}
         </div>
       </fieldset>
+      {draft.metric === 'gauge' ? (
+        <div className="max-w-xs">
+          <Field
+            id="autoscale-gauge"
+            label={t('form.gaugeName')}
+            help={t('form.gaugeNameHelp')}
+            value={draft.gaugeName}
+            onChange={(gaugeName) => set({ gaugeName })}
+          />
+        </div>
+      ) : null}
       <div className="max-w-xs">
         <Field
           id="autoscale-target"

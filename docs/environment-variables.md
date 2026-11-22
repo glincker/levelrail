@@ -583,6 +583,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CHANGES_STREAM_BUFFER` | [`events.changes_buffer`](/runtime-settings#observability) | `64` |
 | `APP_CHANGES_STREAM_HEARTBEAT` | [`events.changes_heartbeat`](/runtime-settings#observability) | `20s` |
 | `APP_CHANGES_STREAM_MAX_PER_CALLER` | [`events.changes_max_streams_per_caller`](/runtime-settings#observability) | `4` |
+| `APP_MAX_LIVE_STREAMS` | [`events.max_live_streams`](/runtime-settings#observability) | `500` |
 | `APP_GC_PERCENT` | [`footprint.gc_percent`](/runtime-settings#observability) | `50` |
 | `APP_GOMEMLIMIT_PERCENT` | [`footprint.memlimit_percent`](/runtime-settings#observability) | `80` |
 | `APP_MEM_TRIM_INTERVAL` | [`footprint.trim_interval`](/runtime-settings#observability) | `2m0s` |

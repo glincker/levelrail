@@ -1171,7 +1171,7 @@
       },
       "streams": {
         "title": "Live streams near the cap",
-        "hint": "New log and event streams are refused at the cap. Raise APP_MAX_LIVE_STREAMS if the host has headroom."
+        "hint": "New log and event streams are refused at the cap. Raise the live stream cap in runtime settings if the host has headroom."
       }
     },
     "banner": {

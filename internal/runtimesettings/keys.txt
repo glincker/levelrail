@@ -352,6 +352,7 @@ errors.dedup_max
 events.changes_buffer
 events.changes_heartbeat
 events.changes_max_streams_per_caller
+events.max_live_streams
 firewall.confirm_window
 fixit.max_per_hour
 footprint.gc_percent

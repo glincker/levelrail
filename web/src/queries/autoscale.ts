@@ -11,7 +11,7 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '../lib/pollTier'
 
 export type AutoscaleMetric =
-  'cpu_percent' | 'memory_percent' | 'requests_per_replica'
+  'cpu_percent' | 'memory_percent' | 'requests_per_replica' | `gauge:${string}`
 
 export interface AutoscaleCondition {
   healthy: boolean

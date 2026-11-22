@@ -95,8 +95,14 @@
     "error": {
       "replicas": "Escribe números enteros de réplicas, con el máximo igual o mayor que el mínimo.",
       "target": "Escribe un objetivo mayor que cero (hasta 100 para CPU y memoria).",
-      "advanced": "Revisa los campos avanzados: usa números enteros, y minutos de al menos 1 segundo."
-    }
+      "advanced": "Revisa los campos avanzados: usa números enteros, y minutos de al menos 1 segundo.",
+      "gauge": "Introduce un nombre de gauge sencillo como queue_depth."
+    },
+    "metricGauge": "Gauge de la app",
+    "metricGaugeHelp": "Lee un gauge que tu app expone en su ruta de métricas.",
+    "gaugeName": "Nombre del gauge",
+    "gaugeNameHelp": "El nombre de métrica que expone tu app, por ejemplo queue_depth.",
+    "gaugeUnit": "unidades"
   },
   "remove": {
     "title": "¿Quitar esta política?",

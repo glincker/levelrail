@@ -95,8 +95,14 @@
     "error": {
       "replicas": "请输入整数副本数，且最大值不得小于最小值。",
       "target": "请输入大于零的目标（CPU 和内存最大为 100）。",
-      "advanced": "请检查高级字段：使用整数，且时间至少为 1 秒。"
-    }
+      "advanced": "请检查高级字段：使用整数，且时间至少为 1 秒。",
+      "gauge": "请输入简单的 gauge 名称,例如 queue_depth。"
+    },
+    "metricGauge": "应用 gauge",
+    "metricGaugeHelp": "读取应用在指标路径上公开的 gauge。",
+    "gaugeName": "Gauge 名称",
+    "gaugeNameHelp": "应用公开的指标名称,例如 queue_depth。",
+    "gaugeUnit": "单位"
   },
   "remove": {
     "title": "移除此策略？",
