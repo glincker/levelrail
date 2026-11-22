@@ -22,6 +22,7 @@ alerts.default_crashloop_restarts
 alerts.defaults_enabled
 alerts.digest_schedule
 alerts.notify_on_sleep
+alerts.renotify_interval
 api.apps_metrics_max
 api.conditional_get
 api.conditional_get_max_bytes

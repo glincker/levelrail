@@ -204,6 +204,9 @@ func (s *bootState) startAlerting() {
 					MinRequests:       float64(live.Int(c, runtimesettings.KeyAlertsDefault5xxMinReqs)),
 				}
 			})
+		alertingEngine.SetRenotify(func(c context.Context) time.Duration {
+			return time.Duration(live.Int(c, runtimesettings.KeyAlertsRenotifyInterval)) * time.Hour
+		}, alertingDB)
 	}
 	wireWeeklyDigest(ctx, logger, apiRouter, alertingDB, db, alertingFederator, restartTracker, emailSender, apiRouter.RuntimeSettings())
 	go func() {

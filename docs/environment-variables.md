@@ -465,6 +465,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ALERTS_DEFAULTS_ENABLED` | [`alerts.defaults_enabled`](/runtime-settings#observability) | `true` |
 | `APP_ALERTS_DIGEST_SCHEDULE` | [`alerts.digest_schedule`](/runtime-settings#observability) | `off` |
 | `APP_ALERTS_NOTIFY_ON_SLEEP` | [`alerts.notify_on_sleep`](/runtime-settings#observability) | `false` |
+| `APP_ALERTS_RENOTIFY_INTERVAL` | [`alerts.renotify_interval`](/runtime-settings#observability) | `0` |
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
 | `APP_APP_METRICS_MAX_BODY_BYTES` | [`app_metrics.max_body_bytes`](/runtime-settings#observability) | `1048576` |
