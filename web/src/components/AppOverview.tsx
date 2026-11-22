@@ -1,6 +1,6 @@
 import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
-import { OptimiseHint } from './resourceAdvisor/ResourceAdvisorTile'
+import { AppAdvisorCard } from './resourceAdvisor/AppAdvisorCard'
 import type {
   AppDetail,
   DeployStrategy,
@@ -59,7 +59,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
           <LayoutGridGlassIcon className="size-5" />
           {t('title')}
         </CardTitle>
-        <OptimiseHint kind="app" name={app.name} />
+        <AppAdvisorCard name={app.name} />
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">

@@ -128,6 +128,7 @@ import type controlPlaneReplica from '../locales/en/controlPlaneReplica.json'
 import type autoscale from '../locales/en/autoscale.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
+import type appAdvisor from '../locales/en/appAdvisor.json'
 import type plugins from '../locales/en/plugins.json'
 import type mail from '../locales/en/mail.json'
 import type help from '../locales/en/help.json'
@@ -282,6 +283,7 @@ declare module 'i18next' {
       autoscale: typeof autoscale
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
+      appAdvisor: typeof appAdvisor
       plugins: typeof plugins
       mail: typeof mail
       help: typeof help

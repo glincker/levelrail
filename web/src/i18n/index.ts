@@ -92,6 +92,7 @@ export const NAMESPACES = [
   'fixit',
   'envEditor',
   'resourceAdvisor',
+  'appAdvisor',
   'plugins',
   'mail',
   'help',
