@@ -34,6 +34,8 @@ type Group struct {
 	TeamID        string    `json:"team_id,omitempty"`
 	EnvironmentID string    `json:"environment_id,omitempty"`
 	Daily         []float64 `json:"daily"`
+	// BuildMinutes is set on team groups only, from recorded build runs.
+	BuildMinutes float64 `json:"build_minutes,omitempty"`
 }
 
 // Totals summarises a report.
@@ -245,4 +247,31 @@ func ForecastMonthEnd(spent, elapsedDays float64, daysInMonth int, recentDaily [
 func ElapsedDays(now time.Time) float64 {
 	n := now.UTC()
 	return float64(n.Day()-1) + float64(n.Hour()*3600+n.Minute()*60+n.Second())/secondsPerDay
+}
+
+// BuildSample is one finished build attributed by app name.
+type BuildSample struct {
+	App        string
+	StartedAt  time.Time
+	DurationMS int64
+}
+
+// AddBuildMinutes sums build time per team into the report's team groups.
+// appTeam maps an app name to its team id; builds outside the period or for
+// apps the caller cannot see are ignored.
+func AddBuildMinutes(r *Report, runs []BuildSample, appTeam map[string]string) {
+	byTeam := map[string]float64{}
+	for _, b := range runs {
+		if b.StartedAt.Before(r.Period.From) || !b.StartedAt.Before(r.Period.To) {
+			continue
+		}
+		team, ok := appTeam[b.App]
+		if !ok {
+			continue
+		}
+		byTeam[orUnassigned(team)] += float64(b.DurationMS) / 60000.0
+	}
+	for i := range r.Teams {
+		r.Teams[i].BuildMinutes = byTeam[r.Teams[i].Key]
+	}
 }

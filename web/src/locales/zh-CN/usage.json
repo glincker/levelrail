@@ -51,6 +51,7 @@
   },
   "export": {
     "csv": "导出 CSV",
+    "teamCsv": "导出团队月度 CSV",
     "json": "导出 JSON"
   },
   "empty": {

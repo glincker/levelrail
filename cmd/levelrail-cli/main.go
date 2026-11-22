@@ -17,7 +17,10 @@ func main() {
 	// Piped stdin or stdout implies CI mode; run() only sees env so tests stay deterministic.
 	forceCI = !isTerminal(os.Stdin) || !isTerminal(os.Stdout)
 	finishHint := startUpdateHint(prog, os.Args[1:], os.Stderr, os.LookupEnv)
-	code := run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv)
+	args, noPager := extractNoPagerFlag(os.Args[1:])
+	out, stopPager := startPager(prog, args, noPager, os.Stdout, os.LookupEnv)
+	code := run(prog, args, out, os.Stderr, os.LookupEnv)
+	stopPager()
 	finishHint()
 	os.Exit(code)
 }
