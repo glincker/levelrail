@@ -536,7 +536,7 @@ Usage:
   %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
   %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
   %[1]s mcp-clients create|list|delete                      pre-register OAuth clients for remote MCP (experimental, root only)
-  %[1]s monitors create|list|results|delete                 uptime monitors (http, tcp, tls, dns, ping, heartbeat), turn on in Settings, Runtime
+  %[1]s monitors create|list|results|delete                 uptime monitors (http, tcp, tls, dns, ping, heartbeat), turn on in Settings, Security and runtime
   %[1]s env pull|push <app> [--file .env] [flags]   sync an app's env vars with a local .env file
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations

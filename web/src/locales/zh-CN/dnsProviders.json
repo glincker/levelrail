@@ -18,7 +18,9 @@
   "providers": {
     "cloudflare": "Cloudflare",
     "route53": "Amazon Route 53",
-    "googleclouddns": "Google Cloud DNS"
+    "googleclouddns": "Google Cloud DNS",
+    "godaddy": "GoDaddy",
+    "namecheap": "Namecheap"
   },
   "attention": {
     "noCredential": "已启用,但未存储凭据。",
@@ -43,7 +45,9 @@
   "perm": {
     "cloudflare": "需要一个对你想管理的区域具有 Zone:Read 和 DNS:Edit 权限的 API 令牌。",
     "route53": "需要一个仅限于 ListHostedZones、ListResourceRecordSets、ChangeResourceRecordSets 和 GetChange 的 IAM 密钥对。",
-    "googleclouddns": "需要一个在该项目上具有 DNS Administrator 角色的服务账号密钥。"
+    "googleclouddns": "需要一个在该项目上具有 DNS Administrator 角色的服务账号密钥。",
+    "godaddy": "需要一个有权访问待管理域名的 GoDaddy API 密钥和密钥密文。",
+    "namecheap": "需要 Namecheap API 用户、API 密钥,以及此服务器调用时使用的已加入白名单的 IP。"
   },
   "field": {
     "cloudflareToken": "Cloudflare API 令牌",
@@ -53,7 +57,12 @@
     "hostedZoneId": "托管区域 ID(可选)",
     "serviceAccount": "服务账号 JSON",
     "regionHint": "Route 53 是全局服务,通常无需关注。默认值:{{region}}。",
-    "hostedZoneHint": "留空则在此密钥可列出的所有区域中匹配域名。"
+    "hostedZoneHint": "留空则在此密钥可列出的所有区域中匹配域名。",
+    "godaddyKey": "GoDaddy API 密钥",
+    "godaddySecret": "GoDaddy API 密钥密文",
+    "namecheapUser": "Namecheap API 用户",
+    "namecheapKey": "Namecheap API 密钥",
+    "namecheapIp": "已加入白名单的客户端 IP"
   },
   "test": {
     "button": "测试连接",

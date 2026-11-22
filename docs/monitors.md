@@ -12,7 +12,7 @@ Use monitors to probe an endpoint, a TCP port or a certificate from the control 
 
 A monitor probes an endpoint on a schedule from the control plane and records the result. The monitor kinds are `http`, `tcp`, `heartbeat` and `tls`, with a result history and hourly rollups. A down monitor is reported by the `monitor_down` alert rule. Internal incidents and the status page link are opt-in.
 
-The feature is off by default. Turn it on in Settings, Runtime (`monitors.enabled`, seeded by `APP_MONITORS_ENABLED`); it starts and stops without a restart. While it is off, the `/api/v1/monitors` routes answer 404 and no scheduler runs. The `dns` kind passes when the host resolves, and the `ping` kind sends one ICMP echo over IPv4 (it needs the unprivileged ping socket or a raw socket right on the control plane host). Both use the tcp minimum interval.
+The feature is off by default. Turn it on in Settings, Security and runtime (`monitors.enabled`, seeded by `APP_MONITORS_ENABLED`); it starts and stops without a restart. While it is off, the `/api/v1/monitors` routes answer 404 and no scheduler runs. The `dns` kind passes when the host resolves, and the `ping` kind sends one ICMP echo over IPv4 (it needs the unprivileged ping socket or a raw socket right on the control plane host). Both use the tcp minimum interval.
 
 ## Kinds
 

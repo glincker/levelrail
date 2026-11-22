@@ -66,6 +66,8 @@ function mockApi(m: Partial<Mock> = {}) {
         }
         return ok(state.cf)
       }
+      if (url.includes('/settings/dns-providers/'))
+        return ok({ provider: 'godaddy', enabled: false, has_key: false })
       if (url.includes('/settings/route53-dns'))
         return ok({
           enabled: false,
@@ -179,7 +181,13 @@ describe('DnsProvidersPage', () => {
       await screen.findByRole('list', { name: 'DNS providers' }),
     )
     expect(await tiles.findAllByText('Connected')).toHaveLength(2)
-    expect(tiles.getByText('Not connected')).toBeInTheDocument()
+    expect(tiles.getAllByText('Not connected')).toHaveLength(3)
+    expect(
+      tiles.getByRole('button', { name: 'Open GoDaddy' }),
+    ).toBeInTheDocument()
+    expect(
+      tiles.getByRole('button', { name: 'Open Namecheap' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('More providers soon')).toBeInTheDocument()
   })
 

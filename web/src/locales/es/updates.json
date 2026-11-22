@@ -778,7 +778,9 @@
     "checkOn": "La comprobación en segundo plano de nuevas versiones está activada. Solo busca; la instalación la controla el interruptor de arriba.",
     "checkOff": "La comprobación en segundo plano de nuevas versiones está desactivada. Activar las actualizaciones automáticas también la activa.",
     "installSteps": "Las actualizaciones se instalan entre {{start}} y {{end}} {{zone}}; primero copia de seguridad, comprobación de salud y reversión automática.",
-    "nextWindows": "Próximas ventanas: {{list}}"
+    "nextWindows": "Próximas ventanas: {{list}}",
+    "onBlocked": "Las actualizaciones automáticas están activadas, pero no pueden ejecutarse en este servidor. Consulta el estado más abajo.",
+    "checkOffActive": "Las comprobaciones en segundo plano de nuevas versiones están desactivadas, así que no se encontrará ninguna actualización hasta activarlas."
   },
   "autoStatus": {
     "state": {

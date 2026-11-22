@@ -15,7 +15,7 @@ Set the runtime setting `k8s.clusters_enabled` to `true`. It is off by default a
 levelrail-cli settings runtime set k8s.clusters_enabled true
 ```
 
-You can also use Settings > Runtime, Experimental card. While it is off, the cluster API refuses requests with `kubernetes clusters are off; enable the runtime setting k8s.clusters_enabled`, and the Clusters page in the dashboard shows "Kubernetes clusters are off". All cluster routes are root only. Every `k8s.*` setting is listed in [Runtime settings](/runtime-settings).
+You can also use Settings > Security and runtime, Experimental card. While it is off, the cluster API refuses requests with `kubernetes clusters are off; enable the runtime setting k8s.clusters_enabled`, and the Clusters page in the dashboard shows "Kubernetes clusters are off". All cluster routes are root only. Every `k8s.*` setting is listed in [Runtime settings](/runtime-settings).
 
 ## How do I connect a cluster?
 

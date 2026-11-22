@@ -202,7 +202,9 @@ function DdnsForm({
         ? t('target.labelPorkbun')
         : provider === 'desec'
           ? t('target.labelDesec')
-          : t('target.labelGeneric')
+          : provider === 'godaddy'
+            ? t('target.labelGodaddy')
+            : t('target.labelGeneric')
   const targetHint = settings.target_configured
     ? settings.host
       ? t('target.configured', { host: settings.host })
@@ -264,6 +266,7 @@ function DdnsForm({
                 <option value="duckdns">{t('provider.duckdns')}</option>
                 <option value="porkbun">{t('provider.porkbun')}</option>
                 <option value="desec">{t('provider.desec')}</option>
+                <option value="godaddy">{t('provider.godaddy')}</option>
               </NativeSelect>
             </Field>
             {provider !== 'generic' ? (
@@ -280,7 +283,9 @@ function DdnsForm({
                       ? t('domains.placeholderPorkbun')
                       : provider === 'desec'
                         ? t('domains.placeholderDesec')
-                        : t('domains.placeholder')
+                        : provider === 'godaddy'
+                          ? t('domains.placeholderGodaddy')
+                          : t('domains.placeholder')
                   }
                   {...register('domains')}
                 />

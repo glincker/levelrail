@@ -19,7 +19,9 @@
   "providers": {
     "cloudflare": "Cloudflare",
     "route53": "Amazon Route 53",
-    "googleclouddns": "Google Cloud DNS"
+    "googleclouddns": "Google Cloud DNS",
+    "godaddy": "GoDaddy",
+    "namecheap": "Namecheap"
   },
   "attention": {
     "noCredential": "Aktiviert, aber keine Zugangsdaten gespeichert.",
@@ -44,7 +46,9 @@
   "perm": {
     "cloudflare": "Benötigt ein API-Token mit Zone:Read und DNS:Edit für die Zonen, die verwaltet werden sollen.",
     "route53": "Benötigt ein IAM-Schlüsselpaar, beschränkt auf ListHostedZones, ListResourceRecordSets, ChangeResourceRecordSets und GetChange.",
-    "googleclouddns": "Benötigt einen Dienstkontoschlüssel mit der Rolle DNS-Administrator für das Projekt."
+    "googleclouddns": "Benötigt einen Dienstkontoschlüssel mit der Rolle DNS-Administrator für das Projekt.",
+    "godaddy": "Benötigt einen GoDaddy-API-Schlüssel samt Secret mit Zugriff auf die zu verwaltenden Domains.",
+    "namecheap": "Benötigt einen Namecheap-API-Benutzer, einen API-Schlüssel und die freigegebene IP, von der dieser Server aus zugreift."
   },
   "field": {
     "cloudflareToken": "Cloudflare-API-Token",
@@ -54,7 +58,12 @@
     "hostedZoneId": "ID der gehosteten Zone (optional)",
     "serviceAccount": "Dienstkonto-JSON",
     "regionHint": "Route 53 ist global, daher selten relevant. Standard: {{region}}.",
-    "hostedZoneHint": "Leer lassen, um die Domain mit allen Zonen abzugleichen, die dieser Schlüssel auflisten kann."
+    "hostedZoneHint": "Leer lassen, um die Domain mit allen Zonen abzugleichen, die dieser Schlüssel auflisten kann.",
+    "godaddyKey": "GoDaddy-API-Schlüssel",
+    "godaddySecret": "GoDaddy-API-Secret",
+    "namecheapUser": "Namecheap-API-Benutzer",
+    "namecheapKey": "Namecheap-API-Schlüssel",
+    "namecheapIp": "Freigegebene Client-IP"
   },
   "test": {
     "button": "Verbindung testen",

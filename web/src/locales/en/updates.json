@@ -796,7 +796,9 @@
     "checkOn": "Checking for new releases in the background is on. It only looks; installing is controlled by the switch above.",
     "checkOff": "Background checks for new releases are off. Turning on automatic updates also turns them on.",
     "installSteps": "Updates install between {{start}} and {{end}} {{zone}}; backup first, health check, automatic rollback.",
-    "nextWindows": "Next windows: {{list}}"
+    "nextWindows": "Next windows: {{list}}",
+    "onBlocked": "Automatic updates are switched on but cannot run on this server. See the status below.",
+    "checkOffActive": "Background checks for new releases are off, so no update will be found until they are turned on."
   },
   "autoStatus": {
     "state": {

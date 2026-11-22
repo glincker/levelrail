@@ -73,7 +73,7 @@ Every change is written to the audit log and to the team's event trail as `quota
 
 ## Instance defaults
 
-These runtime settings set limits for every team and project that has no value of its own. All default to 0, unlimited. Change them in Settings > Runtime (Deploys card), with `levelrail-cli settings runtime set <key> <value>`, or through the settings API; a change applies to the next create or resize with no restart. The environment variables only seed the first value.
+These runtime settings set limits for every team and project that has no value of its own. All default to 0, unlimited. Change them in Settings > Security and runtime (Deploys card), with `levelrail-cli settings runtime set <key> <value>`, or through the settings API; a change applies to the next create or resize with no restart. The environment variables only seed the first value.
 
 | Setting | Environment seed | Meaning |
 | --- | --- | --- |

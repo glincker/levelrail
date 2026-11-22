@@ -175,7 +175,7 @@ Several controls sit between a firing rule and the channel:
 - Grouping: firing alerts for one target can be buffered into one summary. Off by default (`APP_ALERT_GROUP_WINDOW` is 0). A repeat of the same rule replaces its entry in the group.
 - Rate limit: at most 30 sends per 10 minutes per target (`APP_ALERT_CHANNEL_RATE_LIMIT`, `APP_ALERT_CHANNEL_RATE_WINDOW`). Over the limit, the send is recorded as `ratelimited`.
 - Inhibition: alerts for apps on a node that is offline are recorded as `inhibited`, so the node alert is the one you see.
-- Sleeping apps: an app stopped by [sleep when idle](/sleep-when-idle) sends no alerts while it sleeps. A firing alert is recorded as `inhibited` ("app is asleep by design") and is sent if it is still firing after the app wakes. Turn on the runtime setting `alerts.notify_on_sleep` (Settings, Runtime, Observability card, or `levelrail-cli settings runtime set alerts.notify_on_sleep true`) to be told about sleeping apps too. Default off, applied live.
+- Sleeping apps: an app stopped by [sleep when idle](/sleep-when-idle) sends no alerts while it sleeps. A firing alert is recorded as `inhibited` ("app is asleep by design") and is sent if it is still firing after the app wakes. Turn on the runtime setting `alerts.notify_on_sleep` (Settings, Security and runtime, Observability card, or `levelrail-cli settings runtime set alerts.notify_on_sleep true`) to be told about sleeping apps too. Default off, applied live.
 - Silences, maintenance windows and channel quiet hours, above.
 
 Noise control state is held in memory, so a control plane restart forgets pending groups and streaks. Severity is `info`, `warning` or `critical`. The inbox hides `info` by default.

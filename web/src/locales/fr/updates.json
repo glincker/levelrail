@@ -785,7 +785,9 @@
     "checkOn": "La vérification en arrière-plan des nouvelles versions est activée. Elle ne fait que chercher; l'installation dépend de l'interrupteur ci-dessus.",
     "checkOff": "La vérification en arrière-plan des nouvelles versions est désactivée. Activer les mises à jour automatiques l'active aussi.",
     "installSteps": "Les mises à jour s'installent entre {{start}} et {{end}} {{zone}}; sauvegarde d'abord, contrôle de santé, retour arrière automatique.",
-    "nextWindows": "Prochaines fenêtres : {{list}}"
+    "nextWindows": "Prochaines fenêtres : {{list}}",
+    "onBlocked": "Les mises à jour automatiques sont activées mais ne peuvent pas s'exécuter sur ce serveur. Voir l'état ci-dessous.",
+    "checkOffActive": "Les vérifications en arrière-plan des nouvelles versions sont désactivées, donc aucune mise à jour ne sera trouvée tant qu'elles ne sont pas activées."
   },
   "autoStatus": {
     "state": {

@@ -771,7 +771,9 @@
     "checkOn": "后台检查新版本已开启。它只负责查找,安装由上方开关控制。",
     "checkOff": "后台检查新版本已关闭。开启自动更新也会开启它。",
     "installSteps": "更新将在 {{start}} 至 {{end}} ({{zone}}) 之间安装;先备份,再做健康检查,失败则自动回滚。",
-    "nextWindows": "接下来的窗口:{{list}}"
+    "nextWindows": "接下来的窗口:{{list}}",
+    "onBlocked": "自动更新已开启,但无法在此服务器上运行。请查看下方状态。",
+    "checkOffActive": "新版本的后台检查已关闭,开启之前不会发现任何更新。"
   },
   "autoStatus": {
     "state": {

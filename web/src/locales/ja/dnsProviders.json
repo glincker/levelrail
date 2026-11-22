@@ -18,7 +18,9 @@
   "providers": {
     "cloudflare": "Cloudflare",
     "route53": "Amazon Route 53",
-    "googleclouddns": "Google Cloud DNS"
+    "googleclouddns": "Google Cloud DNS",
+    "godaddy": "GoDaddy",
+    "namecheap": "Namecheap"
   },
   "attention": {
     "noCredential": "有効ですが、認証情報が保存されていません。",
@@ -43,7 +45,9 @@
   "perm": {
     "cloudflare": "管理したいゾーンに対する Zone:Read と DNS:Edit を持つAPIトークンが必要です。",
     "route53": "ListHostedZones、ListResourceRecordSets、ChangeResourceRecordSets、GetChange のみに制限されたIAMキーペアが必要です。",
-    "googleclouddns": "プロジェクトに対するDNS管理者ロールを持つサービスアカウントキーが必要です。"
+    "googleclouddns": "プロジェクトに対するDNS管理者ロールを持つサービスアカウントキーが必要です。",
+    "godaddy": "管理したいドメインにアクセスできる GoDaddy の API キーとシークレットが必要です。",
+    "namecheap": "Namecheap の API ユーザー、API キー、およびこのサーバーが接続元として許可済みの IP が必要です。"
   },
   "field": {
     "cloudflareToken": "CloudflareのAPIトークン",
@@ -53,7 +57,12 @@
     "hostedZoneId": "ホストゾーンID(任意)",
     "serviceAccount": "サービスアカウントのJSON",
     "regionHint": "Route 53 はグローバルなので、通常は影響しません。既定値: {{region}}。",
-    "hostedZoneHint": "空欄の場合、このキーで一覧できるすべてのゾーンからドメインを照合します。"
+    "hostedZoneHint": "空欄の場合、このキーで一覧できるすべてのゾーンからドメインを照合します。",
+    "godaddyKey": "GoDaddy API キー",
+    "godaddySecret": "GoDaddy API シークレット",
+    "namecheapUser": "Namecheap API ユーザー",
+    "namecheapKey": "Namecheap API キー",
+    "namecheapIp": "許可済みクライアント IP"
   },
   "test": {
     "button": "接続をテスト",

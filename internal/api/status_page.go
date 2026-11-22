@@ -326,7 +326,7 @@ func (rt *Router) validateStatusComponent(ctx context.Context, req *statusCompon
 	case statuspage.KindMonitor:
 		svc := rt.monitorSvc()
 		if svc == nil {
-			return "monitors are not enabled (turn them on in Settings, Runtime)"
+			return "monitors are not enabled (turn them on in Settings, Security and runtime)"
 		}
 		if _, err := svc.Get(ctx, req.Target); err != nil {
 			return "unknown monitor"

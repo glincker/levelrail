@@ -778,7 +778,9 @@
     "checkOn": "Die Hintergrundprüfung auf neue Releases ist an. Sie sucht nur; die Installation steuert der Schalter oben.",
     "checkOff": "Die Hintergrundprüfung auf neue Releases ist aus. Automatische Updates einzuschalten aktiviert sie ebenfalls.",
     "installSteps": "Updates werden zwischen {{start}} und {{end}} {{zone}} installiert; zuerst Backup, Health-Check, automatisches Rollback.",
-    "nextWindows": "Nächste Fenster: {{list}}"
+    "nextWindows": "Nächste Fenster: {{list}}",
+    "onBlocked": "Automatische Updates sind eingeschaltet, können auf diesem Server aber nicht laufen. Details im Status unten.",
+    "checkOffActive": "Hintergrundprüfungen auf neue Versionen sind aus, daher wird kein Update gefunden, bis sie eingeschaltet werden."
   },
   "autoStatus": {
     "state": {

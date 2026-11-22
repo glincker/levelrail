@@ -961,13 +961,13 @@ Two runtime settings guard the edge for routes that are not websockets or event 
 | `ingress.max_requests_per_ip` | `256` | 8 to 100000 | Most requests one client address may have in flight at once. A request over the limit gets `429` with `Retry-After: 1`. Websockets and event streams are not counted. |
 | `ingress.body_read_timeout_seconds` | `1800` | 60 to 86400 | Seconds a request body may take to arrive. Raise it for very slow or very large uploads, lower it to drop stalled clients sooner. |
 
-Change them in Settings, Runtime, Networking card, or with `levelrail-cli settings runtime get|set ingress.max_requests_per_ip`. Environment variables (`APP_INGRESS_MAX_REQUESTS_PER_IP`, `APP_INGRESS_BODY_READ_TIMEOUT_SECONDS`) seed the defaults. The count is per client address as the edge sees it, so behind a CDN or proxy set the trusted proxy list (below) first, or every visitor shares one address.
+Change them in Settings, Security and runtime, Networking card, or with `levelrail-cli settings runtime get|set ingress.max_requests_per_ip`. Environment variables (`APP_INGRESS_MAX_REQUESTS_PER_IP`, `APP_INGRESS_BODY_READ_TIMEOUT_SECONDS`) seed the defaults. The count is per client address as the edge sees it, so behind a CDN or proxy set the trusted proxy list (below) first, or every visitor shares one address.
 
 ```bash
 levelrail-cli settings runtime set ingress.max_requests_per_ip 512
 ```
 
-The API server has its own limit on the request header block: `api.max_header_bytes` (default `65536`, 8192 to 1048576, Settings, Runtime, Networking card). The server reads it at start, so a change needs a restart. It is separate from `APP_INGRESS_MAX_HEADER_BYTES`, which applies to app traffic at the edge.
+The API server has its own limit on the request header block: `api.max_header_bytes` (default `65536`, 8192 to 1048576, Settings, Security and runtime, Networking card). The server reads it at start, so a change needs a restart. It is separate from `APP_INGRESS_MAX_HEADER_BYTES`, which applies to app traffic at the edge.
 
 For an address-based rate limit by route or path, use the [WAF rate limit](#opt-in-waf-and-rate-limiting).
 
