@@ -618,6 +618,8 @@ retention.max_rows_per_app
 retention.node_event_days
 retention.probe_attempt_days
 retention.recently_deleted_days
+retention.registry_gc_min_mb
+retention.registry_keep_tags
 retention.restore_history_days
 retention.revoked_token_days
 retention.status_incident_days

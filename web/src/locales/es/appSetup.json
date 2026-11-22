@@ -1,4 +1,36 @@
 {
+  "envHints": {
+    "title": "Variables de entorno",
+    "help": "Este repositorio documenta las variables que necesita. Completa cada una antes del primer despliegue.",
+    "scanning": "Leyendo el archivo de ejemplo de entorno del repositorio...",
+    "missing_one": "{{count}} variable obligatoria está vacía.",
+    "missing_other": "{{count}} variables obligatorias están vacías.",
+    "secretHint": "Almacenado cifrado",
+    "valueLabel": "Valor para {{name}}"
+  },
+  "nextStep": {
+    "dismiss": "Descartar esta sugerencia",
+    "app_domain": {
+      "title": "Tu app está en línea. Añade tu propio dominio.",
+      "body": "Apunta a esta app un nombre de host que sea tuyo para que la gente llegue a ella por su nombre.",
+      "cta": "Añadir un dominio"
+    },
+    "first_backup": {
+      "title": "Activa las copias de seguridad",
+      "body": "Haz una primera copia de seguridad para que un disco perdido no se lleve tus apps por delante.",
+      "cta": "Configurar copias de seguridad"
+    },
+    "notifications": {
+      "title": "Añade un monitor y una alerta",
+      "body": "Entérate de un fallo o de una comprobación fallida antes que tus usuarios.",
+      "cta": "Configurar alertas"
+    },
+    "teammate": {
+      "title": "Invita a un compañero",
+      "body": "Da acceso a una segunda persona para que no seas el único que puede entrar.",
+      "cta": "Invitar a alguien"
+    }
+  },
   "launch": {
     "title": "Tu app está en vivo",
     "body": "Ábrela o escanea el código para probarla en el móvil.",

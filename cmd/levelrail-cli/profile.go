@@ -35,9 +35,9 @@ func runProfile(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 func profileUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s profile list [flags]            list configured credentials profiles
-  %[1]s profile use <name>              make a profile the default
-  %[1]s profile remove <name> [--yes]   delete a profile and its saved token
-  %[1]s profile rename <old> <new>      rename a profile
+  %[1]s profile use <name> [--json]            make a profile the default
+  %[1]s profile remove <name> [--yes] [--json] delete a profile and its saved token
+  %[1]s profile rename <old> <new> [--json]    rename a profile
 
 A profile is a named section of the credentials file at
 ~/.config/%[1]s/credentials, each with its own %[2]s/%[3]s, written by
