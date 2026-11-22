@@ -159,3 +159,36 @@ func TestDeSECApexTXTRoundTrip(t *testing.T) {
 		t.Fatalf("put %s %+v", gotPath, gotBody)
 	}
 }
+
+func TestGoDaddyReplacesOnlyOneSet(t *testing.T) {
+	var calls []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "sso-key k:s" {
+			t.Errorf("missing sso-key header")
+		}
+		calls = append(calls, r.Method+" "+r.URL.Path)
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`[{"type":"MX","name":"@","data":"mail.example.com","ttl":600,"priority":10},{"type":"NS","name":"@","data":"ns1","ttl":600}]`))
+		}
+	}))
+	defer srv.Close()
+	g, err := NewGoDaddy("k:s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.SetBaseURL(srv.URL, srv.Client())
+	z := Zone{ID: "example.com", Name: "example.com"}
+	sets, err := g.ListRecordSets(context.Background(), z)
+	if err != nil || len(sets) != 1 || sets[0].Values[0] != "10 mail.example.com" {
+		t.Fatalf("sets = %+v, err = %v", sets, err)
+	}
+	if err := g.UpsertRecordSet(context.Background(), z, RecordSet{Name: "www", Type: "A", TTL: 60, Values: []string{"1.2.3.4"}}); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(calls, "PUT /domains/example.com/records/A/www") {
+		t.Fatalf("calls = %v", calls)
+	}
+	if _, err := NewGoDaddy("nosecret"); err == nil {
+		t.Fatal("want credential error")
+	}
+}

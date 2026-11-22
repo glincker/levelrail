@@ -60,6 +60,9 @@ type PorkbunDNSModule struct{ tokenDNSModule }
 // DeSECDNSModule is dns.providers.desec.
 type DeSECDNSModule struct{ tokenDNSModule }
 
+// GoDaddyDNSModule is dns.providers.godaddy.
+type GoDaddyDNSModule struct{ tokenDNSModule }
+
 // AzureDNSModule is dns.providers.azure.
 type AzureDNSModule struct{ tokenDNSModule }
 
@@ -69,6 +72,7 @@ func init() {
 	caddy.RegisterModule(&AzureDNSModule{})
 	caddy.RegisterModule(&PorkbunDNSModule{})
 	caddy.RegisterModule(&DeSECDNSModule{})
+	caddy.RegisterModule(&GoDaddyDNSModule{})
 }
 
 // CaddyModule implements caddy.Module.
@@ -79,6 +83,16 @@ func (*PorkbunDNSModule) CaddyModule() caddy.ModuleInfo {
 // CaddyModule implements caddy.Module.
 func (*DeSECDNSModule) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{ID: "dns.providers.desec", New: func() caddy.Module { return new(DeSECDNSModule) }}
+}
+
+// CaddyModule implements caddy.Module.
+func (*GoDaddyDNSModule) CaddyModule() caddy.ModuleInfo {
+	return caddy.ModuleInfo{ID: "dns.providers.godaddy", New: func() caddy.Module { return new(GoDaddyDNSModule) }}
+}
+
+// Provision implements caddy.Provisioner.
+func (m *GoDaddyDNSModule) Provision(caddy.Context) error {
+	return m.provision(dnszones.ProviderGoDaddy)
 }
 
 // Provision implements caddy.Provisioner.
@@ -123,6 +137,7 @@ var (
 	_ caddy.Provisioner     = (*AzureDNSModule)(nil)
 	_ caddy.Provisioner     = (*PorkbunDNSModule)(nil)
 	_ caddy.Provisioner     = (*DeSECDNSModule)(nil)
+	_ caddy.Provisioner     = (*GoDaddyDNSModule)(nil)
 	_ libdns.RecordAppender = (*DigitalOceanDNSModule)(nil)
 	_ libdns.RecordDeleter  = (*AzureDNSModule)(nil)
 )

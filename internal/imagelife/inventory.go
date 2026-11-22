@@ -297,6 +297,36 @@ func markRemovable(e *Entry) {
 // Reclaimable is the space freeing e returns, net of layers other images share.
 func Reclaimable(e Entry) int64 { return e.SizeBytes - e.SharedBytes }
 
+// ReclaimEstimate bounds the space freed by removing a set of images together.
+// SharedBytes counts layers shared with any other image, including ones in the set,
+// so per-image net sizes are a floor and the sum of shared bytes can only add to it.
+type ReclaimEstimate struct {
+	MinBytes int64 `json:"reclaimable_bytes"`
+	MaxBytes int64 `json:"reclaimable_max_bytes"`
+	// Exact is true when at most one image in the set shares layers, so nothing is counted twice.
+	Exact bool `json:"reclaimable_exact"`
+}
+
+// EstimateReclaim sums net sizes and widens the range when two or more removed images share layers.
+func EstimateReclaim(entries []Entry) ReclaimEstimate {
+	var est ReclaimEstimate
+	var shared int64
+	sharers := 0
+	for _, e := range entries {
+		est.MinBytes += Reclaimable(e)
+		if e.SharedBytes > 0 {
+			sharers++
+			shared += e.SharedBytes
+		}
+	}
+	est.MaxBytes = est.MinBytes
+	est.Exact = sharers < 2
+	if !est.Exact {
+		est.MaxBytes += shared
+	}
+	return est
+}
+
 // UnmanagedUnused lists the entries an include_unmanaged_unused request removes.
 func UnmanagedUnused(entries []Entry) []Entry {
 	out := []Entry{}
@@ -321,7 +351,10 @@ func hasRole(uses []AppUse, role string) bool {
 type Plan struct {
 	Remove       []Entry `json:"remove"`
 	ReclaimBytes int64   `json:"reclaim_bytes"`
-	KeptCount    int     `json:"kept_count"`
+	// ReclaimMaxBytes and ReclaimExact say how far ReclaimBytes can undercount when removed images share layers.
+	ReclaimMaxBytes int64 `json:"reclaim_max_bytes"`
+	ReclaimExact    bool  `json:"reclaim_exact"`
+	KeptCount       int   `json:"kept_count"`
 }
 
 // PlanGC selects every unprotected entry. Protected images are never in
@@ -336,6 +369,8 @@ func PlanGC(entries []Entry) Plan {
 		p.Remove = append(p.Remove, e)
 		p.ReclaimBytes += Reclaimable(e)
 	}
+	est := EstimateReclaim(p.Remove)
+	p.ReclaimMaxBytes, p.ReclaimExact = est.MaxBytes, est.Exact
 	return p
 }
 

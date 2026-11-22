@@ -210,7 +210,7 @@ func (rt *Router) findConnectedZone(ctx context.Context, domain string) (string,
 var zoneProviderLabels = map[string]string{
 	dnszones.ProviderCloudflare: "Cloudflare", dnszones.ProviderRoute53: "Route 53", dnszones.ProviderGoogleCloud: "Google Cloud DNS",
 	dnszones.ProviderDigitalOcean: "DigitalOcean", dnszones.ProviderHetzner: "Hetzner DNS", dnszones.ProviderAzure: "Azure DNS",
-	dnszones.ProviderPorkbun: "Porkbun", dnszones.ProviderDeSEC: "deSEC",
+	dnszones.ProviderPorkbun: "Porkbun", dnszones.ProviderDeSEC: "deSEC", dnszones.ProviderGoDaddy: "GoDaddy",
 }
 
 // delegationReasonText explains, in plain words, why zone records are not live yet.

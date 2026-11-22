@@ -121,7 +121,7 @@ func runImagesList(prog string, args []string, stdout, stderr io.Writer, lookupE
 	}
 	return writeScheduledTaskResult(stdout, stderr, c.of, res, func() {
 		_, _ = fmt.Fprintf(stdout, "%d images, %s total, %s reclaimable by retention (keeping the newest %d deploys per app)\n",
-			res.Totals.Count, humanBytes(res.Totals.SizeBytes), humanBytes(res.Totals.ReclaimBytes), res.Retention.KeepPerApp)
+			res.Totals.Count, humanBytes(res.Totals.SizeBytes), reclaimText(res.Totals.ReclaimBytes, res.Totals.ReclaimMaxBytes, res.Totals.ReclaimExact), res.Retention.KeepPerApp)
 		tw := tabwriter.NewWriter(stdout, 0, 8, 2, ' ', 0)
 		_, _ = fmt.Fprintln(tw, "ID\tTAG\tSIZE\tAPPS\tSTATUS")
 		for _, e := range res.Images {
@@ -205,12 +205,17 @@ func runImagesGC(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 	return writeScheduledTaskResult(stdout, stderr, c.of, res, func() {
 		if res.DryRun {
-			var total int64
+			var total, shared int64
+			sharers := 0
 			for _, e := range res.Candidates {
 				total += e.SizeBytes - e.SharedBytes
+				if e.SharedBytes > 0 {
+					sharers++
+					shared += e.SharedBytes
+				}
 				_, _ = fmt.Fprintf(stdout, "would remove %s %s (%s)\n", shortImageID(e.ID), strings.Join(e.Tags, ","), humanBytes(e.SizeBytes))
 			}
-			_, _ = fmt.Fprintf(stdout, "%d images, %s would be freed. Run with --apply to remove them.\n", len(res.Candidates), humanBytes(total))
+			_, _ = fmt.Fprintf(stdout, "%d images, %s would be freed. Run with --apply to remove them.\n", len(res.Candidates), reclaimText(total, total+shared, sharers < 2))
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "removed %d images, freed %s\n", len(res.Removed), humanBytes(res.ReclaimedBytes))
@@ -281,15 +286,20 @@ func runImagesRemove(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	return writeScheduledTaskResult(stdout, stderr, c.of, res, func() {
 		if res.DryRun {
-			var total int64
+			var total, shared int64
+			sharers := 0
 			for _, e := range res.Candidates {
 				total += e.SizeBytes - e.SharedBytes
+				if e.SharedBytes > 0 {
+					sharers++
+					shared += e.SharedBytes
+				}
 				_, _ = fmt.Fprintf(stdout, "would remove %s %s (%s)\n", shortImageID(e.ID), strings.Join(e.Tags, ","), humanBytes(e.SizeBytes))
 			}
 			for _, f := range res.Failed {
 				_, _ = fmt.Fprintf(stdout, "cannot remove %s: %s\n", shortImageID(f.ID), f.Error)
 			}
-			_, _ = fmt.Fprintf(stdout, "%d images, %s would be freed.", len(res.Candidates), humanBytes(total))
+			_, _ = fmt.Fprintf(stdout, "%d images, %s would be freed.", len(res.Candidates), reclaimText(total, total+shared, sharers < 2))
 			if !dry {
 				_, _ = fmt.Fprint(stdout, " Run again with --yes to remove them.")
 			}
@@ -358,4 +368,12 @@ func printImageRetention(w io.Writer, res apiclient.ImageRetentionResource) {
 	if res.ProtectedEnvironment != "" {
 		_, _ = fmt.Fprintf(w, "protected environment %s: the count cannot go below the global setting\n", res.ProtectedEnvironment)
 	}
+}
+
+// reclaimText shows a range when removed images share layers, because only the whole set frees them.
+func reclaimText(minBytes, maxBytes int64, exact bool) string {
+	if exact || maxBytes <= minBytes {
+		return humanBytes(minBytes)
+	}
+	return humanBytes(minBytes) + " to " + humanBytes(maxBytes)
 }

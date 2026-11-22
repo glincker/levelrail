@@ -55,10 +55,13 @@ type imageRetention struct {
 }
 
 type imageTotals struct {
-	Count          int   `json:"count"`
-	SizeBytes      int64 `json:"size_bytes"`
-	ReclaimBytes   int64 `json:"reclaimable_bytes"`
-	ProtectedCount int   `json:"protected_count"`
+	Count        int   `json:"count"`
+	SizeBytes    int64 `json:"size_bytes"`
+	ReclaimBytes int64 `json:"reclaimable_bytes"`
+	// ReclaimMaxBytes is the most retention could free when removed images share layers; ReclaimExact says the two agree.
+	ReclaimMaxBytes int64 `json:"reclaimable_max_bytes"`
+	ReclaimExact    bool  `json:"reclaimable_exact"`
+	ProtectedCount  int   `json:"protected_count"`
 	// UnmanagedUnused* count images no app owns and no container uses, which
 	// POST /images/remove can clear on request. Bytes are net of shared layers.
 	UnmanagedUnusedCount int   `json:"unmanaged_unused_count"`
@@ -184,7 +187,7 @@ func (rt *Router) handleListImageInventory(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	plan := imagelife.PlanGC(entries)
-	totals := imageTotals{Count: len(entries), ReclaimBytes: plan.ReclaimBytes, ProtectedCount: plan.KeptCount}
+	totals := imageTotals{Count: len(entries), ReclaimBytes: plan.ReclaimBytes, ReclaimMaxBytes: plan.ReclaimMaxBytes, ReclaimExact: plan.ReclaimExact, ProtectedCount: plan.KeptCount}
 	for _, e := range entries {
 		totals.SizeBytes += e.SizeBytes
 		if e.Unmanaged {
@@ -262,7 +265,10 @@ type imageGCResponse struct {
 	Removed        []string          `json:"removed"`
 	Failed         []imageGCFailure  `json:"failed"`
 	ReclaimedBytes int64             `json:"reclaimed_bytes"`
-	Retention      imageRetention    `json:"retention"`
+	// ReclaimMaxBytes and ReclaimExact describe a dry run's estimate, see imagelife.EstimateReclaim.
+	ReclaimMaxBytes int64          `json:"reclaim_max_bytes"`
+	ReclaimExact    bool           `json:"reclaim_exact"`
+	Retention       imageRetention `json:"retention"`
 }
 
 // handleImageGC handles POST /api/v1/images/gc: removes images no app can
@@ -295,7 +301,7 @@ func (rt *Router) handleImageGC(w http.ResponseWriter, r *http.Request) {
 	}
 	plan := imagelife.PlanGC(entries)
 	plan.Remove = retentionSafeRemovals(plan.Remove)
-	resp := imageGCResponse{DryRun: req.DryRun, Candidates: plan.Remove, Removed: []string{}, Failed: []imageGCFailure{}, Retention: ret}
+	resp := imageGCResponse{DryRun: req.DryRun, Candidates: plan.Remove, Removed: []string{}, Failed: []imageGCFailure{}, ReclaimMaxBytes: plan.ReclaimMaxBytes, ReclaimExact: plan.ReclaimExact, Retention: ret}
 	if !req.DryRun {
 		var refs []string
 		for _, e := range plan.Remove {

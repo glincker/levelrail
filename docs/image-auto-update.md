@@ -48,6 +48,23 @@ API: `GET` and `PUT /api/v1/apps/{name}/auto-update`, and `POST
 /api/v1/apps/{name}/auto-update/check`. Reading needs `read`, changing or
 checking needs `deploy`.
 
+## Follow a version range
+
+By default an app follows the digest of the tag it already runs. To follow
+the newest release inside a semver range instead, set a range such as `1.x`,
+`^1.2.3` or `>=1.2.0 <2.0.0`. Each check lists the registry's tags, picks the
+highest release that fits and redeploys when it differs from the running tag.
+Pre-releases are skipped and a variant suffix such as `-alpine` is kept, so an
+app on `1.4-alpine` stays on `-alpine` tags.
+
+```sh
+levelrail-cli apps auto-update enable web --range '1.x'
+levelrail-cli apps auto-update enable web --range '*'   # clear the range
+```
+
+API: send `version_range` in the `PUT` body. An omitted field leaves the range
+unchanged and an empty string clears it. An invalid range is refused with 400.
+
 ## Update on push
 
 Instead of waiting for the interval, point your registry's push webhook at a
