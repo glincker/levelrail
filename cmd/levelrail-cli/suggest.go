@@ -225,3 +225,14 @@ func errorNextStep(status int) string {
 	}
 	return ""
 }
+
+// errorHasGuidance reports whether the error text already says what to do,
+// so a generic footer would only add noise (login and approval flows).
+func errorHasGuidance(msg string) bool {
+	for _, m := range []string{"approve at", "run on", "fix:", "hint:", "http://", "https://", "login"} {
+		if strings.Contains(msg, m) {
+			return true
+		}
+	}
+	return false
+}
