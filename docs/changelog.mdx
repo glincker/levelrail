@@ -4,6 +4,172 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.5.8" description="2026-11-22">
+**Features**
+
+* add an SFTP backup target
+* add log drain presets for Axiom, Datadog and Grafana Loki
+* agent offline buffer
+* agent update and rollback decision
+* app config history with revert
+* app health explainer
+* app overview, rollback fix, agent log level, demo screens and release workflow fixes for 1.5.8
+* apps list preview state and kind in JSON
+* Aurora cluster stop, start and snapshots under the RDS guard
+* AWS account link engine with capability registry and role templates
+* AWS CloudFront and Systems Manager modules, API and CLI, behind off-by-default flags
+* AWS create guard, shared signed client, ECR, ACM, secrets and audit modules
+* AWS EBS snapshots, CloudWatch metrics and logs, and idle detection behind the cloud guard
+* AWS ElastiCache read, snapshot, reboot and guarded delete
+* AWS Lightsail simple servers with guarded create, managed-only changes, CLI and dashboard card
+* AWS RDS and Aurora support behind the cloud guard
+* AWS service modules in API and CLI with runtime guard settings
+* backup dialog built from descriptors
+* backup setup form renders from the field registry
+* backup target and log drain forms, flags and validation come from one field registry
+* build the node agent for macOS and guard it in CI
+* classify apps by kind in the apps API
+* cloud account instance scope, allowed regions, resize quota, events and spend forecast
+* cloud account instances, spend card and access aware gating
+* cloud accounts API, grants and node-providers compatibility
+* cloud accounts list, AWS link wizard and account detail
+* cloud accounts store, grants and pure cloud authorization
+* cloud doctor --deep runs one read only call per enabled service
+* cloud doctor readiness check for AWS and Oracle accounts, with guard policy setting
+* cloud doctor reads the role's attached policies live for the guard policy step
+* cloud instance, spend and access routes with CLI
+* cloud spend readers for AWS, Oracle, DigitalOcean and Hetzner with a cached, rate limited refresh
+* CloudFront and SSM cards and instance events in the cloud accounts view
+* Connect DigitalOcean with OAuth in the API, CLI and cloud account wizard
+* database wiring panel
+* default crash loop and 5xx alerts with a master switch
+* deploy detail page with logs first, compact findings, one waterfall and a compact rollout
+* deploy target hints, last-used prefill and build node picker
+* deploy target picker with grouped cloud accounts and nodes
+* DNS provider forms and channel edit sheet from the field registry
+* doctor reports update availability and agent version skew
+* domain DNS check by domain name
+* domain rules push audience
+* domains add --wait ends with the live URL or the exact blocker
+* drain progress and stalled state
+* draw the site and app wiring panels as connected diagrams
+* event webhooks and status page webhooks use the shared field registry
+* failed first deploys explain themselves
+* generic field registry route
+* health preset catalog
+* import plan lists resources, secrets, unsupported features and conflicts
+* instance manager and capability matrix for DigitalOcean and Hetzner
+* keys-only environment diff
+* levelrail fields command
+* log drain auth header
+* login with AWS SSO (IAM Identity Center device flow) for short-lived AWS account links
+* macOS doctor and launchd units
+* macOS node agent, install-the-agent banner, Pages overview and runtime fixes for 1.5.8
+* node doctor
+* node health timeline
+* node providers list shows linked cloud accounts and an account-aware connected flag
+* notification channel and DNS provider descriptors
+* opt-in agent self-update with signed releases and rollback
+* optional InstanceManager with Oracle and AWS drivers
+* Oracle as a first-class cloud account with capability probe, policy kit and multi-account isolation
+* Oracle browser session (oci_session) auth with expiry handling, import API, CLI and relogin
+* Oracle browser session spend, budgets and instances, live relogin window setting, wizard and relogin UI
+* package-managed agents refuse self-update
+* Pages promote and rollback wait for serving
+* paste-your-OCI-config flow for the Oracle credential form
+* pending chip on Pages promote
+* publish the macOS node agent with Homebrew and launchd support
+* real app screenshot previews
+* refusals print the exact next step
+* restart count and database size in the apps list
+* restore test for a database's newest backup
+* right-sizing thresholds and history window are live settings
+* rollback shows the going-live chip
+* route mesh-less nodes through agent tunnels and tighten web push delivery for 1.5.8
+* Russian dashboard translation, README.ru and language nav links
+* self-update requires the staged binary to match the target release
+* setup link prefers HTTPS and explains why when it cannot
+* show cached thumbnails on app cards instead of live iframes
+* show purposeful cards for api, worker, cron and database apps
+* suggest stopped database clusters AWS will restart soon, add guarded EC2 run helper with tests
+* translate the 1.5.8 deploy page and login notice strings
+* up uploads the folder when there is no git remote
+* update anyway override with a short disclaimer
+* update window, channel and per-node hold for agent updates
+* v1.5.8 app previews, node agent self-update, field registry, AWS and Oracle cloud accounts
+* vault_aws accounts sign in through the Vault connection or AWS auth, end to end provisioning and live doctor
+* vault_aws auth method and vault kit for AWS accounts
+* version skew upgrade plan
+* VM logs
+* weekly digest mail
+
+
+**Bug Fixes**
+
+* accept --yes when deleting a Pages site from the CLI
+* agent update rollback only after a fresh install fails
+* app cards always show a labelled preview state
+* app cards show the automatic URL
+* ask for confirmation on runtime settings only when it is needed
+* Axiom log drain endpoint
+* backup provider list uses glyph tiles
+* build the control plane for Windows with a shared disk usage helper
+* channel URLs are masked in forms
+* classify bracketed notice and emerg log levels and keep the app hero actions inside the card on phones
+* cloud accounts probe prints its capability rows instead of an empty table
+* cloud provider connection status derives from one account-aware helper across pages
+* cloud services tab, completion tree and guard allowlist
+* database size only shown to users who can see sensitive data
+* development builds are never update targets
+* dismiss CLI login notices and collapse them into one summary row
+* do not offer an update to a build that already carries the latest release
+* doctor explains the update and version skew checks
+* domain alert pushes reach the right team
+* grant IAM actions for RDS, ElastiCache, CloudFront, SSM, ECR, ACM, Secrets Manager and snapshot calls
+* harden AWS SSO login (portal error names, live cloud.aws.sso settings, forget on disable and delete, region at select)
+* harden cloud account auth flows
+* launchd units are written private and reject secret arguments
+* let the dashboard update banner and app chips wrap on narrow screens
+* let the Docker guard accept the SETPCAP cap that database containers declare
+* list Aurora cluster commands in the CLI tree
+* list cloudfront and ssm in the CLI command tree
+* log drain config changes apply while the drain is enabled
+* log drain tokens are cleared when a drain target changes or an app is deleted
+* make the API isolation tests independent of global experimental flag state
+* notification channels list in a stable order
+* open the container image form on the first click
+* oracle instance IPs via VNICs, budget currency, fuller spend table, keep last good forecast
+* preview renders only load the app's own host
+* provider page resources, spend and capabilities read the connected cloud account
+* register cloud CLI subcommands in the command tree
+* rename AWS parameter service setting so it is not read as a credential
+* resetting a runtime setting no longer keeps a stale edit
+* restore the AWS SSO account link changes dropped by the previous commit
+* roll Pages back to the previous production deploy after a promote
+* route EC2 creates through the shared create guard and tag volumes and interfaces
+* Russian language shows its flag in the language picker
+* scope AWS S3 and Route 53 by ARN, S3 tag actions, quick-create URL, Cost Explorer hints and Oracle audit events
+* scope cloud secrets and parameters to a name prefix
+* show friendly labels on promote and rollback rows
+* show the certificate state as a badge on the domain card
+* split proxy route file handling by platform so every target builds
+* stop a Pages site from conflicting with its own domain
+* the local node reports its preflight checks
+* tighten cloud access checks
+* tighten cloud role policy scope
+* version skew report includes the local node
+* web typecheck and Oracle add from cloud accounts without a subnet
+
+
+**Performance**
+
+* cheaper apps list and summary, new read indexes
+* load balancers, jobs and compose stacks refresh from the change stream
+* new telemetry files use incremental vacuum
+* static budget guard and smaller embedded dashboard assets
+* telemetry and alert databases sync with NORMAL under WAL
+</Update>
+
 <Update label="1.5.7" description="2026-11-21">
 **Features**
 
