@@ -4,7 +4,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { Autoscale, AutoscalePolicyFields } from '../../queries/autoscale'
+import {
+  isGaugeMetric,
+  type Autoscale,
+  type AutoscalePolicyFields,
+} from '../../queries/autoscale'
 import { AutoscaleSchedules } from './AutoscaleSchedules'
 import {
   buildSchedules,
@@ -74,8 +78,8 @@ function toDraft(policy: Autoscale | null): Draft {
   return {
     min: String(policy.min_replicas),
     max: String(policy.max_replicas),
-    metric: policy.metric.startsWith(GAUGE_PREFIX) ? 'gauge' : policy.metric,
-    gaugeName: policy.metric.startsWith(GAUGE_PREFIX)
+    metric: isGaugeMetric(policy.metric) ? 'gauge' : policy.metric,
+    gaugeName: isGaugeMetric(policy.metric)
       ? policy.metric.slice(GAUGE_PREFIX.length)
       : '',
     target: String(policy.target),

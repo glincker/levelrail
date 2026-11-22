@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import {
   autoscaleQueryOptions,
+  isGaugeMetric,
   useAutoscaleActions,
   type Autoscale,
 } from '../queries/autoscale'
@@ -67,8 +68,17 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Summary({ policy }: { policy: Autoscale }) {
   const { t } = useTranslation('autoscale')
+  const gauge = isGaugeMetric(policy.metric)
+  // Gauge metrics carry the app's own name and have no percent unit.
+  const metricLabel = isGaugeMetric(policy.metric)
+    ? policy.metric.slice('gauge:'.length)
+    : t(`metric.${policy.metric}`)
   const unit =
-    policy.metric === 'requests_per_replica' ? t('form.perSecond') : '%'
+    policy.metric === 'requests_per_replica'
+      ? t('form.perSecond')
+      : gauge
+        ? t('form.gaugeUnit')
+        : '%'
   const metric = policy.value_known
     ? t('stats.metricValue', {
         value: policy.value.toFixed(1),
@@ -92,7 +102,7 @@ function Summary({ policy }: { policy: Autoscale }) {
           max: policy.effective_max,
         })}
       />
-      <Stat label={t(`metric.${policy.metric}`)} value={metric} />
+      <Stat label={metricLabel} value={metric} />
       <Stat
         label={t('stats.band')}
         value={t('stats.bandValue', {

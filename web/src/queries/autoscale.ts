@@ -13,6 +13,19 @@ import { pollMs } from '../lib/pollTier'
 export type AutoscaleMetric =
   'cpu_percent' | 'memory_percent' | 'requests_per_replica' | `gauge:${string}`
 
+export type AutoscaleGaugeMetric = Extract<AutoscaleMetric, `gauge:${string}`>
+export type AutoscaleBuiltinMetric = Exclude<
+  AutoscaleMetric,
+  AutoscaleGaugeMetric
+>
+
+/** Narrows so callers can tell app gauges from the built-in metrics. */
+export function isGaugeMetric(
+  metric: AutoscaleMetric,
+): metric is AutoscaleGaugeMetric {
+  return metric.startsWith('gauge:')
+}
+
 export interface AutoscaleCondition {
   healthy: boolean
   reason: string
