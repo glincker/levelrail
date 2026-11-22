@@ -51,3 +51,14 @@ export const VIRTUALIZE_AFTER = 50
 export function allTargetsOnSameDisk(targets: CoverageTarget[]): boolean {
   return targets.length > 0 && targets.every((t) => t.provider === 'local')
 }
+
+/** restorableApps lists the apps that own at least one backed up volume, sorted by name. */
+export function restorableApps(rows: CoverageRow[]): string[] {
+  const names = new Set<string>()
+  for (const r of rows) {
+    if (r.kind === 'volume' && r.app_name && r.backup_count > 0) {
+      names.add(r.app_name)
+    }
+  }
+  return [...names].sort((a, b) => a.localeCompare(b))
+}

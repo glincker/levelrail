@@ -14,6 +14,8 @@ import { LazyBackupsDiagram } from '../../components/banners/LazyDiagrams'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useBackupCoverage } from '../../queries/backupCoverage'
 import { CoverageList } from '../../components/backups/CoverageList'
+import { restorableApps } from '../../components/backups/coverageHelpers'
+import { RestoreToNewServerWizard } from '../../components/backups/RestoreToNewServerWizard'
 import { CoverageSummary } from '../../components/backups/CoverageSummary'
 import { DrillTimeline } from '../../components/backups/DrillTimeline'
 import { FirstRunSetup } from '../../components/backups/FirstRunSetup'
@@ -39,6 +41,7 @@ function BackupsPage() {
   const { t } = useTranslation('backups')
   const coverage = useBackupCoverage()
   const [protectOpen, setProtectOpen] = useState(false)
+  const [restoreOpen, setRestoreOpen] = useState(false)
   const data = coverage.data
   const hasTargets = (data?.targets.length ?? 0) > 0
   const isEmpty =
@@ -63,6 +66,17 @@ function BackupsPage() {
                 path="/backups-and-storage"
                 label={t('page.helpLabel')}
               />
+              {restorableApps(data?.resources ?? []).length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setRestoreOpen(true)
+                  }}
+                >
+                  {t('newServer.open')}
+                </Button>
+              ) : null}
               {canProtect ? (
                 <Button
                   size="sm"
@@ -133,6 +147,14 @@ function BackupsPage() {
 
       <OrphanedDataPanel />
       {data && data.targets.length > 0 ? <RecentActivity /> : null}
+
+      {data ? (
+        <RestoreToNewServerWizard
+          apps={restorableApps(data.resources)}
+          open={restoreOpen}
+          onOpenChange={setRestoreOpen}
+        />
+      ) : null}
 
       {data ? (
         <ProtectAllDialog
