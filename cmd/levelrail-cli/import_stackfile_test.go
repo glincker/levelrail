@@ -125,3 +125,49 @@ func TestImportPortainerStackNeverReadsValues(t *testing.T) {
 		}
 	}
 }
+
+const renderBlueprintFixture = `services:
+  - type: web
+    name: api
+    runtime: docker
+    image:
+      url: ghcr.io/acme/api:1.2
+    healthCheckPath: /up
+    numInstances: 2
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: appdb
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: STRIPE_KEY
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+  - type: cron
+    name: nightly
+    runtime: docker
+    image:
+      url: ghcr.io/acme/api:1.2
+    schedule: "0 3 * * *"
+    dockerCommand: ./bin/cleanup
+  - type: keyvalue
+    name: cache
+databases:
+  - name: appdb
+    postgresMajorVersion: "16"
+`
+
+func TestImportRenderBlueprintDryRun(t *testing.T) {
+	p := writeStackFixture(t, "render.yaml", renderBlueprintFixture)
+	out, errs, code := runStackFile(t, "render", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"ghcr.io/acme/api:1.2", "0 3 * * *", "engine: redis", "engine: postgres", "SESSION_SECRET", "STRIPE_KEY", "Dry run"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+}

@@ -31,6 +31,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesJoinTokens(prog, rest, stdout, stderr, lookupEnv)
 	case "revoke-join-token":
 		return runNodesRevokeJoinToken(prog, rest, stdout, stderr, lookupEnv)
+	case "bulk":
+		return runNodesBulk(prog, rest, stdout, stderr, lookupEnv)
 	case "cordon":
 		return runNodesCordon(prog, rest, stdout, stderr, lookupEnv)
 	case "set-labels":

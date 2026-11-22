@@ -284,7 +284,7 @@ var Tree = map[string]*Node{
 		"schedule": {Subs: map[string]*Node{"set": nil, "clear": nil}},
 	}},
 	"archive":               {Subs: map[string]*Node{"ls": nil, "create": nil, "restore": nil, "verify": nil, "download": nil, "delete": nil, "policy": nil}},
-	"control-plane-backups": {Subs: map[string]*Node{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {Subs: map[string]*Node{"show": nil, "set": nil}}, "run-now": nil, "drill": {Subs: map[string]*Node{"run": nil, "status": nil}}, "escrow": nil, "restore-plan": nil, "keys": {Subs: map[string]*Node{"generate": nil}}, "help-dr": nil}},
+	"control-plane-backups": {Subs: map[string]*Node{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {Subs: map[string]*Node{"show": nil, "set": nil}}, "run-now": nil, "drill": {Subs: map[string]*Node{"run": nil, "status": nil}}, "escrow": nil, "restore-plan": nil, "move": nil, "keys": {Subs: map[string]*Node{"generate": nil}}, "help-dr": nil}},
 	"control-plane":         {Subs: map[string]*Node{"rehydrate": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil}}}},
 	"cloudflare-tunnel":     {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil}},
 	"vault":                 {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil, "rotate-credential": nil}},
@@ -357,7 +357,7 @@ var Tree = map[string]*Node{
 	"clusters":     {Subs: map[string]*Node{"connect": nil, "list": nil, "show": nil, "test": nil, "nodes": nil, "namespaces": nil, "disconnect": nil, "rbac": nil, "deploy": nil, "deployments": nil, "status": nil, "logs": nil, "remove": nil, "pull-secret": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}}},
 	"nodes": {Subs: map[string]*Node{
 		"build-trust": nil, "list": nil, "get": nil, "delete": nil, "join-token": nil, "join-tokens": nil, "revoke-join-token": nil,
-		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil, "set-labels": nil,
+		"cordon": nil, "uncordon": nil, "bulk": nil, "drain": nil, "workloads": nil, "set-labels": nil,
 		"health": nil, "patch-status": nil, "patch": {Subs: map[string]*Node{"preview": nil, "apply": nil, "runs": nil}}, "events": nil, "doctor": nil, "timeline": nil, "version-skew": nil, "agent-update": nil, "metrics": nil, "resource-usage": nil,
 		"capacity-forecast": nil, "thresholds": {Subs: map[string]*Node{"get": nil, "set": nil}}, "capacity": nil, "cleanup": nil,
 		"add": nil, "move": nil, "moves": nil, "drains": nil, "resources": nil, "labels": nil, "taint": nil, "zones": nil, "simulate": nil, "failure": nil, "failure-policy": {Subs: map[string]*Node{"get": nil, "set": nil}}, "lost": nil, "failure-resolve": nil, "placement": nil, "allocations": nil, "connectivity": nil,
@@ -490,7 +490,7 @@ var Tree = map[string]*Node{
 	"assets":         {Subs: map[string]*Node{"buckets": {Subs: map[string]*Node{"list": nil, "create": nil, "show": nil, "set": nil, "probe": nil, "delete": nil}}, "usage": nil, "ls": nil, "upload": nil, "url": nil, "rm": nil}},
 	"stack":          {Subs: map[string]*Node{"templates": nil, "init": nil, "list": nil, "show": nil, "create": nil, "plan": nil, "apply": nil, "history": nil, "show-revision": nil, "diff": nil, "rollback": nil, "approve": nil, "reject": nil, "pin": nil, "unpin": nil, "unlock": nil, "delete": nil, "settings": nil, "drift": nil, "adopt-from-export": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}, "sync": {Subs: map[string]*Node{"status": nil, "set": nil, "refresh": nil, "webhook-secret": {Subs: map[string]*Node{"rotate": nil}}}}, "cloud-state": {Subs: map[string]*Node{"list": nil, "recover": nil}}}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
-	"import":         {Subs: map[string]*Node{"config": nil, "compose-ref": nil, "deploy-yml": nil, "portainer": nil, "railway": nil, "vercel": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "k8s": nil, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
+	"import":         {Subs: map[string]*Node{"config": nil, "compose-ref": nil, "deploy-yml": nil, "portainer": nil, "railway": nil, "render": nil, "vercel": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "k8s": nil, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"install": nil, "bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"heartbeat":     {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},

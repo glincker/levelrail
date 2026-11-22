@@ -33,6 +33,8 @@ func stackFileUsage(prog, sub string) string {
 	switch sub {
 	case "portainer":
 		what = "a stack compose file or a stack export JSON"
+	case "render":
+		what = "a render.yaml Blueprint (services, databases, cron jobs; no variable values)"
 	case "railway":
 		what = "a railway.json or railway.toml (build and deploy settings, no variable values)"
 	}
@@ -87,6 +89,9 @@ func runImportStackFile(prog, sub string, args []string, stdout, stderr io.Write
 	switch sub {
 	case "portainer":
 		in, fallback, err = portainerInput(data, path)
+	case "render":
+		in, err = platformimport.RenderBlueprintToEmit(data)
+		fallback = stackNameFromDir(filepath.Dir(path))
 	case "railway":
 		in, err = platformimport.RailwayToEmit(data, fallback, filepath.Base(path))
 	default:

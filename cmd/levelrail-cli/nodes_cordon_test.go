@@ -74,3 +74,26 @@ func TestRun_NodesUncordon_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr)
 	}
 }
+
+func TestRun_NodesBulkCordonByZone(t *testing.T) {
+	var cordoned []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			_ = json.NewEncoder(w).Encode([]nodeResource{{ID: "nd_1", Name: "a", Zone: "eu-1"}, {ID: "nd_2", Name: "b", Zone: "eu-2"}, {ID: "nd_3", Name: "c", Zone: "eu-1"}})
+			return
+		}
+		cordoned = append(cordoned, r.URL.Path)
+		_ = json.NewEncoder(w).Encode(nodeResource{})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"nodes", "bulk", "cordon", "--where", "zone=eu-1", "--dry-run", "--api-url", srv.URL})
+	if len(cordoned) != 0 || !strings.Contains(stdout, "would cordon") {
+		t.Fatalf("dry run changed nodes: %v %q", cordoned, stdout)
+	}
+	runCLIExpectOK(t, []string{"nodes", "bulk", "cordon", "--where", "zone=eu-1", "--api-url", srv.URL})
+	if len(cordoned) != 2 || cordoned[0] != "/api/v1/nodes/nd_1/cordon" || cordoned[1] != "/api/v1/nodes/nd_3/cordon" {
+		t.Errorf("cordoned = %v", cordoned)
+	}
+}

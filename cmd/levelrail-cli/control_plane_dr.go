@@ -30,6 +30,7 @@ func controlPlaneDRUsage(prog string) string {
   %[1]s control-plane-backups escrow ack                       record that the bundle is stored offline
   %[1]s control-plane-backups escrow open <file> --identity F [--extract DIR]  decrypt a bundle locally
   %[1]s control-plane-backups restore-plan                     ordered recovery steps with the newest backup and restore command filled in
+  %[1]s control-plane-backups move --to-host H [--dns-name N]  back up, write the key bundle, print the move steps and DNS cutover
   %[1]s control-plane-backups keys generate [--out FILE]       make an age keypair for backups (private key stays on this machine)
 
 schedule set flags: --enable | --disable, --destination ID, --recipient KEY (repeat),
@@ -44,6 +45,8 @@ func runControlPlaneDR(prog, sub string, args []string, stdout, stderr io.Writer
 		return runDRRun(prog, "run-now", args, stdout, stderr, lookupEnv)
 	case "escrow":
 		return runDREscrow(prog, args, stdout, stderr, lookupEnv)
+	case "move":
+		return runControlPlaneMove(prog, args, stdout, stderr, lookupEnv)
 	case "restore-plan":
 		return runDRRestorePlan(prog, args, stdout, stderr, lookupEnv)
 	}
