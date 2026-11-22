@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { useGitBranches } from '../queries/gitBranches'
 import { useAutoDetectFramework } from '../hooks/useAutoDetectFramework'
+import { usePersistedFlag } from '../hooks/usePersistedFlag'
 import type { DetectFrameworkResult } from '../queries/buildDetect'
 import { gitHostIconName } from '../lib/gitHost'
 import { BrandIcon } from './BrandIcon'
@@ -73,7 +74,7 @@ export function GitBuildSourceFields({
   const [loadedRepoUrl, setLoadedRepoUrl] = useState<string | null>(null)
   // Image name / Dockerfile path are overrides most first-time users
   // never need to touch, so they start collapsed. See the toggle below.
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [showAdvanced, setShowAdvanced] = usePersistedFlag('lr.fold.gitBuild')
   const branchesQuery = useGitBranches(loadedRepoUrl)
   const branches = branchesQuery.data ?? []
   const hostIcon = gitHostIconName(watch('repoUrl'))

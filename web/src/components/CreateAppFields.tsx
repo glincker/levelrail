@@ -1,5 +1,5 @@
 import { NewAppPreflight } from './PreflightPanel'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Controller } from 'react-hook-form'
 import { z } from 'zod'
@@ -30,6 +30,7 @@ import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { getProjectScope } from '../lib/projectScope'
 import { useFormDraft } from '../hooks/useFormDraft'
+import { usePersistedFlag } from '../hooks/usePersistedFlag'
 import { useAppForm } from '../hooks/useAppForm'
 import {
   HEALTH_CHECK_DEFAULT_PATH,
@@ -209,11 +210,9 @@ export function CreateAppFields({
   const projectList = useProjectListOptional()
   const projects = projectList.data ?? []
   // Strategy/replicas/node/project are real fields but not ones a
-  // first-time deploy needs to touch, so they start collapsed. Not reset
-  // on close: the wizard's own step-2 branch unmounts this component
-  // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
-  // fresh open already gets a fresh useState(false) here.
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  // first-time deploy needs to touch, so they start collapsed. The open
+  // state is remembered per browser so a power user sets it once.
+  const [showAdvanced, setShowAdvanced] = usePersistedFlag('lr.fold.createApp')
   // With several nodes the choice matters, so it is not hidden.
   const multiNode = nodes.length > 1
   const form = useAppForm<CreateAppFormInput, CreateAppFormOutput>(

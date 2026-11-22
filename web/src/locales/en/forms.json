@@ -13,6 +13,21 @@
     "submit": "Create form",
     "submitting": "Creating"
   },
+  "recipes": {
+    "title": "Start from a recipe (optional)",
+    "contact": {
+      "title": "Contact form to email",
+      "body": "Name, email and message. Notifies your email channel."
+    },
+    "newsletter": {
+      "title": "Newsletter signup",
+      "body": "One email field. Export the list as CSV."
+    },
+    "feedback": {
+      "title": "Feedback to Slack",
+      "body": "A message and optional email. Notifies your Slack channel."
+    }
+  },
   "empty": {
     "title": "No forms yet",
     "description": "Create a form, design its fields, paste the snippet into your site, and submissions land here.",

@@ -21,6 +21,15 @@
     "common:confirmDialog.impactLead",
     "common:confirmDialog.impactVolumes_one",
     "common:confirmDialog.impactVolumes_other",
+    "forms:recipes.contact.body",
+    "forms:recipes.contact.title",
+    "forms:recipes.feedback.body",
+    "forms:recipes.feedback.title",
+    "forms:recipes.newsletter.body",
+    "forms:recipes.newsletter.title",
+    "forms:recipes.title",
+    "gitSource:network.hideMore",
+    "gitSource:network.showMore",
     "pagesSites:dashDrop.prompt"
   ],
   "knownIssues": []

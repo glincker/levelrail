@@ -143,6 +143,8 @@
   },
   "network": {
     "networking": "Networking",
+    "showMore": "More options",
+    "hideMore": "Fewer options",
     "port": "Port",
     "portPlaceholder": "e.g. 3000",
     "portHint": "The port your app listens on inside its container, e.g. 3000 for a typical Next.js app.",
