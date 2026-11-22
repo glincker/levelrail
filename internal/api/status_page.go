@@ -117,10 +117,11 @@ func (rt *Router) RunStatusPageSampler(ctx context.Context) error {
 type statusMonitorSource struct{ rt *Router }
 
 func (s statusMonitorSource) MonitorState(_ context.Context, id string) string {
-	if s.rt.monitors == nil {
+	svc := s.rt.monitorSvc()
+	if svc == nil {
 		return ""
 	}
-	return s.rt.monitors.State(id)
+	return svc.State(id)
 }
 
 type statusAppSource struct{ rt *Router }
@@ -323,10 +324,11 @@ func (rt *Router) validateStatusComponent(ctx context.Context, req *statusCompon
 			return "target must be an http or https URL without credentials"
 		}
 	case statuspage.KindMonitor:
-		if rt.monitors == nil {
-			return "monitors are not enabled (APP_MONITORS_ENABLED)"
+		svc := rt.monitorSvc()
+		if svc == nil {
+			return "monitors are not enabled (turn them on in Settings, Runtime)"
 		}
-		if _, err := rt.monitors.Get(ctx, req.Target); err != nil {
+		if _, err := svc.Get(ctx, req.Target); err != nil {
 			return "unknown monitor"
 		}
 	default:

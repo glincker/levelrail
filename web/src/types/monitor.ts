@@ -3,7 +3,7 @@ export interface MonitorStatusRange {
   max: number
 }
 
-export type MonitorKind = 'http' | 'tcp' | 'heartbeat' | 'tls'
+export type MonitorKind = 'http' | 'tcp' | 'heartbeat' | 'tls' | 'dns' | 'ping'
 
 export interface Monitor {
   id: string

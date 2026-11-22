@@ -28,6 +28,8 @@
     "tcp": "TCP",
     "heartbeat": "Cron-Heartbeat",
     "tls": "TLS-Zertifikat",
+    "dns": "DNS-Abfrage",
+    "ping": "Ping (ICMP)",
     "grace": "Toleranz (s)",
     "graceHint": "Zusätzliche Wartezeit nach dem Intervall, bevor der Job als verspätet gilt. Leer verwendet den Serverstandard.",
     "warnDays": "Warnung (Tage)",

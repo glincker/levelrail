@@ -25,17 +25,29 @@ type MonitorService interface {
 	Results(ctx context.Context, id string, window time.Duration, limit int) (monitor.History, error)
 }
 
-// SetMonitors enables the monitor routes. Without it they answer 404.
-func (rt *Router) SetMonitors(s MonitorService) { rt.monitors = s }
+// SetMonitors enables the monitor routes, or disables them again with nil, so the engine can be
+// started and stopped from a runtime setting. Without a service they answer 404.
+func (rt *Router) SetMonitors(s MonitorService) {
+	rt.monitorsMu.Lock()
+	rt.monitors = s
+	rt.monitorsMu.Unlock()
+}
+
+// monitorSvc returns the current service or nil; handlers take one snapshot per request.
+func (rt *Router) monitorSvc() MonitorService {
+	rt.monitorsMu.RLock()
+	defer rt.monitorsMu.RUnlock()
+	return rt.monitors
+}
 
 func monitorsResource(*http.Request) string { return "monitors" }
 
-func (rt *Router) monitorsReady(w http.ResponseWriter) bool {
-	if rt.monitors == nil {
+func (rt *Router) monitorsReady(w http.ResponseWriter) MonitorService {
+	svc := rt.monitorSvc()
+	if svc == nil {
 		writeError(w, http.StatusNotFound, "not found")
-		return false
 	}
-	return true
+	return svc
 }
 
 type monitorRequest struct {
@@ -154,10 +166,11 @@ func (rt *Router) monitorError(w http.ResponseWriter, op string, err error) {
 }
 
 func (rt *Router) handleListMonitors(w http.ResponseWriter, r *http.Request) {
-	if !rt.monitorsReady(w) {
+	svc := rt.monitorsReady(w)
+	if svc == nil {
 		return
 	}
-	list, err := rt.monitors.List(r.Context())
+	list, err := svc.List(r.Context())
 	if err != nil {
 		rt.monitorError(w, "list monitors", err)
 		return
@@ -165,7 +178,7 @@ func (rt *Router) handleListMonitors(w http.ResponseWriter, r *http.Request) {
 	out := make([]monitorResource, 0, len(list))
 	for _, m := range list {
 		res := toMonitorResource(m)
-		st := rt.monitors.Status(m.ID)
+		st := svc.Status(m.ID)
 		res.State, res.FailStreak, res.SuccessStreak = st.State, st.FailStreak, st.SuccessStreak
 		out = append(out, res)
 	}
@@ -173,7 +186,8 @@ func (rt *Router) handleListMonitors(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
-	if !rt.monitorsReady(w) {
+	svc := rt.monitorsReady(w)
+	if svc == nil {
 		return
 	}
 	var req monitorRequest
@@ -188,7 +202,7 @@ func (rt *Router) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
 			FollowRedirects: req.FollowRedirects, Host: req.Host, Port: req.Port,
 			StatusLink: req.StatusLink, LinkConfirmFailures: req.LinkConfirmFailures, LinkRecoverySeconds: req.LinkRecoverySeconds,
 			GraceSeconds: req.GraceSeconds, WarnDays: req.WarnDays, CritDays: req.CritDays}}
-	created, err := rt.monitors.Create(r.Context(), monitor.CreateInput{Monitor: m, Headers: req.Headers})
+	created, err := svc.Create(r.Context(), monitor.CreateInput{Monitor: m, Headers: req.Headers})
 	if err != nil {
 		rt.monitorError(w, "create monitor", err)
 		return
@@ -197,7 +211,8 @@ func (rt *Router) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) handleUpdateMonitorLink(w http.ResponseWriter, r *http.Request) {
-	if !rt.monitorsReady(w) {
+	svc := rt.monitorsReady(w)
+	if svc == nil {
 		return
 	}
 	var req monitorLinkRequest
@@ -213,11 +228,11 @@ func (rt *Router) handleUpdateMonitorLink(w http.ResponseWriter, r *http.Request
 	var m monitor.Monitor
 	var err error
 	if req.StatusLink != nil {
-		m, err = rt.monitors.SetStatusLink(r.Context(), id, monitor.StatusLink{Enabled: *req.StatusLink,
+		m, err = svc.SetStatusLink(r.Context(), id, monitor.StatusLink{Enabled: *req.StatusLink,
 			ConfirmFailures: req.LinkConfirmFailures, RecoverySeconds: req.LinkRecoverySeconds})
 	}
 	if err == nil && req.Enabled != nil {
-		m, err = rt.monitors.SetEnabled(r.Context(), id, *req.Enabled)
+		m, err = svc.SetEnabled(r.Context(), id, *req.Enabled)
 	}
 	if err != nil {
 		rt.monitorError(w, "update monitor", err)
@@ -227,10 +242,11 @@ func (rt *Router) handleUpdateMonitorLink(w http.ResponseWriter, r *http.Request
 }
 
 func (rt *Router) handleDeleteMonitor(w http.ResponseWriter, r *http.Request) {
-	if !rt.monitorsReady(w) {
+	svc := rt.monitorsReady(w)
+	if svc == nil {
 		return
 	}
-	if err := rt.monitors.Delete(r.Context(), r.PathValue("id")); err != nil {
+	if err := svc.Delete(r.Context(), r.PathValue("id")); err != nil {
 		rt.monitorError(w, "delete monitor", err)
 		return
 	}
@@ -238,7 +254,8 @@ func (rt *Router) handleDeleteMonitor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) handleMonitorResults(w http.ResponseWriter, r *http.Request) {
-	if !rt.monitorsReady(w) {
+	svc := rt.monitorsReady(w)
+	if svc == nil {
 		return
 	}
 	var window time.Duration
@@ -260,7 +277,7 @@ func (rt *Router) handleMonitorResults(w http.ResponseWriter, r *http.Request) {
 		limit = n
 	}
 	id := r.PathValue("id")
-	h, err := rt.monitors.Results(r.Context(), id, window, limit)
+	h, err := svc.Results(r.Context(), id, window, limit)
 	if err != nil {
 		rt.monitorError(w, "monitor results", err)
 		return

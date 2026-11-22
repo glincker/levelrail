@@ -28,6 +28,8 @@
     "tcp": "TCP",
     "heartbeat": "Cron 心跳",
     "tls": "TLS 证书",
+    "dns": "DNS 查询",
+    "ping": "Ping (ICMP)",
     "grace": "宽限（秒）",
     "graceHint": "间隔之后额外等待的时间，超过后任务才算迟到。留空则使用服务器默认值。",
     "warnDays": "警告（天）",

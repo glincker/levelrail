@@ -28,6 +28,8 @@
     "tcp": "TCP",
     "heartbeat": "Cron heartbeat",
     "tls": "TLS certificate",
+    "dns": "DNS lookup",
+    "ping": "Ping (ICMP)",
     "grace": "Grace (s)",
     "graceHint": "Extra wait after the interval before the job counts as late. Blank uses the server default.",
     "warnDays": "Warn (days)",

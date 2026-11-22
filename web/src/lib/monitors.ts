@@ -33,6 +33,7 @@ export function uptimePercent(results?: MonitorResults): number | undefined {
 
 export function monitorTarget(m: Monitor): string {
   if (m.kind === 'heartbeat') return ''
+  if (m.kind === 'dns' || m.kind === 'ping') return m.host ?? ''
   if (m.kind === 'tcp' || m.kind === 'tls')
     return `${m.host ?? ''}:${m.port ?? ''}`
   return m.url ?? ''

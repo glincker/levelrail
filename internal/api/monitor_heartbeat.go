@@ -20,10 +20,11 @@ type MonitorHeartbeats interface {
 }
 
 func (rt *Router) heartbeats() (MonitorHeartbeats, bool) {
-	if rt.monitors == nil {
+	svc := rt.monitorSvc()
+	if svc == nil {
 		return nil, false
 	}
-	h, ok := rt.monitors.(MonitorHeartbeats)
+	h, ok := svc.(MonitorHeartbeats)
 	return h, ok
 }
 
@@ -87,7 +88,7 @@ func retryAfterSeconds(d time.Duration) string {
 }
 
 func (rt *Router) handleRotateHeartbeat(w http.ResponseWriter, r *http.Request) {
-	if !rt.monitorsReady(w) {
+	if rt.monitorsReady(w) == nil {
 		return
 	}
 	h, ok := rt.heartbeats()

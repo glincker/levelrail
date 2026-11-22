@@ -177,7 +177,8 @@ func (c Config) MinInterval(kind string) time.Duration {
 	switch kind {
 	case KindHTTP:
 		return c.MinIntervalHTTP
-	case KindTCP:
+	case KindTCP, KindDNS, KindPing:
+		// dns and ping share the tcp floor so no new tunable is needed.
 		return c.MinIntervalTCP
 	case KindHeartbeat:
 		return c.MinIntervalHeartbeat

@@ -32,6 +32,8 @@ const (
 	ReasonCertExpired   = "cert_expired"
 	ReasonCertWarn      = "cert_expiring"
 	ReasonCertCritical  = "cert_expiring_critical"
+	ReasonNoAnswer      = "no_answer"
+	ReasonNoReply       = "no_reply"
 )
 
 // certVerdict reports whether a reason is a settled certificate finding rather than a flaky sample.
@@ -97,6 +99,10 @@ func (c *Checker) Check(ctx context.Context, m Monitor, headers map[string]strin
 		c.checkTCP(ctx, m, &res)
 	case KindTLS:
 		c.checkTLS(ctx, m, &res)
+	case KindDNS:
+		c.checkDNS(ctx, m, &res)
+	case KindPing:
+		c.checkPing(ctx, m, &res)
 	default:
 		c.checkHTTP(ctx, m, headers, &res)
 	}

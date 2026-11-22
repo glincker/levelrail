@@ -19,6 +19,10 @@ const (
 	KindHeartbeat = "heartbeat"
 	// KindTLS watches the certificate expiry of a host and port.
 	KindTLS = "tls"
+	// KindDNS resolves a name and fails when it returns no address.
+	KindDNS = "dns"
+	// KindPing sends an ICMP echo to a host and waits for the reply.
+	KindPing = "ping"
 )
 
 // Location labels results from this control plane, the only vantage point so far.
@@ -137,8 +141,11 @@ func Validate(m Monitor, cfg Config) error {
 	}
 	floor := cfg.MinInterval(m.Kind)
 	envName := "APP_MONITOR_MIN_INTERVAL_" + strings.ToUpper(m.Kind)
+	if m.Kind == KindDNS || m.Kind == KindPing {
+		envName = "APP_MONITOR_MIN_INTERVAL_TCP"
+	}
 	if floor == 0 {
-		return bad("kind must be http, tcp, heartbeat or tls")
+		return bad("kind must be http, tcp, heartbeat, tls, dns or ping")
 	}
 	if m.Interval < floor {
 		return bad("interval %s is below the minimum %s (%s)", m.Interval, floor, envName)
@@ -163,6 +170,8 @@ func Validate(m Monitor, cfg Config) error {
 		return validateTCP(m.Spec, bad)
 	case KindTLS:
 		return validateTLS(m.Spec, bad)
+	case KindDNS, KindPing:
+		return validateHostOnly(m.Spec, bad)
 	}
 	return validateHTTP(m.Spec, cfg, bad)
 }
@@ -180,6 +189,14 @@ func validateTLS(s Spec, bad func(string, ...any) error) error {
 	}
 	if s.WarnDays < 0 || s.CritDays < 0 || (s.WarnDays > 0 && s.CritDays > 0 && s.CritDays >= s.WarnDays) {
 		return bad("critical days must be below warning days, and neither negative")
+	}
+	return nil
+}
+
+// validateHostOnly covers the dns and ping kinds, which probe a name and have no port.
+func validateHostOnly(s Spec, bad func(string, ...any) error) error {
+	if s.Host == "" || strings.ContainsAny(s.Host, " /@:") {
+		return bad("host is required and must be a name or address without a port")
 	}
 	return nil
 }
