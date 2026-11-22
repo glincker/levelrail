@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -252,6 +253,11 @@ func requireArgs(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argsLabel s
 // labeled argLabel in the usage error a subcommand like "channels
 // delete <id>" or "apps log-drain get <name>" prints when it's missing.
 func requireOneArg(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argLabel string) (string, bool) {
+	if wantsAppArg(argLabel) && fs.NArg() == 0 {
+		if name, _ := linkedAppName(); name != "" {
+			return name, true
+		}
+	}
 	rest, ok := requireArgs(fs, stderr, prog, cmdLabel, "exactly one "+argLabel, 1)
 	if !ok {
 		return "", false
@@ -274,6 +280,8 @@ type outputFlags struct {
 
 // ok is false when parsing, --help, or a bad --output already wrote to stderr; return exitCode unchanged.
 func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog string, stderr io.Writer) (tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	args, jsonFields := extractJSONFields(fs, args)
+	args, dryRunRequested = extractDryRun(fs, args)
 	if err := parseQuietOnError(fs, reorderArgsFlagsFirst(fs, args), stderr); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return "", "", "", false, outputFlags{}, exitOK, false
@@ -285,8 +293,63 @@ func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog stri
 		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
 		return "", "", "", false, outputFlags{}, exitValidation, false
 	}
-	return *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut, outputFlags{format, *flags.query}, 0, true
+	query := *flags.query
+	if jsonFields != "" && query == "" {
+		query = fieldsQueryPrefix + jsonFields
+		format = outputJSON
+	}
+	return *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut || jsonFields != "", outputFlags{format, query}, 0, true
 }
+
+// dryRunRequested is set by the shared --dry-run flag and read when the API client is built.
+var dryRunRequested bool
+
+// extractDryRun registers --dry-run once for every verb built on parseAPIFlags. A verb
+// that declares its own --dry-run keeps its own meaning, so the flag is left in args.
+func extractDryRun(fs *flag.FlagSet, args []string) ([]string, bool) {
+	if fs.Lookup("dry-run") != nil {
+		return args, false
+	}
+	out := make([]string, 0, len(args))
+	on := false
+	for _, a := range args {
+		if a == "--dry-run" || a == "-dry-run" {
+			on = true
+			continue
+		}
+		out = append(out, a)
+	}
+	return out, on
+}
+
+// extractJSONFields turns "--json name,status" or "--json=name" into a field list and
+// leaves a bare --json alone. The space form needs a comma so "--json myapp" stays an argument.
+func extractJSONFields(fs *flag.FlagSet, args []string) ([]string, string) {
+	if fs.Lookup("json") == nil {
+		return args, ""
+	}
+	fields := ""
+	out := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--":
+			return append(out, args[i:]...), fields
+		case strings.HasPrefix(a, "--json=") && jsonFieldListRE.MatchString(strings.TrimPrefix(a, "--json=")):
+			fields = strings.TrimPrefix(a, "--json=")
+		case (a == "--json" || a == "-json") && i+1 < len(args) && strings.Contains(args[i+1], ",") && jsonFieldListRE.MatchString(args[i+1]):
+			fields = args[i+1]
+			i++
+		default:
+			out = append(out, a)
+			continue
+		}
+		out = append(out, "--json")
+	}
+	return out, fields
+}
+
+var jsonFieldListRE = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(,[A-Za-z_][A-Za-z0-9_]*)*$`)
 
 // Same contract as parseAPIFlags: ok false means the caller returns exitCode unchanged.
 func parseSessionFlags(fs *flag.FlagSet, args []string, jsonOutP *bool, outputFlagP, queryFlagP *string, prog string, stderr io.Writer) (jsonOut bool, of outputFlags, exitCode int, ok bool) {

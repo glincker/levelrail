@@ -11,6 +11,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/jmespath/go-jmespath"
 )
 
@@ -30,6 +31,10 @@ const (
 
 // errors.As unwraps wrapped errors, so classification survives any added context.
 func exitCodeForError(err error) int {
+	var dry *apiclient.DryRunError
+	if errors.As(err, &dry) {
+		return exitOK
+	}
 	var apiErr *apiError
 	if errors.As(err, &apiErr) {
 		return exitAPIError
@@ -121,6 +126,13 @@ func toGenericJSON(v any) (any, error) {
 // feature: lets a caller project or filter a response (e.g.
 // "[?status=='running'].name") without piping through jq.
 func applyQuery(query string, v any) (any, error) {
+	if fields, ok := strings.CutPrefix(query, fieldsQueryPrefix); ok {
+		generic, err := toGenericJSON(v)
+		if err != nil {
+			return nil, err
+		}
+		return pickFields(generic, strings.Split(fields, ",")), nil
+	}
 	generic, err := toGenericJSON(v)
 	if err != nil {
 		return nil, err
@@ -972,4 +984,27 @@ func formatPublishedPorts(ports []publishedPort) string {
 		parts = append(parts, fmt.Sprintf("%d/%s", p.HostPort, proto))
 	}
 	return strings.Join(parts, ", ")
+}
+
+// fieldsQueryPrefix marks a query that came from --json name,status rather than JMESPath.
+const fieldsQueryPrefix = "fields:"
+
+// pickFields keeps only the named top-level keys of an object, or of each object in a list.
+func pickFields(v any, fields []string) any {
+	switch t := v.(type) {
+	case []any:
+		out := make([]any, len(t))
+		for i, e := range t {
+			out[i] = pickFields(e, fields)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(fields))
+		for _, f := range fields {
+			out[f] = t[f]
+		}
+		return out
+	default:
+		return v
+	}
 }

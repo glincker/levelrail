@@ -78,10 +78,16 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	case "help":
 		if len(args) > 1 && (args[1] == "advanced" || args[1] == "all") {
 			_, _ = fmt.Fprint(stdout, rootUsage(prog))
+		} else if len(args) > 1 {
+			return runCommandSearch(prog, args[1:], stdout)
 		} else {
 			_, _ = fmt.Fprint(stdout, simpleUsage(prog))
 		}
 		return exitOK
+	case "link":
+		return runLink(prog, args[1:], stdout, stderr, lookupEnv)
+	case "commands":
+		return runCommands(prog, args[1:], stdout, stderr, lookupEnv)
 	case "up":
 		return runUp(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "dev":
@@ -643,6 +649,8 @@ Usage:
   %[1]s import compose-ref [dir] [--write DIR] [--json]   offline: emit documents for the image services of compose files, see "%[1]s import compose-ref -h"
   %[1]s import deploy-yml|portainer|railway FILE [--write DIR] [--json]   offline: emit documents from a deploy.yml, a Portainer stack or a railway.json/railway.toml, see "%[1]s import railway -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
+  %[1]s link [<app>]                                      remember an app for this directory, so deploy, logs and env need no app name
+  %[1]s commands search <words>                           find the right command, also "%[1]s help <words>"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s fields [RESOURCE] [flags]                         list form field descriptors (types, flags, visibility) of a resource

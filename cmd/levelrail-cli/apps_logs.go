@@ -59,13 +59,11 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		}
 		to = until
 	}
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps logs requires exactly one app name\n\n", prog)
-		fs.Usage()
+	appArg, ok := requireOneArg(fs, stderr, prog, "apps logs", "app name")
+	if !ok {
 		return exitUsage
 	}
-	name := serviceAppName(rest[0], service)
+	name := serviceAppName(appArg, service)
 
 	// A terminal with no search flags wants the live tail; pipes and --json keep the stored-entries output.
 	searching := since != "" || from != "" || to != "" || until != "" || outFile != "" || query != "" || tail != 0 || of.Query != ""

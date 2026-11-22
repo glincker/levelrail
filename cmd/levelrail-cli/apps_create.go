@@ -1010,6 +1010,15 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 
 // reportError writes err to stderr, and to stdout as a JSON error object when jsonOut is set. Writers are passed in so it is testable.
 func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
+	var dry *apiclient.DryRunError
+	if errors.As(err, &dry) {
+		if jsonOut {
+			_ = writeJSONValue(stdout, map[string]any{"dry_run": true, "method": dry.Method, "path": dry.Path})
+			return exitOK
+		}
+		_, _ = fmt.Fprintln(stderr, dry)
+		return exitOK
+	}
 	_, _ = fmt.Fprintln(stderr, err)
 	var apiErr *apiError
 	if errors.As(err, &apiErr) {

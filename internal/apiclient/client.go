@@ -50,6 +50,7 @@ type Client struct {
 	rejectedFix string
 	retry       RetryPolicy
 	inProcess   bool
+	dryRun      bool
 	sleep       func(context.Context, time.Duration) error
 }
 
@@ -71,6 +72,22 @@ func WithUserAgent(userAgent string) Option {
 // in-process caller. It skips server pinning and the process-wide scope headers.
 func WithTransport(rt http.RoundTripper) Option {
 	return func(c *Client) { c.hc.Transport = rt; c.inProcess = true }
+}
+
+// DryRunError is returned instead of sending a mutating request when the
+// client was built WithDryRun. Callers print it and treat it as success.
+type DryRunError struct {
+	Method, Path string
+}
+
+func (e *DryRunError) Error() string {
+	return fmt.Sprintf("dry-run: would %s %s (nothing was sent)", e.Method, e.Path)
+}
+
+// WithDryRun makes every non-read request return a DryRunError instead of
+// reaching the network; GET, HEAD and OPTIONS still go through.
+func WithDryRun() Option {
+	return func(c *Client) { c.dryRun = true }
 }
 
 // WithNoCredentialsFix replaces the message of a 401 answered to a request
@@ -144,6 +161,9 @@ func (c *Client) doHeaders(ctx context.Context, method, path string, body, out a
 }
 
 func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte, out any) (http.Header, error) {
+	if c.dryRun && method != http.MethodGet && method != http.MethodHead && method != http.MethodOptions {
+		return nil, &DryRunError{Method: method, Path: path}
+	}
 	var reqBody io.Reader
 	if payload != nil {
 		reqBody = bytes.NewReader(payload)

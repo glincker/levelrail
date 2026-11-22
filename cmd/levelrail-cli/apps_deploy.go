@@ -77,13 +77,10 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		return exitCode
 	}
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: %s requires exactly one app name\n\n", prog, cfg.cmdLabel)
-		fs.Usage()
+	name, ok := requireOneArg(fs, stderr, prog, cfg.cmdLabel, "app name")
+	if !ok {
 		return exitUsage
 	}
-	name := rest[0]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()

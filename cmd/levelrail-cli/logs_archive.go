@@ -38,6 +38,9 @@ Without --app, a policy or dump covers every app.
 }
 
 func runLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if name, _ := linkedAppName(); name != "" && (len(args) == 0 || (strings.HasPrefix(args[0], "-") && args[0] != "-h" && args[0] != "--help")) {
+		return runAppsLogs(prog, args, stdout, stderr, lookupEnv)
+	}
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, logsUsage(prog))
 		return exitUsage

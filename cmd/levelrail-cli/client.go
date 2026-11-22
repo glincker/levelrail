@@ -389,6 +389,9 @@ func NewClient(baseURL, token string, extra ...apiclient.Option) *Client {
 		defaultURLProbe.Do(func() { hintIfNotLevelrail(baseURL, http.DefaultTransport, os.Stderr) })
 	}
 	base := []apiclient.Option{apiclient.WithUserAgent("levelrail-cli/" + version.Version), apiclient.WithRetry(retryPolicyFromEnv(os.LookupEnv))}
+	if dryRunRequested {
+		base = append(base, apiclient.WithDryRun())
+	}
 	return apiclient.NewClient(baseURL, token, append(base, extra...)...)
 }
 

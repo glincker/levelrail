@@ -104,7 +104,7 @@ func sanitizeIdent(prog string) string {
 
 // runCompletion implements "completion <bash|zsh|fish>": prints a shell
 // completion script for prog to stdout.
-func runCompletion(prog string, args []string, stdout, stderr io.Writer, _ func(string) (string, bool)) int {
+func runCompletion(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, completionUsage(prog))
 		return exitUsage
@@ -114,6 +114,8 @@ func runCompletion(prog string, args []string, stdout, stderr io.Writer, _ func(
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, completionUsage(prog))
 		return exitOK
+	case "install":
+		return runCompletionInstall(prog, args[1:], stdout, stderr, lookupEnv)
 	case "bash":
 		_, _ = fmt.Fprint(stdout, bashCompletionScript(prog))
 		return exitOK
@@ -135,6 +137,7 @@ func completionUsage(prog string) string {
   %[1]s completion bash    print a bash completion script
   %[1]s completion zsh     print a zsh completion script
   %[1]s completion fish    print a fish completion script
+  %[1]s completion install [--shell bash|zsh|fish]   write the script and print the line to add
 
 Completes command and subcommand names for the CLI's full command tree
 (apps, databases, channels, and so on), plus the global flags (%[2]s).

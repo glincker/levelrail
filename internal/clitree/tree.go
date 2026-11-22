@@ -11,6 +11,8 @@ type Node struct {
 var Tree = map[string]*Node{
 	"deploy":         nil,
 	"docs":           nil,
+	"link":           nil,
+	"commands":       {Subs: map[string]*Node{"search": nil}},
 	"mcp":            {Subs: map[string]*Node{"add": nil}},
 	"up":             nil,
 	"open":           nil,
@@ -487,7 +489,7 @@ var Tree = map[string]*Node{
 	"stack":          {Subs: map[string]*Node{"templates": nil, "init": nil, "list": nil, "show": nil, "create": nil, "plan": nil, "apply": nil, "history": nil, "show-revision": nil, "diff": nil, "rollback": nil, "approve": nil, "reject": nil, "pin": nil, "unpin": nil, "unlock": nil, "delete": nil, "settings": nil, "drift": nil, "adopt-from-export": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}, "sync": {Subs: map[string]*Node{"status": nil, "set": nil, "refresh": nil, "webhook-secret": {Subs: map[string]*Node{"rotate": nil}}}}, "cloud-state": {Subs: map[string]*Node{"list": nil, "recover": nil}}}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
 	"import":         {Subs: map[string]*Node{"config": nil, "compose-ref": nil, "deploy-yml": nil, "portainer": nil, "railway": nil, "vercel": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "k8s": nil, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
-	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
+	"completion":     {Subs: map[string]*Node{"install": nil, "bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"heartbeat":     {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
