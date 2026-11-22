@@ -28,6 +28,20 @@ type PlacementSimulation struct {
 	Placed   []SimulatedPlacement `json:"placed"`
 	Unplaced int                  `json:"unplaced"`
 	Zones    []ZoneSummary        `json:"zones"`
+	// Nodes is the per node reserved versus used memory report.
+	Nodes []NodeReservation `json:"nodes,omitempty"`
+}
+
+// NodeReservation compares memory apps reserved on a node with what it uses.
+type NodeReservation struct {
+	NodeID              string `json:"node_id"`
+	Name                string `json:"name"`
+	CPUMilliReserved    int64  `json:"cpu_milli_reserved"`
+	CPUMilliCapacity    int64  `json:"cpu_milli_capacity,omitempty"`
+	MemoryReservedBytes int64  `json:"memory_reserved_bytes"`
+	MemoryCapacityBytes int64  `json:"memory_capacity_bytes,omitempty"`
+	MemoryUsedBytes     int64  `json:"memory_used_bytes,omitempty"`
+	MemoryStrandedBytes int64  `json:"memory_stranded_bytes"`
 }
 
 // FailureSimulation is the body of GET /api/v1/nodes/failure-simulation.

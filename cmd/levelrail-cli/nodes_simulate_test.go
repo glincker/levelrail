@@ -36,3 +36,14 @@ func TestRun_NodesFailure_NeedsOneTarget(t *testing.T) {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
 }
+
+func TestStrandedRowsAndErrorNextStep(t *testing.T) {
+	var b strings.Builder
+	strandedRows(&b, []apiclient.NodeReservation{{Name: "n1", MemoryReservedBytes: 2 << 30, MemoryUsedBytes: 1 << 30, MemoryStrandedBytes: 1 << 30}})
+	if !strings.Contains(b.String(), "STRANDED") || !strings.Contains(b.String(), "1.0 GiB") {
+		t.Errorf("rows = %q", b.String())
+	}
+	if errorNextStep(404) == "" || errorNextStep(401) == "" || errorNextStep(500) != "" {
+		t.Error("unexpected next steps")
+	}
+}

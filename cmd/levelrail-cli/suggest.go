@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"regexp"
 	"sort"
 	"strings"
@@ -209,4 +210,18 @@ func sameLetters(a, b string) bool {
 	sort.Slice(x, func(i, j int) bool { return x[i] < x[j] })
 	sort.Slice(y, func(i, j int) bool { return y[i] < y[j] })
 	return string(x) == string(y)
+}
+
+// errorNextStep is the one-line text-mode tail for the most common API
+// failures; empty when no generic advice fits.
+func errorNextStep(status int) string {
+	switch status {
+	case http.StatusUnauthorized:
+		return cliProg + " login, or pass --token"
+	case http.StatusNotFound:
+		return "check the name with the list verb, for example " + cliProg + " apps list"
+	case http.StatusUnprocessableEntity, http.StatusBadRequest:
+		return "fix the flagged input and retry, see the verb's --help"
+	}
+	return ""
 }

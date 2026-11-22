@@ -1033,6 +1033,9 @@ func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 		if apiErr.RequestID != "" {
 			_, _ = fmt.Fprintf(stderr, "request id: %s\n", apiErr.RequestID)
 		}
+		if next := errorNextStep(apiErr.StatusCode); next != "" && !jsonOut && apiErr.Fix == "" {
+			_, _ = fmt.Fprintf(stderr, "next: %s\n", next)
+		}
 	}
 	if jsonOut {
 		if jerr := writeJSONError(stdout, err); jerr != nil {
