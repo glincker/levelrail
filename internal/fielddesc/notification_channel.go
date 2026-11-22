@@ -28,6 +28,9 @@ func init() {
 	enabled := f("enabled", "enabled", TypeBool, false, nil, "", "channel delivery on or paused (CLI: --disabled creates it paused)")
 	enabled.Default, enabled.FormOnly = "true", true
 
+	tpl := f("message_template", "message_template", TypeText, false, nil, "message-template", "custom text for deploy and alert messages; variables {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}; empty keeps the default")
+	tpl.Placeholder = "{{app}} {{status}}: {{url}}"
+
 	Register(Resource{Name: NotificationChannel, Docs: Docs{File: "notification-channel-fields.md", Title: "Notification channel fields", Description: "Every field of a notification channel with its type, requirement, visibility rule and CLI flag."}, Fields: []Field{
 		kind,
 		ph(f("name", "name", TypeString, true, nil, "name", "display name for the channel"), "e.g. Team Slack", ""),
@@ -45,6 +48,7 @@ func init() {
 		ph(f("resend_from", "resend_from", TypeString, false, when("resend"), "resend-from", "Resend from address, defaults to onboarding@resend.dev"), "alerts@yourdomain.com", "https://resend.com/docs/dashboard/domains/introduction"),
 		ph(sec(f("opsgenie_api_key", "opsgenie_api_key", TypeString, true, when("opsgenie"), "opsgenie-api-key", "Opsgenie API Key (an alternative to notify-url)")), "00000000-0000-0000-0000-000000000000", "https://support.atlassian.com/opsgenie/docs/api-integration/"),
 		enabled,
+		tpl,
 		device,
 		expired,
 	}})

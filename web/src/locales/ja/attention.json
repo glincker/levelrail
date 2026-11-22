@@ -142,7 +142,9 @@
     "notifyDeviceLoginHint": "リンクのみを送信し、コードは送信しません。リンクからこのページを開けるように、ダッシュボードのURLをオンにしてください。",
     "notifyDeviceLoginExpired": "CLIログインが期限切れになったときに通知",
     "notifyDeviceLoginExpiredHint": "ログインリクエストが承認されないまま時間切れになったときに、リンクのみを送信し、コードは送信しません。",
-    "interactiveApprovalsWarning": "このチャンネルのメンバーは、デプロイをリクエストした本人を含め、誰でもチャットから保護されたデプロイを承認できます。オンにする、またはそのシークレットやWebhookを変更できるのは、ルートユーザーのみです。"
+    "interactiveApprovalsWarning": "このチャンネルのメンバーは、デプロイをリクエストした本人を含め、誰でもチャットから保護されたデプロイを承認できます。オンにする、またはそのシークレットやWebhookを変更できるのは、ルートユーザーのみです。",
+    "messageTemplate": "Message text",
+    "messageTemplateHint": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
   },
   "setup": {
     "title_other": "保留中のセットアップと強化({{count}})",

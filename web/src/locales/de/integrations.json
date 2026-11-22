@@ -256,6 +256,10 @@
       "notify_device_login_expired": {
         "label": "Hinweise zu abgelaufener Geräteanmeldung",
         "help": "Hinweis nur mit Link, wenn eine wartende CLI-Anmeldung ungenehmigt abläuft. Der Code wird nie mitgesendet."
+      },
+      "message_template": {
+        "label": "Message text",
+        "help": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
       }
     },
     "dnsProvider": {

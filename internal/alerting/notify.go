@@ -79,6 +79,12 @@ type Event struct {
 	// firing app-scoped events only. ChangesLink points at its dashboard page.
 	Changes     *changes.Result
 	ChangesLink string
+	// LogsLink opens the logs for the firing window; DeployLink the app's deploys when a deploy is among the changes.
+	LogsLink   string
+	DeployLink string
+
+	// CustomText is the rendered per channel message template; it replaces the default first lines.
+	CustomText string
 
 	// Headline replaces the default first line for flapping and grouped
 	// messages; GroupNotices lists the alerts folded into a grouped one.
@@ -200,6 +206,8 @@ type genericPayload struct {
 	LogNotice     string           `json:"log_notice,omitempty"`
 	RecentChanges []changes.Change `json:"recent_changes,omitempty"`
 	ChangesLink   string           `json:"changes_link,omitempty"`
+	LogsLink      string           `json:"logs_link,omitempty"`
+	DeployLink    string           `json:"deploy_link,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -221,6 +229,8 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		GroupCount:           ev.GroupCount,
 		Severity:             ev.Rule.Severity,
 		ChangesLink:          ev.ChangesLink,
+		LogsLink:             ev.LogsLink,
+		DeployLink:           ev.DeployLink,
 		SLONotice:            ev.SLONotice,
 		LogNotice:            ev.LogNotice,
 	}
@@ -646,15 +656,18 @@ func summaryTextCapped(ev Event, limit int) string {
 
 func changesSuffix(ev Event) string {
 	if ev.Changes == nil || ev.Resolved {
-		return ""
+		return linksSuffix(ev)
 	}
 	if block := changes.NotifyBlock(*ev.Changes, ev.ChangesLink); block != "" {
-		return "\n" + block
+		return "\n" + block + linksSuffix(ev)
 	}
-	return ""
+	return linksSuffix(ev)
 }
 
 func summaryBody(ev Event) string {
+	if ev.CustomText != "" {
+		return ev.CustomText
+	}
 	var b strings.Builder
 	switch {
 	case ev.Headline != "":

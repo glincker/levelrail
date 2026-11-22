@@ -266,6 +266,10 @@
       "notify_device_login_expired": {
         "label": "Оповещения об истекшем входе с устройства",
         "help": "Уведомление только со ссылкой, когда ожидающий вход через CLI истек без подтверждения. Код никогда не включается."
+      },
+      "message_template": {
+        "label": "Message text",
+        "help": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
       }
     },
     "dnsProvider": {

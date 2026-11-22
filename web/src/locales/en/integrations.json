@@ -253,6 +253,10 @@
         "label": "Device login alerts",
         "help": "Link-only notice when a CLI login is waiting for approval. The code is never included."
       },
+      "message_template": {
+        "label": "Message text",
+        "help": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
+      },
       "notify_device_login_expired": {
         "label": "Expired device login alerts",
         "help": "Link-only notice when a pending CLI login expires unapproved. The code is never included."

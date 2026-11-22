@@ -9,7 +9,7 @@ import (
 // Full replace: every field to keep must be passed again, as with registry-credentials update.
 func runChannelsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "channels update", "print the updated channel as JSON to stdout and nothing else", stderr)
-	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey string
+	var messageTemplate, name, kind, notifyURL, pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey string
 	var resendAPIKey, resendTo, resendFrom, opsgenieAPIKey string
 	var disabled, notifyDeviceLogin, notifyDeviceLoginExpired bool
 	fs.StringVar(&name, "name", "", "display name for the channel (required)")
@@ -24,6 +24,7 @@ func runChannelsUpdate(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&opsgenieAPIKey, "opsgenie-api-key", "", "Opsgenie API Key (--kind opsgenie only, an alternative to --notify-url)")
 	fs.BoolVar(&notifyDeviceLogin, "notify-device-login", false, "send a link-only notice here when a CLI login is waiting for approval (never includes the code)")
 	fs.BoolVar(&notifyDeviceLoginExpired, "notify-device-login-expired", false, "send a link-only notice here when a pending CLI login expires unapproved (never includes the code)")
+	fs.StringVar(&messageTemplate, "message-template", "", "custom text for deploy and alert messages with {{app}}, {{author}}, {{commit}}, {{url}} variables (empty keeps the default)")
 	fs.BoolVar(&disabled, "disabled", false, "leave the channel disabled (default: enabled)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsUpdateUsage(prog)) }
 
@@ -65,7 +66,7 @@ func runChannelsUpdate(prog string, args []string, stdout, stderr io.Writer, loo
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	updated, err := client.UpdateNotificationChannel(context.Background(), id, updateNotificationChannelRequest{
-		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled, NotifyDeviceLogin: notifyDeviceLogin, NotifyDeviceLoginExpired: notifyDeviceLoginExpired,
+		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled, NotifyDeviceLogin: notifyDeviceLogin, NotifyDeviceLoginExpired: notifyDeviceLoginExpired, MessageTemplate: messageTemplate,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update notification channel %q: %w", id, err))
@@ -105,6 +106,7 @@ Flags:
   --resend-to string                   Resend destination email address (--kind resend only, required with --resend-api-key)
   --resend-from string                 Resend from address (--kind resend only, optional, defaults to onboarding@resend.dev)
   --opsgenie-api-key string            Opsgenie API Key (--kind opsgenie only, an alternative to --notify-url)
+  --message-template string            custom text for deploy and alert messages with {{app}}, {{author}}, {{commit}}, {{url}} variables
   --notify-device-login                send a link-only notice here when a CLI login is waiting for approval (never the code)
   --notify-device-login-expired        send a link-only notice here when a pending CLI login expires unapproved (never the code)
   --disabled                           leave the channel disabled (default: enabled)

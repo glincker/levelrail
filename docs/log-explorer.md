@@ -57,6 +57,8 @@ API: `GET /api/v1/apps/{name}/logs/signatures?from&to&level=error&baseline=true`
 
 The deploy page and the "what changed" timeline show "3 new error types since this deploy" for the newest deploy that took effect: signatures that appeared after it and were absent in the same span before it. The same note is attached to alert notifications that list recent changes.
 
+Alert notifications for an app carry a "Logs for this window" link that opens the Search tab for the span the alert covers, and a "Nearest deploy" link when a deploy is among the recent changes. The generic webhook payload has `logs_link` and `deploy_link`.
+
 ## Log alert rules
 
 Two rule kinds are evaluated from the local log store, once a minute by default:

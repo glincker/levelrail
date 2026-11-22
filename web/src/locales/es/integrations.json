@@ -256,6 +256,10 @@
       "notify_device_login_expired": {
         "label": "Avisos de inicio de sesión de dispositivo caducado",
         "help": "Aviso solo con enlace cuando un inicio de sesión pendiente de la CLI caduca sin aprobación. El código nunca se incluye."
+      },
+      "message_template": {
+        "label": "Message text",
+        "help": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
       }
     },
     "dnsProvider": {

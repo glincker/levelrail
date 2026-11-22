@@ -68,6 +68,9 @@ func releaseNotesPreview(k NotifyKind) bool {
 
 // deployText is summaryDeployText plus release notes sized for the channel.
 func deployText(k NotifyKind, ev DeployOutcome) string {
+	if ev.CustomText != "" {
+		return ev.CustomText
+	}
 	msg := summaryDeployText(ev)
 	if !ev.Succeeded || ev.ReleaseNotes == "" {
 		return msg

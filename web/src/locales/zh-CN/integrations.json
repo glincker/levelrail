@@ -251,6 +251,10 @@
       "notify_device_login_expired": {
         "label": "设备登录过期提醒",
         "help": "待批准的 CLI 登录未经批准即过期时发送仅含链接的提醒，不包含验证码。"
+      },
+      "message_template": {
+        "label": "Message text",
+        "help": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
       }
     },
     "dnsProvider": {

@@ -142,7 +142,9 @@
     "notifyDeviceLoginHint": "只发送链接,绝不发送验证码。请开启仪表盘 URL,以便链接能打开此页面。",
     "notifyDeviceLoginExpired": "CLI 登录过期时通知",
     "notifyDeviceLoginExpiredHint": "登录请求超时未获批时,只发送链接,绝不发送验证码。",
-    "interactiveApprovalsWarning": "此渠道中的任何人,包括请求部署的人,都可以在聊天中批准受保护的部署。只有 root 用户可以开启此功能或更改其密钥和 webhook。"
+    "interactiveApprovalsWarning": "此渠道中的任何人,包括请求部署的人,都可以在聊天中批准受保护的部署。只有 root 用户可以开启此功能或更改其密钥和 webhook。",
+    "messageTemplate": "Message text",
+    "messageTemplateHint": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
   },
   "setup": {
     "title_other": "待处理的设置与加固({{count}})",

@@ -260,6 +260,10 @@
       "notify_device_login_expired": {
         "label": "Avisos de login por dispositivo expirado",
         "help": "Aviso só com link quando um login pendente da CLI expira sem aprovação. O código nunca é incluído."
+      },
+      "message_template": {
+        "label": "Message text",
+        "help": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
       }
     },
     "dnsProvider": {

@@ -35,8 +35,10 @@ type NotificationChannel struct {
 	NotifyDeviceLoginExpired bool
 	// ProjectID limits the channel to apps of one project; empty serves every app.
 	ProjectID string
-	CreatedAt string
-	UpdatedAt string
+	// MessageTemplate replaces the text of deploy and alert messages on text channels; empty keeps the default.
+	MessageTemplate string
+	CreatedAt       string
+	UpdatedAt       string
 }
 
 // ErrNotificationChannelNotFound is returned by GetNotificationChannel
@@ -70,9 +72,9 @@ func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO notification_channels (
 			id, name, kind, notify_url, enabled,
-			interactive_approvals, interactive_secret, notify_device_login, notify_device_login_expired, project_id, created_at, updated_at
+			interactive_approvals, interactive_secret, notify_device_login, notify_device_login_expired, project_id, message_template, created_at, updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -83,9 +85,10 @@ func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel
 			notify_device_login = excluded.notify_device_login,
 			notify_device_login_expired = excluded.notify_device_login_expired,
 			project_id = excluded.project_id,
+			message_template = excluded.message_template,
 			updated_at = excluded.updated_at
 	`, c.ID, c.Name, string(c.Kind), c.NotifyURL, boolToInt(c.Enabled),
-		boolToInt(c.InteractiveApprovals), c.InteractiveSecret, boolToInt(c.NotifyDeviceLogin), boolToInt(c.NotifyDeviceLoginExpired), c.ProjectID, now, now)
+		boolToInt(c.InteractiveApprovals), c.InteractiveSecret, boolToInt(c.NotifyDeviceLogin), boolToInt(c.NotifyDeviceLoginExpired), c.ProjectID, c.MessageTemplate, now, now)
 	if err != nil {
 		return fmt.Errorf("alerting: save notification channel %q: %w", c.ID, err)
 	}
@@ -154,7 +157,7 @@ func (db *DB) DeleteNotificationChannel(ctx context.Context, id string) error {
 
 const notificationChannelSelectColumns = `
 	SELECT id, name, kind, notify_url, enabled,
-		interactive_approvals, interactive_secret, notify_device_login, notify_device_login_expired, project_id, created_at, updated_at
+		interactive_approvals, interactive_secret, notify_device_login, notify_device_login_expired, project_id, message_template, created_at, updated_at
 	FROM notification_channels`
 
 func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel, error) {
@@ -167,7 +170,7 @@ func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel
 		deviceExpiredInt int
 	)
 	if err := scan(&c.ID, &c.Name, &kind, &c.NotifyURL, &enabledInt,
-		&interactiveInt, &c.InteractiveSecret, &deviceLoginInt, &deviceExpiredInt, &c.ProjectID, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		&interactiveInt, &c.InteractiveSecret, &deviceLoginInt, &deviceExpiredInt, &c.ProjectID, &c.MessageTemplate, &c.CreatedAt, &c.UpdatedAt); err != nil {
 		return nil, err
 	}
 	c.Kind = NotifyKind(kind)
@@ -314,4 +317,16 @@ func (d *DeployDispatcher) SendNotice(ctx context.Context, c NotificationChannel
 		return err
 	}
 	return sendTextNotification(ctx, d.client, d.sender, d.pushSender, revealed.Kind, revealed.NotifyURL, text)
+}
+
+// ChannelMessageTemplate returns the channel's custom message text, empty when none is set or the channel is gone.
+func (db *DB) ChannelMessageTemplate(ctx context.Context, channelID string) string {
+	if channelID == "" {
+		return ""
+	}
+	var tpl string
+	if err := db.QueryRowContext(ctx, `SELECT message_template FROM notification_channels WHERE id = ?`, channelID).Scan(&tpl); err != nil {
+		return ""
+	}
+	return tpl
 }

@@ -53,7 +53,7 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	created, err := client.CreateNotificationChannel(context.Background(), createNotificationChannelRequest{
-		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled, NotifyDeviceLogin: flagOn("notify-device-login"), NotifyDeviceLoginExpired: flagOn("notify-device-login-expired"),
+		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled, NotifyDeviceLogin: flagOn("notify-device-login"), NotifyDeviceLoginExpired: flagOn("notify-device-login-expired"), MessageTemplate: str("message-template"),
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create notification channel %q: %w", name, err))
@@ -89,6 +89,7 @@ Flags:
   --resend-to string                   Resend destination email address (--kind resend only, required with --resend-api-key)
   --resend-from string                 Resend from address (--kind resend only, optional, defaults to onboarding@resend.dev)
   --opsgenie-api-key string            Opsgenie API Key (--kind opsgenie only, an alternative to --notify-url)
+  --message-template string            custom text for deploy and alert messages with {{app}}, {{author}}, {{commit}}, {{url}} variables
   --notify-device-login                send a link-only notice here when a CLI login is waiting for approval (never the code)
   --notify-device-login-expired        send a link-only notice here when a pending CLI login expires unapproved (never the code)
   --disabled                           create the channel disabled (default: enabled)

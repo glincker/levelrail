@@ -178,7 +178,9 @@
     "notifyDeviceLoginHint": "Отправляет только ссылку, никогда не код. Включите URL панели, чтобы ссылка открывала эту страницу.",
     "notifyDeviceLoginExpired": "Уведомлять, когда срок входа через CLI истёк",
     "notifyDeviceLoginExpiredHint": "Отправляет только ссылку, никогда не код, когда запрос входа истекает неодобренным.",
-    "interactiveApprovalsWarning": "Любой участник этого канала, включая того, кто запросил деплой, может одобрить защищённый деплой из чата. Включить это или изменить секрет или вебхук может только пользователь root."
+    "interactiveApprovalsWarning": "Любой участник этого канала, включая того, кто запросил деплой, может одобрить защищённый деплой из чата. Включить это или изменить секрет или вебхук может только пользователь root.",
+    "messageTemplate": "Message text",
+    "messageTemplateHint": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
   },
   "setup": {
     "title_one": "Ожидает настройки и защиты ({{count}})",

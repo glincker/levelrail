@@ -183,6 +183,10 @@ type DeployOutcome struct {
 	// ReleaseNotes is optional markdown for a successful production or
 	// promotion deploy. Dispatch clamps it to the configured byte cap.
 	ReleaseNotes string
+	// Author, Commit and URL fill the matching message template variables when the caller knows them.
+	Author, Commit, URL string
+	// CustomText is the rendered channel template; set per target by Dispatch.
+	CustomText string
 }
 
 // deployLogExcerptLines is how many trailing lines a text channel shows.
@@ -256,6 +260,11 @@ type deployGenericPayload struct {
 	LogLines []string `json:"log_lines,omitempty"`
 	// ReleaseNotes is markdown, omitted when empty.
 	ReleaseNotes string `json:"release_notes,omitempty"`
+	Author       string `json:"author,omitempty"`
+	Commit       string `json:"commit,omitempty"`
+	URL          string `json:"url,omitempty"`
+	// CustomText is the template text used by chat kinds, never sent in the JSON shape.
+	CustomText string `json:"-"`
 }
 
 // sendDeployOutcome sends ev to one target, dispatching on t.NotifyKind.
@@ -523,12 +532,16 @@ func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev D
 		target, sendErr := d.db.RevealChannelTarget(ctx, t.ChannelID, t.NotifyURL)
 		if sendErr == nil {
 			t.NotifyURL = target
+			sendEv := ev
+			if tpl := d.db.ChannelMessageTemplate(ctx, t.ChannelID); tpl != "" {
+				sendEv.CustomText = RenderMessageTemplate(tpl, deployTemplateVars(ev))
+			}
 			sendCtx := ctx
 			if t.NotifyKind == NotifyWebpush {
 				aud := withChannelProject(ctx, d.db, t.ChannelID, PushAudience{AppName: ev.AppName})
 				sendCtx = WithPushAudience(ctx, aud)
 			}
-			sendErr = sendDeployOutcome(sendCtx, d.client, d.sender, d.pushSender, t, ev)
+			sendErr = sendDeployOutcome(sendCtx, d.client, d.sender, d.pushSender, t, sendEv)
 		}
 		if sendErr != nil {
 			d.logger.Error("alerting: deploy outcome notification failed",

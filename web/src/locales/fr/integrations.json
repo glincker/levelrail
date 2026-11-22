@@ -256,6 +256,10 @@
       "notify_device_login_expired": {
         "label": "Alertes de connexion par appareil expirée",
         "help": "Avis avec lien uniquement lorsqu'une connexion CLI en attente expire sans approbation. Le code n'est jamais inclus."
+      },
+      "message_template": {
+        "label": "Message text",
+        "help": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
       }
     },
     "dnsProvider": {

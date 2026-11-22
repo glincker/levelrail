@@ -951,6 +951,7 @@ func (e *Engine) attachChanges(ctx context.Context, ev *Event) {
 	ev.Changes = &res
 	if e.changesLink != nil {
 		ev.ChangesLink = e.changesLink(app)
+		ev.LogsLink, ev.DeployLink = alertLinks(ev.ChangesLink, res)
 	}
 }
 
@@ -965,6 +966,11 @@ func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
 	if sendErr == nil {
 		if r.NotifyKind == NotifyWebpush {
 			ctx = WithPushAudience(ctx, withChannelProject(ctx, e.rules, r.ChannelID, resolvePushAudience(ctx, e.rules, r.ResourceID)))
+		}
+		if ts, ok := e.rules.(channelTemplateSource); ok {
+			if tpl := ts.ChannelMessageTemplate(ctx, r.ChannelID); tpl != "" {
+				ev.CustomText = RenderMessageTemplate(tpl, alertTemplateVars(ev))
+			}
 		}
 		sendErr = e.newNotifier(r).Notify(ctx, ev)
 	}

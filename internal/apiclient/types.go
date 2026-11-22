@@ -2323,6 +2323,7 @@ type NotificationChannelResource struct {
 	// NotifyDeviceLoginExpired is true when the channel is told a pending
 	// CLI login expired unapproved.
 	NotifyDeviceLoginExpired bool   `json:"notify_device_login_expired"`
+	MessageTemplate          string `json:"message_template"`
 	CreatedAt                string `json:"created_at"`
 	UpdatedAt                string `json:"updated_at"`
 }
@@ -2338,6 +2339,8 @@ type CreateNotificationChannelRequest struct {
 	NotifyDeviceLogin bool `json:"notify_device_login,omitempty"`
 	// NotifyDeviceLoginExpired opts the channel into the login-expired notice.
 	NotifyDeviceLoginExpired bool `json:"notify_device_login_expired,omitempty"`
+	// MessageTemplate replaces the text of deploy and alert messages.
+	MessageTemplate string `json:"message_template,omitempty"`
 }
 
 // TestNotificationChannelRequest mirrors internal/api's

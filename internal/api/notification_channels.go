@@ -74,8 +74,10 @@ type notificationChannelResource struct {
 	NotifyDeviceLoginExpired bool `json:"notify_device_login_expired"`
 	// ProjectID, when set, limits the channel to alert rules and deploy targets of that project's apps.
 	ProjectID string `json:"project_id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	// MessageTemplate is the custom message text with {{app}} style variables, empty for the default.
+	MessageTemplate string `json:"message_template"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
 }
 
 func toNotificationChannelResource(c alerting.NotificationChannel) notificationChannelResource {
@@ -84,7 +86,7 @@ func toNotificationChannelResource(c alerting.NotificationChannel) notificationC
 		Enabled: c.Enabled, InteractiveApprovals: c.InteractiveApprovals,
 		HasInteractiveSecret:     c.InteractiveSecret != "",
 		NotifyDeviceLogin:        c.NotifyDeviceLogin,
-		NotifyDeviceLoginExpired: c.NotifyDeviceLoginExpired, ProjectID: c.ProjectID,
+		NotifyDeviceLoginExpired: c.NotifyDeviceLoginExpired, ProjectID: c.ProjectID, MessageTemplate: c.MessageTemplate,
 		CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
 	}
 }
@@ -116,6 +118,8 @@ type createNotificationChannelRequest struct {
 	NotifyDeviceLoginExpired bool `json:"notify_device_login_expired,omitempty"`
 	// ProjectID limits the channel to one project; a blank value makes it instance wide.
 	ProjectID string `json:"project_id,omitempty"`
+	// MessageTemplate replaces the text of deploy and alert messages; variables are {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}.
+	MessageTemplate string `json:"message_template,omitempty"`
 }
 
 // notificationChannelsSupportingInteractiveApprovals is InteractiveApprovals'
@@ -226,11 +230,15 @@ func (req createNotificationChannelRequest) toChannel(id, existingSecret string)
 	} else {
 		secret = ""
 	}
+	tpl := strings.TrimSpace(req.MessageTemplate)
+	if len([]rune(tpl)) > alerting.MaxMessageTemplateLen {
+		return alerting.NotificationChannel{}, fmt.Errorf("message_template is longer than %d characters", alerting.MaxMessageTemplateLen)
+	}
 	return alerting.NotificationChannel{
 		ID: id, Name: req.Name, Kind: kind, NotifyURL: req.NotifyURL, Enabled: enabled,
 		InteractiveApprovals: req.InteractiveApprovals, InteractiveSecret: secret,
 		NotifyDeviceLogin: req.NotifyDeviceLogin, NotifyDeviceLoginExpired: req.NotifyDeviceLoginExpired,
-		ProjectID: strings.TrimSpace(req.ProjectID),
+		ProjectID: strings.TrimSpace(req.ProjectID), MessageTemplate: tpl,
 	}, nil
 }
 

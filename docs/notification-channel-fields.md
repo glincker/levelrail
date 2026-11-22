@@ -26,5 +26,6 @@ The dashboard form, the CLI flags and the API all read one field registry, serve
 | `resend_from` (resend_from) | string | no | `kind` is resend | `--resend-from` | Resend from address, defaults to onboarding@resend.dev |
 | `opsgenie_api_key` (opsgenie_api_key) | string, write only | yes | `kind` is opsgenie | `--opsgenie-api-key` | Opsgenie API Key (an alternative to notify-url) |
 | `enabled` (enabled) | bool | no | always | none | channel delivery on or paused (CLI: --disabled creates it paused) |
+| `message_template` (message_template) | text | no | always | `--message-template` | custom text for deploy and alert messages; variables {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}; empty keeps the default |
 | `notify_device_login` (notify_device_login) | bool | no | always | `--notify-device-login` | send a link-only notice here when a CLI login is waiting for approval (never includes the code) |
 | `notify_device_login_expired` (notify_device_login_expired) | bool | no | always | `--notify-device-login-expired` | send a link-only notice here when a pending CLI login expires unapproved (never includes the code) |

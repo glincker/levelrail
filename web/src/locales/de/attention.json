@@ -154,7 +154,9 @@
     "notifyDeviceLoginHint": "Sendet nur einen Link, nie den Code. Aktivieren Sie eine Dashboard-URL, damit der Link diese Seite öffnen kann.",
     "notifyDeviceLoginExpired": "Benachrichtigen, wenn eine CLI-Anmeldung abläuft",
     "notifyDeviceLoginExpiredHint": "Sendet nur einen Link, nie den Code, wenn einer Anmeldeanfrage ohne Genehmigung die Zeit abläuft.",
-    "interactiveApprovalsWarning": "Jeder in diesem Kanal, auch die Person, die den Deploy angefordert hat, kann einen geschützten Deploy aus dem Chat genehmigen. Nur ein Root-Benutzer kann dies einschalten oder sein Secret oder seinen Webhook ändern."
+    "interactiveApprovalsWarning": "Jeder in diesem Kanal, auch die Person, die den Deploy angefordert hat, kann einen geschützten Deploy aus dem Chat genehmigen. Nur ein Root-Benutzer kann dies einschalten oder sein Secret oder seinen Webhook ändern.",
+    "messageTemplate": "Message text",
+    "messageTemplateHint": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
   },
   "setup": {
     "title_one": "Ausstehende Einrichtung und Härtung ({{count}})",
