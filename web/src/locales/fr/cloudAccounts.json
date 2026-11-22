@@ -394,6 +394,17 @@
       "deleteBody": "Cela supprime le cache et ses données. Saisissez le nom pour confirmer. Un instantané final garde une copie.",
       "finalSnapshot": "Nom de l'instantané final (facultatif)"
     },
+    "lightsail": {
+      "title": "Serveurs simples (Lightsail)",
+      "empty": "Aucune instance Lightsail dans cette région.",
+      "start": "Démarrer",
+      "stop": "Arrêter",
+      "reboot": "Redémarrer",
+      "snapshot": "Instantané",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer ce serveur",
+      "deleteBody": "Cela supprime le serveur et son disque. Saisissez le nom pour confirmer. Faites d'abord un instantané pour en garder une copie."
+    },
     "ebs": {
       "title": "Volumes et instantanés (EBS)",
       "target": "ID d'instance ou de volume",

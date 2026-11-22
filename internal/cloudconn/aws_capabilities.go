@@ -90,6 +90,8 @@ var awsCapabilities = []Capability{
 				"rds:DescribeDBParameterGroups", "rds:ListTagsForResource", "elasticache:DescribeCacheClusters", "elasticache:DescribeReplicationGroups",
 				"elasticache:DescribeSnapshots", "elasticache:ListTagsForResource", "ecr:DescribeRepositories", "ecr:ListImages",
 				"acm:ListCertificates", "acm:DescribeCertificate", "ssm:DescribeInstanceInformation",
+				"lightsail:GetInstances", "lightsail:GetInstance", "lightsail:GetBundles", "lightsail:GetBlueprints", "lightsail:GetRegions",
+				"lightsail:GetInstanceSnapshots", "lightsail:GetStaticIps",
 				"cloudtrail:LookupEvents", "cloudwatch:GetMetricData", "cloudwatch:ListMetrics", "logs:DescribeLogGroups", "logs:FilterLogEvents",
 			}, Resources: []string{all}},
 			// CloudFront is a global service, so its actions skip the region condition.
@@ -129,6 +131,11 @@ var awsCapabilities = []Capability{
 			{Actions: []string{"elasticache:CreateSnapshot", "elasticache:AddTagsToResource"},
 				Resources: []string{"arn:*:elasticache:*:*:cluster:*", "arn:*:elasticache:*:*:replicationgroup:*", "arn:*:elasticache:*:*:snapshot:*"}, Tag: TagRequest},
 			{Actions: []string{"elasticache:RebootCacheCluster"}, Resources: []string{"arn:*:elasticache:*:*:cluster:*"}, Tag: TagResource},
+			// Lightsail creates carry the request tag; power changes and snapshots need the managed tag on the instance.
+			{Actions: []string{"lightsail:CreateInstances", "lightsail:CreateInstanceSnapshot", "lightsail:TagResource"},
+				Resources: []string{"arn:*:lightsail:*:*:Instance/*", "arn:*:lightsail:*:*:InstanceSnapshot/*"}, Tag: TagRequest},
+			{Actions: []string{"lightsail:StartInstance", "lightsail:StopInstance", "lightsail:RebootInstance", "lightsail:CreateInstanceSnapshot"},
+				Resources: []string{"arn:*:lightsail:*:*:Instance/*"}, Tag: TagResource},
 			{Actions: []string{"ecr:CreateRepository", "ecr:TagResource"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}, Tag: TagRequest},
 			{Actions: []string{"ecr:PutLifecyclePolicy"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}, Tag: TagResource},
 			// GetAuthorizationToken cannot be scoped to a resource.
@@ -188,6 +195,8 @@ var awsCapabilities = []Capability{
 			// Final snapshots on delete are created and tagged by the delete call itself.
 			{Actions: []string{"elasticache:CreateSnapshot", "rds:CreateDBSnapshot", "rds:CreateDBClusterSnapshot", "rds:AddTagsToResource"},
 				Resources: []string{"arn:*:elasticache:*:*:snapshot:*", "arn:*:rds:*:*:snapshot:*", "arn:*:rds:*:*:cluster-snapshot:*"}, Tag: TagRequest},
+			{Actions: []string{"lightsail:DeleteInstance", "lightsail:DeleteInstanceSnapshot"},
+				Resources: []string{"arn:*:lightsail:*:*:Instance/*", "arn:*:lightsail:*:*:InstanceSnapshot/*"}, Tag: TagResource},
 			{Actions: []string{"ecr:DeleteRepository"}, Resources: []string{"arn:*:ecr:*:*:repository/*"}, Tag: TagResource},
 			// Remote command and shell access run code on hosts, so only this tier grants them. Documents have no tag key, instances do.
 			{Actions: []string{"ssm:SendCommand"}, Resources: []string{"arn:*:ssm:*:*:document/AWS-RunShellScript"}},

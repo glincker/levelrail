@@ -394,6 +394,17 @@
       "deleteBody": "这会删除缓存及其数据。请输入名称确认。最终快照可保留一份副本。",
       "finalSnapshot": "最终快照名称（可选）"
     },
+    "lightsail": {
+      "title": "简易服务器 (Lightsail)",
+      "empty": "此区域没有 Lightsail 实例。",
+      "start": "启动",
+      "stop": "停止",
+      "reboot": "重启",
+      "snapshot": "快照",
+      "delete": "删除",
+      "deleteTitle": "删除此服务器",
+      "deleteBody": "这将删除服务器及其磁盘。输入名称以确认。请先创建快照以保留副本。"
+    },
     "ebs": {
       "title": "卷和快照 (EBS)",
       "target": "实例 ID 或卷 ID",

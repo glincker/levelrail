@@ -2578,6 +2578,20 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/oauth/digitalocean/start | AbilityRoot | handleDOOAuthStart |
 | GET | /api/v1/cloud-accounts/oauth/digitalocean/callback | AbilityRoot | handleDOOAuthCallback |
 | POST | /api/v1/cloud-accounts/oracle/session-import | AbilityRoot | handleOracleSessionImport |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/instances | Public | handleLightsailInstances |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name} | Public | handleLightsailInstance |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/instances | Public | handleLightsailCreate |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/start | Public | handleLightsailStart |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/stop | Public | handleLightsailStop |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/reboot | Public | handleLightsailReboot |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name} | Public | handleLightsailDelete |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/bundles | Public | handleLightsailBundles |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/blueprints | Public | handleLightsailBlueprints |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/regions | Public | handleLightsailRegions |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/static-ips | Public | handleLightsailStaticIPs |
+| GET | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots | Public | handleLightsailSnapshots |
+| POST | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots | Public | handleLightsailSnapshotCreate |
+| DELETE | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots/{name} | Public | handleLightsailSnapshotDelete |
 | POST | /mcp | Public |  |
 
 ## See also

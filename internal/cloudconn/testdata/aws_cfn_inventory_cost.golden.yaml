@@ -222,7 +222,7 @@ Resources:
               }
             },
             {
-              "Sid": "Deploy20",
+              "Sid": "Deploy22",
               "Effect": "Allow",
               "Action": [
                 "kms:DescribeKey"
@@ -426,6 +426,7 @@ Resources:
                 "cloudwatch:*",
                 "ecr:*",
                 "elasticache:*",
+                "lightsail:*",
                 "logs:*",
                 "rds:*",
                 "secretsmanager:*",
@@ -596,6 +597,13 @@ Resources:
                     "acm:ListCertificates",
                     "acm:DescribeCertificate",
                     "ssm:DescribeInstanceInformation",
+                    "lightsail:GetInstances",
+                    "lightsail:GetInstance",
+                    "lightsail:GetBundles",
+                    "lightsail:GetBlueprints",
+                    "lightsail:GetRegions",
+                    "lightsail:GetInstanceSnapshots",
+                    "lightsail:GetStaticIps",
                     "cloudtrail:LookupEvents",
                     "cloudwatch:GetMetricData",
                     "cloudwatch:ListMetrics",

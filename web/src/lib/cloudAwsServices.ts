@@ -7,6 +7,7 @@ export const AWS_SERVICE_SETTING: Record<AwsServiceName, string> = {
   secrets: 'cloud.guard.service.parameters',
   rds: 'cloud.guard.service.rds',
   elasticache: 'cloud.guard.service.elasticache',
+  lightsail: 'cloud.guard.service.lightsail',
   ebs: 'cloud.guard.service.ebs',
   cloudwatch: 'cloud.guard.service.cloudwatch',
   cloudtrail: 'cloud.guard.service.cloudtrail',

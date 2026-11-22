@@ -230,6 +230,7 @@ export type AwsServiceName =
   | 'secrets'
   | 'rds'
   | 'elasticache'
+  | 'lightsail'
   | 'ebs'
   | 'cloudwatch'
   | 'cloudtrail'

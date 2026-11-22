@@ -480,6 +480,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_GUARD_IDLE_EIP_MONTH_CENTS` | [`cloud.guard.idle.eip_month_cents`](/runtime-settings#observability) | `365` |
 | `APP_CLOUD_GUARD_INSTANCE_TYPES` | [`cloud.guard.instance_types`](/runtime-settings#observability) | empty |
 | `APP_CLOUD_GUARD_KILL_SWITCH` | [`cloud.guard.kill_switch`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_LIGHTSAIL_BUNDLES` | [`cloud.guard.lightsail.bundles`](/runtime-settings#observability) | empty |
+| `APP_CLOUD_GUARD_LIGHTSAIL_MAX_INSTANCES` | [`cloud.guard.lightsail.max_instances`](/runtime-settings#observability) | `3` |
 | `APP_CLOUD_GUARD_MONTHLY_CAP_USD` | [`cloud.guard.monthly_cap_usd`](/runtime-settings#observability) | `0` |
 | `APP_CLOUD_GUARD_PER_CREATE_MAX_USD` | [`cloud.guard.per_create_max_usd`](/runtime-settings#observability) | `0` |
 | `APP_CLOUD_GUARD_POLICY_ARN` | [`cloud.guard.policy_arn`](/runtime-settings#observability) | empty |
@@ -490,6 +492,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_GUARD_EBS` | [`cloud.guard.service.ebs`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_ECR` | [`cloud.guard.service.ecr`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_ELASTICACHE` | [`cloud.guard.service.elasticache`](/runtime-settings#observability) | `false` |
+| `APP_CLOUD_GUARD_LIGHTSAIL` | [`cloud.guard.service.lightsail`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_PARAMS` | [`cloud.guard.service.parameters`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_RDS` | [`cloud.guard.service.rds`](/runtime-settings#observability) | `false` |
 | `APP_CLOUD_GUARD_SSM` | [`cloud.guard.service.ssm`](/runtime-settings#observability) | `false` |

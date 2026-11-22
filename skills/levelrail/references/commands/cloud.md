@@ -55,7 +55,7 @@ The provider credential for "accounts add" is read from LEVELRAIL_CLOUD_CREDENTI
 
 ## levelrail-cli cloud aws
 
-Subcommands: acm, audit, cleanup-plan, cloudfront, ecr, elasticache, guard, idle, link-kit, logs, metrics, rds, secrets, snapshots, ssm, sso, vault-kit
+Subcommands: acm, audit, cleanup-plan, cloudfront, ecr, elasticache, guard, idle, lightsail, link-kit, logs, metrics, rds, secrets, snapshots, ssm, sso, vault-kit
 
 ```
 Usage:
@@ -93,6 +93,8 @@ Usage:
   levelrail-cli cloud aws rds cluster-snapshot-delete ACCOUNT SNAPSHOT [--region R]
   levelrail-cli cloud aws rds create ACCOUNT ID --engine E --class C [--username U] [--storage GB] [--multi-az] [--cluster] [--confirm] [--env E] [--project P]
   levelrail-cli cloud aws elasticache list|clusters|show|cluster|snapshots|snapshot|reboot|delete|delete-cluster ACCOUNT [ID] [--confirm-id ID] [--final-snapshot NAME] [--region R]
+  levelrail-cli cloud aws lightsail list|show|start|stop|reboot|delete|bundles|blueprints|regions|static-ips|snapshots|snapshot|snapshot-delete ACCOUNT [NAME] [--confirm-id NAME] [--instance I] [--region R]
+  levelrail-cli cloud aws lightsail create ACCOUNT NAME --zone Z --blueprint B --bundle BUNDLE [--key-pair K] [--env E] [--project P] [--region R]
   levelrail-cli cloud aws snapshots list|create|delete ACCOUNT [SNAPSHOT] [--volume V | --instance I] [--exclude-boot] [--description D] [--region R]
   levelrail-cli cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
   levelrail-cli cloud aws logs groups|events ACCOUNT [GROUP] [--prefix P] [--filter PATTERN] [--hours N] [--limit N] [--region R]
@@ -327,6 +329,44 @@ Usage of levelrail-cli cloud aws elasticache:
     	master username, for rds create
   -volume string
     	volume ID, for snapshots
+```
+
+## levelrail-cli cloud aws lightsail
+
+Subcommands: blueprints, bundles, create, delete, list, reboot, regions, show, snapshot, snapshot-delete, snapshots, start, static-ips, stop
+
+```
+Usage of levelrail-cli cloud aws lightsail:
+  -api-url string
+    	control plane API base URL (overrides LEVELRAIL_API_URL or APP_API_URL and the credentials file, default http://localhost:8080)
+  -blueprint string
+    	blueprint id, for create
+  -bundle string
+    	bundle id, for create
+  -confirm-id string
+    	repeat the instance name to confirm a delete
+  -env string
+    	env tag for new resources
+  -instance string
+    	instance name, for snapshot
+  -json
+    	print the result as JSON to stdout and nothing else
+  -key-pair string
+    	key pair name, for create
+  -output string
+    	output format: json, table, or text (default table; --json is shorthand for --output json)
+  -profile string
+    	named credentials profile to read (overrides APP_PROFILE, default "default")
+  -project string
+    	project tag for new resources
+  -query string
+    	JMESPath expression to filter the result before printing (e.g. "[?status=='running'].name")
+  -region string
+    	AWS region, defaults to the account region
+  -token string
+    	API token (overrides LEVELRAIL_TOKEN or APP_API_TOKEN and the credentials file)
+  -zone string
+    	availability zone, for create
 ```
 
 ## levelrail-cli cloud aws logs

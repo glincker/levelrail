@@ -415,7 +415,7 @@ func TerraformSnippet(in TemplateInput) (string, error) {
 // boundaryWildcardServices are collapsed to service wildcards in the permission boundary so it
 // fits the managed policy size limit. The role policy keeps the exact actions and resources.
 var boundaryWildcardServices = map[string]bool{
-	"rds": true, "elasticache": true, "ecr": true, "acm": true, "cloudfront": true,
+	"rds": true, "elasticache": true, "lightsail": true, "ecr": true, "acm": true, "cloudfront": true,
 	"secretsmanager": true, "ssm": true, "cloudtrail": true, "cloudwatch": true, "logs": true,
 }
 

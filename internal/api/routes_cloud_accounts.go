@@ -38,6 +38,7 @@ func (rt *Router) registerCloudAccountRoutes(mux *http.ServeMux) {
 	rt.registerCloudAWSServiceRoutes(mux)
 	rt.registerCloudRDSRoutes(mux)
 	rt.registerCloudElastiCacheRoutes(mux)
+	rt.registerCloudLightsailRoutes(mux)
 	rt.registerCloudCFSSMRoutes(mux)
 	rt.registerCloudAWSOpsRoutes(mux)
 }

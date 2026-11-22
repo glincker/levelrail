@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2347 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2361 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1273,6 +1273,20 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/guard", Ability: "Public", Group: "Other", Handler: "handleAWSGuardStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/guard/kill-switch", Ability: "AbilityRoot", Group: "Other", Handler: "handleAWSKillSwitch", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/idle", Ability: "Public", Group: "Other", Handler: "handleAWSIdle", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/blueprints", Ability: "Public", Group: "Other", Handler: "handleLightsailBlueprints", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/bundles", Ability: "Public", Group: "Other", Handler: "handleLightsailBundles", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/instances", Ability: "Public", Group: "Other", Handler: "handleLightsailInstances", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/instances", Ability: "Public", Group: "Other", Handler: "handleLightsailCreate", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}", Ability: "Public", Group: "Other", Handler: "handleLightsailDelete", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}", Ability: "Public", Group: "Other", Handler: "handleLightsailInstance", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/reboot", Ability: "Public", Group: "Other", Handler: "handleLightsailReboot", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/start", Ability: "Public", Group: "Other", Handler: "handleLightsailStart", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/instances/{name}/stop", Ability: "Public", Group: "Other", Handler: "handleLightsailStop", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/regions", Ability: "Public", Group: "Other", Handler: "handleLightsailRegions", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/snapshots", Ability: "Public", Group: "Other", Handler: "handleLightsailSnapshots", Description: ""},
+	{Method: "POST", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/snapshots", Ability: "Public", Group: "Other", Handler: "handleLightsailSnapshotCreate", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/snapshots/{name}", Ability: "Public", Group: "Other", Handler: "handleLightsailSnapshotDelete", Description: ""},
+	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/lightsail/static-ips", Ability: "Public", Group: "Other", Handler: "handleLightsailStaticIPs", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots", Ability: "Public", Group: "Other", Handler: "handleRDSClusterSnapshots", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/cloud-accounts/{id}/aws/rds/cluster-snapshots/{sid}", Ability: "Public", Group: "Other", Handler: "handleRDSClusterSnapshotDelete", Description: ""},
 	{Method: "GET", Path: "/api/v1/cloud-accounts/{id}/aws/rds/clusters", Ability: "Public", Group: "Other", Handler: "handleRDSClusters", Description: ""},

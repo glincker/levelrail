@@ -394,6 +394,17 @@
       "deleteBody": "Isso remove o cache e seus dados. Digite o nome para confirmar. Um snapshot final mantém uma cópia.",
       "finalSnapshot": "Nome do snapshot final (opcional)"
     },
+    "lightsail": {
+      "title": "Servidores simples (Lightsail)",
+      "empty": "Nenhuma instância do Lightsail nesta região.",
+      "start": "Iniciar",
+      "stop": "Parar",
+      "reboot": "Reiniciar",
+      "snapshot": "Snapshot",
+      "delete": "Excluir",
+      "deleteTitle": "Excluir este servidor",
+      "deleteBody": "Isso remove o servidor e o disco. Digite o nome para confirmar. Faça um snapshot antes para manter uma cópia."
+    },
     "ebs": {
       "title": "Volumes e snapshots (EBS)",
       "target": "ID da instância ou do volume",

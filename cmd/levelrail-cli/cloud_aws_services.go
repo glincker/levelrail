@@ -29,6 +29,8 @@ func cloudAWSServicesUsage(prog string) string {
   %[1]s cloud aws rds cluster-snapshot-delete ACCOUNT SNAPSHOT [--region R]
   %[1]s cloud aws rds create ACCOUNT ID --engine E --class C [--username U] [--storage GB] [--multi-az] [--cluster] [--confirm] [--env E] [--project P]
   %[1]s cloud aws elasticache list|clusters|show|cluster|snapshots|snapshot|reboot|delete|delete-cluster ACCOUNT [ID] [--confirm-id ID] [--final-snapshot NAME] [--region R]
+  %[1]s cloud aws lightsail list|show|start|stop|reboot|delete|bundles|blueprints|regions|static-ips|snapshots|snapshot|snapshot-delete ACCOUNT [NAME] [--confirm-id NAME] [--instance I] [--region R]
+  %[1]s cloud aws lightsail create ACCOUNT NAME --zone Z --blueprint B --bundle BUNDLE [--key-pair K] [--env E] [--project P] [--region R]
   %[1]s cloud aws snapshots list|create|delete ACCOUNT [SNAPSHOT] [--volume V | --instance I] [--exclude-boot] [--description D] [--region R]
   %[1]s cloud aws metrics ACCOUNT INSTANCE [--names CPUUtilization,NetworkIn] [--hours N] [--region R]
   %[1]s cloud aws logs groups|events ACCOUNT [GROUP] [--prefix P] [--filter PATTERN] [--hours N] [--limit N] [--region R]
@@ -46,13 +48,16 @@ Every command takes --json. Every service is off until enabled in runtime settin
 
 func isCloudAWSService(v string) bool {
 	switch v {
-	case "ecr", "acm", "secrets", "rds", "elasticache", "snapshots", "metrics", "logs", "idle", "audit", "guard", "cleanup-plan", "cloudfront", "ssm":
+	case "ecr", "acm", "secrets", "rds", "elasticache", "lightsail", "snapshots", "metrics", "logs", "idle", "audit", "guard", "cleanup-plan", "cloudfront", "ssm":
 		return true
 	}
 	return false
 }
 
 func runCloudAWSServices(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if verb == "lightsail" {
+		return runCloudAWSLightsail(prog, args, stdout, stderr, lookupEnv)
+	}
 	if verb == "cloudfront" || verb == "ssm" {
 		return runCloudAWSCFSSM(prog, verb, args, stdout, stderr, lookupEnv)
 	}

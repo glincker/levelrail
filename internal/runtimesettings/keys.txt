@@ -152,6 +152,8 @@ cloud.guard.idle.ebs_gb_month_cents
 cloud.guard.idle.eip_month_cents
 cloud.guard.instance_types
 cloud.guard.kill_switch
+cloud.guard.lightsail.bundles
+cloud.guard.lightsail.max_instances
 cloud.guard.monthly_cap_usd
 cloud.guard.per_create_max_usd
 cloud.guard.policy_arn
@@ -162,6 +164,7 @@ cloud.guard.service.cloudwatch
 cloud.guard.service.ebs
 cloud.guard.service.ecr
 cloud.guard.service.elasticache
+cloud.guard.service.lightsail
 cloud.guard.service.parameters
 cloud.guard.service.rds
 cloud.guard.service.ssm

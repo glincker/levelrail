@@ -29,6 +29,7 @@ import { MetricsCard } from './MetricsCard'
 import { CloudFrontCard } from './CloudFrontCard'
 import { SsmCard } from './SsmCard'
 import { ElastiCacheCard } from './ElastiCacheCard'
+import { LightsailCard } from './LightsailCard'
 import { RdsCard } from './RdsCard'
 import { SnapshotsCard } from './SnapshotsCard'
 
@@ -41,6 +42,7 @@ const SERVICES: CardService[] = [
   'secrets',
   'rds',
   'elasticache',
+  'lightsail',
   'ebs',
   'cloudwatch',
   'cloudtrail',
@@ -248,6 +250,8 @@ export function CloudServicesTab({
               <RdsCard id={accountId} canCreate={isRoot} />
             ) : s === 'elasticache' ? (
               <ElastiCacheCard id={accountId} canDelete={isRoot} />
+            ) : s === 'lightsail' ? (
+              <LightsailCard id={accountId} canDelete={isRoot} />
             ) : s === 'ebs' ? (
               <SnapshotsCard id={accountId} />
             ) : s === 'cloudwatch' ? (

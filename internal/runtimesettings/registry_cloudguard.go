@@ -8,6 +8,9 @@ const (
 	KeyCloudGuardCloudTrail    = "cloud.guard.service.cloudtrail"
 	KeyCloudGuardRDS           = "cloud.guard.service.rds"
 	KeyCloudGuardElastiCache   = "cloud.guard.service.elasticache"
+	KeyCloudGuardLightsail     = "cloud.guard.service.lightsail"
+	KeyCloudGuardLSBundles     = "cloud.guard.lightsail.bundles"
+	KeyCloudGuardLSMax         = "cloud.guard.lightsail.max_instances"
 	KeyCloudGuardEBS           = "cloud.guard.service.ebs"
 	KeyCloudGuardCloudWatch    = "cloud.guard.service.cloudwatch"
 	KeyCloudGuardIdleCPU       = "cloud.guard.idle.cpu_percent"
@@ -49,6 +52,12 @@ func init() {
 	registerLimitInt(KeyCloudGuardKeepDaily, "APP_CLOUD_GUARD_SNAPSHOT_KEEP_DAILY", "7", "AWS snapshots to keep (daily)", "Managed snapshots per volume kept for the most recent days when planning cleanup. 0 for both settings keeps everything.", 0, 365)
 	registerLimitInt(KeyCloudGuardKeepWeekly, "APP_CLOUD_GUARD_SNAPSHOT_KEEP_WEEKLY", "4", "AWS snapshots to keep (weekly)", "Managed snapshots per volume kept for the most recent weeks when planning cleanup.", 0, 520)
 	flag(KeyCloudGuardElastiCache, "APP_CLOUD_GUARD_ELASTICACHE", "AWS caches (ElastiCache)", "Lets the control plane list ElastiCache replication groups and clusters, snapshot and reboot managed ones, and delete them with a typed confirm.")
+	flag(KeyCloudGuardLightsail, "APP_CLOUD_GUARD_LIGHTSAIL", "AWS simple servers (Lightsail)", "Lets the control plane list Lightsail instances, bundles and snapshots, start, stop, reboot and snapshot managed instances, create managed ones behind the guard, and delete them with a typed confirm.")
+	Register(Definition{
+		Key: KeyCloudGuardLSBundles, Category: cat, Kind: KindStringList, Default: "", Env: "APP_CLOUD_GUARD_LIGHTSAIL_BUNDLES", Apply: ApplyLive,
+		Title: "AWS Lightsail bundle allowlist", Description: "Bundle ids a Lightsail create may use, for example nano_3_0. Empty refuses every create.",
+	})
+	registerLimitInt(KeyCloudGuardLSMax, "APP_CLOUD_GUARD_LIGHTSAIL_MAX_INSTANCES", "3", "AWS Lightsail managed instance limit", "Most managed Lightsail instances one region may hold. 0 refuses every create. From 0 to 50.", 0, 50)
 	registerLimitInt(KeyCloudGuardMonthlyCapUSD, "APP_CLOUD_GUARD_MONTHLY_CAP_USD", "0", "AWS monthly cap (USD)", "Default monthly spend cap per account that blocks new creates. 0 means no cap.", 0, cloudGuardMaxUSD)
 	Register(Definition{
 		Key: KeyCloudGuardAccountCaps, Category: cat, Kind: KindStringList, Default: "", Env: "APP_CLOUD_GUARD_ACCOUNT_CAPS", Apply: ApplyLive,
