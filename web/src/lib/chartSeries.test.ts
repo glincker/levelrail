@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { attachPrevious, capRows, MAX_CHART_POINTS } from './chartSeries'
+import {
+  attachPrevious,
+  capRows,
+  chartPointBudget,
+  MAX_CHART_POINTS,
+} from './chartSeries'
 import type { ChartRow } from './metricChart'
 import { fetchMetricSeries } from '../queries/metrics'
 import { fetchRequestSeries } from '../queries/requests'
@@ -113,5 +118,14 @@ describe('long range requests', () => {
     const url = new URL(String(fetchMock.mock.calls[0]?.[0]), 'http://x')
     expect(url.searchParams.get('max_points')).toBe('600')
     expect(url.searchParams.has('compare')).toBe(false)
+  })
+})
+
+describe('chartPointBudget', () => {
+  it('scales with width and stays within bounds', () => {
+    expect(chartPointBudget(320)).toBe(200)
+    expect(chartPointBudget(4000)).toBe(MAX_CHART_POINTS)
+    expect(chartPointBudget(0)).toBe(MAX_CHART_POINTS)
+    expect(chartPointBudget(10)).toBe(120)
   })
 })

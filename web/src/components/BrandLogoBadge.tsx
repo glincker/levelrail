@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { useInView } from '@/hooks/useInView'
 import {
   BrandIcon,
   hasMonoVariant,
@@ -19,16 +20,24 @@ export function BrandLogoBadge({
   fallback?: ReactNode
   className?: string
 }) {
+  const { ref, seen } = useInView<HTMLSpanElement>()
   if (!logoId) return <>{fallback ?? null}</>
+  // Mount the lazy logo chunk only once the row is near the viewport.
+  const placeholder = fallback ?? <span className="size-full" />
   return (
     <span
+      ref={ref}
       className={`inline-flex shrink-0 items-center justify-center rounded-md bg-white p-1 ring-1 ring-border ${className}`}
     >
-      <TemplateLogo
-        id={logoId}
-        className="size-full"
-        fallback={fallback ?? <span className="size-full" />}
-      />
+      {seen ? (
+        <TemplateLogo
+          id={logoId}
+          className="size-full"
+          fallback={placeholder}
+        />
+      ) : (
+        placeholder
+      )}
     </span>
   )
 }

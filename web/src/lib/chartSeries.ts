@@ -7,6 +7,21 @@ import type { ChartRow } from './metricChart'
 // applies the same bound again (capRows) so a chart never renders more.
 export const MAX_CHART_POINTS = 600
 
+const MIN_CHART_POINTS = 120
+const PX_PER_POINT = 2
+const WIDTH_BUCKET_PX = 200
+
+// Points worth requesting for a chart of this width; bucketed so a window
+// resize does not change the query key on every pixel.
+export function chartPointBudget(widthPx: number): number {
+  if (!Number.isFinite(widthPx) || widthPx <= 0) return MAX_CHART_POINTS
+  const bucketed = Math.ceil(widthPx / WIDTH_BUCKET_PX) * WIDTH_BUCKET_PX
+  return Math.min(
+    MAX_CHART_POINTS,
+    Math.max(MIN_CHART_POINTS, Math.round(bucketed / PX_PER_POINT)),
+  )
+}
+
 interface TimedValue {
   timestamp: string
   value: number
