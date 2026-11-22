@@ -130,3 +130,19 @@ func TestMonitors_PatchWritesAuditRow(t *testing.T) {
 		t.Fatalf("PATCH audit entries = %d, err = %v", len(entries), err)
 	}
 }
+
+func TestMonitors_CreateRefusesNodeTheCallerCannotReach(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "false")
+	rt, db := newTestRouter(t)
+	cookie := bodyRefFixture(t, rt, db)
+	cfg, err := monitor.ConfigFromEnv(func(string) (string, bool) { return "", false })
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.SetMonitors(monitor.New(monitor.Options{Config: cfg, Store: db, Logger: slog.New(slog.NewTextHandler(discardWriter{}, nil))}))
+	runBodyRefCases(t, rt, cookie, []bodyRefCase{
+		{"denied node", http.MethodPost, "/api/v1/monitors", `{"name":"m1","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"node_id":"n-deny"}`, http.StatusBadRequest, "node not found"},
+		{"unknown node answers the same", http.MethodPost, "/api/v1/monitors", `{"name":"m2","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"node_id":"n-nope"}`, http.StatusBadRequest, "node not found"},
+		{"allowed node", http.MethodPost, "/api/v1/monitors", `{"name":"m3","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"node_id":"n-ok"}`, http.StatusCreated, `"m3"`},
+	})
+}

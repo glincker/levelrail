@@ -206,6 +206,9 @@ func (rt *Router) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
 			FollowRedirects: req.FollowRedirects, Host: req.Host, Port: req.Port,
 			StatusLink: req.StatusLink, LinkConfirmFailures: req.LinkConfirmFailures, LinkRecoverySeconds: req.LinkRecoverySeconds,
 			GraceSeconds: req.GraceSeconds, WarnDays: req.WarnDays, CritDays: req.CritDays, NodeID: req.NodeID}}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "node not found"), nodeRef(req.NodeID)) {
+		return
+	}
 	if req.NodeID != "" && rt.nodes != nil {
 		if _, err := rt.nodes.GetNode(r.Context(), req.NodeID); errors.Is(err, store.ErrNodeNotFound) {
 			writeError(w, http.StatusBadRequest, "node not found")
