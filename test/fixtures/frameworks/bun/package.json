@@ -1,0 +1,1 @@
+{"name":"app","scripts":{"start":"bun run index.ts"}}

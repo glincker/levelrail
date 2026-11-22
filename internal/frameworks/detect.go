@@ -17,10 +17,23 @@ type Match struct {
 // Detect picks the best preset from manifest files, or false when nothing
 // recognisable is present.
 func Detect(read Reader) (Match, bool) {
+	if m, ok := detectDeno(read); ok {
+		return m, true
+	}
 	if text, ok := read("package.json"); ok {
-		if m, ok := detectNode(text, read); ok {
+		m, ok := detectNode(text, read)
+		if ok && m.Preset.ID != "node" {
 			return m, true
 		}
+		if bm, bok := detectBun(read); bok {
+			return bm, true
+		}
+		if ok {
+			return m, true
+		}
+	}
+	if m, ok := detectDotnet(read); ok {
+		return m, true
 	}
 	if _, ok := read("go.mod"); ok {
 		return match("go", "go.mod found"), true
@@ -48,7 +61,17 @@ func Detect(read Reader) (Match, bool) {
 		return match("phoenix", "mix.exs lists phoenix"), true
 	}
 	for _, f := range []string{"pom.xml", "build.gradle", "build.gradle.kts"} {
-		if text, ok := read(f); ok && strings.Contains(strings.ToLower(text), "spring-boot") {
+		text, ok := read(f)
+		if !ok {
+			continue
+		}
+		low := strings.ToLower(text)
+		switch {
+		case strings.Contains(low, "quarkus-maven-plugin") || strings.Contains(low, "io.quarkus"):
+			return match("quarkus", f+" lists quarkus"), true
+		case strings.Contains(low, "micronaut"):
+			return match("micronaut", f+" lists micronaut"), true
+		case strings.Contains(low, "spring-boot"):
 			return match("spring-boot", f+" lists spring-boot"), true
 		}
 	}
@@ -171,4 +194,49 @@ func angularMatch(read Reader) Match {
 		m.Evidence = "angular.json has the single project " + name
 	}
 	return m
+}
+
+// detectDeno matches Deno projects by their config file; Fresh is told apart
+// by its generated manifest or its import in the config.
+func detectDeno(read Reader) (Match, bool) {
+	for _, f := range []string{"deno.json", "deno.jsonc"} {
+		text, ok := read(f)
+		if !ok {
+			continue
+		}
+		if _, gen := read("fresh.gen.ts"); gen {
+			return match("fresh", "fresh.gen.ts found"), true
+		}
+		if strings.Contains(text, "$fresh/") || strings.Contains(text, "@fresh/core") {
+			return match("fresh", f+" imports fresh"), true
+		}
+		return match("deno", f+" found"), true
+	}
+	return Match{}, false
+}
+
+// detectBun is a hint only: a Bun lockfile next to package.json. Framework
+// presets win over it, so it never overrides Next.js or similar.
+func detectBun(read Reader) (Match, bool) {
+	for _, f := range []string{"bun.lockb", "bun.lock"} {
+		if _, ok := read(f); ok {
+			return match("bun", f+" found"), true
+		}
+	}
+	return Match{}, false
+}
+
+// detectDotnet works from the entry point files because Reader cannot list
+// *.csproj; the web host builder call is what marks an ASP.NET Core app.
+func detectDotnet(read Reader) (Match, bool) {
+	for _, f := range []string{"Program.cs", "Startup.cs"} {
+		text, ok := read(f)
+		if !ok {
+			continue
+		}
+		if strings.Contains(text, "WebApplication.CreateBuilder") || strings.Contains(text, "Microsoft.AspNetCore") || strings.Contains(text, "UseStartup") {
+			return match("aspnet-core", f+" builds an ASP.NET Core host"), true
+		}
+	}
+	return Match{}, false
 }
