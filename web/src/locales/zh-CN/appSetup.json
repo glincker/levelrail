@@ -1,0 +1,13 @@
+{
+  "launch": {
+    "title": "你的应用已上线",
+    "body": "直接打开,或扫描二维码在手机上试用。",
+    "copy": "复制网址",
+    "copied": "已复制",
+    "share": "复制分享链接",
+    "shareText": "试试 {{name}}:",
+    "dismiss": "关闭",
+    "qrLabel": "线上网址的二维码",
+    "qrLoading": "正在加载二维码"
+  }
+}

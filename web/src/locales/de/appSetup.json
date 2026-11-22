@@ -1,0 +1,13 @@
+{
+  "launch": {
+    "title": "Deine App ist live",
+    "body": "Öffne sie oder scanne den Code, um sie auf dem Handy zu testen.",
+    "copy": "URL kopieren",
+    "copied": "Kopiert",
+    "share": "Link zum Teilen kopieren",
+    "shareText": "Probiere {{name}} aus:",
+    "dismiss": "Schließen",
+    "qrLabel": "QR-Code für die Live-URL",
+    "qrLoading": "QR-Code wird geladen"
+  }
+}

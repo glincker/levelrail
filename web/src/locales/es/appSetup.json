@@ -1,0 +1,13 @@
+{
+  "launch": {
+    "title": "Tu app está en vivo",
+    "body": "Ábrela o escanea el código para probarla en el móvil.",
+    "copy": "Copiar URL",
+    "copied": "Copiado",
+    "share": "Copiar enlace para compartir",
+    "shareText": "Prueba {{name}}:",
+    "dismiss": "Cerrar",
+    "qrLabel": "Código QR de la URL en vivo",
+    "qrLoading": "Cargando código QR"
+  }
+}

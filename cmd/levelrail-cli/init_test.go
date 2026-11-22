@@ -175,3 +175,17 @@ func TestInitCommentedOutStdout(t *testing.T) {
 		t.Fatal("--out must not write AGENTS.md")
 	}
 }
+
+func TestInit_TuneFlagsWriteNamePortHealthDomain(t *testing.T) {
+	dir := writeProject(t, map[string]string{"go.mod": "module x\n"})
+	code, _, stderr := runInitCLI(t, "--dir", dir, "--yes", "--name", "shop", "--port", "9000", "--health", "/healthz", "--domain", "shop.example.com")
+	if code != exitOK {
+		t.Fatalf("exit %d, stderr: %s", code, stderr)
+	}
+	y := readProjectFile(t, dir, "app.yaml")
+	for _, want := range []string{"shop:", "port: 9000", "path: /healthz", "- shop.example.com"} {
+		if !strings.Contains(y, want) {
+			t.Errorf("app.yaml missing %q:\n%s", want, y)
+		}
+	}
+}

@@ -59,6 +59,7 @@ type initResult struct {
 func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "init", "print the plan and result as JSON to stdout and nothing else", stderr)
 	var dir, mode, mcpBinary, template string
+	var tune appTune
 	var force, dryRun, yes, listTemplates, commented bool
 	var outFile string
 	params := stringMapFlag{}
@@ -67,6 +68,11 @@ func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	fs.BoolVar(&listTemplates, "list-templates", false, "list the starter templates and their parameters, then exit")
 	fs.BoolVar(&commented, "commented", false, "comment every app.yaml field from the schema and add the common optional fields as commented-out lines")
 	fs.StringVar(&outFile, "out", "", "write only app.yaml to FILE, or to stdout when '-', and skip AGENTS.md and .mcp.json")
+	fs.StringVar(&tune.Name, "name", "", "app name to write (default: detected, asked on a terminal)")
+	fs.IntVar(&tune.Port, "port", 0, "container port to write (default: detected, asked on a terminal)")
+	fs.StringVar(&tune.Health, "health", "", "readiness path to write (default: /, asked on a terminal)")
+	fs.StringVar(&tune.Domain, "domain", "", "domain to write under domains (default: none, asked on a terminal)")
+	fs.BoolVar(&tune.Deploy, "deploy", false, "run \"up\" in the project directory after the files are written")
 	fs.StringVar(&dir, "dir", ".", "project directory to initialise")
 	fs.StringVar(&mode, "mode", agentinit.ModeAgentCore, "MCP tool exposure written to .mcp.json: agent-core (small tool profile, default), read-only, standard or full")
 	fs.StringVar(&mcpBinary, "mcp-binary", "", "MCP server binary name (default: derived from the CLI name)")
@@ -119,7 +125,16 @@ func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		}
 	}
 
-	files, err := planInit(dir, stack, opts, force, tplFiles, commented)
+	prompted := false
+	if template == "" && stack.Detected() && outFile == "" && !yes && !dryRun && !jsonOut && of.Format != outputJSON && stdinSourceIsTerminal() {
+		tune = promptTune(bufio.NewReader(stdinSource), stderr, stack, tune)
+		prompted = true
+	}
+	if template == "" && stack.Detected() {
+		tune.applyToStack(&stack)
+		opts.App = stack.Name
+	}
+	files, err := planInit(dir, stack, opts, force, tplFiles, commented, tune)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -176,6 +191,9 @@ func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
+	if res.Written && (tune.Deploy || (prompted && askYesNo(bufio.NewReader(stdinSource), stderr, "Deploy now with up?"))) {
+		return deployAfterInit(prog, dir, apiURLFlag, stdout, stderr, lookupEnv)
+	}
 	return exitOK
 }
 
@@ -200,7 +218,7 @@ func initNames(prog, mcpBinary string, lookupEnv func(string) (string, bool)) ag
 }
 
 // planInit decides what to do with each generated file without touching disk.
-func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force bool, tpl []projecttpl.File, commented bool) ([]initFile, error) {
+func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force bool, tpl []projecttpl.File, commented bool, tune appTune) ([]initFile, error) {
 	specPath := "app.yaml"
 	if found, err := spec.DiscoverPath(dir, ""); err == nil {
 		specPath = filepath.Base(found)
@@ -220,7 +238,7 @@ func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force
 		if err != nil {
 			return nil, err
 		}
-		files = append(files, initFile{Path: specPath, content: body})
+		files = append(files, initFile{Path: specPath, content: tune.applyToYAML(body)})
 	} else {
 		files = append(files, initFile{Path: specPath, Action: initSkip, Reason: "no stack detected: write app.yaml by hand"})
 	}
@@ -288,9 +306,13 @@ func writeInit(dir string, files []initFile) error {
 	return nil
 }
 
-func confirmInit(stderr io.Writer, n int) error {
+func stdinSourceIsTerminal() bool {
 	f, ok := stdinSource.(*os.File)
-	if !ok || !term.IsTerminal(int(f.Fd())) { //nolint:gosec // a terminal file descriptor always fits an int
+	return ok && term.IsTerminal(int(f.Fd())) //nolint:gosec // a terminal file descriptor always fits an int
+}
+
+func confirmInit(stderr io.Writer, n int) error {
+	if !stdinSourceIsTerminal() {
 		return errors.New("not a terminal: pass --yes to write without confirmation, or --dry-run to preview")
 	}
 	_, _ = fmt.Fprintf(stderr, "Write %d file(s)? [y/N] ", n)

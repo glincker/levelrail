@@ -30,5 +30,16 @@
       "body": "Give a second person access so you are not the only login.",
       "cta": "Invite someone"
     }
+  },
+  "launch": {
+    "title": "Your app is live",
+    "body": "Open it, or scan the code to try it on your phone.",
+    "copy": "Copy URL",
+    "copied": "Copied",
+    "share": "Copy share link",
+    "shareText": "Try {{name}}:",
+    "dismiss": "Dismiss",
+    "qrLabel": "QR code for the live URL",
+    "qrLoading": "Loading QR code"
   }
 }

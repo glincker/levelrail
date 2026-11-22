@@ -1,0 +1,13 @@
+{
+  "launch": {
+    "title": "Seu app está no ar",
+    "body": "Abra ou escaneie o código para testar no celular.",
+    "copy": "Copiar URL",
+    "copied": "Copiado",
+    "share": "Copiar link de compartilhamento",
+    "shareText": "Experimente {{name}}:",
+    "dismiss": "Fechar",
+    "qrLabel": "QR code da URL ativa",
+    "qrLoading": "Carregando QR code"
+  }
+}

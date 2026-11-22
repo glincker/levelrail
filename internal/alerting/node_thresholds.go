@@ -118,7 +118,7 @@ func EvaluateNodePressure(ctx context.Context, nodes NodeSource, services NodeSe
 		// A firing rule after a restart has no streaks; a node still over stays counted so it does not recover and refire.
 		if streaks[node.ID] >= need || r.Firing {
 			breached = true
-			notices = append(notices, nodePressureNotice(r.Kind, node, value, limit))
+			notices = append(notices, nodePressureNotice(r.Kind, node, value, limit)+nodeCulpritSuffix(ctx, services, metrics, r.Kind, node, from, now))
 		}
 	}
 	if haveMax {
