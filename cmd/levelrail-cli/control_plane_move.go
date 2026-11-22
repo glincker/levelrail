@@ -48,7 +48,7 @@ func runControlPlaneMove(prog string, args []string, stdout, stderr io.Writer, l
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("build key bundle: %w", err))
 	}
 	bundlePath := filepath.Join(*dir, "levelrail-escrow-"+time.Now().UTC().Format("20060102T150405Z")+".age")
-	if err := writeExclusive(bundlePath, bundle.Armored, 0o600); err != nil {
+	if err := writeExclusive(bundlePath, bundle.Armored); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	plan, err := client.GetControlPlaneRestorePlan(ctx)

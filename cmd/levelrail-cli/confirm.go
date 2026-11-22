@@ -29,7 +29,7 @@ func extractNoInputFlag(args []string) (remaining []string, set bool) {
 
 // confirmAction is the one confirm rule: --yes skips it, CI mode or a non-terminal stdin
 // fails fast naming the flag, otherwise the user is asked y/N on stderr.
-func confirmAction(stdin io.Reader, stderr io.Writer, question string, yes bool, yesFlag string) error {
+func confirmAction(stdin io.Reader, stderr io.Writer, question string, yes bool, yesFlag string) error { //nolint:unparam // the flag name is part of the error message
 	if yes {
 		return nil
 	}

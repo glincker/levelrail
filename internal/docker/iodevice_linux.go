@@ -16,9 +16,9 @@ func blockDeviceFor(dir string) string {
 	if err := syscall.Stat(dir, &st); err != nil {
 		return ""
 	}
-	dev := uint64(st.Dev) //nolint:unconvert // Dev is uint32 on some arches
-	major := uint32(((dev >> 8) & 0xfff) | ((dev >> 32) &^ 0xfff))
-	minor := uint32((dev & 0xff) | ((dev >> 12) &^ 0xff))
+	dev := uint64(st.Dev)                                          //nolint:unconvert // Dev is uint32 on some arches
+	major := uint32(((dev >> 8) & 0xfff) | ((dev >> 32) &^ 0xfff)) //nolint:gosec // masked to 32 bits
+	minor := uint32((dev & 0xff) | ((dev >> 12) &^ 0xff))          //nolint:gosec // masked to 32 bits
 	link, err := filepath.EvalSymlinks(fmt.Sprintf("/sys/dev/block/%d:%d", major, minor))
 	if err != nil {
 		return ""
