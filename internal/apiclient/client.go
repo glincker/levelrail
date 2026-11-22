@@ -487,6 +487,39 @@ func (c *Client) GetGlobalDeployFreeze(ctx context.Context) (DeployFreezeResourc
 	return out, err
 }
 
+// VacationFreezeResource is the one-off vacation freeze state.
+type VacationFreezeResource struct {
+	Active   bool       `json:"active"`
+	Until    *time.Time `json:"until,omitempty"`
+	DaysLeft int        `json:"days_left"`
+	Reason   string     `json:"reason,omitempty"`
+}
+
+// GetVacationFreeze calls GET /api/v1/settings/vacation-freeze.
+func (c *Client) GetVacationFreeze(ctx context.Context) (VacationFreezeResource, error) {
+	var out VacationFreezeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/vacation-freeze", nil, &out)
+	return out, err
+}
+
+// SetVacationFreeze calls PUT /api/v1/settings/vacation-freeze.
+func (c *Client) SetVacationFreeze(ctx context.Context, days int, reason string) (VacationFreezeResource, error) {
+	var out VacationFreezeResource
+	body := struct {
+		Days   int    `json:"days"`
+		Reason string `json:"reason,omitempty"`
+	}{days, reason}
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/vacation-freeze", body, &out)
+	return out, err
+}
+
+// ClearVacationFreeze calls DELETE /api/v1/settings/vacation-freeze.
+func (c *Client) ClearVacationFreeze(ctx context.Context) (VacationFreezeResource, error) {
+	var out VacationFreezeResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/vacation-freeze", nil, &out)
+	return out, err
+}
+
 // SetGlobalDeployFreeze calls PUT /api/v1/settings/deploy-freeze, replacing
 // the fleet-wide windows; an empty list clears them.
 func (c *Client) SetGlobalDeployFreeze(ctx context.Context, windows []FreezeWindowResource) (DeployFreezeResource, error) {

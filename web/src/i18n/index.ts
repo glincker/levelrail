@@ -156,6 +156,7 @@ export const NAMESPACES = [
   'nextSteps',
   'tags',
   'deployPolicies',
+  'vacationFreeze',
   'deployDetail',
   'staticRoutes',
   'pipelines',

@@ -319,7 +319,7 @@ func (rt *Router) loadFreeze(ctx context.Context, name string) ([]store.DeployFr
 			return nil, nil, err
 		}
 	}
-	global, err := rt.deploySafety.ListDeployFreezeWindows(ctx, store.DeployFreezeScopeGlobal)
+	global, err := rt.deploySafety.ListDeployFreezeWindows(ctx, store.DeployFreezeScopeGlobal, store.DeployFreezeScopeVacation)
 	return own, global, err
 }
 

@@ -12,6 +12,11 @@ import (
 // DeployFreezeScopeGlobal applies a freeze window to every app.
 const DeployFreezeScopeGlobal = "global"
 
+// DeployFreezeScopeVacation holds the one-off vacation freeze. Its window's
+// Cron is the RFC3339 start instead of a schedule, and it lifts itself when
+// Duration has passed.
+const DeployFreezeScopeVacation = "vacation"
+
 // DeployFreezeScopeApp returns the scope string for one app's own windows.
 func DeployFreezeScopeApp(serviceName string) string { return "app:" + serviceName }
 

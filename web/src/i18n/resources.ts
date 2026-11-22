@@ -128,6 +128,7 @@ import type buildMemory from '../locales/en/buildMemory.json'
 import type janitor from '../locales/en/janitor.json'
 import type cleanup from '../locales/en/cleanup.json'
 import type deployPolicies from '../locales/en/deployPolicies.json'
+import type vacationFreeze from '../locales/en/vacationFreeze.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type resilience from '../locales/en/resilience.json'
@@ -365,6 +366,7 @@ declare module 'i18next' {
       nextSteps: typeof nextSteps
       tags: typeof tags
       deployPolicies: typeof deployPolicies
+      vacationFreeze: typeof vacationFreeze
       deployDetail: typeof deployDetail
       staticRoutes: typeof staticRoutes
       firewall: typeof firewall

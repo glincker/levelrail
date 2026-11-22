@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2388 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2391 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -754,6 +754,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/traffic-export/sinks/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateTrafficExportSink", Description: "Omitted fields and empty credentials keep the stored value; the kind cannot change."},
 	{Method: "POST", Path: "/api/v1/settings/traffic-export/sinks/{id}/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestTrafficExportSink", Description: "Root: sends one synthetic record through that sink alone; a failed delivery returns ok false with an error kind."},
 	{Method: "GET", Path: "/api/v1/settings/traffic-export/status", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTrafficExportStatus", Description: "Last success, last error kind, queued and dropped counters per sink."},
+	{Method: "DELETE", Path: "/api/v1/settings/vacation-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteVacationFreeze", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/vacation-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetVacationFreeze", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/vacation-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutVacationFreeze", Description: ""},
 	{Method: "GET", Path: "/api/v1/users", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListUsers", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/users/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteUser", Description: ""},
 	{Method: "PUT", Path: "/api/v1/users/{id}/abilities", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateUserAbilities", Description: "PUT .../abilities is AbilityRoot like the delete route above, and refuses self-edits inside the handler (self-lockout guard): a root caller may change any other user's abilities, never their own."},

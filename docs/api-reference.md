@@ -336,6 +336,9 @@ Endpoints for:
 | PUT | /api/v1/settings/dns-providers/{provider} | AbilityRoot | handleUpdateDNSTokenProvider |
 | DELETE | /api/v1/settings/dns-providers/{provider} | AbilityRoot | handleDisconnectDNSTokenProvider |
 | POST | /api/v1/settings/dns-providers/{provider}/test | AbilityRoot | handleTestDNSTokenProvider |
+| GET | /api/v1/settings/vacation-freeze | AbilityRead | handleGetVacationFreeze |
+| PUT | /api/v1/settings/vacation-freeze | AbilityRoot | handlePutVacationFreeze |
+| DELETE | /api/v1/settings/vacation-freeze | AbilityRoot | handleDeleteVacationFreeze |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
