@@ -55,7 +55,16 @@ type ImageSource interface {
 
 // BuildPreview runs a dry pass and groups the outcome. Nothing is removed.
 func BuildPreview(ctx context.Context, run Runner, imgs ImageSource) (Preview, error) {
-	rep, err := run.Run(ctx, janitor.Options{Trigger: janitor.TriggerNodeGuardrail, DryRun: true, Force: true, Stages: previewStages})
+	return buildPreview(ctx, run, imgs, previewStages)
+}
+
+// BuildSafePreview is BuildPreview without the volume listing, for a node that keeps no volume bookkeeping.
+func BuildSafePreview(ctx context.Context, run Runner, imgs ImageSource) (Preview, error) {
+	return buildPreview(ctx, run, imgs, SafeStages)
+}
+
+func buildPreview(ctx context.Context, run Runner, imgs ImageSource, stages []janitor.Stage) (Preview, error) {
+	rep, err := run.Run(ctx, janitor.Options{Trigger: janitor.TriggerNodeGuardrail, DryRun: true, Force: true, Stages: stages})
 	if err != nil {
 		return Preview{}, fmt.Errorf("nodecapacity: preview: %w", err)
 	}

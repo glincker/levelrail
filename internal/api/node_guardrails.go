@@ -204,7 +204,35 @@ func settingsOf(g store.NodeGuardrails) nodeGuardrailSettings {
 		g.MemWarnAvailPct, g.MemCritAvailPct, g.SwapWarnUsedPct, g.SwapCritUsedPct, g.AutoClean}
 }
 
-const cleanupRemoteReason = "cleanup is not supported on this node yet, free space on the node itself"
+const cleanupRemoteReason = "this node's agent is too old for cleanup, upgrade the agent or free space on the node itself"
+
+// nodeCleaner is a node transport that can free disk on its own Docker. *agent.GRPCTransport satisfies it.
+type nodeCleaner interface {
+	NodeCleanup(ctx context.Context, dryRun bool, keep []string) (nodecapacity.Result, error)
+}
+
+// remoteCleaner resolves the agent transport for a remote node, or nil when it cannot clean.
+func (rt *Router) remoteCleaner(id string) nodeCleaner {
+	runtime, err := rt.execRuntimeFor(id)
+	if err != nil {
+		return nil
+	}
+	c, ok := runtime.(nodeCleaner)
+	if !ok {
+		return nil
+	}
+	return c
+}
+
+// remoteCleanupCapable is true when the node's connected agent advertises cleanup.
+func (rt *Router) remoteCleanupCapable(id string) bool {
+	c := rt.remoteCleaner(id)
+	if c == nil {
+		return false
+	}
+	cc, ok := c.(interface{ CanCleanup() bool })
+	return !ok || cc.CanCleanup()
+}
 
 func (rt *Router) cleanupReady() bool { return rt.janitor != nil && rt.janitorStore != nil }
 
@@ -240,9 +268,13 @@ func (rt *Router) handleGetNodeCapacity(w http.ResponseWriter, r *http.Request) 
 	} else {
 		resp.Status = nodecapacity.Status{Metrics: []nodecapacity.MetricStatus{}, Thresholds: th, Worst: nodecapacity.LevelUnknown}
 	}
-	resp.CleanupSupported = resp.Local && rt.cleanupReady()
-	if !resp.Local {
-		resp.CleanupReason = cleanupRemoteReason
+	if resp.Local {
+		resp.CleanupSupported = rt.cleanupReady()
+	} else {
+		resp.CleanupSupported = rt.remoteCleanupCapable(id)
+		if !resp.CleanupSupported {
+			resp.CleanupReason = cleanupRemoteReason
+		}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -302,17 +334,31 @@ func (rt *Router) handleNodeCleanup(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if !rt.isLocalGuardNode(id) {
-		writeCodedError(w, http.StatusNotImplemented, "cleanup_unsupported", cleanupRemoteReason)
+	local := rt.isLocalGuardNode(id)
+	if local && !rt.cleanupReady() {
+		writeError(w, http.StatusNotImplemented, "cleanup is not configured on this control plane")
 		return
 	}
-	if !rt.cleanupReady() {
-		writeError(w, http.StatusNotImplemented, "cleanup is not configured on this control plane")
+	if !local && !rt.remoteCleanupCapable(id) {
+		writeCodedError(w, http.StatusNotImplemented, "cleanup_unsupported", cleanupRemoteReason)
 		return
 	}
 	var req nodeCleanupRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<12)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.DryRun && !local {
+		keep, err := rt.keepContainerNames(r.Context())
+		var res nodecapacity.Result
+		if err == nil {
+			res, err = rt.remoteCleaner(id).NodeCleanup(r.Context(), true, keep)
+		}
+		if err != nil {
+			rt.internalError(w, "api: node cleanup preview failed", err, slog.String("node_id", id))
+			return
+		}
+		writeJSON(w, http.StatusOK, nodeCleanupResponse{DryRun: true, Preview: res.Preview})
 		return
 	}
 	if req.DryRun {
@@ -343,7 +389,18 @@ func (rt *Router) handleNodeCleanup(w http.ResponseWriter, r *http.Request) {
 // runNodeCleanup removes the safe classes and records the outcome in the node's history.
 func (rt *Router) runNodeCleanup(ctx context.Context, nodeID, trigger, actor string) (nodecapacity.Result, error) {
 	started := time.Now()
-	res, err := nodecapacity.Execute(ctx, rt.janitor, janitor.TriggerNodeGuardrail)
+	var res nodecapacity.Result
+	var err error
+	if rt.isLocalGuardNode(nodeID) {
+		res, err = nodecapacity.Execute(ctx, rt.janitor, janitor.TriggerNodeGuardrail)
+	} else if c := rt.remoteCleaner(nodeID); c != nil {
+		var keep []string
+		if keep, err = rt.keepContainerNames(ctx); err == nil {
+			res, err = c.NodeCleanup(ctx, false, keep)
+		}
+	} else {
+		err = errors.New("cleanup is not available on this node")
+	}
 	if err != nil {
 		return res, fmt.Errorf("node %s: %w", nodeID, err)
 	}
@@ -388,6 +445,23 @@ func (rt *Router) handleListNodeCleanupRuns(w http.ResponseWriter, r *http.Reque
 			FreedBytes: run.ReclaimedBytes, Classes: json.RawMessage(run.Body), Error: run.Error})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func (rt *Router) autoCleanReady(id string) bool {
+	if rt.isLocalGuardNode(id) {
+		return rt.cleanupReady()
+	}
+	return rt.remoteCleanupCapable(id)
+}
+
+// keepContainerNames is every desired container name on any node, a safe superset for one node's prune.
+// A failed read is an error: a node must never prune without knowing what is desired.
+func (rt *Router) keepContainerNames(ctx context.Context) ([]string, error) {
+	names, err := rt.desiredContainerNames(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list desired containers: %w", err)
+	}
+	return names, nil
 }
 
 func (rt *Router) guardNodeIDs(ctx context.Context) []string {
@@ -471,7 +545,7 @@ func (rt *Router) checkNodeGuardrails(ctx context.Context) {
 		if rt.nodeGuard.notify != nil && st.Worst != prev && (st.Worst == nodecapacity.LevelWarn || st.Worst == nodecapacity.LevelCritical) {
 			rt.nodeGuard.notify(ctx, fmt.Sprintf("Node %s: %s (%s)", rt.nodeDisplayName(ctx, id), st.Reason, st.Worst))
 		}
-		if auto[id] && rt.isLocalGuardNode(id) && rt.cleanupReady() && st.Worst != nodecapacity.LevelOK && st.Worst != nodecapacity.LevelUnknown {
+		if auto[id] && rt.autoCleanReady(id) && st.Worst != nodecapacity.LevelOK && st.Worst != nodecapacity.LevelUnknown {
 			if _, err := rt.runNodeCleanup(ctx, id, nodeCleanupTriggerAut, "auto-clean"); err != nil && !errors.Is(err, janitor.ErrBusy) {
 				rt.logger.Warn("api: node auto-clean failed", slog.String("error", err.Error()), slog.String("node_id", id))
 			}

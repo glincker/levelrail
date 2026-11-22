@@ -19,7 +19,7 @@ Current limits, each with the page it comes from. Labels and evidence change wit
 - The join flow is verified across two real Docker daemons, not across a real WAN. Source: [roadmap](roadmap.md), [multi-node](multi-node.md).
 - The WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons. Source: [roadmap](roadmap.md).
 - Multi-cloud node onboarding has no run against a real cloud metadata endpoint. Source: [feature status](feature-status.md).
-- Capacity cleanup covers the control plane node only. Remote nodes monitor and block. Source: [feature status](feature-status.md).
+- Capacity cleanup on a remote node needs an agent that advertises `node_cleanup`. An older agent monitors and blocks only, so upgrade it. Source: [feature status](feature-status.md).
 
 ## Not verified on real infrastructure
 

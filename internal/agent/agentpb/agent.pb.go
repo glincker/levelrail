@@ -1828,6 +1828,7 @@ type AgentRequest struct {
 	//	*AgentRequest_InspectContainers
 	//	*AgentRequest_Probe
 	//	*AgentRequest_TunnelOpen
+	//	*AgentRequest_Cleanup
 	Op            isAgentRequest_Op `protobuf_oneof:"op"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2120,6 +2121,15 @@ func (x *AgentRequest) GetTunnelOpen() *TunnelOpenRequest {
 	return nil
 }
 
+func (x *AgentRequest) GetCleanup() *CleanupRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_Cleanup); ok {
+			return x.Cleanup
+		}
+	}
+	return nil
+}
+
 type isAgentRequest_Op interface {
 	isAgentRequest_Op()
 }
@@ -2259,6 +2269,12 @@ type AgentRequest_TunnelOpen struct {
 	TunnelOpen *TunnelOpenRequest `protobuf:"bytes,28,opt,name=tunnel_open,json=tunnelOpen,proto3,oneof"`
 }
 
+type AgentRequest_Cleanup struct {
+	// Cleanup previews or runs the safe capacity cleanup on this node's own
+	// Docker. Sent only to agents advertising "node_cleanup".
+	Cleanup *CleanupRequest `protobuf:"bytes,29,opt,name=cleanup,proto3,oneof"`
+}
+
 func (*AgentRequest_InspectByName) isAgentRequest_Op() {}
 
 func (*AgentRequest_Create) isAgentRequest_Op() {}
@@ -2313,6 +2329,8 @@ func (*AgentRequest_Probe) isAgentRequest_Op() {}
 
 func (*AgentRequest_TunnelOpen) isAgentRequest_Op() {}
 
+func (*AgentRequest_Cleanup) isAgentRequest_Op() {}
+
 // AgentResponse is the agent's answer to exactly one AgentRequest,
 // carrying the same request_id.
 type AgentResponse struct {
@@ -2342,6 +2360,7 @@ type AgentResponse struct {
 	//	*AgentResponse_InspectContainers
 	//	*AgentResponse_Probe
 	//	*AgentResponse_TunnelOpen
+	//	*AgentResponse_Cleanup
 	Result        isAgentResponse_Result `protobuf_oneof:"result"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2551,6 +2570,15 @@ func (x *AgentResponse) GetTunnelOpen() *TunnelOpenResponse {
 	return nil
 }
 
+func (x *AgentResponse) GetCleanup() *CleanupResponse {
+	if x != nil {
+		if x, ok := x.Result.(*AgentResponse_Cleanup); ok {
+			return x.Cleanup
+		}
+	}
+	return nil
+}
+
 type isAgentResponse_Result interface {
 	isAgentResponse_Result()
 }
@@ -2627,6 +2655,10 @@ type AgentResponse_TunnelOpen struct {
 	TunnelOpen *TunnelOpenResponse `protobuf:"bytes,19,opt,name=tunnel_open,json=tunnelOpen,proto3,oneof"`
 }
 
+type AgentResponse_Cleanup struct {
+	Cleanup *CleanupResponse `protobuf:"bytes,20,opt,name=cleanup,proto3,oneof"`
+}
+
 func (*AgentResponse_InspectByName) isAgentResponse_Result() {}
 
 func (*AgentResponse_Create) isAgentResponse_Result() {}
@@ -2660,6 +2692,8 @@ func (*AgentResponse_InspectContainers) isAgentResponse_Result() {}
 func (*AgentResponse_Probe) isAgentResponse_Result() {}
 
 func (*AgentResponse_TunnelOpen) isAgentResponse_Result() {}
+
+func (*AgentResponse_Cleanup) isAgentResponse_Result() {}
 
 // TunnelOpenRequest names the target by service and container port only.
 // The agent resolves the loopback host port itself and never accepts a host
@@ -8993,6 +9027,265 @@ func (x *RotateMeshKeyResponse) GetNewPublicKey() string {
 	return ""
 }
 
+// CleanupRequest asks the node to free disk. keep_containers are desired
+// container names the control plane wants left alone. Volumes are never
+// removed by this op, they are only listed in a preview.
+type CleanupRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	DryRun         bool                   `protobuf:"varint,1,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	KeepContainers []string               `protobuf:"bytes,2,rep,name=keep_containers,json=keepContainers,proto3" json:"keep_containers,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CleanupRequest) Reset() {
+	*x = CleanupRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[116]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CleanupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CleanupRequest) ProtoMessage() {}
+
+func (x *CleanupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[116]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CleanupRequest.ProtoReflect.Descriptor instead.
+func (*CleanupRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{116}
+}
+
+func (x *CleanupRequest) GetDryRun() bool {
+	if x != nil {
+		return x.DryRun
+	}
+	return false
+}
+
+func (x *CleanupRequest) GetKeepContainers() []string {
+	if x != nil {
+		return x.KeepContainers
+	}
+	return nil
+}
+
+type CleanupItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Detail        string                 `protobuf:"bytes,2,opt,name=detail,proto3" json:"detail,omitempty"`
+	SizeBytes     int64                  `protobuf:"varint,3,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	Action        string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CleanupItem) Reset() {
+	*x = CleanupItem{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[117]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CleanupItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CleanupItem) ProtoMessage() {}
+
+func (x *CleanupItem) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[117]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CleanupItem.ProtoReflect.Descriptor instead.
+func (*CleanupItem) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{117}
+}
+
+func (x *CleanupItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CleanupItem) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+func (x *CleanupItem) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *CleanupItem) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+type CleanupClass struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Deletable     bool                   `protobuf:"varint,2,opt,name=deletable,proto3" json:"deletable,omitempty"`
+	Bytes         int64                  `protobuf:"varint,3,opt,name=bytes,proto3" json:"bytes,omitempty"`
+	Items         []*CleanupItem         `protobuf:"bytes,4,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CleanupClass) Reset() {
+	*x = CleanupClass{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[118]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CleanupClass) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CleanupClass) ProtoMessage() {}
+
+func (x *CleanupClass) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[118]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CleanupClass.ProtoReflect.Descriptor instead.
+func (*CleanupClass) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{118}
+}
+
+func (x *CleanupClass) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CleanupClass) GetDeletable() bool {
+	if x != nil {
+		return x.Deletable
+	}
+	return false
+}
+
+func (x *CleanupClass) GetBytes() int64 {
+	if x != nil {
+		return x.Bytes
+	}
+	return 0
+}
+
+func (x *CleanupClass) GetItems() []*CleanupItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type CleanupResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Classes       []*CleanupClass        `protobuf:"bytes,1,rep,name=classes,proto3" json:"classes,omitempty"`
+	TotalBytes    int64                  `protobuf:"varint,2,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
+	FreedBytes    int64                  `protobuf:"varint,3,opt,name=freed_bytes,json=freedBytes,proto3" json:"freed_bytes,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CleanupResponse) Reset() {
+	*x = CleanupResponse{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[119]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CleanupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CleanupResponse) ProtoMessage() {}
+
+func (x *CleanupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[119]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CleanupResponse.ProtoReflect.Descriptor instead.
+func (*CleanupResponse) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{119}
+}
+
+func (x *CleanupResponse) GetClasses() []*CleanupClass {
+	if x != nil {
+		return x.Classes
+	}
+	return nil
+}
+
+func (x *CleanupResponse) GetTotalBytes() int64 {
+	if x != nil {
+		return x.TotalBytes
+	}
+	return 0
+}
+
+func (x *CleanupResponse) GetFreedBytes() int64 {
+	if x != nil {
+		return x.FreedBytes
+	}
+	return 0
+}
+
+func (x *CleanupResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_proto_agent_v1_agent_proto protoreflect.FileDescriptor
 
 const file_proto_agent_v1_agent_proto_rawDesc = "" +
@@ -9119,7 +9412,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	" \x01(\v2\x1c.levelrail.agent.v1.RenewNowH\x00R\brenewNow\x12J\n" +
 	"\x0esilence_config\x18\v \x01(\v2!.levelrail.agent.v1.SilenceConfigH\x00R\rsilenceConfigB\t\n" +
 	"\apayload\"\b\n" +
-	"\x06GoAway\"\x9f\x10\n" +
+	"\x06GoAway\"\xdf\x10\n" +
 	"\fAgentRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12R\n" +
@@ -9154,9 +9447,9 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x12inspect_containers\x18\x1a \x01(\v2,.levelrail.agent.v1.InspectContainersRequestH\x00R\x11inspectContainers\x128\n" +
 	"\x05probe\x18\x1b \x01(\v2 .levelrail.agent.v1.ProbeRequestH\x00R\x05probe\x12H\n" +
 	"\vtunnel_open\x18\x1c \x01(\v2%.levelrail.agent.v1.TunnelOpenRequestH\x00R\n" +
-	"tunnelOpenB\x04\n" +
-	"\x02op\"\xd5\n" +
-	"\n" +
+	"tunnelOpen\x12>\n" +
+	"\acleanup\x18\x1d \x01(\v2\".levelrail.agent.v1.CleanupRequestH\x00R\acleanupB\x04\n" +
+	"\x02op\"\x96\v\n" +
 	"\rAgentResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
@@ -9182,7 +9475,8 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x12inspect_containers\x18\x11 \x01(\v2-.levelrail.agent.v1.InspectContainersResponseH\x00R\x11inspectContainers\x129\n" +
 	"\x05probe\x18\x12 \x01(\v2!.levelrail.agent.v1.ProbeResponseH\x00R\x05probe\x12I\n" +
 	"\vtunnel_open\x18\x13 \x01(\v2&.levelrail.agent.v1.TunnelOpenResponseH\x00R\n" +
-	"tunnelOpenB\b\n" +
+	"tunnelOpen\x12?\n" +
+	"\acleanup\x18\x14 \x01(\v2#.levelrail.agent.v1.CleanupResponseH\x00R\acleanupB\b\n" +
 	"\x06result\"\x92\x01\n" +
 	"\x11TunnelOpenRequest\x12\x1b\n" +
 	"\ttunnel_id\x18\x01 \x01(\fR\btunnelId\x12\x18\n" +
@@ -9683,7 +9977,28 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x05peers\x18\x02 \x03(\v2\".levelrail.agent.v1.MeshPeerStatusR\x05peers\"c\n" +
 	"\x15RotateMeshKeyResponse\x12$\n" +
 	"\x0eold_public_key\x18\x01 \x01(\tR\foldPublicKey\x12$\n" +
-	"\x0enew_public_key\x18\x02 \x01(\tR\fnewPublicKey*[\n" +
+	"\x0enew_public_key\x18\x02 \x01(\tR\fnewPublicKey\"R\n" +
+	"\x0eCleanupRequest\x12\x17\n" +
+	"\adry_run\x18\x01 \x01(\bR\x06dryRun\x12'\n" +
+	"\x0fkeep_containers\x18\x02 \x03(\tR\x0ekeepContainers\"p\n" +
+	"\vCleanupItem\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
+	"\x06detail\x18\x02 \x01(\tR\x06detail\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x03 \x01(\x03R\tsizeBytes\x12\x16\n" +
+	"\x06action\x18\x04 \x01(\tR\x06action\"\x8d\x01\n" +
+	"\fCleanupClass\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
+	"\tdeletable\x18\x02 \x01(\bR\tdeletable\x12\x14\n" +
+	"\x05bytes\x18\x03 \x01(\x03R\x05bytes\x125\n" +
+	"\x05items\x18\x04 \x03(\v2\x1f.levelrail.agent.v1.CleanupItemR\x05items\"\xa5\x01\n" +
+	"\x0fCleanupResponse\x12:\n" +
+	"\aclasses\x18\x01 \x03(\v2 .levelrail.agent.v1.CleanupClassR\aclasses\x12\x1f\n" +
+	"\vtotal_bytes\x18\x02 \x01(\x03R\n" +
+	"totalBytes\x12\x1f\n" +
+	"\vfreed_bytes\x18\x03 \x01(\x03R\n" +
+	"freedBytes\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error*[\n" +
 	"\tBuildKind\x12\x1a\n" +
 	"\x16BUILD_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15BUILD_KIND_DOCKERFILE\x10\x01\x12\x17\n" +
@@ -9710,7 +10025,7 @@ func file_proto_agent_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 123)
+var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 127)
 var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(BuildKind)(0),                       // 0: levelrail.agent.v1.BuildKind
 	(VolumeFileOp_Kind)(0),               // 1: levelrail.agent.v1.VolumeFileOp.Kind
@@ -9831,21 +10146,25 @@ var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(*MeshPeerStatus)(nil),               // 116: levelrail.agent.v1.MeshPeerStatus
 	(*MeshStatusResponse)(nil),           // 117: levelrail.agent.v1.MeshStatusResponse
 	(*RotateMeshKeyResponse)(nil),        // 118: levelrail.agent.v1.RotateMeshKeyResponse
-	nil,                                  // 119: levelrail.agent.v1.ContainerSpec.EnvEntry
-	nil,                                  // 120: levelrail.agent.v1.ContainerSpec.LabelsEntry
-	nil,                                  // 121: levelrail.agent.v1.ContainerSpec.SysctlsEntry
-	nil,                                  // 122: levelrail.agent.v1.ContainerState.LabelsEntry
-	nil,                                  // 123: levelrail.agent.v1.EnsureNetworkRequest.LabelsEntry
-	nil,                                  // 124: levelrail.agent.v1.BuildRequest.BuildArgsEntry
-	nil,                                  // 125: levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	(*timestamppb.Timestamp)(nil),        // 126: google.protobuf.Timestamp
+	(*CleanupRequest)(nil),               // 119: levelrail.agent.v1.CleanupRequest
+	(*CleanupItem)(nil),                  // 120: levelrail.agent.v1.CleanupItem
+	(*CleanupClass)(nil),                 // 121: levelrail.agent.v1.CleanupClass
+	(*CleanupResponse)(nil),              // 122: levelrail.agent.v1.CleanupResponse
+	nil,                                  // 123: levelrail.agent.v1.ContainerSpec.EnvEntry
+	nil,                                  // 124: levelrail.agent.v1.ContainerSpec.LabelsEntry
+	nil,                                  // 125: levelrail.agent.v1.ContainerSpec.SysctlsEntry
+	nil,                                  // 126: levelrail.agent.v1.ContainerState.LabelsEntry
+	nil,                                  // 127: levelrail.agent.v1.EnsureNetworkRequest.LabelsEntry
+	nil,                                  // 128: levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	nil,                                  // 129: levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	(*timestamppb.Timestamp)(nil),        // 130: google.protobuf.Timestamp
 }
 var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	7,   // 0: levelrail.agent.v1.EnrollRequest.agent:type_name -> levelrail.agent.v1.AgentInfo
-	126, // 1: levelrail.agent.v1.EnrollResponse.not_after:type_name -> google.protobuf.Timestamp
-	126, // 2: levelrail.agent.v1.RenewResponse.not_after:type_name -> google.protobuf.Timestamp
+	130, // 1: levelrail.agent.v1.EnrollResponse.not_after:type_name -> google.protobuf.Timestamp
+	130, // 2: levelrail.agent.v1.RenewResponse.not_after:type_name -> google.protobuf.Timestamp
 	7,   // 3: levelrail.agent.v1.ReenrollRequest.agent:type_name -> levelrail.agent.v1.AgentInfo
-	126, // 4: levelrail.agent.v1.ReenrollResponse.not_after:type_name -> google.protobuf.Timestamp
+	130, // 4: levelrail.agent.v1.ReenrollResponse.not_after:type_name -> google.protobuf.Timestamp
 	22,  // 5: levelrail.agent.v1.AgentMessage.response:type_name -> levelrail.agent.v1.AgentResponse
 	50,  // 6: levelrail.agent.v1.AgentMessage.event:type_name -> levelrail.agent.v1.ProxiedEvent
 	92,  // 7: levelrail.agent.v1.AgentMessage.exec_output:type_name -> levelrail.agent.v1.ExecOutput
@@ -9858,9 +10177,9 @@ var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	47,  // 14: levelrail.agent.v1.AgentMessage.host_report:type_name -> levelrail.agent.v1.HostReport
 	16,  // 15: levelrail.agent.v1.AgentMessage.renewal:type_name -> levelrail.agent.v1.RenewalReport
 	15,  // 16: levelrail.agent.v1.AgentMessage.onboarding:type_name -> levelrail.agent.v1.OnboardingReport
-	126, // 17: levelrail.agent.v1.RenewalReport.next_renew_at:type_name -> google.protobuf.Timestamp
-	126, // 18: levelrail.agent.v1.RenewalReport.last_failed_at:type_name -> google.protobuf.Timestamp
-	126, // 19: levelrail.agent.v1.RenewalReport.next_retry_at:type_name -> google.protobuf.Timestamp
+	130, // 17: levelrail.agent.v1.RenewalReport.next_renew_at:type_name -> google.protobuf.Timestamp
+	130, // 18: levelrail.agent.v1.RenewalReport.last_failed_at:type_name -> google.protobuf.Timestamp
+	130, // 19: levelrail.agent.v1.RenewalReport.next_retry_at:type_name -> google.protobuf.Timestamp
 	21,  // 20: levelrail.agent.v1.ControlMessage.request:type_name -> levelrail.agent.v1.AgentRequest
 	89,  // 21: levelrail.agent.v1.ControlMessage.exec_input:type_name -> levelrail.agent.v1.ExecInput
 	90,  // 22: levelrail.agent.v1.ControlMessage.exec_cancel:type_name -> levelrail.agent.v1.ExecCancel
@@ -9899,102 +10218,106 @@ var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	74,  // 55: levelrail.agent.v1.AgentRequest.inspect_containers:type_name -> levelrail.agent.v1.InspectContainersRequest
 	28,  // 56: levelrail.agent.v1.AgentRequest.probe:type_name -> levelrail.agent.v1.ProbeRequest
 	23,  // 57: levelrail.agent.v1.AgentRequest.tunnel_open:type_name -> levelrail.agent.v1.TunnelOpenRequest
-	52,  // 58: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
-	54,  // 59: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
-	60,  // 60: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
-	62,  // 61: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
-	34,  // 62: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
-	66,  // 63: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
-	71,  // 64: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
-	108, // 65: levelrail.agent.v1.AgentResponse.inspect_exit_state:type_name -> levelrail.agent.v1.InspectExitStateResponse
-	113, // 66: levelrail.agent.v1.AgentResponse.apply_mesh:type_name -> levelrail.agent.v1.ApplyMeshResponse
-	118, // 67: levelrail.agent.v1.AgentResponse.rotate_mesh_key:type_name -> levelrail.agent.v1.RotateMeshKeyResponse
-	81,  // 68: levelrail.agent.v1.AgentResponse.stats:type_name -> levelrail.agent.v1.StatsResponse
-	117, // 69: levelrail.agent.v1.AgentResponse.mesh_status:type_name -> levelrail.agent.v1.MeshStatusResponse
-	86,  // 70: levelrail.agent.v1.AgentResponse.archive_stat:type_name -> levelrail.agent.v1.ArchiveStat
-	32,  // 71: levelrail.agent.v1.AgentResponse.logs:type_name -> levelrail.agent.v1.LogsResponse
-	79,  // 72: levelrail.agent.v1.AgentResponse.inspect_containers:type_name -> levelrail.agent.v1.InspectContainersResponse
-	29,  // 73: levelrail.agent.v1.AgentResponse.probe:type_name -> levelrail.agent.v1.ProbeResponse
-	24,  // 74: levelrail.agent.v1.AgentResponse.tunnel_open:type_name -> levelrail.agent.v1.TunnelOpenResponse
-	25,  // 75: levelrail.agent.v1.TunnelFrame.hello:type_name -> levelrail.agent.v1.TunnelHello
-	34,  // 76: levelrail.agent.v1.TunnelFrame.half_close:type_name -> levelrail.agent.v1.Empty
-	26,  // 77: levelrail.agent.v1.TunnelFrame.reset:type_name -> levelrail.agent.v1.TunnelReset
-	31,  // 78: levelrail.agent.v1.LogsResponse.lines:type_name -> levelrail.agent.v1.LogLine
-	36,  // 79: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
-	119, // 80: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
-	37,  // 81: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
-	38,  // 82: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
-	43,  // 83: levelrail.agent.v1.ContainerSpec.gpu:type_name -> levelrail.agent.v1.GPURequest
-	120, // 84: levelrail.agent.v1.ContainerSpec.labels:type_name -> levelrail.agent.v1.ContainerSpec.LabelsEntry
-	42,  // 85: levelrail.agent.v1.ContainerSpec.bind_mounts:type_name -> levelrail.agent.v1.BindMount
-	41,  // 86: levelrail.agent.v1.ContainerSpec.files:type_name -> levelrail.agent.v1.FileMount
-	40,  // 87: levelrail.agent.v1.ContainerSpec.ulimits:type_name -> levelrail.agent.v1.Ulimit
-	121, // 88: levelrail.agent.v1.ContainerSpec.sysctls:type_name -> levelrail.agent.v1.ContainerSpec.SysctlsEntry
-	44,  // 89: levelrail.agent.v1.GPUReport.devices:type_name -> levelrail.agent.v1.GPUDevice
-	46,  // 90: levelrail.agent.v1.HostReport.other_containers:type_name -> levelrail.agent.v1.UnmanagedContainer
-	36,  // 91: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
-	122, // 92: levelrail.agent.v1.ContainerState.labels:type_name -> levelrail.agent.v1.ContainerState.LabelsEntry
-	126, // 93: levelrail.agent.v1.ContainerState.created:type_name -> google.protobuf.Timestamp
-	126, // 94: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
-	126, // 95: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
-	48,  // 96: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
-	39,  // 97: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
-	37,  // 98: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
-	49,  // 99: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
-	48,  // 100: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
-	123, // 101: levelrail.agent.v1.EnsureNetworkRequest.labels:type_name -> levelrail.agent.v1.EnsureNetworkRequest.LabelsEntry
-	64,  // 102: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
-	72,  // 103: levelrail.agent.v1.ContainerStats.cpu_raw:type_name -> levelrail.agent.v1.CPUStatsRaw
-	75,  // 104: levelrail.agent.v1.ContainerDetail.health:type_name -> levelrail.agent.v1.ContainerHealthDetail
-	126, // 105: levelrail.agent.v1.ContainerDetail.started_at:type_name -> google.protobuf.Timestamp
-	126, // 106: levelrail.agent.v1.ContainerDetail.finished_at:type_name -> google.protobuf.Timestamp
-	36,  // 107: levelrail.agent.v1.ContainerDetail.ports:type_name -> levelrail.agent.v1.PortBinding
-	76,  // 108: levelrail.agent.v1.ContainerDetail.networks:type_name -> levelrail.agent.v1.ContainerNetworkDetail
-	77,  // 109: levelrail.agent.v1.ContainerDetail.mounts:type_name -> levelrail.agent.v1.ContainerMountDetail
-	78,  // 110: levelrail.agent.v1.InspectContainersResponse.containers:type_name -> levelrail.agent.v1.ContainerDetail
-	73,  // 111: levelrail.agent.v1.StatsResponse.stats:type_name -> levelrail.agent.v1.ContainerStats
-	87,  // 112: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
-	85,  // 113: levelrail.agent.v1.ExecRequest.archive:type_name -> levelrail.agent.v1.ArchiveOp
-	84,  // 114: levelrail.agent.v1.ExecRequest.file:type_name -> levelrail.agent.v1.FileOp
-	83,  // 115: levelrail.agent.v1.ExecRequest.volume_file:type_name -> levelrail.agent.v1.VolumeFileOp
-	1,   // 116: levelrail.agent.v1.VolumeFileOp.kind:type_name -> levelrail.agent.v1.VolumeFileOp.Kind
-	2,   // 117: levelrail.agent.v1.FileOp.kind:type_name -> levelrail.agent.v1.FileOp.Kind
-	93,  // 118: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
-	94,  // 119: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
-	0,   // 120: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
-	124, // 121: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
-	97,  // 122: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
-	96,  // 123: levelrail.agent.v1.BuildRequest.push:type_name -> levelrail.agent.v1.PushTarget
-	102, // 124: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
-	103, // 125: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
-	104, // 126: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
-	125, // 127: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	126, // 128: levelrail.agent.v1.ExitState.started_at:type_name -> google.protobuf.Timestamp
-	126, // 129: levelrail.agent.v1.ExitState.finished_at:type_name -> google.protobuf.Timestamp
-	106, // 130: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
-	109, // 131: levelrail.agent.v1.DeviceConfig.peers:type_name -> levelrail.agent.v1.PeerConfig
-	110, // 132: levelrail.agent.v1.ApplyMeshRequest.config:type_name -> levelrail.agent.v1.DeviceConfig
-	111, // 133: levelrail.agent.v1.ApplyMeshResponse.identity:type_name -> levelrail.agent.v1.NodeIdentity
-	116, // 134: levelrail.agent.v1.MeshStatusResponse.peers:type_name -> levelrail.agent.v1.MeshPeerStatus
-	5,   // 135: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
-	14,  // 136: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
-	8,   // 137: levelrail.agent.v1.AgentService.Renew:input_type -> levelrail.agent.v1.RenewRequest
-	10,  // 138: levelrail.agent.v1.AgentService.Reenroll:input_type -> levelrail.agent.v1.ReenrollRequest
-	12,  // 139: levelrail.agent.v1.AgentService.CheckIdentity:input_type -> levelrail.agent.v1.CheckIdentityRequest
-	3,   // 140: levelrail.agent.v1.AgentService.UpdateCheck:input_type -> levelrail.agent.v1.UpdateCheckRequest
-	27,  // 141: levelrail.agent.v1.AgentService.Tunnel:input_type -> levelrail.agent.v1.TunnelFrame
-	6,   // 142: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
-	19,  // 143: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
-	9,   // 144: levelrail.agent.v1.AgentService.Renew:output_type -> levelrail.agent.v1.RenewResponse
-	11,  // 145: levelrail.agent.v1.AgentService.Reenroll:output_type -> levelrail.agent.v1.ReenrollResponse
-	13,  // 146: levelrail.agent.v1.AgentService.CheckIdentity:output_type -> levelrail.agent.v1.CheckIdentityResponse
-	4,   // 147: levelrail.agent.v1.AgentService.UpdateCheck:output_type -> levelrail.agent.v1.UpdateCheckResponse
-	27,  // 148: levelrail.agent.v1.AgentService.Tunnel:output_type -> levelrail.agent.v1.TunnelFrame
-	142, // [142:149] is the sub-list for method output_type
-	135, // [135:142] is the sub-list for method input_type
-	135, // [135:135] is the sub-list for extension type_name
-	135, // [135:135] is the sub-list for extension extendee
-	0,   // [0:135] is the sub-list for field type_name
+	119, // 58: levelrail.agent.v1.AgentRequest.cleanup:type_name -> levelrail.agent.v1.CleanupRequest
+	52,  // 59: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
+	54,  // 60: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
+	60,  // 61: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
+	62,  // 62: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
+	34,  // 63: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
+	66,  // 64: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
+	71,  // 65: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
+	108, // 66: levelrail.agent.v1.AgentResponse.inspect_exit_state:type_name -> levelrail.agent.v1.InspectExitStateResponse
+	113, // 67: levelrail.agent.v1.AgentResponse.apply_mesh:type_name -> levelrail.agent.v1.ApplyMeshResponse
+	118, // 68: levelrail.agent.v1.AgentResponse.rotate_mesh_key:type_name -> levelrail.agent.v1.RotateMeshKeyResponse
+	81,  // 69: levelrail.agent.v1.AgentResponse.stats:type_name -> levelrail.agent.v1.StatsResponse
+	117, // 70: levelrail.agent.v1.AgentResponse.mesh_status:type_name -> levelrail.agent.v1.MeshStatusResponse
+	86,  // 71: levelrail.agent.v1.AgentResponse.archive_stat:type_name -> levelrail.agent.v1.ArchiveStat
+	32,  // 72: levelrail.agent.v1.AgentResponse.logs:type_name -> levelrail.agent.v1.LogsResponse
+	79,  // 73: levelrail.agent.v1.AgentResponse.inspect_containers:type_name -> levelrail.agent.v1.InspectContainersResponse
+	29,  // 74: levelrail.agent.v1.AgentResponse.probe:type_name -> levelrail.agent.v1.ProbeResponse
+	24,  // 75: levelrail.agent.v1.AgentResponse.tunnel_open:type_name -> levelrail.agent.v1.TunnelOpenResponse
+	122, // 76: levelrail.agent.v1.AgentResponse.cleanup:type_name -> levelrail.agent.v1.CleanupResponse
+	25,  // 77: levelrail.agent.v1.TunnelFrame.hello:type_name -> levelrail.agent.v1.TunnelHello
+	34,  // 78: levelrail.agent.v1.TunnelFrame.half_close:type_name -> levelrail.agent.v1.Empty
+	26,  // 79: levelrail.agent.v1.TunnelFrame.reset:type_name -> levelrail.agent.v1.TunnelReset
+	31,  // 80: levelrail.agent.v1.LogsResponse.lines:type_name -> levelrail.agent.v1.LogLine
+	36,  // 81: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
+	123, // 82: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
+	37,  // 83: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
+	38,  // 84: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
+	43,  // 85: levelrail.agent.v1.ContainerSpec.gpu:type_name -> levelrail.agent.v1.GPURequest
+	124, // 86: levelrail.agent.v1.ContainerSpec.labels:type_name -> levelrail.agent.v1.ContainerSpec.LabelsEntry
+	42,  // 87: levelrail.agent.v1.ContainerSpec.bind_mounts:type_name -> levelrail.agent.v1.BindMount
+	41,  // 88: levelrail.agent.v1.ContainerSpec.files:type_name -> levelrail.agent.v1.FileMount
+	40,  // 89: levelrail.agent.v1.ContainerSpec.ulimits:type_name -> levelrail.agent.v1.Ulimit
+	125, // 90: levelrail.agent.v1.ContainerSpec.sysctls:type_name -> levelrail.agent.v1.ContainerSpec.SysctlsEntry
+	44,  // 91: levelrail.agent.v1.GPUReport.devices:type_name -> levelrail.agent.v1.GPUDevice
+	46,  // 92: levelrail.agent.v1.HostReport.other_containers:type_name -> levelrail.agent.v1.UnmanagedContainer
+	36,  // 93: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
+	126, // 94: levelrail.agent.v1.ContainerState.labels:type_name -> levelrail.agent.v1.ContainerState.LabelsEntry
+	130, // 95: levelrail.agent.v1.ContainerState.created:type_name -> google.protobuf.Timestamp
+	130, // 96: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
+	130, // 97: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
+	48,  // 98: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
+	39,  // 99: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
+	37,  // 100: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
+	49,  // 101: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
+	48,  // 102: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
+	127, // 103: levelrail.agent.v1.EnsureNetworkRequest.labels:type_name -> levelrail.agent.v1.EnsureNetworkRequest.LabelsEntry
+	64,  // 104: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
+	72,  // 105: levelrail.agent.v1.ContainerStats.cpu_raw:type_name -> levelrail.agent.v1.CPUStatsRaw
+	75,  // 106: levelrail.agent.v1.ContainerDetail.health:type_name -> levelrail.agent.v1.ContainerHealthDetail
+	130, // 107: levelrail.agent.v1.ContainerDetail.started_at:type_name -> google.protobuf.Timestamp
+	130, // 108: levelrail.agent.v1.ContainerDetail.finished_at:type_name -> google.protobuf.Timestamp
+	36,  // 109: levelrail.agent.v1.ContainerDetail.ports:type_name -> levelrail.agent.v1.PortBinding
+	76,  // 110: levelrail.agent.v1.ContainerDetail.networks:type_name -> levelrail.agent.v1.ContainerNetworkDetail
+	77,  // 111: levelrail.agent.v1.ContainerDetail.mounts:type_name -> levelrail.agent.v1.ContainerMountDetail
+	78,  // 112: levelrail.agent.v1.InspectContainersResponse.containers:type_name -> levelrail.agent.v1.ContainerDetail
+	73,  // 113: levelrail.agent.v1.StatsResponse.stats:type_name -> levelrail.agent.v1.ContainerStats
+	87,  // 114: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
+	85,  // 115: levelrail.agent.v1.ExecRequest.archive:type_name -> levelrail.agent.v1.ArchiveOp
+	84,  // 116: levelrail.agent.v1.ExecRequest.file:type_name -> levelrail.agent.v1.FileOp
+	83,  // 117: levelrail.agent.v1.ExecRequest.volume_file:type_name -> levelrail.agent.v1.VolumeFileOp
+	1,   // 118: levelrail.agent.v1.VolumeFileOp.kind:type_name -> levelrail.agent.v1.VolumeFileOp.Kind
+	2,   // 119: levelrail.agent.v1.FileOp.kind:type_name -> levelrail.agent.v1.FileOp.Kind
+	93,  // 120: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
+	94,  // 121: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
+	0,   // 122: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
+	128, // 123: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	97,  // 124: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
+	96,  // 125: levelrail.agent.v1.BuildRequest.push:type_name -> levelrail.agent.v1.PushTarget
+	102, // 126: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
+	103, // 127: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
+	104, // 128: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
+	129, // 129: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	130, // 130: levelrail.agent.v1.ExitState.started_at:type_name -> google.protobuf.Timestamp
+	130, // 131: levelrail.agent.v1.ExitState.finished_at:type_name -> google.protobuf.Timestamp
+	106, // 132: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
+	109, // 133: levelrail.agent.v1.DeviceConfig.peers:type_name -> levelrail.agent.v1.PeerConfig
+	110, // 134: levelrail.agent.v1.ApplyMeshRequest.config:type_name -> levelrail.agent.v1.DeviceConfig
+	111, // 135: levelrail.agent.v1.ApplyMeshResponse.identity:type_name -> levelrail.agent.v1.NodeIdentity
+	116, // 136: levelrail.agent.v1.MeshStatusResponse.peers:type_name -> levelrail.agent.v1.MeshPeerStatus
+	120, // 137: levelrail.agent.v1.CleanupClass.items:type_name -> levelrail.agent.v1.CleanupItem
+	121, // 138: levelrail.agent.v1.CleanupResponse.classes:type_name -> levelrail.agent.v1.CleanupClass
+	5,   // 139: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
+	14,  // 140: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
+	8,   // 141: levelrail.agent.v1.AgentService.Renew:input_type -> levelrail.agent.v1.RenewRequest
+	10,  // 142: levelrail.agent.v1.AgentService.Reenroll:input_type -> levelrail.agent.v1.ReenrollRequest
+	12,  // 143: levelrail.agent.v1.AgentService.CheckIdentity:input_type -> levelrail.agent.v1.CheckIdentityRequest
+	3,   // 144: levelrail.agent.v1.AgentService.UpdateCheck:input_type -> levelrail.agent.v1.UpdateCheckRequest
+	27,  // 145: levelrail.agent.v1.AgentService.Tunnel:input_type -> levelrail.agent.v1.TunnelFrame
+	6,   // 146: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
+	19,  // 147: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
+	9,   // 148: levelrail.agent.v1.AgentService.Renew:output_type -> levelrail.agent.v1.RenewResponse
+	11,  // 149: levelrail.agent.v1.AgentService.Reenroll:output_type -> levelrail.agent.v1.ReenrollResponse
+	13,  // 150: levelrail.agent.v1.AgentService.CheckIdentity:output_type -> levelrail.agent.v1.CheckIdentityResponse
+	4,   // 151: levelrail.agent.v1.AgentService.UpdateCheck:output_type -> levelrail.agent.v1.UpdateCheckResponse
+	27,  // 152: levelrail.agent.v1.AgentService.Tunnel:output_type -> levelrail.agent.v1.TunnelFrame
+	146, // [146:153] is the sub-list for method output_type
+	139, // [139:146] is the sub-list for method input_type
+	139, // [139:139] is the sub-list for extension type_name
+	139, // [139:139] is the sub-list for extension extendee
+	0,   // [0:139] is the sub-list for field type_name
 }
 
 func init() { file_proto_agent_v1_agent_proto_init() }
@@ -10057,6 +10380,7 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentRequest_InspectContainers)(nil),
 		(*AgentRequest_Probe)(nil),
 		(*AgentRequest_TunnelOpen)(nil),
+		(*AgentRequest_Cleanup)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[19].OneofWrappers = []any{
 		(*AgentResponse_InspectByName)(nil),
@@ -10076,6 +10400,7 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentResponse_InspectContainers)(nil),
 		(*AgentResponse_Probe)(nil),
 		(*AgentResponse_TunnelOpen)(nil),
+		(*AgentResponse_Cleanup)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[24].OneofWrappers = []any{
 		(*TunnelFrame_Hello)(nil),
@@ -10096,7 +10421,7 @@ func file_proto_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_agent_v1_agent_proto_rawDesc), len(file_proto_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   123,
+			NumMessages:   127,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
