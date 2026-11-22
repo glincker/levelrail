@@ -17,6 +17,19 @@ export interface MajorUpgrade {
   finished_at?: string
 }
 
+export interface MajorUpgradeCheck {
+  go: boolean
+  reasons: string[]
+  restore_point?: {
+    backup_id: string
+    finished_at: string
+    age_seconds: number
+  }
+  max_age_seconds: number
+  from_version: string
+  to_version: string
+}
+
 const POLL_MS = 3_000
 
 export const majorUpgradeKeys = {
@@ -46,6 +59,27 @@ async function send<T>(
     )
   }
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T)
+}
+
+// Go or no-go with the restore point age; runs only once a target version is typed.
+export function useMajorUpgradeCheck(name: string, version: string) {
+  return useQuery({
+    queryKey: [...majorUpgradeKeys.list(name), 'check', version] as const,
+    enabled: version !== '',
+    queryFn: () =>
+      send<MajorUpgradeCheck>(
+        `${base(name)}/major-upgrade/check?version=${encodeURIComponent(version)}`,
+        'GET',
+        undefined,
+        'check major upgrade',
+      ),
+  })
+}
+
+export function formatRestorePointAge(seconds: number): string {
+  if (seconds >= 86_400) return `${Math.floor(seconds / 86_400)}d`
+  if (seconds >= 3_600) return `${Math.floor(seconds / 3_600)}h`
+  return `${Math.max(1, Math.floor(seconds / 60))}m`
 }
 
 export function useMajorUpgrades(name: string) {

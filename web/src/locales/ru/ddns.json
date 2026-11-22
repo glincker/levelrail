@@ -15,11 +15,13 @@
   "provider": {
     "label": "Провайдер",
     "generic": "Произвольный URL",
-    "duckdns": "DuckDNS"
+    "duckdns": "DuckDNS",
+    "godaddy": "GoDaddy"
   },
   "domains": {
     "label": "Домены DuckDNS",
-    "placeholder": "myhome,office"
+    "placeholder": "myhome,office",
+    "placeholderGodaddy": "home.example.com"
   },
   "target": {
     "labelGeneric": "URL обновления",
@@ -29,7 +31,8 @@
     "configuredNoHost": "Настроено",
     "notConfigured": "Не настроено",
     "clear": "Очистить",
-    "cleared": "Учетные данные удалены."
+    "cleared": "Учетные данные удалены.",
+    "labelGodaddy": "GoDaddy ключ:секрет"
   },
   "advanced": {
     "toggle": "Дополнительно",

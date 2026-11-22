@@ -96,7 +96,10 @@ func (rt *Router) selectorFor(ctx context.Context, kind, name string) (placement
 		return nil, nil
 	}
 	sel, err := rt.multiNode.store.GetPlacementSelector(ctx, kind, name)
-	return placement.Selector(sel), err
+	if err != nil {
+		return nil, err
+	}
+	return rt.poolSelector(ctx, kind, name, placement.Selector(sel))
 }
 
 // checkPlacement validates an explicit target for kind/name: it must be a

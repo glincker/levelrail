@@ -25,7 +25,8 @@ func TestRunCompletion_Dispatch(t *testing.T) {
 		{name: "bash", args: []string{"bash"}, wantExit: exitOK, wantStdout: "complete -F"},
 		{name: "zsh", args: []string{"zsh"}, wantExit: exitOK, wantStdout: "#compdef"},
 		{name: "fish", args: []string{"fish"}, wantExit: exitOK, wantStdout: "complete -c"},
-		{name: "unknown shell", args: []string{"powershell"}, wantExit: exitUsage, wantStderr: "unknown completion shell"},
+		{name: "powershell", args: []string{"powershell"}, wantExit: exitOK, wantStdout: "Register-ArgumentCompleter"},
+		{name: "unknown shell", args: []string{"nushell"}, wantExit: exitUsage, wantStderr: "unknown completion shell"},
 	}
 
 	for _, tt := range tests {
@@ -284,5 +285,22 @@ func collectAPICmdKeys(cl *ast.CompositeLit, found map[string]bool, anyValue boo
 				found[v] = true
 			}
 		}
+	}
+}
+
+// Per-verb flags must reach every shell script, not only the global ones.
+func TestCompletionScripts_CarryPerVerbFlags(t *testing.T) {
+	for name, gen := range map[string]func(string) string{
+		"bash": bashCompletionScript, "zsh": zshCompletionScript, "fish": fishCompletionScript, "powershell": powershellCompletionScript,
+	} {
+		script := gen("levelrail-cli")
+		for _, want := range []string{"apps deploy", "--image", "--dockerfile-file"} {
+			if !strings.Contains(script, want) {
+				t.Errorf("%s script lacks %q", name, want)
+			}
+		}
+	}
+	if flags := verbFlagTable()["apps deploy"]; len(flags) == 0 {
+		t.Fatal("apps deploy has no flags in the table")
 	}
 }

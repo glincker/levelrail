@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -14,16 +15,51 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// startMonitors runs the uptime monitor engine only when APP_MONITORS_ENABLED is true.
+// startMonitors watches the monitors.enabled runtime setting (seeded by APP_MONITORS_ENABLED) and
+// starts or stops the engine to match, so toggling it needs no restart.
 func (s *bootState) startMonitors() {
 	cfg, err := monitor.ConfigFromEnv(os.LookupEnv)
 	if err != nil {
 		s.logger.Error("monitors configuration invalid", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	if !cfg.Enabled {
-		return
+	go s.superviseMonitors(cfg)
+}
+
+func (s *bootState) superviseMonitors(cfg monitor.Config) {
+	var stop context.CancelFunc
+	var done chan struct{}
+	tick := time.NewTicker(cfg.FlushInterval)
+	defer tick.Stop()
+	for {
+		on := s.apiRouter.RuntimeSettings().Bool(s.ctx, runtimesettings.KeyMonitorsEnabled)
+		switch {
+		case on && stop == nil:
+			ctx, cancel := context.WithCancel(s.ctx)
+			stop, done = cancel, make(chan struct{})
+			go func() { defer close(done); s.runMonitors(ctx, cfg) }()
+			s.logger.Info("monitors started")
+		case !on && stop != nil:
+			stop()
+			<-done
+			s.apiRouter.SetMonitors(nil)
+			stop = nil
+			s.logger.Info("monitors stopped")
+		}
+		select {
+		case <-s.ctx.Done():
+			if stop != nil {
+				stop()
+				<-done
+			}
+			return
+		case <-tick.C:
+		}
 	}
+}
+
+// runMonitors blocks until ctx ends, running the engine and the incident helpers around it.
+func (s *bootState) runMonitors(ctx context.Context, cfg monitor.Config) {
 	cfg.UserAgent = s.b.BinaryName + "-monitor"
 	downs := alerting.NewMonitorDownTracker()
 	if s.alertingEngine != nil {
@@ -47,16 +83,22 @@ func (s *bootState) startMonitors() {
 	svc := monitor.New(opts)
 	svc.SetRawRetentionSource(retentionSetting(s.apiRouter, runtimesettings.KeyMonitorRawRetained, 0))
 	s.apiRouter.SetMonitors(svc)
-	go svc.Run(s.ctx)
+	var wg sync.WaitGroup
+	run := func(f func(context.Context)) {
+		wg.Add(1)
+		go func() { defer wg.Done(); f(ctx) }()
+	}
+	run(svc.Run)
 	if linker != nil {
 		linker.SetPublisher(s.apiRouter.EmitStatusIncident)
 		linker.SetMonitors(svc)
-		go linker.Run(s.ctx)
+		run(linker.Run)
 	}
 	if opener != nil {
 		opener.SetMonitors(svc)
-		go opener.Run(s.ctx)
+		run(opener.Run)
 	}
+	wg.Wait()
 }
 
 // newIncidentOpener returns nil unless APP_MONITORS_ENABLED and APP_INCIDENTS_ENABLED are both true.

@@ -1,0 +1,15 @@
+{
+  "action": {
+    "scale": "Scale",
+    "rollback": "Roll back"
+  },
+  "value": {
+    "scale": "Replicas (3) or min-max (2-6)"
+  },
+  "hint": {
+    "scale": "A plain number sets replicas on apps without autoscale. A range sets the autoscale minimum and maximum. Apps of the other kind are skipped."
+  },
+  "warning": {
+    "rollback": "This redeploys the release before the current one on {{count}} apps. Apps without a previous release are skipped, and apps in a protected environment wait for approval."
+  }
+}

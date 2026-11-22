@@ -96,5 +96,19 @@
     "restarts_other": "{{count}} restarts",
     "restartsRising": "Restart count is increasing",
     "dbSize": "Database size {{size}}"
+  },
+  "group": {
+    "label": "Group by",
+    "none": "No grouping",
+    "node": "Node",
+    "project": "Project",
+    "environment": "Environment",
+    "noneNode": "No node",
+    "noneProject": "No project",
+    "noneEnvironment": "No environment",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "select": "Select group",
+    "deselect": "Deselect group"
   }
 }

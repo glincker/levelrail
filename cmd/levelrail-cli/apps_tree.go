@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -205,14 +204,7 @@ func fetchAppTree(ctx context.Context, client *Client, name string) (appTree, er
 
 func runAppsTree(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps tree", "print the tree as nested JSON", stderr)
-	watch := fs.Bool("watch", false, "redraw the tree on an interval until Ctrl+C")
-	every := 5 * time.Second
-	if v, ok := lookupEnv("LEVELRAIL_TREE_INTERVAL"); ok {
-		if d, err := time.ParseDuration(v); err == nil && d > 0 {
-			every = d
-		}
-	}
-	interval := fs.Duration("interval", every, "redraw interval with --watch (env LEVELRAIL_TREE_INTERVAL)")
+	wo := registerWatch(fs, lookupEnv, "LEVELRAIL_TREE_INTERVAL")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps tree <name> [--watch] [--interval 5s] [flags]\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -230,22 +222,5 @@ func runAppsTree(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		}
 		return writeScheduledTaskResult(stdout, stderr, of, t, func() { _, _ = io.WriteString(stdout, renderAppTree(t)) })
 	}
-	if !*watch {
-		return draw()
-	}
-	tick := time.NewTicker(*interval)
-	defer tick.Stop()
-	for {
-		if !jsonOut {
-			_, _ = io.WriteString(stdout, "\x1b[H\x1b[2J")
-		}
-		if code := draw(); code != exitOK {
-			return code
-		}
-		select {
-		case <-ctx.Done():
-			return exitOK
-		case <-tick.C:
-		}
-	}
+	return wo.run(stdout, jsonOut, draw)
 }

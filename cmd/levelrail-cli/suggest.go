@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"regexp"
 	"sort"
 	"strings"
@@ -183,6 +184,24 @@ func emptyHint(noun, createCmd string) string {
 	return msg
 }
 
+// undoHint is the one-line text-mode tail naming the exact command that
+// reverses a state change; args are shell-quoted when they need it.
+func undoHint(prog string, args ...string) string {
+	parts := make([]string, len(args))
+	for i, a := range args {
+		parts[i] = shellWord(a)
+	}
+	return fmt.Sprintf("undo: %s %s\n", prog, strings.Join(parts, " "))
+}
+
+// shellWord single-quotes a word that holds anything outside a safe set.
+func shellWord(s string) string {
+	if s != "" && strings.Trim(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-./:@=,") == "" {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
 func sameLetters(a, b string) bool {
 	if len(a) != len(b) {
 		return false
@@ -191,4 +210,56 @@ func sameLetters(a, b string) bool {
 	sort.Slice(x, func(i, j int) bool { return x[i] < x[j] })
 	sort.Slice(y, func(i, j int) bool { return y[i] < y[j] })
 	return string(x) == string(y)
+}
+
+// errorNextStep is the one-line text-mode tail for the most common API
+// failures; empty when no generic advice fits.
+func errorNextStep(status int) string {
+	switch status {
+	case http.StatusUnauthorized:
+		return cliProg + " login, or pass --token"
+	case http.StatusForbidden:
+		return "this token lacks the ability named above; use a token that has it, " + cliProg + " whoami shows what the current one can do"
+	case http.StatusNotFound:
+		return "check the name with the list verb, for example " + cliProg + " apps list"
+	case http.StatusUnprocessableEntity, http.StatusBadRequest:
+		return "fix the flagged input and retry, see the verb's --help"
+	}
+	return ""
+}
+
+// errorNextStepFor narrows the 404 advice to the resource named in the error text,
+// so a missing template or node does not point at the apps list.
+func errorNextStepFor(status int, msg string) string {
+	if status == http.StatusNotFound {
+		switch {
+		case strings.Contains(msg, "template"):
+			return "check the name with " + cliProg + " templates list"
+		case strings.Contains(msg, "zone"):
+			return "check the zone with " + cliProg + " nodes zones"
+		case strings.Contains(msg, "node"):
+			return "check the node id with " + cliProg + " nodes list"
+		}
+	}
+	return errorNextStep(status)
+}
+
+// splitInlineNext separates a trailing ". next: ..." step from an error message
+// so it prints on its own line like every other next step.
+func splitInlineNext(msg string) (string, string) {
+	if i := strings.Index(msg, ". next: "); i >= 0 {
+		return msg[:i], msg[i+len(". next: "):]
+	}
+	return msg, ""
+}
+
+// errorHasGuidance reports whether the error text already says what to do,
+// so a generic footer would only add noise (login and approval flows).
+func errorHasGuidance(msg string) bool {
+	for _, m := range []string{"approve at", "run on", "fix:", "hint:", "http://", "https://", "login"} {
+		if strings.Contains(msg, m) {
+			return true
+		}
+	}
+	return false
 }

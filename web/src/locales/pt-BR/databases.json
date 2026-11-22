@@ -169,6 +169,10 @@
     "failedTitle": "Não foi possível iniciar a restauração."
   },
   "majorUpgrade": {
+    "checkGo": "Pode seguir: existe um ponto de restauração recente.",
+    "checkNoGo": "Não siga: corrija os itens abaixo antes de atualizar.",
+    "restorePoint": "O ponto de restauração mais recente tem {{age}} (limite {{limit}}).",
+    "noRestorePoint": "Ainda não há backup bem-sucedido, então não há ponto de restauração.",
     "title": "Atualização de versão maior",
     "description": "Atualiza este banco de dados entre versões maiores por dump e restauração. Ele fica offline enquanto isso executa. Os dados antigos são copiados primeiro para um snapshot de rollback, e uma falha faz rollback automaticamente.",
     "versionLabel": "Versão maior de destino",

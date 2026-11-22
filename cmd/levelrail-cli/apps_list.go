@@ -16,6 +16,8 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	environmentFlag := fs.String("environment", "", "only apps in this environment (name or id)")
 	startingTokenFlag := fs.String("starting-token", "", "resume from the next_token a previous --max-items call printed, to fetch the next page")
 	lo := registerListOpts(fs)
+	allProfilesP := registerAllProfiles(fs)
+	wo := registerWatch(fs, lookupEnv)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps list [flags]\n\nLists every app the caller's token can read. --json always prints a bare\narray. With --max-items or --starting-token, next_token and total_count go\nto stderr as \"next_token=N total_count=M\", so a script can page through a\nlarge fleet without the stdout shape changing. JSON rows carry app_kind and\npreview.state (none, queued, rendering, ready or failed), and summary with restarts and, for\ndatabases, db_size_bytes when the node answered in time; the table omits them.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -26,63 +28,96 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitCode
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	if *maxItemsFlag == 0 && *startingTokenFlag == "" {
-		listApps := client.ListApps
-		if *environmentFlag != "" {
-			listApps = func(ctx context.Context) ([]appResource, error) {
-				return client.ListAppsInEnvironment(ctx, *environmentFlag)
+	if *allProfilesP {
+		return wo.run(stdout, jsonOut, func() int {
+			if *maxItemsFlag != 0 || *startingTokenFlag != "" {
+				return reportError(stdout, stderr, jsonOut, newValidationError("apps list: --all-profiles cannot be combined with --max-items or --starting-token"))
 			}
+			results, err := runAcrossProfiles(prog, lookupEnv, func(c *Client) (any, error) {
+				var apps []appResource
+				var err error
+				if *environmentFlag != "" {
+					apps, err = c.ListAppsInEnvironment(context.Background(), *environmentFlag)
+				} else {
+					apps, err = c.ListApps(context.Background())
+				}
+				if err != nil {
+					return nil, err
+				}
+				apps = applyListOpts(apps, lo)
+				fillPreviewState(apps)
+				return apps, nil
+			})
+			if err != nil {
+				return reportError(stdout, stderr, jsonOut, err)
+			}
+			return renderAcrossProfiles(stdout, stderr, of, results, func(data any) {
+				if apps, ok := data.([]appResource); ok {
+					printAppsTable(stdout, apps)
+				}
+			})
+		})
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	return wo.run(stdout, jsonOut, func() int {
+
+		if *maxItemsFlag == 0 && *startingTokenFlag == "" {
+			listApps := client.ListApps
+			if *environmentFlag != "" {
+				listApps = func(ctx context.Context) ([]appResource, error) {
+					return client.ListAppsInEnvironment(ctx, *environmentFlag)
+				}
+			}
+			apps, err := listApps(context.Background())
+			if err != nil {
+				return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
+			}
+			apps = applyListOpts(apps, lo)
+			fillPreviewState(apps)
+			if err := renderResult(stdout, of.Format, of.Query, apps, func() { printAppsTable(stdout, apps) }); err != nil {
+				_, _ = fmt.Fprintln(stderr, err)
+				return exitCodeForError(err)
+			}
+			return exitOK
 		}
-		apps, err := listApps(context.Background())
+
+		offset := 0
+		if *startingTokenFlag != "" {
+			if *maxItemsFlag == 0 {
+				// The server applies offset only alongside a limit, so offset alone would silently return everything.
+				return reportError(stdout, stderr, jsonOut, newValidationError("apps list: --starting-token requires --max-items (the server only pages a result when a limit is set)"))
+			}
+			n, perr := strconv.Atoi(*startingTokenFlag)
+			if perr != nil || n < 0 {
+				return reportError(stdout, stderr, jsonOut, newValidationError("apps list: --starting-token must be a non-negative integer offset from a previous call's next_token, got %q", *startingTokenFlag))
+			}
+			offset = n
+		}
+
+		page, err := client.ListAppsPage(context.Background(), apiclient.ListAppsOptions{Limit: *maxItemsFlag, Offset: offset, Environment: *environmentFlag})
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
 		}
-		apps = applyListOpts(apps, lo)
-		fillPreviewState(apps)
-		if err := renderResult(stdout, of.Format, of.Query, apps, func() { printAppsTable(stdout, apps) }); err != nil {
+		page.Items = applyListOpts(page.Items, lo)
+		fillPreviewState(page.Items)
+		nextToken := ""
+		if page.NextOffset > 0 {
+			nextToken = strconv.Itoa(page.NextOffset)
+		}
+		_, _ = fmt.Fprintf(stderr, "next_token=%s total_count=%d\n", nextToken, page.TotalCount)
+
+		if err := renderResult(stdout, of.Format, of.Query, page.Items, func() {
+			printAppsTable(stdout, page.Items)
+			if nextToken != "" {
+				_, _ = fmt.Fprintf(stdout, "more: rerun with --starting-token %s\n", nextToken)
+			}
+		}); err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return exitCodeForError(err)
 		}
 		return exitOK
-	}
-
-	offset := 0
-	if *startingTokenFlag != "" {
-		if *maxItemsFlag == 0 {
-			// The server applies offset only alongside a limit, so offset alone would silently return everything.
-			return reportError(stdout, stderr, jsonOut, newValidationError("apps list: --starting-token requires --max-items (the server only pages a result when a limit is set)"))
-		}
-		n, perr := strconv.Atoi(*startingTokenFlag)
-		if perr != nil || n < 0 {
-			return reportError(stdout, stderr, jsonOut, newValidationError("apps list: --starting-token must be a non-negative integer offset from a previous call's next_token, got %q", *startingTokenFlag))
-		}
-		offset = n
-	}
-
-	page, err := client.ListAppsPage(context.Background(), apiclient.ListAppsOptions{Limit: *maxItemsFlag, Offset: offset, Environment: *environmentFlag})
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
-	}
-	page.Items = applyListOpts(page.Items, lo)
-	fillPreviewState(page.Items)
-	nextToken := ""
-	if page.NextOffset > 0 {
-		nextToken = strconv.Itoa(page.NextOffset)
-	}
-	_, _ = fmt.Fprintf(stderr, "next_token=%s total_count=%d\n", nextToken, page.TotalCount)
-
-	if err := renderResult(stdout, of.Format, of.Query, page.Items, func() {
-		printAppsTable(stdout, page.Items)
-		if nextToken != "" {
-			_, _ = fmt.Fprintf(stdout, "more: rerun with --starting-token %s\n", nextToken)
-		}
-	}); err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitCodeForError(err)
-	}
-	return exitOK
+	})
 }
 
 // fillPreviewState makes the JSON carry an explicit "none" when the server omitted the card, so scripts never branch on a missing key.

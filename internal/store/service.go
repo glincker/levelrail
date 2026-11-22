@@ -29,6 +29,11 @@ type ServiceResources struct {
 	// ReadOnlyRootfs is the per-app read-only root choice; nil inherits the
 	// fleet default. Kept here so it needs no new column.
 	ReadOnlyRootfs *bool `json:"read_only_rootfs,omitempty"`
+	// IOReadBps and IOWriteBps cap disk throughput in bytes per second; 0 is unlimited.
+	IOReadBps  int64 `json:"io_read_bps,omitempty"`
+	IOWriteBps int64 `json:"io_write_bps,omitempty"`
+	// NetMbit caps network bandwidth in megabits per second; 0 is unlimited.
+	NetMbit int64 `json:"net_mbit,omitempty"`
 }
 
 // ServiceGPU is a service's GPU request: Count -1 means every GPU,

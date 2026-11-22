@@ -15,11 +15,13 @@
   "provider": {
     "label": "提供商",
     "generic": "通用 URL",
-    "duckdns": "DuckDNS"
+    "duckdns": "DuckDNS",
+    "godaddy": "GoDaddy"
   },
   "domains": {
     "label": "DuckDNS 域名",
-    "placeholder": "myhome,office"
+    "placeholder": "myhome,office",
+    "placeholderGodaddy": "home.example.com"
   },
   "target": {
     "labelGeneric": "更新 URL",
@@ -29,7 +31,8 @@
     "configuredNoHost": "已配置",
     "notConfigured": "未配置",
     "clear": "清除",
-    "cleared": "凭据已清除。"
+    "cleared": "凭据已清除。",
+    "labelGodaddy": "GoDaddy 密钥:密文"
   },
   "advanced": {
     "toggle": "高级",

@@ -1,0 +1,45 @@
+{
+  "envHints": {
+    "title": "Variables d'environnement",
+    "help": "Ce dépôt documente les variables dont il a besoin. Renseigne-les toutes avant le premier déploiement.",
+    "scanning": "Lecture du fichier d'exemple d'environnement du dépôt...",
+    "missing_one": "{{count}} variable requise est vide.",
+    "missing_other": "{{count}} variables requises sont vides.",
+    "secretHint": "Stockée chiffrée",
+    "valueLabel": "Valeur pour {{name}}"
+  },
+  "nextStep": {
+    "dismiss": "Ignorer cette suggestion",
+    "app_domain": {
+      "title": "Ton app est en ligne. Ajoute ton propre domaine.",
+      "body": "Associe à cette app un nom d'hôte qui t'appartient pour que les gens y accèdent par son nom.",
+      "cta": "Ajouter un domaine"
+    },
+    "first_backup": {
+      "title": "Active les sauvegardes",
+      "body": "Fais une première sauvegarde pour qu'un disque défaillant n'emporte pas tes apps avec lui.",
+      "cta": "Configurer les sauvegardes"
+    },
+    "notifications": {
+      "title": "Ajoute un moniteur et une alerte",
+      "body": "Sois prévenu d'un plantage ou d'un contrôle en échec avant tes utilisateurs.",
+      "cta": "Configurer les alertes"
+    },
+    "teammate": {
+      "title": "Invite un coéquipier",
+      "body": "Donne accès à une deuxième personne pour que tu ne sois pas le seul à te connecter.",
+      "cta": "Inviter quelqu'un"
+    }
+  },
+  "launch": {
+    "title": "Votre app est en ligne",
+    "body": "Ouvrez-la ou scannez le code pour l'essayer sur votre téléphone.",
+    "copy": "Copier l'URL",
+    "copied": "Copié",
+    "share": "Copier le lien de partage",
+    "shareText": "Essayez {{name}} :",
+    "dismiss": "Fermer",
+    "qrLabel": "Code QR de l'URL en ligne",
+    "qrLoading": "Chargement du code QR"
+  }
+}

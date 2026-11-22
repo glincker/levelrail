@@ -59,7 +59,9 @@
     "anyMethod": "任何方法",
     "actorLabel": "按操作者筛选",
     "actorPlaceholder": "操作者名称",
-    "exportCsv": "导出 CSV（最近 {{count}} 行）"
+    "exportCsv": "导出 CSV（所有匹配行）",
+    "exporting": "正在导出...",
+    "exportFailed": "导出失败，请重试。"
   },
   "anchor": {
     "title": "审计锚点",

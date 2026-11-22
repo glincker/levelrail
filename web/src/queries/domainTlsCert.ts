@@ -162,6 +162,10 @@ export interface RenewCertificateResult {
   domain: string
   had_stored_certificate: boolean
   status: string
+  reason?: string
+  /** The CA error of the attempt this renewal replaces, empty when none failed. */
+  previous_error?: string
+  explanation?: string
 }
 
 // renewDomainCertificate calls POST

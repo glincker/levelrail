@@ -37,6 +37,8 @@ export interface BackupHistoryRecord {
   finished_at?: string
   // "zstd+age" for an encrypted object, absent for a raw legacy one.
   codec?: string
+  // true when the backup is kept forever: retention and delete skip it.
+  pinned?: boolean
 }
 
 export interface TriggerBackupRequest {

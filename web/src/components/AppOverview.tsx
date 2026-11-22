@@ -1,6 +1,6 @@
 import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
-import { OptimiseHint } from './resourceAdvisor/ResourceAdvisorTile'
+import { AppAdvisorCard } from './resourceAdvisor/AppAdvisorCard'
 import type {
   AppDetail,
   DeployStrategy,
@@ -9,6 +9,7 @@ import type {
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldLabel } from '@/components/ui/typography'
+import { Term } from '@/components/ui/term'
 import { MoveToProjectDialog } from './MoveToProjectDialog'
 import { MoveToEnvironmentDialog } from './MoveToEnvironmentDialog'
 import { MoveEnvironmentDialog } from './environments/MoveEnvironmentDialog'
@@ -58,7 +59,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
           <LayoutGridGlassIcon className="size-5" />
           {t('title')}
         </CardTitle>
-        <OptimiseHint kind="app" name={app.name} />
+        <AppAdvisorCard name={app.name} />
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
@@ -94,7 +95,9 @@ export function AppOverview({ app }: { app: AppDetail }) {
             </dd>
           </div>
           <div>
-            <FieldLabel as="dt">{t('replicas')}</FieldLabel>
+            <FieldLabel as="dt">
+              <Term term="replica">{t('replicas')}</Term>
+            </FieldLabel>
             <dd className="mt-0.5 text-sm text-foreground">
               {app.replicas}
               {app.replicas > 1 ? (

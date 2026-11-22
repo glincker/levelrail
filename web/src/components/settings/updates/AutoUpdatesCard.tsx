@@ -335,6 +335,7 @@ function AutoUpdatesBody({
     }
   }
 
+  const blocked = policy.status?.state === 'blocked'
   let sentence: string
   if (policy.paused_until) {
     sentence = t('quick.paused', {
@@ -342,6 +343,9 @@ function AutoUpdatesBody({
     })
   } else if (!on) {
     sentence = t('quick.off')
+  } else if (blocked) {
+    // The switch is a saved choice; say plainly that this host cannot act on it.
+    sentence = t('quick.onBlocked')
   } else {
     sentence = t(policy.mode === 'any' ? 'quick.onAny' : 'quick.onPatch', {
       start: win.start,
@@ -349,7 +353,8 @@ function AutoUpdatesBody({
       days: t(`quick.days.${win.days}`),
     })
   }
-  const next = on && policy.next_window ? policy.next_window.start : null
+  const next =
+    on && !blocked && policy.next_window ? policy.next_window.start : null
 
   return (
     <Card>
@@ -386,7 +391,7 @@ function AutoUpdatesBody({
             ) : null}
           </div>
         </div>
-        {on ? (
+        {on && !blocked ? (
           <div className="space-y-0.5 text-xs text-muted-foreground">
             <p>
               {t('quick.installSteps', {
@@ -410,7 +415,9 @@ function AutoUpdatesBody({
           </div>
         ) : null}
         <p className="text-xs text-muted-foreground">
-          {t(settings.auto_update_enabled ? 'quick.checkOn' : 'quick.checkOff')}
+          {settings.auto_update_enabled
+            ? t('quick.checkOn')
+            : t(on ? 'quick.checkOffActive' : 'quick.checkOff')}
         </p>
         {policy.status ? <AutoUpdateStatus status={policy.status} /> : null}
         {on ? (

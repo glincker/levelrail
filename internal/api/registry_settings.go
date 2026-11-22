@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -50,15 +52,22 @@ type registrySettingsResource struct {
 	Host           string `json:"host,omitempty"`
 	Username       string `json:"username,omitempty"`
 	HasCredentials bool   `json:"has_credentials"`
-	Status         string `json:"status"`
-	Message        string `json:"message,omitempty"`
+	// ProxyRemoteURL is set when the registry runs as a pull-through cache of one upstream.
+	ProxyRemoteURL   string `json:"proxy_remote_url,omitempty"`
+	ProxyUsername    string `json:"proxy_username,omitempty"`
+	HasProxyPassword bool   `json:"has_proxy_password,omitempty"`
+	// GC is the unreferenced-layer report, present only when GET asks for it with ?gc=1.
+	GC      *registryGCResource `json:"gc,omitempty"`
+	Status  string              `json:"status"`
+	Message string              `json:"message,omitempty"`
 	// Password is set only by handleUpdateRegistrySettings the moment it
 	// generates a fresh credential, omitted every other time.
 	Password string `json:"password,omitempty"`
 }
 
 func (rt *Router) toRegistrySettingsResource(ctx context.Context, s store.RegistrySettings) registrySettingsResource {
-	res := registrySettingsResource{Enabled: s.Enabled, Host: s.Host, Username: s.Username}
+	res := registrySettingsResource{Enabled: s.Enabled, Host: s.Host, Username: s.Username,
+		ProxyRemoteURL: s.ProxyRemoteURL, ProxyUsername: s.ProxyUsername}
 
 	if rt.registrySecrets != nil {
 		exists, err := rt.registrySecrets.Exists(ctx, store.RegistrySettingsSecretsKey(), store.RegistryPasswordEnvKey)
@@ -66,6 +75,13 @@ func (rt *Router) toRegistrySettingsResource(ctx context.Context, s store.Regist
 			rt.logger.Warn("api: check registry credentials failed", slog.String("error", err.Error()))
 		}
 		res.HasCredentials = exists
+		if s.ProxyRemoteURL != "" {
+			hp, perr := rt.registrySecrets.Exists(ctx, store.RegistrySettingsSecretsKey(), store.RegistryProxyPasswordEnvKey)
+			if perr != nil {
+				rt.logger.Warn("api: check registry proxy password failed", slog.String("error", perr.Error()))
+			}
+			res.HasProxyPassword = hp
+		}
 	}
 
 	conditions, err := rt.deploys.GetConditions(ctx, registryreconcile.ControllerName)
@@ -109,12 +125,27 @@ func (rt *Router) handleGetRegistrySettings(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: get registry settings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toRegistrySettingsResource(r.Context(), settings))
+	res := rt.toRegistrySettingsResource(r.Context(), settings)
+	if r.URL.Query().Get("gc") == "1" {
+		res.GC = rt.registryGCReport(r.Context(), settings.Enabled)
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
+// updateRegistrySettingsRequest: the proxy fields are pointers so an omitted one keeps its stored value;
+// an empty proxy_remote_url turns pull-through mode off.
 type updateRegistrySettingsRequest struct {
-	Enabled bool   `json:"enabled"`
-	Host    string `json:"host,omitempty"`
+	Enabled        bool    `json:"enabled"`
+	Host           string  `json:"host,omitempty"`
+	ProxyRemoteURL *string `json:"proxy_remote_url,omitempty"`
+	ProxyUsername  *string `json:"proxy_username,omitempty"`
+	ProxyPassword  *string `json:"proxy_password,omitempty"`
+}
+
+// validProxyRemote accepts only an http(s) URL with a host, so the upstream cannot be a file or other scheme.
+func validProxyRemote(raw string) bool {
+	u, err := url.Parse(raw)
+	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" && u.User == nil
 }
 
 // handleUpdateRegistrySettings handles PUT /api/v1/settings/registry.
@@ -142,6 +173,26 @@ func (rt *Router) handleUpdateRegistrySettings(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	current, err := rt.registry.GetRegistrySettings(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: get registry settings failed", err)
+		return
+	}
+	proxyURL, proxyUser := current.ProxyRemoteURL, current.ProxyUsername
+	if req.ProxyRemoteURL != nil {
+		proxyURL = strings.TrimSpace(*req.ProxyRemoteURL)
+		if proxyURL != "" && !validProxyRemote(proxyURL) {
+			writeError(w, http.StatusBadRequest, "proxy_remote_url must be an http or https URL")
+			return
+		}
+	}
+	if req.ProxyUsername != nil {
+		proxyUser = strings.TrimSpace(*req.ProxyUsername)
+	}
+	if proxyURL == "" {
+		proxyUser = ""
+	}
+
 	key := store.RegistrySettingsSecretsKey()
 	hasCredentials, err := rt.registrySecrets.Exists(r.Context(), key, store.RegistryPasswordEnvKey)
 	if err != nil {
@@ -163,7 +214,25 @@ func (rt *Router) handleUpdateRegistrySettings(w http.ResponseWriter, r *http.Re
 		generatedPassword = password
 	}
 
-	settings := store.RegistrySettings{Enabled: req.Enabled, Host: req.Host, Username: registryUsername}
+	if req.ProxyPassword != nil {
+		var perr error
+		if *req.ProxyPassword == "" || proxyURL == "" {
+			if d, ok := rt.registrySecrets.(interface {
+				DeleteValue(ctx context.Context, serviceName, envKey string) error
+			}); ok {
+				perr = d.DeleteValue(r.Context(), key, store.RegistryProxyPasswordEnvKey)
+			}
+		} else {
+			perr = rt.registrySecrets.SetValue(r.Context(), key, store.RegistryProxyPasswordEnvKey, *req.ProxyPassword)
+		}
+		if perr != nil {
+			rt.internalError(w, "api: save registry proxy password failed", perr)
+			return
+		}
+	}
+
+	settings := store.RegistrySettings{Enabled: req.Enabled, Host: req.Host, Username: registryUsername,
+		ProxyRemoteURL: proxyURL, ProxyUsername: proxyUser}
 	if req.Enabled {
 		settings.CreatedAt = time.Now().UTC().Format(time.RFC3339)
 	}

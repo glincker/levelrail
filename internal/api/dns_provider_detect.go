@@ -20,9 +20,12 @@ const envDNSProviderCacheSeconds = "APP_MAIL_DNS_PROVIDER_CACHE_SECONDS"
 
 // hostProviders maps a detected DNS host to the zone provider we can connect for it.
 var hostProviders = map[string]string{
-	mailrecords.HostCloudflare:  dnszones.ProviderCloudflare,
-	mailrecords.HostRoute53:     dnszones.ProviderRoute53,
-	mailrecords.HostGoogleCloud: dnszones.ProviderGoogleCloud,
+	mailrecords.HostCloudflare:   dnszones.ProviderCloudflare,
+	mailrecords.HostRoute53:      dnszones.ProviderRoute53,
+	mailrecords.HostGoogleCloud:  dnszones.ProviderGoogleCloud,
+	mailrecords.HostDigitalOcean: dnszones.ProviderDigitalOcean,
+	mailrecords.HostHetzner:      dnszones.ProviderHetzner,
+	mailrecords.HostAzure:        dnszones.ProviderAzure,
 }
 
 var hostLabels = map[string]string{

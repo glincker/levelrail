@@ -339,3 +339,12 @@ func TestEmailNotifier_CertExpiryBody(t *testing.T) {
 		})
 	}
 }
+
+func TestCertPolicy_OriginCAAsksForManualReplace(t *testing.T) {
+	now := time.Now()
+	info := CertInfo{Domain: "app.example.com", Issuer: "CloudFlare Origin SSL Certificate Authority", NotBefore: now.Add(-3650 * oneDay), NotAfter: now.Add(5 * oneDay), OriginCA: true}
+	fact, alert := testPolicy(stubACME{"app.example.com": "dns failure"}, 7*oneDay).assess(info, now, time.Hour, false)
+	if !alert || fact.Action != CertActionReplace || fact.FailureKind != CertFailureOther {
+		t.Fatalf("origin cert fact = %+v alert=%v, want a replace action", fact, alert)
+	}
+}

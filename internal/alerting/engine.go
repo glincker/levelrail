@@ -86,6 +86,10 @@ type Engine struct {
 	certMu                      sync.Mutex
 	certFacts                   map[string][]CertFact
 	certReminded                map[string]time.Time
+	renotified                  map[string]time.Time
+	escalated                   map[string]time.Time
+	renotifyEvery               func(context.Context) time.Duration
+	acks                        AckSource
 	clock                       func() time.Time
 	certRenewalStalledThreshold time.Duration
 	patchStatusThreshold        float64
@@ -107,8 +111,13 @@ type Engine struct {
 	exportHealth      ExportHealthSource
 	backupCopy        BackupCopySource
 	backupCopyDefault time.Duration
+	backupSize        BackupSizeSource
+	backupSizePolicy  func(context.Context) BackupSizePolicy
+	durations         DurationSource
+	durationsPolicy   func(context.Context) DurationRegressionPolicy
 
 	registryRefresh RegistryRefreshSource
+	dnsCredentials  DNSCredentialSource
 
 	restoreDrills RestoreDrillSource
 
@@ -227,12 +236,25 @@ func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 // SetRegistryRefresh enables kind=registry_refresh_failing rules.
 func (e *Engine) SetRegistryRefresh(src RegistryRefreshSource) { e.registryRefresh = src }
 
+// SetDNSCredentials enables kind=dns_credential_failing rules.
+func (e *Engine) SetDNSCredentials(src DNSCredentialSource) { e.dnsCredentials = src }
+
 // SetExportHealth enables kind=export_behind rules.
 func (e *Engine) SetExportHealth(src ExportHealthSource) { e.exportHealth = src }
 
 // SetBackupCopy enables kind=backup_copy_behind rules; defaultLag applies when a rule sets no ForDuration.
 func (e *Engine) SetBackupCopy(src BackupCopySource, defaultLag time.Duration) {
 	e.backupCopy, e.backupCopyDefault = src, defaultLag
+}
+
+// SetBackupSizeAnomaly enables kind=backup_size_anomaly rules; policy is read on every tick so settings apply live.
+func (e *Engine) SetBackupSizeAnomaly(src BackupSizeSource, policy func(context.Context) BackupSizePolicy) {
+	e.backupSize, e.backupSizePolicy = src, policy
+}
+
+// SetDurationRegression enables kind=deploy_duration_regression rules; policy is read on every tick so settings apply live.
+func (e *Engine) SetDurationRegression(src DurationSource, policy func(context.Context) DurationRegressionPolicy) {
+	e.durations, e.durationsPolicy = src, policy
 }
 
 // SetRestoreDrills enables kind=restore_drill_failed rules.
@@ -678,11 +700,38 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindBackupSizeAnomaly:
+			if e.backupSize == nil || e.backupSizePolicy == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateBackupSizeAnomaly(ctx, e.backupSize, e.backupSizePolicy(ctx), r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindDeployDurationRegression:
+			if e.durations == nil || e.durationsPolicy == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateDeployDurationRegression(ctx, e.durations, e.durationsPolicy(ctx), r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindRegistryRefreshFailing:
 			if e.registryRefresh == nil {
 				continue
 			}
 			next, backupMissingNoticeText, err = EvaluateRegistryRefreshFailing(ctx, e.registryRefresh, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindDNSCredentialFailing:
+			if e.dnsCredentials == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateDNSCredentialFailing(ctx, e.dnsCredentials, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -732,7 +781,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
-		case KindCertExpiring, KindCertRenewalStalled, KindDomainNotResolving, KindDomainTrafficDrop, KindParkedDomainCertExpiry:
+		case KindCertExpiring, KindCertRenewalStalled, KindDomainNotResolving, KindDomainTrafficDrop, KindParkedDomainCertExpiry, KindDomainRegistrationExpiry:
 			var skip bool
 			var notices []string
 			next, notices, skip, err = e.evaluateTrafficKind(ctx, r, now)
@@ -769,6 +818,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
+			e.renotifyMark(r.ID, now, true)
 			if r.Kind == KindCertExpiry {
 				e.certReminderReset(r.ID, now, true)
 			}
@@ -787,6 +837,8 @@ func (e *Engine) Tick(ctx context.Context) error {
 				MaybeAutoRollbackOnSLOBurn(ctx, e.sloAutoRollback, e.sloAutoRollbackHistory, e.sloAutoRollbackNudger, e.sloAutoRollbackTracker, next, sloNotice, e.logger)
 			}
 		case becameResolved:
+			e.renotifyMark(r.ID, now, false)
+			e.escalationMark(r.ID, time.Time{}, false)
 			if r.Kind == KindCertExpiry {
 				e.certReminderReset(r.ID, now, false)
 				if certSuperseded {
@@ -801,6 +853,12 @@ func (e *Engine) Tick(ctx context.Context) error {
 			}
 			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "", "")
 		case stillFiring:
+			if e.escalationDue(ctx, next, now) {
+				e.escalate(ctx, next, Event{Rule: next})
+			}
+			if e.renotifyDue(ctx, next, now) {
+				e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice)
+			}
 			if r.Kind == KindCertExpiry && e.certPolicy.Enabled && len(certNotices) > 0 && e.certReminderDue(r.ID, now) {
 				e.dispatch(ctx, next, false, certNotices, nil, nil, nil, nil, nil, "", "", "", "")
 			}
@@ -887,7 +945,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindBackupSizeAnomaly || r.Kind == KindDeployDurationRegression || r.Kind == KindRegistryRefreshFailing || r.Kind == KindDNSCredentialFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {
@@ -927,6 +985,7 @@ func (e *Engine) attachChanges(ctx context.Context, ev *Event) {
 	ev.Changes = &res
 	if e.changesLink != nil {
 		ev.ChangesLink = e.changesLink(app)
+		ev.LogsLink, ev.DeployLink = alertLinks(ev.ChangesLink, res)
 	}
 }
 
@@ -941,6 +1000,11 @@ func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
 	if sendErr == nil {
 		if r.NotifyKind == NotifyWebpush {
 			ctx = WithPushAudience(ctx, withChannelProject(ctx, e.rules, r.ChannelID, resolvePushAudience(ctx, e.rules, r.ResourceID)))
+		}
+		if ts, ok := e.rules.(channelTemplateSource); ok {
+			if tpl := ts.ChannelMessageTemplate(ctx, r.ChannelID); tpl != "" {
+				ev.CustomText = RenderMessageTemplate(tpl, alertTemplateVars(ev))
+			}
 		}
 		sendErr = e.newNotifier(r).Notify(ctx, ev)
 	}

@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Verificações preliminares",
+    "prepull": "Pré-baixando a imagem no nó de destino",
     "stop_source": "Parando no node de origem",
     "copy_volumes": "Copiando volumes",
     "place": "Iniciando no node de destino",
@@ -139,6 +140,30 @@
       "summary": "{{done}} de {{total}} movidos, {{failed}} com falha",
       "eta": "cerca de {{seconds}} s restantes",
       "stalled": "Sem progresso há algum tempo. Verifique o node e as movimentações abaixo."
+    },
+    "zone": {
+      "switch": "Drenar uma zona inteira",
+      "title": "Drenar uma zona",
+      "description": "Drena cada nó da zona, um de cada vez, esperando cada um terminar. Para no primeiro dreno que não tiver sucesso para que o resto continue servindo.",
+      "zoneLabel": "Zona",
+      "pick": "Escolha uma zona",
+      "minAvailable": "Mínimo disponível",
+      "hint": "Mínimo disponível é quantos nós fora da zona devem continuar online e agendáveis.",
+      "dryRun": "Simulação",
+      "start": "Drenar zona",
+      "invalidMin": "O mínimo disponível deve ser um inteiro de pelo menos 1.",
+      "empty": "Nenhum nó tem o rótulo de zona {{zone}}.",
+      "tooFew": "Drenar esta zona deixaria {{stay}} nó(s) disponíveis, abaixo do mínimo de {{min}}.",
+      "dryRunResult": "A zona {{zone}} drenaria {{count}} nó(s) nesta ordem. Nada foi alterado.",
+      "stopped": "Parado. {{left}} nó(s) não foram drenados.",
+      "moved": "{{done}} de {{total}} movidos",
+      "step": {
+        "pending": "Aguardando",
+        "running": "Drenando",
+        "succeeded": "Drenado",
+        "partial": "Parcialmente drenado",
+        "failed": "Falhou"
+      }
     }
   },
   "drains": {
@@ -207,7 +232,15 @@
       "to": "Para",
       "none": "Nenhum node",
       "failed": "A simulação falhou.",
-      "invalid": "Informe números inteiros, com pelo menos um app."
+      "invalid": "Informe números inteiros, com pelo menos um app.",
+      "unknown": "Desconhecido",
+      "memoryCaption": "Memória reservada versus usada por nó",
+      "memoryHint": "Memória reservada pelos apps comparada ao que cada nó realmente usa. Memória encalhada está reservada, mas ociosa.",
+      "colNode": "Nó",
+      "colReserved": "Reservada",
+      "colCapacity": "Capacidade",
+      "colUsed": "Usada",
+      "colStranded": "Encalhada"
     }
   },
   "placement": {
@@ -237,7 +270,18 @@
     "moveHere": "Mover para este servidor",
     "movedHere": "Agora posicionado neste servidor.",
     "moveFailed": "Não foi possível movê-lo para este servidor.",
-    "domainWarnings": "Avisos de domínio de falha"
+    "domainWarnings": "Avisos de domínio de falha",
+    "warm": {
+      "title": "Manter a imagem aquecida",
+      "hint": "Baixa antecipadamente a imagem deste app nos nós escolhidos para que uma mudança ou failover inicie rápido.",
+      "switchAria": "Manter a imagem baixada nos nós escolhidos",
+      "nodesLabel": "Nós aquecidos",
+      "addLabel": "Adicionar rótulo",
+      "save": "Salvar destinos",
+      "saved": "Destinos salvos.",
+      "cleared": "Destinos removidos.",
+      "saveFailed": "Não foi possível salvar os destinos"
+    }
   },
   "allocation": {
     "title": "Capacidade",
@@ -1290,5 +1334,21 @@
       "queued": "Na fila para a próxima verificação do agente",
       "disclaimer": "Ignora a janela de manutenção e a retenção. A atualização continua verificada por assinatura e é revertida em caso de falha."
     }
+  },
+  "pools": {
+    "title": "Pools de nós",
+    "description": "Dê nome a um grupo de nós por um seletor de rótulos. Os apps escolhem o pool em vez de repetir o seletor.",
+    "empty": "Ainda não há pools. Crie um, por exemplo ssd com disk=ssd.",
+    "remove": "Remover {{name}}",
+    "nameLabel": "Nome do pool",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Seletor",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Salvar pool",
+    "selectorInvalid": "Use pares chave=valor separados por vírgulas.",
+    "pickerLabel": "Pool de nós",
+    "pickerPlaceholder": "Sem pool",
+    "none": "Sem pool",
+    "pickerHint": "Os rótulos do pool são somados ao seletor de posicionamento próprio deste app."
   }
 }

@@ -22,7 +22,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var tokenName, abilitiesFlag, clientNameFlag string
 	var expiresInDays int
-	var deviceFlag, reauthFlag, waitFlag, printToken, forceFlag, insecureHTTP bool
+	var deviceFlag, reauthFlag, waitFlag, printToken, forceFlag, insecureHTTP, withToken bool
 	var codeFlag string
 	var openFlag triBool
 	var approvalTimeout time.Duration
@@ -31,6 +31,8 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs.Var(&openFlag, "open", "open the approval page in a browser when a new device needs approval (default: on at a desktop terminal, off over SSH and in scripts)")
 	fs.BoolVar(&waitFlag, "wait", false, "wait for new-device approval even when not at a terminal (default: fail at once with the fix)")
 	fs.DurationVar(&approvalTimeout, "approval-timeout", 0, "how long to wait for new-device approval (default: "+envLoginApprovalTimeout+" env var, then 3m)")
+	fs.BoolVar(&withToken, "with-token", false, "read an existing API token from the first line of stdin and save it (no token on argv)")
+	fs.BoolVar(&withToken, "token-stdin", false, "same as --with-token")
 	fs.BoolVar(&reauthFlag, "reauth", false, "replace the server this profile is pinned to (use after the server was reinstalled or restored)")
 	fs.BoolVar(&forceFlag, "force", false, "sign in again even when a valid saved login exists (default: reuse it and make no new session)")
 	fs.StringVar(&tokenName, "token-name", "", "name for the newly minted token (default: \"levelrail-cli-<timestamp>\")")
@@ -66,6 +68,10 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	// A password, device cookie or minted token only goes to an address the user saved or typed.
 	if m, bad := savedLoginMismatch(*apiURLFlagP, lookupEnv, prog, resolveProfile(*profileFlagP, lookupEnv)); bad {
 		return reportError(stdout, stderr, jsonOut, m)
+	}
+
+	if withToken {
+		return runAuthLoginWithToken(prog, *apiURLFlagP, *profileFlagP, stdin, stdout, stderr, lookupEnv, of, jsonOut, reauthFlag)
 	}
 
 	if !forceFlag && !reauthFlag {
@@ -239,6 +245,7 @@ Flags:
   --insecure-http            allow plain http to a non-loopback host (default: refused)
   --force                         sign in again even when a valid saved login exists (default: reuse it, no new session)
   --reauth                       replace the server this profile is pinned to (after the server was reinstalled or restored)
+  --with-token                read an existing API token from the first line of stdin and save it after the server accepts it (alias --token-stdin); example: %[1]s login --with-token < token.txt
   --code string                pairing code from the dashboard's "Connect your CLI" card
   --open                         open the approval page in a browser (default: on at a desktop terminal)
   --wait                          wait for new-device approval when not at a terminal

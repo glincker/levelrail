@@ -138,6 +138,12 @@ func WithRoute53DNSSecrets(s Route53DNSSecrets) Option {
 	return func(rt *Router) { rt.route53DNSSecrets = s }
 }
 
+// WithDNSTokenSecrets enables PUT/DELETE /api/v1/settings/dns-providers/{provider}
+// and lets the records, zones and domain automation paths read the credential back.
+func WithDNSTokenSecrets(s DNSTokenSecrets) Option {
+	return func(rt *Router) { rt.dnsTokenSecrets = s }
+}
+
 // WithGoogleCloudDNSSecrets enables PUT/DELETE /api/v1/settings/google-cloud-dns
 // and lets the records, zones and domain automation paths read the key back.
 func WithGoogleCloudDNSSecrets(s GoogleCloudDNSSecrets) Option {

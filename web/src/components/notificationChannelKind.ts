@@ -24,6 +24,8 @@ export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
   opsgenie: 'Opsgenie',
   webex: 'Webex',
   googlechat: 'Google Chat',
+  matrix: 'Matrix',
+  zulip: 'Zulip',
   webpush: 'Browser push',
 }
 

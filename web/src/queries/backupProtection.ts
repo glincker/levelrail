@@ -10,6 +10,8 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type {
+  AppRestoreToNodeRequest,
+  AppRestoreToNodeResponse,
   BackupDrill,
   BackupHealth,
   TargetProtection,
@@ -192,4 +194,27 @@ export function useRestoreVolumeTo(app: string, volume: string) {
       },
     },
   )
+}
+
+// useRestoreAppToNode plans (dry_run) or starts the restore of an app's
+// volumes and databases onto a node (POST /api/v1/apps/{name}/restore-to-node).
+export function useRestoreAppToNode(app: string) {
+  return useMutation<
+    AppRestoreToNodeResponse,
+    ApiError,
+    AppRestoreToNodeRequest
+  >({
+    mutationFn: async (req) => {
+      const res = await fetch(
+        `/api/v1/apps/${encodeURIComponent(app)}/restore-to-node`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req),
+        },
+      )
+      if (!res.ok) return failure(res, 'restore app to node')
+      return (await res.json()) as AppRestoreToNodeResponse
+    },
+  })
 }

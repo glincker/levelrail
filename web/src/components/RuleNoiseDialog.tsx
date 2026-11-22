@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SlidersHorizontalGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,10 +22,14 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 import { useUpdateAlertRule } from '../queries/alerts'
+import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import type { AlertRule, CreateAlertRuleRequest } from '../types/alerts'
 import type { Severity } from '../types/alertNoise'
 
 const SEVERITIES: Severity[] = ['info', 'warning', 'critical']
+const NO_CHANNEL = 'none'
+// Mirrors the API's runbook length limit.
+const RUNBOOK_MAX = 1000
 const GO_DURATION = /^(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 
 // A PUT replaces the whole rule, so the request restates every editable
@@ -48,7 +53,15 @@ function ruleToRequest(rule: AlertRule): CreateAlertRuleRequest {
     notify_url: rule.channel_id ? undefined : rule.notify_url,
     notify_kind: rule.channel_id ? undefined : rule.notify_kind,
     enabled: rule.enabled,
+    runbook: rule.runbook,
   }
+}
+
+// The API returns Go durations such as 15m0s or 1h0m0s; the field edits whole minutes.
+function durationMinutes(d: string): number {
+  const h = /(\d+)h/.exec(d)
+  const m = /(\d+)m(?!s)/.exec(d)
+  return Number(h?.[1] ?? 0) * 60 + Number(m?.[1] ?? 0)
 }
 
 function parseLabels(raw: string): Record<string, string> | undefined {
@@ -85,6 +98,16 @@ export function RuleNoiseDialog({
       .map(([k, v]) => `${k}=${v}`)
       .join(', '),
   )
+  const { t } = useTranslation('alertEscalation')
+  const channels = useNotificationChannelsOptional().data ?? []
+  const [escChannel, setEscChannel] = useState(
+    rule.escalate_channel_id || NO_CHANNEL,
+  )
+  const [escMinutes, setEscMinutes] = useState(
+    rule.escalate_after ? String(durationMinutes(rule.escalate_after)) : '',
+  )
+  const { t: tr } = useTranslation('alertRunbook')
+  const [runbook, setRunbook] = useState(rule.runbook ?? '')
   const [formError, setFormError] = useState('')
   const update = useUpdateAlertRule(appName)
 
@@ -104,6 +127,19 @@ export function RuleNoiseDialog({
       setFormError('Flap window must look like 30m or 1h.')
       return
     }
+    const minutes = escMinutes === '' ? 0 : Number(escMinutes)
+    if (!Number.isInteger(minutes) || minutes < 0) {
+      setFormError(t('invalidAfter'))
+      return
+    }
+    if ((escChannel === NO_CHANNEL) !== (minutes === 0)) {
+      setFormError(t('needBoth'))
+      return
+    }
+    if (runbook.trim().length > RUNBOOK_MAX) {
+      setFormError(tr('tooLong', { max: RUNBOOK_MAX }))
+      return
+    }
     setFormError('')
     update.mutate(
       {
@@ -115,6 +151,10 @@ export function RuleNoiseDialog({
           consecutive_failures: consecutiveN || undefined,
           flap_threshold: flapN || undefined,
           flap_window: flapWindow || undefined,
+          escalate_channel_id:
+            escChannel === NO_CHANNEL ? undefined : escChannel,
+          escalate_after: minutes > 0 ? `${minutes}m` : undefined,
+          runbook: runbook.trim() || undefined,
         },
       },
       {
@@ -227,6 +267,60 @@ export function RuleNoiseDialog({
               }}
             />
           </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field>
+              <FieldLabel htmlFor="noise-escalate-channel">
+                {t('channelLabel')}
+              </FieldLabel>
+              <Select
+                value={escChannel}
+                onValueChange={(v) => {
+                  setEscChannel(v ?? NO_CHANNEL)
+                }}
+              >
+                <SelectTrigger id="noise-escalate-channel">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_CHANNEL}>{t('channelNone')}</SelectItem>
+                  {channels
+                    .filter((c) => c.id !== rule.channel_id)
+                    .map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="noise-escalate-after">
+                {t('afterLabel')}
+              </FieldLabel>
+              <Input
+                id="noise-escalate-after"
+                inputMode="numeric"
+                placeholder="15"
+                value={escMinutes}
+                onChange={(e) => {
+                  setEscMinutes(e.target.value)
+                }}
+              />
+            </Field>
+          </div>
+          <p className="text-xs text-muted-foreground">{t('afterHint')}</p>
+          <Field>
+            <FieldLabel htmlFor="noise-runbook">{tr('fieldLabel')}</FieldLabel>
+            <Input
+              id="noise-runbook"
+              placeholder={tr('fieldPlaceholder')}
+              value={runbook}
+              onChange={(e) => {
+                setRunbook(e.target.value)
+              }}
+            />
+          </Field>
+          <p className="text-xs text-muted-foreground">{tr('fieldHint')}</p>
           {formError || update.isError ? (
             <p role="alert" className="text-sm text-destructive">
               {formError || update.error?.message}

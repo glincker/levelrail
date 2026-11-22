@@ -88,3 +88,25 @@ func TestLimiterAppliesHeapAndExplainsOOM(t *testing.T) {
 		}
 	}
 }
+
+func TestSuggestMemory(t *testing.T) {
+	g := MemGuard{Percent: 60, ReserveMB: 512, NodeHeapPercent: 75}
+	cases := []struct {
+		name              string
+		limit, peak, host int
+		wantMB            int
+		wantRoute         bool
+	}{
+		{"peak plus reserve rounded to step", 0, 1900, 16384, 2560, false},
+		{"limit used when no peak was read", 1024, 0, 16384, 1536, false},
+		{"does not fit a small host so route to a node", 0, 3000, 4096, 3584, true},
+		{"unknown host never routes", 0, 3000, 0, 3584, false},
+		{"nothing known suggests nothing", 0, 0, 8192, 0, false},
+	}
+	for _, c := range cases {
+		got := SuggestMemory(c.limit, c.peak, c.host, g)
+		if got.SuggestedMB != c.wantMB || got.RouteToNode != c.wantRoute {
+			t.Errorf("%s: got %+v, want %d MB route=%v", c.name, got, c.wantMB, c.wantRoute)
+		}
+	}
+}

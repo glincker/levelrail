@@ -411,3 +411,50 @@ func TestWatcher_OperatorRollbackLiveShape(t *testing.T) {
 		})
 	}
 }
+
+// restartsSince reports restarts only when the count window opens before at.
+type restartsSince struct{ at time.Time }
+
+func (f restartsSince) CountContainersSince(_ []string, since time.Time) int {
+	if since.Before(f.at) {
+		return 2
+	}
+	return 0
+}
+
+func TestWatcher_SleepAndWakeAreNotACrashloop(t *testing.T) {
+	ctx := context.Background()
+	stopped := func(string) (docker.ExitStateInspector, error) {
+		return fakeInspector{currentContainer(): {Running: false, ExitCode: 0}}, nil
+	}
+	t.Run("asleep", func(t *testing.T) {
+		f := newWatchFixture(t, true)
+		f.watcher.Restarts = fakeRestarts(1)
+		f.watcher.Inspectors = stopped
+		if err := f.db.SetAppSleepIdle(ctx, "web", 5, f.now.Add(-time.Hour)); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.db.SetAppSleeping(ctx, "web", true, f.now.Add(-30*time.Second)); err != nil {
+			t.Fatal(err)
+		}
+		f.watcher.Tick(ctx)
+		if hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusFailed, "") {
+			t.Fatalf("a sleeping app tripped the watch: %+v", f.events(t))
+		}
+	})
+	t.Run("woke after cutover", func(t *testing.T) {
+		f := newWatchFixture(t, true)
+		wake := f.now.Add(-10 * time.Second).UTC().Truncate(time.Second)
+		f.watcher.Restarts = restartsSince{at: wake}
+		if err := f.db.SetAppSleepIdle(ctx, "web", 5, f.now.Add(-time.Hour)); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.db.SetAppSleeping(ctx, "web", false, wake); err != nil {
+			t.Fatal(err)
+		}
+		f.watcher.Tick(ctx)
+		if hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusFailed, "") {
+			t.Fatalf("the wake start was counted as a crashloop: %+v", f.events(t))
+		}
+	})
+}

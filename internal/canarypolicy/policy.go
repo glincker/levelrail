@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -20,6 +21,10 @@ const (
 	EnvMinRequests  = "APP_CANARY_MIN_REQUESTS"
 	EnvP95FloorMS   = "APP_CANARY_P95_FLOOR_MS"
 	EnvTick         = "APP_CANARY_TICK"
+	EnvSticky       = "APP_CANARY_STICKY"
+
+	EnvMaxHealthFailures = "APP_CANARY_MAX_HEALTH_FAILURES"
+	EnvAlertRuleID       = "APP_CANARY_ALERT_RULE_ID"
 )
 
 const (
@@ -29,6 +34,8 @@ const (
 	defaultMinRequests  = 30
 	defaultP95FloorMS   = 50.0
 	defaultTick         = 15 * time.Second
+	// A confirmed liveness failure on the canary is already past the probe threshold, so one is enough.
+	defaultMaxHealthFailures = 1
 
 	// MaxStages bounds a stage schedule.
 	MaxStages = 10
@@ -59,6 +66,11 @@ type Limits struct {
 	// P95FloorMS ignores latency ratios while the canary p95 is below it.
 	P95FloorMS float64
 	Tick       time.Duration
+	// MaxHealthFailures rolls the canary back once its liveness probe has failed this many
+	// times in a row; 0 turns the check off.
+	MaxHealthFailures uint64
+	// AlertRuleID names an alert rule whose firing state also rolls the canary back; empty is off.
+	AlertRuleID string
 }
 
 // DefaultPolicy returns the built-in defaults overridden by APP_CANARY_* env vars.
@@ -81,7 +93,11 @@ func DefaultPolicy(getenv func(string) string) Policy {
 
 // DefaultLimits returns the global limits overridden by APP_CANARY_* env vars.
 func DefaultLimits(getenv func(string) string) Limits {
-	l := Limits{MinRequests: defaultMinRequests, P95FloorMS: defaultP95FloorMS, Tick: defaultTick}
+	l := Limits{MinRequests: defaultMinRequests, P95FloorMS: defaultP95FloorMS, Tick: defaultTick, MaxHealthFailures: defaultMaxHealthFailures}
+	if n, err := strconv.ParseUint(strings.TrimSpace(getenv(EnvMaxHealthFailures)), 10, 64); err == nil {
+		l.MaxHealthFailures = n
+	}
+	l.AlertRuleID = strings.TrimSpace(getenv(EnvAlertRuleID))
 	if n, err := strconv.ParseUint(strings.TrimSpace(getenv(EnvMinRequests)), 10, 64); err == nil && n > 0 {
 		l.MinRequests = n
 	}
@@ -94,8 +110,34 @@ func DefaultLimits(getenv func(string) string) Limits {
 	return l
 }
 
-// OSEnv reads the process environment, the getenv the daemon passes in.
-func OSEnv(k string) string { return os.Getenv(k) }
+// StickyEnabled reports whether ingress pins a visitor to one release by
+// cookie. It is on unless the setting says otherwise.
+func StickyEnabled(getenv func(string) string) bool {
+	v, err := strconv.ParseBool(strings.TrimSpace(getenv(EnvSticky)))
+	return err != nil || v
+}
+
+var liveEnv atomic.Pointer[func(string) string]
+
+// SetLiveEnv points the defaults at the runtime settings so a change applies
+// to the next stage or release. nil goes back to the process environment alone.
+func SetLiveEnv(f func(string) string) {
+	if f == nil {
+		liveEnv.Store(nil)
+		return
+	}
+	liveEnv.Store(&f)
+}
+
+// OSEnv asks the live settings first, then the process environment.
+func OSEnv(k string) string {
+	if f := liveEnv.Load(); f != nil {
+		if v := (*f)(k); v != "" {
+			return v
+		}
+	}
+	return os.Getenv(k)
+}
 
 func envFloat(getenv func(string) string, key string) (float64, bool) {
 	v := strings.TrimSpace(getenv(key))

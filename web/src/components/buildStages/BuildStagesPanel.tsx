@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useDeployDetailT } from '../deployDetail/useDeployDetailT'
 import type { DeployStepEvent } from '../../hooks/useDeployStepStream'
 import type { BuildStageName } from '../../lib/buildStages'
+import { BuildMemorySuggestion } from './BuildMemorySuggestion'
 import { StageLogPanel } from './StageLogPanel'
 import { StageOverview } from './StageOverview'
 import { useBuildStages, useRefetchOnBuildSteps } from './useBuildStages'
@@ -24,6 +25,9 @@ export function BuildStagesPanel({
     data !== undefined && data.status !== 'running' && data.status !== 'queued'
   return (
     <div className="space-y-3">
+      {data?.status === 'failed' ? (
+        <BuildMemorySuggestion appName={appName} />
+      ) : null}
       <StageOverview
         appName={appName}
         deployId={deployId}

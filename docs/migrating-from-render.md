@@ -21,7 +21,7 @@ Collect this before you touch Levelrail. Some of it is only in the Render dashbo
 - Persistent disks: mount path and size.
 - Render Postgres and Key Value instances: version, plan and disk size.
 - Pre-deploy commands, auto-deploy settings, preview environments and autoscaling rules.
-- A `render.yaml` Blueprint, if you have one. There is no Blueprint importer, so use it as a checklist.
+- A `render.yaml` Blueprint, if you have one. `levelrail-cli import render render.yaml` turns it into reviewable Levelrail documents (Apps, databases, cron jobs). It is a dry run unless you pass `--write DIR`.
 
 ## 2. Run the importer
 
@@ -75,7 +75,7 @@ The directory holds the stack documents, a `SECRETS.md` with secret names only a
 | Auto-deploy on push | Git webhook on the app | Reported, connect the repository webhook after import |
 | Preview environments | [Preview environments](/preview-environments) | Enabled per app, set up by hand |
 | Autoscaling | [Autoscaling](/autoscaling) (beta) | Not read by the importer. Set a policy by hand |
-| Blueprint (`render.yaml`) | App spec or a stack | No Blueprint importer. Use the file as a checklist |
+| Blueprint (`render.yaml`) | App spec or a stack | `import render render.yaml` emits Apps, databases and cron jobs. Static sites and environment groups are listed in the notes |
 
 ## 4. Environment variables and secrets
 
@@ -147,7 +147,7 @@ Raise TTLs again only after a clean run.
 ## 8. Limits and gaps
 
 - The importer does not migrate data: database contents and disk files are copied by hand.
-- Render cron jobs, Environment Groups, pre-deploy commands, autoscaling rules, preview environment settings and Blueprints are not created by the importer.
+- Render cron jobs, Environment Groups, pre-deploy commands, autoscaling rules and preview environment settings are not created by the API importer. Use the Blueprint importer for cron jobs and pre-deploy commands.
 - Render private networking between services does not carry over. Check how your apps reach each other here, see [Private networks](/private-networks).
 - Region and plan names do not map. Choose nodes and sizes yourself.
 - Render's global edge and DDoS layer are not part of Levelrail. Files and traffic are served from the nodes you run.

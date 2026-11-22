@@ -24,7 +24,8 @@ func (s *bootState) setupDNS01Check() {
 		return ingressreconcile.DNSProviderConnected(ctx, db,
 			ingressreconcile.WithCloudflareDNSTokens(sec),
 			ingressreconcile.WithRoute53DNSCredentials(sec),
-			ingressreconcile.WithGoogleCloudDNSKey(sec))
+			ingressreconcile.WithGoogleCloudDNSKey(sec),
+			ingressreconcile.WithDNSTokens(sec))
 	})
 }
 

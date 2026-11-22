@@ -23,6 +23,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import { IntegrityCard } from '@/components/settings/IntegrityCard'
 import { ReconcileGuardCard } from '@/components/settings/ReconcileGuardCard'
+import { StoragePartsCard } from '@/components/settings/StoragePartsCard'
+import { HotSpotsCard } from '@/components/settings/HotSpotsCard'
+import { SlowRequestsCard } from '@/components/settings/SlowRequestsCard'
 import {
   useApplyControlPlaneFix,
   useControlPlaneHealth,
@@ -379,6 +382,15 @@ export function ControlPlaneHealthPage() {
           </Suspense>
           <IntegrityCard />
           <ReconcileGuardCard guard={data.reconcile.guard} />
+          <StoragePartsCard />
+          <SlowRequestsCard
+            thresholdMs={data.slow_request_threshold_ms ?? 0}
+            requests={data.slow_requests ?? []}
+          />
+          <HotSpotsCard
+            routes={data.hot_routes ?? []}
+            statements={data.db.hot_statements ?? []}
+          />
           <Card>
             <CardHeader>
               <CardTitle>{t('controlPlaneHealth.metricsTitle')}</CardTitle>

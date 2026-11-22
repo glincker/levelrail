@@ -1,0 +1,45 @@
+{
+  "envHints": {
+    "title": "Environment variables",
+    "help": "This repository documents variables it needs. Fill each one before the first deploy.",
+    "scanning": "Reading the repository's example env file...",
+    "missing_one": "{{count}} required variable is empty.",
+    "missing_other": "{{count}} required variables are empty.",
+    "secretHint": "Stored encrypted",
+    "valueLabel": "Value for {{name}}"
+  },
+  "nextStep": {
+    "dismiss": "Dismiss this suggestion",
+    "app_domain": {
+      "title": "Your app is live. Add your own domain.",
+      "body": "Point a hostname you own at this app so people reach it by name.",
+      "cta": "Add a domain"
+    },
+    "first_backup": {
+      "title": "Turn on backups",
+      "body": "Take a first backup so a lost disk does not take your apps with it.",
+      "cta": "Set up backups"
+    },
+    "notifications": {
+      "title": "Add a monitor and an alert",
+      "body": "Get told about a crash or a failing check before your users are.",
+      "cta": "Set up alerts"
+    },
+    "teammate": {
+      "title": "Invite a teammate",
+      "body": "Give a second person access so you are not the only login.",
+      "cta": "Invite someone"
+    }
+  },
+  "launch": {
+    "title": "Your app is live",
+    "body": "Open it, or scan the code to try it on your phone.",
+    "copy": "Copy URL",
+    "copied": "Copied",
+    "share": "Copy share link",
+    "shareText": "Try {{name}}:",
+    "dismiss": "Dismiss",
+    "qrLabel": "QR code for the live URL",
+    "qrLoading": "Loading QR code"
+  }
+}

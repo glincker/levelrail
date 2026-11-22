@@ -9,10 +9,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// backupCheckLookback bounds how many recent backups the upgrade check scans for a restore point.
+const backupCheckLookback = 50
 
 // MajorUpgradeStore is the store surface the major upgrade routes read.
 type MajorUpgradeStore interface {
@@ -267,4 +272,71 @@ func randomMajorUpgradeID() (string, error) {
 		return "", fmt.Errorf("api: generate major upgrade id: %w", err)
 	}
 	return "mu_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+type restorePointResource struct {
+	BackupID   string `json:"backup_id"`
+	FinishedAt string `json:"finished_at"`
+	AgeSeconds int64  `json:"age_seconds"`
+}
+
+type majorUpgradeCheckResource struct {
+	Go            bool                  `json:"go"`
+	Reasons       []string              `json:"reasons"`
+	RestorePoint  *restorePointResource `json:"restore_point,omitempty"`
+	MaxAgeSeconds int64                 `json:"max_age_seconds"`
+	FromVersion   string                `json:"from_version"`
+	ToVersion     string                `json:"to_version"`
+}
+
+// majorUpgradeCheck turns the refusal, the newest successful backup and the age
+// limit into a go/no-go answer. now is passed in so tests pin the age.
+func majorUpgradeCheck(d *store.DesiredDatabase, toVersion string, history []store.BackupHistory, maxAge time.Duration, now time.Time) majorUpgradeCheckResource {
+	out := majorUpgradeCheckResource{Reasons: []string{}, MaxAgeSeconds: int64(maxAge.Seconds()), FromVersion: d.Version, ToVersion: toVersion}
+	if msg := checkMajorUpgrade(d, toVersion); msg != "" {
+		out.Reasons = append(out.Reasons, msg)
+	}
+	var newest time.Time
+	for _, h := range history {
+		if h.Status != store.BackupStatusSucceeded {
+			continue
+		}
+		at, err := time.Parse(time.RFC3339, h.FinishedAt)
+		if err != nil || !at.After(newest) {
+			continue
+		}
+		newest = at
+		out.RestorePoint = &restorePointResource{BackupID: h.ID, FinishedAt: h.FinishedAt, AgeSeconds: int64(now.Sub(at).Seconds())}
+	}
+	switch {
+	case out.RestorePoint == nil:
+		out.Reasons = append(out.Reasons, "no successful backup exists: take one first so there is a restore point")
+	case time.Duration(out.RestorePoint.AgeSeconds)*time.Second > maxAge:
+		out.Reasons = append(out.Reasons, fmt.Sprintf("the newest restore point is %s old, older than the %s limit: take a fresh backup first", time.Duration(out.RestorePoint.AgeSeconds)*time.Second, maxAge))
+	}
+	out.Go = len(out.Reasons) == 0
+	return out
+}
+
+// handleMajorUpgradeCheck handles GET /api/v1/databases/{name}/major-upgrade/check?version=V.
+// It changes nothing: it answers go or no-go with the restore point age so an
+// operator sees the safety net before taking the database offline.
+func (rt *Router) handleMajorUpgradeCheck(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	d, ok := rt.loadDatabaseForRunner(w, r, name, "api: major upgrade check: load database failed")
+	if !ok {
+		return
+	}
+	toVersion := r.URL.Query().Get("version")
+	if toVersion == "" {
+		writeError(w, http.StatusBadRequest, "version is required")
+		return
+	}
+	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name, backupCheckLookback, nil)
+	if err != nil {
+		rt.internalError(w, "api: major upgrade check: list backups failed", err, slog.String("name", name))
+		return
+	}
+	hours := rt.RuntimeSettings().Int(r.Context(), runtimesettings.KeyMajorUpgradeRestorePointMaxAgeHours)
+	writeJSON(w, http.StatusOK, majorUpgradeCheck(d, toVersion, history, time.Duration(hours)*time.Hour, time.Now()))
 }

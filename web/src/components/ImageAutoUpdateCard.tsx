@@ -19,6 +19,16 @@ import {
 const DEFAULT_WINDOW_MINUTES =
   Number(import.meta.env.VITE_IMAGE_UPDATE_WINDOW_MINUTES) || 120
 
+// Mirrors internal/imageupdate ParseRange so bad input is caught before the PUT.
+const RANGE_TOKEN =
+  /^(?:[\^~]\d+(?:\.\d+){0,2}|v?\d+(?:\.(?:\d+|[xX*])){0,2}|(?:>=|<=|>|<|=)v?\d+(?:\.\d+){0,2})$/
+
+function isValidVersionRange(spec: string): boolean {
+  const trimmed = spec.trim()
+  if (trimmed === '' || trimmed === '*') return true
+  return trimmed.split(/\s+/).every((tok) => RANGE_TOKEN.test(tok))
+}
+
 const WINDOW_PRESETS = [
   { id: 'nightly', cron: '0 3 * * *' },
   { id: 'weekends', cron: '0 3 * * 6,0' },
@@ -40,6 +50,31 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
     String(setting.data.window_minutes || DEFAULT_WINDOW_MINUTES),
   )
   const [windowError, setWindowError] = useState('')
+  const [range, setRange] = useState(setting.data.version_range ?? '')
+  const [rangeError, setRangeError] = useState('')
+
+  function saveRange() {
+    const trimmed = range.trim()
+    if (!isValidVersionRange(trimmed)) {
+      setRangeError(t('imageAutoUpdate.range.invalid'))
+      return
+    }
+    setRangeError('')
+    setEnabled.mutate(
+      {
+        enabled: setting.data.enabled,
+        version_range: trimmed === '*' ? '' : trimmed,
+      },
+      {
+        onSuccess: () =>
+          toast.add({
+            title: t('imageAutoUpdate.range.saved'),
+            type: 'success',
+          }),
+        onError: (error) => setRangeError(error.message),
+      },
+    )
+  }
 
   function saveWindow(on: boolean) {
     setWindowError('')
@@ -188,6 +223,49 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
               ? t('imageAutoUpdate.checking')
               : t('imageAutoUpdate.checkNow')}
           </Button>
+        </div>
+        <div className="space-y-1 border-t border-border pt-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-0 flex-1 basis-40 space-y-1">
+              <label
+                htmlFor="image-update-range"
+                className="text-xs text-muted-foreground"
+              >
+                {t('imageAutoUpdate.range.label')}
+              </label>
+              <Input
+                id="image-update-range"
+                value={range}
+                placeholder="1.x"
+                className="font-mono"
+                aria-invalid={rangeError ? true : undefined}
+                aria-describedby="image-update-range-help"
+                onChange={(e) => setRange(e.target.value)}
+              />
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              onClick={saveRange}
+              disabled={
+                setEnabled.isPending ||
+                range.trim() === (setting.data.version_range ?? '')
+              }
+            >
+              {t('imageAutoUpdate.range.save')}
+            </Button>
+          </div>
+          <p
+            id="image-update-range-help"
+            className="text-xs text-muted-foreground"
+          >
+            {t('imageAutoUpdate.range.help')}
+          </p>
+          {rangeError ? (
+            <p className="text-xs text-destructive" role="alert">
+              {rangeError}
+            </p>
+          ) : null}
         </div>
         <div className="space-y-2 border-t border-border pt-3">
           <div className="flex items-center justify-between gap-4">

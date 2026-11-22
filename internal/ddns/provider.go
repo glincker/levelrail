@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/heartbeat"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/kit/netguard"
@@ -85,4 +86,14 @@ func (p *HTTPProvider) Update(ctx context.Context, ip string) error {
 		return errors.New("provider rejected the update")
 	}
 	return nil
+}
+
+// NewGoDaddy is the preset that updates hostnames through GoDaddy's record API. credential is "key:secret".
+func NewGoDaddy(domains, credential string) (Provider, error) {
+	p, err := dnszones.NewGoDaddy(credential)
+	if err != nil {
+		return nil, err
+	}
+	secretmask.Add(credential)
+	return newZoneProvider(p, domains, 600)
 }

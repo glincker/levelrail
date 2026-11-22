@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Contrôles préalables",
+    "prepull": "Pré-téléchargement de l'image sur le nœud cible",
     "stop_source": "Arrêt sur le node source",
     "copy_volumes": "Copie des volumes",
     "place": "Démarrage sur le node cible",
@@ -139,6 +140,30 @@
       "summary": "{{done}} sur {{total}} déplacés, {{failed}} en échec",
       "eta": "environ {{seconds}} s restantes",
       "stalled": "Aucune progression depuis un moment. Vérifiez le node et les déplacements ci-dessous."
+    },
+    "zone": {
+      "switch": "Drainer une zone entière à la place",
+      "title": "Drainer une zone",
+      "description": "Draine chaque nœud de la zone un par un, en attendant la fin de chacun. S'arrête au premier drain qui échoue pour que le reste continue de servir.",
+      "zoneLabel": "Zone",
+      "pick": "Choisir une zone",
+      "minAvailable": "Minimum disponible",
+      "hint": "Le minimum disponible est le nombre de nœuds hors de la zone qui doivent rester en ligne et planifiables.",
+      "dryRun": "Simulation",
+      "start": "Drainer la zone",
+      "invalidMin": "Le minimum disponible doit être un entier d'au moins 1.",
+      "empty": "Aucun nœud ne porte l'étiquette de zone {{zone}}.",
+      "tooFew": "Drainer cette zone laisserait {{stay}} nœud(s) disponible(s), sous le minimum de {{min}}.",
+      "dryRunResult": "La zone {{zone}} drainerait {{count}} nœud(s) dans cet ordre. Rien n'a changé.",
+      "stopped": "Arrêté. {{left}} nœud(s) n'ont pas été drainés.",
+      "moved": "{{done}} sur {{total}} déplacés",
+      "step": {
+        "pending": "En attente",
+        "running": "Drain en cours",
+        "succeeded": "Drainé",
+        "partial": "Partiellement drainé",
+        "failed": "Échec"
+      }
     }
   },
   "drains": {
@@ -207,7 +232,15 @@
       "to": "Vers",
       "none": "Aucun node",
       "failed": "Échec de la simulation.",
-      "invalid": "Saisissez des nombres entiers, avec au moins une app."
+      "invalid": "Saisissez des nombres entiers, avec au moins une app.",
+      "unknown": "Inconnu",
+      "memoryCaption": "Mémoire réservée et utilisée par nœud",
+      "memoryHint": "Mémoire réservée par les apps comparée à l'usage réel de chaque nœud. La mémoire inutilisée est réservée mais inactive.",
+      "colNode": "Nœud",
+      "colReserved": "Réservée",
+      "colCapacity": "Capacité",
+      "colUsed": "Utilisée",
+      "colStranded": "Inutilisée"
     }
   },
   "placement": {
@@ -237,7 +270,18 @@
     "moveHere": "Déplacer vers ce serveur",
     "movedHere": "Désormais placé sur ce serveur.",
     "moveFailed": "Impossible de le déplacer vers ce serveur.",
-    "domainWarnings": "Avertissements sur les domaines de défaillance"
+    "domainWarnings": "Avertissements sur les domaines de défaillance",
+    "warm": {
+      "title": "Garder l'image au chaud",
+      "hint": "Télécharge à l'avance l'image de cette app sur les nœuds choisis pour qu'un déplacement ou un basculement démarre vite.",
+      "switchAria": "Garder l'image téléchargée sur les nœuds choisis",
+      "nodesLabel": "Nœuds au chaud",
+      "addLabel": "Ajouter un label",
+      "save": "Enregistrer les cibles",
+      "saved": "Cibles enregistrées.",
+      "cleared": "Cibles supprimées.",
+      "saveFailed": "Impossible d'enregistrer les cibles"
+    }
   },
   "allocation": {
     "title": "Capacité",
@@ -1290,5 +1334,21 @@
       "queued": "Planifié pour la prochaine vérification de l'agent",
       "disclaimer": "Ignore la fenêtre de maintenance et le blocage. La mise à jour reste vérifiée par signature et est annulée en cas d'échec."
     }
+  },
+  "pools": {
+    "title": "Pools de nœuds",
+    "description": "Nommez un groupe de nœuds par un sélecteur de labels. Les apps choisissent le pool au lieu de répéter le sélecteur.",
+    "empty": "Aucun pool pour l'instant. Créez-en un, par exemple ssd avec disk=ssd.",
+    "remove": "Retirer {{name}}",
+    "nameLabel": "Nom du pool",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Sélecteur",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Enregistrer le pool",
+    "selectorInvalid": "Utilisez des paires clé=valeur séparées par des virgules.",
+    "pickerLabel": "Pool de nœuds",
+    "pickerPlaceholder": "Aucun pool",
+    "none": "Aucun pool",
+    "pickerHint": "Les labels du pool s'ajoutent au sélecteur de placement propre à cette app."
   }
 }

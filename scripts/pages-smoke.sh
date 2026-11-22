@@ -60,7 +60,7 @@ cleanup() {
     # pages delete removes the app too; apps delete covers servers without that fix.
     for s in "$SITE" "$SITE-git"; do
       "$CLI" pages delete "$s" >/dev/null 2>&1 || true
-      "$CLI" apps delete "$s" >/dev/null 2>&1 || true
+      "$CLI" apps delete "$s" --yes >/dev/null 2>&1 || true
     done
   fi
   if [ -n "$WORK" ]; then rm -rf "$WORK"; fi

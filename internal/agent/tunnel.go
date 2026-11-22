@@ -30,7 +30,7 @@ var ErrTunnelUnsupported = errors.New("agent: ingress tunnel unsupported")
 // agentCapabilities lists what this agent binary advertises; the tunnel
 // capability follows the feature flag so a default install never offers it.
 func agentCapabilities() []string {
-	caps := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush, CapRegistryBearer, CapHostProbe}
+	caps := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush, CapRegistryBearer, CapHostProbe, CapNodeCleanup, CapImagePull}
 	if experimental.Enabled(experimental.AgentIngressTunnel) {
 		caps = append(caps, CapIngressTunnel)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -58,6 +59,9 @@ func (s *bootState) wireStorageSettings() {
 	go log.RunVisitorHistory(s.ctx)
 	backup.SetLocalRootSource(func() string {
 		return rs().String(context.Background(), runtimesettings.KeyBackupLocalRoot)
+	})
+	deploy.SetBuildReuseSource(func() bool {
+		return rs().Bool(context.Background(), runtimesettings.KeyBuildReuseUnchanged)
 	})
 	store.SetReadConnsSource(func() int {
 		return rs().Limit(context.Background(), runtimesettings.KeyReadConns)

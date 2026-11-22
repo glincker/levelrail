@@ -14,6 +14,11 @@ func notSignedInFix(prog, profile, apiURL string) string {
 	return fmt.Sprintf("not signed in: no saved login for profile %q. A person must run once at a terminal: %s login --api-url %s --profile %s (agents and CI cannot answer the prompts or approve their own sign-in; or pass --token, or set %s). Machine-readable state: %s whoami --json", profile, prog, apiURL, profile, apiTokenEnvHelp, prog)
 }
 
+// signInFixArgv is the login command as argv, for JSON errors an agent can hand to a person or a runner.
+func signInFixArgv(prog, profile, apiURL string) []string {
+	return append([]string{prog, "login"}, firstRunLoginArgs(apiURL, profile)...)
+}
+
 // isLoopbackURL reports whether rawURL points at this machine, where password login over plain http is fine.
 func isLoopbackURL(rawURL string) bool {
 	u, err := url.Parse(rawURL)

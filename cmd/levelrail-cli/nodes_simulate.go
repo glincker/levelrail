@@ -22,6 +22,27 @@ func simulatedRows(stdout io.Writer, rows []apiclient.SimulatedPlacement) {
 	_ = tw.Flush()
 }
 
+// strandedRows prints reserved versus used memory per node; unknown usage shows a dash.
+func strandedRows(stdout io.Writer, nodes []apiclient.NodeReservation) {
+	tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "NODE\tRESERVED\tCAPACITY\tUSED\tSTRANDED")
+	for _, n := range nodes {
+		capacity, used, stranded := "-", "-", "-"
+		if n.MemoryCapacityBytes > 0 {
+			capacity = humanBytes(n.MemoryCapacityBytes)
+		}
+		if n.MemoryUsedBytes > 0 {
+			used, stranded = humanBytes(n.MemoryUsedBytes), humanBytes(n.MemoryStrandedBytes)
+		}
+		name := n.Name
+		if name == "" {
+			name = n.NodeID
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", name, humanBytes(n.MemoryReservedBytes), capacity, used, stranded)
+	}
+	_ = tw.Flush()
+}
+
 // runNodesSimulate implements "nodes simulate": a dry run of adding apps.
 func runNodesSimulate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes simulate", "print the simulation as JSON", stderr)
@@ -44,6 +65,10 @@ func runNodesSimulate(prog string, args []string, stdout, stderr io.Writer, look
 	if err := renderResult(stdout, of.Format, of.Query, res, func() {
 		simulatedRows(stdout, res.Placed)
 		_, _ = fmt.Fprintf(stdout, "%d placed, %d refused\n", len(res.Placed)-res.Unplaced, res.Unplaced)
+		if len(res.Nodes) > 0 {
+			_, _ = fmt.Fprintln(stdout)
+			strandedRows(stdout, res.Nodes)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

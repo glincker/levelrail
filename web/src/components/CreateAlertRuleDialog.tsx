@@ -116,6 +116,7 @@ export function CreateAlertRuleDialog({
   const channels = channelsQuery.data ?? []
   const { t } = useTranslation('observability')
   const { t: tAlert } = useTranslation('alertSetup')
+  const { t: tRegression } = useTranslation('alertRegression')
   const scheduledTasksQuery = useScheduledTasks(appName)
   const scheduledTasks = scheduledTasksQuery.data ?? []
   const databasesQuery = useDatabases()
@@ -248,9 +249,13 @@ export function CreateAlertRuleDialog({
                             ? tAlert(
                                 'trafficKinds.kind.domain_traffic_drop.label',
                               )
-                            : tAlert(
-                                'trafficKinds.kind.parked_domain_cert_expiry.label',
-                              )
+                            : option.value === 'domain_registration_expiry'
+                              ? tAlert(
+                                  'trafficKinds.kind.domain_registration_expiry.label',
+                                )
+                              : tAlert(
+                                  'trafficKinds.kind.parked_domain_cert_expiry.label',
+                                )
                           : isAlertKindCopyKind(option.value)
                             ? alertKindLabel(t, option.value)
                             : option.label}
@@ -548,6 +553,10 @@ export function CreateAlertRuleDialog({
             <AlertKindGuidance kind="email_delivery_failing" />
           ) : kind === 'cleanup_failing' ? (
             <AlertKindGuidance kind="cleanup_failing" />
+          ) : kind === 'deploy_duration_regression' ? (
+            <p className="text-sm text-muted-foreground">
+              {tRegression('hint')}
+            </p>
           ) : kind === 'deploy_failed' ||
             kind === 'job_failing' ||
             kind === 'monitor_down' ? (

@@ -12,6 +12,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useFormActions } from '../../queries/forms'
+import { useNotificationChannelsOptional } from '../../queries/notificationChannels'
+import {
+  FORM_RECIPES,
+  recipeChannelIds,
+  type FormRecipe,
+} from '../../lib/formRecipes'
 
 const NAME_PATTERN = /^[a-z0-9][a-z0-9_-]{0,62}$/
 
@@ -25,7 +31,9 @@ export function CreateFormDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('forms')
-  const { create } = useFormActions(app)
+  const { create, saveFields, save } = useFormActions(app)
+  const channels = useNotificationChannelsOptional()
+  const [recipe, setRecipe] = useState<FormRecipe | null>(null)
   const [name, setName] = useState('')
   const valid = NAME_PATTERN.test(name)
 
@@ -33,8 +41,25 @@ export function CreateFormDialog({
     e.preventDefault()
     if (!valid) return
     create.mutate(name, {
-      onSuccess: () => {
+      onSuccess: (created) => {
+        // Recipe fields and notify channel are best effort: the form exists
+        // either way and both can be edited on its card.
+        if (recipe) {
+          saveFields.mutate({ form: created.name, schema: recipe.schema })
+          const ids = recipeChannelIds(recipe, channels.data ?? [])
+          if (ids.length > 0) {
+            save.mutate({
+              form: created.name,
+              input: {
+                redirect_url: created.redirect_url,
+                honeypot_field: created.honeypot_field,
+                notify_channel_ids: ids,
+              },
+            })
+          }
+        }
         setName('')
+        setRecipe(null)
         onOpenChange(false)
       },
     })
@@ -48,6 +73,31 @@ export function CreateFormDialog({
             <DialogTitle>{t('create.title')}</DialogTitle>
             <DialogDescription>{t('create.description')}</DialogDescription>
           </DialogHeader>
+          <div className="space-y-1.5">
+            <Label>{t('recipes.title')}</Label>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {FORM_RECIPES.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  aria-pressed={recipe?.id === r.id}
+                  onClick={() => {
+                    const next = recipe?.id === r.id ? null : r
+                    setRecipe(next)
+                    if (next && !name) setName(next.name)
+                  }}
+                  className="rounded-lg border border-border p-2 text-left text-sm hover:bg-muted aria-pressed:border-ring aria-pressed:bg-muted"
+                >
+                  <span className="block font-medium">
+                    {t(`recipes.${r.id}.title`)}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t(`recipes.${r.id}.body`)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="form-name">{t('create.name')}</Label>
             <Input

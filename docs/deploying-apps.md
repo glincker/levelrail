@@ -585,7 +585,7 @@ In the dashboard, each row of the Apps list has an actions menu with Restart, St
 
 ### Container restart policy
 
-Long-running app containers get a Docker restart policy so apps come back after a host reboot or a Docker restart. It is the runtime setting `containers.restart_policy`: `unless-stopped` (default), `on-failure` or `no`. Change it in Settings, Runtime, Deploys card, or with `levelrail-cli settings runtime set containers.restart_policy no`. On a small host (1 GB), many apps starting at boot at once compete for memory; `no` leaves the start order to the control plane's sequential start. A change applies to containers created on the next deploy or recreate, and existing containers keep their old policy.
+Long-running app containers get a Docker restart policy so apps come back after a host reboot or a Docker restart. It is the runtime setting `containers.restart_policy`: `unless-stopped` (default), `on-failure` or `no`. Change it in Settings, Security and runtime, Deploys card, or with `levelrail-cli settings runtime set containers.restart_policy no`. On a small host (1 GB), many apps starting at boot at once compete for memory; `no` leaves the start order to the control plane's sequential start. A change applies to containers created on the next deploy or recreate, and existing containers keep their old policy.
 
 ### One-off commands and the terminal
 

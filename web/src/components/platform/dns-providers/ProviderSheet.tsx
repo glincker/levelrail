@@ -39,7 +39,41 @@ import {
   useUpdateGoogleCloudDns,
 } from '@/queries/googleCloudDns'
 import type { DnsZone } from '@/types/dns'
-import type { ProviderId, ProviderState } from './providers'
+import {
+  dnsTokenProviderQueryOptions,
+  useDisconnectDnsTokenProvider,
+  useTestDnsTokenProvider,
+  useUpdateDnsTokenProvider,
+} from '@/queries/dnsTokenProviders'
+import {
+  isTokenProviderId,
+  type ProviderId,
+  type ProviderState,
+  type TokenProviderId,
+} from './providers'
+
+// Fields joined with ":" into the one credential the backend parses for each provider.
+type TokenFieldLabel =
+  | 'field.godaddyKey'
+  | 'field.godaddySecret'
+  | 'field.namecheapUser'
+  | 'field.namecheapKey'
+  | 'field.namecheapIp'
+
+const TOKEN_FIELDS: Record<
+  TokenProviderId,
+  { key: string; label: TokenFieldLabel; secret: boolean }[]
+> = {
+  godaddy: [
+    { key: 'key', label: 'field.godaddyKey', secret: false },
+    { key: 'secret', label: 'field.godaddySecret', secret: true },
+  ],
+  namecheap: [
+    { key: 'apiUser', label: 'field.namecheapUser', secret: false },
+    { key: 'apiKey', label: 'field.namecheapKey', secret: true },
+    { key: 'clientIp', label: 'field.namecheapIp', secret: false },
+  ],
+}
 
 interface Step {
   key: 'credential' | 'zones' | 'permission'
@@ -64,6 +98,10 @@ function ProviderForm({
   const cfSettings = useQuery(cloudflareDnsSettingsQueryOptions())
   const r53Settings = useQuery(route53DnsSettingsQueryOptions())
   const gcpSettings = useGoogleCloudDnsSettings()
+  const gdSettings = useQuery(dnsTokenProviderQueryOptions('godaddy'))
+  const ncSettings = useQuery(dnsTokenProviderQueryOptions('namecheap'))
+  const gd = useUpdateDnsTokenProvider('godaddy')
+  const nc = useUpdateDnsTokenProvider('namecheap')
   const cf = useUpdateCloudflareDnsSettings()
   const r53 = useUpdateRoute53DnsSettings()
   const gcp = useUpdateGoogleCloudDns()
@@ -73,6 +111,7 @@ function ProviderForm({
   const [region, setRegion] = useState('')
   const [zoneId, setZoneId] = useState('')
   const [json, setJson] = useState('')
+  const [parts, setParts] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
 
   const stored =
@@ -80,7 +119,11 @@ function ProviderForm({
       ? !!cfSettings.data?.has_token
       : id === 'route53'
         ? !!r53Settings.data?.has_access_key_id
-        : !!gcpSettings.data?.has_key
+        : id === 'godaddy'
+          ? !!gdSettings.data?.has_key
+          : id === 'namecheap'
+            ? !!ncSettings.data?.has_key
+            : !!gcpSettings.data?.has_key
 
   const afterSave = () => {
     // Secrets leave component state the moment the server has them.
@@ -88,6 +131,7 @@ function ProviderForm({
     setKeyId('')
     setSecret('')
     setJson('')
+    setParts({})
     setError(null)
     toast.add({ title: t('sheet.saved', { provider: label }), type: 'success' })
     onSaved()
@@ -116,6 +160,12 @@ function ProviderForm({
         },
         done,
       )
+    } else if (isTokenProviderId(id)) {
+      const credential = tokenCredential(id)
+      ;(id === 'godaddy' ? gd : nc).mutate(
+        { enabled: true, credential: credential || undefined },
+        done,
+      )
     } else {
       gcp.mutate(
         { enabled: true, service_account_json: json.trim() || undefined },
@@ -124,13 +174,24 @@ function ProviderForm({
     }
   }
 
+  const tokenCredential = (pid: TokenProviderId) =>
+    TOKEN_FIELDS[pid].every((f) => parts[f.key]?.trim())
+      ? TOKEN_FIELDS[pid].map((f) => (parts[f.key] ?? '').trim()).join(':')
+      : ''
+  const tokenFilled = isTokenProviderId(id)
+    ? TOKEN_FIELDS[id].filter((f) => parts[f.key]?.trim()).length
+    : 0
   const empty =
     id === 'cloudflare'
       ? !token.trim()
       : id === 'route53'
         ? !keyId.trim() && !secret.trim()
-        : !json.trim()
-  const needsSecret = !stored && empty
+        : isTokenProviderId(id)
+          ? tokenFilled === 0
+          : !json.trim()
+  // A token provider needs every part together, never half a credential.
+  const partial = isTokenProviderId(id) && !tokenCredential(id) && !empty
+  const needsSecret = (!stored && empty) || partial
 
   return (
     <form onSubmit={submit} className="space-y-3" aria-label={label}>
@@ -214,6 +275,28 @@ function ProviderForm({
           </div>
         </>
       ) : null}
+      {isTokenProviderId(id) ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {TOKEN_FIELDS[id].map((f) => (
+            <Field key={f.key}>
+              <FieldLabel htmlFor={`dnsp-${id}-${f.key}`}>
+                {t(f.label)}
+              </FieldLabel>
+              <Input
+                id={`dnsp-${id}-${f.key}`}
+                type={f.secret ? 'password' : 'text'}
+                autoComplete="off"
+                spellCheck={false}
+                value={parts[f.key] ?? ''}
+                onChange={(e) =>
+                  setParts((prev) => ({ ...prev, [f.key]: e.target.value }))
+                }
+                disabled={busy}
+              />
+            </Field>
+          ))}
+        </div>
+      ) : null}
       {id === 'googleclouddns' ? (
         <Field>
           <FieldLabel htmlFor="dnsp-gcp-json">
@@ -265,6 +348,8 @@ function TestPanel({
   const { t } = useTranslation('dnsProviders')
   const gcpTest = useTestGoogleCloudDns()
   const r53Test = useTestRoute53Dns()
+  const gdTest = useTestDnsTokenProvider('godaddy')
+  const ncTest = useTestDnsTokenProvider('namecheap')
   const { copy, copied } = useCopyToClipboard()
   const [policy, setPolicy] = useState('')
   const [steps, setSteps] = useState<Step[] | null>(null)
@@ -275,6 +360,19 @@ function TestPanel({
     try {
       if (id === 'googleclouddns') {
         const r = await gcpTest.mutateAsync()
+        setSteps([
+          { key: 'credential', ok: r.ok, detail: r.ok ? undefined : r.error },
+          {
+            key: 'zones',
+            ok: r.ok,
+            detail: r.ok
+              ? t('test.zonesCount', { count: r.zones?.length ?? 0 })
+              : undefined,
+          },
+        ])
+        onResult(r.ok ? null : (r.error ?? t('test.failed')))
+      } else if (isTokenProviderId(id)) {
+        const r = await (id === 'godaddy' ? gdTest : ncTest).mutateAsync()
         setSteps([
           { key: 'credential', ok: r.ok, detail: r.ok ? undefined : r.error },
           {
@@ -403,6 +501,8 @@ export function ProviderSheet({
   const disconnectCf = useDisconnectCloudflareDns()
   const disconnectR53 = useDisconnectRoute53Dns()
   const disconnectGcp = useDisconnectGoogleCloudDns()
+  const disconnectGd = useDisconnectDnsTokenProvider('godaddy')
+  const disconnectNc = useDisconnectDnsTokenProvider('namecheap')
   const label = id ? t(`providers.${id}`) : ''
   const mine = zones.filter(
     (z) =>
@@ -416,7 +516,11 @@ export function ProviderSheet({
       ? disconnectCf
       : id === 'route53'
         ? disconnectR53
-        : disconnectGcp
+        : id === 'godaddy'
+          ? disconnectGd
+          : id === 'namecheap'
+            ? disconnectNc
+            : disconnectGcp
 
   return (
     <>

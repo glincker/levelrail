@@ -18,7 +18,15 @@ type cmdNode = clitree.Node
 var cliCommandTree = clitree.Tree
 
 // Flags offered as completions at every command depth.
-var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "--debug", "--insecure-http", "--no-color", "-h", "--help"}
+var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "--debug", "--insecure-http", "--no-color", "--no-input", "--api-timeout", "--api-retries", "-h", "--help"}
+
+var globalFlagSet = func() map[string]bool {
+	m := make(map[string]bool, len(globalFlags))
+	for _, f := range globalFlags {
+		m[f] = true
+	}
+	return m
+}()
 
 // One entry per node with children; path is the space-joined verb sequence.
 type treeEntry struct {
@@ -84,6 +92,51 @@ func renderChildrenFunc(funcName string) string {
 	return b.String()
 }
 
+// verbFlagTable maps a verb path to its own flag names, parsed from the same help text docs --json uses so it cannot drift.
+// completion itself is skipped: its help prints the script, which would recurse into this table.
+func verbFlagTable() map[string][]string {
+	prev := experimental.EnabledList()
+	experimental.Set(experimental.All()...)
+	defer experimental.Set(prev...)
+	table := map[string][]string{}
+	for _, e := range walkFullCommandTree() {
+		for _, c := range e.children {
+			path := strings.Fields(strings.TrimSpace(e.path + " " + c))
+			if path[0] == "completion" {
+				continue
+			}
+			var flags []string
+			for _, f := range parseHelpFlags(helpFor(path)) {
+				if name := "--" + f.Name; !globalFlagSet[name] && f.Name != "h" && f.Name != "help" {
+					flags = append(flags, name)
+				}
+			}
+			if len(flags) > 0 {
+				sort.Strings(flags)
+				table[strings.Join(path, " ")] = flags
+			}
+		}
+	}
+	return table
+}
+
+// renderFlagsFunc emits a case table of per-verb flags; paths absent from it fall back to the global flags.
+func renderFlagsFunc(funcName string) string {
+	table := verbFlagTable()
+	paths := make([]string, 0, len(table))
+	for p := range table {
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s() {\n  case \"$1\" in\n", funcName)
+	for _, p := range paths {
+		fmt.Fprintf(&b, "    %q) echo %q ;;\n", p, strings.Join(table[p], " "))
+	}
+	b.WriteString("    *) echo \"\" ;;\n  esac\n}\n")
+	return b.String()
+}
+
 // Binary name comes from os.Args[0], so completion function names must stay valid for any name.
 func sanitizeIdent(prog string) string {
 	var b strings.Builder
@@ -102,9 +155,9 @@ func sanitizeIdent(prog string) string {
 	return out
 }
 
-// runCompletion implements "completion <bash|zsh|fish>": prints a shell
+// runCompletion implements "completion <bash|zsh|fish|powershell>": prints a shell
 // completion script for prog to stdout.
-func runCompletion(prog string, args []string, stdout, stderr io.Writer, _ func(string) (string, bool)) int {
+func runCompletion(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, completionUsage(prog))
 		return exitUsage
@@ -114,6 +167,8 @@ func runCompletion(prog string, args []string, stdout, stderr io.Writer, _ func(
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, completionUsage(prog))
 		return exitOK
+	case "install":
+		return runCompletionInstall(prog, args[1:], stdout, stderr, lookupEnv)
 	case "bash":
 		_, _ = fmt.Fprint(stdout, bashCompletionScript(prog))
 		return exitOK
@@ -122,6 +177,9 @@ func runCompletion(prog string, args []string, stdout, stderr io.Writer, _ func(
 		return exitOK
 	case "fish":
 		_, _ = fmt.Fprint(stdout, fishCompletionScript(prog))
+		return exitOK
+	case "powershell":
+		_, _ = fmt.Fprint(stdout, powershellCompletionScript(prog))
 		return exitOK
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown completion shell %q\n\n", prog, args[0])
@@ -135,10 +193,15 @@ func completionUsage(prog string) string {
   %[1]s completion bash    print a bash completion script
   %[1]s completion zsh     print a zsh completion script
   %[1]s completion fish    print a fish completion script
+  %[1]s completion powershell    print a PowerShell completion script
+  %[1]s completion install [--shell bash|zsh|fish]   write the script and print the line to add
 
 Completes command and subcommand names for the CLI's full command tree
-(apps, databases, channels, and so on), plus the global flags (%[2]s).
-It does not complete flag values or positional arguments like app names.
+(apps, databases, channels, and so on), plus each command's own flags after "--" and the global flags (%[2]s).
+After deploy, logs, apps get and similar verbs it also offers real app names
+from the server, and real profile, project and environment names after
+--profile, --project and --env. Server answers are cached for a few seconds
+and a Tab press never prompts or prints an error.
 
 Install:
   bash   source <(%[1]s completion bash)
@@ -149,5 +212,8 @@ Install:
 
   fish   %[1]s completion fish | source
          or: %[1]s completion fish > ~/.config/fish/completions/%[1]s.fish
+
+  powershell   %[1]s completion powershell | Out-String | Invoke-Expression
+         or add that line to your $PROFILE
 `, prog, strings.Join(globalFlags, " "))
 }

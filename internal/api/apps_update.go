@@ -55,6 +55,10 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		writeAppInvalid(w, err)
 		return
 	}
+	if err := rt.checkThroughputCaps(r.Context(), req.Resources); err != nil {
+		writeAppInvalid(w, err)
+		return
+	}
 	if sent["dns_names"] {
 		if err := rt.checkAppDNSNames(r.Context(), name, &req.DNSNames); err != nil {
 			writeAppInvalid(w, err)

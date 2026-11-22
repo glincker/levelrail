@@ -150,6 +150,9 @@ type Limiter struct {
 	guard  MemGuard
 	host   func() int
 
+	fairKey func(ctx context.Context, app string) string
+	fairOn  func(ctx context.Context) bool
+
 	mu    sync.Mutex
 	slots map[string]*nodeSlots
 
@@ -164,7 +167,32 @@ type Limiter struct {
 type nodeSlots struct {
 	running int
 	limit   int
-	waiters []chan struct{}
+	waiters []slotWaiter
+	byKey   map[string]int
+}
+
+// slotWaiter is one queued build; key is its team (project) for fair share.
+type slotWaiter struct {
+	ch  chan struct{}
+	key string
+}
+
+// WithFairShare makes a freed slot go to the waiting team with the fewest running builds on
+// that node, so one project's burst cannot starve the rest. on is read per build.
+func WithFairShare(key func(ctx context.Context, app string) string, on func(ctx context.Context) bool) LimiterOption {
+	return func(l *Limiter) { l.fairKey, l.fairOn = key, on }
+}
+
+// pickWaiter returns the index of the waiter to admit next: the oldest one of the team
+// with the fewest running builds. Without keys every team ties, so it is plain FIFO.
+func (n *nodeSlots) pickWaiter() int {
+	best, bestRun := 0, n.byKey[n.waiters[0].key]
+	for i := 1; i < len(n.waiters); i++ {
+		if r := n.byKey[n.waiters[i].key]; r < bestRun {
+			best, bestRun = i, r
+		}
+	}
+	return best
 }
 
 // NewLimiter wraps inner. limits is read once per build.
@@ -212,15 +240,19 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 		return nil, fmt.Errorf("build: waiting for the build queue to resume: %w", err)
 	}
 	phase(ActiveWaiting)
+	key := ""
+	if l.fairKey != nil && l.fairOn != nil && l.fairOn(ctx) {
+		key = l.fairKey(ctx, app)
+	}
 	capped, gerr := admitLocal(ctx, nodeID, lim.MaxConcurrent, progress)
 	if gerr != nil {
 		return nil, fmt.Errorf("build: waiting for host pressure: %w", gerr)
 	}
 	lim.MaxConcurrent = capped
-	if err := l.acquire(ctx, nodeID, lim.MaxConcurrent); err != nil {
+	if err := l.acquire(ctx, nodeID, lim.MaxConcurrent, key); err != nil {
 		return nil, fmt.Errorf("build: waiting for a build slot: %w", err)
 	}
-	defer l.release(nodeID)
+	defer l.release(nodeID, key)
 	phase(ActiveBuilding)
 
 	started := l.clock.Now()
@@ -281,6 +313,9 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	}
 
 	res, err := do(bctx, wrapped, cgroupParent, heapMB)
+	if pr, ok := l.cg.(CgroupPeakReader); ok && cgroupParent != "" {
+		run.PeakMemoryMB = pr.PeakMB(cgroupParent)
+	}
 	run.Duration = l.clock.Now().Sub(started)
 	smu.Lock()
 	run.CachedSteps, run.TotalSteps = steps.cached, steps.total()
@@ -364,17 +399,17 @@ func (l *Limiter) slotsFor(node string) *nodeSlots {
 	return n
 }
 
-func (l *Limiter) acquire(ctx context.Context, node string, limit int) error {
+func (l *Limiter) acquire(ctx context.Context, node string, limit int, key string) error {
 	l.mu.Lock()
 	n := l.slotsFor(node)
 	n.limit = limit
 	if limit <= 0 || (n.running < limit && len(n.waiters) == 0) {
-		n.running++
+		n.admit(key)
 		l.mu.Unlock()
 		return nil
 	}
 	ch := make(chan struct{})
-	n.waiters = append(n.waiters, ch)
+	n.waiters = append(n.waiters, slotWaiter{ch: ch, key: key})
 	l.mu.Unlock()
 
 	select {
@@ -383,7 +418,7 @@ func (l *Limiter) acquire(ctx context.Context, node string, limit int) error {
 	case <-ctx.Done():
 		l.mu.Lock()
 		for i, w := range n.waiters {
-			if w == ch {
+			if w.ch == ch {
 				n.waiters = append(n.waiters[:i], n.waiters[i+1:]...)
 				l.mu.Unlock()
 				return ctx.Err()
@@ -391,21 +426,38 @@ func (l *Limiter) acquire(ctx context.Context, node string, limit int) error {
 		}
 		l.mu.Unlock()
 		// Admitted at the same moment the context ended: hand the slot back.
-		l.release(node)
+		l.release(node, key)
 		return ctx.Err()
 	}
 }
 
-func (l *Limiter) release(node string) {
+func (n *nodeSlots) admit(key string) {
+	n.running++
+	if key == "" {
+		return
+	}
+	if n.byKey == nil {
+		n.byKey = map[string]int{}
+	}
+	n.byKey[key]++
+}
+
+func (l *Limiter) release(node, key string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	n := l.slotsFor(node)
 	n.running--
+	if key != "" {
+		if n.byKey[key]--; n.byKey[key] <= 0 {
+			delete(n.byKey, key)
+		}
+	}
 	for len(n.waiters) > 0 && (n.limit <= 0 || n.running < n.limit) {
-		ch := n.waiters[0]
-		n.waiters = n.waiters[1:]
-		n.running++
-		close(ch)
+		i := n.pickWaiter()
+		w := n.waiters[i]
+		n.waiters = append(n.waiters[:i], n.waiters[i+1:]...)
+		n.admit(w.key)
+		close(w.ch)
 	}
 }
 

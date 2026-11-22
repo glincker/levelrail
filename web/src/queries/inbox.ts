@@ -13,6 +13,7 @@ import { pollMs } from '@/lib/pollTier'
 export interface InboxItem extends AlertHistoryEntry {
   read: boolean
   resolved: boolean
+  runbook?: string
   repeats?: number
   repeat_ids?: string[]
 }

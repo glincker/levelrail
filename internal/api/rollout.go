@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -102,6 +103,77 @@ func (rt *Router) handleDeleteRollout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handlePauseRollout handles POST /api/v1/apps/{name}/rollout/pause: the
+// rolling deploy stops before its next wave until it is resumed.
+func (rt *Router) handlePauseRollout(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if !rt.appExists(w, r, name) {
+		return
+	}
+	p, ok := rolloutpolicy.RequestPause(name)
+	if !ok {
+		writeError(w, http.StatusConflict, "no rolling deploy is in progress for this app")
+		return
+	}
+	rt.persistRolloutProgress(r.Context(), name, p)
+	writeJSON(w, http.StatusOK, p)
+}
+
+// handleResumeRollout handles POST /api/v1/apps/{name}/rollout/resume.
+func (rt *Router) handleResumeRollout(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if !rt.appExists(w, r, name) {
+		return
+	}
+	p, ok := rolloutpolicy.Resume(name)
+	if !ok {
+		writeError(w, http.StatusConflict, "this app's rollout is not paused")
+		return
+	}
+	rt.persistRolloutProgress(r.Context(), name, p)
+	writeJSON(w, http.StatusOK, p)
+}
+
+// handleAbortRollout handles POST /api/v1/apps/{name}/rollout/abort: rolls the
+// app back to the newest succeeded deploy before the current one, which also
+// ends a paused hold because the hold is tied to the release being rolled out.
+func (rt *Router) handleAbortRollout(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if !rt.appExists(w, r, name) {
+		return
+	}
+	attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), name)
+	if err != nil {
+		rt.internalError(w, "api: rollout abort: list deploys failed", err, slog.String("name", name))
+		return
+	}
+	for i, a := range attempts {
+		if i == 0 || a.Status != store.DeployAttemptStatusSucceeded {
+			continue
+		}
+		r.SetPathValue("deployId", a.ID)
+		rt.handleRollbackToDeploy(w, r)
+		return
+	}
+	writeError(w, http.StatusConflict, "no earlier succeeded deploy to roll back to")
+}
+
+// persistRolloutProgress keeps a pause across a restart; a failed save only
+// costs that, so it is logged and not returned.
+func (rt *Router) persistRolloutProgress(ctx context.Context, name string, p rolloutpolicy.Progress) {
+	ps, ok := rt.apps.(application.RolloutProgressStore)
+	if !ok {
+		return
+	}
+	raw, err := json.Marshal(p)
+	if err == nil {
+		err = ps.SaveRolloutProgress(ctx, name, raw)
+	}
+	if err != nil {
+		rt.logger.Warn("api: rollout progress not saved", slog.String("name", name), slog.String("error", err.Error()))
+	}
 }
 
 func (rt *Router) rolloutPolicy(ctx context.Context, name string) (rolloutpolicy.Policy, error) {

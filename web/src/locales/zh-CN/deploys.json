@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub:仓库的 Webhooks,添加该 URL。Docker Hub 不发送摘要,因此会先解析标签。",
       "ghcr": "GitHub(ghcr.io):设置、Webhooks,内容类型 application/json,事件 Packages,并使用上面的密钥。未签名的投递会被拒绝。",
       "protected": "一次推送会为此应用自身的镜像和标签部署被推送的摘要。在受保护的环境中则会改为提交审批。"
+    },
+    "range": {
+      "label": "版本范围",
+      "help": "跟随范围内的最新发布，例如 1.x、^1.2.3 或 >=1.2.0 <2.0.0。留空则跟随当前标签。",
+      "save": "保存范围",
+      "saved": "版本范围已保存。",
+      "invalid": "范围无效。请使用 1.x、^1.2.3、~1.2.3 或 >=1.2.0 <2.0.0 这类形式。"
     }
   },
   "canary": {
@@ -333,7 +340,9 @@
       "typicalWithP95": "通常约 {{typical}} 唤醒(p95 {{p95}})。",
       "noneShort": "暂无唤醒数据",
       "short": "约 {{typical}} 唤醒",
-      "shortWithP95": "约 {{typical}} 唤醒(p95 {{p95}})"
+      "shortWithP95": "约 {{typical}} 唤醒(p95 {{p95}})",
+      "last": "上次唤醒耗时 {{last}}。",
+      "overBudget": "唤醒可能超过代理等待的 {{budget}},访问者可能先看到等待页面。"
     },
     "frees": "休眠时可释放约 {{size}}",
     "checklistLabel": "休眠资格",
@@ -778,6 +787,7 @@
     "capacityLabel": "{{name}} 上已用的构建槽位",
     "labels": "标签",
     "lastBuild": "最近构建:",
+    "skipped": "已跳过新构建：{{reason}}",
     "noBuilds": "暂无构建",
     "cache": "构建缓存 {{size}}",
     "builtOn": "构建于 {{name}}",

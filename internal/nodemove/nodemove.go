@@ -18,6 +18,7 @@ import (
 // copy_volumes, stateful ones skip stop_old (the source is already stopped).
 const (
 	PhasePreflight   = "preflight"
+	PhasePrepull     = "prepull"
 	PhaseStopSource  = "stop_source"
 	PhaseCopyVolumes = "copy_volumes"
 	PhasePlace       = "place"
@@ -55,6 +56,11 @@ type Executor interface {
 	// Preflight refuses a move that cannot work (wrap with Permanent) and
 	// prepares dependencies such as a database's mesh endpoint.
 	Preflight(ctx context.Context, m store.NodeMove) error
+	// PrePull pulls the resource's image onto the target before the source
+	// stops. It is best effort: an error is recorded and the move goes on,
+	// because placing the resource pulls the image anyway. The detail says
+	// what happened, e.g. a skip reason.
+	PrePull(ctx context.Context, m store.NodeMove) (detail string, err error)
 	// Stop suspends the resource and removes its containers from nodeID.
 	Stop(ctx context.Context, kind, name, nodeID string) error
 	CopyVolume(ctx context.Context, fromNodeID, toNodeID, volume string) error
@@ -264,7 +270,17 @@ func (r *Runner) Advance(ctx context.Context, id string) (store.NodeMove, error)
 func (r *Runner) step(ctx context.Context, m *store.NodeMove) bool {
 	switch m.Phase {
 	case PhasePreflight:
-		return r.do(m, r.exec.Preflight(ctx, *m), r.afterPreflight(m))
+		return r.do(m, r.exec.Preflight(ctx, *m), PhasePrepull)
+	case PhasePrepull:
+		detail, err := r.exec.PrePull(ctx, *m)
+		if err != nil {
+			r.record(m, PhasePrepull, OutcomeFailed, "image not pre-pulled, the target pulls it on start: "+err.Error())
+			m.Phase, m.Attempts = r.afterPreflight(m), 0
+			return true
+		}
+		r.record(m, PhasePrepull, OutcomeOK, detail)
+		m.Phase, m.Attempts = r.afterPreflight(m), 0
+		return true
 	case PhaseStopSource:
 		return r.do(m, r.exec.Stop(ctx, m.Kind, m.Resource, m.FromNodeID), PhaseCopyVolumes)
 	case PhaseCopyVolumes:

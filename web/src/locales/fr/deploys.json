@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub : Webhooks du dépôt, ajoutez l'URL. Docker Hub n'envoie pas de digest, donc le tag est d'abord résolu.",
       "ghcr": "GitHub (ghcr.io) : Settings, Webhooks, type de contenu application/json, événement Packages, et le secret ci-dessus. Les livraisons non signées sont refusées.",
       "protected": "Un push deploie le digest poussé pour l'image et le tag propres à cette app. Dans un environnement protégé, il crée une approbation à la place."
+    },
+    "range": {
+      "label": "Plage de versions",
+      "help": "Suit la version la plus récente d'une plage, par exemple 1.x, ^1.2.3 ou >=1.2.0 <2.0.0. Laissez vide pour suivre le tag actuel.",
+      "save": "Enregistrer la plage",
+      "saved": "Plage de versions enregistrée.",
+      "invalid": "Plage non valide. Utilisez des formes comme 1.x, ^1.2.3, ~1.2.3 ou >=1.2.0 <2.0.0."
     }
   },
   "canary": {
@@ -337,7 +344,9 @@
       "typicalWithP95": "Se réveille généralement en environ {{typical}} (p95 {{p95}}).",
       "noneShort": "Aucune donnée de réveil pour l'instant",
       "short": "Se réveille en environ {{typical}}",
-      "shortWithP95": "Se réveille en environ {{typical}} (p95 {{p95}})"
+      "shortWithP95": "Se réveille en environ {{typical}} (p95 {{p95}})",
+      "last": "Le dernier réveil a pris {{last}}.",
+      "overBudget": "Un réveil peut dépasser les {{budget}} d'attente du proxy : les visiteurs verront d'abord une page de réveil."
     },
     "frees": "Libère environ {{size}} en veille",
     "checklistLabel": "Éligibilité à la veille",
@@ -793,6 +802,7 @@
     "capacityLabel": "Emplacements de build utilisés sur {{name}}",
     "labels": "Étiquettes",
     "lastBuild": "Dernier build :",
+    "skipped": "Ignoré pour les nouveaux builds : {{reason}}",
     "noBuilds": "Aucun build pour l’instant",
     "cache": "Cache de build {{size}}",
     "builtOn": "Compilé sur {{name}}",

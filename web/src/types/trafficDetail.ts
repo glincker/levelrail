@@ -108,4 +108,9 @@ export interface TrafficDetail {
   shield: TrafficShield
   abuse: AbuseCounters
   error_spikes: TrafficErrorSpike[]
+  slow_upstream?: {
+    p95_ms: number
+    threshold_ms: number
+    routes: TrafficRoute[]
+  }
 }

@@ -19,7 +19,12 @@ import {
   useMergedChartQuery,
   zeroFillSleep,
 } from '../lib/metricChart'
-import { attachPrevious, capRows, MAX_CHART_POINTS } from '../lib/chartSeries'
+import {
+  attachPrevious,
+  capRows,
+  chartPointBudget,
+  MAX_CHART_POINTS,
+} from '../lib/chartSeries'
 import { chartPalette } from '../lib/chartPalette'
 import {
   bucketRestarts,
@@ -150,7 +155,7 @@ function ChartCard({
   const params = {
     from: range.from,
     to: range.to,
-    maxPoints: MAX_CHART_POINTS,
+    maxPoints: chartPointBudget(window.innerWidth),
     compare: interaction.compare,
   }
   const primaryQuery = useMetricSeries(appName, group.primary.metric, params)

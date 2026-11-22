@@ -1,0 +1,11 @@
+{
+  "title": "After install: {{name}}",
+  "dismiss": "Dismiss",
+  "steps": {
+    "open_admin": "Open the admin page",
+    "create_login": "Create your admin login on first visit",
+    "change_default_login": "Sign in with the default login (admin / umami), then change the password",
+    "point_domain": "Point your domain at this app"
+  },
+  "domainsLink": "Add a domain"
+}

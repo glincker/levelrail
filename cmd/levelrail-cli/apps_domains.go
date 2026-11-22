@@ -152,6 +152,7 @@ func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Wr
 		for _, d := range edited.DNSResults {
 			_, _ = fmt.Fprintf(stdout, "  dns %s: %s %s\n", d.Domain, d.DNS, d.Message)
 		}
+		_, _ = fmt.Fprint(stderr, undoHint(prog, domainUndoArgs(verb, name, envFlag, wanted)...))
 	})
 	if code != exitOK || !wait || verb != "add" {
 		return code
@@ -172,6 +173,19 @@ func waitAddedDomains(ctx context.Context, client *Client, runs []apiclient.GoLi
 		}
 	}
 	return code
+}
+
+// domainUndoArgs is the inverse verb over the same domains and environment.
+func domainUndoArgs(verb, name, env string, domains []string) []string {
+	inverse := "remove"
+	if verb == "remove" {
+		inverse = "add"
+	}
+	out := append([]string{"apps", "domains", inverse, name}, domains...)
+	if env != "" {
+		out = append(out, "--env", env)
+	}
+	return out
 }
 
 func normalizeDomains(in []string) []string {

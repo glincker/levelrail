@@ -24,6 +24,9 @@ const (
 	KeyForgeStatusDays      = "retention.forge_status_days"
 	KeyUsageCostDays        = "retention.usage_cost_days"
 	KeyStatusIncidentDays   = "retention.status_incident_days"
+	KeyDeployAttemptDays    = "retention.deploy_attempt_days"
+	KeyNodeEventDays        = "retention.node_event_days"
+	KeyMaxRowsPerApp        = "retention.max_rows_per_app"
 	KeyCleanupInterval      = "cleanup.interval"
 	KeyCleanupEnabled       = "cleanup.enabled"
 	AuditLogFloorDays       = 90
@@ -46,6 +49,14 @@ func MinDaysCheck(floor int) func(string) error {
 		}
 		return fmt.Errorf("retention cannot be shorter than %d days, choose %d or more (or 0 to keep forever)", floor, floor)
 	}
+}
+
+// NonNegativeCheck rejects a negative count; 0 means no limit.
+func NonNegativeCheck(canonical string) error {
+	if n, err := strconv.Atoi(canonical); err == nil && n < 0 {
+		return fmt.Errorf("must be 0 (no limit) or more")
+	}
+	return nil
 }
 
 // MinDurationCheck rejects a duration below floor.
@@ -144,9 +155,19 @@ func init() {
 			"Days a daily cost showback snapshot is kept. 0 keeps them forever."},
 		{KeyStatusIncidentDays, "APP_RETENTION_STATUS_INCIDENT_DAYS", "365", "Keep resolved status incidents for",
 			"Days a resolved incident or completed maintenance stays on the status page record. Open ones are never removed. 0 keeps them forever."},
+		{KeyDeployAttemptDays, "", "365", "Keep deploy history for",
+			"Days a finished deploy attempt stays in an app's history. The newest succeeded deploy and pinned deploys are always kept. 0 keeps them forever."},
+		{KeyNodeEventDays, "", "90", "Keep node status and security events for",
+			"Days a node status change or node security event is kept. 0 keeps them forever."},
 	} {
 		Register(retention(n.key, n.env, n.def, n.title, n.desc))
 	}
+	Register(Definition{
+		Key: KeyMaxRowsPerApp, Category: CategoryRetention, Kind: KindInt, Default: "0",
+		Apply: ApplyLive, CheckValue: NonNegativeCheck,
+		TitleKey: "runtimeSettings:items." + KeyMaxRowsPerApp + ".title", DescKey: "runtimeSettings:items." + KeyMaxRowsPerApp + ".description",
+		Title: "Keep at most this many history rows per app", Description: "Newest app events and finished deploy attempts kept for each app, on top of the day windows. Runs with those windows. 0 means no row limit.",
+	})
 	Register(Definition{
 		Key: KeyCleanupInterval, Category: CategoryRetention, Kind: KindDuration, Default: cleanupDefaultInterval,
 		Env: "APP_CLEANUP_INTERVAL", Apply: ApplyLive, CheckValue: MinDurationCheck(CleanupMinInterval),

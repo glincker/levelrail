@@ -5,8 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/catalog"
@@ -14,20 +16,32 @@ import (
 
 // runTemplatesImport implements "templates import <file>": POST /api/v1/templates/custom.
 func runTemplatesImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var id, name, description, format, srcURL string
+	var id, name, description, format, srcURL, repoURL string
 	var vars stringListFlag
-	cmd, code, ok := parseComposeCmd(prog, "templates import", "templates import <file | -> | templates import --url HTTPS_URL <id> [--id ID] [--name NAME] [--description TEXT] [--var NAME]... [--format compose|oneclick]", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
+	cmd, code, ok := parseComposeCmd(prog, "templates import", "templates import <file | -> | templates import --url HTTPS_URL <id> | templates import --repo GITHUB_URL <id> [--id ID] [--name NAME] [--description TEXT] [--var NAME]... [--format compose|oneclick]", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.StringVar(&id, "id", "", "template id (default: the file name without its extension)")
 		fs.StringVar(&name, "name", "", "display name (default: the id)")
 		fs.StringVar(&description, "description", "", "description")
 		fs.Var(&vars, "var", "placeholder name filled in at deploy time (repeatable)")
 		fs.StringVar(&srcURL, "url", "", "https address to download the compose file from; the argument is then the template id")
+		fs.StringVar(&repoURL, "repo", "", "github.com repo address (optionally /tree/REF/SUBPATH) whose compose file is imported; the argument is then the template id")
 		fs.StringVar(&format, "format", "compose", "input format: compose, or oneclick for a one-click app JSON document")
 	})
 	if !ok {
 		return code
 	}
 	var body []byte
+	if repoURL != "" {
+		if srcURL != "" {
+			return reportError(stdout, stderr, cmd.json, newValidationError("use --repo or --url, not both"))
+		}
+		found, err := findRepoCompose(repoURL)
+		if err != nil {
+			return reportError(stdout, stderr, cmd.json, err)
+		}
+		srcURL = found
+		_, _ = fmt.Fprintf(stderr, "found compose file: %s\n", found)
+	}
 	if srcURL == "" {
 		var err error
 		if body, err = readComposeFile(cmd.args[0]); err != nil {
@@ -79,4 +93,28 @@ func runTemplatesImport(prog string, args []string, stdout, stderr io.Writer, lo
 			_, _ = fmt.Fprintf(stdout, "  needs %s\n", k)
 		}
 	})
+}
+
+// findRepoCompose returns the first compose file URL that exists for a repo address.
+func findRepoCompose(repoURL string) (string, error) {
+	candidates, err := catalog.RepoComposeCandidates(repoURL)
+	if err != nil {
+		return "", newValidationError("%s", err.Error())
+	}
+	hc := &http.Client{Timeout: 10 * time.Second}
+	for _, c := range candidates {
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodHead, c, nil)
+		if err != nil {
+			continue
+		}
+		resp, err := hc.Do(req)
+		if err != nil {
+			continue
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			return c, nil
+		}
+	}
+	return "", newValidationError("no compose.yaml, compose.yml, docker-compose.yaml or docker-compose.yml found in that repo path")
 }

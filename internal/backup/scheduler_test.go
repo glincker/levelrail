@@ -772,3 +772,23 @@ func TestScheduler_Tick_LeapDayRunsOnceAndRearms(t *testing.T) {
 		t.Fatalf("leap day ran %d backups, want 1", len(runner.calls))
 	}
 }
+
+func TestScheduler_Tick_SkipsWhileDatabaseImportRuns(t *testing.T) {
+	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
+	runner := &fakeScheduledRunner{}
+	s := NewScheduler(fakeStore, runner, nil, nil)
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	release := MarkImport(DatabaseBusyKey("main"))
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	release()
+	if len(runner.calls) != 0 {
+		t.Fatalf("backup ran during an import: %d calls", len(runner.calls))
+	}
+}

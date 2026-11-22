@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub: repository Webhooks, add the URL. Docker Hub sends no digest, so the tag is resolved first.",
       "ghcr": "GitHub (ghcr.io): Settings, Webhooks, content type application/json, event Packages, and the secret above. Unsigned deliveries are refused.",
       "protected": "A push deploys the pushed digest for this app's own image and tag. In a protected environment it files an approval instead."
+    },
+    "range": {
+      "label": "Version range",
+      "help": "Follow the newest release in a range, for example 1.x, ^1.2.3 or >=1.2.0 <2.0.0. Leave empty to follow the current tag.",
+      "save": "Save range",
+      "saved": "Version range saved.",
+      "invalid": "Not a valid range. Use forms like 1.x, ^1.2.3, ~1.2.3 or >=1.2.0 <2.0.0."
     }
   },
   "canary": {
@@ -335,7 +342,9 @@
       "typicalWithP95": "Usually wakes in about {{typical}} (p95 {{p95}}).",
       "noneShort": "No wake data yet",
       "short": "Wakes in about {{typical}}",
-      "shortWithP95": "Wakes in about {{typical}} (p95 {{p95}})"
+      "shortWithP95": "Wakes in about {{typical}} (p95 {{p95}})",
+      "last": "Last wake took {{last}}.",
+      "overBudget": "Wakes can take longer than the {{budget}} the proxy waits, so visitors may see a waking page first."
     },
     "frees": "Frees about {{size}} while asleep",
     "checklistLabel": "Sleep eligibility",
@@ -787,6 +796,7 @@
     "capacityLabel": "Build slots in use on {{name}}",
     "labels": "Labels",
     "lastBuild": "Last build:",
+    "skipped": "Skipped for new builds: {{reason}}",
     "noBuilds": "No builds yet",
     "cache": "Build cache {{size}}",
     "builtOn": "Built on {{name}}",

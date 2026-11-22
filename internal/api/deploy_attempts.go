@@ -342,6 +342,10 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 // own Image).
 func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	cursor, ok := parseKeysetCursor(w, r)
+	if !ok {
+		return
+	}
 
 	// A compose stack has no service row of its own; its attempts live under the stack name.
 	var liveImage string
@@ -417,7 +421,7 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		}
 		out = append(out, res)
 	}
-	writeJSON(w, http.StatusOK, parseDeployAttemptFilter(r).apply(out))
+	writeJSON(w, http.StatusOK, rt.pageDeployAttempts(w, parseDeployAttemptFilter(r), out, cursor))
 }
 
 // cacheWarningLister and cacheWarningSetter are optional deployAttempts
@@ -725,4 +729,30 @@ func (rt *Router) requireAppOrStack(w http.ResponseWriter, r *http.Request, name
 // requireReadableApp is requireAppAccess for the read routes.
 func (rt *Router) requireReadableApp(w http.ResponseWriter, r *http.Request, name string) bool {
 	return rt.requireAppAccess(w, r, name, AbilityRead)
+}
+
+// pageDeployAttempts resumes after cursor, applies the filter and, when the
+// limit cut the list short, sets the next-cursor header. The derived live and
+// chain fields were computed on the full history, so they stay stable per page.
+func (rt *Router) pageDeployAttempts(w http.ResponseWriter, f deployAttemptFilter, all []deployAttemptResource, cursor string) []deployAttemptResource {
+	if cursor != "" {
+		ts, id, _ := store.DecodeKeysetCursor(cursor)
+		kept := make([]deployAttemptResource, 0, len(all))
+		for _, a := range all {
+			at := a.StartedAt.UTC().Format(time.RFC3339Nano)
+			if at < ts || (at == ts && a.ID < id) {
+				kept = append(kept, a)
+			}
+		}
+		all = kept
+	}
+	limit := f.Limit
+	f.Limit = 0
+	page := f.apply(all)
+	if limit > 0 && len(page) > limit {
+		page = page[:limit]
+		last := page[len(page)-1]
+		w.Header().Set(nextCursorHeader, store.EncodeDeploymentCursor(last.StartedAt, last.ID))
+	}
+	return page
 }

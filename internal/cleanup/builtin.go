@@ -35,8 +35,10 @@ type BuiltinDeps struct {
 	Janitor JanitorSource
 	// Retention enables the targets for history that had no sweeper before; nil skips them.
 	Retention RetentionStore
-	Settings  Settings
-	Now       func() time.Time
+	// RegistryTags enables the built-in registry targets; nil skips them.
+	RegistryTags RegistryTags
+	Settings     Settings
+	Now          func() time.Time
 }
 
 // Built-in target ids.
@@ -89,6 +91,11 @@ func RegisterBuiltins(r *Registry, d BuiltinDeps) {
 	}
 	if d.Retention != nil {
 		for _, t := range retentionTargets(d) {
+			r.Register(t)
+		}
+	}
+	if d.RegistryTags != nil {
+		for _, t := range registryTargets(d) {
 			r.Register(t)
 		}
 	}

@@ -17,6 +17,7 @@ func runNodesList(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs.StringVar(&opts.Query, "q", "", "search node name and address")
 	fs.IntVar(&opts.Limit, "limit", 0, "max nodes to return (default: every node)")
 	fs.IntVar(&opts.Offset, "offset", 0, "skip this many nodes before the page starts")
+	wo := registerWatch(fs, lookupEnv)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesListUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -25,17 +26,19 @@ func runNodesList(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	return wo.run(stdout, jsonOut, func() int {
 
-	nodes, _, err := client.ListNodesFiltered(context.Background(), opts)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list nodes: %w", err))
-	}
+		nodes, _, err := client.ListNodesFiltered(context.Background(), opts)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list nodes: %w", err))
+		}
 
-	if err := renderResult(stdout, of.Format, of.Query, nodes, func() { printNodesTable(stdout, nodes) }); err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitCodeForError(err)
-	}
-	return exitOK
+		if err := renderResult(stdout, of.Format, of.Query, nodes, func() { printNodesTable(stdout, nodes) }); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitCodeForError(err)
+		}
+		return exitOK
+	})
 }
 
 func nodesListUsage(prog string) string {
@@ -51,6 +54,8 @@ Flags:
   --q string                search node name and address
   --limit int               max nodes to return (default: every node)
   --offset int              skip this many nodes before the page starts
+  --watch                  redraw on an interval until Ctrl+C
+  --interval duration  redraw interval with --watch (env LEVELRAIL_WATCH_INTERVAL, default 5s)
   --json                    print nodes as a JSON array to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing

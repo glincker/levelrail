@@ -19,6 +19,8 @@ type AppListFilter struct {
 	Tags          []string
 	Names         []string
 	Limit, Offset int
+	// AfterName resumes a name-ordered page after this app; it replaces Offset.
+	AfterName string
 }
 
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
@@ -69,6 +71,10 @@ func (f AppListFilter) where() (string, []any, error) {
 			WHERE t.name IN (SELECT value FROM json_each(?))
 			GROUP BY at.app_name HAVING COUNT(DISTINCT t.name) >= ?)`)
 		args = append(args, string(bTags), need)
+	}
+	if f.AfterName != "" {
+		clauses = append(clauses, `name > ?`)
+		args = append(args, f.AfterName)
 	}
 	if len(clauses) == 0 {
 		return "", nil, nil

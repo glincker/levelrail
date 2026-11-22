@@ -95,11 +95,22 @@ type Input struct {
 	Elapsed  time.Duration
 	Canary   Sample
 	Baseline Sample
+	// HealthFailures is the canary's consecutive failed liveness probes.
+	HealthFailures uint64
+	// AlertFiring is true while the configured alert rule is firing.
+	AlertFiring bool
 }
 
 // Breach reports whether the canary is worse than the baseline beyond the
 // policy, with a reason. Too few canary requests is never a breach.
 func Breach(in Input) (bool, string) {
+	// These signals do not depend on traffic, so they are judged before the request minimum.
+	if in.Limits.MaxHealthFailures > 0 && in.HealthFailures >= in.Limits.MaxHealthFailures {
+		return true, fmt.Sprintf("health check failed %d times on the canary (limit %d)", in.HealthFailures, in.Limits.MaxHealthFailures)
+	}
+	if in.AlertFiring && in.Limits.AlertRuleID != "" {
+		return true, fmt.Sprintf("alert rule %s is firing", in.Limits.AlertRuleID)
+	}
 	if in.Canary.Requests < in.Limits.MinRequests {
 		return false, ""
 	}

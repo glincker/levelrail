@@ -244,6 +244,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_IMAGE_KEEP` | [`app.image_keep`](/runtime-settings#deploys) | `0` |
 | `APP_ENV_APPLY_ON_SET` | [`apps.env_apply_on_set`](/runtime-settings#deploys) | `false` |
 | `APP_MAX_REPLICAS_PER_SERVICE` | [`apps.max_replicas_per_service`](/runtime-settings#deploys) | `100` |
+| `APP_RESOURCES_MAX_IO_BPS` | [`apps.resources_max_io_bps`](/runtime-settings#deploys) | `0` |
+| `APP_RESOURCES_MAX_NET_MBIT` | [`apps.resources_max_net_mbit`](/runtime-settings#deploys) | `0` |
 | `APP_SIZE_PRESETS` | [`apps.size_presets`](/runtime-settings#deploys) | `small=0.5:512Mi,medium=1:1Gi,large=2:2Gi,xlarge=4:4Gi` |
 | `APP_RUN_CPU_LIMIT_MILLIS` | [`apps_run.cpu_limit_millis`](/runtime-settings#deploys) | `0` |
 | `APP_RUN_MAX_CONCURRENT_PER_APP` | [`apps_run.max_concurrent_per_app`](/runtime-settings#deploys) | `3` |
@@ -282,6 +284,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_CACHE_RECLAIM_MAX_RECORDS` | [`build.cache_reclaim_max_records`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_CPU_PERCENT` | [`build.cpu_percent`](/runtime-settings#deploys) | `75` |
+| `APP_BUILD_FAIR_SHARE` | [`build.fair_share`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `60` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_PERSONAL_IN_PRODUCTION` | [`build.personal_builders_in_production`](/runtime-settings#deploys) | `false` |
@@ -296,6 +299,20 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_TRANSFER_PUSH_TTL` | [`build.transfer_push_ttl`](/runtime-settings#deploys) | `45m` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_SETTING_VALUE_MAX_BYTES` | [`builds.setting_value_max_bytes`](/runtime-settings#deploys) | `128` |
+| `APP_BULK_CONCURRENCY` | [`bulk.concurrency`](/runtime-settings#deploys) | `4` |
+| `APP_BULK_CONFIRM_ABOVE` | [`bulk.confirm_above`](/runtime-settings#deploys) | `10` |
+| `APP_BULK_MAX_APPS` | [`bulk.max_apps`](/runtime-settings#deploys) | `200` |
+| `APP_BULK_MAX_RESOURCES` | [`bulk.max_resources`](/runtime-settings#deploys) | `500` |
+| `APP_CANARY_ALERT_RULE_ID` | [`canary.alert_rule_id`](/runtime-settings#deploys) | empty |
+| `APP_CANARY_INTERVAL` | [`canary.interval`](/runtime-settings#deploys) | `5m` |
+| `APP_CANARY_MAX_ERROR_RATE` | [`canary.max_error_rate`](/runtime-settings#deploys) | `0.02` |
+| `APP_CANARY_MAX_HEALTH_FAILURES` | [`canary.max_health_failures`](/runtime-settings#deploys) | `1` |
+| `APP_CANARY_MAX_P95_RATIO` | [`canary.max_p95_ratio`](/runtime-settings#deploys) | `1.5` |
+| `APP_CANARY_MIN_REQUESTS` | [`canary.min_requests`](/runtime-settings#deploys) | `30` |
+| `APP_CANARY_P95_FLOOR_MS` | [`canary.p95_floor_ms`](/runtime-settings#deploys) | `50` |
+| `APP_CANARY_STAGES` | [`canary.stages`](/runtime-settings#deploys) | `10,25,50,100` |
+| `APP_CANARY_STICKY` | [`canary.sticky`](/runtime-settings#deploys) | `true` |
+| `APP_CANARY_TICK` | [`canary.tick`](/runtime-settings#deploys) | `15s` |
 | `APP_CLOUD_DEFAULT_MONTHLY_COST_LIMIT` | [`cloud.default_monthly_cost_limit`](/runtime-settings#deploys) | `0` |
 | `APP_CLOUD_ENGINE_CPUS` | [`cloud.engine_cpus`](/runtime-settings#deploys) | `1` |
 | `APP_CLOUD_ENGINE_MEMORY_MB` | [`cloud.engine_memory_mb`](/runtime-settings#deploys) | `1024` |
@@ -412,6 +429,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROJECT_IMPORT_MAX_BYTES` | [`projects.import_max_bytes`](/runtime-settings#deploys) | `268435456` |
 | `APP_PROJECT_IMPORT_MAX_CONCURRENT` | [`projects.import_max_concurrent`](/runtime-settings#deploys) | `2` |
 | `APP_PROJECT_IMPORT_MAX_CONCURRENT_GLOBAL` | [`projects.import_max_concurrent_global`](/runtime-settings#deploys) | `8` |
+| `APP_QUOTA_DEFAULT_MAX_APPS` | [`quota.default_max_apps`](/runtime-settings#deploys) | `0` |
+| `APP_QUOTA_DEFAULT_MAX_CPU` | [`quota.default_max_cpu`](/runtime-settings#deploys) | `0` |
+| `APP_QUOTA_DEFAULT_MAX_DATABASES` | [`quota.default_max_databases`](/runtime-settings#deploys) | `0` |
+| `APP_QUOTA_DEFAULT_MAX_MEMORY_MB` | [`quota.default_max_memory_mb`](/runtime-settings#deploys) | `0` |
+| `APP_QUOTA_DEFAULT_MAX_PREVIEWS` | [`quota.default_max_previews`](/runtime-settings#deploys) | `0` |
 | `APP_REGISTRY_DOCKERHUB_LIMIT_WARN_PERCENT` | [`registry.dockerhub.limit_warn_percent`](/runtime-settings#deploys) | `20` |
 | `APP_REGISTRY_DOCKERHUB_LIMITS_CACHE_SECONDS` | [`registry.dockerhub.limits_cache_seconds`](/runtime-settings#deploys) | `300` |
 | `APP_REGISTRY_DOCKERHUB_TAG_PAGE_SIZE` | [`registry.dockerhub.tag_page_size`](/runtime-settings#deploys) | `25` |
@@ -419,6 +441,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_REGISTRY_MIRROR_PREFIX` | [`registry.mirror_prefix`](/runtime-settings#deploys) | empty |
 | `APP_RESOURCE_DESCRIPTION_MAX_CHARS` | [`resources.description_max_chars`](/runtime-settings#deploys) | `280` |
 | `APP_RESOURCE_NOTES_MAX_BYTES` | [`resources.notes_max_bytes`](/runtime-settings#deploys) | `65536` |
+| `APP_ROLLOUT_MAX_SURGE` | [`rollout.max_surge`](/runtime-settings#deploys) | `1` |
+| `APP_ROLLOUT_MAX_UNAVAILABLE` | [`rollout.max_unavailable`](/runtime-settings#deploys) | `0` |
+| `APP_ROLLOUT_MIN_AVAILABLE` | [`rollout.min_available`](/runtime-settings#deploys) | `0` |
 | `APP_RUNTIME_DNS_MAX` | [`runtime.dns_max`](/runtime-settings#deploys) | `3` |
 | `APP_RUNTIME_EXTRA_HOSTS_MAX` | [`runtime.extra_hosts_max`](/runtime-settings#deploys) | `32` |
 | `APP_RUNTIME_PIDS_LIMIT_MAX` | [`runtime.pids_limit_max`](/runtime-settings#deploys) | `32768` |
@@ -465,8 +490,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ALERTS_DEFAULTS_ENABLED` | [`alerts.defaults_enabled`](/runtime-settings#observability) | `true` |
 | `APP_ALERTS_DIGEST_SCHEDULE` | [`alerts.digest_schedule`](/runtime-settings#observability) | `off` |
 | `APP_ALERTS_NOTIFY_ON_SLEEP` | [`alerts.notify_on_sleep`](/runtime-settings#observability) | `false` |
+| `APP_ALERTS_RENOTIFY_INTERVAL` | [`alerts.renotify_interval`](/runtime-settings#observability) | `0` |
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
+| `APP_SLOW_REQUEST_THRESHOLD` | [`api.slow_request_threshold`](/runtime-settings#observability) | `500ms` |
 | `APP_APP_METRICS_MAX_BODY_BYTES` | [`app_metrics.max_body_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_APP_METRICS_MAX_LABEL_BYTES` | [`app_metrics.max_label_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_APP_METRICS_MAX_LABELS` | [`app_metrics.max_labels`](/runtime-settings#observability) | `10` |
@@ -534,6 +561,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_QUERY_MAX_SQL_BYTES` | [`database_viewer.max_sql_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_TIMEOUT` | [`database_viewer.query_timeout`](/runtime-settings#observability) | `15s` |
 | `APP_DB_SCHEMA_MAX_ROWS` | [`database_viewer.schema_max_rows`](/runtime-settings#observability) | `5000` |
+| `APP_MAJOR_UPGRADE_RESTORE_POINT_MAX_AGE_HOURS` | [`databases.major_upgrade_restore_point_max_age_hours`](/runtime-settings#observability) | `24` |
 | `APP_DB_COMPACT_MIN_FREE_PERCENT` | [`db.compact_min_free_percent`](/runtime-settings#observability) | `10` |
 | `APP_DB_SPACE_REPORT_ROWS` | [`db.space_report_rows`](/runtime-settings#observability) | `20` |
 | `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |
@@ -559,6 +587,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CHANGES_STREAM_BUFFER` | [`events.changes_buffer`](/runtime-settings#observability) | `64` |
 | `APP_CHANGES_STREAM_HEARTBEAT` | [`events.changes_heartbeat`](/runtime-settings#observability) | `20s` |
 | `APP_CHANGES_STREAM_MAX_PER_CALLER` | [`events.changes_max_streams_per_caller`](/runtime-settings#observability) | `4` |
+| `APP_MAX_LIVE_STREAMS` | [`events.max_live_streams`](/runtime-settings#observability) | `500` |
 | `APP_GC_PERCENT` | [`footprint.gc_percent`](/runtime-settings#observability) | `50` |
 | `APP_GOMEMLIMIT_PERCENT` | [`footprint.memlimit_percent`](/runtime-settings#observability) | `80` |
 | `APP_MEM_TRIM_INTERVAL` | [`footprint.trim_interval`](/runtime-settings#observability) | `2m0s` |
@@ -596,6 +625,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_LOG_EXPORT_MAX_LINES` | [`logs.export_max_lines`](/runtime-settings#observability) | `5000` |
 | `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
 | `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
+| `APP_MONITORS_ENABLED` | [`monitors.enabled`](/runtime-settings#observability) | `false` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
 | `APP_NODE_AGENT_AUTO_UPDATE` | [`nodes.agent_auto_update`](/runtime-settings#observability) | `false` |
 | `APP_NODE_AGENT_BUFFER_MAX_BYTES` | [`nodes.agent_buffer_max_bytes`](/runtime-settings#observability) | `4194304` |
@@ -668,6 +698,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | [`backup.hook_max_output_bytes`](/runtime-settings#data-retention) | `4096` |
 | `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | [`backup.hook_timeout_seconds`](/runtime-settings#data-retention) | `60` |
+| `APP_BACKUP_SIZE_ANOMALY_BASELINE` | [`backup.size_anomaly_baseline`](/runtime-settings#data-retention) | `3` |
+| `APP_BACKUP_SIZE_ANOMALY_PERCENT` | [`backup.size_anomaly_percent`](/runtime-settings#data-retention) | `25` |
 | `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#data-retention) | `2h` |
 | `APP_BACKUP_DRILL_INTERVAL_HOURS` | [`backups.drill_interval_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_BACKUP_DRILL_MAX_CONCURRENT` | [`backups.drill_max_concurrent`](/runtime-settings#data-retention) | `2` |
@@ -696,6 +728,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_EXPIRED_TOKEN_DAYS` | [`retention.expired_token_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_FORGE_STATUS_DAYS` | [`retention.forge_status_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_PROBE_ATTEMPT_DAYS` | [`retention.probe_attempt_days`](/runtime-settings#data-retention) | `90` |
+| `APP_RETENTION_RECENTLY_DELETED_DAYS` | [`retention.recently_deleted_days`](/runtime-settings#data-retention) | `7` |
 | `APP_RETENTION_RESTORE_HISTORY_DAYS` | [`retention.restore_history_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_REVOKED_TOKEN_DAYS` | [`retention.revoked_token_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_STATUS_INCIDENT_DAYS` | [`retention.status_incident_days`](/runtime-settings#data-retention) | `365` |

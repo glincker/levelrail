@@ -12,6 +12,11 @@ import type palette from '../locales/en/palette.json'
 import type paletteSettings from '../locales/en/paletteSettings.json'
 import type projectExport from '../locales/en/projectExport.json'
 import type projectClone from '../locales/en/projectClone.json'
+import type slowRequests from '../locales/en/slowRequests.json'
+import type hotSpots from '../locales/en/hotSpots.json'
+import type buildLogs from '../locales/en/buildLogs.json'
+import type storageParts from '../locales/en/storageParts.json'
+import type installCard from '../locales/en/installCard.json'
 import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
@@ -31,6 +36,7 @@ import type access from '../locales/en/access.json'
 import type logPipeline from '../locales/en/logPipeline.json'
 import type logBudgets from '../locales/en/logBudgets.json'
 import type alertSetup from '../locales/en/alertSetup.json'
+import type logRuleEdit from '../locales/en/logRuleEdit.json'
 import type environments from '../locales/en/environments.json'
 import type stacks from '../locales/en/stacks.json'
 import type iacForm from '../locales/en/iacForm.json'
@@ -54,6 +60,7 @@ import type firstRun from '../locales/en/firstRun.json'
 import type newAppNoGit from '../locales/en/newAppNoGit.json'
 import type appOverview from '../locales/en/appOverview.json'
 import type webVitals from '../locales/en/webVitals.json'
+import type rolloutHold from '../locales/en/rolloutHold.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -66,6 +73,7 @@ import type upgradeSafety from '../locales/en/upgradeSafety.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
 import type canvas from '../locales/en/canvas.json'
 import type mailServer from '../locales/en/mailServer.json'
+import type glossary from '../locales/en/glossary.json'
 import type dnsSetup from '../locales/en/dnsSetup.json'
 import type dnsProviders from '../locales/en/dnsProviders.json'
 import type ddns from '../locales/en/ddns.json'
@@ -83,12 +91,21 @@ import type dns from '../locales/en/dns.json'
 import type domainPolicies from '../locales/en/domainPolicies.json'
 import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
+import type nextSteps from '../locales/en/nextSteps.json'
 import type tags from '../locales/en/tags.json'
 import type previews from '../locales/en/previews.json'
 import type delivery from '../locales/en/delivery.json'
 import type branchDeploys from '../locales/en/branchDeploys.json'
 import type deployContexts from '../locales/en/deployContexts.json'
+import type restorePreview from '../locales/en/restorePreview.json'
 import type backups from '../locales/en/backups.json'
+import type backupPins from '../locales/en/backupPins.json'
+import type alertEscalation from '../locales/en/alertEscalation.json'
+import type alertRunbook from '../locales/en/alertRunbook.json'
+import type alertRegression from '../locales/en/alertRegression.json'
+import type autoscaleSchedule from '../locales/en/autoscaleSchedule.json'
+import type appBulkResources from '../locales/en/appBulkResources.json'
+import type appBulkScale from '../locales/en/appBulkScale.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type forms from '../locales/en/forms.json'
 import type splitTesting from '../locales/en/splitTesting.json'
@@ -108,9 +125,11 @@ import type trafficExport from '../locales/en/trafficExport.json'
 import type maintenance from '../locales/en/maintenance.json'
 import type appBuildCache from '../locales/en/appBuildCache.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
+import type buildMemory from '../locales/en/buildMemory.json'
 import type janitor from '../locales/en/janitor.json'
 import type cleanup from '../locales/en/cleanup.json'
 import type deployPolicies from '../locales/en/deployPolicies.json'
+import type vacationFreeze from '../locales/en/vacationFreeze.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type resilience from '../locales/en/resilience.json'
@@ -124,6 +143,8 @@ import type controlPlaneReplica from '../locales/en/controlPlaneReplica.json'
 import type autoscale from '../locales/en/autoscale.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
+import type lifecycle from '../locales/en/lifecycle.json'
+import type appAdvisor from '../locales/en/appAdvisor.json'
 import type plugins from '../locales/en/plugins.json'
 import type mail from '../locales/en/mail.json'
 import type help from '../locales/en/help.json'
@@ -135,9 +156,11 @@ import type betaFeatures from '../locales/en/betaFeatures.json'
 import type runtimeSettings from '../locales/en/runtimeSettings.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
+import type appSetup from '../locales/en/appSetup.json'
 import type onboarding from '../locales/en/onboarding.json'
 import type usage from '../locales/en/usage.json'
 import type costs from '../locales/en/costs.json'
+import type costIdle from '../locales/en/costIdle.json'
 import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
 import type staticRoutes from '../locales/en/staticRoutes.json'
@@ -148,6 +171,7 @@ import type storage from '../locales/en/storage.json'
 import type storagePolicy from '../locales/en/storagePolicy.json'
 import type storageTrend from '../locales/en/storageTrend.json'
 import type buildCenter from '../locales/en/buildCenter.json'
+import type imageBloat from '../locales/en/imageBloat.json'
 import type functions from '../locales/en/functions.json'
 import type advisories from '../locales/en/advisories.json'
 import type monitors from '../locales/en/monitors.json'
@@ -193,6 +217,7 @@ declare module 'i18next' {
       logPipeline: typeof logPipeline
       logBudgets: typeof logBudgets
       alertSetup: typeof alertSetup
+      logRuleEdit: typeof logRuleEdit
       environments: typeof environments
       stacks: typeof stacks
       iacForm: typeof iacForm
@@ -214,6 +239,7 @@ declare module 'i18next' {
       newAppNoGit: typeof newAppNoGit
       appOverview: typeof appOverview
       webVitals: typeof webVitals
+      rolloutHold: typeof rolloutHold
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess
@@ -226,6 +252,7 @@ declare module 'i18next' {
       infraCanvas: typeof infraCanvas
       canvas: typeof canvas
       mailServer: typeof mailServer
+      glossary: typeof glossary
       dnsSetup: typeof dnsSetup
       dnsProviders: typeof dnsProviders
       platformSettings: typeof platformSettings
@@ -247,6 +274,14 @@ declare module 'i18next' {
       branchDeploys: typeof branchDeploys
       deployContexts: typeof deployContexts
       backups: typeof backups
+      restorePreview: typeof restorePreview
+      backupPins: typeof backupPins
+      alertEscalation: typeof alertEscalation
+      alertRunbook: typeof alertRunbook
+      alertRegression: typeof alertRegression
+      autoscaleSchedule: typeof autoscaleSchedule
+      appBulkResources: typeof appBulkResources
+      appBulkScale: typeof appBulkScale
       sleepHistory: typeof sleepHistory
       forms: typeof forms
       splitTesting: typeof splitTesting
@@ -276,6 +311,8 @@ declare module 'i18next' {
       autoscale: typeof autoscale
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
+      lifecycle: typeof lifecycle
+      appAdvisor: typeof appAdvisor
       plugins: typeof plugins
       mail: typeof mail
       help: typeof help
@@ -287,9 +324,11 @@ declare module 'i18next' {
       runtimeSettings: typeof runtimeSettings
       newApp: typeof newApp
       getStarted: typeof getStarted
+      appSetup: typeof appSetup
       onboarding: typeof onboarding
       usage: typeof usage
       costs: typeof costs
+      costIdle: typeof costIdle
       resources: typeof resources
       deployTimeline: typeof deployTimeline
       deployEvents: typeof deployEvents
@@ -298,6 +337,7 @@ declare module 'i18next' {
       storagePolicy: typeof storagePolicy
       storageTrend: typeof storageTrend
       buildCenter: typeof buildCenter
+      imageBloat: typeof imageBloat
       functions: typeof functions
       advisories: typeof advisories
       monitors: typeof monitors
@@ -318,13 +358,16 @@ declare module 'i18next' {
       maintenance: typeof maintenance
       appBuildCache: typeof appBuildCache
       buildPerformance: typeof buildPerformance
+      buildMemory: typeof buildMemory
       janitor: typeof janitor
       cleanup: typeof cleanup
       sso: typeof sso
       cdn: typeof cdn
       trialApp: typeof trialApp
+      nextSteps: typeof nextSteps
       tags: typeof tags
       deployPolicies: typeof deployPolicies
+      vacationFreeze: typeof vacationFreeze
       deployDetail: typeof deployDetail
       staticRoutes: typeof staticRoutes
       firewall: typeof firewall
@@ -342,6 +385,11 @@ declare module 'i18next' {
       gitConnect: typeof gitConnect
       projectExport: typeof projectExport
       projectClone: typeof projectClone
+      slowRequests: typeof slowRequests
+      hotSpots: typeof hotSpots
+      buildLogs: typeof buildLogs
+      storageParts: typeof storageParts
+      installCard: typeof installCard
     }
   }
 }

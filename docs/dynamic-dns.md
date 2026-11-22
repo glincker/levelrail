@@ -51,6 +51,9 @@ Tuning flags on `set`: `--interval`, `--timeout`, `--min-update-gap`, `--reasser
 | --- | --- | --- |
 | `generic` | an https update URL containing `{ip}` | GET request, any 2xx answer is success. |
 | `duckdns` | your DuckDNS token, plus `--domains` | Calls the DuckDNS update endpoint and accepts an answer that starts with `OK`. |
+| `porkbun` | `apikey:secretapikey`, plus `--domains` as full hostnames | Upserts an A record through the Porkbun API (600 second TTL). API access must be enabled for the domain. |
+| `godaddy` | `key:secret` from the GoDaddy developer portal (a production key), plus `--domains` as full hostnames | Upserts an A record through the GoDaddy API (600 second TTL). |
+| `desec` | your deSEC API token, plus `--domains` as full hostnames | Upserts an A record through the deSEC API (3600 second TTL). |
 
 Not built yet: a Cloudflare provider and IPv6 (AAAA) updates. The updater writes IPv4 only.
 

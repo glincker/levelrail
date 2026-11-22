@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { InfoTip } from '@/components/kit'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
-import { deriveSleepState } from '../lib/sleepState'
+import { deriveSleepState, formatWakeMs } from '../lib/sleepState'
 import {
   useAppSleep,
   useAppSleepActions,
@@ -27,6 +27,12 @@ export function AppSleepCard({ appName }: { appName: string }) {
   const { blockers, warnings } = sleep
   const blocked = !sleep.eligible
   const idle = sleep.settings.idle_minutes
+  const lastWakeMs = sleep.wake_timing.ready_last_ms
+  const budgetMs = sleep.wake_budget_ms
+  const overBudget =
+    budgetMs !== undefined &&
+    budgetMs > 0 &&
+    Math.max(lastWakeMs ?? 0, sleep.wake_timing.ready_p50_ms ?? 0) > budgetMs
 
   const fail = (error: Error) =>
     toast.add({
@@ -85,6 +91,21 @@ export function AppSleepCard({ appName }: { appName: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <SleepStatusHeader state={state} sleep={sleep} actions={actions} />
+        {lastWakeMs !== undefined ? (
+          <p className="text-sm text-foreground" data-testid="sleep-wake-last">
+            {t('appSleep.wakeTiming.last', { last: formatWakeMs(lastWakeMs) })}
+          </p>
+        ) : null}
+        {overBudget ? (
+          <p
+            role="alert"
+            className="text-sm text-amber-700 dark:text-amber-400"
+          >
+            {t('appSleep.wakeTiming.overBudget', {
+              budget: formatWakeMs(budgetMs),
+            })}
+          </p>
+        ) : null}
         {sleep.enabled ? (
           <>
             {blockers.length > 0 || warnings.length > 0 ? (

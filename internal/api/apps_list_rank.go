@@ -26,7 +26,7 @@ func (a *appRank) sort(svcs []store.DesiredService) {
 // service rows are loaded. canRead is the caller's own visibility check.
 func listRankedApps(ctx context.Context, fs appFilterStore, f store.AppListFilter, rank *appRank, canRead func(string) bool) ([]store.DesiredService, int, error) {
 	nf := f
-	nf.Query, nf.Names, nf.Limit, nf.Offset = "", rank.names, 0, 0
+	nf.Query, nf.Names, nf.Limit, nf.Offset, nf.AfterName = "", rank.names, 0, 0, ""
 	matching, err := fs.ListAppNamesFiltered(ctx, nf)
 	if err != nil {
 		return nil, 0, err
@@ -41,6 +41,7 @@ func listRankedApps(ctx context.Context, fs appFilterStore, f store.AppListFilte
 			ordered = append(ordered, n)
 		}
 	}
+	ordered = afterNames(ordered, f.AfterName)
 	total := len(ordered)
 	if f.Offset >= total {
 		return nil, total, nil

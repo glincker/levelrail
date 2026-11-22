@@ -144,7 +144,7 @@ levelrail-cli apps branch-deploys delete web staging
 
 - `--mode` is `off`, `all`, or `patterns`. Only `all` and `patterns` give branches a deploy. In `patterns`, a pattern is an exact branch name or a glob where `*` matches any characters, including `/`. The production branch never gets one.
 - A branch deploy is removed when the branch is deleted, or after 14 days with no push. `APP_BRANCH_DEPLOY_TTL` changes the idle time.
-- Repeat pushes of one commit are folded: if a branch is still deploying a commit and the same commit arrives again within the coalesce window (for example a push and a variable change together), the repeat is skipped with an "already deploying this commit" note. The window is the runtime setting `deploys.coalesce_window` (default `15s`, from `1s` to `10m`, applies to the next push, environment seed `APP_DEPLOY_COALESCE_WINDOW`). Change it under Settings > Runtime, Deploys card, or with `levelrail-cli settings runtime set deploys.coalesce_window 30s`.
+- Repeat pushes of one commit are folded: if a branch is still deploying a commit and the same commit arrives again within the coalesce window (for example a push and a variable change together), the repeat is skipped with an "already deploying this commit" note. The window is the runtime setting `deploys.coalesce_window` (default `15s`, from `1s` to `10m`, applies to the next push, environment seed `APP_DEPLOY_COALESCE_WINDOW`). Change it under Settings > Security and runtime, Deploys card, or with `levelrail-cli settings runtime set deploys.coalesce_window 30s`.
 - `APP_BRANCH_DEPLOY_MAX_PER_APP` (default 10) caps live branch deploys per app. A push past the cap is ignored with a note.
 - Branch-scoped env overrides are set with `levelrail-cli apps branch-env`.
 

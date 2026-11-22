@@ -438,6 +438,12 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
 
+	if spec.IODevice == "" && spec.Resources != nil && (spec.Resources.IOReadBps > 0 || spec.Resources.IOWriteBps > 0) {
+		// An unresolvable device only skips the IO caps, it never blocks the deploy.
+		if root, rerr := c.DockerRootDir(ctx); rerr == nil {
+			spec.IODevice = blockDeviceFor(root)
+		}
+	}
 	hostConfig := buildHostConfig(spec, portBindings)
 	if spec.GPU != nil {
 		c.attachGPU(ctx, hostConfig, *spec.GPU)
@@ -725,6 +731,7 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 			MemorySwap: spec.Resources.SwapMemoryBytes,
 			CpusetCpus: spec.Resources.CPUSetCPUs,
 		}
+		applyIOLimits(hostConfig, spec.Resources, spec.IODevice)
 	}
 	applyLogRotation(hostConfig, currentLogRotation())
 	if spec.CPUShares > 0 {

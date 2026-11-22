@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,6 +46,13 @@ func (f *fakeAPI) Deploy(_ context.Context, app, image string) error {
 }
 func (f *fakeAPI) Rollback(_ context.Context, app, id string) error {
 	return f.record("rollback " + app + " " + id)
+}
+
+func (f *fakeAPI) Scale(_ context.Context, app string, n int) error {
+	return f.record(fmt.Sprintf("scale %s %d", app, n))
+}
+func (f *fakeAPI) SetEnv(_ context.Context, app, k, v string) error {
+	return f.record("env " + app + " " + k + "=" + v)
 }
 
 func (f *fakeAPI) Logs(ctx context.Context, _ LogKind, _ string, on func(LogLine) error) error {

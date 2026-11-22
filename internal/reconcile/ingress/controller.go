@@ -18,6 +18,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/GLINCKER/levelrail/internal/canary"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
@@ -138,6 +139,12 @@ type Route53DNSCredentialResolver interface {
 // GoogleCloudDNSKeyResolver resolves the Cloud DNS service account JSON.
 // *secrets.Manager satisfies it structurally.
 type GoogleCloudDNSKeyResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+// DNSTokenResolver resolves the DigitalOcean, Hetzner or Azure DNS credential.
+// *secrets.Manager satisfies it structurally.
+type DNSTokenResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
@@ -314,6 +321,9 @@ type Controller struct {
 	// gcdKeys, if set via WithGoogleCloudDNSKey, enables Cloud DNS DNS-01.
 	// It ranks after Cloudflare and Route53 in resolveDNSProvider.
 	gcdKeys GoogleCloudDNSKeyResolver
+
+	// dnsTokens, if set via WithDNSTokens, enables DigitalOcean, Hetzner and Azure DNS-01 after Cloud DNS.
+	tokenDNSCreds DNSTokenResolver
 
 	// basicAuthSecrets, if set via WithDomainBasicAuthSecrets, is
 	// resolved fresh every Reconcile pass for every domain returned by
@@ -620,6 +630,12 @@ func WithRoute53DNSCredentials(resolver Route53DNSCredentialResolver) Option {
 // domains whenever store.GoogleCloudDNSSettings.Enabled is true.
 func WithGoogleCloudDNSKey(resolver GoogleCloudDNSKeyResolver) Option {
 	return func(c *Controller) { c.gcdKeys = resolver }
+}
+
+// WithDNSTokens enables DigitalOcean, Hetzner and Azure DNS-01 for wildcard
+// domains whenever the provider is enabled in store.
+func WithDNSTokens(resolver DNSTokenResolver) Option {
+	return func(c *Controller) { c.tokenDNSCreds = resolver }
 }
 
 // WithDomainBasicAuthSecrets enables HTTP Basic Auth on any domain
@@ -1321,7 +1337,37 @@ func (c *Controller) resolveDNSProvider(ctx context.Context) ingress.DNS01Provid
 	if p := c.resolveRoute53DNSProvider(ctx); p != nil {
 		return p
 	}
-	return c.resolveGoogleCloudDNSProvider(ctx)
+	if p := c.resolveGoogleCloudDNSProvider(ctx); p != nil {
+		return p
+	}
+	return c.resolveTokenDNSProvider(ctx)
+}
+
+// resolveTokenDNSProvider returns the first enabled token provider; a bad
+// credential must not block the whole reconcile, same as the others.
+func (c *Controller) resolveTokenDNSProvider(ctx context.Context) ingress.DNS01Provider {
+	flags, ok := c.store.(interface {
+		GetDNSTokenProviderEnabled(ctx context.Context, provider string) (bool, error)
+	})
+	if c.tokenDNSCreds == nil || !ok {
+		return nil
+	}
+	for _, name := range dnszones.TokenProviders {
+		enabled, err := flags.GetDNSTokenProviderEnabled(ctx, name)
+		if err != nil {
+			c.logger.WarnContext(ctx, "ingress: get dns provider settings failed, wildcard domains will not get DNS-01 this pass", slog.String("provider", name), slog.String("error", err.Error()))
+			continue
+		}
+		if !enabled {
+			continue
+		}
+		cred, err := c.tokenDNSCreds.Resolve(ctx, store.DNSTokenSecretsKey(name), store.DNSTokenEnvKey)
+		if err != nil || cred == "" {
+			continue
+		}
+		return ingress.TokenDNSProvider{Name: name, Credential: cred}
+	}
+	return nil
 }
 
 // resolveGoogleCloudDNSProvider follows the same fail-to-nil rule as the

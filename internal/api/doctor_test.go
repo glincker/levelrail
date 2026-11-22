@@ -493,3 +493,22 @@ func TestDoctorCheckControlPlaneBackup(t *testing.T) {
 		})
 	}
 }
+
+func TestDoctorReport_CachedUnlessRefreshed(t *testing.T) {
+	rt, _ := newDoctorTestRouter(t)
+	rt.dash = newDashboardCache(time.Minute, time.Minute)
+	sentinel := systemDoctorResponse{Checks: []doctorCheckResource{{Code: "sentinel"}}}
+	rt.dash.entries["doctor"] = dashboardEntry{value: sentinel, fetched: time.Now()}
+
+	got, err := rt.doctorReport(context.Background(), false)
+	if err != nil || len(got.Checks) != 1 || got.Checks[0].Code != "sentinel" {
+		t.Fatalf("cached read = %+v, %v", got, err)
+	}
+	got, err = rt.doctorReport(context.Background(), true)
+	if err != nil || len(got.Checks) < 2 {
+		t.Fatalf("refresh did not run live checks: %+v, %v", got, err)
+	}
+	if again, _ := rt.doctorReport(context.Background(), false); len(again.Checks) != len(got.Checks) {
+		t.Fatalf("refresh did not replace the cached entry")
+	}
+}

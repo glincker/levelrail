@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -26,6 +27,8 @@ const (
 	bulkActionSetEnvironment = "set-environment"
 	bulkActionMoveToProject  = "move-to-project"
 	bulkActionDelete         = "delete"
+	bulkActionScale          = "scale"
+	bulkActionRollback       = "rollback"
 
 	bulkStatusOK       = "ok"
 	bulkStatusWouldRun = "would_apply"
@@ -47,6 +50,11 @@ var bulkActionAbility = map[string]string{
 	bulkActionSetEnvironment: AbilityWrite,
 	bulkActionMoveToProject:  AbilityWrite,
 	bulkActionDelete:         AbilityWrite,
+	bulkActionScale:          AbilityWrite,
+	bulkActionRollback:       AbilityDeploy,
+	bulkActionSetMemory:      AbilityWrite,
+	bulkActionSetCPU:         AbilityWrite,
+	bulkActionSetEnv:         AbilityWrite,
 }
 
 type bulkAppsRequest struct {
@@ -55,6 +63,8 @@ type bulkAppsRequest struct {
 	Names       []string `json:"names,omitempty"`
 	Tag         string   `json:"tag,omitempty"`
 	Environment string   `json:"environment,omitempty"`
+	// Project selects every app in this project ID; it combines with Tag and Environment.
+	Project string `json:"project,omitempty"`
 	// Value is the tag, environment ID or name, or project ID the action applies.
 	Value  string `json:"value,omitempty"`
 	DryRun bool   `json:"dry_run,omitempty"`
@@ -62,12 +72,31 @@ type bulkAppsRequest struct {
 	ConfirmNames []string `json:"confirm_names,omitempty"`
 	// ConfirmCount must equal the resolved target count for a large disruptive action.
 	ConfirmCount int `json:"confirm_count,omitempty"`
+	// BatchSize runs targets in waves of this many apps; 0 keeps one parallel pass.
+	BatchSize int `json:"batch_size,omitempty"`
+	// PauseSeconds waits between waves, capped by the bulk.max_pause_seconds setting.
+	PauseSeconds int `json:"pause_seconds,omitempty"`
+	// HaltOnFail stops before the next wave once a wave has an error; the rest are skipped.
+	HaltOnFail bool `json:"halt_on_fail,omitempty"`
+	// Replicas is the count scale sets on apps without an autoscale policy.
+	Replicas *int `json:"replicas,omitempty"`
+	// MinReplicas and MaxReplicas are the bounds scale sets on apps with an autoscale policy.
+	MinReplicas *int `json:"min_replicas,omitempty"`
+	MaxReplicas *int `json:"max_replicas,omitempty"`
+	// MemoryBytes, NanoCPUs and EnvKey with EnvValue are what set-memory, set-cpu and set-env apply.
+	MemoryBytes *int64  `json:"memory_bytes,omitempty"`
+	NanoCPUs    *int64  `json:"nano_cpus,omitempty"`
+	EnvKey      string  `json:"env_key,omitempty"`
+	EnvValue    *string `json:"env_value,omitempty"`
 }
 
 type bulkAppResult struct {
 	Name    string `json:"name"`
 	Status  string `json:"status"`
 	Message string `json:"message,omitempty"`
+	// Before and After are the old and new value for set-memory, set-cpu and set-env, also on a dry run.
+	Before string `json:"before,omitempty"`
+	After  string `json:"after,omitempty"`
 }
 
 type bulkAppsResponse struct {
@@ -82,6 +111,14 @@ func envIntDefault(key string, def int) int {
 		return n
 	}
 	return def
+}
+
+// bulkLimit reads one bulk limit setting; without a settings service it falls back to the registered default.
+func (rt *Router) bulkLimit(ctx context.Context, key string) int {
+	if rt.runtimeSettings == nil {
+		return runtimesettings.ClampLimit(key, 0)
+	}
+	return rt.runtimeSettings.Limit(ctx, key)
 }
 
 // bulkPrincipal is the caller identity plus the IAM policies each app is
@@ -124,10 +161,10 @@ func (rt *Router) handleBulkApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(names) == 0 {
-		writeError(w, http.StatusBadRequest, "no target apps: set names, tag or environment")
+		writeError(w, http.StatusBadRequest, "no target apps: set names, tag, environment or project")
 		return
 	}
-	if maxN := envIntDefault("APP_BULK_MAX_APPS", 200); len(names) > maxN {
+	if maxN := rt.bulkLimit(r.Context(), runtimesettings.KeyBulkMaxApps); len(names) > maxN {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("too many apps (%d, max %d)", len(names), maxN))
 		return
 	}
@@ -136,7 +173,7 @@ func (rt *Router) handleBulkApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !req.DryRun && bulkNeedsCountConfirm(req.Action, len(names)) && req.ConfirmCount != len(names) {
+	if !req.DryRun && bulkNeedsCountConfirm(req.Action, len(names), rt.bulkLimit(r.Context(), runtimesettings.KeyBulkConfirmAbove)) && req.ConfirmCount != len(names) {
 		writeError(w, http.StatusConflict, bulkCountConfirmMessage(req.Action, len(names)))
 		return
 	}
@@ -147,19 +184,7 @@ func (rt *Router) handleBulkApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results := make([]bulkAppResult, len(names))
-	sem := make(chan struct{}, envIntDefault("APP_BULK_CONCURRENCY", 4))
-	var wg sync.WaitGroup
-	for i, name := range names {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func() {
-			defer wg.Done()
-			defer func() { <-sem }()
-			results[i] = rt.applyBulkOne(r.Context(), r, principal, ability, req, name)
-		}()
-	}
-	wg.Wait()
+	results := rt.runBulkWaves(r.Context(), r, principal, ability, req, names)
 
 	counts := map[string]int{}
 	for _, res := range results {
@@ -169,6 +194,72 @@ func (rt *Router) handleBulkApps(w http.ResponseWriter, r *http.Request) {
 		rt.nudgeReconciler()
 	}
 	writeJSON(w, http.StatusMultiStatus, bulkAppsResponse{Action: req.Action, DryRun: req.DryRun, Results: results, Counts: counts})
+}
+
+// runBulkWaves applies the action in waves of req.BatchSize (all at once when 0), pausing
+// between waves and, with HaltOnFail, skipping the remaining waves after a failed one.
+func (rt *Router) runBulkWaves(ctx context.Context, r *http.Request, p bulkPrincipal, ability string, req bulkAppsRequest, names []string) []bulkAppResult {
+	results := make([]bulkAppResult, len(names))
+	size := req.BatchSize
+	if size <= 0 || size > len(names) {
+		size = len(names)
+	}
+	pause := time.Duration(min(max(req.PauseSeconds, 0), rt.bulkMaxPauseSeconds(ctx))) * time.Second
+	for start := 0; start < len(names); start += size {
+		end := min(start+size, len(names))
+		if start > 0 && pause > 0 && !req.DryRun {
+			select {
+			case <-time.After(pause):
+			case <-ctx.Done():
+				bulkMarkSkipped(results, names, start, "stopped: request canceled during the pause between waves")
+				return results
+			}
+		}
+		rt.runBulkWave(ctx, r, p, ability, req, names, results, start, end)
+		if req.HaltOnFail && end < len(names) && bulkWaveFailed(results[start:end]) {
+			bulkMarkSkipped(results, names, end, "not started: an earlier wave failed (halt on fail)")
+			break
+		}
+	}
+	return results
+}
+
+func (rt *Router) runBulkWave(ctx context.Context, r *http.Request, p bulkPrincipal, ability string, req bulkAppsRequest, names []string, results []bulkAppResult, start, end int) {
+	sem := make(chan struct{}, rt.bulkLimit(ctx, runtimesettings.KeyBulkConcurrency))
+	var wg sync.WaitGroup
+	for i := start; i < end; i++ {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+			results[i] = rt.applyBulkOne(ctx, r, p, ability, req, names[i])
+		}()
+	}
+	wg.Wait()
+}
+
+func bulkWaveFailed(wave []bulkAppResult) bool {
+	for _, res := range wave {
+		if res.Status == bulkStatusError {
+			return true
+		}
+	}
+	return false
+}
+
+// bulkMarkSkipped fills every unset result from index from onward with a skipped row.
+func bulkMarkSkipped(results []bulkAppResult, names []string, from int, msg string) {
+	for i := from; i < len(results); i++ {
+		results[i] = bulkAppResult{Name: names[i], Status: bulkStatusSkipped, Message: msg}
+	}
+}
+
+func (rt *Router) bulkMaxPauseSeconds(ctx context.Context) int {
+	if rt.runtimeSettings == nil {
+		return 0
+	}
+	return rt.runtimeSettings.Int(ctx, runtimesettings.KeyBulkMaxPauseSeconds)
 }
 
 func validateBulkValue(req bulkAppsRequest) error {
@@ -181,6 +272,10 @@ func validateBulkValue(req bulkAppsRequest) error {
 		if req.Value == "" {
 			return errors.New("value (project id) is required")
 		}
+	case bulkActionScale:
+		return validateBulkScale(req)
+	case bulkActionSetMemory, bulkActionSetCPU, bulkActionSetEnv:
+		return validateBulkResources(req)
 	}
 	return nil
 }
@@ -198,14 +293,14 @@ func (rt *Router) resolveBulkTargets(ctx context.Context, req bulkAppsRequest) (
 		slices.Sort(names)
 		return slices.Compact(names), nil
 	}
-	if req.Tag == "" && req.Environment == "" {
+	if req.Tag == "" && req.Environment == "" && req.Project == "" {
 		return nil, nil
 	}
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
 		return nil, errNoFilteredList
 	}
-	f := store.AppListFilter{Environment: req.Environment}
+	f := store.AppListFilter{Environment: req.Environment, ProjectID: req.Project}
 	if req.Tag != "" {
 		f.Tags = []string{req.Tag}
 	}
@@ -244,17 +339,26 @@ func (rt *Router) applyBulkOne(ctx context.Context, r *http.Request, p bulkPrinc
 		rt.logger.Error("api: bulk apps: load app failed", slog.String("error", err.Error()), slog.String("name", name))
 		return bulkAppResult{Name: name, Status: bulkStatusError, Message: "internal error"}
 	}
+	if isBulkResourceAction(req.Action) {
+		status, msg, before, after := rt.bulkResources(ctx, req, *svc, req.DryRun)
+		if status == bulkStatusOK && req.DryRun {
+			status = bulkStatusWouldRun
+		} else if status == bulkStatusOK {
+			rt.recordBulkAudit(ctx, r, p, ability, req.Action, name)
+		}
+		return bulkAppResult{Name: name, Status: status, Message: msg, Before: before, After: after}
+	}
 	if req.DryRun {
 		return bulkAppResult{Name: name, Status: bulkStatusWouldRun, Message: req.Action}
 	}
-	status, msg := rt.runBulkAction(ctx, req, *svc)
+	status, msg := rt.runBulkAction(ctx, r, req, *svc)
 	if status == bulkStatusOK {
 		rt.recordBulkAudit(ctx, r, p, ability, req.Action, name)
 	}
 	return bulkAppResult{Name: name, Status: status, Message: msg}
 }
 
-func (rt *Router) runBulkAction(ctx context.Context, req bulkAppsRequest, svc store.DesiredService) (status, message string) {
+func (rt *Router) runBulkAction(ctx context.Context, r *http.Request, req bulkAppsRequest, svc store.DesiredService) (status, message string) {
 	fail := func(what string, err error) (string, string) {
 		rt.logger.Error("api: bulk apps: "+what+" failed", slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("action", req.Action))
 		return bulkStatusError, what + " failed"
@@ -311,6 +415,10 @@ func (rt *Router) runBulkAction(ctx context.Context, req bulkAppsRequest, svc st
 		if _, err := rt.deleteApp(ctx, svc.Name); err != nil {
 			return fail("delete", err)
 		}
+	case bulkActionScale:
+		return rt.bulkScale(ctx, req, svc)
+	case bulkActionRollback:
+		return rt.bulkRollback(ctx, r, svc)
 	}
 	return bulkStatusOK, ""
 }

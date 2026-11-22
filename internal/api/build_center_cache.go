@@ -53,6 +53,7 @@ type buildCacheResponse struct {
 	RecordCount      int                        `json:"record_count"`
 	Records          []buildCacheRecordResource `json:"records"`
 	Nodes            []buildCacheNode           `json:"nodes"`
+	PruneAgeHours    int                        `json:"prune_age_hours"`
 }
 
 type buildCachePruneRequest struct {
@@ -112,7 +113,7 @@ func (rt *Router) buildCacheNodeList(r *http.Request) []buildCacheNode {
 // handleBuildCache handles GET /api/v1/builds/cache?node=: BuildKit cache usage of one node.
 func (rt *Router) handleBuildCache(w http.ResponseWriter, r *http.Request) {
 	nodeID := r.URL.Query().Get("node")
-	resp := buildCacheResponse{Node: nodeID, Records: []buildCacheRecordResource{}, Nodes: rt.buildCacheNodeList(r)}
+	resp := buildCacheResponse{Node: nodeID, Records: []buildCacheRecordResource{}, Nodes: rt.buildCacheNodeList(r), PruneAgeHours: rt.cachePruneAgeHours(r.Context())}
 	admin, ok := rt.buildCacheFor(w, nodeID)
 	if !ok {
 		return
@@ -145,7 +146,7 @@ func (rt *Router) handleBuildCachePrune(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	hours := defaultCachePruneAgeHrs
+	hours := rt.cachePruneAgeHours(r.Context())
 	if req.OlderThanHours != nil {
 		hours = *req.OlderThanHours
 	}
@@ -205,6 +206,11 @@ var cacheScanGate = make(chan struct{}, 1)
 // *build.Client satisfies it.
 type AppCacheQuotaReclaimer interface {
 	ReclaimAppCacheQuota(ctx context.Context, cacheID string, siblings []string, quotaBytes int64, maxRecords int) (build.AppCacheReclaim, error)
+}
+
+// NodeDependencyCacheReclaimer is the optional surface for the per node dependency cache cap.
+type NodeDependencyCacheReclaimer interface {
+	ReclaimNodeDependencyCache(ctx context.Context, capBytes int64, maxRecords int) (build.AppCacheReclaim, error)
 }
 
 type cacheReclaimEntry struct {
@@ -361,11 +367,42 @@ func (rt *Router) runCacheReclaim(base context.Context, r *http.Request, app, tr
 func (rt *Router) AfterBuildFinish(app string) {
 	ctx := context.Background()
 	defer rt.pruneCacheToBudgetBounded(ctx)
+	defer rt.reclaimNodeDependencyCache(ctx)
 	if rt.appCacheQuotaBytes(ctx) <= 0 {
 		return
 	}
 	if _, err := rt.runCacheReclaim(ctx, nil, app, cacheReclaimTriggerAuto); err != nil {
 		rt.logger.Warn("api: build cache quota reclaim failed", slog.String("app", app), slog.String("error", err.Error()))
+	}
+}
+
+// reclaimNodeDependencyCache trims all dependency cache mounts on the builder to
+// build.cache_node_dep_cap_gb. It shares the scan gate and the reclaim bounds.
+func (rt *Router) reclaimNodeDependencyCache(base context.Context) {
+	capBytes := int64(rt.runtimeSettings.Limit(base, runtimesettings.KeyBuildCacheNodeDepCapGB)) * cacheBytesPerGiB
+	if capBytes <= 0 || rt.appBuildCache == nil {
+		return
+	}
+	q, ok := rt.appBuildCache.(NodeDependencyCacheReclaimer)
+	if !ok {
+		return
+	}
+	timeout := runtimesettings.ClampBuildCacheReclaimTimeout(rt.runtimeSettings.Duration(base, runtimesettings.KeyBuildCacheReclaimTimeout))
+	ctx, cancel := context.WithTimeout(base, timeout)
+	defer cancel()
+	select {
+	case cacheScanGate <- struct{}{}:
+	case <-ctx.Done():
+		return
+	}
+	defer func() { <-cacheScanGate }()
+	res, err := q.ReclaimNodeDependencyCache(ctx, capBytes, rt.runtimeSettings.Limit(ctx, runtimesettings.KeyBuildCacheReclaimMaxRecords))
+	if err != nil {
+		rt.logger.Warn("api: node dependency cache reclaim failed", slog.String("error", err.Error()), slog.Int64("freed_bytes", res.FreedBytes))
+		return
+	}
+	if res.Removed > 0 {
+		rt.logger.Info("api: node dependency cache trimmed", slog.Int64("usage_bytes", res.UsageBytes), slog.Int64("cap_bytes", capBytes), slog.Int64("freed_bytes", res.FreedBytes))
 	}
 }
 

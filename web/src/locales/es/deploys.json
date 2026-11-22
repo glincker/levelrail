@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub: Webhooks del repositorio, añade la URL. Docker Hub no envía el digest, así que primero se resuelve la etiqueta.",
       "ghcr": "GitHub (ghcr.io): Settings, Webhooks, tipo application/json, evento Packages y el secreto de arriba. Se rechazan las entregas sin firma.",
       "protected": "Un push despliega el digest publicado de la imagen y etiqueta de esta app. En un entorno protegido crea una aprobación en su lugar."
+    },
+    "range": {
+      "label": "Rango de versiones",
+      "help": "Sigue la versión más reciente dentro de un rango, por ejemplo 1.x, ^1.2.3 o >=1.2.0 <2.0.0. Déjalo vacío para seguir la etiqueta actual.",
+      "save": "Guardar rango",
+      "saved": "Rango de versiones guardado.",
+      "invalid": "Rango no válido. Usa formas como 1.x, ^1.2.3, ~1.2.3 o >=1.2.0 <2.0.0."
     }
   },
   "canary": {
@@ -335,7 +342,9 @@
       "typicalWithP95": "Normalmente se reactiva en unos {{typical}} (p95 {{p95}}).",
       "noneShort": "Aún no hay datos de reactivación",
       "short": "Se reactiva en unos {{typical}}",
-      "shortWithP95": "Se reactiva en unos {{typical}} (p95 {{p95}})"
+      "shortWithP95": "Se reactiva en unos {{typical}} (p95 {{p95}})",
+      "last": "El último despertar tardó {{last}}.",
+      "overBudget": "Despertar puede tardar más de los {{budget}} que espera el proxy, así que los visitantes pueden ver primero una página de espera."
     },
     "frees": "Libera unos {{size}} mientras está suspendida",
     "checklistLabel": "Requisitos para suspender",
@@ -787,6 +796,7 @@
     "capacityLabel": "Ranuras de build en uso en {{name}}",
     "labels": "Etiquetas",
     "lastBuild": "Último build:",
+    "skipped": "Omitido para nuevas compilaciones: {{reason}}",
     "noBuilds": "Aún no hay builds",
     "cache": "Caché de build {{size}}",
     "builtOn": "Compilado en {{name}}",

@@ -36,6 +36,14 @@ export interface BuildRun {
   cached_steps: number
   total_steps: number
   error?: string
+  peak_memory_mb?: number
+}
+
+export interface BuildMemorySuggestion {
+  peak_mb: number
+  limit_mb: number
+  suggested_mb: number
+  route_to_node: boolean
 }
 
 export interface BuildStats {
@@ -43,6 +51,7 @@ export interface BuildStats {
   limit: number
   trend: BuildTrend
   runs: BuildRun[]
+  memory_suggestion?: BuildMemorySuggestion
 }
 
 export type BuildSpeedFixKind = 'auto' | 'guided' | 'manual'

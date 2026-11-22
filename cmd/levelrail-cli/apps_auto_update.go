@@ -44,6 +44,10 @@ deliveries are verified with the signing secret printed with the URL.
 Use --window-cron and --window-minutes with enable to apply updates only inside
 a window (UTC); one found earlier waits for it. --clear-window removes it.
 
+Use --range with enable to follow the newest release tag inside a semver range
+(for example 1.x) instead of only the current tag. Pre-releases are skipped and
+a variant suffix such as -alpine is kept.
+
 Off by default. Enabled apps are checked on the control plane's interval
 (APP_IMAGE_UPDATE_INTERVAL, default 1h). Apps built from source, stopped,
 frozen, or in a protected environment are skipped, never forced.
@@ -55,9 +59,11 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 	var windowCron string
 	var windowMinutes int
 	var clearWindow bool
+	var versionRange string
 	if verb == "enable" {
 		fs.StringVar(&windowCron, "window-cron", "", "cron expression (UTC) when updates may apply, e.g. '0 3 * * *'")
 		fs.IntVar(&windowMinutes, "window-minutes", 0, "how many minutes the window stays open")
+		fs.StringVar(&versionRange, "range", "", "follow the newest release tag in a semver range such as '1.x', '^1.2.3' or '>=1.2.0 <2.0.0' (use '*' to clear)")
 		fs.BoolVar(&clearWindow, "clear-window", false, "remove the apply window so updates apply at once")
 	}
 	fs.Usage = func() {
@@ -90,7 +96,13 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 	)
 	switch verb {
 	case "enable":
-		if windowCron != "" || clearWindow {
+		if versionRange != "" {
+			// "*" matches everything, so it clears the range.
+			if versionRange == "*" {
+				versionRange = ""
+			}
+			result, err = client.SetImageAutoUpdateRange(ctx, appName, true, versionRange)
+		} else if windowCron != "" || clearWindow {
 			result, err = client.SetImageAutoUpdateWindow(ctx, appName, true, windowCron, windowMinutes)
 		} else {
 			result, err = client.SetImageAutoUpdate(ctx, appName, true)
@@ -128,6 +140,9 @@ func printImageAutoUpdate(out io.Writer, r imageAutoUpdateResource) {
 	}
 	if r.WindowCron != "" {
 		_, _ = fmt.Fprintf(out, "window:      %s for %d min (UTC)\n", r.WindowCron, r.WindowMinutes)
+	}
+	if r.VersionRange != "" {
+		_, _ = fmt.Fprintf(out, "range:       %s\n", r.VersionRange)
 	}
 	if r.LastResult != "" {
 		_, _ = fmt.Fprintf(out, "result:      %s\n", r.LastResult)

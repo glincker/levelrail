@@ -26,7 +26,7 @@ export function ApiErrorAlert({
   const apply = useApplyFix()
   const [copied, setCopied] = useState(false)
   const api = error instanceof ApiError ? error : undefined
-  const { message, action } = useErrorText()(error)
+  const { message, action, raw } = useErrorText()(error)
 
   async function runFix(id: string) {
     await apply.mutateAsync({ id })
@@ -54,8 +54,18 @@ export function ApiErrorAlert({
     <Alert variant="danger" data-testid="api-error-alert">
       <TriangleAlertGlassIcon size="1.7em" aria-hidden="true" />
       <AlertDescription className="space-y-2">
-        <p>{message}</p>
+        <p>
+          {raw ? (
+            <span className="font-medium">{t('apiError.whatThisMeans')} </span>
+          ) : null}
+          {message}
+        </p>
         {action ? <p className="text-muted-foreground">{action}</p> : null}
+        {raw ? (
+          <p className="break-words font-mono text-xs text-muted-foreground">
+            {raw}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           {api?.fix ? (
             <Button

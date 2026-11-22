@@ -35,6 +35,9 @@ vi.mock('@/components/settings/IntegrityCard', () => ({
 vi.mock('@/components/settings/ReconcileGuardCard', () => ({
   ReconcileGuardCard: () => null,
 }))
+vi.mock('@/components/settings/StoragePartsCard', () => ({
+  StoragePartsCard: () => null,
+}))
 vi.mock('@/components/system/StatementTimingCard', () => ({
   StatementTimingCard: () => null,
 }))

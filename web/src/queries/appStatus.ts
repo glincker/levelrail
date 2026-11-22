@@ -12,6 +12,11 @@ export interface AppStatus {
   outcome?: DeployAttempt['outcome']
   outcome_reason?: string
   rollout_crash_loop_restarts?: number
+  backoff?: {
+    restarts: number
+    retry_in_seconds: number
+    next_restart_at: string
+  }
 }
 
 export const appStatusKeys = {

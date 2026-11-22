@@ -46,6 +46,7 @@ func TestMonitors_CreateListResultsDelete(t *testing.T) {
 	for name, bad := range map[string]string{
 		"below floor":             `{"name":"x","kind":"http","url":"https://example.com","interval_seconds":1,"timeout_ms":500}`,
 		"private host":            `{"name":"x","kind":"tcp","host":"127.0.0.1","port":80,"interval_seconds":60,"timeout_ms":1000}`,
+		"unknown node":            `{"name":"x","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"node_id":"no-such-node"}`,
 		"headers without a vault": `{"name":"x","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"headers":{"X-Probe":"value"}}`,
 	} {
 		if r := apiDo(t, rt, cookie, http.MethodPost, "/api/v1/monitors", bad); r.Code != http.StatusBadRequest {
@@ -128,4 +129,20 @@ func TestMonitors_PatchWritesAuditRow(t *testing.T) {
 	if err != nil || len(entries) != 1 {
 		t.Fatalf("PATCH audit entries = %d, err = %v", len(entries), err)
 	}
+}
+
+func TestMonitors_CreateRefusesNodeTheCallerCannotReach(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "false")
+	rt, db := newTestRouter(t)
+	cookie := bodyRefFixture(t, rt, db)
+	cfg, err := monitor.ConfigFromEnv(func(string) (string, bool) { return "", false })
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.SetMonitors(monitor.New(monitor.Options{Config: cfg, Store: db, Logger: slog.New(slog.NewTextHandler(discardWriter{}, nil))}))
+	runBodyRefCases(t, rt, cookie, []bodyRefCase{
+		{"denied node", http.MethodPost, "/api/v1/monitors", `{"name":"m1","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"node_id":"n-deny"}`, http.StatusBadRequest, "node not found"},
+		{"unknown node answers the same", http.MethodPost, "/api/v1/monitors", `{"name":"m2","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"node_id":"n-nope"}`, http.StatusBadRequest, "node not found"},
+		{"allowed node", http.MethodPost, "/api/v1/monitors", `{"name":"m3","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"node_id":"n-ok"}`, http.StatusCreated, `"m3"`},
+	})
 }

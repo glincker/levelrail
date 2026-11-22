@@ -169,6 +169,10 @@
     "failedTitle": "Impossible de démarrer la restauration."
   },
   "majorUpgrade": {
+    "checkGo": "Go : un point de restauration récent existe.",
+    "checkNoGo": "No-go : corrigez les points suivants avant la mise à niveau.",
+    "restorePoint": "Le point de restauration le plus récent a {{age}} (limite {{limit}}).",
+    "noRestorePoint": "Aucune sauvegarde réussie pour l'instant, donc pas de point de restauration.",
     "title": "Mise à niveau de version majeure",
     "description": "Met à niveau cette base de données sur une version majeure par dump et restauration. Elle est hors ligne pendant l'opération. Les anciennes données sont d'abord copiées dans un snapshot de rollback, et un échec déclenche un rollback automatique.",
     "versionLabel": "Version majeure cible",

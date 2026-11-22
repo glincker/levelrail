@@ -8,6 +8,8 @@ import {
   AlertTitle,
 } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useTranslation } from 'react-i18next'
 import {
   Select,
   SelectContent,
@@ -17,7 +19,10 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 import { useCreateAlertRule } from '../queries/alerts'
-import { useNotificationChannelsOptional } from '../queries/notificationChannels'
+import {
+  useCreateNotificationChannel,
+  useNotificationChannelsOptional,
+} from '../queries/notificationChannels'
 import { CreateNotificationChannelDialog } from './CreateNotificationChannelDialog'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import type { AlertRuleKind, CreateAlertRuleRequest } from '../types/alerts'
@@ -39,6 +44,17 @@ const RECOMMENDED_RULES: { kind: AlertRuleKind; name: string }[] = [
   { kind: 'node_cert_expiring', name: 'Node agent certificate expiring' },
   { kind: 'control_plane_backup_stale', name: 'Control plane backup stale' },
 ]
+
+// What the one-address onboarding path watches: something is down, a backup
+// failed, or disk is running low.
+const EMAIL_QUICK_RULES: { kind: AlertRuleKind; name: string }[] = [
+  { kind: 'app_unhealthy', name: 'An app is down' },
+  { kind: 'node_offline', name: 'Node offline' },
+  { kind: 'backup_failed', name: 'A backup failed' },
+  { kind: 'node_disk_space', name: 'Node disk space low' },
+]
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function readDismissed(): boolean {
   try {
@@ -80,6 +96,10 @@ export function AlertingQuickSetupPrompt({
   const [channelId, setChannelId] = useState('')
   const createRule = useCreateAlertRule(carrierAppName)
   const [isEnabling, setIsEnabling] = useState(false)
+  const { t } = useTranslation('alertSetup')
+  const createChannel = useCreateNotificationChannel()
+  const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState(false)
 
   if (dismissed) {
     return null
@@ -91,6 +111,42 @@ export function AlertingQuickSetupPrompt({
   }
 
   const selectedChannelId = channelId || channels[0]?.id || ''
+
+  async function handleEmailSetup() {
+    const address = email.trim()
+    if (!EMAIL_PATTERN.test(address)) {
+      setEmailError(true)
+      return
+    }
+    setEmailError(false)
+    setIsEnabling(true)
+    try {
+      const channel = await createChannel.mutateAsync({
+        name: t('emailQuick.channelName'),
+        kind: 'email',
+        notify_url: address,
+      })
+      for (const rule of EMAIL_QUICK_RULES) {
+        await createRule.mutateAsync({
+          name: rule.name,
+          kind: rule.kind,
+          channel_id: channel.id,
+          enabled: true,
+        })
+      }
+      toast.add({ title: t('emailQuick.done'), type: 'success' })
+      writeDismissed()
+      setDismissed(true)
+    } catch (error) {
+      toast.add({
+        title: t('emailQuick.failed'),
+        description: error instanceof Error ? error.message : undefined,
+        type: 'error',
+      })
+    } finally {
+      setIsEnabling(false)
+    }
+  }
 
   async function handleEnable() {
     if (!selectedChannelId) return
@@ -134,7 +190,37 @@ export function AlertingQuickSetupPrompt({
       </AlertDescription>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {channels.length === 0 ? (
-          <CreateNotificationChannelDialog />
+          <>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('emailQuick.placeholder')}
+              aria-label={t('emailQuick.label')}
+              aria-invalid={emailError}
+              className="h-8 w-56 text-xs"
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={isEnabling}
+              onClick={() => {
+                void handleEmailSetup()
+              }}
+            >
+              {isEnabling ? t('emailQuick.submitting') : t('emailQuick.submit')}
+            </Button>
+            <CreateNotificationChannelDialog />
+            {emailError ? (
+              <span role="alert" className="text-xs text-destructive">
+                {t('emailQuick.invalid')}
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {t('emailQuick.hint')}
+              </span>
+            )}
+          </>
         ) : (
           <>
             {channels.length > 1 ? (

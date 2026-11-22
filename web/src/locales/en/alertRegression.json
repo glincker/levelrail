@@ -1,0 +1,3 @@
+{
+  "hint": "Fires while an app's recent build or deploy p50 is well above its own earlier p50, and names the stage that grew. Set the percent and run windows in Settings, Security and runtime (alerts.duration_regression_percent, alerts.duration_regression_recent, alerts.duration_regression_baseline). Resolves once durations return to normal."
+}

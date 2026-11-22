@@ -244,15 +244,24 @@ func (p *Prober) Check(ctx context.Context, t Target, cfg Config) error {
 	return p.attempt(ctx, t, cfg)
 }
 
-// WaitReady retries cfg on cfg.Interval until an attempt succeeds or ctx
-// is done, then returns ctx's error wrapped with the last failure.
+// WaitReady retries cfg until an attempt succeeds or ctx is done, then
+// returns ctx's error wrapped with the last failure. The first retries come
+// quickly (limits.FirstInterval, doubling) and settle at cfg.Interval, so an
+// app that is ready a moment after start is not held back by a slow cadence.
 func (p *Prober) WaitReady(ctx context.Context, t Target, cfg Config) error {
 	interval := cfg.Interval
 	if interval <= 0 {
 		interval = p.limits.DefaultInterval
 	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	wait := p.limits.FirstInterval
+	if wait <= 0 {
+		wait = DefaultFirstInterval
+	}
+	if wait > interval {
+		wait = interval
+	}
+	timer := time.NewTimer(wait)
+	defer timer.Stop()
 
 	var lastErr error
 	for {
@@ -268,8 +277,10 @@ func (p *Prober) WaitReady(ctx context.Context, t Target, cfg Config) error {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("never became ready (%w), last attempt: %w", ctx.Err(), lastErr)
-		case <-ticker.C:
+		case <-timer.C:
 		}
+		wait = min(wait*2, interval)
+		timer.Reset(wait)
 	}
 }
 

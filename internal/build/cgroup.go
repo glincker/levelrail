@@ -15,6 +15,12 @@ type CgroupProvisioner interface {
 	Provision(id string, memoryMB, cpuMillis int) (parent string, cleanup func(), err error)
 }
 
+// CgroupPeakReader is implemented by provisioners that can report a build cgroup's
+// peak memory in MiB, read before cleanup removes the group. 0 means unknown.
+type CgroupPeakReader interface {
+	PeakMB(parent string) int
+}
+
 // withCgroupParent sets the cgroup parent on every exec op. An op's digest
 // covers its content, so each rewritten op gets a new digest and the inputs
 // and metadata of the ops after it follow.

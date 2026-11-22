@@ -49,7 +49,9 @@ type Collector struct {
 	// presence and idleInterval slow polling while nobody watches; nil presence keeps the fixed cadence.
 	presence     *Presence
 	idleInterval time.Duration
-	now          func() time.Time
+	// intervalFn, when set, is read before every wait so a saved setting applies without a restart.
+	intervalFn func() time.Duration
+	now        func() time.Time
 
 	// prevCPU replaces a one-shot stats response's own PreCPUStats (see
 	// docker.ContainerStats.CPUPercent): a container's first sample
@@ -92,12 +94,27 @@ func (c *Collector) SetPresence(p *Presence, idle time.Duration) {
 	c.presence, c.idleInterval = p, idle
 }
 
+// SetIntervalFunc makes Run read its sampling interval from fn before each wait. Call before Run.
+func (c *Collector) SetIntervalFunc(fn func() time.Duration) { c.intervalFn = fn }
+
+func (c *Collector) currentInterval() time.Duration {
+	if c.intervalFn != nil {
+		if d := c.intervalFn(); d > 0 {
+			return d
+		}
+	}
+	return c.interval
+}
+
 // dueAt reports whether a tick should collect: always with a viewer, else only once idleInterval passed since the last run.
 func (c *Collector) dueAt(last time.Time) bool {
-	if c.presence == nil || c.idleInterval <= c.interval || c.presence.Active() {
+	every := c.currentInterval()
+	// Idle polling stays a multiple of the live interval so a slower base never idles faster.
+	idle := max(c.idleInterval, 4*every)
+	if c.presence == nil || idle <= every || c.presence.Active() {
 		return true
 	}
-	return c.now().Sub(last) >= c.idleInterval
+	return c.now().Sub(last) >= idle
 }
 
 // CollectOnce polls every target once and writes whatever succeeded.
@@ -110,6 +127,22 @@ func (c *Collector) dueAt(last time.Time) bool {
 // count; a partial failure is not treated as this tick failing overall,
 // since the successful samples were still written.
 func (c *Collector) CollectOnce(ctx context.Context, targets []Target) error {
+	return c.collect(ctx, targets, true)
+}
+
+// watchedOnly keeps the targets whose resource was viewed recently.
+func (c *Collector) watchedOnly(targets []Target) []Target {
+	var out []Target
+	for _, t := range targets {
+		if c.presence.ResourceActive(t.ResourceID) {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// collect is CollectOnce; prune is false for a partial set so unwatched apps keep their CPU baseline.
+func (c *Collector) collect(ctx context.Context, targets []Target, prune bool) error {
 	now := time.Now()
 	samples := make([]Sample, 0, len(targets)*7) // 7 metrics per container, see sampleValues
 	var errs []error
@@ -128,7 +161,9 @@ func (c *Collector) CollectOnce(ctx context.Context, targets []Target) error {
 		errs = append(errs, fmt.Errorf("write samples: %w", err))
 	}
 
-	c.pruneCPUCache(targets)
+	if prune {
+		c.pruneCPUCache(targets)
+	}
 	return errors.Join(errs...)
 }
 
@@ -174,25 +209,34 @@ func (c *Collector) pruneCPUCache(targets []Target) {
 // principle every reconcile.Controller already follows, applied here to
 // "what should be collected" instead of "what should be running."
 func (c *Collector) Run(ctx context.Context, targetsFunc func(context.Context) ([]Target, error)) error {
-	ticker := time.NewTicker(c.interval)
-	defer ticker.Stop()
+	timer := time.NewTimer(c.currentInterval())
+	defer timer.Stop()
 	var last time.Time
 
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-ticker.C:
-			if !c.dueAt(last) {
-				continue
+		case <-timer.C:
+			timer.Reset(c.currentInterval())
+			due := c.dueAt(last)
+			if due {
+				last = c.now()
 			}
-			last = c.now()
 			targets, err := targetsFunc(ctx)
 			if err != nil {
 				c.logger.Error("telemetry: list collection targets failed", slog.String("error", err.Error()))
 				continue // try again next tick rather than stopping the collector over one bad listing
 			}
-			if err := c.CollectOnce(ctx, targets); err != nil {
+			prune := due
+			if !due {
+				// Idle fleet: still sample the apps someone has open at the live cadence.
+				targets = c.watchedOnly(targets)
+				if len(targets) == 0 {
+					continue
+				}
+			}
+			if err := c.collect(ctx, targets, prune); err != nil {
 				c.logger.Warn("telemetry: collection tick had errors", slog.String("error", err.Error()))
 			}
 		}

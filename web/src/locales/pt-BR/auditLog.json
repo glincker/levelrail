@@ -61,7 +61,9 @@
     "anyMethod": "Qualquer método",
     "actorLabel": "Filtrar por autor",
     "actorPlaceholder": "Nome do autor",
-    "exportCsv": "Exportar CSV (últimas {{count}} linhas)"
+    "exportCsv": "Exportar CSV (todas as linhas)",
+    "exporting": "Exportando...",
+    "exportFailed": "Falha na exportação. Tente novamente."
   },
   "anchor": {
     "title": "Âncora de auditoria",

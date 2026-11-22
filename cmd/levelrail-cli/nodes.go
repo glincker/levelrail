@@ -31,6 +31,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesJoinTokens(prog, rest, stdout, stderr, lookupEnv)
 	case "revoke-join-token":
 		return runNodesRevokeJoinToken(prog, rest, stdout, stderr, lookupEnv)
+	case "bulk":
+		return runNodesBulk(prog, rest, stdout, stderr, lookupEnv)
 	case "cordon":
 		return runNodesCordon(prog, rest, stdout, stderr, lookupEnv)
 	case "set-labels":
@@ -137,6 +139,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesAllocations(prog, rest, stdout, stderr, lookupEnv)
 	case "placement":
 		return runNodesPlacement(prog, rest, stdout, stderr, lookupEnv)
+	case "pools":
+		return runNodesPools(prog, rest, stdout, stderr, lookupEnv)
 	case "connectivity":
 		return runNodesConnectivity(prog, rest, stdout, stderr, lookupEnv)
 	default:

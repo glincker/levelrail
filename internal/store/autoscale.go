@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -12,16 +13,25 @@ import (
 
 const (
 	autoscaleColumns = `app_name, min_replicas, max_replicas, metric, target, scale_up_tolerance_pct, scale_down_tolerance_pct,
-		scale_up_cooldown_secs, scale_down_cooldown_secs, stabilization_secs, max_step_up, max_step_down`
+		scale_up_cooldown_secs, scale_down_cooldown_secs, stabilization_secs, max_step_up, max_step_down, schedules`
 	autoscaleEventsKept = 500
 	autoscaleActor      = "autoscaler"
 )
 
 func scanAutoscalePolicy(sc interface{ Scan(...any) error }) (autoscale.Policy, error) {
 	var p autoscale.Policy
+	var schedules string
 	err := sc.Scan(&p.App, &p.MinReplicas, &p.MaxReplicas, &p.Metric, &p.Target, &p.ScaleUpTolerancePct, &p.ScaleDownTolerancePct,
-		&p.ScaleUpCooldownSecs, &p.ScaleDownCooldownSecs, &p.StabilizationSecs, &p.MaxStepUp, &p.MaxStepDown)
-	return p, err
+		&p.ScaleUpCooldownSecs, &p.ScaleDownCooldownSecs, &p.StabilizationSecs, &p.MaxStepUp, &p.MaxStepDown, &schedules)
+	if err != nil {
+		return p, err
+	}
+	if schedules != "" {
+		if err := json.Unmarshal([]byte(schedules), &p.Schedules); err != nil {
+			return p, fmt.Errorf("decode schedules: %w", err)
+		}
+	}
+	return p, nil
 }
 
 func formatAutoscaleTime(t time.Time) string {
@@ -84,16 +94,20 @@ func (db *DB) SaveAutoscalePolicy(ctx context.Context, p autoscale.Policy, ev au
 		return fmt.Errorf("store: save autoscale policy: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	schedules, err := json.Marshal(append([]autoscale.Schedule{}, p.Schedules...))
+	if err != nil {
+		return fmt.Errorf("store: encode autoscale schedules: %w", err)
+	}
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO app_autoscale (`+autoscaleColumns+`, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(app_name) DO UPDATE SET min_replicas = excluded.min_replicas, max_replicas = excluded.max_replicas,
 			metric = excluded.metric, target = excluded.target, scale_up_tolerance_pct = excluded.scale_up_tolerance_pct,
 			scale_down_tolerance_pct = excluded.scale_down_tolerance_pct, scale_up_cooldown_secs = excluded.scale_up_cooldown_secs,
 			scale_down_cooldown_secs = excluded.scale_down_cooldown_secs, stabilization_secs = excluded.stabilization_secs,
-			max_step_up = excluded.max_step_up, max_step_down = excluded.max_step_down, updated_at = excluded.updated_at`,
+			max_step_up = excluded.max_step_up, max_step_down = excluded.max_step_down, schedules = excluded.schedules, updated_at = excluded.updated_at`,
 		p.App, p.MinReplicas, p.MaxReplicas, p.Metric, p.Target, p.ScaleUpTolerancePct, p.ScaleDownTolerancePct,
-		p.ScaleUpCooldownSecs, p.ScaleDownCooldownSecs, p.StabilizationSecs, p.MaxStepUp, p.MaxStepDown, now.UTC().Format(time.RFC3339))
+		p.ScaleUpCooldownSecs, p.ScaleDownCooldownSecs, p.StabilizationSecs, p.MaxStepUp, p.MaxStepDown, string(schedules), now.UTC().Format(time.RFC3339))
 	if err != nil {
 		return fmt.Errorf("store: save autoscale policy %q: %w", p.App, err)
 	}

@@ -74,6 +74,18 @@ function UsagePage() {
             <DownloadGlassIcon size="1.4em" />
             {t('export.csv')}
           </Button>
+          <Button
+            variant="outline"
+            render={
+              <a
+                href={`/api/v1/usage/report?period=${period}&format=csv&group=team`}
+                download
+              />
+            }
+          >
+            <DownloadGlassIcon size="1.4em" />
+            {t('export.teamCsv')}
+          </Button>
         </>
       }
     >

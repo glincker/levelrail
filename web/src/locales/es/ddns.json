@@ -15,11 +15,13 @@
   "provider": {
     "label": "Proveedor",
     "generic": "URL genérica",
-    "duckdns": "DuckDNS"
+    "duckdns": "DuckDNS",
+    "godaddy": "GoDaddy"
   },
   "domains": {
     "label": "Dominios de DuckDNS",
-    "placeholder": "micasa,oficina"
+    "placeholder": "micasa,oficina",
+    "placeholderGodaddy": "home.example.com"
   },
   "target": {
     "labelGeneric": "URL de actualización",
@@ -29,7 +31,8 @@
     "configuredNoHost": "Configurado",
     "notConfigured": "Sin configurar",
     "clear": "Borrar",
-    "cleared": "Credencial borrada."
+    "cleared": "Credencial borrada.",
+    "labelGodaddy": "GoDaddy clave:secreto"
   },
   "advanced": {
     "toggle": "Avanzado",

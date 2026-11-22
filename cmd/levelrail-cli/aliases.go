@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 // runAliasedDeploy implements "deploy <app> ...", an alias for "apps deploy <app> ...".
@@ -30,4 +31,24 @@ func runAliasedDeploy(prog string, args []string, stdout, stderr io.Writer, look
 func runAliasedRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	_, _ = fmt.Fprintf(stderr, "alias for 'apps rollback', see '%s apps rollback --help'\n", prog)
 	return runAppsRollback(prog, args, stdout, stderr, lookupEnv, os.Stdin)
+}
+
+// runAliasedLs implements "ls", an alias for "apps list".
+func runAliasedLs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	return runAppsList(prog, args, stdout, stderr, lookupEnv)
+}
+
+// runAliasedPs implements "ps", "apps list" narrowed to running apps unless the caller passes --status.
+func runAliasedPs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	for _, a := range args {
+		if a == "--status" || strings.HasPrefix(a, "--status=") || a == "-h" || a == "--help" {
+			return runAppsList(prog, args, stdout, stderr, lookupEnv)
+		}
+	}
+	return runAppsList(prog, append([]string{"--status", "running"}, args...), stdout, stderr, lookupEnv)
+}
+
+// runAliasedRm implements "rm <app>", an alias for "apps delete <app>" (it keeps the confirm prompt).
+func runAliasedRm(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	return runAppsDelete(prog, args, stdout, stderr, lookupEnv)
 }

@@ -218,6 +218,14 @@
       "title": "Politique de redémarrage des containers",
       "description": "Politique de redémarrage Docker pour les containers d'apps de longue durée, afin que les apps reviennent après un redémarrage de l'hôte ou de Docker. S'applique aux containers créés au prochain deploy ou à la prochaine recréation ; les containers existants gardent leur ancienne politique."
     },
+    "buildReuseUnchanged": {
+      "title": "Réutiliser l'image pour un commit inchangé",
+      "description": "Redéployer le même commit avec les mêmes réglages de build réutilise l'image déjà construite sur ce nœud au lieu de reconstruire. Un build sans cache, avec secrets ou avec attestation reconstruit toujours. Le prochain déploiement utilise la valeur modifiée."
+    },
+    "buildRunnerMinDisk": {
+      "title": "Disque libre minimal du runner de build",
+      "description": "Un nœud de build qui signale moins de MiB de disque libre que cette valeur est ignoré pour les nouveaux builds et affiché comme ignoré dans le panneau des runners. 0 désactive la vérification. Le prochain build utilise la valeur modifiée."
+    },
     "backupLocalRoot": {
       "title": "Racine des sauvegardes locales",
       "description": "Répertoire absolu sur le plan de contrôle qui confine les cibles de sauvegarde locales. Vide utilise backups/ dans le répertoire de données. La prochaine sauvegarde ou restauration utilise la valeur modifiée ; les chemins des cibles restent relatifs à celle-ci et ne peuvent pas en sortir."

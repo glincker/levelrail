@@ -118,11 +118,13 @@ func (p *controlPlaneProvider) Resources(context.Context) []func() resource.Reso
 		NewCronJobResource,
 		NewSettingResource,
 		NewNodeLabelsResource,
+		NewDNSZoneResource,
+		NewDNSRecordResource,
 	}
 }
 
 func (p *controlPlaneProvider) DataSources(context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{NewAppsDataSource, NewNodesDataSource, NewAppSecretsDataSource, NewCronJobsDataSource, NewProjectsDataSource}
+	return []func() datasource.DataSource{NewAppsDataSource, NewNodesDataSource, NewAppSecretsDataSource, NewCronJobsDataSource, NewProjectsDataSource, NewTemplatesDataSource, NewLatestDeployDataSource}
 }
 
 // clientFrom extracts the configured client; nil before Configure ran.

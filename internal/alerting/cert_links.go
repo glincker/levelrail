@@ -30,6 +30,9 @@ func BuildCertLinks(baseURL string, f CertFact, app string) CertLinks {
 	if f.Action == CertActionDNS {
 		label = "Check DNS"
 	}
+	if f.Action == CertActionReplace {
+		label = "Replace certificate"
+	}
 	return CertLinks{
 		Primary:      base + "/domains/" + url.PathEscape(f.Domain) + "?" + q.Encode(),
 		PrimaryLabel: label,

@@ -50,6 +50,8 @@
     "pingTitle": "Añade esto a tu tarea",
     "serverDefault": "predeterminado",
     "tls": "Certificado TLS",
+    "dns": "Consulta DNS",
+    "ping": "Ping (ICMP)",
     "warnDays": "Aviso (días)",
     "urlPlaceholder": "https://example.com/health"
   },

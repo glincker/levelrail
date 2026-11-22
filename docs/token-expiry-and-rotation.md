@@ -53,3 +53,7 @@ The API call is `POST /api/v1/auth/tokens/{id}/rotate`. It answers 201 with the 
 See [Runtime settings](/runtime-settings) for ranges and environment seeds.
 
 Git provider credentials follow the same windows: see [credential health, auto-renew and rotation](/git-integrations#credential-health-auto-renew-and-rotation).
+
+## DNS provider credentials
+
+A DNS provider token can be revoked or lose its zone rights long before a certificate renewal needs it. The `dns_credential_failing` [alert](/alerts) re-runs the read-only zone and record check on every connected provider (Cloudflare, Route 53, Google Cloud DNS and the token providers), at most once per rule `for_duration` (6 hours by default). It fires for a credential the provider rejects or that lacks zone read rights, and names the missing permission. A provider that is only unreachable does not fire it. Fix it by saving a working credential under Settings > DNS.

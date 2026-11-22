@@ -140,6 +140,34 @@ export function doctorQueryOptions() {
   })
 }
 
+export type SmokeStatus = 'pass' | 'warn' | 'fail' | 'skipped'
+
+export interface SmokeItem {
+  id: 'apps' | 'domains' | 'certificates' | 'backups'
+  status: SmokeStatus
+  message: string
+}
+
+export interface SmokeReport {
+  ok: boolean
+  checked_at: string
+  items: SmokeItem[]
+}
+
+// The fixed post-upgrade tour: apps, domains, certificates, backups.
+export function smokeQueryOptions() {
+  return queryOptions({
+    queryKey: ['updates', 'self-upgrade', 'smoke'] as const,
+    queryFn: () =>
+      getJSON<SmokeReport>(
+        '/api/v1/updates/self-upgrade/smoke',
+        'run post-upgrade smoke check',
+      ),
+    enabled: false,
+    staleTime: 0,
+  })
+}
+
 export function useStartRollback() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -1,3 +1,4 @@
+import { RecentlyDeletedCard } from '../../components/apps/RecentlyDeletedCard'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { topicPollMs } from '../../lib/pollTier'
 import { useEnvironmentScope } from '../../lib/environmentScope'
@@ -47,6 +48,8 @@ import {
 import { AppsFirstRun } from '../../components/apps/AppsFirstRun'
 import { AppsEmptyActions } from '../../components/apps/AppsEmptyActions'
 import { AppsListBody, ListHeader } from '../../components/apps/AppsListBody'
+import { AppsGroupBySelect } from '../../components/apps/AppsGroupBySelect'
+import { loadGroupBy, storeGroupBy, type GroupBy } from '../../lib/appsGroup'
 import { filtersActive, type AppListFilters } from '../../lib/appViews'
 import {
   appFiltersFromSearch,
@@ -126,6 +129,7 @@ function AppListPage() {
   const totalApps = summary?.total ?? filteredTotal
   const [selected, setSelected] = useState<string[]>([])
   const [mode, setMode] = useState<ViewMode>(loadViewMode)
+  const [groupBy, setGroupBy] = useState<GroupBy>(loadGroupBy)
 
   const environments = useMemo(
     () => Object.keys(summary?.by_environment ?? {}).sort(),
@@ -175,6 +179,13 @@ function AppListPage() {
   const toggleSelected = (name: string, checked: boolean) => {
     setSelected((prev) =>
       checked ? [...new Set([...prev, name])] : prev.filter((n) => n !== name),
+    )
+  }
+  const selectMany = (names: string[], checked: boolean) => {
+    setSelected((prev) =>
+      checked
+        ? [...new Set([...prev, ...names])]
+        : prev.filter((n) => !names.includes(n)),
     )
   }
   const allVisibleSelected =
@@ -281,6 +292,15 @@ function AppListPage() {
           <ViewToggle mode={mode} onChange={changeMode} />
         </span>
       ) : null}
+      {totalApps > 0 ? (
+        <AppsGroupBySelect
+          value={groupBy}
+          onChange={(next) => {
+            storeGroupBy(next)
+            setGroupBy(next)
+          }}
+        />
+      ) : null}
       {noApps ? <AppsEmptyActions /> : null}
       <Button
         size="sm"
@@ -370,6 +390,8 @@ function AppListPage() {
             mode={mode}
             selected={selected}
             onSelect={toggleSelected}
+            groupBy={groupBy}
+            onSelectMany={selectMany}
           />
           <LoadMore
             loaded={filteredApps.length}
@@ -382,6 +404,7 @@ function AppListPage() {
         </div>
       )}
       <StaticSitesCard />
+      <RecentlyDeletedCard />
       {selected.length > 0 ? (
         <Suspense fallback={null}>
           <BulkActionsBar

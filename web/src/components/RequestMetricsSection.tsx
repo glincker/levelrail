@@ -6,7 +6,12 @@ import { Skeleton } from './ui/skeleton'
 import { useRequestSeries } from '../queries/requests'
 import type { RequestPoint } from '../types/requests'
 import type { ChartMarker, ChartRow } from '../lib/metricChart'
-import { attachPrevious, capRows, MAX_CHART_POINTS } from '../lib/chartSeries'
+import {
+  attachPrevious,
+  capRows,
+  chartPointBudget,
+  MAX_CHART_POINTS,
+} from '../lib/chartSeries'
 import { chartPalette } from '../lib/chartPalette'
 import type { ResolvedTimeRange } from '../lib/timeRange'
 
@@ -60,7 +65,7 @@ export function RequestMetricsSection({
   const { data, isLoading, error } = useRequestSeries(appName, {
     from: range.from,
     to: range.to,
-    maxPoints: MAX_CHART_POINTS,
+    maxPoints: chartPointBudget(window.innerWidth),
     compare,
     live,
   })

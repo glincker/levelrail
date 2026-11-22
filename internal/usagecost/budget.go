@@ -125,6 +125,29 @@ func WriteCSV(w io.Writer, currency string, r Report, labels map[string]string) 
 	return cw.Error()
 }
 
+// WriteTeamCSV writes the per team monthly totals, including build minutes.
+func WriteTeamCSV(w io.Writer, currency string, r Report, labels map[string]string) error {
+	cw := csv.NewWriter(w)
+	f := func(v float64) string { return strconv.FormatFloat(v, 'f', 4, 64) }
+	header := []string{"month", "team", "compute", "storage", "egress", "idle_share", "build_minutes", "total", "previous", "currency"}
+	if err := cw.Write(header); err != nil {
+		return fmt.Errorf("usagecost: write team csv header: %w", err)
+	}
+	month := r.Period.From.UTC().Format("2006-01")
+	for _, g := range r.Teams {
+		name := labels["team:"+g.Key]
+		if name == "" {
+			name = g.Key
+		}
+		rec := []string{month, csvSafe(name), f(g.Compute), f(g.Storage), f(g.Egress), f(g.Idle), f(g.BuildMinutes), f(g.Total), f(g.Previous), currency}
+		if err := cw.Write(rec); err != nil {
+			return fmt.Errorf("usagecost: write team csv row: %w", err)
+		}
+	}
+	cw.Flush()
+	return cw.Error()
+}
+
 // csvSafe neutralises spreadsheet formula injection from user chosen names.
 func csvSafe(s string) string {
 	if s != "" && (s[0] == '=' || s[0] == '+' || s[0] == '-' || s[0] == '@') {

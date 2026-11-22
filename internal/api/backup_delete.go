@@ -45,6 +45,10 @@ func (rt *Router) handleDeleteBackup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.backupDeleter.DeleteBackup(r.Context(), historyID); err != nil {
+		if errors.Is(err, store.ErrBackupPinned) {
+			writeError(w, http.StatusConflict, fmt.Sprintf("backup %q is pinned to keep forever; unpin it before deleting", historyID))
+			return
+		}
 		if errors.Is(err, store.ErrBackupInUse) {
 			writeError(w, http.StatusConflict, fmt.Sprintf("backup %q cannot be deleted: it was used by a restore or clone (%s); the restore history is kept", historyID, err.Error()))
 			return
@@ -80,6 +84,10 @@ func (rt *Router) handleDeleteVolumeBackup(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := rt.backupDeleter.DeleteBackup(r.Context(), historyID); err != nil {
+		if errors.Is(err, store.ErrBackupPinned) {
+			writeError(w, http.StatusConflict, fmt.Sprintf("backup %q is pinned to keep forever; unpin it before deleting", historyID))
+			return
+		}
 		if errors.Is(err, store.ErrBackupInUse) {
 			writeError(w, http.StatusConflict, fmt.Sprintf("backup %q cannot be deleted: it was used by a restore or clone (%s); the restore history is kept", historyID, err.Error()))
 			return

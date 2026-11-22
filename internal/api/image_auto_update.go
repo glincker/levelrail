@@ -8,11 +8,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/distribution/reference"
+
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -25,6 +29,7 @@ type ImageAutoUpdateStore interface {
 	SetImageAutoUpdateWindow(ctx context.Context, serviceName, cron string, minutes int) error
 	SetImageAutoUpdateWebhookHash(ctx context.Context, serviceName, hash string) error
 	DeleteImageAutoUpdatesForApp(ctx context.Context, serviceName string) error
+	SetImageAutoUpdateRange(ctx context.Context, serviceName, versionRange string) error
 }
 
 // Results CheckImageUpdate records; the UI and CLI show them verbatim.
@@ -44,6 +49,8 @@ type imageAutoUpdateResource struct {
 	// WindowCron and WindowMinutes: updates found outside the window wait for it.
 	WindowCron    string `json:"window_cron,omitempty"`
 	WindowMinutes int    `json:"window_minutes,omitempty"`
+	// VersionRange (for example "1.x") deploys the newest release tag inside it.
+	VersionRange string `json:"version_range,omitempty"`
 }
 
 type setImageAutoUpdateRequest struct {
@@ -51,10 +58,12 @@ type setImageAutoUpdateRequest struct {
 	// Window fields are left untouched when omitted; an empty cron clears the window.
 	WindowCron    *string `json:"window_cron,omitempty"`
 	WindowMinutes *int    `json:"window_minutes,omitempty"`
+	// VersionRange is left untouched when omitted; an empty string clears it.
+	VersionRange *string `json:"version_range,omitempty"`
 }
 
 func toImageAutoUpdateResource(u store.ImageAutoUpdate) imageAutoUpdateResource {
-	return imageAutoUpdateResource{Enabled: u.Enabled, LastCheckedAt: u.LastCheckedAt, LastResult: u.LastResult, HasWebhook: u.WebhookHash != "", WindowCron: u.WindowCron, WindowMinutes: u.WindowMinutes}
+	return imageAutoUpdateResource{Enabled: u.Enabled, LastCheckedAt: u.LastCheckedAt, LastResult: u.LastResult, HasWebhook: u.WebhookHash != "", WindowCron: u.WindowCron, WindowMinutes: u.WindowMinutes, VersionRange: u.VersionRange}
 }
 
 func (rt *Router) handleGetImageAutoUpdate(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +103,18 @@ func (rt *Router) handleSetImageAutoUpdate(w http.ResponseWriter, r *http.Reques
 	if werr != nil {
 		writeError(w, http.StatusBadRequest, werr.Error())
 		return
+	}
+	versionRange := ""
+	if req.VersionRange != nil {
+		versionRange = strings.TrimSpace(*req.VersionRange)
+		if _, err := imageupdate.ParseRange(versionRange); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err := rt.imageAutoUpdates.SetImageAutoUpdateRange(r.Context(), name, versionRange); err != nil {
+			rt.internalError(w, "api: set image auto-update range", err, slog.String("name", name))
+			return
+		}
 	}
 	if req.WindowCron != nil {
 		if err := rt.imageAutoUpdates.SetImageAutoUpdateWindow(r.Context(), name, cron, minutes); err != nil {
@@ -173,6 +194,11 @@ func (rt *Router) checkImageUpdate(ctx context.Context, serviceName string, manu
 	}
 	tagRef := docker.UnpinImageRef(svc.Image)
 	trigger := rt.imageTrigger(ctx, *svc, true, "image auto-update")
+	if u, uerr := rt.imageAutoUpdates.GetImageAutoUpdate(ctx, serviceName); uerr == nil && u.VersionRange != "" {
+		if tagRef, err = rt.newestTagInRange(ctx, tagRef, u.VersionRange, trigger.Auth); err != nil {
+			return "", err
+		}
+	}
 	remote, err := rt.imageResolver.ResolveImage(ctx, tagRef, trigger.Auth, true)
 	if err != nil {
 		return "", fmt.Errorf("resolve %s: %w", tagRef, err)
@@ -378,4 +404,35 @@ func (rt *Router) handleImageUpdateWebhook(w http.ResponseWriter, r *http.Reques
 		}
 	}()
 	writeJSON(w, http.StatusAccepted, map[string]string{"status": "check started"})
+}
+
+// newestTagInRange returns tagRef moved to the newest release tag inside
+// versionRange, or tagRef unchanged when nothing newer qualifies, so the
+// normal digest check still covers a tag that was re-pushed in place.
+func (rt *Router) newestTagInRange(ctx context.Context, tagRef, versionRange string, auth *docker.RegistryAuth) (string, error) {
+	rng, err := imageupdate.ParseRange(versionRange)
+	if err != nil {
+		return "", err
+	}
+	named, err := reference.ParseNormalizedNamed(tagRef)
+	if err != nil {
+		return "", fmt.Errorf("parse %s: %w", tagRef, err)
+	}
+	current := ""
+	if t, ok := named.(reference.Tagged); ok {
+		current = t.Tag()
+	}
+	lister := rt.imageTagLister
+	if lister == nil {
+		lister = imageupdate.HTTPTagLister{}
+	}
+	tags, err := lister.ListTags(ctx, tagRef, auth)
+	if err != nil {
+		return "", err
+	}
+	best, ok := imageupdate.NewestInRange(tags, rng, current)
+	if !ok || !imageupdate.IsNewer(best, current) {
+		return tagRef, nil
+	}
+	return reference.TrimNamed(named).String() + ":" + best, nil
 }

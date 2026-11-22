@@ -43,7 +43,7 @@ levelrail-cli apps bulk set-environment staging --env development
 levelrail-cli apps bulk delete --tag scratch
 ```
 
-Actions: `redeploy`, `restart`, `stop`, `start`, `add-tag`, `remove-tag`, `set-environment`, `move-to-project`, `delete`.
+Actions: `redeploy`, `restart`, `stop`, `start`, `add-tag`, `remove-tag`, `set-environment`, `move-to-project`, `delete`, `scale`, `rollback`, `set-memory`, `set-cpu` and `set-env`. The last three take `512Mi`, `0.5` and `KEY=VALUE`; a raise is checked against project and team quota, and `--dry-run` shows each app's before and after.
 
 `POST /api/v1/apps/bulk` takes `action`, one of `names`, `tag` or `environment`, an optional `value`, and `dry_run`. It always answers **207** with one result per app:
 

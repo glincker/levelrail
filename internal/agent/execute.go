@@ -205,6 +205,21 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = &agentpb.AgentResponse_TunnelOpen{TunnelOpen: out}
 
+	case *agentpb.AgentRequest_Cleanup:
+		out, err := executeCleanup(ctx, rt, op.Cleanup)
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_Cleanup{Cleanup: out}
+
+	case *agentpb.AgentRequest_PullImage:
+		if err := executeImagePull(ctx, rt, op.PullImage); err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = emptyResult()
+
 	case *agentpb.AgentRequest_ListNetworksByPrefix:
 		networks, err := rt.ListNetworksByPrefix(ctx, op.ListNetworksByPrefix.GetPrefix())
 		if err != nil {

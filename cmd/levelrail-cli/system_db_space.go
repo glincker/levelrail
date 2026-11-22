@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -52,6 +53,22 @@ func runSystemDBSpace(prog string, args []string, stdout, stderr io.Writer, look
 			_, _ = fmt.Fprintf(tw, "%s\t%d\n", t.Name, t.Bytes)
 		}
 		_ = tw.Flush()
+		if len(res.Parts) == 0 {
+			return
+		}
+		_, _ = fmt.Fprintln(stdout)
+		pw := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
+		_, _ = fmt.Fprintln(pw, "PART\tBYTES\tPRUNE WITH")
+		for _, p := range res.Parts {
+			prune := p.Fix
+			if len(p.CleanupTargets) > 0 {
+				prune = "cleanup run " + strings.Join(p.CleanupTargets, ", ")
+			} else if p.Fix != "" {
+				prune = "system health --fix " + p.Fix
+			}
+			_, _ = fmt.Fprintf(pw, "%s\t%d\t%s\n", p.ID, p.Bytes, prune)
+		}
+		_ = pw.Flush()
 	})
 }
 

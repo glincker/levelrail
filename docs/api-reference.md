@@ -127,6 +127,7 @@ System endpoints for:
 | POST | /api/v1/system/db-space/compact | AbilityRoot | handleCompactDB |
 | GET | /api/v1/system/processes | AbilityRoot | handleGetSystemProcesses |
 | GET | /api/v1/system/slow-statements | AbilityRoot | handleGetSlowStatements |
+| GET | /api/v1/updates/self-upgrade/smoke | AbilityRead | handleSelfUpgradeSmoke |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -331,6 +332,13 @@ Endpoints for:
 | POST | /api/v1/settings/cloud-connections/oracle | AbilityRoot | handleCreateOracleConnection |
 | POST | /api/v1/auth/tokens/{id}/rotate | Public | handleRotateToken |
 | GET | /api/v1/auth/dev-login | Public | handleDevLogin |
+| GET | /api/v1/settings/dns-providers/{provider} | AbilityRead | handleGetDNSTokenProvider |
+| PUT | /api/v1/settings/dns-providers/{provider} | AbilityRoot | handleUpdateDNSTokenProvider |
+| DELETE | /api/v1/settings/dns-providers/{provider} | AbilityRoot | handleDisconnectDNSTokenProvider |
+| POST | /api/v1/settings/dns-providers/{provider}/test | AbilityRoot | handleTestDNSTokenProvider |
+| GET | /api/v1/settings/vacation-freeze | AbilityRead | handleGetVacationFreeze |
+| PUT | /api/v1/settings/vacation-freeze | AbilityRoot | handlePutVacationFreeze |
+| DELETE | /api/v1/settings/vacation-freeze | AbilityRoot | handleDeleteVacationFreeze |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -796,6 +804,13 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/health-explain | AbilityRead | handleGetAppHealthExplain |
 | GET | /api/v1/apps/{name}/env-diff | AbilityRead | handleEnvDiff |
 | POST | /api/v1/apps/{name}/revert | AbilityWrite | handleRevertApp |
+| POST | /api/v1/apps/{name}/restore-to-node | AbilityWriteSensitive | handleAppRestoreToNode |
+| POST | /api/v1/apps/{name}/rollout/pause | AbilityDeploy | handlePauseRollout |
+| POST | /api/v1/apps/{name}/rollout/resume | AbilityDeploy | handleResumeRollout |
+| PUT | /api/v1/apps/{name}/pool | AbilityRoot | handleSetAppPool |
+| GET | /api/v1/apps/{name}/warm | AbilityRead | handleGetAppWarm |
+| PUT | /api/v1/apps/{name}/warm | AbilityRoot | handleSetAppWarm |
+| POST | /api/v1/apps/{name}/rollout/abort | AbilityDeploy | handleAbortRollout |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -1014,6 +1029,8 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/logs/download | AbilityRead | handleDownloadDatabaseLogs |
 | POST | /api/v1/databases/{name}/restore-test | AbilityWriteSensitive | handleStartDatabaseRestoreTest |
 | GET | /api/v1/databases/{name}/restore-test | AbilityRead | handleGetDatabaseRestoreTest |
+| GET | /api/v1/databases/{name}/restore-preview | AbilityRead | handleDatabaseRestorePreview |
+| GET | /api/v1/databases/{name}/major-upgrade/check | AbilityRead | handleMajorUpgradeCheck |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 
@@ -1509,6 +1526,8 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/backup-schedule/pause | AbilityWriteSensitive | handlePauseBackupSchedule |
 | POST | /api/v1/databases/{name}/backup-schedule/resume | AbilityWriteSensitive | handleResumeBackupSchedule |
 | POST | /api/v1/backups/drill | AbilityWriteSensitive | handleBackupDrillLatest |
+| PUT | /api/v1/databases/{name}/backups/{historyId}/pin | AbilityWriteSensitive | handlePinBackup |
+| DELETE | /api/v1/databases/{name}/backups/{historyId}/pin | AbilityWriteSensitive | handleUnpinBackup |
 
 ## App Volume Backups / Restore
 
@@ -1546,6 +1565,8 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause | AbilityWriteSensitive | handlePauseVolumeBackupSchedule |
 | POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume | AbilityWriteSensitive | handleResumeVolumeBackupSchedule |
 | GET | /api/v1/apps/{name}/volumes/{volume}/size-history | AbilityRead | handleVolumeSizeHistory |
+| PUT | /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin | AbilityWriteSensitive | handlePinVolumeBackup |
+| DELETE | /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin | AbilityWriteSensitive | handleUnpinVolumeBackup |
 
 ## App Storage / Database Attach
 
@@ -2602,6 +2623,13 @@ Routes that do not fit an existing group.
 | GET | /api/v1/alert-defaults/settings | AbilityRead | handleGetAlertDefaultsSettings |
 | PUT | /api/v1/alert-defaults/settings | AbilityWrite | handlePutAlertDefaultsSettings |
 | GET | /api/v1/alert-defaults/digest-preview | AbilityRead | handleAlertDigestPreview |
+| GET | /api/v1/recently-deleted | AbilityRead | handleListRecentlyDeleted |
+| POST | /api/v1/recently-deleted/{kind}/{name}/restore | AbilityWrite | handleRestoreRecentlyDeleted |
+| GET | /api/v1/builds/farm | AbilityRead | handleBuildFarmSummary |
+| GET | /api/v1/status-page/uptime-report | AbilityRead | handleStatusUptimeReport |
+| GET | /api/v1/node-pools | AbilityRoot | handleListNodePools |
+| PUT | /api/v1/node-pools/{name} | AbilityRoot | handleSetNodePool |
+| DELETE | /api/v1/node-pools/{name} | AbilityRoot | handleDeleteNodePool |
 | POST | /mcp | Public |  |
 
 ## See also

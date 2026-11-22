@@ -97,3 +97,38 @@ func idOf(a *selfUpgradeAttemptItem) string {
 	}
 	return a.ID
 }
+
+func TestSelfUpgradeSmokeTour(t *testing.T) {
+	rt, cookie, _ := newSelfUpgradeRouter(t, true, nil)
+	code, body := suDo(t, rt, cookie, http.MethodGet, "/api/v1/updates/self-upgrade/smoke", "")
+	if code != http.StatusOK {
+		t.Fatalf("status %d: %s", code, body)
+	}
+	var got selfUpgradeSmokeResource
+	if err := json.Unmarshal(body, &got); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{smokeApps, smokeDomains, smokeCerts, smokeBackups}
+	if len(got.Items) != len(want) {
+		t.Fatalf("items = %+v, want ids %v", got.Items, want)
+	}
+	for i, id := range want {
+		if got.Items[i].ID != id || got.Items[i].Status == "" {
+			t.Errorf("item %d = %+v, want id %s with a status", i, got.Items[i], id)
+		}
+	}
+}
+
+func TestSmokeFromDoctorKeepsWorst(t *testing.T) {
+	got := smokeFromDoctor(smokeBackups,
+		doctorCheckResource{Status: doctorStatusOK, Message: "fine"},
+		doctorCheckResource{Status: doctorStatusFail, Message: "stale"},
+		doctorCheckResource{Status: doctorStatusWarn, Message: "old"},
+	)
+	if got.Status != smokeFail || got.Message != "stale" {
+		t.Errorf("got %+v, want the failing row", got)
+	}
+	if got := smokeFromDoctor(smokeDomains, doctorCheckResource{Status: doctorStatusUnknown}); got.Status != smokeSkipped {
+		t.Errorf("unknown = %q, want skipped", got.Status)
+	}
+}

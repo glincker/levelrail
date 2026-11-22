@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 	"github.com/GLINCKER/levelrail/kit/ticker"
@@ -123,7 +124,9 @@ type Scheduler struct {
 	// DefaultRetentionHours, if set, gives backups with no count or age rule of their own a
 	// maximum age in hours (0 keeps them). It runs right after a fresh success, so the newest backup always survives.
 	DefaultRetentionHours func(ctx context.Context) int
-	Logger                *slog.Logger
+	// RunWindow, if set, returns "HH:MM-HH:MM" server local time; a due backup waits until the window is open.
+	RunWindow func(ctx context.Context) string
+	Logger    *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -194,6 +197,22 @@ func (s *Scheduler) retentionRule(ctx context.Context, keep, days int) (int, tim
 	return keep, olderThan, true
 }
 
+// windowOpen reports whether scheduled backups may start now. A bad or empty window never blocks.
+func (s *Scheduler) windowOpen(ctx context.Context, now time.Time) bool {
+	if s.RunWindow == nil {
+		return true
+	}
+	start, end, ok, err := runtimesettings.ParseBackupWindow(s.RunWindow(ctx))
+	if err != nil || !ok {
+		return true
+	}
+	m := now.Hour()*60 + now.Minute()
+	if start < end {
+		return m >= start && m < end
+	}
+	return m >= start || m < end
+}
+
 func (s *Scheduler) now() time.Time {
 	if s.Now != nil {
 		return s.Now()
@@ -258,7 +277,7 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 			s.arm(s.nextRun, d.Name, d.Name, sched, now, !known)
 			continue
 		}
-		if !cronexpr.Due(next, now) {
+		if !cronexpr.Due(next, now) || !s.windowOpen(ctx, now) {
 			continue
 		}
 
@@ -332,7 +351,7 @@ func (s *Scheduler) tickBaseBackups(ctx context.Context, now time.Time) error {
 			s.arm(s.baseNextRun, d.Name, d.Name, sched, now, !known)
 			continue
 		}
-		if !cronexpr.Due(next, now) {
+		if !cronexpr.Due(next, now) || !s.windowOpen(ctx, now) {
 			continue
 		}
 		s.arm(s.baseNextRun, d.Name, d.Name, sched, now, true)
@@ -382,7 +401,7 @@ func (s *Scheduler) tickServiceVolumes(ctx context.Context, now time.Time) error
 			s.arm(s.volumeNextRun, key, key, sched, now, !known)
 			continue
 		}
-		if !cronexpr.Due(next, now) {
+		if !cronexpr.Due(next, now) || !s.windowOpen(ctx, now) {
 			continue
 		}
 
@@ -417,6 +436,11 @@ func (s *Scheduler) tickServiceVolumes(ctx context.Context, now time.Time) error
 // reasoning Engine.dispatch's own doc comment applies to a notification
 // failing after a rule's state was already persisted successfully.
 func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) error {
+	// A dump taken mid-import or mid-restore would capture a half-written database.
+	if CheckNoImport(DatabaseBusyKey(d.Name)) != nil {
+		s.log().Info("backup: scheduled run skipped, an import or restore is running", slog.String("database", d.Name))
+		return nil
+	}
 	historyID, err := randomScheduledBackupHistoryID()
 	if err != nil {
 		return fmt.Errorf("generate history id: %w", err)

@@ -133,6 +133,7 @@ export interface CPHealth {
     wal_bytes: number
     db_bytes: number
     recent_slow: CPHealthSlowQuery[]
+    hot_statements?: CPHealthHotStatement[]
   }
   reconcile: {
     passes: number
@@ -162,6 +163,36 @@ export interface CPHealth {
   }
   idle_footprint?: IdleFootprint
   findings: CPHealthFinding[]
+  slow_request_threshold_ms?: number
+  slow_requests?: CPHealthSlowRequest[]
+  hot_routes?: CPHealthHotRoute[]
+}
+
+export interface CPHealthHotRoute {
+  method: string
+  route: string
+  count: number
+  errors: number
+  total_ms: number
+  avg_ms: number
+  max_ms: number
+}
+
+export interface CPHealthHotStatement {
+  sql: string
+  count: number
+  total_ms: number
+  avg_ms: number
+  max_ms: number
+}
+
+export interface CPHealthSlowRequest {
+  at: string
+  method: string
+  route: string
+  status: number
+  duration_ms: number
+  breakdown?: string
 }
 
 // Older servers serialize empty slices as null; the page expects arrays.
@@ -169,7 +200,13 @@ export function normalizeCPHealth(h: CPHealth): CPHealth {
   return {
     ...h,
     findings: h.findings ?? [],
-    db: { ...h.db, recent_slow: h.db?.recent_slow ?? [] },
+    slow_requests: h.slow_requests ?? [],
+    hot_routes: h.hot_routes ?? [],
+    db: {
+      ...h.db,
+      recent_slow: h.db?.recent_slow ?? [],
+      hot_statements: h.db?.hot_statements ?? [],
+    },
     reconcile: h.reconcile && {
       ...h.reconcile,
       guard: h.reconcile.guard && {

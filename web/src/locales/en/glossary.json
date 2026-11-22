@@ -1,0 +1,50 @@
+{
+  "learnMore": "Learn more",
+  "terms": {
+    "ingress": {
+      "label": "Ingress",
+      "body": "The front door: the proxy that receives web traffic and sends it to the right app."
+    },
+    "replica": {
+      "label": "Replicas",
+      "body": "Identical copies of your app running side by side to share traffic and survive a restart."
+    },
+    "volume": {
+      "label": "Volume",
+      "body": "Storage that outlives the container, so files and data stay after a redeploy."
+    },
+    "cert": {
+      "label": "Certificate",
+      "body": "The file that proves your domain is yours and lets browsers use HTTPS. It renews automatically."
+    },
+    "aRecord": {
+      "label": "DNS",
+      "body": "DNS records, such as an A record, point your domain name at the IP address of this server."
+    },
+    "reconciler": {
+      "label": "Reconciler",
+      "body": "The background loop that compares what you asked for with what is running and fixes any difference."
+    },
+    "agent": {
+      "label": "Agent",
+      "body": "The small program on each node that runs containers for the control plane and reports back."
+    },
+    "node": {
+      "label": "Node",
+      "body": "A server that runs your apps. The control plane can manage one or many nodes."
+    },
+    "environment": {
+      "label": "Environment",
+      "body": "A named set of apps and settings, such as production or staging, kept apart from the others."
+    },
+    "deployment": {
+      "label": "Deployment",
+      "body": "One rollout of a new version of your app: build, start, health check, then switch traffic."
+    },
+    "rollback": {
+      "label": "Rollback",
+      "body": "Going back to a previous deployment when the new one misbehaves."
+    }
+  },
+  "seeInGlossary": "See in glossary"
+}

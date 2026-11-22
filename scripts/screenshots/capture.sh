@@ -41,8 +41,8 @@ cleanup() {
   export HOME="$FAKE_HOME"
   if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
     if [ -f "$CLI" ]; then
-      "$CLI" apps delete "$HERO_APP" >/dev/null 2>&1
-      "$CLI" apps delete "$SECOND_APP" >/dev/null 2>&1
+      "$CLI" apps delete "$HERO_APP" --yes >/dev/null 2>&1
+      "$CLI" apps delete "$SECOND_APP" --yes >/dev/null 2>&1
       "$CLI" databases delete "$SAMPLE_DB" >/dev/null 2>&1
       i=0
       while docker ps --format '{{.Names}}' 2>/dev/null | grep -qE "^(${HERO_APP}|${SECOND_APP}|db-${SAMPLE_DB})"; do

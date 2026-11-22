@@ -19,6 +19,7 @@ const (
 	KeyBuildRunnerStrategy   = "build.runner_strategy"
 	KeyBuildRunnerStaleAfter = "build.runner_stale_after"
 	KeyBuildRemotePressure   = "build.remote_pressure_hold"
+	KeyBuildRunnerMinDisk    = runtimesettings.KeyBuildRunnerMinDiskMB
 
 	envBuildRunnerStrategy   = "APP_BUILD_RUNNER_STRATEGY"
 	envBuildRunnerStaleAfter = "APP_BUILD_RUNNER_STALE_AFTER"
@@ -61,6 +62,8 @@ func wireBuildRunnerSettings(svc *runtimesettings.Service) {
 			PressureHold: svc.Bool(ctx, KeyBuildRemotePressure),
 			StaleAfter:   svc.Duration(ctx, KeyBuildRunnerStaleAfter),
 
+			MinDiskFreeBytes: int64(svc.Int(ctx, KeyBuildRunnerMinDisk)) << 20,
+
 			PersonalInProduction: svc.Bool(ctx, KeyBuildPersonalInProduction),
 		}
 	})
@@ -97,6 +100,8 @@ type buildRunnerResource struct {
 	LastBuildStat string     `json:"last_build_status,omitempty"`
 	CacheBytes    *int64     `json:"cache_bytes,omitempty"`
 	Trust         string     `json:"trust,omitempty"`
+	// SkipReason is why routing currently skips this runner, empty when it is usable.
+	SkipReason string `json:"skip_reason,omitempty"`
 }
 
 type buildRunnersResponse struct {
@@ -201,12 +206,18 @@ func (rt *Router) handleListBuildRunners(w http.ResponseWriter, r *http.Request)
 			}
 		}
 	}
+	policy := build.Policy{Now: time.Now()}
+	if rs := rt.RuntimeSettings(); rs != nil {
+		policy.StaleAfter = rs.Duration(ctx, KeyBuildRunnerStaleAfter)
+		policy.MinDiskFreeBytes = int64(rs.Int(ctx, KeyBuildRunnerMinDisk)) << 20
+	}
 	for _, n := range nodes {
 		status, health := runnerStatus(n)
 		res := buildRunnerResource{
 			ID: n.ID, Name: n.Name, Kind: "node", Status: status, Health: health,
 			SlotsUsed: n.SlotsUsed, SlotsTotal: n.SlotsTotal, Waiting: n.Waiting, ActiveBuilds: n.SlotsUsed,
 			Pressure: n.Pressure, Architecture: n.Arch, CPUCores: n.CPUCores, Labels: labelStrings(n.Labels),
+			SkipReason: n.SkipReason(policy),
 		}
 		if !n.Local {
 			res.Trust = n.Trust

@@ -51,6 +51,7 @@
   },
   "export": {
     "csv": "CSV exportieren",
+    "teamCsv": "Monatliche Team-CSV exportieren",
     "json": "JSON exportieren"
   },
   "empty": {

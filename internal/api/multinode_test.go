@@ -517,3 +517,14 @@ func TestNodeLabelsApplyLiveToPlacement(t *testing.T) {
 		t.Fatalf("after clear = %q, want n2", got)
 	}
 }
+
+func TestNodePoolRoutesRegistered(t *testing.T) {
+	rt := &Router{}
+	mux := http.NewServeMux()
+	rt.registerMultiNodeRoutes(mux)
+	for _, p := range []string{"/api/v1/node-pools", "/api/v1/apps/web/warm"} {
+		if _, pattern := mux.Handler(httptest.NewRequest(http.MethodGet, p, nil)); pattern == "" {
+			t.Errorf("no route for GET %s", p)
+		}
+	}
+}

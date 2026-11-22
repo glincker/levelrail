@@ -19,6 +19,7 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	var replicas int
 	var strategy, memory, swap, cpuset, size string
 	var cpu float64
+	var tp throughputFlags
 	fs.IntVar(&replicas, "replicas", 0, "number of container replicas (at least 1; use \"apps stop\" to run none)")
 	fs.StringVar(&strategy, "strategy", "", "deploy strategy: rolling, recreate, or blue-green (default: unchanged)")
 	fs.StringVar(&size, "size", "", "named size preset such as small or large (see the size-presets API); sets CPU and memory unless --cpu or --memory is given")
@@ -26,6 +27,9 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs.Float64Var(&cpu, "cpu", 0, "CPU limit in cores, e.g. 0.5 (default: unchanged)")
 	fs.StringVar(&swap, "swap-memory", "", "memory plus swap limit, e.g. 1Gi; at least the memory limit (default: unchanged)")
 	fs.StringVar(&cpuset, "cpuset-cpus", "", "CPUs the app may use, e.g. 0-1 or 0,2 (default: unchanged)")
+	fs.StringVar(&tp.ioRead, "io-read", "", "disk read cap per second, e.g. 50Mi (default: unchanged)")
+	fs.StringVar(&tp.ioWrite, "io-write", "", "disk write cap per second, e.g. 20Mi (default: unchanged)")
+	fs.Int64Var(&tp.netMbit, "net-mbit", 0, "network bandwidth cap in megabits per second (default: unchanged)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScaleUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -40,12 +44,12 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 	name := rest[0]
 	if len(rest) > 1 {
-		if replicas != 0 || strategy != "" || memory != "" || cpu != 0 || swap != "" || cpuset != "" || size != "" {
+		if replicas != 0 || strategy != "" || memory != "" || cpu != 0 || swap != "" || cpuset != "" || size != "" || tp.any() {
 			return reportError(stdout, stderr, jsonOut, newValidationError("service=count pairs cannot be combined with --replicas, --strategy, --memory, --cpu, --swap-memory or --cpuset-cpus"))
 		}
 		return scaleServices(prog, name, rest[1:], apiURLFlag, tokenFlag, profileFlag, jsonOut, of, stdout, stderr, lookupEnv)
 	}
-	if replicas < 0 || cpu < 0 || (replicas == 0 && size == "" && strategy == "" && memory == "" && cpu == 0 && swap == "" && cpuset == "") {
+	if replicas < 0 || cpu < 0 || (replicas == 0 && size == "" && strategy == "" && memory == "" && cpu == 0 && swap == "" && cpuset == "" && !tp.any()) {
 		return reportError(stdout, stderr, jsonOut, newValidationError("apps scale requires --replicas N (N >= 1), --strategy, --memory, --cpu, --swap-memory and/or --cpuset-cpus"))
 	}
 	memoryBytes, err := parseOptionalMemory(memory)
@@ -69,6 +73,7 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", name, err))
 	}
+	prevReplicas, prevStrategy := app.Replicas, app.Strategy
 	if replicas > 0 {
 		app.Replicas = replicas
 	}
@@ -91,7 +96,7 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if strategy != "" {
 		app.Strategy = strategy
 	}
-	if memoryBytes > 0 || cpu > 0 || swapBytes > 0 || cpuset != "" {
+	if memoryBytes > 0 || cpu > 0 || swapBytes > 0 || cpuset != "" || tp.any() {
 		res := serviceResources{}
 		if app.Resources != nil {
 			res = *app.Resources
@@ -112,6 +117,9 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		if cpuset != "" {
 			res.CPUSetCPUs = cpuset
 		}
+		if err := tp.apply(&res); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
 		app.Resources = &res
 	}
 	updated, err := client.UpdateApp(ctx, name, app)
@@ -122,11 +130,26 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
 		_, _ = fmt.Fprintf(stderr, "app %q scaled to %d replica(s), strategy %s; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Replicas, updated.Strategy, prog, updated.Name)
 		printAppHuman(stdout, updated)
+		if undo := scaleUndoArgs(updated, prevReplicas, prevStrategy); len(undo) > 0 {
+			_, _ = fmt.Fprint(stderr, undoHint(prog, append([]string{"apps", "scale", updated.Name}, undo...)...))
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// scaleUndoArgs lists the flags that restore replicas and strategy; empty when neither moved.
+func scaleUndoArgs(now appResource, prevReplicas int, prevStrategy string) []string {
+	var out []string
+	if prevReplicas > 0 && now.Replicas != prevReplicas {
+		out = append(out, "--replicas", strconv.Itoa(prevReplicas))
+	}
+	if prevStrategy != "" && now.Strategy != prevStrategy {
+		out = append(out, "--strategy", prevStrategy)
+	}
+	return out
 }
 
 // parseScalePairs turns "web=2" arguments into ordered service/count pairs, rejecting every malformed one up front.
@@ -258,6 +281,9 @@ Flags:
   --cpu float             CPU limit in cores, e.g. 0.5
   --swap-memory string    memory plus swap limit, e.g. 1Gi (at least the memory limit)
   --cpuset-cpus string    CPUs the app may use, e.g. 0-1 or 0,2
+  --io-read string        disk read cap per second, e.g. 50Mi (0 clears)
+  --io-write string       disk write cap per second, e.g. 20Mi (0 clears)
+  --net-mbit int          network bandwidth cap in megabits per second (recorded, see the runtime options docs)
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

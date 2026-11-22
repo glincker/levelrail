@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { auditLogExportURL, buildAuditLogParams } from './auditLog'
+import {
+  auditLogExportURL,
+  buildAuditLogParams,
+  nextAuditCursor,
+  parseCsv,
+} from './auditLog'
 
 describe('buildAuditLogParams', () => {
   it.each([
@@ -32,5 +37,22 @@ describe('auditLogExportURL', () => {
     expect(url).toContain('format=csv')
     expect(url).toContain('q=bob')
     expect(url).toContain('status=failed')
+  })
+})
+
+describe('audit csv paging helpers', () => {
+  it('parses quoted commas and newlines', () => {
+    expect(parseCsv('a,b\r\n"x,1","y\nz"\r\n')).toEqual([
+      ['a', 'b'],
+      ['x,1', 'y\nz'],
+    ])
+  })
+  it('bumps the cursor by one nanosecond with carry', () => {
+    expect(nextAuditCursor('2026-01-01T00:00:00.000000009Z')).toBe(
+      '2026-01-01T00:00:00.000000010Z',
+    )
+    expect(nextAuditCursor('2026-01-01T00:00:00.999999999Z')).toBe(
+      '2026-01-01T00:00:01.000000000Z',
+    )
   })
 })

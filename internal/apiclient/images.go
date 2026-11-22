@@ -47,10 +47,13 @@ type ImageRetention struct {
 
 // ImageTotals summarizes an inventory.
 type ImageTotals struct {
-	Count          int   `json:"count"`
-	SizeBytes      int64 `json:"size_bytes"`
-	ReclaimBytes   int64 `json:"reclaimable_bytes"`
-	ProtectedCount int   `json:"protected_count"`
+	Count        int   `json:"count"`
+	SizeBytes    int64 `json:"size_bytes"`
+	ReclaimBytes int64 `json:"reclaimable_bytes"`
+	// ReclaimMaxBytes is the upper estimate when removed images share layers; ReclaimExact says the range is a single value.
+	ReclaimMaxBytes int64 `json:"reclaimable_max_bytes"`
+	ReclaimExact    bool  `json:"reclaimable_exact"`
+	ProtectedCount  int   `json:"protected_count"`
 
 	UnmanagedUnusedCount int   `json:"unmanaged_unused_count"`
 	UnmanagedUnusedBytes int64 `json:"unmanaged_unused_bytes"`
@@ -108,7 +111,10 @@ type ImageGCResource struct {
 	Removed        []string         `json:"removed"`
 	Failed         []ImageGCFailure `json:"failed"`
 	ReclaimedBytes int64            `json:"reclaimed_bytes"`
-	Retention      ImageRetention   `json:"retention"`
+	// ReclaimMaxBytes and ReclaimExact describe a dry run's estimate.
+	ReclaimMaxBytes int64          `json:"reclaim_max_bytes"`
+	ReclaimExact    bool           `json:"reclaim_exact"`
+	Retention       ImageRetention `json:"retention"`
 }
 
 // ImageVerifyRequest is the body of POST /api/v1/images/verify.

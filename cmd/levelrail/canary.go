@@ -15,5 +15,8 @@ import (
 func startCanaryReconciler(ctx context.Context, logger *slog.Logger, db *store.DB, rt *api.Router) {
 	rec := canary.NewReconciler(db, ingress.DefaultRequestStats(), canary.DefaultDials(), rt.CanaryActions(), canary.DefaultLimits(canary.OSEnv), nil, logger)
 	rt.SetCanaryProgress(rec)
+	if svc := rt.RuntimeSettings(); svc != nil {
+		rec.SetLimitsSource(func() canary.Limits { return canary.DefaultLimits(canary.OSEnv) })
+	}
 	go rec.Run(ctx)
 }

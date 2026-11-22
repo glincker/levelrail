@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -34,6 +35,8 @@ func confirmDatabaseName(name, flag, warning string, stdin io.Reader, stderr io.
 func runDatabasesMajorUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases major-upgrade", "print the started upgrade as JSON to stdout and nothing else", stderr)
 	var version, confirm string
+	var check bool
+	fs.BoolVar(&check, "check", false, "only report go or no-go with the restore point age, change nothing")
 	fs.StringVar(&version, "version", "", "target major version, e.g. 17 (required)")
 	fs.StringVar(&confirm, "confirm", "", "must equal the database name to skip the interactive prompt")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, majorUpgradeUsage(prog)) }
@@ -48,6 +51,18 @@ func runDatabasesMajorUpgrade(prog string, args []string, stdout, stderr io.Writ
 	if version == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--version is required"))
 	}
+	if check {
+		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+		res, err := client.CheckMajorUpgrade(context.Background(), name, version)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("check major upgrade of database %q to %q: %w", name, version, err))
+		}
+		code := writeScheduledTaskResult(stdout, stderr, of, res, func() { printMajorUpgradeCheck(stdout, name, res) })
+		if code == exitOK && !res.Go {
+			return exitCheckFailed
+		}
+		return code
+	}
 	warn := fmt.Sprintf("Database %q will be OFFLINE while it is dumped and restored on version %s. The old data is kept as a rollback snapshot.", name, version)
 	if err := confirmDatabaseName(name, confirm, warn, os.Stdin, stderr); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
@@ -60,6 +75,22 @@ func runDatabasesMajorUpgrade(prog string, args []string, stdout, stderr io.Writ
 	return writeScheduledTaskResult(stdout, stderr, of, started, func() {
 		_, _ = fmt.Fprintf(stdout, "major upgrade %q of database %q from %s to %s started; follow it with \"%s databases major-upgrades %s\"\n", started.ID, name, started.FromVersion, started.ToVersion, prog, name)
 	})
+}
+
+func printMajorUpgradeCheck(out io.Writer, name string, res apiclient.MajorUpgradeCheck) {
+	verdict := "NO-GO"
+	if res.Go {
+		verdict = "GO"
+	}
+	_, _ = fmt.Fprintf(out, "%s: database %q %s -> %s\n", verdict, name, res.FromVersion, res.ToVersion)
+	if rp := res.RestorePoint; rp != nil {
+		_, _ = fmt.Fprintf(out, "restore point: backup %s finished %s (%s old, limit %s)\n", rp.BackupID, rp.FinishedAt, (time.Duration(rp.AgeSeconds) * time.Second).Round(time.Minute), time.Duration(res.MaxAgeSeconds)*time.Second)
+	} else {
+		_, _ = fmt.Fprintln(out, "restore point: none")
+	}
+	for _, r := range res.Reasons {
+		_, _ = fmt.Fprintf(out, "  - %s\n", r)
+	}
 }
 
 // runDatabasesMajorUpgrades implements "databases major-upgrades <name>".
@@ -155,7 +186,7 @@ func runDatabasesMajorUpgradeDiscard(prog string, args []string, stdout, stderr 
 
 func majorUpgradeUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s databases major-upgrade <name> --version V [--confirm NAME] [flags]
+  %[1]s databases major-upgrade <name> --version V [--confirm NAME] [--check] [flags]
   %[1]s databases major-upgrades <name> [flags]
   %[1]s databases major-upgrade-rollback <name> <id> [--confirm NAME] [flags]
   %[1]s databases major-upgrade-discard <name> <id> [flags]
@@ -166,6 +197,8 @@ volume first and the dump is taken from that copy; any failure after the live
 volume is wiped restores the snapshot and the old version automatically.
 After a success the snapshot is kept so major-upgrade-rollback can undo it
 (losing writes since the upgrade) until major-upgrade-discard frees the disk.
+
+--check prints go or no-go with the age of the newest restore point and exits 1 on no-go.
 
 Refused while point-in-time restore is enabled (its base backups cannot be
 replayed on another major) and for downgrades. Needs free disk for the

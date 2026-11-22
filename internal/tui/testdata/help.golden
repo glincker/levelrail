@@ -5,14 +5,14 @@ Keys
   1-7, tab          switch view   enter drill into row    esc/q          back
   /                 filter rows   :     command bar       l              logs
   f (in logs)       follow        c     clear logs      ctrl-c         quit
-  r restart   d deploy   b rollback   x stop   o start   (each asks you to type the app name)
+  r restart   d deploy   b rollback   x stop   o start   s scale   e env   (each asks you to type t…
 
 Commands
-  :deploy [app]  :restart [app]  :rollback [app]  :stop [app]  :start [app]
+  :deploy [app]  :restart [app]  :rollback [app]  :stop [app]  :start [app]  :scale [app] N  :env […
+  :<name> fuzzy jump to an app, node or domain and list its CLI verbs
   :logs [name]   :apps :databases :deploys :nodes :domains :alerts :backups   :q
 
 Secrets and env values are never shown here; use the dashboard to reveal them.
-
 
 
 

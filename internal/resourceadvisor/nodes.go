@@ -138,6 +138,10 @@ func hostFindings(n Node, res []Resource, th Thresholds, now time.Time) []Findin
 				f.Impact.Risk = "Under pressure any container without a limit can be the one the kernel kills."
 				f.Action = &Action{Type: ActionManual, Instructions: "Set memory limits on the largest consumers, lower over-provisioned ones, or move work to another node."}
 				f.Params["node"], f.Params["percent"] = nodeLabel(n), fmt.Sprintf("%.0f", used*100)
+				if name, share, ok := memoryCulprit(res, now); ok {
+					f.Why += fmt.Sprintf(" %s holds about %.0f%% of the container memory here and is the likeliest neighbour to cap or move.", name, share*100)
+					f.Params["culprit"], f.Params["culprit_share"] = name, fmt.Sprintf("%.0f", share*100)
+				}
 				out = append(out, f)
 			}
 		}
@@ -198,4 +202,34 @@ func topConsumersFinding(n Node, res []Resource, th Thresholds, now time.Time) (
 	}
 	f.Params["names"], f.Params["percent"], f.Params["node"] = strings.Join(names, ", "), fmt.Sprintf("%.0f", share*100), nodeLabel(n)
 	return f, true
+}
+
+// memoryCulprit is the app with the largest memory share on a node. It needs a clear lead over an
+// even split, and only describes: no limit is set and nothing is moved.
+func memoryCulprit(res []Resource, now time.Time) (string, float64, bool) {
+	var top string
+	var topVal, total float64
+	var n int
+	for _, r := range res {
+		if r.Ref.Kind != ResourceApp {
+			continue
+		}
+		cur := summarize(within(r.Memory, now.Add(-time.Hour)))
+		if cur.n == 0 {
+			continue
+		}
+		n++
+		total += cur.mean
+		if cur.mean > topVal {
+			top, topVal = r.Ref.Name, cur.mean
+		}
+	}
+	if n < 2 || total <= 0 {
+		return "", 0, false
+	}
+	share := topVal / total
+	if share < 1.5/float64(n) {
+		return "", 0, false
+	}
+	return top, share, true
 }

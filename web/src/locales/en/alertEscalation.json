@@ -1,0 +1,8 @@
+{
+  "channelLabel": "Escalate to channel",
+  "channelNone": "No escalation",
+  "afterLabel": "If unread after (minutes)",
+  "afterHint": "Also sends the alert to this channel when nobody reads it in the Inbox in time.",
+  "invalidAfter": "Enter a whole number of minutes above zero.",
+  "needBoth": "Pick a channel and a delay together, or clear both."
+}

@@ -14,6 +14,8 @@ The control plane watches its own saturation so a busy instance tells you before
 - Live streams: open log, deploy and event streams against the cap.
 - Footprint: resident memory, OS threads, CPU, the metrics database size, the soft memory limit, and every background loop with its interval, last run and share of a core. See [Performance budget](/performance-budget).
 
+Two hot lists answer what to fix first at scale. **Busiest API routes** ranks route patterns (not raw paths, so `/apps/{id}` is one row) by total time with calls, 5xx errors, average and max. **Costliest database statements** ranks statement shapes (literals redacted) the same way. Both are in `hot_routes` and `db.hot_statements` of the health response, top 10 each, kept in memory since start, and cleared by the `reset_slow_log` fix. Streams are excluded from the route list. At most 1024 routes and 512 distinct statements are tracked, so memory stays flat.
+
 Latency covers statements issued through the store, over the last 512 queries. Slow statements keep the SQL text only, never arguments.
 
 ## Findings and fixes
@@ -36,7 +38,7 @@ Applying a fix needs a root token. Reading health needs read access. The API is 
 
 ## Guards that are always on
 
-- Live streams (deploy logs, resource logs, pipeline logs, the deployments stream) are capped. Past the cap a new stream gets `503` with `Retry-After`. Set `APP_MAX_LIVE_STREAMS` (default 500).
+- Live streams (deploy logs, resource logs, pipeline logs, the deployments stream) are capped. Past the cap a new stream gets `503` with `Retry-After`. Change the cap live with the `events.max_live_streams` runtime setting (default 500; `APP_MAX_LIVE_STREAMS` only seeds it). The health response lists the callers holding the most streams.
 - The write ahead log is checkpointed every minute and capped at 64 MiB after a checkpoint, so a long reader cannot let it grow without bound.
 - Planner statistics are refreshed with `PRAGMA optimize` every 6 hours and once at shutdown. Change the interval with the runtime setting `store.optimize_interval` (`0` disables it, `APP_DB_OPTIMIZE_INTERVAL` only seeds the default). The `sqlite optimize` loop shows in the footprint card.
 - The app list is paginated (`limit`, `offset`) with a hard cap, and API requests are rate limited per actor.

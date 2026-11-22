@@ -118,6 +118,8 @@
     "failingCheck": "检查 {{target}} 自 {{since}} 起失败",
     "restarts": "重启次数：{{n}}",
     "crashloop": "崩溃循环",
+    "backoff": "已重启 {{n}} 次，下次重启在 {{seconds}} 秒后 ({{at}})",
+    "stopRetrying": "停止重试",
     "lastDeploy": "最近一次部署：{{status}}",
     "logError": "最近错误：{{line}}",
     "next": {

@@ -24,6 +24,12 @@ A check is skipped, with the reason recorded, when the app:
 - is in a protected environment (deploy it manually so it gets approved)
 - already has a deploy running
 
+## Reviewing what changed
+
+Each automatic redeploy records the old and new digest in its deploy history
+reason, with a link to the registry page for the image (Docker Hub or ghcr.io)
+where its tags and release notes are listed.
+
 ## Turn it on
 
 Dashboard: open the app, then **Deploys**, and switch on **Redeploy
@@ -41,6 +47,23 @@ levelrail-cli apps auto-update disable web
 API: `GET` and `PUT /api/v1/apps/{name}/auto-update`, and `POST
 /api/v1/apps/{name}/auto-update/check`. Reading needs `read`, changing or
 checking needs `deploy`.
+
+## Follow a version range
+
+By default an app follows the digest of the tag it already runs. To follow
+the newest release inside a semver range instead, set a range such as `1.x`,
+`^1.2.3` or `>=1.2.0 <2.0.0`. Each check lists the registry's tags, picks the
+highest release that fits and redeploys when it differs from the running tag.
+Pre-releases are skipped and a variant suffix such as `-alpine` is kept, so an
+app on `1.4-alpine` stays on `-alpine` tags.
+
+```sh
+levelrail-cli apps auto-update enable web --range '1.x'
+levelrail-cli apps auto-update enable web --range '*'   # clear the range
+```
+
+API: send `version_range` in the `PUT` body. An omitted field leaves the range
+unchanged and an empty string clears it. An invalid range is refused with 400.
 
 ## Update on push
 

@@ -121,7 +121,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMeOnboardingRoutes(mux)
 	rt.registerMePreferencesRoutes(mux)
 
-	h := rt.stackLockMiddleware(mux)
+	h := rt.stackLockMiddleware(capturePatternMiddleware(mux))
 	h = rt.bodyLimitMiddleware(h)
 	h = rt.streamDrainMiddleware(h)
 	h = rt.accountEventMiddleware(h)
@@ -137,7 +137,7 @@ func (rt *Router) Handler() http.Handler {
 		h = hstsDBOverrideMiddleware(rt)(h)
 	}
 	h = panicRecoveryMiddleware(rt.logger)(h)
-	h = requestLoggingMiddleware(rt.logger, rt.requestLogThresholds)(h)
+	h = requestLoggingMiddlewareLive(rt.logger, rt.requestLogThresholds, rt.liveSlowThreshold, &rt.slowRequests)(h)
 	h = requestIDMiddleware(h)
 	if rt.demo != nil {
 		h = rt.demoGate(h)

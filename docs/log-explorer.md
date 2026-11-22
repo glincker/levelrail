@@ -57,6 +57,8 @@ API: `GET /api/v1/apps/{name}/logs/signatures?from&to&level=error&baseline=true`
 
 The deploy page and the "what changed" timeline show "3 new error types since this deploy" for the newest deploy that took effect: signatures that appeared after it and were absent in the same span before it. The same note is attached to alert notifications that list recent changes.
 
+Alert notifications for an app carry a "Logs for this window" link that opens the Search tab for the span the alert covers, and a "Nearest deploy" link when a deploy is among the recent changes. The generic webhook payload has `logs_link` and `deploy_link`.
+
 ## Log alert rules
 
 Two rule kinds are evaluated from the local log store, once a minute by default:
@@ -73,7 +75,7 @@ levelrail-cli logs alert-from web --name "checkout timeouts" --q timeout --regex
 levelrail-cli logs alert-from web --name "error rate" --per-minute 30 --level error
 ```
 
-Create one from a search with "Alert on this" on the Search tab, or from a signature on the Errors tab. Log rules are created and deleted, not edited in place: delete and recreate to change one.
+Create one from a search with "Alert on this" on the Search tab, or from a signature on the Errors tab. Edit a rule in place from the alert rules list (Edit) or with `PUT /api/v1/apps/{name}/alerts/{id}` to change its count, rate, window or cooldown. The rule keeps its id and firing state, and the same limits apply as on create.
 
 ### Limits
 
@@ -130,7 +132,7 @@ Likely cause: The window or threshold is wrong, or the log stream is delayed.
 
 How to confirm: Test the rule manually: `levelrail-cli apps logs <app> --since 10m --q "<pattern>"` and count the lines. Compare to the rule's `count` or `per_minute` threshold. Check when the rule was last evaluated: `levelrail-cli apps alerts list <app> --json`.
 
-Fix: Adjust the threshold or window: delete and recreate the rule with better parameters. For a pattern rule firing too often, increase the `count` threshold. For a rate rule, increase `per_minute`. To reduce noise from oscillating alerts, increase the cooldown: `--cooldown 30m`.
+Fix: Adjust the threshold or window by editing the rule in place. For a pattern rule firing too often, increase the `count` threshold. For a rate rule, increase `per_minute`. To reduce noise from oscillating alerts, increase the cooldown: `--cooldown 30m`.
 
 Still stuck: Check control plane logs for rule evaluation errors: `levelrail logs --since 1h | grep "alert\|log.*rule"`.
 

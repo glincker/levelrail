@@ -51,6 +51,7 @@
   },
   "export": {
     "csv": "CSVをエクスポート",
+    "teamCsv": "チーム別月次CSVをエクスポート",
     "json": "JSONをエクスポート"
   },
   "empty": {

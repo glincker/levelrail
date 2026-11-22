@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Comprobaciones previas",
+    "prepull": "Descargando la imagen previamente en el nodo de destino",
     "stop_source": "Deteniendo en el nodo de origen",
     "copy_volumes": "Copiando volúmenes",
     "place": "Iniciando en el nodo de destino",
@@ -139,6 +140,30 @@
       "summary": "{{done}} de {{total}} movidos, {{failed}} con error",
       "eta": "unos {{seconds}} s restantes",
       "stalled": "Sin avance desde hace un rato. Revisa el nodo y los movimientos de abajo."
+    },
+    "zone": {
+      "switch": "Drenar una zona completa",
+      "title": "Drenar una zona",
+      "description": "Drena cada nodo de la zona de uno en uno y espera a que termine cada uno. Se detiene en el primer drenaje que no tenga éxito para que el resto siga sirviendo.",
+      "zoneLabel": "Zona",
+      "pick": "Elige una zona",
+      "minAvailable": "Mínimo disponible",
+      "hint": "Mínimo disponible es cuántos nodos fuera de la zona deben seguir en línea y programables.",
+      "dryRun": "Simulación",
+      "start": "Drenar zona",
+      "invalidMin": "El mínimo disponible debe ser un entero de al menos 1.",
+      "empty": "Ningún nodo tiene la etiqueta de zona {{zone}}.",
+      "tooFew": "Drenar esta zona dejaría {{stay}} nodo(s) disponibles, por debajo del mínimo de {{min}}.",
+      "dryRunResult": "La zona {{zone}} drenaría {{count}} nodo(s) en este orden. No se cambió nada.",
+      "stopped": "Detenido. {{left}} nodo(s) no se drenaron.",
+      "moved": "{{done}} de {{total}} movidos",
+      "step": {
+        "pending": "En espera",
+        "running": "Drenando",
+        "succeeded": "Drenado",
+        "partial": "Drenado en parte",
+        "failed": "Falló"
+      }
     }
   },
   "drains": {
@@ -205,7 +230,15 @@
       "to": "Hacia",
       "none": "Ningún nodo",
       "failed": "La simulación falló.",
-      "invalid": "Ingresa números enteros, con al menos una app."
+      "invalid": "Ingresa números enteros, con al menos una app.",
+      "unknown": "Desconocido",
+      "memoryCaption": "Memoria reservada frente a usada por nodo",
+      "memoryHint": "Memoria reservada por las apps frente a lo que cada nodo usa de verdad. La memoria varada está reservada pero inactiva.",
+      "colNode": "Nodo",
+      "colReserved": "Reservada",
+      "colCapacity": "Capacidad",
+      "colUsed": "Usada",
+      "colStranded": "Varada"
     }
   },
   "placement": {
@@ -235,7 +268,18 @@
     "moveHere": "Mover a este servidor",
     "movedHere": "Ahora está en este servidor.",
     "moveFailed": "No se pudo mover a este servidor.",
-    "domainWarnings": "Avisos de dominio de fallo"
+    "domainWarnings": "Avisos de dominio de fallo",
+    "warm": {
+      "title": "Mantener la imagen caliente",
+      "hint": "Descarga de antemano la imagen de esta app en los nodos elegidos para que un traslado o failover arranque rápido.",
+      "switchAria": "Mantener la imagen descargada en los nodos elegidos",
+      "nodesLabel": "Nodos calientes",
+      "addLabel": "Añadir etiqueta",
+      "save": "Guardar destinos calientes",
+      "saved": "Destinos calientes guardados.",
+      "cleared": "Destinos calientes eliminados.",
+      "saveFailed": "No se pudieron guardar los destinos calientes"
+    }
   },
   "allocation": {
     "title": "Capacidad",
@@ -1276,5 +1320,21 @@
       "queued": "En cola para la próxima comprobación del agente",
       "disclaimer": "Omite la ventana de mantenimiento y la retención. La actualización sigue verificándose por firma y se revierte si falla."
     }
+  },
+  "pools": {
+    "title": "Grupos de nodos",
+    "description": "Da nombre a un grupo de nodos con un selector de etiquetas. Las apps eligen el grupo en lugar de repetir el selector.",
+    "empty": "Aún no hay grupos. Crea uno, por ejemplo ssd con disk=ssd.",
+    "remove": "Quitar {{name}}",
+    "nameLabel": "Nombre del grupo",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Selector",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Guardar grupo",
+    "selectorInvalid": "Usa pares clave=valor separados por comas.",
+    "pickerLabel": "Grupo de nodos",
+    "pickerPlaceholder": "Sin grupo",
+    "none": "Sin grupo",
+    "pickerHint": "Las etiquetas del grupo se suman al selector de ubicación propio de esta app."
   }
 }

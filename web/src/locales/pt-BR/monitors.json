@@ -28,6 +28,8 @@
     "tcp": "TCP",
     "heartbeat": "Heartbeat de cron",
     "tls": "Certificado TLS",
+    "dns": "Consulta DNS",
+    "ping": "Ping (ICMP)",
     "grace": "Tolerância (s)",
     "graceHint": "Espera extra após o intervalo antes de o job contar como atrasado. Em branco usa o padrão do servidor.",
     "warnDays": "Aviso (dias)",

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -61,9 +62,17 @@ func runAppsPlacement(prog string, args []string, stdout, stderr io.Writer, look
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps placement", "print the placement decision as JSON", stderr)
 	var db bool
 	fs.BoolVar(&db, "database", false, "the name is a database, not an app")
+	var pool, warmNodes, warmLabels string
+	var clearPool, clearWarm bool
+	fs.StringVar(&pool, "pool", "", "target this node pool (see 'nodes pools')")
+	fs.BoolVar(&clearPool, "clear-pool", false, "stop targeting a pool")
+	fs.StringVar(&warmNodes, "warm-node", "", "comma-separated node ids that keep the app's image pulled")
+	fs.StringVar(&warmLabels, "warm-label", "", "comma-separated key=value labels; nodes with all of them keep the image pulled")
+	fs.BoolVar(&clearWarm, "clear-warm", false, "stop keeping the image pulled anywhere")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, `Usage:
-  %[1]s apps placement <name> [--database] [flags]
+  %[1]s apps placement <name> [--database] [--pool <pool> | --clear-pool]
+      [--warm-node a,b] [--warm-label k=v] [--clear-warm] [flags]
 
 Shows why an app runs on its node: which nodes were considered, which were
 refused and the shortfall, and a fresh evaluation of every node right now.
@@ -86,6 +95,9 @@ Flags:
 		kind = "database"
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if code, handled := applyAppPlacementEdits(client, name, db, pool, clearPool, warmNodes, warmLabels, clearWarm, stdout, stderr, jsonOut); handled {
+		return code
+	}
 	view, err := client.GetPlacementDecision(context.Background(), kind, name)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("placement decision for %s %q: %w", kind, name, err))
@@ -137,4 +149,42 @@ func runNodesAllocations(prog string, args []string, stdout, stderr io.Writer, l
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// applyAppPlacementEdits applies --pool and warm flags; handled is false when
+// none were given so the caller prints the decision as usual.
+func applyAppPlacementEdits(client *apiclient.Client, name string, isDB bool, pool string, clearPool bool, warmNodes, warmLabels string, clearWarm bool, stdout, stderr io.Writer, jsonOut bool) (int, bool) {
+	warmSet := warmNodes != "" || warmLabels != "" || clearWarm
+	if pool == "" && !clearPool && !warmSet {
+		return 0, false
+	}
+	if isDB {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("pool and warm flags apply to apps only")), true
+	}
+	ctx := context.Background()
+	if pool != "" || clearPool {
+		if _, err := client.SetAppPool(ctx, name, pool); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("set pool for app %q: %w", name, err)), true
+		}
+		_, _ = fmt.Fprintf(stdout, "app %s pool: %s\n", name, noneIfEmpty(pool))
+	}
+	if warmSet {
+		t := apiclient.WarmTargets{Nodes: []string{}, Labels: map[string]string{}}
+		if warmNodes != "" {
+			t.Nodes = strings.Split(warmNodes, ",")
+		}
+		if warmLabels != "" {
+			l, err := placement.ParseLabels(strings.Split(warmLabels, ","))
+			if err != nil {
+				return reportError(stdout, stderr, jsonOut, err), true
+			}
+			t.Labels = l
+		}
+		got, err := client.SetAppWarm(ctx, name, t)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("set warm targets for app %q: %w", name, err)), true
+		}
+		_, _ = fmt.Fprintf(stdout, "app %s image kept pulled on nodes [%s] labels %s\n", name, strings.Join(got.Nodes, ","), noneIfEmpty(placement.Selector(got.Labels).String()))
+	}
+	return exitOK, true
 }

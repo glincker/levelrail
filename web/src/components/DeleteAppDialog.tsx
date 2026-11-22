@@ -6,7 +6,9 @@ import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
-import { useDeleteApp } from '../queries/apps'
+import { useQuery } from '@tanstack/react-query'
+import { appDetailQueryOptions, useDeleteApp } from '../queries/apps'
+import { useBackupCoverage } from '../queries/backupCoverage'
 import { DeleteDataOption } from './backups/DeleteDataOption'
 
 // One app's delete action, split out of the detail route the same way
@@ -32,6 +34,11 @@ export function DeleteAppDialog({
   const { t } = useTranslation('common')
   const deleteApp = useDeleteApp()
   const [deleteData, setDeleteData] = useState(false)
+  const detail = useQuery({ ...appDetailQueryOptions(name), enabled: open })
+  const coverage = useBackupCoverage()
+  const volumes = detail.data?.volumes?.length ?? 0
+  // Backups are kept by retention days unless the owner also deletes the data.
+  const retention = deleteData ? 0 : (coverage.data?.defaults.retain_days ?? 0)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -62,6 +69,11 @@ export function DeleteAppDialog({
         title={t('deleteApp.title', { name })}
         description={t('deleteApp.description')}
         requireTyped={name}
+        impact={{
+          volumes: deleteData ? volumes : 0,
+          domains: detail.data?.domains?.length ?? 0,
+          backupRetentionDays: volumes > 0 ? retention : 0,
+        }}
         confirmLabel={t('deleteApp.confirm', { name })}
         pendingLabel={t('deleteApp.deleting')}
         pending={deleteApp.isPending}

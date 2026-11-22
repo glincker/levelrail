@@ -778,7 +778,9 @@
     "checkOn": "Die Hintergrundprüfung auf neue Releases ist an. Sie sucht nur; die Installation steuert der Schalter oben.",
     "checkOff": "Die Hintergrundprüfung auf neue Releases ist aus. Automatische Updates einzuschalten aktiviert sie ebenfalls.",
     "installSteps": "Updates werden zwischen {{start}} und {{end}} {{zone}} installiert; zuerst Backup, Health-Check, automatisches Rollback.",
-    "nextWindows": "Nächste Fenster: {{list}}"
+    "nextWindows": "Nächste Fenster: {{list}}",
+    "onBlocked": "Automatische Updates sind eingeschaltet, können auf diesem Server aber nicht laufen. Details im Status unten.",
+    "checkOffActive": "Hintergrundprüfungen auf neue Versionen sind aus, daher wird kein Update gefunden, bis sie eingeschaltet werden."
   },
   "autoStatus": {
     "state": {
@@ -816,5 +818,17 @@
       "pending": "Wartet auf das Fenster",
       "running": "Läuft"
     }
+  },
+  "skipped": {
+    "title": "Was sich seit Ihrer Version geändert hat",
+    "loading": "Release-Notes werden geladen...",
+    "none": "Sie nutzen die neueste Version, oder die Release-Notes konnten nicht geladen werden.",
+    "breaking": "Inkompatible Änderungen"
+  },
+  "uptimeReport": {
+    "title": "Monatliche Verfügbarkeit",
+    "month": "Monat",
+    "loading": "Verfügbarkeit wird geladen...",
+    "none": "Keine Verfügbarkeitsdaten für diesen Monat. Fügen Sie die App der Statusseite hinzu, um die Aufzeichnung zu starten."
   }
 }

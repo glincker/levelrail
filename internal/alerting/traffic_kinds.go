@@ -39,7 +39,7 @@ const (
 // IsTrafficKind reports whether k is one of the traffic kinds above.
 func IsTrafficKind(k Kind) bool {
 	return k == KindCertExpiring || k == KindCertRenewalStalled || k == KindDomainNotResolving ||
-		k == KindDomainTrafficDrop || k == KindParkedDomainCertExpiry
+		k == KindDomainTrafficDrop || k == KindParkedDomainCertExpiry || k == KindDomainRegistrationExpiry
 }
 
 // DomainListSource lists every configured domain. *store.DB satisfies it.
@@ -59,6 +59,8 @@ type trafficKinds struct {
 	acme    ACMEFailureSource
 	visits  DomainTrafficSource
 	parked  ParkedDomainSource
+
+	registration RegistrationExpirySource
 
 	mu    sync.Mutex
 	since map[string]time.Time
@@ -265,6 +267,11 @@ func (e *Engine) evaluateTrafficKind(ctx context.Context, r Rule, now time.Time)
 			return r, nil, true, nil
 		}
 		next, notices, err = e.EvaluateParkedDomainCertExpiry(ctx, r, now)
+	case KindDomainRegistrationExpiry:
+		if e.traffic.domains == nil || e.traffic.registration == nil {
+			return r, nil, true, nil
+		}
+		next, notices, err = e.EvaluateDomainRegistrationExpiry(ctx, r, now)
 	}
 	return next, notices, false, err
 }

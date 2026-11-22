@@ -200,6 +200,8 @@ The dashboard shows the same steps as a Restore plan under Disaster recovery (`G
 
 ## Runbook: the control plane machine is gone
 
+Moving to a new server while the old one still answers? `levelrail-cli control-plane-backups move --to-host <host> --dns-name <name>` takes a fresh backup, writes the key bundle and prints these steps with your values filled in, plus the DNS cutover checklist.
+
 This is the exact sequence that was run, end to end, against a real S3 server
 (SeaweedFS) with generated keys, restoring into an empty second data directory
 after stopping the original control plane. Replace the placeholders.

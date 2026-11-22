@@ -36,31 +36,32 @@ type buildHint struct {
 }
 
 type buildRow struct {
-	ID              string     `json:"id"`
-	App             string     `json:"app"`
-	Status          string     `json:"status"`
-	Source          string     `json:"source"`
-	Branch          string     `json:"branch,omitempty"`
-	CommitSHA       string     `json:"commit_sha,omitempty"`
-	Image           string     `json:"image,omitempty"`
-	QueuedAt        *time.Time `json:"queued_at,omitempty"`
-	StartedAt       time.Time  `json:"started_at"`
-	FinishedAt      *time.Time `json:"finished_at,omitempty"`
-	DurationSeconds *float64   `json:"duration_seconds,omitempty"`
-	QueuePosition   int        `json:"queue_position,omitempty"`
-	CacheHitRatio   *float64   `json:"cache_hit_ratio,omitempty"`
-	ImageBytes      int64      `json:"image_bytes,omitempty"`
-	ImageDeltaBytes *int64     `json:"image_delta_bytes,omitempty"`
-	Node            string     `json:"node,omitempty"`
-	RunnerName      string     `json:"runner_name,omitempty"`
-	RunnerReason    string     `json:"runner_reason,omitempty"`
-	QueueWaitMS     int64      `json:"queue_wait_ms"`
-	Platform        string     `json:"platform,omitempty"`
-	Error           string     `json:"error,omitempty"`
-	Hint            *buildHint `json:"hint,omitempty"`
-	LogsPath        string     `json:"logs_path"`
-	CanCancel       bool       `json:"can_cancel"`
-	CanRetry        bool       `json:"can_retry"`
+	ID              string      `json:"id"`
+	App             string      `json:"app"`
+	Status          string      `json:"status"`
+	Source          string      `json:"source"`
+	Branch          string      `json:"branch,omitempty"`
+	CommitSHA       string      `json:"commit_sha,omitempty"`
+	Image           string      `json:"image,omitempty"`
+	QueuedAt        *time.Time  `json:"queued_at,omitempty"`
+	StartedAt       time.Time   `json:"started_at"`
+	FinishedAt      *time.Time  `json:"finished_at,omitempty"`
+	DurationSeconds *float64    `json:"duration_seconds,omitempty"`
+	QueuePosition   int         `json:"queue_position,omitempty"`
+	CacheHitRatio   *float64    `json:"cache_hit_ratio,omitempty"`
+	ImageBytes      int64       `json:"image_bytes,omitempty"`
+	ImageDeltaBytes *int64      `json:"image_delta_bytes,omitempty"`
+	ImageBloat      *imageBloat `json:"image_bloat,omitempty"`
+	Node            string      `json:"node,omitempty"`
+	RunnerName      string      `json:"runner_name,omitempty"`
+	RunnerReason    string      `json:"runner_reason,omitempty"`
+	QueueWaitMS     int64       `json:"queue_wait_ms"`
+	Platform        string      `json:"platform,omitempty"`
+	Error           string      `json:"error,omitempty"`
+	Hint            *buildHint  `json:"hint,omitempty"`
+	LogsPath        string      `json:"logs_path"`
+	CanCancel       bool        `json:"can_cancel"`
+	CanRetry        bool        `json:"can_retry"`
 }
 
 type buildCounts struct {
@@ -137,21 +138,28 @@ func matchBuildRuns(attempts []store.DeployAttempt, runs []store.BuildRun) map[s
 	return out
 }
 
+// imageChange is one run's image size against the app's previous successful run.
+type imageChange struct {
+	Delta     int64
+	PrevBytes int64
+	PrevTag   string
+}
+
 // imageDeltas maps a successful run to its image size change against the app's
 // previous successful run, keyed like matchBuildRuns.
-func imageDeltas(runs []store.BuildRun) map[string]int64 {
+func imageDeltas(runs []store.BuildRun) map[string]imageChange {
 	asc := append([]store.BuildRun(nil), runs...)
 	sort.SliceStable(asc, func(i, j int) bool { return asc[i].StartedAt.Before(asc[j].StartedAt) })
-	prev := map[string]int64{}
-	out := map[string]int64{}
+	prev := map[string]store.BuildRun{}
+	out := map[string]imageChange{}
 	for _, r := range asc {
 		if r.Status != string(build.RunSuccess) || r.ImageBytes <= 0 {
 			continue
 		}
 		if p, ok := prev[r.App]; ok {
-			out[r.App+r.Tag+r.StartedAt.Format(time.RFC3339Nano)] = r.ImageBytes - p
+			out[r.App+r.Tag+r.StartedAt.Format(time.RFC3339Nano)] = imageChange{Delta: r.ImageBytes - p.ImageBytes, PrevBytes: p.ImageBytes, PrevTag: p.Tag}
 		}
-		prev[r.App] = r.ImageBytes
+		prev[r.App] = r
 	}
 	return out
 }
@@ -183,7 +191,7 @@ func failureHint(app, errText string) *buildHint {
 
 // assembleBuildRows joins attempts with their build runs, in queue order:
 // queued by arrival, then running, then finished newest first.
-func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun) []buildRow {
+func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun, policy bloatPolicy) []buildRow {
 	matched := matchBuildRuns(attempts, runs)
 	deltas := imageDeltas(runs)
 	rows := make([]buildRow, 0, len(attempts))
@@ -208,8 +216,10 @@ func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun) []
 				ratio := float64(r.CachedSteps) / float64(r.TotalSteps)
 				row.CacheHitRatio = &ratio
 			}
-			if d, ok := deltas[r.App+r.Tag+r.StartedAt.Format(time.RFC3339Nano)]; ok {
+			if ch, ok := deltas[r.App+r.Tag+r.StartedAt.Format(time.RFC3339Nano)]; ok {
+				d := ch.Delta
 				row.ImageDeltaBytes = &d
+				row.ImageBloat = policy.check(ch, r.Tag)
 			}
 			if row.Error == "" {
 				row.Error = r.Error
@@ -279,22 +289,63 @@ func countBuildRows(rows []buildRow) buildCounts {
 	return c
 }
 
+// buildPager is the optional keyset extension of BuildPerformanceStore; the
+// SQLite store implements it.
+type buildPager interface {
+	ListBuildAttemptsPage(ctx context.Context, limit int, cursor string) ([]store.DeployAttempt, error)
+	ListAllBuildRunsBefore(ctx context.Context, limit int, before string) ([]store.BuildRun, error)
+}
+
 func (rt *Router) buildCenterRows(r *http.Request, limit int) ([]buildRow, error) {
-	attempts, err := rt.buildPerf.ListBuildAttempts(r.Context(), limit)
-	if err != nil {
-		return nil, err
+	rows, _, err := rt.buildCenterPage(r, limit, "")
+	return rows, err
+}
+
+// buildCenterPage returns one page of builds after cursor plus the cursor of
+// the next page ("" when exhausted). Without a pager store it is one capped page.
+func (rt *Router) buildCenterPage(r *http.Request, limit int, cursor string) ([]buildRow, string, error) {
+	var (
+		attempts []store.DeployAttempt
+		runs     []store.BuildRun
+		next     string
+		err      error
+	)
+	if pager, ok := rt.buildPerf.(buildPager); ok {
+		attempts, err = pager.ListBuildAttemptsPage(r.Context(), limit+1, cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		if len(attempts) > limit {
+			attempts = attempts[:limit]
+			last := attempts[len(attempts)-1]
+			next = store.EncodeDeploymentCursor(last.StartedAt, last.ID)
+		}
+		if cursor == "" {
+			runs, err = rt.buildPerf.ListAllBuildRuns(r.Context(), buildCenterMaxLimit)
+		} else {
+			// A run starts shortly after its attempt, so widen the bound by the match slack.
+			ts, _, _ := store.DecodeKeysetCursor(cursor)
+			at, _ := time.Parse(time.RFC3339Nano, ts)
+			runs, err = pager.ListAllBuildRunsBefore(r.Context(), buildCenterMaxLimit, at.Add(buildRunMatchSlack).UTC().Format(time.RFC3339Nano))
+		}
+	} else {
+		attempts, err = rt.buildPerf.ListBuildAttempts(r.Context(), limit)
+		if err != nil {
+			return nil, "", err
+		}
+		runs, err = rt.buildPerf.ListAllBuildRuns(r.Context(), buildCenterMaxLimit)
 	}
-	runs, err := rt.buildPerf.ListAllBuildRuns(r.Context(), buildCenterMaxLimit)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	visible, err := rt.visibleAppNames(r)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	rows := assembleBuildRows(attempts, runs)
+	rows := assembleBuildRows(attempts, runs, rt.bloatPolicy(r.Context()))
+	rt.nameGrownLayers(r.Context(), rows)
 	if visible == nil {
-		return rows, nil
+		return rows, next, nil
 	}
 	allowed := make(map[string]bool, len(visible))
 	for _, n := range visible {
@@ -306,7 +357,7 @@ func (rt *Router) buildCenterRows(r *http.Request, limit int) ([]buildRow, error
 			kept = append(kept, row)
 		}
 	}
-	return kept, nil
+	return kept, next, nil
 }
 
 func (rt *Router) buildCenterReady(w http.ResponseWriter) bool {
@@ -326,10 +377,17 @@ func (rt *Router) handleListBuilds(w http.ResponseWriter, r *http.Request) {
 	if limit <= 0 || limit > buildCenterMaxLimit {
 		limit = buildCenterDefaultLimit
 	}
-	rows, err := rt.buildCenterRows(r, limit)
+	cursor, ok := parseKeysetCursor(w, r)
+	if !ok {
+		return
+	}
+	rows, next, err := rt.buildCenterPage(r, limit, cursor)
 	if err != nil {
 		rt.internalError(w, "api: list builds failed", err)
 		return
+	}
+	if next != "" {
+		w.Header().Set(nextCursorHeader, next)
 	}
 	app, status := r.URL.Query().Get("app"), r.URL.Query().Get("status")
 	if app != "" || status != "" {
@@ -434,4 +492,57 @@ func (rt *Router) handleRetryBuild(w http.ResponseWriter, r *http.Request) {
 func withDeployID(r *http.Request) *http.Request {
 	r.SetPathValue("deployId", r.PathValue("id"))
 	return r
+}
+
+const (
+	farmSummaryDefaultHours = 24
+	farmSummaryMaxHours     = 168
+)
+
+type farmSummaryResponse struct {
+	build.FleetSummary
+	Hours int `json:"hours"`
+	// SlotsTotal is the configured concurrent builds per node, the line to size against.
+	SlotsTotal int `json:"slots_total"`
+}
+
+// handleBuildFarmSummary handles GET /api/v1/builds/farm: builds per hour,
+// queue wait percentiles, cache hit rate and slots in use over the last hours.
+func (rt *Router) handleBuildFarmSummary(w http.ResponseWriter, r *http.Request) {
+	if !rt.buildCenterReady(w) {
+		return
+	}
+	hours := queryIntOr(r, "hours", farmSummaryDefaultHours)
+	if hours <= 0 || hours > farmSummaryMaxHours {
+		hours = farmSummaryDefaultHours
+	}
+	stored, err := rt.buildPerf.ListAllBuildRuns(r.Context(), buildCenterMaxLimit)
+	if err != nil {
+		rt.internalError(w, "api: build farm summary failed", err)
+		return
+	}
+	visible, err := rt.visibleAppNames(r)
+	if err != nil {
+		rt.internalError(w, "api: build farm summary failed", err)
+		return
+	}
+	allowed := map[string]bool{}
+	for _, n := range visible {
+		allowed[n] = true
+	}
+	runs := make([]build.Run, 0, len(stored))
+	for _, s := range stored {
+		if visible != nil && !allowed[s.App] {
+			continue
+		}
+		runs = append(runs, build.Run{
+			App: s.App, Tag: s.Tag, StartedAt: s.StartedAt,
+			Duration: time.Duration(s.DurationMS) * time.Millisecond, QueueWait: time.Duration(s.QueueWaitMS) * time.Millisecond,
+			Status: build.RunStatus(s.Status), CachedSteps: s.CachedSteps, TotalSteps: s.TotalSteps,
+		})
+	}
+	writeJSON(w, http.StatusOK, farmSummaryResponse{
+		FleetSummary: build.ComputeFleetSummary(runs, time.Now(), hours), Hours: hours,
+		SlotsTotal: rt.buildLimitsView(r.Context()).Effective.MaxConcurrent,
+	})
 }

@@ -1,4 +1,8 @@
-import type { CoverageRow, CoverageState } from '../../types/backupCoverage'
+import type {
+  CoverageRow,
+  CoverageState,
+  CoverageTarget,
+} from '../../types/backupCoverage'
 
 export function coverageBadgeVariant(
   state: CoverageState,
@@ -42,3 +46,19 @@ export function coverageHeadline(s: {
 
 /** Rows above this count render windowed. */
 export const VIRTUALIZE_AFTER = 50
+
+/** allTargetsOnSameDisk is true when every target lives on this server's own disk. */
+export function allTargetsOnSameDisk(targets: CoverageTarget[]): boolean {
+  return targets.length > 0 && targets.every((t) => t.provider === 'local')
+}
+
+/** restorableApps lists the apps that own at least one backed up volume, sorted by name. */
+export function restorableApps(rows: CoverageRow[]): string[] {
+  const names = new Set<string>()
+  for (const r of rows) {
+    if (r.kind === 'volume' && r.app_name && r.backup_count > 0) {
+      names.add(r.app_name)
+    }
+  }
+  return [...names].sort((a, b) => a.localeCompare(b))
+}

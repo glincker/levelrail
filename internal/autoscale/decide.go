@@ -92,7 +92,7 @@ func Decide(p Policy, in Input) Decision {
 	if in.Ceiling > 0 && in.Ceiling < hi {
 		hi, capBy = in.Ceiling, BlockedGlobalCeiling
 	}
-	lo := min(p.MinReplicas, hi)
+	lo := min(p.EffectiveMin(in.Now), hi)
 
 	switch {
 	case in.Current < lo:

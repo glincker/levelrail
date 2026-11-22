@@ -136,3 +136,30 @@ func LowMemoryWarning(framework string, hostMB int) string {
 func MemoryKillMessage(limitMB, hostMB int) string {
 	return fmt.Sprintf("the kernel out of memory killer stopped the build (exit 137, OOMKilled). Setting builds.memory_limit_mb allowed %d MiB and the host has %d MiB. Options: raise builds.memory_limit_mb, run builds on a builds-only node, add swap to the host, or build elsewhere (for example in CI) and deploy the image", limitMB, hostMB)
 }
+
+// MemorySuggestion is what to do after a build was killed for memory. RouteToNode is
+// true when the suggested cap would not fit this host, so a build node is the better fix.
+type MemorySuggestion struct {
+	PeakMB      int  `json:"peak_mb"`
+	LimitMB     int  `json:"limit_mb"`
+	SuggestedMB int  `json:"suggested_mb"`
+	RouteToNode bool `json:"route_to_node"`
+}
+
+// SuggestMemory sizes a new build cap from the observed peak (or the limit that was hit when
+// no peak was read), plus the guard's reserve, rounded up to the registry step. Unknown host memory never routes.
+func SuggestMemory(limitMB, peakMB, hostMB int, g MemGuard) MemorySuggestion {
+	base := max(limitMB, peakMB)
+	if base <= 0 {
+		return MemorySuggestion{}
+	}
+	want := base + g.ReserveMB
+	if r := want % BuildMemoryMinMB; r != 0 {
+		want += BuildMemoryMinMB - r
+	}
+	s := MemorySuggestion{PeakMB: peakMB, LimitMB: limitMB, SuggestedMB: want}
+	if hostMB > 0 && want > AutoMemoryCapMB(hostMB, g) {
+		s.RouteToNode = true
+	}
+	return s
+}

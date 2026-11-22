@@ -19,6 +19,8 @@ export type NotificationChannelKind =
   | 'opsgenie'
   | 'webex'
   | 'googlechat'
+  | 'matrix'
+  | 'zulip'
   | 'webpush'
 
 export interface NotificationChannel {
@@ -36,6 +38,8 @@ export interface NotificationChannel {
   notify_device_login: boolean
   // Opt-in link-only notice when a pending CLI login expires unapproved.
   notify_device_login_expired: boolean
+  // Custom message text with {{app}} style variables, empty for the default.
+  message_template?: string
   created_at: string
   updated_at: string
 }
@@ -52,6 +56,7 @@ export interface CreateNotificationChannelRequest {
   interactive_secret?: string
   notify_device_login?: boolean
   notify_device_login_expired?: boolean
+  message_template?: string
 }
 
 export interface TestNotificationChannelRequest {

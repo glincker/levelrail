@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -158,4 +159,39 @@ func randomID(prefix string) (string, error) {
 		return "", fmt.Errorf("nodemove: generate id: %w", err)
 	}
 	return prefix + "_" + s, nil
+}
+
+// RollingNode is the part of a node a rolling drain plan needs.
+type RollingNode struct {
+	ID          string
+	Online      bool
+	Schedulable bool
+	Workloads   int
+}
+
+// RollingDrainOrder returns the group's node ids in drain order (fewest
+// workloads first, so early steps are cheap and fail fast). It refuses when
+// the nodes outside the group that stay online and schedulable would fall
+// below minAvailable, because the drained work would have nowhere to go.
+func RollingDrainOrder(group, others []RollingNode, minAvailable int) ([]string, error) {
+	if len(group) == 0 {
+		return nil, errors.New("nodemove: no nodes match the rolling drain selection")
+	}
+	minAvailable = max(minAvailable, 1)
+	stay := 0
+	for _, n := range others {
+		if n.Online && n.Schedulable {
+			stay++
+		}
+	}
+	if stay < minAvailable {
+		return nil, fmt.Errorf("nodemove: draining this group would leave %d node(s) available, below min_available %d", stay, minAvailable)
+	}
+	sorted := append([]RollingNode(nil), group...)
+	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].Workloads < sorted[j].Workloads })
+	out := make([]string, 0, len(sorted))
+	for _, n := range sorted {
+		out = append(out, n.ID)
+	}
+	return out, nil
 }

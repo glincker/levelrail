@@ -352,6 +352,12 @@ message AgentRequest {
     // TunnelOpen asks the agent to open an ingress tunnel to one of its own
     // service ports. Sent only to agents advertising "ingress_tunnel".
     TunnelOpenRequest tunnel_open = 28;
+    // Cleanup previews or runs the safe capacity cleanup on this node's own
+    // Docker. Sent only to agents advertising "node_cleanup".
+    CleanupRequest cleanup = 29;
+    // PullImage pulls one image into the node's own store ahead of a move.
+    // Sent only to agents advertising "image_pull".
+    PullImageRequest pull_image = 30;
   }
 }
 
@@ -386,6 +392,7 @@ message AgentResponse {
     InspectContainersResponse inspect_containers = 17;
     ProbeResponse probe = 18;
     TunnelOpenResponse tunnel_open = 19;
+    CleanupResponse cleanup = 20;
   }
 }
 
@@ -468,6 +475,13 @@ message LogsResponse {
   repeated LogLine lines = 1;
 }
 
+// PullImageRequest names one image. registry_bearer is the same short-lived
+// built-in registry token CreateRequest carries; a stored login never crosses the wire.
+message PullImageRequest {
+  string ref = 1;
+  string registry_bearer = 2;
+}
+
 message RemoveVolumeRequest {
   string name = 1;
 }
@@ -494,6 +508,9 @@ message Resources {
   int64 nano_cpus = 2;
   int64 swap_memory_bytes = 3;
   string cpuset_cpus = 4;
+  int64 io_read_bps = 5;
+  int64 io_write_bps = 6;
+  int64 net_mbit = 7;
 }
 
 message VolumeMount {
@@ -1271,4 +1288,33 @@ message MeshStatusResponse {
 message RotateMeshKeyResponse {
   string old_public_key = 1;
   string new_public_key = 2;
+}
+
+// CleanupRequest asks the node to free disk. keep_containers are desired
+// container names the control plane wants left alone. Volumes are never
+// removed by this op, they are only listed in a preview.
+message CleanupRequest {
+  bool dry_run = 1;
+  repeated string keep_containers = 2;
+}
+
+message CleanupItem {
+  string name = 1;
+  string detail = 2;
+  int64 size_bytes = 3;
+  string action = 4;
+}
+
+message CleanupClass {
+  string name = 1;
+  bool deletable = 2;
+  int64 bytes = 3;
+  repeated CleanupItem items = 4;
+}
+
+message CleanupResponse {
+  repeated CleanupClass classes = 1;
+  int64 total_bytes = 2;
+  int64 freed_bytes = 3;
+  string error = 4;
 }

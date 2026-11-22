@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { BuildImageBloat } from './buildCenter'
 import { pollMs } from '../lib/pollTier'
 
 export type RunnerKind = 'control_plane' | 'node'
@@ -37,6 +38,7 @@ export interface BuildRunner {
   last_build_status?: string
   cache_bytes?: number
   trust?: string
+  skip_reason?: string
 }
 
 export interface BuildRunnersView {
@@ -64,6 +66,7 @@ export interface BuildRunnerInfo {
   runner_name?: string
   runner_reason?: string
   queue_wait_ms?: number
+  image_bloat?: BuildImageBloat
 }
 
 export const buildRunnerKeys = {
@@ -163,5 +166,39 @@ export function useBuildRunnerInfo(deployId: string, polling: boolean) {
     },
     retry: false,
     refetchInterval: polling ? pollMs('active') : false,
+  })
+}
+
+export interface BuildFarmBucket {
+  start: string
+  builds: number
+  avg_slots: number
+  wait_p95_seconds: number
+}
+
+// GET /api/v1/builds/farm: fleet aggregate used to size the build farm.
+export interface BuildFarmSummary {
+  hours: number
+  slots_total: number
+  builds: number
+  builds_per_hour: number
+  wait_p50_seconds: number
+  wait_p95_seconds: number
+  cache_hit_ratio: number
+  cache_known: boolean
+  peak_slots: number
+  buckets: BuildFarmBucket[] | null
+}
+
+export function useBuildFarmSummary() {
+  return useQuery({
+    queryKey: ['build-runners', 'farm'] as const,
+    queryFn: async ({ signal }) =>
+      json<BuildFarmSummary>(
+        await fetch('/api/v1/builds/farm', { signal }),
+        'fetch build farm summary',
+      ),
+    retry: false,
+    refetchInterval: pollMs('idle'),
   })
 }

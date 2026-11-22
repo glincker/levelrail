@@ -14,8 +14,8 @@ import {
 } from '@thesvg/ui-react'
 import { isDatabaseRuleKind } from '@/lib/databaseRuleKinds'
 import {
-  PARKED_CERT_KIND,
   TRAFFIC_DROP_KIND,
+  isDaysOnlyKind,
   domainFromResourceId,
   isTrafficWindowValid,
   trafficResourceId,
@@ -123,6 +123,12 @@ export const ALERT_KIND_OPTIONS: {
   { value: 'monitor_down', Icon: GlobeGlassIcon },
   { value: 'domain_traffic_drop', Icon: GaugeGlassIcon },
   { value: 'parked_domain_cert_expiry', Icon: ShieldAlertGlassIcon },
+  { value: 'domain_registration_expiry', Icon: GlobeGlassIcon },
+  {
+    value: 'deploy_duration_regression',
+    label: 'Deploy duration regression',
+    Icon: GaugeGlassIcon,
+  },
 ]
 
 export const ALERT_COMPARATOR_OPTIONS: { value: Comparator; label: string }[] =
@@ -169,6 +175,8 @@ export const alertRuleFormSchema = z
       'monitor_down',
       'domain_traffic_drop',
       'parked_domain_cert_expiry',
+      'domain_registration_expiry',
+      'deploy_duration_regression',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -208,12 +216,13 @@ export const alertRuleFormSchema = z
       data.kind === 'deploy_failed' ||
       data.kind === 'job_failing' ||
       data.kind === 'monitor_down' ||
+      data.kind === 'deploy_duration_regression' ||
       data.kind === 'budget_threshold'
     ) {
       return
     }
 
-    if (data.kind === PARKED_CERT_KIND) {
+    if (isDaysOnlyKind(data.kind)) {
       if (!Number.isInteger(data.threshold) || data.threshold < 1) {
         ctx.addIssue({
           code: 'custom',
@@ -459,7 +468,7 @@ export function buildAlertRuleRequest(
     req.for_duration = values.forDuration.trim() || undefined
     req.threshold = values.threshold
     req.restart_count_threshold = values.restartCountThreshold
-  } else if (values.kind === PARKED_CERT_KIND) {
+  } else if (isDaysOnlyKind(values.kind)) {
     req.threshold = values.threshold
   } else if (values.kind === 'threshold') {
     req.metric = values.metric.trim()

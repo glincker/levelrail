@@ -1,0 +1,8 @@
+{
+  "label": "Runbook",
+  "fieldLabel": "Runbook link or note",
+  "fieldPlaceholder": "https://wiki.example.com/runbooks/high-cpu",
+  "fieldHint": "Shown in the notification and the Inbox item so the responder knows what to do.",
+  "tooLong": "The runbook can be at most {{max}} characters.",
+  "open": "Open runbook"
+}

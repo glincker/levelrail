@@ -33,8 +33,18 @@ func stackFileUsage(prog, sub string) string {
 	switch sub {
 	case "portainer":
 		what = "a stack compose file or a stack export JSON"
+	case "render":
+		what = "a render.yaml Blueprint (services, databases, cron jobs; no variable values)"
 	case "railway":
 		what = "a railway.json or railway.toml (build and deploy settings, no variable values)"
+	case "fly":
+		what = "a fly.toml (app, build image, env, http_service port and checks, vm size, release command; no secrets)"
+	case "netlify":
+		what = "a netlify.toml (build command, publish and base, redirects, headers) as a static site App"
+	case "do-app":
+		what = "a .do/app.yaml spec (services, workers, jobs, databases; SECRET values never read)"
+	case "cloud-run":
+		what = "a Cloud Run service YAML from gcloud run services describe --format export"
 	}
 	return fmt.Sprintf(`Usage:
   %[1]s import %[2]s FILE [--stack NAME] [--project NAME] [--environment NAME] [--image-repo REPO] [--write DIR [--force]] [--json]
@@ -87,8 +97,25 @@ func runImportStackFile(prog, sub string, args []string, stdout, stderr io.Write
 	switch sub {
 	case "portainer":
 		in, fallback, err = portainerInput(data, path)
+	case "render":
+		in, err = platformimport.RenderBlueprintToEmit(data)
+		fallback = stackNameFromDir(filepath.Dir(path))
 	case "railway":
 		in, err = platformimport.RailwayToEmit(data, fallback, filepath.Base(path))
+	case "fly":
+		in, err = platformimport.FlyTOMLToEmit(data, fallback, filepath.Base(path))
+		if err == nil && len(in.Apps) > 0 {
+			fallback = in.Apps[0].Name
+		}
+	case "netlify":
+		in, err = platformimport.NetlifyTOMLToEmit(data, fallback, filepath.Base(path))
+	case "do-app":
+		in, err = platformimport.DOAppSpecToEmit(data)
+	case "cloud-run":
+		in, err = platformimport.KnativeServiceToEmit(data)
+		if len(in.Apps) > 0 {
+			fallback = in.Apps[0].Name
+		}
 	default:
 		in, err = platformimport.DeployYMLToEmit(data)
 		if len(in.Apps) > 0 {

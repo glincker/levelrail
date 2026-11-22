@@ -139,6 +139,21 @@ describe('AppSleepCard', () => {
     expect(toast.add).not.toHaveBeenCalled()
   })
 
+  it('shows the last wake and warns when it exceeds the proxy budget', async () => {
+    fetchMock.mockResolvedValue(
+      json({
+        ...off,
+        wake_budget_ms: 10000,
+        wake_timing: { samples: 3, ready_last_ms: 12000, ready_p50_ms: 8000 },
+      }),
+    )
+    renderCard()
+    expect(await screen.findByTestId('sleep-wake-last')).toHaveTextContent(
+      '12.0 s',
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('10.0 s')
+  })
+
   it('runs the fix endpoint, then refetches eligibility', async () => {
     let fixed = false
     fetchMock.mockImplementation(

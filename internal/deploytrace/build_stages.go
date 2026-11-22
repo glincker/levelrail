@@ -93,14 +93,16 @@ type StageObs struct {
 }
 
 type stageState struct {
-	span     *Span
-	started  time.Time
-	vertices int
-	cached   int
-	bytes    int64
-	tail     []string
-	failed   bool
-	closed   bool
+	span      *Span
+	started   time.Time
+	vertices  int
+	cached    int
+	bytes     int64
+	tail      []string
+	failed    bool
+	closed    bool
+	missStep  string
+	missCause string
 }
 
 // StageTracker turns one build's progress events into per-stage trace rows
@@ -113,6 +115,10 @@ type StageTracker struct {
 	current  string
 	maxRank  int
 	finished bool
+	// copyMissed and anyMissed carry across stages so a later install miss
+	// can be blamed on the earlier COPY that changed.
+	copyMissed bool
+	anyMissed  bool
 }
 
 // NewStageTracker returns a tracker writing to tr, or nil when tr is nil.
@@ -157,6 +163,8 @@ func (s *StageTracker) Observe(ctx context.Context, o StageObs) string {
 		st.vertices++
 		if o.Cached {
 			st.cached++
+		} else {
+			s.noteMiss(st, stage, o.Step)
 		}
 		if o.Error != "" {
 			st.failed = true
@@ -166,6 +174,21 @@ func (s *StageTracker) Observe(ctx context.Context, o StageObs) string {
 		st.span.Progress(ctx, summary(st))
 	}
 	return stage
+}
+
+// noteMiss records the first missed step of a stage and its likely cause.
+func (s *StageTracker) noteMiss(st *stageState, stage, step string) {
+	cause := MissCause(step, stage, s.copyMissed, s.anyMissed)
+	if cause == "" {
+		return
+	}
+	if st.missStep == "" {
+		st.missStep, st.missCause = step, cause
+	}
+	if cause == CauseSourceChanged {
+		s.copyMissed = true
+	}
+	s.anyMissed = true
 }
 
 func (s *StageTracker) trim(st *stageState) {
@@ -225,7 +248,46 @@ func (s *StageTracker) Finish(ctx context.Context) {
 }
 
 func summary(st *stageState) string {
-	return fmt.Sprintf("vertices=%d cached=%d bytes=%d", st.vertices, st.cached, st.bytes)
+	base := fmt.Sprintf("vertices=%d cached=%d bytes=%d", st.vertices, st.cached, st.bytes)
+	if st.missStep == "" {
+		return base
+	}
+	step := strings.ReplaceAll(secretmask.Mask(st.missStep), "\n", " ")
+	return base + " cause=" + st.missCause + " miss=" + step
+}
+
+// Likely reasons a build step missed the cache.
+const (
+	CauseBaseChanged   = "base_changed"
+	CauseArgChanged    = "arg_changed"
+	CauseSourceChanged = "source_changed"
+	CauseCopyBefore    = "copy_before_install"
+	CauseEarlierStep   = "earlier_step_changed"
+	CauseStepChanged   = "step_changed"
+)
+
+// MissCause names the likely reason step missed the cache; "" for a step
+// that is never cacheable (BuildKit internal bookkeeping other than the
+// base image metadata lookup).
+func MissCause(step, stage string, copyMissed, anyMissed bool) string {
+	s := strings.ToLower(strings.TrimSpace(step))
+	switch {
+	case s == "":
+		return ""
+	case strings.Contains(s, "load metadata") || strings.Contains(s, "] from "):
+		return CauseBaseChanged
+	case strings.HasPrefix(s, "[internal]"):
+		return ""
+	case strings.Contains(s, "] arg ") || strings.Contains(s, "--build-arg"):
+		return CauseArgChanged
+	case strings.Contains(s, "] copy ") || strings.Contains(s, "] add "):
+		return CauseSourceChanged
+	case copyMissed && stage == StageInstall:
+		return CauseCopyBefore
+	case anyMissed:
+		return CauseEarlierStep
+	}
+	return CauseStepChanged
 }
 
 func cacheReason(st *stageState) string {
@@ -267,6 +329,10 @@ type StageView struct {
 	Vertices       int        `json:"vertices"`
 	CachedVertices int        `json:"cached_vertices"`
 	LogBytes       int64      `json:"log_bytes"`
+	// MissStep and MissCause name the first step that missed the cache and
+	// why it likely did; empty when nothing missed.
+	MissStep  string `json:"miss_step,omitempty"`
+	MissCause string `json:"miss_cause,omitempty"`
 }
 
 // StagesFromRows picks the build stage rows out of a trace, in pipeline order.
@@ -287,6 +353,7 @@ func StagesFromRows(rows []store.DeployTraceStep) []StageView {
 		}
 		_, _ = fmt.Sscanf(SummaryLine(r.Detail), "vertices=%d cached=%d bytes=%d", &v.Vertices, &v.CachedVertices, &v.LogBytes)
 		v.Cache = cacheState(v.Vertices, v.CachedVertices)
+		v.MissCause, v.MissStep = parseMiss(SummaryLine(r.Detail))
 		out = append(out, v)
 	}
 	sort.SliceStable(out, func(i, j int) bool { return stageRank(out[i].Stage) < stageRank(out[j].Stage) })
@@ -306,4 +373,13 @@ func StageTail(rows []store.DeployTraceStep, stage string) []string {
 		return strings.Split(rest, "\n")
 	}
 	return nil
+}
+
+func parseMiss(line string) (cause, step string) {
+	_, rest, ok := strings.Cut(line, " cause=")
+	if !ok {
+		return "", ""
+	}
+	cause, step, _ = strings.Cut(rest, " miss=")
+	return cause, step
 }

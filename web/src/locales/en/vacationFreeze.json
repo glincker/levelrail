@@ -1,0 +1,15 @@
+{
+  "title": "Vacation freeze",
+  "description": "One switch that holds automatic deploys, scheduled jobs and held-deploy replay for a number of days, then lifts itself.",
+  "switchLabel": "Pause deploys and scheduled jobs",
+  "days": "Days",
+  "reason": "Reason (optional)",
+  "reasonPlaceholder": "Away until Monday",
+  "daysInvalid": "Enter a whole number of days.",
+  "on": "Vacation freeze is on.",
+  "off": "Vacation freeze lifted.",
+  "rootOnly": "Only instance admins can change the vacation freeze.",
+  "active_one": "Vacation freeze on until {{until}} (1 day left)",
+  "active_other": "Vacation freeze on until {{until}} ({{count}} days left)",
+  "details": "Details"
+}

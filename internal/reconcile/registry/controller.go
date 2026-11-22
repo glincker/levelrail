@@ -306,6 +306,18 @@ func (c *Controller) Reconcile(ctx context.Context) (res reconcile.Result, err e
 		spec.Labels = map[string]string{authLabel: wantAuth}
 	}
 
+	wantProxy, err := c.applyProxy(ctx, settings, &spec)
+	if err != nil {
+		return notReady("ProxyConfigFailed", err), fmt.Errorf("registry: %w", err)
+	}
+	if wantProxy != "" {
+		if spec.Labels == nil {
+			spec.Labels = map[string]string{}
+		}
+		spec.Labels[proxyLabel] = wantProxy
+	}
+	active.Store(c)
+
 	justDeployed := false
 	switch {
 	case state == nil:
@@ -314,7 +326,7 @@ func (c *Controller) Reconcile(ctx context.Context) (res reconcile.Result, err e
 		}
 		justDeployed = true
 
-	case !docker.SameImageRef(state.Image, image) || publishedBeyondLoopback(state) || (!state.LabelsUnknown && state.Labels[authLabel] != wantAuth):
+	case !docker.SameImageRef(state.Image, image) || publishedBeyondLoopback(state) || (!state.LabelsUnknown && (state.Labels[authLabel] != wantAuth || state.Labels[proxyLabel] != wantProxy)):
 		if err := c.replace(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("registry: %w", err)
 		}

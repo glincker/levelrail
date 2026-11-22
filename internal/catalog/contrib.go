@@ -2,9 +2,12 @@ package catalog
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"sort"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -112,4 +115,47 @@ func mustLoadContribTemplates() []Template {
 		panic(err)
 	}
 	return tpls
+}
+
+// composeFileNames are the file names looked for, in order, in a repo
+// root or sub path when an import points at a repository.
+var composeFileNames = []string{"compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml"}
+
+// RepoComposeCandidates turns a github.com repo address (optionally
+// /tree/<ref>/<subpath>) into the raw file URLs to try, root or subpath
+// first. Only https github.com repos are accepted.
+func RepoComposeCandidates(repoURL string) ([]string, error) {
+	u, err := url.Parse(strings.TrimSpace(repoURL))
+	if err != nil || u.Scheme != "https" || (u.Host != "github.com" && u.Host != "www.github.com") {
+		return nil, fmt.Errorf("repo url must be an https github.com address")
+	}
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+		return nil, fmt.Errorf("repo url must look like https://github.com/OWNER/REPO")
+	}
+	owner, repo := parts[0], strings.TrimSuffix(parts[1], ".git")
+	ref, sub := "HEAD", ""
+	if len(parts) >= 4 && (parts[2] == "tree" || parts[2] == "blob") {
+		ref = parts[3]
+		sub = strings.Join(parts[4:], "/")
+	}
+	if strings.Contains(sub, "..") {
+		return nil, errors.New("repo sub path must not contain parent references")
+	}
+	if len(parts) >= 3 && parts[2] == "blob" && sub != "" {
+		return []string{rawGitHub(owner, repo, ref, sub)}, nil
+	}
+	out := make([]string, 0, len(composeFileNames))
+	for _, name := range composeFileNames {
+		path := name
+		if sub != "" {
+			path = strings.TrimSuffix(sub, "/") + "/" + name
+		}
+		out = append(out, rawGitHub(owner, repo, ref, path))
+	}
+	return out, nil
+}
+
+func rawGitHub(owner, repo, ref, path string) string {
+	return "https://raw.githubusercontent.com/" + url.PathEscape(owner) + "/" + url.PathEscape(repo) + "/" + url.PathEscape(ref) + "/" + path
 }

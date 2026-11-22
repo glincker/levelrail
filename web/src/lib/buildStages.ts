@@ -24,6 +24,8 @@ export interface BuildStage {
   vertices: number
   cached_vertices: number
   log_bytes: number
+  miss_step?: string
+  miss_cause?: string
 }
 
 export interface BuildStagesResponse {
@@ -186,4 +188,19 @@ export function runElapsedMs(data: BuildStagesResponse, nowMs: number): number {
     return Math.max(0, nowMs - first)
   }
   return data.wall_ms > 0 ? data.wall_ms : data.stages_ms
+}
+
+export interface CacheMissHint {
+  stage: BuildStageName
+  step: string
+  cause: string
+}
+
+// The first stage whose cache missed, named by the step and likely cause.
+export function firstCacheMiss(
+  data: BuildStagesResponse,
+): CacheMissHint | null {
+  const s = data.stages.find((x) => x.miss_step && x.miss_cause)
+  if (!s || !s.miss_step || !s.miss_cause) return null
+  return { stage: s.stage, step: s.miss_step, cause: s.miss_cause }
 }

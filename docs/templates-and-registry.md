@@ -143,6 +143,10 @@ The saved Compose body does not capture everything about the app:
 - Host port, bind address and bind mounts are specific to the source machine.
 - Resources and health checks have no Compose representation Levelrail can read back, so they are dropped.
 
+### Import from a GitHub repo
+
+`levelrail-cli templates import --repo https://github.com/OWNER/REPO <id>` looks for `compose.yaml`, `compose.yml`, `docker-compose.yaml` or `docker-compose.yml` in the repo root and saves the first one found as a custom template. Add `/tree/REF/SUBPATH` to the address to search a sub folder on a branch or tag, or `/blob/REF/PATH` for one exact file. Only https github.com addresses are accepted. Env keys the file needs are listed after the import, and `--var NAME` names a `${NAME}` placeholder to fill at deploy time.
+
 ## Static sites
 
 An app whose `app.yaml` sets `build.type: static` has no container. The control plane copies the built output to a directory on its own host and Caddy serves it directly. These sites are created only by a git push to such an app. `levelrail-cli static-sites list` (and `GET /api/v1/static-sites`) lists their names and domains, and the Apps page shows a read-only **Static sites** card when any exist. See [app.yaml reference](/app-spec-reference#build) for the build types.

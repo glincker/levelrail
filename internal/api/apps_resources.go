@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -30,6 +32,9 @@ func validateServiceResources(r *store.ServiceResources) error {
 		{"nano_cpus", r.NanoCPUs},
 		{"swap_memory_bytes", r.SwapMemoryBytes},
 		{"shm_size_bytes", r.ShmSizeBytes},
+		{"io_read_bps", r.IOReadBps},
+		{"io_write_bps", r.IOWriteBps},
+		{"net_mbit", r.NetMbit},
 	} {
 		if f.v < 0 {
 			return resourcesError{fmt.Sprintf("resources.%s must not be negative", f.name)}
@@ -40,6 +45,26 @@ func validateServiceResources(r *store.ServiceResources) error {
 	}
 	if limit := compose.MaxShmBytes(); r.ShmSizeBytes > limit {
 		return resourcesError{fmt.Sprintf("resources.shm_size_bytes %d is above the %d byte limit (APP_COMPOSE_MAX_SHM_BYTES)", r.ShmSizeBytes, limit)}
+	}
+	return nil
+}
+
+// checkThroughputCaps rejects io and net values above the live operator ceilings; 0 means no ceiling.
+func (rt *Router) checkThroughputCaps(ctx context.Context, r *store.ServiceResources) error {
+	if r == nil || rt.runtimeSettings == nil {
+		return nil
+	}
+	for _, c := range []struct {
+		name, key string
+		v         int64
+	}{
+		{"io_read_bps", runtimesettings.KeyAppsMaxIOBps, r.IOReadBps},
+		{"io_write_bps", runtimesettings.KeyAppsMaxIOBps, r.IOWriteBps},
+		{"net_mbit", runtimesettings.KeyAppsMaxNetMbit, r.NetMbit},
+	} {
+		if limit := int64(rt.runtimeSettings.Int(ctx, c.key)); limit > 0 && c.v > limit {
+			return resourcesError{fmt.Sprintf("resources.%s %d is above the %d limit (setting %s)", c.name, c.v, limit, c.key)}
+		}
 	}
 	return nil
 }

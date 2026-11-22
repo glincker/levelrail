@@ -101,6 +101,7 @@ export function LogSearchPanel({
   onSearchChange?: (next: LogsSearch) => void
 }) {
   const { t } = useTranslation('observability')
+  const { t: tl } = useTranslation('buildLogs', { keyPrefix: 'logSearch' })
   const [localSearch, setLocalSearch] = useState<LogsSearch>({})
   const filters = onSearchChange ? (searchProp ?? {}) : localSearch
   const update = (patch: Partial<LogsSearch>) => {
@@ -118,6 +119,8 @@ export function LogSearchPanel({
     DEFAULT_TIME_RANGE_KEY,
   )
   const [refreshNonce, setRefreshNonce] = useState(0)
+  // First search stays on the last hour; all time is an explicit opt in.
+  const [allTime, setAllTime] = useState(false)
   const [levels, setLevels] = useState<ReadonlySet<LevelBucket>>(new Set())
   const [copied, setCopied] = useState(false)
   const [wrap, setWrap] = useState(false)
@@ -138,6 +141,7 @@ export function LogSearchPanel({
   const fixedTo = filters.to
   const setRangeKey = (key: TimeRangeKey) => {
     setRangeKeyState(key)
+    setAllTime(false)
     if (fixedFrom || fixedTo) {
       update({ from: undefined, to: undefined })
     }
@@ -147,9 +151,11 @@ export function LogSearchPanel({
     () =>
       fixedFrom && fixedTo
         ? { from: new Date(fixedFrom), to: new Date(fixedTo) }
-        : resolveTimeRange(rangeKey),
+        : allTime
+          ? { from: new Date(0), to: new Date() }
+          : resolveTimeRange(rangeKey),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rangeKey, refreshNonce, fixedFrom, fixedTo],
+    [rangeKey, refreshNonce, fixedFrom, fixedTo, allTime],
   )
   const fieldFilters = useMemo(
     () => parseFieldFilters(filters.field ?? []),
@@ -278,12 +284,36 @@ export function LogSearchPanel({
           </p>
         </div>
         <TimeRangeControls
-          rangeKey={rangeKey}
+          rangeKey={allTime ? 'custom' : rangeKey}
           onRangeChange={setRangeKey}
           onRefresh={() => {
             setRefreshNonce((n) => n + 1)
           }}
         >
+          {allTime ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setRangeKey(DEFAULT_TIME_RANGE_KEY)
+              }}
+            >
+              {tl('backToHour')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={Boolean(fixedFrom || fixedTo)}
+              onClick={() => {
+                setAllTime(true)
+              }}
+            >
+              {tl('allTime')}
+            </Button>
+          )}
           <SavedLogQueriesMenu
             appName={appName}
             current={current}

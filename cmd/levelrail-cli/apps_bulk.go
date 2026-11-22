@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -14,12 +14,20 @@ import (
 func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps bulk", "print the per-app results as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsBulkUsage(prog)) }
-	var tag, env, names string
-	var dryRun, yes bool
+	var tag, env, project, names string
+	var dryRun, yes, haltOnFail bool
+	var batch, pause, replicas, minReplicas, maxReplicas int
 	fs.StringVar(&tag, "tag", "", "select every app carrying this tag")
 	fs.StringVar(&env, "env", "", "select every app in this environment (name or ID)")
+	fs.StringVar(&project, "project", "", "select every app in this project (ID)")
 	fs.StringVar(&names, "names", "", "comma-separated app names to act on")
 	fs.BoolVar(&dryRun, "dry-run", false, "show what would be applied without changing anything")
+	fs.IntVar(&batch, "batch", 0, "apply in waves of this many apps (0 runs them all in one pass)")
+	fs.IntVar(&pause, "pause", 0, "seconds to wait between waves")
+	fs.BoolVar(&haltOnFail, "halt-on-fail", false, "stop before the next wave when a wave has a failure")
+	fs.IntVar(&replicas, "replicas", 0, "scale: set this many replicas on apps without autoscale")
+	fs.IntVar(&minReplicas, "min", 0, "scale: set the autoscale minimum (use with --max) on autoscaled apps")
+	fs.IntVar(&maxReplicas, "max", 0, "scale: set the autoscale maximum (use with --min) on autoscaled apps")
 	fs.BoolVar(&yes, "yes", false, "skip the confirmation prompt")
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -28,20 +36,30 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 	rest := fs.Args()
 	if len(rest) < 1 || len(rest) > 2 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps bulk requires an action and, for add-tag, remove-tag, set-environment and move-to-project, a value\n\n%s", prog, appsBulkUsage(prog))
+		_, _ = fmt.Fprintf(stderr, "%s: apps bulk requires an action and, for add-tag, remove-tag, set-environment, move-to-project, set-memory, set-cpu and set-env, a value\n\n%s", prog, appsBulkUsage(prog))
 		return exitUsage
 	}
-	req := apiclient.BulkAppsRequest{Action: rest[0], Tag: tag, Environment: env, DryRun: dryRun}
+	req := apiclient.BulkAppsRequest{Action: rest[0], Tag: tag, Environment: env, Project: project, DryRun: dryRun, BatchSize: batch, PauseSeconds: pause, HaltOnFail: haltOnFail}
 	if len(rest) == 2 {
 		req.Value = rest[1]
+	}
+	if err := applyBulkResourceValue(&req); err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
+		return exitUsage
+	}
+	if replicas > 0 {
+		req.Replicas = &replicas
+	}
+	if minReplicas > 0 || maxReplicas > 0 {
+		req.MinReplicas, req.MaxReplicas = &minReplicas, &maxReplicas
 	}
 	for _, n := range strings.Split(names, ",") {
 		if n = strings.TrimSpace(n); n != "" {
 			req.Names = append(req.Names, n)
 		}
 	}
-	if len(req.Names) == 0 && tag == "" && env == "" {
-		_, _ = fmt.Fprintf(stderr, "%s: select apps with --tag, --env or --names\n", prog)
+	if len(req.Names) == 0 && tag == "" && env == "" && project == "" {
+		_, _ = fmt.Fprintf(stderr, "%s: select apps with --tag, --env, --project or --names\n", prog)
 		return exitUsage
 	}
 
@@ -66,15 +84,13 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			return exitOK
 		}
 		if !yes {
-			_, _ = fmt.Fprintf(stderr, "%s %d app(s): %s\nProceed? [y/N] ", req.Action, len(targets), strings.Join(targets, ", "))
-			line, _ := bufio.NewReader(stdin).ReadString('\n')
-			if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
-				_, _ = fmt.Fprintln(stderr, "aborted")
-				return exitUsage
+			q := fmt.Sprintf("%s %d app(s): %s", req.Action, len(targets), strings.Join(targets, ", "))
+			if err := confirmAction(stdin, stderr, q, false, "--yes"); err != nil {
+				return reportError(stdout, stderr, jsonOut, err)
 			}
 		}
 		req.Names = targets
-		req.Tag, req.Environment = "", ""
+		req.Tag, req.Environment, req.Project = "", "", ""
 		req.ConfirmCount = len(targets)
 		if req.Action == "delete" {
 			req.ConfirmNames = targets
@@ -88,7 +104,10 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	code := writeScheduledTaskResult(stdout, stderr, of, resp, func() {
 		for _, r := range resp.Results {
 			line := fmt.Sprintf("%-32s %s", r.Name, r.Status)
-			if r.Message != "" {
+			if r.Before != "" || r.After != "" {
+				line += fmt.Sprintf("  %s -> %s", r.Before, r.After)
+			}
+			if r.Message != "" && r.Before == "" {
 				line += "  " + r.Message
 			}
 			_, _ = fmt.Fprintln(stdout, line)
@@ -102,21 +121,54 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 
 func appsBulkUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps bulk <action> [value] (--tag T | --env E | --names a,b) [--dry-run] [--yes]
+  %[1]s apps bulk <action> [value] (--tag T | --env E | --project P | --names a,b) [--dry-run] [--yes]
+      [--batch N] [--pause SECONDS] [--halt-on-fail]
 
 Actions: redeploy, restart, stop, start, add-tag <tag>, remove-tag <tag>,
-set-environment <env>, move-to-project <project-id>, delete.
+set-environment <env>, move-to-project <project-id>, delete,
+set-memory <512Mi|2Gi>, set-cpu <cores, e.g. 0.5>, set-env <KEY=VALUE> (a raise is checked against quota;
+--dry-run shows each app's before and after),
+scale (--replicas N, or --min N --max M for autoscaled apps), rollback (each app
+goes back to its previous release; apps without one are skipped).
 
 Each app is authorized separately; denied apps are listed, not hidden, and
 do not fail the rest. Without --yes the targets are shown and confirmed
-first. restart, stop and redeploy of more than 10 apps (APP_BULK_CONFIRM_ABOVE)
+first. restart, stop, redeploy and rollback of more than 10 apps (setting bulk.confirm_above)
 are also confirmed by count server side. delete always lists the exact apps it removes. redeploy skips apps in
 protected environments (deploy those individually).
 
 Flags:
-  --tag string, --env string, --names string   select target apps
+  --tag, --env, --project, --names   select target apps
+  --replicas N, --min N, --max M                scale targets
   --dry-run                                     show what would happen, change nothing
   --yes                                         skip the confirmation prompt
   --token, --api-url, --profile, --json, --output, --query   as for other commands
 `, prog)
+}
+
+// applyBulkResourceValue turns the positional value of set-memory, set-cpu and
+// set-env into the typed request fields the server expects.
+func applyBulkResourceValue(req *apiclient.BulkAppsRequest) error {
+	switch req.Action {
+	case "set-memory":
+		n, err := parseMemoryBytes(req.Value)
+		if err != nil {
+			return err
+		}
+		req.MemoryBytes, req.Value = &n, ""
+	case "set-cpu":
+		cores, err := strconv.ParseFloat(req.Value, 64)
+		if err != nil || cores <= 0 {
+			return fmt.Errorf("invalid cpu value %q, want cores above zero such as 0.5", req.Value)
+		}
+		n := int64(cores * 1e9)
+		req.NanoCPUs, req.Value = &n, ""
+	case "set-env":
+		key, val, ok := strings.Cut(req.Value, "=")
+		if !ok || key == "" {
+			return fmt.Errorf("set-env wants KEY=VALUE, got %q", req.Value)
+		}
+		req.EnvKey, req.EnvValue, req.Value = key, &val, ""
+	}
+	return nil
 }

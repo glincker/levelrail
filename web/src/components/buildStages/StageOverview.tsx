@@ -2,10 +2,12 @@ import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTranslation } from 'react-i18next'
 import { useDeployDetailT } from '../deployDetail/useDeployDetailT'
 import {
   BUILD_STAGE_ORDER,
   failedStage,
+  firstCacheMiss,
   type BuildStageName,
 } from '../../lib/buildStages'
 import { StageWaterfall } from './StageWaterfall'
@@ -24,6 +26,7 @@ export function StageOverview({
   onSelect: (stage: BuildStageName) => void
 }) {
   const { t } = useDeployDetailT()
+  const { t: tm } = useTranslation('buildLogs', { keyPrefix: 'cacheMiss' })
   const { query, data, nowMs } = useBuildStages(appName, deployId)
 
   if (query.isPending) {
@@ -64,6 +67,7 @@ export function StageOverview({
     )
   }
   const failed = failedStage(data)
+  const miss = firstCacheMiss(data)
   return (
     <div className="space-y-2">
       <StageWaterfall
@@ -72,6 +76,19 @@ export function StageOverview({
         selected={selected}
         onSelect={onSelect}
       />
+      {miss ? (
+        <div data-testid="cache-miss-hint">
+          <Banner variant="info" title={tm('title')}>
+            {tm('body', {
+              stage: t(`buildStages.stage.${miss.stage}`),
+              step: miss.step,
+              cause: tm(`cause.${miss.cause}`, {
+                defaultValue: tm('cause.step_changed'),
+              }),
+            })}
+          </Banner>
+        </div>
+      ) : null}
       {failed ? (
         <div data-testid="stage-failure-hint">
           <Banner

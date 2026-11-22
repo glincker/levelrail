@@ -1,0 +1,45 @@
+{
+  "envHints": {
+    "title": "Variáveis de ambiente",
+    "help": "Este repositório documenta as variáveis de que precisa. Preencha cada uma antes do primeiro deploy.",
+    "scanning": "Lendo o arquivo de exemplo de ambiente do repositório...",
+    "missing_one": "{{count}} variável obrigatória está vazia.",
+    "missing_other": "{{count}} variáveis obrigatórias estão vazias.",
+    "secretHint": "Armazenado criptografado",
+    "valueLabel": "Valor de {{name}}"
+  },
+  "nextStep": {
+    "dismiss": "Dispensar esta sugestão",
+    "app_domain": {
+      "title": "Seu app está no ar. Adicione seu próprio domínio.",
+      "body": "Aponte para este app um nome de host seu para que as pessoas o acessem pelo nome.",
+      "cta": "Adicionar um domínio"
+    },
+    "first_backup": {
+      "title": "Ative os backups",
+      "body": "Faça um primeiro backup para que a perda de um disco não leve seus apps junto.",
+      "cta": "Configurar backups"
+    },
+    "notifications": {
+      "title": "Adicione um monitor e um alerta",
+      "body": "Saiba de uma falha ou de uma verificação com erro antes dos seus usuários.",
+      "cta": "Configurar alertas"
+    },
+    "teammate": {
+      "title": "Convide um colega",
+      "body": "Dê acesso a uma segunda pessoa para que você não seja o único a fazer login.",
+      "cta": "Convidar alguém"
+    }
+  },
+  "launch": {
+    "title": "Seu app está no ar",
+    "body": "Abra ou escaneie o código para testar no celular.",
+    "copy": "Copiar URL",
+    "copied": "Copiado",
+    "share": "Copiar link de compartilhamento",
+    "shareText": "Experimente {{name}}:",
+    "dismiss": "Fechar",
+    "qrLabel": "QR code da URL ativa",
+    "qrLoading": "Carregando QR code"
+  }
+}

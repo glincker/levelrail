@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildWaterfall,
   cacheChipState,
+  firstCacheMiss,
   normalizeBuildStages,
   stageDurationMs,
   stagesPollInterval,
@@ -198,5 +199,28 @@ describe('stagesPollInterval', () => {
       ),
     ).toBe(false)
     expect(stagesPollInterval(data({ status: 'failed' }), 3000)).toBe(false)
+  })
+})
+
+describe('firstCacheMiss', () => {
+  it('returns the first stage that names a missed step', () => {
+    const d = data({
+      stages: [
+        stage({ stage: 'source' }),
+        stage({
+          stage: 'install',
+          miss_step: '[3/5] RUN npm ci',
+          miss_cause: 'copy_before_install',
+        }),
+      ],
+    })
+    expect(firstCacheMiss(d)).toEqual({
+      stage: 'install',
+      step: '[3/5] RUN npm ci',
+      cause: 'copy_before_install',
+    })
+    expect(
+      firstCacheMiss(data({ stages: [stage({ stage: 'build' })] })),
+    ).toBeNull()
   })
 })

@@ -60,7 +60,9 @@
     "anyMethod": "Beliebige Methode",
     "actorLabel": "Nach Akteur filtern",
     "actorPlaceholder": "Name des Akteurs",
-    "exportCsv": "CSV exportieren (neueste {{count}} Zeilen)"
+    "exportCsv": "CSV exportieren (alle passenden Zeilen)",
+    "exporting": "Exportiere...",
+    "exportFailed": "Export fehlgeschlagen. Erneut versuchen."
   },
   "anchor": {
     "title": "Audit-Anker",

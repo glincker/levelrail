@@ -75,6 +75,10 @@
       "parked_domain_cert_expiry": {
         "label": "Caducidad del certificado de dominio aparcado",
         "help": "Se activa cuando un dominio aparcado tiene menos días de certificado que el límite. Cubre todos los dominios aparcados de la plataforma."
+      },
+      "domain_registration_expiry": {
+        "label": "Vencimiento del registro de dominio",
+        "help": "Se activa cuando un dominio que sirves está dentro del límite de su fecha de vencimiento en el registrador, leída de datos públicos del registro. Cubre todos los dominios de la plataforma."
       }
     },
     "scopeLabel": "Dominio",

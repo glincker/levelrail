@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { usePersistedFlag } from '../hooks/usePersistedFlag'
 import { HEALTH_CHECK_DEFAULT_PATH } from '../lib/healthCheckDefaults'
 import type { FormInput } from '../lib/createAppFromGit'
 
@@ -32,6 +33,7 @@ export function CreateAppFromGitNetworkFields({
   locked: boolean
 }) {
   const { t } = useTranslation('gitSource')
+  const [showMore, setShowMore] = usePersistedFlag('lr.fold.gitNetwork')
   return (
     <>
       <div className="space-y-4">
@@ -69,38 +71,53 @@ export function CreateAppFromGitNetworkFields({
         </Field>
       </div>
 
-      <div className="space-y-4">
-        <FieldSectionLabel>{t('network.healthCheck')}</FieldSectionLabel>
-        <Field orientation="horizontal">
-          <Switch
-            id="git-app-health-enabled"
-            checked={healthCheckEnabled}
-            onCheckedChange={(checked) => {
-              setValue('healthCheckEnabled', checked, { shouldValidate: true })
-            }}
-            disabled={locked}
-          />
-          <FieldLabel htmlFor="git-app-health-enabled">
-            {t('network.healthEnable')}
-          </FieldLabel>
-        </Field>
-        {healthCheckEnabled ? (
-          <Field>
-            <FieldLabel htmlFor="git-app-health-path">
-              {t('network.healthPath')}
-            </FieldLabel>
-            <Input
-              id="git-app-health-path"
-              className="font-mono"
-              placeholder={HEALTH_CHECK_DEFAULT_PATH}
+      <button
+        type="button"
+        onClick={() => {
+          setShowMore((prev) => !prev)
+        }}
+        aria-expanded={showMore}
+        className="w-fit text-xs font-medium text-muted-foreground hover:text-foreground"
+      >
+        {showMore ? t('network.hideMore') : t('network.showMore')}
+      </button>
+
+      {showMore ? (
+        <div className="space-y-4">
+          <FieldSectionLabel>{t('network.healthCheck')}</FieldSectionLabel>
+          <Field orientation="horizontal">
+            <Switch
+              id="git-app-health-enabled"
+              checked={healthCheckEnabled}
+              onCheckedChange={(checked) => {
+                setValue('healthCheckEnabled', checked, {
+                  shouldValidate: true,
+                })
+              }}
               disabled={locked}
-              {...register('healthCheckPath')}
             />
-            <FieldHint>{t('network.healthHint')}</FieldHint>
-            <FieldError errors={[formState.errors.healthCheckPath]} />
+            <FieldLabel htmlFor="git-app-health-enabled">
+              {t('network.healthEnable')}
+            </FieldLabel>
           </Field>
-        ) : null}
-      </div>
+          {healthCheckEnabled ? (
+            <Field>
+              <FieldLabel htmlFor="git-app-health-path">
+                {t('network.healthPath')}
+              </FieldLabel>
+              <Input
+                id="git-app-health-path"
+                className="font-mono"
+                placeholder={HEALTH_CHECK_DEFAULT_PATH}
+                disabled={locked}
+                {...register('healthCheckPath')}
+              />
+              <FieldHint>{t('network.healthHint')}</FieldHint>
+              <FieldError errors={[formState.errors.healthCheckPath]} />
+            </Field>
+          ) : null}
+        </div>
+      ) : null}
     </>
   )
 }

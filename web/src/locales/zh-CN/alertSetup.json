@@ -75,6 +75,10 @@
       "parked_domain_cert_expiry": {
         "label": "停放域名证书过期",
         "help": "当停放域名的证书剩余天数少于限制时触发。覆盖平台上的所有停放域名。"
+      },
+      "domain_registration_expiry": {
+        "label": "域名注册到期",
+        "help": "当你提供服务的域名距注册商到期日不足设定天数时触发,日期取自公开注册数据。覆盖平台上的所有域名。"
       }
     },
     "scopeLabel": "域名",

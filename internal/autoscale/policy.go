@@ -66,6 +66,8 @@ type Policy struct {
 	StabilizationSecs     int `json:"stabilization_secs"`
 	MaxStepUp             int `json:"max_step_up"`
 	MaxStepDown           int `json:"max_step_down"`
+	// Schedules raise the minimum while a window is open; MinReplicas stays the base.
+	Schedules []Schedule `json:"schedules,omitempty"`
 }
 
 // Normalize fills unset fields with their defaults. Hysteresis cannot be
@@ -111,6 +113,9 @@ func (p Policy) Validate(ceiling int) error {
 		return fmt.Errorf("max_replicas must not exceed %d, the limit set by %s", ceiling, EnvMaxReplicasCeiling)
 	}
 	if err := p.validateTarget(); err != nil {
+		return err
+	}
+	if err := p.validateSchedules(); err != nil {
 		return err
 	}
 	switch {

@@ -149,6 +149,33 @@ func (l LiveAPI) Rollback(ctx context.Context, app, deployID string) error {
 	return wrapAction("rollback", app, err)
 }
 
+// Scale sets the replica count, keeping every other field as stored.
+func (l LiveAPI) Scale(ctx context.Context, app string, replicas int) error {
+	a, err := l.Client.GetApp(ctx, app)
+	if err != nil {
+		return wrapAction("scale", app, err)
+	}
+	a.Replicas = replicas
+	_, err = l.Client.UpdateApp(ctx, app, a)
+	return wrapAction("scale", app, err)
+}
+
+// SetEnv sets one plain env key, keeping every other field as stored.
+func (l LiveAPI) SetEnv(ctx context.Context, app, key, value string) error {
+	a, err := l.Client.GetApp(ctx, app)
+	if err != nil {
+		return wrapAction("env", app, err)
+	}
+	env := make(map[string]string, len(a.Env)+1)
+	for k, v := range a.Env {
+		env[k] = v
+	}
+	env[key] = value
+	a.Env = env
+	_, err = l.Client.UpdateApp(ctx, app, a)
+	return wrapAction("env", app, err)
+}
+
 // Logs tails an app or database log stream until ctx ends.
 func (l LiveAPI) Logs(ctx context.Context, kind LogKind, name string, onLine func(LogLine) error) error {
 	fn := func(e apiclient.LogStreamEntry) error {

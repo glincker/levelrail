@@ -159,6 +159,14 @@ func (db *DB) DeleteBackupHistory(ctx context.Context, id string) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	var pinned int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM backup_pins WHERE history_id = ?`, id).Scan(&pinned); err != nil {
+		return fmt.Errorf("store: delete backup history %q: check pin: %w", id, err)
+	}
+	if pinned > 0 {
+		return fmt.Errorf("%w: unpin %q first", ErrBackupPinned, id)
+	}
+
 	// Restores are audit history and block the delete; verification runs only describe this backup, so they go with it.
 	for _, table := range []string{"restore_history", "volume_clone_restores", "clone_restores"} {
 		var n int
@@ -223,10 +231,12 @@ func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, target_id, object_key FROM backup_history
 		WHERE database_name = ? AND status = ?
+		AND id NOT IN (SELECT history_id FROM backup_pins)
 		AND (
 			(? AND id NOT IN (
 				SELECT id FROM backup_history
 				WHERE database_name = ? AND status = ?
+				AND id NOT IN (SELECT history_id FROM backup_pins)
 				ORDER BY started_at DESC
 				LIMIT ?
 			))
@@ -439,10 +449,12 @@ func (db *DB) PruneServiceVolumeBackupHistory(ctx context.Context, serviceName, 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, target_id, object_key FROM backup_history
 		WHERE resource_kind = ? AND service_name = ? AND volume_name = ? AND status = ?
+		AND id NOT IN (SELECT history_id FROM backup_pins)
 		AND (
 			(? AND id NOT IN (
 				SELECT id FROM backup_history
 				WHERE resource_kind = ? AND service_name = ? AND volume_name = ? AND status = ?
+				AND id NOT IN (SELECT history_id FROM backup_pins)
 				ORDER BY started_at DESC
 				LIMIT ?
 			))

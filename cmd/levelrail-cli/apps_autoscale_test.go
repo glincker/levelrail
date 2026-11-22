@@ -117,3 +117,16 @@ func TestAutoscaleIsInTheCompletionTree(t *testing.T) {
 		}
 	}
 }
+
+func TestParseScheduleSpec(t *testing.T) {
+	s, err := parseScheduleSpec("mon-fri 08:00-20:00 min=3 Europe/Berlin")
+	if err != nil || len(s.Days) != 5 || s.Days[4] != "fri" || s.MinReplicas != 3 || s.Timezone != "Europe/Berlin" {
+		t.Fatalf("got %+v, %v", s, err)
+	}
+	if _, err := parseScheduleSpec("daily 20:00-08:00 min=2"); err != nil {
+		t.Fatalf("overnight daily window: %v", err)
+	}
+	if _, err := parseScheduleSpec("mon-fri 08:00 min=3"); err == nil {
+		t.Fatal("a window without an end must fail")
+	}
+}

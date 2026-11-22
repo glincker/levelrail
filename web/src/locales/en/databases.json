@@ -169,6 +169,10 @@
     "failedTitle": "Could not start restore."
   },
   "majorUpgrade": {
+    "checkGo": "Go: a recent restore point exists.",
+    "checkNoGo": "No-go: fix the items below before upgrading.",
+    "restorePoint": "Newest restore point is {{age}} old (limit {{limit}}).",
+    "noRestorePoint": "No successful backup yet, so there is no restore point.",
     "title": "Major version upgrade",
     "description": "Upgrades this database across a major version by dump and restore. It is offline while it runs. The old data is copied to a rollback snapshot first, and a failure rolls back automatically.",
     "versionLabel": "Target major version",

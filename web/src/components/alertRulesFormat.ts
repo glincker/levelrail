@@ -3,6 +3,7 @@ import type { badgeVariants } from '@/components/ui/badge'
 import type { AlertRule } from '../types/alerts'
 import {
   PARKED_CERT_DEFAULT_DAYS,
+  REGISTRATION_EXPIRY_DEFAULT_DAYS,
   TRAFFIC_DROP_DEFAULTS,
   domainFromResourceId,
 } from '@/lib/alertTrafficKinds'
@@ -95,6 +96,9 @@ export function formatCondition(rule: AlertRule): string {
   }
   if (rule.kind === 'parked_domain_cert_expiry') {
     return `a parked domain with fewer than ${rule.threshold || PARKED_CERT_DEFAULT_DAYS} days of certificate left (platform-wide)`
+  }
+  if (rule.kind === 'domain_registration_expiry') {
+    return `a domain registration with fewer than ${rule.threshold || REGISTRATION_EXPIRY_DEFAULT_DAYS} days left (platform-wide)`
   }
   if (rule.kind === 'slo_burn') {
     const slo = rule.slo
@@ -198,6 +202,9 @@ export function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'parked_domain_cert_expiry') {
     return `${rule.last_value.toFixed(1)} days left (soonest parked domain)`
+  }
+  if (rule.kind === 'domain_registration_expiry') {
+    return `${rule.last_value.toFixed(1)} days left (soonest domain registration)`
   }
   if (rule.kind === 'slo_burn') {
     return `${rule.last_value.toFixed(1)}x burn rate (fastest tier)`

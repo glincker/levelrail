@@ -927,7 +927,7 @@ levelrail-cli nodes capacity-forecast <id>   # projects when disk or memory runs
 
 Each node is watched for disk, inode, memory and swap headroom against warn and critical thresholds (env defaults `APP_NODE_DISK_WARN_FREE_PCT`, `APP_NODE_DISK_CRIT_FREE_PCT`, and the matching `INODE`, `MEM` and `SWAP` variables; per-node overrides live in the node's Capacity card). Warn raises an attention item and a notice. At critical, new builds and deploys on that node are refused with a clear reason while the running version keeps serving.
 
-The Free space button previews a cleanup grouped by class, then asks for confirmation. Only dangling images, idle build cache and stopped containers are removed. Images kept for rollback and volumes are shown but never deleted. Auto-clean is opt-in per node and off by default. Cleanup runs on the control plane node only for now; remote nodes report capacity and block, but you free their space on the host.
+The Free space button previews a cleanup grouped by class, then asks for confirmation. Only dangling images, idle build cache and stopped containers are removed. Images kept for rollback and volumes are shown but never deleted. Auto-clean is opt-in per node and off by default. On a remote node the same cleanup runs through its agent and keeps every container the control plane still wants. An agent too old to advertise `node_cleanup` only reports capacity and blocks, so upgrade it or free the space on the host.
 
 ```bash
 levelrail-cli nodes capacity <node>              # use "local" for the control plane node
@@ -1160,3 +1160,9 @@ Move app volumes to another node.
 Per-node metrics, resource usage and patch status.
 </Card>
 </CardGroup>
+
+## Rolling zone drain, canary agent updates and stranded capacity
+
+- `levelrail nodes drain --zone ZONE [--min-available N] [--dry-run]` drains a zone one node at a time, fewest workloads first. It waits for each drain to finish, stops at the first failure and refuses to start if fewer than N nodes outside the zone would stay online.
+- Label a node `levelrail.io/agent-canary=true` to make it the canary: other nodes hold their automatic agent update until every canary runs the target version and is online. Update anyway still overrides.
+- `nodes simulate` and `GET /api/v1/nodes/placement-simulation` now include a per node report of reserved versus used memory, with the stranded amount.

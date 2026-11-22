@@ -3,9 +3,12 @@ package alerting
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
+
+	"golang.org/x/net/publicsuffix"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -20,6 +23,9 @@ const (
 	// KindParkedDomainCertExpiry fires for parked domains whose certificate has fewer than
 	// Threshold days left. Platform-wide.
 	KindParkedDomainCertExpiry Kind = "parked_domain_cert_expiry"
+	// KindDomainRegistrationExpiry fires when a domain you serve is within Threshold days of
+	// its registrar expiration (RDAP). Platform-wide.
+	KindDomainRegistrationExpiry Kind = "domain_registration_expiry"
 )
 
 // Defaults for the domain lifecycle kinds; a rule's own fields override them.
@@ -28,6 +34,7 @@ const (
 	DefaultDomainTrafficDropPercent     = 50.0
 	DefaultDomainTrafficDropMinBaseline = 20
 	DefaultParkedCertExpiryDays         = 14
+	DefaultRegistrationExpiryDays       = 30
 	// domainTrafficBaselineShift is how far back the comparison window sits.
 	domainTrafficBaselineShift = 24 * time.Hour
 )
@@ -42,6 +49,14 @@ type DomainTrafficSource interface {
 type ParkedDomainSource interface {
 	ListParkedDomains(ctx context.Context) ([]store.ParkedDomain, error)
 }
+
+// RegistrationExpirySource returns a domain's registrar expiration. *dnszones.RDAP satisfies it.
+type RegistrationExpirySource interface {
+	Expiration(ctx context.Context, domain string) (time.Time, bool)
+}
+
+// SetRegistrationExpiry enables domain_registration_expiry; nil leaves the kind skipped.
+func (e *Engine) SetRegistrationExpiry(src RegistrationExpirySource) { e.traffic.registration = src }
 
 // SetDomainTraffic enables domain_traffic_drop; nil leaves the kind skipped.
 func (e *Engine) SetDomainTraffic(src DomainTrafficSource) { e.traffic.visits = src }
@@ -160,5 +175,44 @@ func (e *Engine) EvaluateParkedDomainCertExpiry(ctx context.Context, r Rule, now
 	sort.Strings(notices)
 	count := float64(len(notices))
 	next.LastValue = &count
+	return advanceState(next, r, len(notices) > 0, 0, now), notices, nil
+}
+
+// EvaluateDomainRegistrationExpiry runs one KindDomainRegistrationExpiry rule.
+// Domains are checked at their registrable name, and a failed lookup never fires.
+func (e *Engine) EvaluateDomainRegistrationExpiry(ctx context.Context, r Rule, now time.Time) (Rule, []string, error) {
+	days := int(r.Threshold)
+	if days <= 0 {
+		days = DefaultRegistrationExpiryDays
+	}
+	domains, err := e.traffic.domains.ListServiceDomains(ctx)
+	if err != nil {
+		return r, nil, fmt.Errorf("alerting: evaluate rule %q: list domains: %w", r.ID, err)
+	}
+	seen := map[string]bool{}
+	var notices []string
+	minDays := math.Inf(1)
+	for _, d := range domains {
+		name, err := publicsuffix.EffectiveTLDPlusOne(strings.ToLower(strings.TrimSuffix(d.Domain, ".")))
+		if err != nil || seen[name] {
+			continue
+		}
+		seen[name] = true
+		exp, ok := e.traffic.registration.Expiration(ctx, name)
+		if !ok {
+			continue
+		}
+		left := exp.Sub(now).Hours() / 24
+		minDays = math.Min(minDays, left)
+		if left < float64(days) {
+			notices = append(notices, fmt.Sprintf("%s: registration expires %s (%.0f days)", name, exp.UTC().Format(time.DateOnly), left))
+		}
+	}
+	sort.Strings(notices)
+	next := r
+	next.LastEvaluatedAt = &now
+	if !math.IsInf(minDays, 1) {
+		next.LastValue = &minDays
+	}
 	return advanceState(next, r, len(notices) > 0, 0, now), notices, nil
 }

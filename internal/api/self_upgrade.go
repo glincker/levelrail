@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -189,7 +190,17 @@ type selfUpgradeBreaking struct {
 	RequiresAck bool   `json:"requires_ack"`
 }
 
+// selfUpgradeSkipped is one release passed over by the upgrade, with its
+// own breaking changes so the page can group them per version.
+type selfUpgradeSkipped struct {
+	Version  string                `json:"version"`
+	Notes    string                `json:"notes"`
+	Breaking []selfUpgradeBreaking `json:"breaking"`
+}
+
 type selfUpgradePlanResource struct {
+	// Skipped lists every release newer than the running one up to the target, oldest first.
+	Skipped        []selfUpgradeSkipped  `json:"skipped"`
 	CurrentVersion string                `json:"current_version"`
 	TargetVersion  string                `json:"target_version"`
 	Breaking       []selfUpgradeBreaking `json:"breaking"`
@@ -300,7 +311,7 @@ func (rt *Router) fillPlanSchema(ctx context.Context, plan *selfUpgradePlanResou
 }
 
 func (rt *Router) buildSelfUpgradePlan(ctx context.Context, target string) (selfUpgradePlanResource, int, string) {
-	plan := selfUpgradePlanResource{CurrentVersion: version.Version, TargetVersion: target, Breaking: []selfUpgradeBreaking{}, Steps: selfUpgradeSteps}
+	plan := selfUpgradePlanResource{CurrentVersion: version.Version, TargetVersion: target, Breaking: []selfUpgradeBreaking{}, Skipped: []selfUpgradeSkipped{}, Steps: selfUpgradeSteps}
 	if !selfupgrade.ValidTag(target) {
 		return plan, http.StatusBadRequest, "target must be a release tag such as v1.2.3"
 	}
@@ -327,6 +338,7 @@ func (rt *Router) buildSelfUpgradePlan(ctx context.Context, target string) (self
 		if fromFallback {
 			plan.NotesSource = notesSourceFallback
 		}
+		plan.Skipped = skippedReleases(releases, version.Version, target)
 		for _, b := range selfupgrade.BreakingBetween(notes, version.Version, target) {
 			plan.Breaking = append(plan.Breaking, selfUpgradeBreaking{ID: b.ID, Version: b.Version, Summary: b.Summary, RequiresAck: b.RequiresAck})
 		}
@@ -582,4 +594,27 @@ func edgePlan(tag string, g *edgeGuidance) selfUpgradePlanResource {
 		CurrentVersion: version.Version, TargetVersion: tag, Breaking: []selfUpgradeBreaking{}, Steps: []string{},
 		CannotApplyWhy: errEdgeNotApplicable, Command: cmd, Edge: g,
 	}
+}
+
+// skippedReleases returns the notes of every release newer than current and
+// no newer than target, oldest first, each with its breaking changes.
+func skippedReleases(all []upgrade.HistoryRelease, current, target string) []selfUpgradeSkipped {
+	out := []selfUpgradeSkipped{}
+	for _, r := range all {
+		newer, ok1 := semver.Compare(r.Tag, current)
+		upTo, ok2 := semver.Compare(r.Tag, target)
+		if !ok1 || !ok2 || newer <= 0 || upTo > 0 {
+			continue
+		}
+		item := selfUpgradeSkipped{Version: r.Tag, Notes: truncateRunes(cleanReleaseNotes(r.Body), releaseNotesHistoryMx), Breaking: []selfUpgradeBreaking{}}
+		for _, b := range selfupgrade.ParseBreaking(r.Tag, r.Body) {
+			item.Breaking = append(item.Breaking, selfUpgradeBreaking{ID: b.ID, Version: b.Version, Summary: b.Summary, RequiresAck: b.RequiresAck})
+		}
+		out = append(out, item)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		c, ok := semver.Compare(out[i].Version, out[j].Version)
+		return ok && c < 0
+	})
+	return out
 }

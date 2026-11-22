@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -19,12 +20,13 @@ func TestAutoscaleRoundTrip(t *testing.T) {
 	if _, err := db.GetAutoscalePolicy(ctx, "web"); !errors.Is(err, autoscale.ErrNotFound) {
 		t.Fatalf("missing policy = %v", err)
 	}
-	pol := autoscale.Policy{App: "web", MinReplicas: 2, MaxReplicas: 8, Metric: autoscale.MetricRequestsPerReplica, Target: 120.5}.Normalize()
+	pol := autoscale.Policy{App: "web", MinReplicas: 2, MaxReplicas: 8, Metric: autoscale.MetricRequestsPerReplica, Target: 120.5,
+		Schedules: []autoscale.Schedule{{Days: []string{"mon", "tue"}, Start: "08:00", End: "20:00", Timezone: "Europe/Berlin", MinReplicas: 4}}}.Normalize()
 	if err := db.SaveAutoscalePolicy(ctx, pol, autoscale.Event{App: "web", Kind: autoscale.EventConfigured, At: now}, now); err != nil {
 		t.Fatal(err)
 	}
 	got, err := db.GetAutoscalePolicy(ctx, "web")
-	if err != nil || got != pol {
+	if err != nil || !reflect.DeepEqual(got, pol) {
 		t.Fatalf("policy = %+v err = %v, want %+v", got, err, pol)
 	}
 

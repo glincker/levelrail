@@ -218,3 +218,44 @@ export function useDeleteBackup(databaseName: string) {
     },
   })
 }
+
+// PUT (pin) or DELETE (unpin) .../backups/{historyId}/pin for a database
+// or app volume backup, chosen from the record's own resource kind.
+export async function setBackupPinned(
+  record: BackupHistoryRecord,
+  pinned: boolean,
+): Promise<void> {
+  const base =
+    record.resource_kind === 'volume'
+      ? `/api/v1/apps/${encodeURIComponent(record.service_name ?? '')}/volumes/${encodeURIComponent(record.volume_name ?? '')}/backups`
+      : `/api/v1/databases/${encodeURIComponent(record.database_name ?? '')}/backups`
+  const res = await fetch(`${base}/${encodeURIComponent(record.id)}/pin`, {
+    method: pinned ? 'PUT' : 'DELETE',
+  })
+  if (res.status === 204) {
+    return
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(res, `set backup pin failed: ${res.status}`),
+  )
+}
+
+export function useSetBackupPinned() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    void,
+    ApiError,
+    { record: BackupHistoryRecord; pinned: boolean }
+  >({
+    mutationFn: ({ record, pinned }) => setBackupPinned(record, pinned),
+    onSuccess: () => {
+      // Every history list carries the pinned flag, so refresh them all.
+      void queryClient.invalidateQueries({ queryKey: ['databases'] })
+      void queryClient.invalidateQueries({ queryKey: ['apps'] })
+      void queryClient.invalidateQueries({
+        queryKey: allBackupHistoryKeys.list(),
+      })
+    },
+  })
+}

@@ -77,13 +77,10 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		return exitCode
 	}
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: %s requires exactly one app name\n\n", prog, cfg.cmdLabel)
-		fs.Usage()
+	name, ok := requireOneArg(fs, stderr, prog, cfg.cmdLabel, "app name")
+	if !ok {
 		return exitUsage
 	}
-	name := rest[0]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
@@ -152,6 +149,13 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		image = resolved
 	}
 
+	// Read before the change so the undo hint can name the image to go back to.
+	priorImage := ""
+	if !cfg.knownImagesOnly {
+		if cur, gerr := client.GetApp(ctx, name); gerr == nil {
+			priorImage = cur.Image
+		}
+	}
 	if idemKey == "" {
 		idemKey = idempotencyKey(lookupEnv, time.Now(), cfg.errContext, name, image)
 	}
@@ -174,6 +178,9 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
 		_, _ = fmt.Fprintf(stderr, cfg.successFormat, updated.Name, updated.Image, prog, updated.Name)
 		printAppHuman(stdout, updated)
+		if priorImage != "" && priorImage != updated.Image {
+			_, _ = fmt.Fprint(stderr, undoHint(prog, "apps", "rollback", updated.Name, "--image", priorImage))
+		}
 	})
 }
 

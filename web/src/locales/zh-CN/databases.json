@@ -169,6 +169,10 @@
     "failedTitle": "无法开始恢复。"
   },
   "majorUpgrade": {
+    "checkGo": "可以升级:存在较新的恢复点。",
+    "checkNoGo": "暂不可升级:请先解决下列问题。",
+    "restorePoint": "最新恢复点已有 {{age}}(上限 {{limit}})。",
+    "noRestorePoint": "尚无成功的备份,因此没有恢复点。",
     "title": "主版本升级",
     "description": "通过转储和恢复，将此数据库跨主版本升级。运行期间它处于离线状态。旧数据会先复制到回滚快照，失败时自动回滚。",
     "versionLabel": "目标主版本",

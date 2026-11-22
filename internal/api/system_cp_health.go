@@ -9,7 +9,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
-	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -17,13 +17,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
-	envMaxLiveStreams     = "APP_MAX_LIVE_STREAMS"
-	defaultMaxLiveStreams = 500
-	streamRetryAfterSecs  = "5"
+	streamRetryAfterSecs = "5"
+	maxStreamHolders     = 10
 )
 
 // ControlPlaneDB is the database surface the health page reads and fixes.
@@ -61,26 +61,58 @@ type GuardProbe interface {
 type cpHealthState struct {
 	probe   atomic.Pointer[ControlPlaneProbe]
 	streams atomic.Int64
-	cap     int64
+	cap     int64 // test override; production reads the runtime setting
+
+	holdMu  sync.Mutex
+	holders map[string]int
+}
+
+func (s *cpHealthState) hold(caller string, delta int) {
+	s.holdMu.Lock()
+	defer s.holdMu.Unlock()
+	if s.holders == nil {
+		s.holders = map[string]int{}
+	}
+	if s.holders[caller]+delta <= 0 {
+		delete(s.holders, caller)
+		return
+	}
+	s.holders[caller] += delta
+}
+
+func (s *cpHealthState) topHolders() []cpStreamHolder {
+	s.holdMu.Lock()
+	out := make([]cpStreamHolder, 0, len(s.holders))
+	for c, n := range s.holders {
+		out = append(out, cpStreamHolder{Caller: c, Streams: n})
+	}
+	s.holdMu.Unlock()
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Streams != out[j].Streams {
+			return out[i].Streams > out[j].Streams
+		}
+		return out[i].Caller < out[j].Caller
+	})
+	if len(out) > maxStreamHolders {
+		out = out[:maxStreamHolders]
+	}
+	return out
 }
 
 // SetControlPlaneProbe enables GET /api/v1/system/control-plane-health.
 func (rt *Router) SetControlPlaneProbe(p ControlPlaneProbe) { rt.cpHealth.probe.Store(&p) }
 
-func (s *cpHealthState) streamCap() int64 {
-	if s.cap > 0 {
-		return s.cap
+func (rt *Router) streamCap() int64 {
+	if rt.cpHealth.cap > 0 {
+		return rt.cpHealth.cap
 	}
-	if n, err := strconv.Atoi(os.Getenv(envMaxLiveStreams)); err == nil && n > 0 {
-		return int64(n)
-	}
-	return defaultMaxLiveStreams
+	return int64(rt.changesSettings().Limit(context.Background(), runtimesettings.KeyMaxLiveStreams))
 }
 
 // startLiveSSE is startSSE for long lived streams: it refuses new ones past the cap so a stampede cannot starve the process.
 func (rt *Router) startLiveSSE(w http.ResponseWriter, r *http.Request) (http.Flusher, bool) {
 	s := &rt.cpHealth
-	if s.streams.Add(1) > s.streamCap() {
+	if s.streams.Add(1) > rt.streamCap() {
 		s.streams.Add(-1)
 		w.Header().Set("Retry-After", streamRetryAfterSecs)
 		writeError(w, http.StatusServiceUnavailable, "too many live streams, retry shortly")
@@ -91,9 +123,15 @@ func (rt *Router) startLiveSSE(w http.ResponseWriter, r *http.Request) (http.Flu
 		s.streams.Add(-1)
 		return nil, false
 	}
+	caller := "unknown"
+	if pt, pid, _, err := rt.callerPrincipal(r); err == nil {
+		caller = pt + ":" + pid
+	}
+	s.hold(caller, 1)
 	go func() {
 		<-r.Context().Done()
 		s.streams.Add(-1)
+		s.hold(caller, -1)
 	}()
 	return flusher, true
 }
@@ -110,6 +148,10 @@ type cpHealthResource struct {
 	Thresholds cphealth.Thresholds  `json:"thresholds"`
 	Findings   []cphealth.Finding   `json:"findings"`
 	Status     string               `json:"status"`
+
+	SlowRequestThresholdMS float64            `json:"slow_request_threshold_ms"`
+	SlowRequests           []slowRequestEntry `json:"slow_requests"`
+	HotRoutes              []routeStat        `json:"hot_routes"`
 }
 
 type cpRuntime struct {
@@ -164,8 +206,14 @@ type cpFootprint struct {
 }
 
 type cpStreams struct {
-	Active int64 `json:"active"`
-	Cap    int64 `json:"cap"`
+	Active  int64            `json:"active"`
+	Cap     int64            `json:"cap"`
+	Holders []cpStreamHolder `json:"holders"`
+}
+
+type cpStreamHolder struct {
+	Caller  string `json:"caller"`
+	Streams int    `json:"streams"`
 }
 
 func durMS(d time.Duration) float64 { return float64(d) / float64(time.Millisecond) }
@@ -185,9 +233,12 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 			GCPauseMS: float64(ms.PauseNs[(ms.NumGC+255)%256]) / float64(time.Millisecond),
 		},
 		DB:      p.DB.Metrics(),
-		Streams: cpStreams{Active: rt.cpHealth.streams.Load(), Cap: rt.cpHealth.streamCap()},
+		Streams: cpStreams{Active: rt.cpHealth.streams.Load(), Cap: rt.streamCap(), Holders: rt.cpHealth.topHolders()},
 	}
 	res.Spool = spool.Usage()
+	res.SlowRequestThresholdMS = durMS(rt.liveSlowThreshold())
+	res.SlowRequests = rt.slowRequests.snapshot()
+	res.HotRoutes = rt.slowRequests.stats.top(routeStatReport)
 	proc := footprint.ReadProc()
 	res.Footprint = cpFootprint{
 		RSSBytes: proc.RSSBytes, Threads: proc.Threads, OpenFDs: proc.OpenFDs, CPUPercent: proc.CPUPercent,
@@ -259,6 +310,12 @@ func (r *cpHealthResource) normalizeSlices() {
 	if r.Footprint.Goroutines == nil {
 		r.Footprint.Goroutines = []footprint.SubsystemCount{}
 	}
+	if r.HotRoutes == nil {
+		r.HotRoutes = []routeStat{}
+	}
+	if r.DB.HotStatements == nil {
+		r.DB.HotStatements = []store.HotStatement{}
+	}
 	if r.DB.RecentSlow == nil {
 		r.DB.RecentSlow = []store.SlowQuery{}
 	}
@@ -322,6 +379,7 @@ func (rt *Router) handleCPHealthFix(w http.ResponseWriter, r *http.Request) {
 		err = p.DB.Optimize(r.Context())
 	case cphealth.FixResetSlowLog:
 		p.DB.ResetSlowQueries()
+		rt.slowRequests.stats.reset()
 	case cphealth.FixTelemetryPrune:
 		if p.Telemetry == nil {
 			writeError(w, http.StatusNotImplemented, "metrics database is not available")

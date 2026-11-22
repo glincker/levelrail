@@ -470,17 +470,14 @@ func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, 
 // ListDeployAttempts returns every attempt for serviceName, newest
 // first. A service with no attempts yet returns an empty (nil) slice and
 // a nil error, not an error, the same "absence is not an error"
-// convention GetConditions/QueryLogs already establish. No pagination:
-// per this task's own scope note, an app that accumulates a very large
-// number of attempts over its lifetime will make this list grow
-// unbounded; that's a known, deliberately deferred follow-up, not solved
-// here.
+// convention GetConditions/QueryLogs already establish. The API pages
+// the result by (started_at, id) keyset, which this order makes stable.
 func (db *DB) ListDeployAttempts(ctx context.Context, serviceName string) ([]DeployAttempt, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT `+deployAttemptColumns+`
 		FROM deploy_attempts
 		WHERE service_name = ?
-		ORDER BY started_at DESC
+		ORDER BY started_at DESC, id DESC
 	`, serviceName)
 	if err != nil {
 		return nil, fmt.Errorf("store: list deploy attempts for %q: %w", serviceName, err)

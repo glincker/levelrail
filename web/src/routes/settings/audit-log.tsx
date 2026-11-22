@@ -10,7 +10,7 @@ import {
   TriangleAlertGlassIcon,
 } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button, buttonVariants } from '../../components/ui/button'
+import { Button } from '../../components/ui/button'
 import {
   Select,
   SelectContent,
@@ -19,8 +19,7 @@ import {
   SelectValue,
 } from '../../components/ui/select'
 import {
-  AUDIT_LOG_EXPORT_LIMIT,
-  auditLogExportURL,
+  fetchAuditLogCsvAll,
   auditLogQueryOptions,
   fetchAuditLog,
   isAuditRange,
@@ -94,24 +93,9 @@ export const Route = createFileRoute('/settings/audit-log')({
   pendingComponent: AuditLogSettingsPending,
 })
 
-// Downloads GET /api/v1/audit-log?format=csv as a plain browser
-// navigation (<a href download>), the same pattern
-// BackupsSection.tsx's DownloadBackupLink already establishes for a raw,
-// non-JSON response: no fetch/blob dance needed since auth rides along
-// on the same httpOnly session cookie every same-origin request uses.
-// clientKind, when set, carries the live filter into the export so the
-// downloaded CSV matches what's on screen.
-function ExportAuditLogLink({
-  clientKind,
-  search,
-  failedOnly,
-  agent,
-  action,
-  path,
-  since,
-  actor,
-  method,
-}: {
+// Pages the CSV export until every matching row is fetched, then saves it as
+// one file, so the button matches the CLI export instead of the first page.
+function ExportAuditLogLink(props: {
   since?: string
   actor?: string
   method?: string
@@ -123,25 +107,45 @@ function ExportAuditLogLink({
   path?: string
 }) {
   const { t } = useTranslation('auditLog')
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const run = async () => {
+    setBusy(true)
+    setFailed(false)
+    try {
+      const csv = await fetchAuditLogCsvAll(props)
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'audit-log.csv'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setFailed(true)
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
-    <a
-      href={auditLogExportURL({
-        clientKind,
-        search,
-        failedOnly,
-        agent,
-        action,
-        path,
-        since,
-        actor,
-        method,
-      })}
-      download
-      className={buttonVariants({ variant: 'outline', size: 'sm' })}
-    >
-      <DownloadGlassIcon className="size-5" aria-hidden="true" />
-      {t('filters.exportCsv', { count: AUDIT_LOG_EXPORT_LIMIT })}
-    </a>
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        onClick={() => {
+          void run()
+        }}
+      >
+        <DownloadGlassIcon className="size-5" aria-hidden="true" />
+        {busy ? t('filters.exporting') : t('filters.exportCsv')}
+      </Button>
+      {failed ? (
+        <span role="alert" className="text-sm text-destructive">
+          {t('filters.exportFailed')}
+        </span>
+      ) : null}
+    </>
   )
 }
 

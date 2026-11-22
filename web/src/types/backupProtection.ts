@@ -108,3 +108,25 @@ export interface VolumeRestoreToResponse {
   new_volume_name: string
   node_id: string
 }
+
+export interface AppRestoreToNodeRequest {
+  node_id: string
+  dry_run?: boolean
+}
+
+export interface AppRestoreToNodeItem {
+  kind: 'volume' | 'database'
+  source: string
+  new_name?: string
+  backup_id?: string
+  id?: string
+  status: 'planned' | 'started' | 'skipped' | 'failed'
+  reason?: string
+}
+
+export interface AppRestoreToNodeResponse {
+  app: string
+  node_id: string
+  dry_run: boolean
+  items: AppRestoreToNodeItem[]
+}

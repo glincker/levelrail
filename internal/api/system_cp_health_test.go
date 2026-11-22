@@ -168,3 +168,18 @@ func TestCPHealthTelemetryFindingAndFix(t *testing.T) {
 		t.Fatalf("fix = %d, compacts %d, body %s", rec.Code, tel.compacts, rec.Body.String())
 	}
 }
+
+func TestLiveStreamHolders(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.cpHealth.hold("token:a", 1)
+	rt.cpHealth.hold("token:a", 1)
+	rt.cpHealth.hold("token:b", 1)
+	rt.cpHealth.hold("token:b", -1)
+	h := rt.cpHealth.topHolders()
+	if len(h) != 1 || h[0].Caller != "token:a" || h[0].Streams != 2 {
+		t.Fatalf("holders = %+v", h)
+	}
+	if got := rt.streamCap(); got != 500 {
+		t.Fatalf("default cap = %d, want 500", got)
+	}
+}

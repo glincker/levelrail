@@ -598,6 +598,9 @@ func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.Des
 		return
 	}
 	digestReason, reason := describeResolution(res)
+	if reason == "" && source == store.DeployAttemptSourceImage {
+		reason = imageUpdateReviewLine(svc.Image, res.Digest, image)
+	}
 	now := time.Now()
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: serviceName, Image: image,
@@ -620,6 +623,62 @@ func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.Des
 			ReleaseNotes: rt.releaseNotesForDeploy(ctx, serviceName, source),
 		})
 	}
+}
+
+// imageUpdateReviewLine summarises an automatic image update for review: the digest
+// change and where to read what changed. Empty when the digest did not move.
+func imageUpdateReviewLine(prevImage, newDigest, ref string) string {
+	prev := docker.ImageDigestOf(prevImage)
+	if newDigest == "" || prev == newDigest {
+		return ""
+	}
+	if prev == "" {
+		prev = "none"
+	}
+	line := "ImageUpdate: " + shortDigest(prev) + " to " + shortDigest(newDigest)
+	if link := imageChangelogLink(ref); link != "" {
+		line += "; changes: " + link
+	}
+	return line
+}
+
+// imageChangelogLink points at the registry page that lists the image's tags and
+// releases. Only registries with a stable public URL shape get one.
+func imageChangelogLink(ref string) string {
+	repo := docker.UnpinImageRef(ref)
+	if i := strings.LastIndex(repo, ":"); i > strings.LastIndex(repo, "/") {
+		repo = repo[:i]
+	}
+	parts := strings.Split(repo, "/")
+	switch {
+	case len(parts) == 3 && parts[0] == "ghcr.io":
+		return "https://github.com/" + parts[1] + "/" + parts[2] + "/pkgs/container/" + parts[2]
+	case len(parts) == 1:
+		return "https://hub.docker.com/_/" + parts[0]
+	case len(parts) == 2 && !strings.ContainsAny(parts[0], ".:"):
+		return "https://hub.docker.com/r/" + parts[0] + "/" + parts[1]
+	}
+	return ""
+}
+
+// crashBackoffResource is the restart delay of a crash-looping app, parsed from its
+// Ready condition so no second source of truth exists. Stopping the app ends retries.
+type crashBackoffResource struct {
+	Restarts       int       `json:"restarts"`
+	RetryInSeconds int       `json:"retry_in_seconds"`
+	NextRestartAt  time.Time `json:"next_restart_at"`
+}
+
+func crashBackoffFrom(conditions []reconcile.Condition, now time.Time) *crashBackoffResource {
+	for _, c := range conditions {
+		if c.Reason != deploysafety.ReasonCrashLoopBackOff {
+			continue
+		}
+		if n, wait, ok := deploysafety.ParseCrashLoop(c.Message); ok {
+			return &crashBackoffResource{Restarts: n, RetryInSeconds: int(wait.Seconds()), NextRestartAt: now.Add(wait).UTC()}
+		}
+	}
+	return nil
 }
 
 // describeResolution maps an image resolution to the digest reason and the
@@ -720,7 +779,7 @@ func (rt *Router) handleAppStatus(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: app status failed", err, slog.String("name", name))
 		return
 	}
-	out := appStatusResource{Conditions: conditions}
+	out := appStatusResource{Conditions: conditions, Backoff: crashBackoffFrom(conditions, time.Now())}
 	if rt.deployAttempts != nil {
 		attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), name)
 		if err != nil {
@@ -745,6 +804,7 @@ type appStatusResource struct {
 	Outcome                  string                `json:"outcome,omitempty"`
 	OutcomeReason            string                `json:"outcome_reason,omitempty"`
 	RolloutCrashLoopRestarts int                   `json:"rollout_crash_loop_restarts,omitempty"`
+	Backoff                  *crashBackoffResource `json:"backoff,omitempty"`
 }
 
 // markRestartRollingOut replaces a stored Ready=True while the newest attempt

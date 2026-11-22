@@ -15,9 +15,11 @@ func bashCompletionScript(prog string) string {
 
 	b.WriteString(renderChildrenFunc(fmt.Sprintf("_%s_children", ident)))
 	b.WriteString("\n")
+	b.WriteString(renderFlagsFunc(fmt.Sprintf("_%s_flags", ident)))
+	b.WriteString("\n")
 
 	fmt.Fprintf(&b, `_%[1]s_complete() {
-  local cur words cword path i w children opts
+  local cur words cword path i w children opts names
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
   words=("${COMP_WORDS[@]}")
@@ -37,7 +39,15 @@ func bashCompletionScript(prog string) string {
     esac
     i=$((i + 1))
   done
+  names="$(%[3]s __complete "${COMP_WORDS[@]:1:$cword}" 2>/dev/null)"
+  if [ -n "$names" ]; then
+    COMPREPLY=( $(compgen -W "$names" -- "$cur") )
+    return 0
+  fi
   children="$(_%[1]s_children "$path")"
+  case "$cur" in
+    -*) children="$(_%[1]s_flags "$path")" ;;
+  esac
   opts="$children %[2]s"
   COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
   return 0

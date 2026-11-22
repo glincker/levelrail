@@ -151,6 +151,24 @@
       "started": "Rollback to {{version}} started. The dashboard reconnects when the control plane is back."
     }
   },
+  "smoke": {
+    "title": "Post-upgrade smoke check",
+    "run": "Run smoke check",
+    "running": "Checking...",
+    "error": "Smoke check could not run: {{message}}",
+    "item": {
+      "apps": "Apps are up",
+      "domains": "Domains resolve",
+      "certificates": "Certificates are valid",
+      "backups": "Backups are current"
+    },
+    "status": {
+      "pass": "pass",
+      "warn": "warning",
+      "fail": "fail",
+      "skipped": "skipped"
+    }
+  },
   "verify": {
     "title": "Verify after an upgrade or rollback",
     "description": "Runs the control plane's own health checks and reports the result. Run it once the service is back.",
@@ -778,7 +796,9 @@
     "checkOn": "Checking for new releases in the background is on. It only looks; installing is controlled by the switch above.",
     "checkOff": "Background checks for new releases are off. Turning on automatic updates also turns them on.",
     "installSteps": "Updates install between {{start}} and {{end}} {{zone}}; backup first, health check, automatic rollback.",
-    "nextWindows": "Next windows: {{list}}"
+    "nextWindows": "Next windows: {{list}}",
+    "onBlocked": "Automatic updates are switched on but cannot run on this server. See the status below.",
+    "checkOffActive": "Background checks for new releases are off, so no update will be found until they are turned on."
   },
   "autoStatus": {
     "state": {
@@ -816,5 +836,17 @@
       "pending": "Waiting for the window",
       "running": "Running"
     }
+  },
+  "skipped": {
+    "title": "What changed since your version",
+    "loading": "Loading release notes...",
+    "none": "You are on the newest release, or the release notes could not be fetched.",
+    "breaking": "Breaking changes"
+  },
+  "uptimeReport": {
+    "title": "Monthly uptime",
+    "month": "Month",
+    "loading": "Loading uptime...",
+    "none": "No uptime data for this month. Add the app to the status page to start recording."
   }
 }

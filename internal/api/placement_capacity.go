@@ -145,3 +145,36 @@ func withDomainLabels(labels map[string]string, n store.Node) map[string]string 
 	}
 	return out
 }
+
+// nodeReservation compares what apps reserved on a node with what the host
+// actually uses, so stranded memory is visible before any repack.
+type nodeReservation struct {
+	NodeID              string `json:"node_id"`
+	Name                string `json:"name"`
+	CPUMilliReserved    int64  `json:"cpu_milli_reserved"`
+	CPUMilliCapacity    int64  `json:"cpu_milli_capacity,omitempty"`
+	MemoryReservedBytes int64  `json:"memory_reserved_bytes"`
+	MemoryCapacityBytes int64  `json:"memory_capacity_bytes,omitempty"`
+	MemoryUsedBytes     int64  `json:"memory_used_bytes,omitempty"`
+	// MemoryStrandedBytes is reserved memory the host is not using; zero when usage is unknown.
+	MemoryStrandedBytes int64 `json:"memory_stranded_bytes"`
+}
+
+func (rt *Router) nodeReservations(cands []placement.Candidate) []nodeReservation {
+	out := make([]nodeReservation, 0, len(cands))
+	for _, c := range cands {
+		r := nodeReservation{NodeID: c.ID, Name: c.Name, CPUMilliReserved: c.Requested.CPUMilli, MemoryReservedBytes: c.Requested.MemoryBytes}
+		if c.Capacity.CPUMilli.Known {
+			r.CPUMilliCapacity = c.Capacity.CPUMilli.Value
+		}
+		if c.Capacity.MemoryBytes.Known {
+			r.MemoryCapacityBytes = c.Capacity.MemoryBytes.Value
+		}
+		if s, ok := rt.nodeSample(c.ID); ok && s.MemTotal > 0 {
+			r.MemoryUsedBytes = int64(min(s.MemTotal-min(s.MemAvail, s.MemTotal), 1<<62)) //nolint:gosec // clamped to int64 range
+			r.MemoryStrandedBytes = max(r.MemoryReservedBytes-r.MemoryUsedBytes, 0)
+		}
+		out = append(out, r)
+	}
+	return out
+}

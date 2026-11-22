@@ -11,6 +11,15 @@ import (
 // with the reason. Keep it short: a command that returns data or a status
 // an agent would branch on belongs on --json, not in this list.
 var jsonExempt = map[string]string{
+	"prompt":                        "prints one plain string for a shell prompt",
+	"config get":                    "prints one plain saved setting value",
+	"config set":                    "edits a local settings file, no server data",
+	"alias set":                     "edits a local config file, no server data",
+	"alias list":                    "prints local config entries, no server data",
+	"alias delete":                  "edits a local config file, no server data",
+	"link":                          "writes or shows one local file path, no server data",
+	"commands search":               "prints the best three usage lines for a person, offline",
+	"completion install":            "writes a local shell script and prints the line to add",
 	"clusters rbac":                 "prints Kubernetes manifests to apply, not data an agent branches on",
 	"migrate coolify undo":          "prints a removal plan and asks for a typed confirmation before deleting data",
 	"migrate dokploy undo":          "prints a removal plan and asks for a typed confirmation before deleting data",
@@ -33,6 +42,7 @@ var jsonExempt = map[string]string{
 	"completion bash":               "prints a shell script meant to be sourced",
 	"completion zsh":                "prints a shell script meant to be sourced",
 	"completion fish":               "prints a shell script meant to be sourced",
+	"completion powershell":         "prints a shell script meant to be sourced",
 	"control-plane-backups help-dr": "prints a static runbook, no data to structure",
 	"tui":                           "interactive full-screen UI, needs a TTY and has no machine output",
 	"functions init":                "writes local starter files, no API call or data to structure",

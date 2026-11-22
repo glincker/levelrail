@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Preflight checks",
+    "prepull": "Pre-pulling the image on the target",
     "stop_source": "Stopping on the source node",
     "copy_volumes": "Copying volumes",
     "place": "Starting on the target node",
@@ -139,6 +140,30 @@
       "summary": "{{done}} of {{total}} moved, {{failed}} failed",
       "eta": "about {{seconds}} s left",
       "stalled": "No progress for a while. Check the node and the moves below."
+    },
+    "zone": {
+      "switch": "Drain a whole zone instead",
+      "title": "Drain a zone",
+      "description": "Drains every node in the zone one at a time, waiting for each to finish. It stops at the first drain that does not succeed so the rest keep serving.",
+      "zoneLabel": "Zone",
+      "pick": "Pick a zone",
+      "minAvailable": "Min available",
+      "hint": "Min available is how many nodes outside the zone must stay online and schedulable.",
+      "dryRun": "Dry run",
+      "start": "Drain zone",
+      "invalidMin": "Min available must be a whole number of at least 1.",
+      "empty": "No nodes are labeled with zone {{zone}}.",
+      "tooFew": "Draining this zone would leave {{stay}} node(s) available, below the minimum of {{min}}.",
+      "dryRunResult": "Zone {{zone}} would drain {{count}} node(s) in this order. Nothing changed.",
+      "stopped": "Stopped. {{left}} node(s) were not drained.",
+      "moved": "{{done}} of {{total}} moved",
+      "step": {
+        "pending": "Waiting",
+        "running": "Draining",
+        "succeeded": "Drained",
+        "partial": "Partly drained",
+        "failed": "Failed"
+      }
     }
   },
   "drains": {
@@ -205,7 +230,15 @@
       "to": "To",
       "none": "No node",
       "failed": "Simulation failed.",
-      "invalid": "Enter whole numbers, with at least one app."
+      "invalid": "Enter whole numbers, with at least one app.",
+      "unknown": "Unknown",
+      "memoryCaption": "Reserved versus used memory per node",
+      "memoryHint": "Memory reserved by apps compared with what each node actually uses. Stranded memory is reserved but idle.",
+      "colNode": "Node",
+      "colReserved": "Reserved",
+      "colCapacity": "Capacity",
+      "colUsed": "Used",
+      "colStranded": "Stranded"
     }
   },
   "placement": {
@@ -235,7 +268,18 @@
     "moveHere": "Move to this server",
     "movedHere": "Now placed on this server.",
     "moveFailed": "Could not move it to this server.",
-    "domainWarnings": "Failure domain warnings"
+    "domainWarnings": "Failure domain warnings",
+    "warm": {
+      "title": "Keep image warm",
+      "hint": "Pre-pull this app's image on chosen nodes so a move or failover starts fast.",
+      "switchAria": "Keep the image pulled on chosen nodes",
+      "nodesLabel": "Warm nodes",
+      "addLabel": "Add label",
+      "save": "Save warm targets",
+      "saved": "Warm targets saved.",
+      "cleared": "Warm targets cleared.",
+      "saveFailed": "Could not save warm targets"
+    }
   },
   "allocation": {
     "title": "Capacity",
@@ -1276,5 +1320,21 @@
       "queued": "Queued for the next agent check",
       "disclaimer": "Skips the maintenance window and hold. The update is still signature verified and rolls back on failure."
     }
+  },
+  "pools": {
+    "title": "Node pools",
+    "description": "Name a group of nodes by a label selector. Apps pick the pool instead of repeating the selector.",
+    "empty": "No pools yet. Create one, for example ssd with disk=ssd.",
+    "remove": "Remove {{name}}",
+    "nameLabel": "Pool name",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Selector",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Save pool",
+    "selectorInvalid": "Use key=value pairs separated by commas.",
+    "pickerLabel": "Node pool",
+    "pickerPlaceholder": "No pool",
+    "none": "No pool",
+    "pickerHint": "The pool's labels are added to this app's own placement selector."
   }
 }

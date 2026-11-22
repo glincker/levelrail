@@ -24,6 +24,8 @@ const (
 const (
 	CertActionRenew = "renew"
 	CertActionDNS   = "dns"
+	// CertActionReplace is for certificates the platform cannot renew, such as an imported origin certificate.
+	CertActionReplace = "replace"
 )
 
 // Failure kinds carried on the structured cert payload.
@@ -112,6 +114,11 @@ func (p CertExpiryPolicy) assess(info CertInfo, now time.Time, grace time.Durati
 	fact := CertFact{Domain: info.Domain, Issuer: info.Issuer, DaysLeft: int(math.Floor(left.Hours() / 24)), Action: CertActionRenew, NotAfter: info.NotAfter, FailureKind: CertFailureOther}
 	if info.Internal {
 		return fact, false
+	}
+	if info.OriginCA {
+		fact.Action = CertActionReplace
+		fact.Reason = "This origin certificate is not renewed automatically. Issue a new one in the CDN dashboard and import it before it expires"
+		return fact, true
 	}
 	if p.ACME != nil {
 		if msg, failing := p.ACME.ACMEFailing(info.Domain); failing {

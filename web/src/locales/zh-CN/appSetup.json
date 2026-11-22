@@ -1,0 +1,45 @@
+{
+  "envHints": {
+    "title": "环境变量",
+    "help": "此仓库记录了它需要的变量。请在首次部署前填写每一项。",
+    "scanning": "正在读取仓库的示例环境文件...",
+    "missing_one": "{{count}} 个必需变量为空。",
+    "missing_other": "{{count}} 个必需变量为空。",
+    "secretHint": "加密存储",
+    "valueLabel": "{{name}} 的值"
+  },
+  "nextStep": {
+    "dismiss": "关闭此建议",
+    "app_domain": {
+      "title": "你的应用已上线。添加你自己的域名。",
+      "body": "将你拥有的主机名指向此应用，让用户可以通过域名访问。",
+      "cta": "添加域名"
+    },
+    "first_backup": {
+      "title": "开启备份",
+      "body": "先做一次首次备份，避免磁盘丢失时连同应用一起丢失。",
+      "cta": "设置备份"
+    },
+    "notifications": {
+      "title": "添加监控和告警",
+      "body": "在用户发现之前，及时获知崩溃或检查失败。",
+      "cta": "设置告警"
+    },
+    "teammate": {
+      "title": "邀请团队成员",
+      "body": "为第二个人开通访问权限，这样你就不是唯一的登录者。",
+      "cta": "邀请成员"
+    }
+  },
+  "launch": {
+    "title": "你的应用已上线",
+    "body": "直接打开,或扫描二维码在手机上试用。",
+    "copy": "复制网址",
+    "copied": "已复制",
+    "share": "复制分享链接",
+    "shareText": "试试 {{name}}:",
+    "dismiss": "关闭",
+    "qrLabel": "线上网址的二维码",
+    "qrLoading": "正在加载二维码"
+  }
+}

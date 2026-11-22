@@ -2,9 +2,12 @@ package ingress
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"regexp"
 
 	"github.com/GLINCKER/levelrail/internal/canary"
+	"github.com/GLINCKER/levelrail/internal/canarypolicy"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -79,9 +82,22 @@ func (c *Controller) canaryRoute(ctx context.Context, stableDial string, plan ca
 	}
 	c.noteCanaryDials(plan.release.ServiceName, &canary.Pair{Stable: stableDial, Canary: canaryDial})
 	weight := min(plan.release.Weight, 99)
-	return &ingress.LBRoute{
+	lb := &ingress.LBRoute{
 		Upstreams: []string{stableDial, canaryDial},
 		Weights:   []int{100 - weight, weight},
 		Policy:    ingress.LBPolicyWeighted,
 	}
+	if canarypolicy.StickyEnabled(canarypolicy.OSEnv) {
+		lb.StickyCookie = canaryCookieName(plan.release)
+	}
+	return lb
+}
+
+var cookieUnsafe = regexp.MustCompile(`[^A-Za-z0-9_-]`)
+
+// canaryCookieName scopes the sticky cookie to one app and one canary, so a
+// new canary of the same app starts every visitor afresh.
+func canaryCookieName(rel store.CanaryRelease) string {
+	app := cookieUnsafe.ReplaceAllString(rel.ServiceName, "_")
+	return fmt.Sprintf("lr_canary_%s_%d", app, rel.CreatedAt.Unix())
 }

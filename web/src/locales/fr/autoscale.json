@@ -95,8 +95,14 @@
     "error": {
       "replicas": "Saisissez des nombres entiers de réplicas, avec un maximum au moins égal au minimum.",
       "target": "Saisissez une cible supérieure à zéro (jusqu'à 100 pour le CPU et la mémoire).",
-      "advanced": "Vérifiez les champs avancés : utilisez des nombres entiers, et des minutes d'au moins 1 seconde."
-    }
+      "advanced": "Vérifiez les champs avancés : utilisez des nombres entiers, et des minutes d'au moins 1 seconde.",
+      "gauge": "Saisissez un nom de jauge simple comme queue_depth."
+    },
+    "metricGauge": "Jauge de l'app",
+    "metricGaugeHelp": "Lit une jauge exposée par votre app sur son chemin de métriques.",
+    "gaugeName": "Nom de la jauge",
+    "gaugeNameHelp": "Le nom de métrique exposé par votre app, par exemple queue_depth.",
+    "gaugeUnit": "unités"
   },
   "remove": {
     "title": "Supprimer cette politique ?",

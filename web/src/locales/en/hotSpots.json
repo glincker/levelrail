@@ -1,0 +1,9 @@
+{
+  "routesTitle": "Busiest API routes",
+  "statementsTitle": "Costliest database statements",
+  "noRoutes": "No API request has been served since the last start or reset.",
+  "noStatements": "No statement has been timed since the last start or reset.",
+  "routeRow": "{{count}} calls, {{errors}} errors, avg {{avg}} ms, max {{max}} ms, total {{total}} ms",
+  "statementRow": "{{count}} runs, avg {{avg}} ms, max {{max}} ms, total {{total}} ms",
+  "hint": "Ranked by total time since start. Clear the slow log to restart the counts."
+}

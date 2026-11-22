@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -6,6 +7,7 @@ import {
   BookOpenGlassIcon,
   BookmarkGlassIcon,
   CircleQuestionMarkGlassIcon,
+  CopyGlassIcon,
   MessageCircleGlassIcon,
   RocketGlassIcon,
   LightbulbGlassIcon,
@@ -25,6 +27,8 @@ import { useIsRoot } from '../hooks/useIsRoot'
 import { helpDocForPath } from './shell/contextHelp'
 import { LazyReportIssueDialog } from './LazyReportIssueDialog'
 import type { IssueSource } from '@/lib/issueReport'
+import { supportDetails } from '@/lib/supportDetails'
+import { updatesQueryOptions } from '@/queries/updates'
 
 // Header-level help entry point, next to NotificationBell/ThemeToggle.
 // Documentation and Troubleshooting go to the bundled in-app /help
@@ -39,6 +43,8 @@ export function HelpMenu() {
   const contextDoc = useRouterState({
     select: (st) => helpDocForPath(st.location.pathname),
   })
+
+  const updates = useQuery({ ...updatesQueryOptions(), retry: false })
 
   const [report, setReport] = useState<IssueSource | null>(null)
 
@@ -87,6 +93,22 @@ export function HelpMenu() {
           <DropdownMenuItem render={<Link to="/settings/system-status" />}>
             <ActivityGlassIcon size="1.4em" />
             {t('shell.help.systemStatus')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              void navigator.clipboard
+                .writeText(
+                  supportDetails(
+                    t('shell.help.detailsHeader'),
+                    window.location.pathname,
+                    updates.data?.current_version,
+                  ),
+                )
+                .catch(() => undefined)
+            }}
+          >
+            <CopyGlassIcon size="1.4em" />
+            {t('shell.help.copyDetails')}
           </DropdownMenuItem>
           {brand.DocsURL || brand.SupportURL || brand.DiscussionsURL ? (
             <DropdownMenuSeparator />

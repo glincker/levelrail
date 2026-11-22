@@ -485,6 +485,14 @@ API: `GET` and `PUT /api/v1/settings/ingress/dns01`. Enabling is refused while n
 
 Moving a live domain from another server? DNS-01 lets the certificate be issued before DNS changes: see [Move a domain with no downtime](/move-a-domain-with-no-downtime).
 
+## GoDaddy DNS
+
+GoDaddy is a token-style DNS provider next to DigitalOcean, Hetzner, Porkbun and deSEC. Store the credential as `key:secret`, an API key pair created in the GoDaddy developer portal (a production key, not an OTE test key). It lists your active domains as zones and manages records and DNS-01 challenge records. Each change replaces only the one name and type it targets, so other records stay as they are. GoDaddy rejects TTLs below 600 seconds, so smaller values are raised to 600. SRV records and creating or deleting zones are not available through this provider.
+
+## Namecheap DNS
+
+Namecheap is a token-style DNS provider next to GoDaddy. Store the credential as `apiuser:apikey:clientip`: your Namecheap API user, its API key, and the public IP of this control plane, which must be on the API whitelist in your Namecheap account. It lists the domains of the account as zones and manages records and DNS-01 challenge records. Namecheap replaces every record of a domain in one call, so each change first reads all current records, merges the one record set and writes everything back. A change is refused when the read fails or returns no records, so a bad read can never wipe a domain. The domain must use Namecheap nameservers. SRV records and creating or deleting zones are not available through this provider. The lowest TTL is 60 seconds.
+
 ## Wildcard domains: DNS-01 providers
 
 Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.
@@ -953,13 +961,13 @@ Two runtime settings guard the edge for routes that are not websockets or event 
 | `ingress.max_requests_per_ip` | `256` | 8 to 100000 | Most requests one client address may have in flight at once. A request over the limit gets `429` with `Retry-After: 1`. Websockets and event streams are not counted. |
 | `ingress.body_read_timeout_seconds` | `1800` | 60 to 86400 | Seconds a request body may take to arrive. Raise it for very slow or very large uploads, lower it to drop stalled clients sooner. |
 
-Change them in Settings, Runtime, Networking card, or with `levelrail-cli settings runtime get|set ingress.max_requests_per_ip`. Environment variables (`APP_INGRESS_MAX_REQUESTS_PER_IP`, `APP_INGRESS_BODY_READ_TIMEOUT_SECONDS`) seed the defaults. The count is per client address as the edge sees it, so behind a CDN or proxy set the trusted proxy list (below) first, or every visitor shares one address.
+Change them in Settings, Security and runtime, Networking card, or with `levelrail-cli settings runtime get|set ingress.max_requests_per_ip`. Environment variables (`APP_INGRESS_MAX_REQUESTS_PER_IP`, `APP_INGRESS_BODY_READ_TIMEOUT_SECONDS`) seed the defaults. The count is per client address as the edge sees it, so behind a CDN or proxy set the trusted proxy list (below) first, or every visitor shares one address.
 
 ```bash
 levelrail-cli settings runtime set ingress.max_requests_per_ip 512
 ```
 
-The API server has its own limit on the request header block: `api.max_header_bytes` (default `65536`, 8192 to 1048576, Settings, Runtime, Networking card). The server reads it at start, so a change needs a restart. It is separate from `APP_INGRESS_MAX_HEADER_BYTES`, which applies to app traffic at the edge.
+The API server has its own limit on the request header block: `api.max_header_bytes` (default `65536`, 8192 to 1048576, Settings, Security and runtime, Networking card). The server reads it at start, so a change needs a restart. It is separate from `APP_INGRESS_MAX_HEADER_BYTES`, which applies to app traffic at the edge.
 
 For an address-based rate limit by route or path, use the [WAF rate limit](#opt-in-waf-and-rate-limiting).
 

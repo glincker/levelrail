@@ -78,6 +78,14 @@ func runConfig(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runConfigCurrentContext(prog, args[1:], stdout, stderr, lookupEnv)
 	case "use-context":
 		return runConfigUseContext(prog, args[1:], stdout, stderr)
+	case "set-context":
+		return runConfigSetContext(prog, args[1:], stdout, stderr)
+	case "delete-context":
+		return runConfigDeleteContext(prog, args[1:], stdout, stderr)
+	case "set":
+		return runConfigSet(prog, args[1:], stdout, stderr)
+	case "get":
+		return runConfigGet(prog, args[1:], stdout, stderr)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown config subcommand %q\n\n%s", prog, args[0], configUsage(prog))
 		return exitUsage
@@ -183,22 +191,21 @@ func runConfigUseContext(prog string, args []string, stdout, stderr io.Writer) i
 		_, _ = fmt.Fprint(stderr, configUsage(prog))
 		return exitUsage
 	}
-	name := fs.Arg(0)
-	profiles, err := listProfiles(prog)
+	return runConfigUseContextNamed(prog, fs.Arg(0), *jsonOut, outputFlags{format, *queryFlag}, stdout, stderr)
+}
+
+func runConfigUseContextNamed(prog, name string, jsonOut bool, of outputFlags, stdout, stderr io.Writer) int {
+	ok, err := profileExists(prog, name)
 	if err != nil {
-		return reportError(stdout, stderr, *jsonOut, fmt.Errorf("list contexts: %w", err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list contexts: %w", err))
 	}
-	found := false
-	for _, p := range profiles {
-		found = found || p.Name == name
-	}
-	if !found {
-		return reportError(stdout, stderr, *jsonOut, newValidationError("no context %q, run \"%s config get-contexts\" to list them", name, prog))
+	if !ok {
+		return reportError(stdout, stderr, jsonOut, newValidationError("no context %q, run \"%s config get-contexts\" to list them", name, prog))
 	}
 	if err := writeCurrentContext(prog, name); err != nil {
-		return reportError(stdout, stderr, *jsonOut, err)
+		return reportError(stdout, stderr, jsonOut, err)
 	}
-	if err := renderResult(stdout, format, *queryFlag, map[string]string{"current": name}, func() {
+	if err := renderResult(stdout, of.Format, of.Query, map[string]string{"current": name}, func() {
 		_, _ = fmt.Fprintf(stdout, "Switched to context %q.\n", name)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
@@ -212,6 +219,11 @@ func configUsage(prog string) string {
   %[1]s config get-contexts [flags]        list saved profiles, marking the current one
   %[1]s config current-context [flags]     print the active profile name
   %[1]s config use-context <name> [flags]  make a profile the default
+  %[1]s config set-context <name> [--api-url U] [--team T] [--project P] [--rename NEW]
+                                           create or update a context
+  %[1]s config delete-context <name> [--yes]  remove a context and its saved token
+  %[1]s config set output <format>         save the default --output (json, ndjson, yaml, table, wide, text, name)
+  %[1]s config get output                  print the saved default --output
 
 Flags (all verbs):
   --json            print the result as JSON, nothing else
@@ -221,4 +233,98 @@ Flags (all verbs):
 A context is a credentials profile. The --profile flag and the APP_PROFILE
 environment variable still win over the saved current context.
 `, prog)
+}
+
+func runConfigSetContext(prog string, args []string, stdout, stderr io.Writer) int {
+	fs, jsonOut, outputFlag, queryFlag := configFlagSet(prog, "set-context", stderr, configUsage(prog))
+	apiURL := fs.String("api-url", "", "control plane URL for a new context, or to change an existing one")
+	team := fs.String("team", "", "default team for this context")
+	project := fs.String("project", "", "default project for this context")
+	rename := fs.String("rename", "", "rename the context to this name")
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return exitOK
+		}
+		return exitUsage
+	}
+	format, err := resolveOutputFormat(*jsonOut, *outputFlag)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, err)
+		return exitValidation
+	}
+	if fs.NArg() != 1 {
+		_, _ = fmt.Fprint(stderr, configUsage(prog))
+		return exitUsage
+	}
+	name := fs.Arg(0)
+	exists, err := profileExists(prog, name)
+	if err != nil {
+		return reportError(stdout, stderr, *jsonOut, fmt.Errorf("list contexts: %w", err))
+	}
+	if !exists {
+		if err := validateProfileName(name); err != nil {
+			return reportError(stdout, stderr, *jsonOut, err)
+		}
+		if *apiURL == "" {
+			return reportError(stdout, stderr, *jsonOut, newValidationError("set-context: new context %q needs --api-url", name))
+		}
+	}
+	if *apiURL != "" {
+		creds, _ := readCredentialsFile(prog, name)
+		if exists && creds.APIURL != *apiURL {
+			// A token belongs to the server that issued it, so a new URL must not keep the old one.
+			creds = credentials{}
+		}
+		creds.APIURL = *apiURL
+		if err := writeCredentialsFile(prog, name, creds); err != nil {
+			return reportError(stdout, stderr, *jsonOut, err)
+		}
+	}
+	if *team != "" || *project != "" {
+		sc, _ := apiclient.ReadContext(prog, name)
+		if *team != "" {
+			sc.Team = *team
+		}
+		if *project != "" {
+			sc.Project = *project
+		}
+		if err := apiclient.WriteContext(prog, name, sc); err != nil {
+			return reportError(stdout, stderr, *jsonOut, err)
+		}
+	}
+	final := name
+	if *rename != "" {
+		if err := renameProfile(prog, name, *rename); err != nil {
+			return reportError(stdout, stderr, *jsonOut, err)
+		}
+		final = *rename
+	}
+	if err := renderResult(stdout, format, *queryFlag, map[string]string{"context": final}, func() {
+		_, _ = fmt.Fprintf(stdout, "Context %q saved.\n", final)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func runConfigDeleteContext(prog string, args []string, stdout, stderr io.Writer) int {
+	fs, jsonOut, outputFlag, queryFlag := configFlagSet(prog, "delete-context", stderr, configUsage(prog))
+	yes := fs.Bool("yes", false, "skip the confirmation prompt")
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return exitOK
+		}
+		return exitUsage
+	}
+	format, err := resolveOutputFormat(*jsonOut, *outputFlag)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, err)
+		return exitValidation
+	}
+	if fs.NArg() != 1 {
+		_, _ = fmt.Fprint(stderr, configUsage(prog))
+		return exitUsage
+	}
+	return removeProfileCommand(prog, fs.Arg(0), *yes, *jsonOut, outputFlags{format, *queryFlag}, stdout, stderr)
 }

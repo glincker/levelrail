@@ -41,3 +41,35 @@ func TestConfigContextsRoundTrip(t *testing.T) {
 	}
 	_ = os.Remove(home)
 }
+
+func TestProfileManageAndAllProfiles(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	env := func(string) (string, bool) { return "", false }
+	var out, errb bytes.Buffer
+	for _, args := range [][]string{
+		{"set-context", "prod", "--api-url", "https://prod.example", "--team", "core"},
+		{"set-context", "stage", "--api-url", "https://stage.example"},
+		{"set-context", "stage", "--rename", "qa"},
+	} {
+		if code := runConfig("lrtest", args, &out, &errb, env); code != exitOK {
+			t.Fatalf("%v code %d: %s", args, code, errb.String())
+		}
+	}
+	if code := runProfile("lrtest", []string{"use", "qa"}, &out, &errb, env); code != exitOK || readCurrentContext("lrtest") != "qa" {
+		t.Fatalf("use failed: %d %s", code, errb.String())
+	}
+	if code := runProfile("lrtest", []string{"remove", "qa"}, &out, &errb, env); code == exitOK {
+		t.Fatal("remove without --yes must not proceed in a non-terminal")
+	}
+	if code := runProfile("lrtest", []string{"remove", "qa", "--yes"}, &out, &errb, env); code != exitOK {
+		t.Fatalf("remove code %d: %s", code, errb.String())
+	}
+	names, _ := savedProfileNames("lrtest")
+	if len(names) != 1 || names[0] != "prod" || readCurrentContext("lrtest") != "" {
+		t.Fatalf("after remove: %v current %q", names, readCurrentContext("lrtest"))
+	}
+	res, err := runAcrossProfiles("lrtest", env, func(*Client) (any, error) { return nil, nil })
+	if err != nil || len(res) != 1 || res[0].Err == nil {
+		t.Fatalf("unsigned profile must fail softly: %v %v", res, err)
+	}
+}

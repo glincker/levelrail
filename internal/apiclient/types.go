@@ -20,6 +20,10 @@ type ServiceResources struct {
 	NanoCPUs        int64  `json:"nano_cpus,omitempty"`
 	SwapMemoryBytes int64  `json:"swap_memory_bytes,omitempty"`
 	CPUSetCPUs      string `json:"cpuset_cpus,omitempty"`
+	// IOReadBps and IOWriteBps cap disk throughput in bytes per second; NetMbit caps bandwidth. 0 is unlimited.
+	IOReadBps  int64 `json:"io_read_bps,omitempty"`
+	IOWriteBps int64 `json:"io_write_bps,omitempty"`
+	NetMbit    int64 `json:"net_mbit,omitempty"`
 	// ReadOnlyRootfs is the per-app read-only root choice; nil inherits.
 	ReadOnlyRootfs *bool `json:"read_only_rootfs,omitempty"`
 }
@@ -1215,6 +1219,7 @@ type BackupHistoryResource struct {
 	FinishedAt     string `json:"finished_at,omitempty"`
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
 	Label          string `json:"label,omitempty"`
+	Pinned         bool   `json:"pinned,omitempty"`
 }
 
 // BackupVerificationResource mirrors internal/api's
@@ -2323,6 +2328,7 @@ type NotificationChannelResource struct {
 	// NotifyDeviceLoginExpired is true when the channel is told a pending
 	// CLI login expired unapproved.
 	NotifyDeviceLoginExpired bool   `json:"notify_device_login_expired"`
+	MessageTemplate          string `json:"message_template"`
 	CreatedAt                string `json:"created_at"`
 	UpdatedAt                string `json:"updated_at"`
 }
@@ -2338,6 +2344,8 @@ type CreateNotificationChannelRequest struct {
 	NotifyDeviceLogin bool `json:"notify_device_login,omitempty"`
 	// NotifyDeviceLoginExpired opts the channel into the login-expired notice.
 	NotifyDeviceLoginExpired bool `json:"notify_device_login_expired,omitempty"`
+	// MessageTemplate replaces the text of deploy and alert messages.
+	MessageTemplate string `json:"message_template,omitempty"`
 }
 
 // TestNotificationChannelRequest mirrors internal/api's
@@ -2590,6 +2598,9 @@ type CreateAlertRuleRequest struct {
 	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
 	FlapThreshold       int               `json:"flap_threshold,omitempty"`
 	FlapWindow          string            `json:"flap_window,omitempty"`
+	EscalateChannelID   string            `json:"escalate_channel_id,omitempty"`
+	EscalateAfter       string            `json:"escalate_after,omitempty"`
+	Runbook             string            `json:"runbook,omitempty"`
 }
 
 // UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
@@ -3998,6 +4009,9 @@ type AlertRuleResource struct {
 	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
 	FlapThreshold       int               `json:"flap_threshold,omitempty"`
 	FlapWindow          string            `json:"flap_window,omitempty"`
+	EscalateChannelID   string            `json:"escalate_channel_id,omitempty"`
+	EscalateAfter       string            `json:"escalate_after,omitempty"`
+	Runbook             string            `json:"runbook,omitempty"`
 	Silenced            bool              `json:"silenced,omitempty"`
 	SilencedBy          string            `json:"silenced_by,omitempty"`
 
@@ -4385,6 +4399,9 @@ type RenewCertificateResource struct {
 	Domain               string `json:"domain"`
 	HadStoredCertificate bool   `json:"had_stored_certificate"`
 	Status               string `json:"status"`
+	Reason               string `json:"reason,omitempty"`
+	PreviousError        string `json:"previous_error,omitempty"`
+	Explanation          string `json:"explanation,omitempty"`
 }
 
 // OAuthProviderSettingsResource mirrors internal/api's

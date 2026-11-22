@@ -28,6 +28,8 @@
     "tcp": "TCP",
     "heartbeat": "Heartbeat cron",
     "tls": "Certificat TLS",
+    "dns": "Requête DNS",
+    "ping": "Ping (ICMP)",
     "grace": "Délai de grâce (s)",
     "graceHint": "Attente supplémentaire après l'intervalle avant que le job soit considéré en retard. Vide utilise la valeur par défaut du serveur.",
     "warnDays": "Avertir (jours)",

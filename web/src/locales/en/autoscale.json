@@ -95,8 +95,14 @@
     "error": {
       "replicas": "Enter whole replica counts, with the maximum at least the minimum.",
       "target": "Enter a target above zero (up to 100 for CPU and memory).",
-      "advanced": "Check the advanced fields: use whole numbers, and minutes of at least 1 second."
-    }
+      "advanced": "Check the advanced fields: use whole numbers, and minutes of at least 1 second.",
+      "gauge": "Enter a plain gauge name such as queue_depth."
+    },
+    "metricGauge": "App gauge",
+    "metricGaugeHelp": "Reads a gauge your app exposes on its metrics path.",
+    "gaugeName": "Gauge name",
+    "gaugeNameHelp": "The metric name your app exposes, for example queue_depth.",
+    "gaugeUnit": "units"
   },
   "remove": {
     "title": "Remove this policy?",

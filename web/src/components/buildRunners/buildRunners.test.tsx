@@ -6,6 +6,7 @@ import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import deploysEn from '../../locales/en/deploys.json'
+import buildCenterEn from '../../locales/en/buildCenter.json'
 import { createTestQueryClient } from '@/test/testQueryClient'
 import { RunnersPanel } from './RunnersPanel'
 import { RunnerChip } from './RunnerChip'
@@ -25,9 +26,9 @@ vi.mock('@tanstack/react-router', async (orig) => ({
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
   lng: 'en',
-  ns: ['deploys'],
+  ns: ['deploys', 'buildCenter'],
   defaultNS: 'deploys',
-  resources: { en: { deploys: deploysEn } },
+  resources: { en: { deploys: deploysEn, buildCenter: buildCenterEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -99,6 +100,45 @@ describe('RunnersPanel', () => {
     expect(screen.getByText(/Build cache/)).toBeInTheDocument()
     const bars = screen.getAllByRole('progressbar')
     expect(bars[0]).toHaveAttribute('aria-valuenow', '25')
+  })
+
+  it('shows the farm summary card above the runners', async () => {
+    mockFetch((url) =>
+      url.endsWith('/farm')
+        ? ok({
+            hours: 24,
+            slots_total: 4,
+            builds: 12,
+            builds_per_hour: 0.5,
+            wait_p50_seconds: 3,
+            wait_p95_seconds: 41,
+            cache_hit_ratio: 0.75,
+            cache_known: true,
+            peak_slots: 2.5,
+            buckets: [
+              {
+                start: '2026-11-22T09:00:00Z',
+                builds: 4,
+                avg_slots: 2.5,
+                wait_p95_seconds: 9,
+              },
+              {
+                start: '2026-11-22T10:00:00Z',
+                builds: 8,
+                avg_slots: 1,
+                wait_p95_seconds: 41,
+              },
+            ],
+          })
+        : ok({ strategy: 'first', runners: [controlPlane] }),
+    )
+    wrap(<RunnersPanel />)
+    const card = await screen.findByTestId('farm-summary')
+    expect(card).toHaveTextContent('12 builds, 0.5 per hour')
+    expect(card).toHaveTextContent('41 s')
+    expect(card).toHaveTextContent('75%')
+    expect(card).toHaveTextContent('2.5 of 4 per node')
+    window.localStorage.clear()
   })
 
   it('offers a dismissible add-node link when only the control plane exists', async () => {

@@ -9,14 +9,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const defaultBulkConfirmAbove = 10
-
 // bulkNeedsCountConfirm reports whether a disruptive bulk action over n apps must carry confirm_count.
 // Delete has its own stricter confirm_names rule, so it is not repeated here.
-func bulkNeedsCountConfirm(action string, n int) bool {
+func bulkNeedsCountConfirm(action string, n, above int) bool {
 	switch action {
-	case bulkActionRedeploy, bulkActionRestart, bulkActionStop:
-		return n > envIntDefault("APP_BULK_CONFIRM_ABOVE", defaultBulkConfirmAbove)
+	case bulkActionRedeploy, bulkActionRestart, bulkActionStop, bulkActionRollback:
+		return n > above
 	default:
 		return false
 	}

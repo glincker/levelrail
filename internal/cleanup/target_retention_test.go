@@ -161,6 +161,34 @@ func (e *retentionEnv) seedAppHistory(t *testing.T) {
 	}
 }
 
+// seedDeploys: web has an old succeeded deploy that is the newest succeeded one (kept), older failed ones (pruned),
+// a pinned old one and a running one (kept); api has two old succeeded, so only the older goes.
+func (e *retentionEnv) seedDeploys(t *testing.T) {
+	e.seedTables(t, func(exec func(string, ...any)) {
+		for _, r := range []struct {
+			id, svc, status string
+			days            int
+		}{
+			{"w1", "web", "failed", 200}, {"w2", "web", "failed", 150}, {"w3", "web", "succeeded", 100}, {"w4", "web", "failed", 120},
+			{"w5", "web", "failed", 110}, {"w6", "web", "running", 100}, {"a1", "api", "succeeded", 100}, {"a2", "api", "succeeded", 90}, {"y1", "api", "failed", 5},
+		} {
+			exec(`INSERT INTO deploy_attempts (id, service_name, image, status, started_at) VALUES (?, ?, 'img', ?, ?)`,
+				r.id, r.svc, r.status, e.ago(r.days).Format(time.RFC3339Nano))
+		}
+		exec(`INSERT INTO deploy_pins (deploy_attempt_id, service_name, created_at) VALUES ('w5', 'web', 'x')`)
+		exec(`INSERT INTO probe_attempts (deploy_attempt_id, target, success, probed_at) VALUES ('w1', 't', 1, ?)`, e.ago(1).Format(time.RFC3339Nano))
+	})
+}
+
+func (e *retentionEnv) seedNodeEvents(t *testing.T) {
+	e.seedTables(t, func(exec func(string, ...any)) {
+		for _, d := range []int{100, 5} {
+			exec(`INSERT INTO node_status_events (node_id, from_status, to_status, created_at) VALUES ('n', 'online', 'offline', ?)`, e.ago(d).Format(time.RFC3339Nano))
+			exec(`INSERT INTO node_security_events (node_id, kind, outcome, first_at, last_at) VALUES ('n', 'k', 'o', ?, ?)`, e.ago(d).UnixMilli(), e.ago(d).UnixMilli())
+		}
+	})
+}
+
 func (e *retentionEnv) seedUsage(t *testing.T) {
 	for _, d := range []int{100, 5} {
 		e.exec(t, `INSERT INTO usage_cost_daily (day, kind, name) VALUES (?, 'app', 'web')`, e.ago(d).Format("2006-01-02"))
@@ -191,6 +219,8 @@ func TestRetentionTargetsPreviewMatchesRun(t *testing.T) {
 		{cleanup.TargetRestoreHistory, (*retentionEnv).seedRestore, 3, map[string]int{"restore_history": 2, "pitr_restore_history": 2, "backup_drills": 2}},
 		{cleanup.TargetProbeAttempts, (*retentionEnv).seedProbes, 1, map[string]int{"probe_attempts": 1}},
 		{cleanup.TargetAppHistory, (*retentionEnv).seedAppHistory, 3, map[string]int{"app_events": 1, "app_schedule_history": 1, "canary_outcomes": 1}},
+		{cleanup.TargetDeployHistory, (*retentionEnv).seedDeploys, 4, map[string]int{"deploy_attempts": 5, "probe_attempts": 0}},
+		{cleanup.TargetNodeEvents, (*retentionEnv).seedNodeEvents, 2, map[string]int{"node_status_events": 1, "node_security_events": 1}},
 		{cleanup.TargetUsageCost, (*retentionEnv).seedUsage, 1, map[string]int{"usage_cost_daily": 1}},
 		{cleanup.TargetStatusIncidents, (*retentionEnv).seedIncidents, 1, map[string]int{"status_incidents": 3, "status_incident_updates": 0}},
 	}
@@ -237,8 +267,8 @@ func TestRetentionTargetsPreviewMatchesRun(t *testing.T) {
 func TestRetentionTargetsAreNewAndPreview(t *testing.T) {
 	e := newRetentionEnv(t)
 	targets := e.reg.Targets()
-	if len(targets) != 8 {
-		t.Fatalf("registered %d targets, want 8", len(targets))
+	if len(targets) != 10 {
+		t.Fatalf("registered %d targets, want 10", len(targets))
 	}
 	for _, tg := range targets {
 		m := tg.Meta()
@@ -286,3 +316,40 @@ func TestRetentionDeleteRunsInBatches(t *testing.T) {
 		t.Fatalf("deleted %d, %v, want 7 across batches of 3", n, err)
 	}
 }
+
+func TestRetentionMaxRowsPerAppKeepsNewestInsideWindow(t *testing.T) {
+	e := newRetentionEnv(t)
+	for i := range 6 {
+		if err := e.db.AddAppEvent(context.Background(), store.AppEvent{ID: fmt.Sprintf("e%d", i), AppName: "web", Kind: "restart", CreatedAt: e.ago(1 + i)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := e.db.AddAppEvent(context.Background(), store.AppEvent{ID: "o1", AppName: "api", Kind: "restart", CreatedAt: e.ago(2)}); err != nil {
+		t.Fatal(err)
+	}
+	reg := cleanup.NewRegistry(nil)
+	cleanup.RegisterBuiltins(reg, cleanup.BuiltinDeps{Retention: e.db, Settings: intSetting{runtimesettings.KeyMaxRowsPerApp: 3}, Now: func() time.Time { return e.now }})
+	tg, _ := reg.Get(cleanup.TargetAppHistory)
+	imp, err := tg.Preview(context.Background(), retentionTestDays)
+	if err != nil || imp.Rows != 3 {
+		t.Fatalf("preview = %+v, %v, want the 3 oldest web events", imp, err)
+	}
+	res := tg.Run(context.Background(), retentionTestDays, cleanup.RunOptions{MaxRows: 1000, Slice: 24 * time.Hour})
+	if res.Err != nil || res.Rows != 3 {
+		t.Fatalf("run = %+v", res)
+	}
+	if got := e.count(t, "app_events"); got != 4 {
+		t.Fatalf("%d events left, want 3 web plus 1 api", got)
+	}
+}
+
+// intSetting serves fixed ints and the defaults of everything else.
+type intSetting map[string]int
+
+func (s intSetting) Int(_ context.Context, k string) int { return s[k] }
+
+func (s intSetting) String(context.Context, string) string { return "" }
+
+func (s intSetting) Bool(context.Context, string) bool { return true }
+
+func (s intSetting) Duration(context.Context, string) time.Duration { return time.Hour }

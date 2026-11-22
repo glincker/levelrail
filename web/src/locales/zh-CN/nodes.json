@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "预检",
+    "prepull": "在目标节点上预拉取镜像",
     "stop_source": "在源节点上停止",
     "copy_volumes": "复制卷",
     "place": "在目标节点上启动",
@@ -139,6 +140,30 @@
       "summary": "已迁移 {{done}} / {{total}},失败 {{failed}}",
       "eta": "约剩 {{seconds}} 秒",
       "stalled": "已有一段时间没有进展。请检查节点和下方的迁移。"
+    },
+    "zone": {
+      "switch": "改为排空整个可用区",
+      "title": "排空可用区",
+      "description": "逐个排空该可用区内的节点，并等待每个完成。遇到第一个未成功的排空即停止，让其余节点继续提供服务。",
+      "zoneLabel": "可用区",
+      "pick": "选择可用区",
+      "minAvailable": "最少可用数",
+      "hint": "最少可用数是可用区之外必须保持在线且可调度的节点数量。",
+      "dryRun": "试运行",
+      "start": "排空可用区",
+      "invalidMin": "最少可用数必须是不小于 1 的整数。",
+      "empty": "没有节点带有可用区标签 {{zone}}。",
+      "tooFew": "排空此可用区后只剩 {{stay}} 个可用节点，低于最小值 {{min}}。",
+      "dryRunResult": "可用区 {{zone}} 将按此顺序排空 {{count}} 个节点。未做任何更改。",
+      "stopped": "已停止。有 {{left}} 个节点未被排空。",
+      "moved": "已迁移 {{done}} / {{total}}",
+      "step": {
+        "pending": "等待中",
+        "running": "排空中",
+        "succeeded": "已排空",
+        "partial": "部分排空",
+        "failed": "失败"
+      }
     }
   },
   "drains": {
@@ -203,7 +228,15 @@
       "to": "到",
       "none": "无节点",
       "failed": "模拟失败。",
-      "invalid": "请输入整数，且至少有一个应用。"
+      "invalid": "请输入整数，且至少有一个应用。",
+      "unknown": "未知",
+      "memoryCaption": "每个节点的预留与已用内存",
+      "memoryHint": "应用预留的内存与各节点实际使用量的对比。搁置内存是已预留但闲置的部分。",
+      "colNode": "节点",
+      "colReserved": "已预留",
+      "colCapacity": "容量",
+      "colUsed": "已使用",
+      "colStranded": "搁置"
     }
   },
   "placement": {
@@ -233,7 +266,18 @@
     "moveHere": "迁移到此服务器",
     "movedHere": "现已放置在此服务器上。",
     "moveFailed": "无法将其迁移到此服务器。",
-    "domainWarnings": "故障域警告"
+    "domainWarnings": "故障域警告",
+    "warm": {
+      "title": "保持镜像预热",
+      "hint": "在所选节点上提前拉取此应用的镜像，使迁移或故障转移更快启动。",
+      "switchAria": "在所选节点上保持镜像已拉取",
+      "nodesLabel": "预热节点",
+      "addLabel": "添加标签",
+      "save": "保存预热目标",
+      "saved": "预热目标已保存。",
+      "cleared": "预热目标已清除。",
+      "saveFailed": "无法保存预热目标"
+    }
   },
   "allocation": {
     "title": "容量",
@@ -1260,5 +1304,21 @@
       "queued": "已排队，将在代理下次检查时执行",
       "disclaimer": "跳过维护窗口和暂停。更新仍会进行签名验证，失败时会回滚。"
     }
+  },
+  "pools": {
+    "title": "节点池",
+    "description": "用标签选择器为一组节点命名。应用选择节点池，无需重复填写选择器。",
+    "empty": "还没有节点池。创建一个，例如 disk=ssd 的 ssd。",
+    "remove": "移除 {{name}}",
+    "nameLabel": "节点池名称",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "选择器",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "保存节点池",
+    "selectorInvalid": "请使用以逗号分隔的 key=value 键值对。",
+    "pickerLabel": "节点池",
+    "pickerPlaceholder": "无节点池",
+    "none": "无节点池",
+    "pickerHint": "节点池的标签会合并到此应用自己的放置选择器中。"
   }
 }

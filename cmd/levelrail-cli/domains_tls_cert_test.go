@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Fixture PEM goes in files, never on the command line: the command only reads PEM from disk.
@@ -173,6 +175,37 @@ func TestRun_DomainsTLSCertRenew(t *testing.T) {
 	}
 	if !strings.Contains(stdout, `certificate renewal requested for domain "app.example.com"`) {
 		t.Errorf("stdout = %q, want a renewal confirmation", stdout)
+	}
+}
+
+func TestRun_DomainsTLSCertRenewReasonAndCAError(t *testing.T) {
+	old := certWaitPoll
+	certWaitPoll = time.Millisecond
+	defer func() { certWaitPoll = old }()
+	var gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost {
+			b, _ := io.ReadAll(r.Body)
+			gotBody = string(b)
+			w.WriteHeader(http.StatusAccepted)
+			_ = json.NewEncoder(w).Encode(renewCertificateResource{Domain: "app.example.com", Status: "renewal_requested", PreviousError: "old"})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"domain": "app.example.com", "state": "failed", "error": "urn:ietf:params:acme:error:rateLimited", "explanation": "too many certificates"})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"domains", "tls-cert", "renew", "web", "app.example.com", "--reason", "rotate", "--wait", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stderr %q)", got, exitAPIError, stderr.String())
+	}
+	if !strings.Contains(gotBody, `"reason":"rotate"`) {
+		t.Errorf("body = %q, want the reason", gotBody)
+	}
+	if !strings.Contains(stdout.String(), "CA said:  urn:ietf:params:acme:error:rateLimited") {
+		t.Errorf("stdout = %q, want the CA error", stdout.String())
 	}
 }
 

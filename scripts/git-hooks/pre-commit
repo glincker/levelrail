@@ -90,6 +90,17 @@ elif command -v golangci-lint >/dev/null; then
 	# cache is shared across worktrees (its writes are atomic). If an older
 	# binary still reports the single-run lock, wait a bounded time and retry,
 	# then fail loudly: lint is never skipped silently.
+	# CI pins the linter; a different local version has passed locally and failed CI (gosec rules).
+	pinned_lint="$(sed -n 's/^[[:space:]]*version: \(v2\.[0-9.]*\)[[:space:]]*$/\1/p' .github/workflows/ci.yml | head -n1)"
+	local_lint="$(golangci-lint version --short 2>/dev/null || golangci-lint --version 2>/dev/null | sed -n 's/.*version \([0-9][0-9.]*\).*/\1/p')"
+	local_lint="v${local_lint#v}"
+	case "$local_lint" in "$pinned_lint" | "$pinned_lint".*) ;; *)
+		if [ -n "$pinned_lint" ]; then
+			echo "WARNING: local golangci-lint is $local_lint, CI pins $pinned_lint (rules differ, CI Lint may still fail)."
+			echo "         install: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$pinned_lint"
+		fi
+		;;
+	esac
 	lint_cache="${LEVELRAIL_LINT_CACHE:-$(git rev-parse --path-format=absolute --git-common-dir)/golangci-lint-cache}"
 	lint_wait="${APP_LINT_LOCK_WAIT_SECONDS:-300}"
 	lint_log="$(mktemp)"
@@ -170,13 +181,9 @@ fi
 # for, which would otherwise flag itself.
 echo "pre-commit: em dash / en dash sweep"
 staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^scripts/git-hooks/pre-commit$')
-dash_hits=""
-for f in $staged_files; do
-	[ -f "$f" ] || continue
-	if grep -l "—\|–" "$f" >/dev/null 2>&1; then
-		dash_hits="$dash_hits $f"
-	fi
-done
+# One grep over the whole staged list instead of a process per file.
+dash_hits="$(printf '%s\n' "$staged_files" | while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done | xargs grep -l "—\|–" 2>/dev/null | tr '\n' ' ')"
+[ -n "$dash_hits" ] && dash_hits=" $dash_hits"
 if [ -n "$dash_hits" ]; then
 	echo "em dash or en dash found in:$dash_hits"
 	echo "No em dashes or en dashes anywhere. Use commas, periods, parentheses, or colons."
@@ -188,13 +195,8 @@ fi
 # diff review caught it). Catch it for every staged file, not just that
 # one, before it lands again.
 echo "pre-commit: merge conflict markers"
-marker_hits=""
-for f in $staged_files; do
-	[ -f "$f" ] || continue
-	if grep -lE '^(<{7}|={7}|>{7})([^=<>]|$)' "$f" >/dev/null 2>&1; then
-		marker_hits="$marker_hits $f"
-	fi
-done
+marker_hits="$(printf '%s\n' "$staged_files" | while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done | xargs grep -lE '^(<{7}|={7}|>{7})([^=<>]|$)' 2>/dev/null | tr '\n' ' ')"
+[ -n "$marker_hits" ] && marker_hits=" $marker_hits"
 if [ -n "$marker_hits" ]; then
 	echo "unresolved merge conflict markers found in:$marker_hits"
 	fail=1
@@ -258,13 +260,8 @@ fi
 echo "pre-commit: icon library sweep (UI icons are @thesvg/ui-react only, ADR 053)"
 # Lockfiles list transitive dependencies (e.g. @glinui/ui pulls lucide-react); the rule is about our own imports.
 staged_all_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v -e '^scripts/git-hooks/pre-commit$' -e '^scripts/check-icon-rules\.sh$' -e '^adr/014-phosphor-icons\.md$' -e '^adr/053-thesvg-ui-icons\.md$' -e '^CHANGELOG\.md$' -e '^docs/changelog\.mdx$' -e 'package-lock\.json$')
-icon_lib_hits=""
-for f in $staged_all_files; do
-	[ -f "$f" ] || continue
-	if grep -l -E "lucide-react|@phosphor-icons" "$f" >/dev/null 2>&1; then
-		icon_lib_hits="$icon_lib_hits $f"
-	fi
-done
+icon_lib_hits="$(printf '%s\n' "$staged_all_files" | while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done | xargs grep -l -E "lucide-react|@phosphor-icons" 2>/dev/null | tr '\n' ' ')"
+[ -n "$icon_lib_hits" ] && icon_lib_hits=" $icon_lib_hits"
 if [ -n "$icon_lib_hits" ]; then
 	echo "Another icon library is imported in:$icon_lib_hits"
 	echo "UI icons come from @thesvg/ui-react only (glass look, ADR 053)."

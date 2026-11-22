@@ -37,3 +37,18 @@ func TestImageAutoUpdate(t *testing.T) {
 		t.Fatalf("enabled = %+v, %v; want only web", list, err)
 	}
 }
+
+func TestImageAutoUpdateRange(t *testing.T) {
+	db := openTestDB(t)
+	ctx := t.Context()
+	if err := db.SetImageAutoUpdateRange(ctx, "web", "1.x"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetImageAutoUpdate(ctx, "web", true); err != nil {
+		t.Fatal(err)
+	}
+	list, err := db.ListEnabledImageAutoUpdates(ctx)
+	if err != nil || len(list) != 1 || list[0].VersionRange != "1.x" {
+		t.Fatalf("list = %+v, err = %v; want the range carried", list, err)
+	}
+}

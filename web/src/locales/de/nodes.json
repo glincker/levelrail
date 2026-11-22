@@ -93,6 +93,7 @@
   },
   "phase": {
     "preflight": "Vorabprüfungen",
+    "prepull": "Image auf dem Zielknoten vorab laden",
     "stop_source": "Auf dem Quell-Node wird gestoppt",
     "copy_volumes": "Volumes werden kopiert",
     "place": "Auf dem Ziel-Node wird gestartet",
@@ -139,6 +140,30 @@
       "summary": "{{done}} von {{total}} verschoben, {{failed}} fehlgeschlagen",
       "eta": "noch etwa {{seconds}} s",
       "stalled": "Seit einer Weile kein Fortschritt. Prüfe den Node und die Verschiebungen unten."
+    },
+    "zone": {
+      "switch": "Stattdessen eine ganze Zone drainen",
+      "title": "Zone drainen",
+      "description": "Drained alle Nodes der Zone nacheinander und wartet jeweils auf den Abschluss. Es stoppt beim ersten Drain ohne Erfolg, damit der Rest weiter bedient.",
+      "zoneLabel": "Zone",
+      "pick": "Zone wählen",
+      "minAvailable": "Mindestens verfügbar",
+      "hint": "Mindestens verfügbar ist die Zahl der Nodes außerhalb der Zone, die online und planbar bleiben müssen.",
+      "dryRun": "Probelauf",
+      "start": "Zone drainen",
+      "invalidMin": "Mindestens verfügbar muss eine ganze Zahl ab 1 sein.",
+      "empty": "Kein Node trägt das Zonenlabel {{zone}}.",
+      "tooFew": "Das Drainen dieser Zone ließe {{stay}} Node(s) verfügbar, unter dem Minimum von {{min}}.",
+      "dryRunResult": "Zone {{zone}} würde {{count}} Node(s) in dieser Reihenfolge drainen. Nichts wurde geändert.",
+      "stopped": "Gestoppt. {{left}} Node(s) wurden nicht gedraint.",
+      "moved": "{{done}} von {{total}} verschoben",
+      "step": {
+        "pending": "Wartet",
+        "running": "Wird gedraint",
+        "succeeded": "Gedraint",
+        "partial": "Teilweise gedraint",
+        "failed": "Fehlgeschlagen"
+      }
     }
   },
   "drains": {
@@ -205,7 +230,15 @@
       "to": "Nach",
       "none": "Kein Node",
       "failed": "Die Simulation ist fehlgeschlagen.",
-      "invalid": "Geben Sie ganze Zahlen ein, mit mindestens einer App."
+      "invalid": "Geben Sie ganze Zahlen ein, mit mindestens einer App.",
+      "unknown": "Unbekannt",
+      "memoryCaption": "Reservierter und genutzter Speicher pro Node",
+      "memoryHint": "Von Apps reservierter Speicher im Vergleich zur tatsächlichen Nutzung je Node. Gestrandeter Speicher ist reserviert, aber ungenutzt.",
+      "colNode": "Node",
+      "colReserved": "Reserviert",
+      "colCapacity": "Kapazität",
+      "colUsed": "Genutzt",
+      "colStranded": "Gestrandet"
     }
   },
   "placement": {
@@ -235,7 +268,18 @@
     "moveHere": "Auf diesen Server verschieben",
     "movedHere": "Jetzt auf diesem Server platziert.",
     "moveFailed": "Das Verschieben auf diesen Server war nicht möglich.",
-    "domainWarnings": "Warnungen zu Fehlerdomänen"
+    "domainWarnings": "Warnungen zu Fehlerdomänen",
+    "warm": {
+      "title": "Image vorwärmen",
+      "hint": "Zieht das Image dieser App vorab auf gewählten Nodes, damit Verschiebung oder Failover schnell starten.",
+      "switchAria": "Image auf gewählten Nodes vorhalten",
+      "nodesLabel": "Vorgewärmte Nodes",
+      "addLabel": "Label hinzufügen",
+      "save": "Warm-Ziele speichern",
+      "saved": "Warm-Ziele gespeichert.",
+      "cleared": "Warm-Ziele entfernt.",
+      "saveFailed": "Warm-Ziele konnten nicht gespeichert werden"
+    }
   },
   "allocation": {
     "title": "Kapazität",
@@ -1276,5 +1320,21 @@
       "queued": "Für die nächste Agent-Prüfung vorgemerkt",
       "disclaimer": "Überspringt Wartungsfenster und Sperre. Das Update wird weiterhin per Signatur geprüft und bei einem Fehler zurückgerollt."
     }
+  },
+  "pools": {
+    "title": "Node-Pools",
+    "description": "Benenne eine Gruppe von Nodes über einen Label-Selektor. Apps wählen den Pool, statt den Selektor zu wiederholen.",
+    "empty": "Noch keine Pools. Lege einen an, zum Beispiel ssd mit disk=ssd.",
+    "remove": "{{name}} entfernen",
+    "nameLabel": "Pool-Name",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Selektor",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Pool speichern",
+    "selectorInvalid": "Verwende Schlüssel=Wert-Paare, durch Kommas getrennt.",
+    "pickerLabel": "Node-Pool",
+    "pickerPlaceholder": "Kein Pool",
+    "none": "Kein Pool",
+    "pickerHint": "Die Labels des Pools werden zum eigenen Platzierungs-Selektor dieser App hinzugefügt."
   }
 }

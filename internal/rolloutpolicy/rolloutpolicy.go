@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,11 +27,31 @@ const (
 	fallbackMaxUnavailable = "0"
 )
 
-// Env reads a variable; OSEnv is the process environment.
+// Env reads a variable; OSEnv is the live settings lookup with the process
+// environment behind it.
 type Env func(string) string
 
-// OSEnv reads the real process environment.
-var OSEnv Env = os.Getenv
+var liveEnv atomic.Pointer[Env]
+
+// SetLiveEnv points the defaults at the runtime settings so a change applies
+// to the next rollout. nil goes back to the process environment alone.
+func SetLiveEnv(e Env) {
+	if e == nil {
+		liveEnv.Store(nil)
+		return
+	}
+	liveEnv.Store(&e)
+}
+
+// OSEnv asks the live settings first, then the process environment.
+var OSEnv Env = func(name string) string {
+	if e := liveEnv.Load(); e != nil {
+		if v := (*e)(name); v != "" {
+			return v
+		}
+	}
+	return os.Getenv(name)
+}
 
 // Policy is an app's rollout settings as written: an int ("2") or a
 // percent of replicas ("25%"). Empty inherits the env default.
@@ -183,6 +204,7 @@ type Progress struct {
 	Surge          int       `json:"surge"`
 	MaxSurge       int       `json:"max_surge"`
 	MaxUnavailable int       `json:"max_unavailable"`
+	Paused         bool      `json:"paused,omitempty"`
 	Message        string    `json:"message,omitempty"`
 	StartedAt      time.Time `json:"started_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
@@ -191,6 +213,7 @@ type Progress struct {
 // Rollout phases.
 const (
 	PhaseRolling  = "rolling"
+	PhasePaused   = "paused"
 	PhaseComplete = "complete"
 	PhaseFailed   = "failed"
 )
@@ -218,4 +241,93 @@ func Lookup(service string) (Progress, bool) {
 	}
 	p, _ := v.(Progress)
 	return p, true
+}
+
+// hold is an operator's request to stop a rollout at its next wave boundary.
+// key names the release being held, so a rollback to another one is never held.
+type hold struct{ key string }
+
+var (
+	holdMu sync.Mutex
+	holds  = map[string]*hold{}
+)
+
+// RequestPause holds service's rolling deploy at the next wave boundary. It
+// reports false when no rollout is in progress.
+func RequestPause(service string) (Progress, bool) {
+	p, ok := Lookup(service)
+	if !ok || !p.Active {
+		return Progress{}, false
+	}
+	holdMu.Lock()
+	if holds[service] == nil {
+		holds[service] = &hold{}
+	}
+	holdMu.Unlock()
+	p.Paused = true
+	Record(service, p)
+	return p, true
+}
+
+// RestorePause re-arms a pause saved with a rollout's progress after a restart.
+func RestorePause(service string) {
+	holdMu.Lock()
+	defer holdMu.Unlock()
+	if holds[service] == nil {
+		holds[service] = &hold{}
+	}
+}
+
+// Resume lets service's held rollout continue. It reports false when nothing
+// was paused.
+func Resume(service string) (Progress, bool) {
+	holdMu.Lock()
+	_, was := holds[service]
+	delete(holds, service)
+	holdMu.Unlock()
+	p, ok := Lookup(service)
+	if !was || !ok {
+		return p, false
+	}
+	p.Paused = false
+	if p.Phase == PhasePaused {
+		p.Phase = PhaseRolling
+		p.Message = ""
+	}
+	Record(service, p)
+	return p, true
+}
+
+// ShouldHold is asked by the controller before it starts a wave. A hold taken
+// for one release lapses when the release changes, so a rollback is not held.
+func ShouldHold(service, releaseKey string) bool {
+	holdMu.Lock()
+	defer holdMu.Unlock()
+	h := holds[service]
+	if h == nil {
+		return false
+	}
+	if h.key == "" {
+		h.key = releaseKey
+		return true
+	}
+	if h.key != releaseKey {
+		delete(holds, service)
+		return false
+	}
+	return true
+}
+
+// ClearHold drops any pause for service, used when its rollout ends.
+func ClearHold(service string) {
+	holdMu.Lock()
+	delete(holds, service)
+	holdMu.Unlock()
+}
+
+// Held reports whether a pause is armed for service.
+func Held(service string) bool {
+	holdMu.Lock()
+	defer holdMu.Unlock()
+	return holds[service] != nil
 }

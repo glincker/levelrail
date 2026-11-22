@@ -118,6 +118,8 @@
     "failingCheck": "Check {{target}} failing since {{since}}",
     "restarts": "Restarts: {{n}}",
     "crashloop": "Crashloop",
+    "backoff": "Restarted {{n}} times, next restart in {{seconds}}s (at {{at}})",
+    "stopRetrying": "Stop retrying",
     "lastDeploy": "Last deploy: {{status}}",
     "logError": "Last error: {{line}}",
     "next": {
@@ -308,7 +310,14 @@
   },
   "confirmDialog": {
     "cancel": "Cancel",
-    "typePrompt": "Type {{value}} to confirm"
+    "typePrompt": "Type {{value}} to confirm",
+    "impactLead": "You lose: {{items}}.",
+    "impactVolumes_one": "{{count}} volume",
+    "impactVolumes_other": "{{count}} volumes",
+    "impactDomains_one": "{{count}} domain",
+    "impactDomains_other": "{{count}} domains",
+    "impactBackups_one": "backups stay {{count}} day",
+    "impactBackups_other": "backups stay {{count}} days"
   },
   "deleteApp": {
     "trigger": "Delete",
@@ -513,7 +522,9 @@
       "systemStatus": "Doctor",
       "report": "Report an issue",
       "community": "Ask the community",
-      "suggest": "Suggest a feature"
+      "suggest": "Suggest a feature",
+      "copyDetails": "Copy details for support",
+      "detailsHeader": "Levelrail support details"
     },
     "account": {
       "controlPlane": "Control plane",
@@ -1173,6 +1184,7 @@
     "copied": "Copied",
     "generic": "The server hit an error. Try again.",
     "toastTitle": "That did not work",
+    "whatThisMeans": "What this means:",
     "friendly": {
       "generic": {
         "action": "Try again, and quote the request ID if it keeps failing.",
@@ -1277,6 +1289,11 @@
         "title": "Email is not set up",
         "message": "No email provider is configured yet.",
         "action": "Add one in Settings, Email, then retry."
+      },
+      "badToken": {
+        "title": "Token rejected",
+        "message": "The token or credentials were refused or have expired.",
+        "action": "Create a fresh token with the right access and try again."
       }
     }
   },

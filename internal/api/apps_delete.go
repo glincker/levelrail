@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -29,6 +30,10 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	var undo *store.DesiredService
+	if !purge {
+		undo, _ = rt.apps.GetDesiredService(r.Context(), name)
+	}
 	teardownErr, err := rt.deleteApp(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -40,6 +45,9 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if purge && teardownErr == nil {
 		rt.purgeVolumes(context.WithoutCancel(r.Context()), "app/"+name, volumes)
+	}
+	if undo != nil {
+		rt.rememberDeleted(context.WithoutCancel(r.Context()), r, store.RecentlyDeletedApp, name, undo, "")
 	}
 	rt.changes.Publish(changeApps, name)
 	rt.purgeAppAccess(name)
@@ -361,7 +369,7 @@ func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
 func reservedSecretNamespace(name string) bool {
 	switch name {
 	case store.EmailSettingsSecretsKey(), sysEmailSecretsNS, store.VaultSecretsKey(), store.AIAssistantSecretsKey(),
-		store.CloudflareTunnelSecretsKey(), store.CloudflareDNSSecretsKey(), store.GoogleCloudDNSSecretsKey(),
+		store.CloudflareTunnelSecretsKey(), store.CloudflareDNSSecretsKey(), store.GoogleCloudDNSSecretsKey(), store.DNSTokenSecretsKey(dnszones.ProviderDigitalOcean), store.DNSTokenSecretsKey(dnszones.ProviderHetzner), store.DNSTokenSecretsKey(dnszones.ProviderAzure), store.DNSTokenSecretsKey(dnszones.ProviderPorkbun), store.DNSTokenSecretsKey(dnszones.ProviderDeSEC), store.DNSTokenSecretsKey(dnszones.ProviderGoDaddy), store.DNSTokenSecretsKey(dnszones.ProviderNamecheap),
 		store.RegistrySettingsSecretsKey(), store.Route53DNSSecretsKey():
 		return true
 	}

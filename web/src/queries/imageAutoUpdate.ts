@@ -18,6 +18,7 @@ export interface ImageAutoUpdate {
   has_signing_secret?: boolean
   window_cron?: string
   window_minutes?: number
+  version_range?: string
 }
 
 /** Omitted window fields stay unchanged on the server; an empty cron clears the window. */
@@ -25,6 +26,8 @@ export interface ImageAutoUpdateInput {
   enabled: boolean
   window_cron?: string
   window_minutes?: number
+  /** Omitted leaves the range unchanged; an empty string clears it. */
+  version_range?: string
 }
 
 export interface ImageUpdateWebhook {

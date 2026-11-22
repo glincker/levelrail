@@ -24,6 +24,8 @@ type AppAutoscaleUpdate struct {
 	StabilizationSecs     int     `json:"stabilization_secs,omitempty"`
 	MaxStepUp             int     `json:"max_step_up,omitempty"`
 	MaxStepDown           int     `json:"max_step_down,omitempty"`
+	// Schedules replace the whole list; none clears it.
+	Schedules []autoscale.Schedule `json:"schedules,omitempty"`
 }
 
 // AppAutoscaleHistory is GET /api/v1/apps/{name}/autoscale/history.

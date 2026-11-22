@@ -1010,7 +1010,17 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 
 // reportError writes err to stderr, and to stdout as a JSON error object when jsonOut is set. Writers are passed in so it is testable.
 func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
-	_, _ = fmt.Fprintln(stderr, err)
+	var dry *apiclient.DryRunError
+	if errors.As(err, &dry) {
+		if jsonOut {
+			_ = writeJSONValue(stdout, map[string]any{"dry_run": true, "method": dry.Method, "path": dry.Path})
+			return exitOK
+		}
+		_, _ = fmt.Fprintln(stderr, dry)
+		return exitOK
+	}
+	msg, inlineNext := splitInlineNext(err.Error())
+	_, _ = fmt.Fprintln(stderr, msg)
 	var apiErr *apiError
 	if errors.As(err, &apiErr) {
 		if apiErr.Fix != "" {
@@ -1024,6 +1034,13 @@ func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 		if apiErr.RequestID != "" {
 			_, _ = fmt.Fprintf(stderr, "request id: %s\n", apiErr.RequestID)
 		}
+		if inlineNext != "" {
+			_, _ = fmt.Fprintf(stderr, "next: %s\n", inlineNext)
+		} else if next := errorNextStepFor(apiErr.StatusCode, err.Error()); next != "" && !jsonOut && apiErr.Fix == "" && !errorHasGuidance(err.Error()) {
+			_, _ = fmt.Fprintf(stderr, "next: %s\n", next)
+		}
+	} else if inlineNext != "" {
+		_, _ = fmt.Fprintf(stderr, "next: %s\n", inlineNext)
 	}
 	if jsonOut {
 		if jerr := writeJSONError(stdout, err); jerr != nil {

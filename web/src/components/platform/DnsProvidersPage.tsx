@@ -60,9 +60,13 @@ export function DnsProvidersPage() {
     )
   }
 
+  // Only zones of a provider that is actually connected are listed, so stale rows never read as live.
   const allZones = useMemo(
-    () => zonesQuery.data?.zones ?? [],
-    [zonesQuery.data],
+    () =>
+      (zonesQuery.data?.zones ?? []).filter(
+        (z) => states[z.provider as ProviderId]?.status === 'connected',
+      ),
+    [zonesQuery.data, states],
   )
   const q = query.trim().toLowerCase()
   const zoneCount = (id: ProviderId) =>

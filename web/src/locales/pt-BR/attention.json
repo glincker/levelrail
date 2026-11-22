@@ -165,7 +165,9 @@
     "notifyDeviceLoginHint": "Envia somente um link, nunca o código. Ative uma URL do painel para que o link possa abrir esta página.",
     "notifyDeviceLoginExpired": "Notificar quando um login da CLI expirar",
     "notifyDeviceLoginExpiredHint": "Envia somente um link, nunca o código, quando uma solicitação de login esgota o tempo sem aprovação.",
-    "interactiveApprovalsWarning": "Qualquer pessoa neste canal, inclusive quem solicitou o deploy, pode aprovar um deploy protegido pelo chat. Somente um usuário root pode ativar isto ou alterar o segredo ou o webhook."
+    "interactiveApprovalsWarning": "Qualquer pessoa neste canal, inclusive quem solicitou o deploy, pode aprovar um deploy protegido pelo chat. Somente um usuário root pode ativar isto ou alterar o segredo ou o webhook.",
+    "messageTemplate": "Message text",
+    "messageTemplateHint": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
   },
   "setup": {
     "title_one": "Configuração e reforço pendentes ({{count}})",

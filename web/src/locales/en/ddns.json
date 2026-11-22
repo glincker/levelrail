@@ -15,21 +15,31 @@
   "provider": {
     "label": "Provider",
     "generic": "Generic URL",
-    "duckdns": "DuckDNS"
+    "duckdns": "DuckDNS",
+    "porkbun": "Porkbun",
+    "desec": "deSEC",
+    "godaddy": "GoDaddy"
   },
   "domains": {
     "label": "DuckDNS domains",
-    "placeholder": "myhome,office"
+    "placeholder": "myhome,office",
+    "labelHosts": "Hostnames to update",
+    "placeholderPorkbun": "home.example.com",
+    "placeholderDesec": "home.example.dedyn.io",
+    "placeholderGodaddy": "home.example.com"
   },
   "target": {
     "labelGeneric": "Update URL",
     "labelDuckdns": "DuckDNS token",
+    "labelPorkbun": "Porkbun apikey:secretapikey",
+    "labelDesec": "deSEC API token",
     "placeholder": "Paste to set or replace",
     "configured": "Configured ({{host}})",
     "configuredNoHost": "Configured",
     "notConfigured": "Not configured",
     "clear": "Clear",
-    "cleared": "Credential cleared."
+    "cleared": "Credential cleared.",
+    "labelGodaddy": "GoDaddy key:secret"
   },
   "advanced": {
     "toggle": "Advanced",

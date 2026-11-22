@@ -9,7 +9,8 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
-export type DdnsProvider = 'generic' | 'duckdns'
+export type DdnsProvider =
+  'generic' | 'duckdns' | 'porkbun' | 'desec' | 'godaddy'
 
 export const ddnsKeys = {
   settings: ['ddns-settings'] as const,

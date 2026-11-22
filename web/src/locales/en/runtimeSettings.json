@@ -218,6 +218,14 @@
       "title": "Container restart policy",
       "description": "Docker restart policy for long-running app containers, so apps come back after a host reboot or Docker restart. Applies to containers created on the next deploy or recreate; existing containers keep their old policy."
     },
+    "buildReuseUnchanged": {
+      "title": "Reuse the image for an unchanged commit",
+      "description": "Redeploying the same commit with the same build settings reuses the image already built on this node instead of rebuilding. A no-cache build, a build with secrets and an attested build always rebuild. The next deploy uses a changed value."
+    },
+    "buildRunnerMinDisk": {
+      "title": "Build runner minimum free disk",
+      "description": "A build node reporting less free disk than this many MiB is skipped for new builds and shown as skipped on the Runners panel. 0 turns the gate off. The next build uses a changed value."
+    },
     "backupLocalRoot": {
       "title": "Local backup root",
       "description": "Absolute directory on the control plane that confines local backup targets. Empty uses backups/ under the data directory. The next backup or restore uses a changed value; target paths stay relative to it and cannot leave it."

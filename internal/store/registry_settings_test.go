@@ -59,3 +59,20 @@ func TestRegistrySettingsSecretsKey_Stable(t *testing.T) {
 		t.Errorf("RegistrySettingsSecretsKey() is not stable across calls: %q vs %q", got, RegistrySettingsSecretsKey())
 	}
 }
+
+func TestRegistrySettings_ProxyModeRoundTrips(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	want := RegistrySettings{Enabled: true, Host: "r.example", Username: "levelrail",
+		ProxyRemoteURL: "https://registry-1.docker.io", ProxyUsername: "mirror"}
+	if err := db.UpdateRegistrySettings(ctx, want); err != nil {
+		t.Fatalf("UpdateRegistrySettings() error = %v", err)
+	}
+	got, err := db.GetRegistrySettings(ctx)
+	if err != nil {
+		t.Fatalf("GetRegistrySettings() error = %v", err)
+	}
+	if got.ProxyRemoteURL != want.ProxyRemoteURL || got.ProxyUsername != want.ProxyUsername {
+		t.Errorf("proxy fields = %q/%q, want %q/%q", got.ProxyRemoteURL, got.ProxyUsername, want.ProxyRemoteURL, want.ProxyUsername)
+	}
+}

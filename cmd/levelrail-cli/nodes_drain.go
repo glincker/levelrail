@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/nodemove"
 )
 
 // runNodesDrain implements "nodes drain <id> [--target ID] [--wait]": the
@@ -15,10 +16,13 @@ import (
 // time. --wait polls until the drain finishes and exits non-zero on failure.
 func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes drain", "print the drain as JSON to stdout and nothing else", stderr)
-	var target string
+	var target, zone string
+	var minAvailable int
 	var wait, dryRun bool
 	var timeout, interval time.Duration
 	fs.StringVar(&target, "target", "", "node id to move everything to (default: the scheduler spreads)")
+	fs.StringVar(&zone, "zone", "", "drain every node in this zone one at a time (no node id)")
+	fs.IntVar(&minAvailable, "min-available", 1, "with --zone, stop unless this many nodes outside the zone stay online")
 	fs.BoolVar(&wait, "wait", false, "wait until the drain finishes")
 	fs.BoolVar(&dryRun, "dry-run", false, "list what would move without cordoning or moving anything")
 	fs.DurationVar(&timeout, "timeout", 30*time.Minute, "how long --wait waits")
@@ -29,12 +33,19 @@ func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if !ok {
 		return exitCode
 	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	ctx := context.Background()
+	if zone != "" {
+		if fs.NArg() != 0 {
+			_, _ = fmt.Fprintln(stderr, "--zone takes no node id")
+			return exitUsage
+		}
+		return runRollingZoneDrain(ctx, client, zone, minAvailable, dryRun, timeout, interval, jsonOut, stdout, stderr)
+	}
 	id, ok := requireOneArg(fs, stderr, prog, "nodes drain", "node id")
 	if !ok {
 		return exitUsage
 	}
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	ctx := context.Background()
 
 	if dryRun {
 		p, err := client.PreviewNodeDrain(ctx, id)
@@ -66,6 +77,53 @@ func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupE
 	}
 	if d.Status == "failed" {
 		return exitAPIError
+	}
+	return exitOK
+}
+
+// runRollingZoneDrain drains a zone one node at a time, waiting for each
+// drain to finish and stopping at the first failure so the rest stay serving.
+func runRollingZoneDrain(ctx context.Context, client *apiclient.Client, zone string, minAvailable int, dryRun bool, timeout, interval time.Duration, jsonOut bool, stdout, stderr io.Writer) int {
+	z, err := client.GetZones(ctx)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list zones: %w", err))
+	}
+	var group, others []nodemove.RollingNode
+	for _, n := range z.Nodes {
+		rn := nodemove.RollingNode{ID: n.NodeID, Online: n.Online, Schedulable: true, Workloads: n.Workloads}
+		if n.Zone == zone {
+			group = append(group, rn)
+		} else {
+			others = append(others, rn)
+		}
+	}
+	order, err := nodemove.RollingDrainOrder(group, others, minAvailable)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("rolling drain of zone %q: %w", zone, err))
+	}
+	if dryRun {
+		_, _ = fmt.Fprintf(stdout, "dry run: zone %s would drain %d node(s) in this order; nothing changed\n", zone, len(order))
+		for i, id := range order {
+			_, _ = fmt.Fprintf(stdout, "  %d. %s\n", i+1, id)
+		}
+		return exitOK
+	}
+	for i, id := range order {
+		d, err := client.StartNodeDrain(ctx, id, "")
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("drain node %q (%d of %d): %w", id, i+1, len(order), err))
+		}
+		d, err = pollUntil(ctx, timeout, interval, d, func(ctx context.Context) (apiclient.NodeDrainResource, error) {
+			return client.GetNodeDrain(ctx, d.ID)
+		}, apiclient.NodeDrainResource.Done)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("wait for drain %s: %w", d.ID, err))
+		}
+		printDrainHuman(stdout, d, true)
+		if d.Status != "succeeded" {
+			_, _ = fmt.Fprintf(stderr, "stopping: drain of %s ended %s, %d node(s) not drained\n", id, d.Status, len(order)-i-1)
+			return exitAPIError
+		}
 	}
 	return exitOK
 }
@@ -130,6 +188,7 @@ func pollUntil[T any](ctx context.Context, timeout, interval time.Duration, cur 
 func nodesDrainUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes drain <id> [--target NODE-ID] [--wait] [flags]
+  %[1]s nodes drain --zone ZONE [--min-available N] [--dry-run] [flags]
 
 Cordons <id>, then moves every database and then every app off it, one
 at a time. Each move is staged on the target and verified ready before
@@ -141,6 +200,8 @@ cannot be moved and are reported as blocked.
 
 Flags:
   --target string          node id to move everything to (default: the scheduler spreads)
+  --zone string            drain every node in a zone one at a time, stopping at the first failure
+  --min-available int      with --zone, refuse unless this many nodes outside the zone stay online (default 1)
   --dry-run                list what would move, change nothing
   --wait                   wait until the drain finishes, exit non-zero if it fails
   --timeout duration       how long --wait waits (default 30m)

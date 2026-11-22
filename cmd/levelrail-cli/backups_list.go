@@ -62,9 +62,9 @@ func printBackupHistoryTable(out io.Writer, history []backupHistoryResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tLABEL\tTARGET\tSTATUS\tSIZE\tSTARTED\tFINISHED")
+	_, _ = fmt.Fprintln(tw, "ID\tLABEL\tPINNED\tTARGET\tSTATUS\tSIZE\tSTARTED\tFINISHED")
 	for _, h := range history {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%d\t%s\t%s\n", h.ID, h.Label, h.TargetID, h.Status, h.SizeBytes, h.StartedAt, h.FinishedAt)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\n", h.ID, h.Label, pinMark(h.Pinned), h.TargetID, h.Status, h.SizeBytes, h.StartedAt, h.FinishedAt)
 	}
 	_ = tw.Flush()
 }

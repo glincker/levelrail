@@ -108,10 +108,10 @@ func runDREscrow(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if path == "" {
 		path = "levelrail-escrow-" + time.Now().UTC().Format("20060102T150405Z") + ".age"
 	}
-	if err := writeExclusive(path, bundle.Armored, 0o600); err != nil {
+	if err := writeExclusive(path, bundle.Armored); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
-	if err := writeExclusive(path+".instructions.txt", bundle.Instructions+"\n", 0o600); err != nil {
+	if err := writeExclusive(path+".instructions.txt", bundle.Instructions+"\n"); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	_, _ = fmt.Fprintf(stderr, "\nWARNING: %s holds your master key and agent CA key, encrypted to %d recipient(s).\n"+
@@ -157,8 +157,8 @@ func runEscrowAck(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	return exitOK
 }
 
-func writeExclusive(path, content string, perm os.FileMode) error {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm) //nolint:gosec // operator-chosen output path
+func writeExclusive(path, content string) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // operator-chosen output path
 	if err != nil {
 		return fmt.Errorf("cannot create %s (it must not already exist): %w", path, err)
 	}
@@ -234,7 +234,7 @@ func extractEscrow(p escrowPayload, dir string) ([]string, error) {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		if err := writeExclusive(filepath.Join(dir, name), files[name], 0o600); err != nil {
+		if err := writeExclusive(filepath.Join(dir, name), files[name]); err != nil {
 			return nil, err
 		}
 	}

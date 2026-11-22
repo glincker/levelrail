@@ -1,12 +1,15 @@
 import type { DnsDelegated } from '@/types/dns'
 import type { DnsDetection } from '@/queries/domainDns'
 
-export type ProviderId = 'cloudflare' | 'route53' | 'googleclouddns'
+export type ProviderId =
+  'cloudflare' | 'route53' | 'googleclouddns' | 'godaddy' | 'namecheap'
 
 export const PROVIDER_IDS: ProviderId[] = [
   'cloudflare',
   'route53',
   'googleclouddns',
+  'godaddy',
+  'namecheap',
 ]
 
 // The hash anchor each provider answers to, e.g. #route53.
@@ -14,6 +17,8 @@ export const PROVIDER_HASH: Record<ProviderId, string> = {
   cloudflare: 'cloudflare',
   route53: 'route53',
   googleclouddns: 'google-cloud-dns',
+  godaddy: 'godaddy',
+  namecheap: 'namecheap',
 }
 
 // Detection reports "googlecloud"; the settings and zones APIs say "googleclouddns".
@@ -22,6 +27,8 @@ const DETECTED_TO_ID: Record<string, ProviderId> = {
   route53: 'route53',
   googlecloud: 'googleclouddns',
   googleclouddns: 'googleclouddns',
+  godaddy: 'godaddy',
+  namecheap: 'namecheap',
 }
 
 export function providerFromDetection(
@@ -34,6 +41,13 @@ export function providerFromHash(hash: string): ProviderId | null {
   const h = hash.replace(/^#/, '')
   return PROVIDER_IDS.find((id) => PROVIDER_HASH[id] === h) ?? null
 }
+
+// Providers connected with one stored credential through the generic settings route.
+export const TOKEN_PROVIDER_IDS = ['godaddy', 'namecheap'] as const
+export type TokenProviderId = (typeof TOKEN_PROVIDER_IDS)[number]
+export const isTokenProviderId = (
+  id: ProviderId | null,
+): id is TokenProviderId => id === 'godaddy' || id === 'namecheap'
 
 export type TileStatus = 'connected' | 'notConnected' | 'attention'
 

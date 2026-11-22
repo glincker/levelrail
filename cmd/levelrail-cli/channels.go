@@ -47,7 +47,7 @@ func channelsUsage(prog string) string {
   %[1]s channels deliveries <id> [flags]                                lists a channel's recorded send history, newest first
   %[1]s channels quiet-hours <id> [--start HH:MM --end HH:MM | --clear]  hold non-critical alerts during a daily window
 
-Valid --kind values: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat.
+Valid --kind values: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat, matrix, zulip.
 
 Run "%[1]s channels <subcommand> -h" for a subcommand's own flags.
 `, prog)

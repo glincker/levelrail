@@ -29,6 +29,7 @@ type WatchStore interface {
 	FailDeployAttemptWithReason(ctx context.Context, id, reason, message string) (bool, error)
 	SetDeployAttemptReason(ctx context.Context, id, reason string) error
 	ListRollbackPins(ctx context.Context, serviceName string) ([]store.RollbackPin, error)
+	GetAppSleep(ctx context.Context, serviceName string) (store.AppSleep, error)
 }
 
 // RestartCounter counts restarts of the named containers since a time.
@@ -170,6 +171,15 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 	if !docker.SameImageRef(attempt.Image, svc.Image) || svc.Suspended {
 		return nil
 	}
+	// A deliberate sleep stops the container and a wake starts it again, so
+	// neither is a crash: wait while asleep and count restarts from the wake.
+	sleep, err := w.Store.GetAppSleep(ctx, service)
+	if err != nil {
+		return err
+	}
+	if sleep.Sleeping {
+		return nil
+	}
 	overrides, err := w.Store.GetDeploySafetySettings(ctx, service)
 	if err != nil {
 		return err
@@ -183,7 +193,11 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 			fmt.Sprintf("watching for crashloops, OOM kills and a 5xx rate over %.0f%% for %s", cfg.WatchErrorRate*100, cfg.WatchWindow))
 	}
 
-	obs, err := w.observe(ctx, svc, attempt.ID, cfg, st.cutoverAt, now)
+	since := st.cutoverAt
+	if sleep.IdleMinutes > 0 && sleep.Since.After(since) {
+		since = sleep.Since
+	}
+	obs, err := w.observe(ctx, svc, attempt.ID, cfg, since, now)
 	if err != nil {
 		return err
 	}

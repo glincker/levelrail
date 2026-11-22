@@ -94,6 +94,9 @@ func newDRServer(t *testing.T, f *drFake) *httptest.Server {
 		f.acked = true
 		write(w, f.st)
 	})
+	mux.HandleFunc("GET /api/v1/system/control-plane-dr/restore-plan", func(w http.ResponseWriter, _ *http.Request) {
+		write(w, apiclient.ControlPlaneRestorePlan{Ready: true, Backup: &apiclient.ControlPlaneRestoreBackup{Key: "cp-backups/i/a.db.age", CreatedAt: "2026-09-25"}, Command: "levelrail restore --from s3://b/cp-backups/i/"})
+	})
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return srv
@@ -241,5 +244,24 @@ func TestCLI_ControlPlaneDR_KeysGenerateAndEscrowRoundTrip(t *testing.T) {
 	out.Reset()
 	if got := run("levelrail-cli-test", []string{"control-plane-backups", "escrow", "open", bundle, "--identity", otherID}, &out, &errOut, envMap()); got != exitValidation {
 		t.Fatalf("wrong identity exit = %d", got)
+	}
+}
+
+func TestCLI_ControlPlaneMove(t *testing.T) {
+	withFastPolling(t)
+	srv := newDRServer(t, &drFake{})
+	id, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	stdout, _ := runCLIExpectOK(t, []string{"control-plane-backups", "move", "--api-url", srv.URL, "--to-host", "10.0.0.9", "--dns-name", "lr.example.com", "--recipient", id.Recipient().String(), "--out", dir})
+	for _, want := range []string{"root@10.0.0.9", "lr.example.com", "scp ", "escrow open", "Stop the old control plane", "levelrail restore --from"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("move output missing %q: %s", want, stdout)
+		}
+	}
+	if m, _ := filepath.Glob(filepath.Join(dir, "levelrail-escrow-*.age")); len(m) != 1 {
+		t.Fatalf("bundle files = %v", m)
 	}
 }

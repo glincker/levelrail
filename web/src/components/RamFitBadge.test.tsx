@@ -114,7 +114,7 @@ describe('RamFitBadge', () => {
     })
     renderBadge(6 * 1024 * 1024 * 1024)
     expect(
-      await screen.findByText(/May not fit on worker-1/),
+      await screen.findByText(/May not fit on worker-1: needs about 6/),
     ).toBeInTheDocument()
   })
 })

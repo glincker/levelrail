@@ -7,9 +7,23 @@ const (
 	KeyMetricsIdleInterval   = "metrics.idle_interval"
 	KeyMetricsPresenceWindow = "metrics.presence_window"
 	KeyStoreTouchFlush       = "store.touch_flush_interval"
+	KeyMetricsSampleInterval = "metrics.sample_interval"
+	KeySlowRequestThreshold  = "api.slow_request_threshold"
 )
 
 func init() {
+	Register(Definition{
+		Key: KeyMetricsSampleInterval, Category: CategoryObservability, Kind: KindDuration, Default: "15s", Apply: ApplyLive,
+		CheckValue:  durationRangeCheck(5*time.Second, 5*time.Minute),
+		Title:       "Container stats interval",
+		Description: "How often every running container's stats are sampled, from 5 seconds to 5 minutes. A small host can pick 30s or 1m to cut idle CPU, at the cost of coarser charts. The collector uses a saved change on its next tick.",
+	})
+	Register(Definition{
+		Key: KeySlowRequestThreshold, Category: CategoryObservability, Kind: KindDuration, Default: "500ms", Env: "APP_SLOW_REQUEST_THRESHOLD", Apply: ApplyLive,
+		CheckValue:  durationRangeCheck(10*time.Millisecond, time.Minute),
+		Title:       "Slow request threshold",
+		Description: "API requests slower than this are logged at Warn and listed on the control plane health page, from 10ms to 1 minute. A saved change applies to the next request.",
+	})
 	Register(Definition{
 		Key: KeyMetricsIdleInterval, Category: CategoryObservability, Kind: KindDuration, Default: "1m", Env: "APP_METRICS_IDLE_INTERVAL", Apply: ApplyRestart,
 		CheckValue:  durationRangeCheck(15*time.Second, 24*time.Hour),

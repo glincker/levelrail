@@ -209,6 +209,14 @@
         "label": "URL du point de terminaison des messages",
         "help": "Envoyé : nom de l'app, image/tag, succès ou échec, et le message d'erreur en cas d'échec. Rien d'autre sur votre app."
       },
+      "notify_url_matrix": {
+        "label": "Matrix homeserver URL",
+        "help": "Homeserver URL with room (the internal room id, starts with !) and token (the bot access token) as query parameters."
+      },
+      "notify_url_zulip": {
+        "label": "Zulip server URL",
+        "help": "Server URL with the bot email and API key as user:password, plus a stream and optional topic query parameter. Percent-encode the @ in the bot email."
+      },
       "pushover_user_key": {
         "label": "Clé utilisateur Pushover",
         "help": "Votre clé utilisateur, visible dans le tableau de bord Pushover."
@@ -248,6 +256,10 @@
       "notify_device_login_expired": {
         "label": "Alertes de connexion par appareil expirée",
         "help": "Avis avec lien uniquement lorsqu'une connexion CLI en attente expire sans approbation. Le code n'est jamais inclus."
+      },
+      "message_template": {
+        "label": "Message text",
+        "help": "Replaces the text of deploy and alert messages. Variables: {{app}}, {{author}}, {{commit}}, {{url}}, {{status}}, {{image}}, {{error}}, {{rule}}, {{resource}}, {{value}}. Leave empty for the default message."
       }
     },
     "dnsProvider": {

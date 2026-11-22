@@ -19,6 +19,7 @@ import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { formatAge } from '../lib/format'
 import { certNoticeFromItem } from './certNotice'
+import { RunbookLine } from './RunbookLine'
 import {
   useInbox,
   useInboxPrefs,
@@ -162,6 +163,9 @@ function InboxRow({ item, onRead }: { item: InboxItem; onRead: () => void }) {
           {formatAge(item.at)}
           {item.detail && !certNotice ? ` - ${item.detail}` : ''}
         </p>
+        {item.event === 'fired' && !item.resolved ? (
+          <RunbookLine runbook={item.runbook} />
+        ) : null}
         {certNotice && item.event === 'fired' ? (
           <div className="mt-2">
             <Suspense fallback={null}>

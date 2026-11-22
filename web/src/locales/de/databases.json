@@ -169,6 +169,10 @@
     "failedTitle": "Die Wiederherstellung konnte nicht gestartet werden."
   },
   "majorUpgrade": {
+    "checkGo": "Go: Ein aktueller Wiederherstellungspunkt ist vorhanden.",
+    "checkNoGo": "No-Go: Behebe die folgenden Punkte vor dem Upgrade.",
+    "restorePoint": "Der neueste Wiederherstellungspunkt ist {{age}} alt (Limit {{limit}}).",
+    "noRestorePoint": "Noch kein erfolgreiches Backup, also kein Wiederherstellungspunkt.",
     "title": "Upgrade der Hauptversion",
     "description": "Upgradet diese Datenbank per Dump und Wiederherstellung über eine Hauptversion hinweg. Sie ist währenddessen offline. Die alten Daten werden zuerst in einen Rollback-Snapshot kopiert, und ein Fehler rollt automatisch zurück.",
     "versionLabel": "Ziel-Hauptversion",

@@ -42,12 +42,22 @@ export interface DeployEventWindow {
   p95_ms: number
 }
 
+export interface DeployEventGap {
+  failed: number
+  queued: number
+  gap_ms: number
+  window_ms: number
+  queued_over_ms: number
+  truncated?: boolean
+}
+
 export interface DeployEventImpact {
   cutover_at: string
   window_ms: number
   complete: boolean
   before: DeployEventWindow
   after: DeployEventWindow
+  gap?: DeployEventGap
 }
 
 export interface DeployEvent {

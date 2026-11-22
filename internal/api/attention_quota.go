@@ -37,7 +37,7 @@ func (rt *Router) quotaAttentionItems(r *http.Request, abilities []string) []att
 				continue
 			}
 			seen[scope+id] = true
-			limits, err := effectiveQuota(ctx, db, scope, id)
+			limits, err := rt.effectiveQuota(ctx, db, scope, id)
 			if err != nil || limits.Unlimited() {
 				continue
 			}

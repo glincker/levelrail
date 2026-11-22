@@ -62,7 +62,7 @@ func (s *Scheduler) tickComposeServices(ctx context.Context, now time.Time) erro
 			s.arm(s.composeNextRun, key, key, sched, now, !known)
 			continue
 		}
-		if !cronexpr.Due(next, now) {
+		if !cronexpr.Due(next, now) || !s.windowOpen(ctx, now) {
 			continue
 		}
 		s.arm(s.composeNextRun, key, key, sched, now, true)

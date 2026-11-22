@@ -137,6 +137,51 @@ var presets = []Preset{
 		HealthPath: "/", BuildCommand: "npx @11ty/eleventy", PublishDir: "_site", OwnBuild: true, DocsAnchor: "eleventy",
 	},
 	{
+		ID: "angular", Name: "Angular", Runtime: "node", Icon: "angular", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "ng build", PublishDir: "dist", DocsAnchor: "angular-vue-cli-solidstart-and-qwik",
+		EnvHints: []EnvHint{{Key: "NG_CLI_ANALYTICS", Description: "Set to false so the build never prompts for analytics.", Default: "false"}},
+	},
+	{
+		ID: "vue-cli", Name: "Vue CLI", Runtime: "node", Icon: "vue", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "vue-cli-service build", PublishDir: "dist", DocsAnchor: "angular-vue-cli-solidstart-and-qwik",
+		EnvHints: []EnvHint{{Key: "VUE_APP_API_URL", Description: "Variables prefixed VUE_APP_ are inlined at build time."}},
+	},
+	{
+		ID: "solidstart", Name: "SolidStart (static)", Runtime: "node", Icon: "solidjs", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "vinxi build", PublishDir: ".output/public", DocsAnchor: "angular-vue-cli-solidstart-and-qwik",
+	},
+	{
+		ID: "qwik", Name: "Qwik (static)", Runtime: "node", Icon: "qwik", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "qwik build", PublishDir: "dist", DocsAnchor: "angular-vue-cli-solidstart-and-qwik",
+	},
+	{
+		ID: "vitepress", Name: "VitePress", Runtime: "node", Icon: "vitepress", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "vitepress build", PublishDir: ".vitepress/dist", DocsAnchor: "vitepress-mkdocs-zola-and-gatsby",
+	},
+	{
+		ID: "gatsby", Name: "Gatsby", Runtime: "node", Icon: "gatsby", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "gatsby build", PublishDir: "public", DocsAnchor: "vitepress-mkdocs-zola-and-gatsby",
+		EnvHints: []EnvHint{{Key: "GATSBY_API_URL", Description: "Variables prefixed GATSBY_ are inlined at build time."}},
+	},
+	{
+		ID: "mkdocs", Name: "MkDocs", Runtime: "python", Icon: "mkdocs", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "mkdocs build", PublishDir: "site", OwnBuild: true, DocsAnchor: "vitepress-mkdocs-zola-and-gatsby",
+	},
+	{
+		ID: "zola", Name: "Zola", Runtime: "rust", Icon: "zola", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "zola build", PublishDir: "public", OwnBuild: true, DocsAnchor: "vitepress-mkdocs-zola-and-gatsby",
+	},
+	{
+		ID: "phoenix", Name: "Phoenix (Elixir)", Runtime: "elixir", Icon: "phoenix", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 4000, HealthPath: "/", BuildCommand: "mix release", StartCommand: "bin/server", ReadyTimeout: "60s", DocsAnchor: "phoenix",
+		EnvHints: []EnvHint{
+			{Key: "PHX_SERVER", Description: "Starts the endpoint when the release boots; without it the release exits immediately.", Required: true, Default: "true"},
+			{Key: "SECRET_KEY_BASE", Description: "Signs cookies; generate with mix phx.gen.secret.", Required: true, Secret: true},
+			{Key: "PHX_HOST", Description: "Public host name used when generating URLs."},
+			{Key: "PORT", Description: "The release endpoint listens on this port; keep it equal to the app port.", Default: "4000"},
+		},
+	},
+	{
 		ID: "nestjs", Name: "NestJS", Runtime: "node", Icon: "nestjs", BuildType: BuildRailpack, OutputMode: OutputServer,
 		Port: 3000, HealthPath: "/", BuildCommand: "nest build", StartCommand: "node dist/main", DocsAnchor: "nestjs",
 		EnvHints: []EnvHint{{Key: "PORT", Description: "Pass it to app.listen(process.env.PORT); NestJS defaults to 3000 when it is unset.", Default: "3000"}},
@@ -178,6 +223,53 @@ var presets = []Preset{
 			{Key: "SPRING_PROFILES_ACTIVE", Description: "Active profile, for example prod.", Default: "prod"},
 			{Key: "JAVA_TOOL_OPTIONS", Description: "Size the heap from the container limit.", Default: "-XX:MaxRAMPercentage=75"},
 			{Key: "MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED", Description: "Expose liveness and readiness groups on the actuator.", Default: "true"},
+		},
+	},
+	{
+		ID: "quarkus", Name: "Quarkus", Runtime: "java", Icon: "quarkus", BuildType: BuildRailpack, OutputMode: OutputJar,
+		Port: 8080, HealthPath: "/q/health", ReadyTimeout: "60s", Dockerfile: true, DocsAnchor: "quarkus-and-micronaut",
+		StartCommand: "java -jar quarkus-run.jar",
+		EnvHints: []EnvHint{
+			{Key: "QUARKUS_HTTP_HOST", Description: "Bind address; Quarkus listens on localhost in dev mode only, production needs 0.0.0.0.", Default: "0.0.0.0"},
+			{Key: "QUARKUS_HTTP_PORT", Description: "Listen port; keep it equal to the app port.", Default: "8080"},
+			{Key: "JAVA_TOOL_OPTIONS", Description: "Size the heap from the container limit.", Default: "-XX:MaxRAMPercentage=75"},
+		},
+	},
+	{
+		ID: "micronaut", Name: "Micronaut", Runtime: "java", Icon: "micronaut", BuildType: BuildRailpack, OutputMode: OutputJar,
+		Port: 8080, HealthPath: "/health", ReadyTimeout: "60s", Dockerfile: true, DocsAnchor: "quarkus-and-micronaut",
+		StartCommand: "java -jar app.jar",
+		EnvHints: []EnvHint{
+			{Key: "MICRONAUT_SERVER_PORT", Description: "Listen port; keep it equal to the app port.", Default: "8080"},
+			{Key: "ENDPOINTS_HEALTH_ENABLED", Description: "The /health endpoint needs the management module and this switch on.", Default: "true"},
+			{Key: "JAVA_TOOL_OPTIONS", Description: "Size the heap from the container limit.", Default: "-XX:MaxRAMPercentage=75"},
+		},
+	},
+	{
+		ID: "aspnet-core", Name: "ASP.NET Core", Runtime: "dotnet", Icon: "dotnet", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 8080, HealthPath: "/healthz", ReadyTimeout: "60s", StartCommand: "dotnet app.dll", DocsAnchor: "aspnet-core",
+		EnvHints: []EnvHint{
+			{Key: "ASPNETCORE_URLS", Description: "Bind address and port; must be on 0.0.0.0 to be reachable.", Default: "http://0.0.0.0:8080"},
+			{Key: "ASPNETCORE_ENVIRONMENT", Description: "Hosting environment; selects appsettings.{env}.json.", Default: "Production"},
+			{Key: "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", Description: "Skip ICU on slim images that do not ship it.", Default: "1"},
+		},
+	},
+	{
+		ID: "fresh", Name: "Fresh (Deno)", Runtime: "deno", Icon: "deno", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 8000, HealthPath: "/", BuildCommand: "deno task build", StartCommand: "deno task start", DocsAnchor: "bun-deno-and-fresh",
+		EnvHints: []EnvHint{{Key: "PORT", Description: "Fresh listens on this port; keep it equal to the app port.", Default: "8000"}},
+	},
+	{
+		ID: "deno", Name: "Deno", Runtime: "deno", Icon: "deno", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 8000, HealthPath: "/", StartCommand: "deno task start", DocsAnchor: "bun-deno-and-fresh",
+		EnvHints: []EnvHint{{Key: "PORT", Description: "Read it for Deno.serve; Deno defaults to 8000 when it is unset.", Default: "8000"}},
+	},
+	{
+		ID: "bun", Name: "Bun", Runtime: "bun", Icon: "bun", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 3000, HealthPath: "/", StartCommand: "bun run start", DocsAnchor: "bun-deno-and-fresh",
+		EnvHints: []EnvHint{
+			{Key: "NODE_ENV", Description: "Enables production code paths in most libraries.", Default: "production"},
+			{Key: "PORT", Description: "Bun.serve reads it; keep it equal to the app port.", Default: "3000"},
 		},
 	},
 	{

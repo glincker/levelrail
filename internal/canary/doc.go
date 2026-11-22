@@ -33,11 +33,13 @@ var (
 
 // The APP_CANARY_* variable names.
 const (
-	EnvStages       = canarypolicy.EnvStages
-	EnvInterval     = canarypolicy.EnvInterval
-	EnvMaxErrorRate = canarypolicy.EnvMaxErrorRate
-	EnvMaxP95Ratio  = canarypolicy.EnvMaxP95Ratio
-	EnvMinRequests  = canarypolicy.EnvMinRequests
-	EnvP95FloorMS   = canarypolicy.EnvP95FloorMS
-	EnvTick         = canarypolicy.EnvTick
+	EnvStages            = canarypolicy.EnvStages
+	EnvInterval          = canarypolicy.EnvInterval
+	EnvMaxErrorRate      = canarypolicy.EnvMaxErrorRate
+	EnvMaxP95Ratio       = canarypolicy.EnvMaxP95Ratio
+	EnvMinRequests       = canarypolicy.EnvMinRequests
+	EnvP95FloorMS        = canarypolicy.EnvP95FloorMS
+	EnvMaxHealthFailures = canarypolicy.EnvMaxHealthFailures
+	EnvAlertRuleID       = canarypolicy.EnvAlertRuleID
+	EnvTick              = canarypolicy.EnvTick
 )

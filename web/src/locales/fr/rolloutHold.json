@@ -1,0 +1,10 @@
+{
+  "pause": "Mettre le déploiement en pause",
+  "resume": "Reprendre le déploiement",
+  "pausedBadge": "En pause",
+  "pausedHint": "Arrêté avant la vague {{wave}}. Reprenez pour continuer ou annulez pour revenir en arrière.",
+  "pauseHint": "Pause avant la prochaine vague ; les vagues déjà lancées se terminent.",
+  "failed": "Impossible de modifier le déploiement progressif",
+  "abort": "Annuler et revenir en arrière",
+  "abortHint": "Revient au déploiement réussi précédent et lève la pause."
+}

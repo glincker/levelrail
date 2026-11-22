@@ -1,0 +1,10 @@
+{
+  "pause": "Pause rollout",
+  "resume": "Resume rollout",
+  "pausedBadge": "Paused",
+  "pausedHint": "Held before wave {{wave}}. Resume to continue, or abort to roll back.",
+  "pauseHint": "Pauses before the next wave; waves already started finish first.",
+  "failed": "Could not change the rollout",
+  "abort": "Abort and roll back",
+  "abortHint": "Rolls back to the previous succeeded deploy and releases the hold."
+}

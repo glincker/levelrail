@@ -134,6 +134,37 @@ describe('ImageAutoUpdateCard', () => {
     })
   })
 
+  it('rejects a bad version range and saves a good one', async () => {
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          json({
+            enabled: false,
+            version_range: init?.method === 'PUT' ? '1.x' : '',
+          }),
+        ),
+    )
+
+    const user = userEvent.setup()
+    renderCard()
+    const input = await screen.findByLabelText('Version range')
+    await user.type(input, 'latest')
+    await user.click(screen.getByRole('button', { name: 'Save range' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Not a valid range',
+    )
+
+    await user.clear(input)
+    await user.type(input, '1.x')
+    await user.click(screen.getByRole('button', { name: 'Save range' }))
+    await waitFor(() => {
+      expect(toast.add).toHaveBeenCalledWith({
+        title: 'Version range saved.',
+        type: 'success',
+      })
+    })
+  })
+
   it('shows the new webhook URL once after creating it', async () => {
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) =>

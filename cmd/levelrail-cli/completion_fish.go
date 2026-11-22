@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -16,6 +17,18 @@ func fishCompletionScript(prog string) string {
 	fmt.Fprintf(&b, "function __%s_children\n    switch \"$argv[1]\"\n", ident)
 	for _, e := range walkCommandTree() {
 		fmt.Fprintf(&b, "        case %s\n            echo %q\n", fishCasePattern(e.path), strings.Join(e.children, " "))
+	}
+	b.WriteString("        case '*'\n            echo \"\"\n    end\nend\n\n")
+
+	table := verbFlagTable()
+	flagPaths := make([]string, 0, len(table))
+	for p := range table {
+		flagPaths = append(flagPaths, p)
+	}
+	sort.Strings(flagPaths)
+	fmt.Fprintf(&b, "function __%s_flags\n    switch \"$argv[1]\"\n", ident)
+	for _, p := range flagPaths {
+		fmt.Fprintf(&b, "        case %s\n            echo %q\n", fishCasePattern(p), strings.Join(table[p], " "))
 	}
 	b.WriteString("        case '*'\n            echo \"\"\n    end\nend\n\n")
 
@@ -34,7 +47,13 @@ func fishCompletionScript(prog string) string {
     echo $path
 end
 
+function __%[1]s_names
+    %[2]s __complete (commandline -opc)[2..-1] (commandline -ct) 2>/dev/null
+end
+
+complete -c %[2]s -f -a '(__%[1]s_names)'
 complete -c %[2]s -f -a '(__%[1]s_children (__%[1]s_path))'
+complete -c %[2]s -f -a '(__%[1]s_flags (__%[1]s_path))' -d "command flags"
 complete -c %[2]s -f -a %[3]q -d "global flags"
 `, ident, prog, strings.Join(globalFlags, " "))
 

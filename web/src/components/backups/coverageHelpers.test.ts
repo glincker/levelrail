@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { coverageBadgeVariant, coverageHeadline } from './coverageHelpers'
+import {
+  coverageBadgeVariant,
+  coverageHeadline,
+  restorableApps,
+} from './coverageHelpers'
 
 describe('coverageHeadline', () => {
   it.each([
@@ -19,5 +23,33 @@ describe('coverageBadgeVariant', () => {
     expect(coverageBadgeVariant('failing')).toBe('destructive')
     expect(coverageBadgeVariant('never_ran')).toBe('warning')
     expect(coverageBadgeVariant('verified')).toBe('success')
+  })
+})
+
+describe('restorableApps', () => {
+  const row = (
+    kind: 'volume' | 'database',
+    app: string | undefined,
+    count: number,
+  ) => ({
+    kind,
+    app_name: app,
+    name: 'x',
+    state: 'verified' as const,
+    primary_action: 'restore' as const,
+    total_bytes: 0,
+    backup_count: count,
+    encrypted: false,
+  })
+
+  it('keeps only apps with a backed up volume, deduplicated and sorted', () => {
+    const rows = [
+      row('volume', 'web', 2),
+      row('volume', 'api', 1),
+      row('volume', 'web', 1),
+      row('volume', 'empty', 0),
+      row('database', 'db-app', 3),
+    ]
+    expect(restorableApps(rows)).toEqual(['api', 'web'])
   })
 })

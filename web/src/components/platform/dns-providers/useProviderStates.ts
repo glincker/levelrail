@@ -2,15 +2,18 @@ import { useQuery } from '@tanstack/react-query'
 import { cloudflareDnsSettingsQueryOptions } from '@/queries/cloudflareDns'
 import { route53DnsSettingsQueryOptions } from '@/queries/route53Dns'
 import { useGoogleCloudDnsSettings } from '@/queries/googleCloudDns'
+import { dnsTokenProviderQueryOptions } from '@/queries/dnsTokenProviders'
 import type { ProviderId, ProviderState } from './providers'
 
-/** One status per provider, derived from the three existing settings queries; never reads a secret. */
+/** One status per provider, derived from the existing settings queries; never reads a secret. */
 export function useProviderStates(
   testErrors: Partial<Record<ProviderId, string>>,
 ): { states: Record<ProviderId, ProviderState>; loading: boolean } {
   const cf = useQuery(cloudflareDnsSettingsQueryOptions())
   const r53 = useQuery(route53DnsSettingsQueryOptions())
   const gcp = useGoogleCloudDnsSettings()
+  const gd = useQuery(dnsTokenProviderQueryOptions('godaddy'))
+  const nc = useQuery(dnsTokenProviderQueryOptions('namecheap'))
 
   const make = (
     id: ProviderId,
@@ -26,7 +29,12 @@ export function useProviderStates(
   }
 
   return {
-    loading: cf.isPending || r53.isPending || gcp.isPending,
+    loading:
+      cf.isPending ||
+      r53.isPending ||
+      gcp.isPending ||
+      gd.isPending ||
+      nc.isPending,
     states: {
       cloudflare: make('cloudflare', cf.data?.enabled, !!cf.data?.has_token),
       route53: make(
@@ -41,6 +49,8 @@ export function useProviderStates(
         !!gcp.data?.has_key,
         gcp.data?.client_email ?? gcp.data?.project_id,
       ),
+      godaddy: make('godaddy', gd.data?.enabled, !!gd.data?.has_key),
+      namecheap: make('namecheap', nc.data?.enabled, !!nc.data?.has_key),
     },
   }
 }

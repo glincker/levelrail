@@ -50,6 +50,7 @@ type Client struct {
 	rejectedFix string
 	retry       RetryPolicy
 	inProcess   bool
+	dryRun      bool
 	sleep       func(context.Context, time.Duration) error
 }
 
@@ -73,6 +74,22 @@ func WithTransport(rt http.RoundTripper) Option {
 	return func(c *Client) { c.hc.Transport = rt; c.inProcess = true }
 }
 
+// DryRunError is returned instead of sending a mutating request when the
+// client was built WithDryRun. Callers print it and treat it as success.
+type DryRunError struct {
+	Method, Path string
+}
+
+func (e *DryRunError) Error() string {
+	return fmt.Sprintf("dry-run: would %s %s (nothing was sent)", e.Method, e.Path)
+}
+
+// WithDryRun makes every non-read request return a DryRunError instead of
+// reaching the network; GET, HEAD and OPTIONS still go through.
+func WithDryRun() Option {
+	return func(c *Client) { c.dryRun = true }
+}
+
 // WithNoCredentialsFix replaces the message of a 401 answered to a request
 // that carried no token, so the caller can name the exact command that fixes it.
 func WithNoCredentialsFix(msg string) Option {
@@ -83,6 +100,15 @@ func WithNoCredentialsFix(msg string) Option {
 // request that carried a token, so a revoked or expired login names its fix.
 func WithRejectedCredentialFix(msg string) Option {
 	return func(c *Client) { c.rejectedFix = msg }
+}
+
+// WithTimeout bounds every request of the client; zero or negative keeps the default.
+func WithTimeout(d time.Duration) Option {
+	return func(c *Client) {
+		if d > 0 {
+			c.hc.Timeout = d
+		}
+	}
 }
 
 // NewClient builds a Client. baseURL should not have a trailing slash
@@ -144,6 +170,9 @@ func (c *Client) doHeaders(ctx context.Context, method, path string, body, out a
 }
 
 func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte, out any) (http.Header, error) {
+	if c.dryRun && method != http.MethodGet && method != http.MethodHead && method != http.MethodOptions {
+		return nil, &DryRunError{Method: method, Path: path}
+	}
 	var reqBody io.Reader
 	if payload != nil {
 		reqBody = bytes.NewReader(payload)
@@ -455,6 +484,39 @@ func (c *Client) SetDeployFreeze(ctx context.Context, name string, windows []Fre
 func (c *Client) GetGlobalDeployFreeze(ctx context.Context) (DeployFreezeResource, error) {
 	var out DeployFreezeResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/settings/deploy-freeze", nil, &out)
+	return out, err
+}
+
+// VacationFreezeResource is the one-off vacation freeze state.
+type VacationFreezeResource struct {
+	Active   bool       `json:"active"`
+	Until    *time.Time `json:"until,omitempty"`
+	DaysLeft int        `json:"days_left"`
+	Reason   string     `json:"reason,omitempty"`
+}
+
+// GetVacationFreeze calls GET /api/v1/settings/vacation-freeze.
+func (c *Client) GetVacationFreeze(ctx context.Context) (VacationFreezeResource, error) {
+	var out VacationFreezeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/vacation-freeze", nil, &out)
+	return out, err
+}
+
+// SetVacationFreeze calls PUT /api/v1/settings/vacation-freeze.
+func (c *Client) SetVacationFreeze(ctx context.Context, days int, reason string) (VacationFreezeResource, error) {
+	var out VacationFreezeResource
+	body := struct {
+		Days   int    `json:"days"`
+		Reason string `json:"reason,omitempty"`
+	}{days, reason}
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/vacation-freeze", body, &out)
+	return out, err
+}
+
+// ClearVacationFreeze calls DELETE /api/v1/settings/vacation-freeze.
+func (c *Client) ClearVacationFreeze(ctx context.Context) (VacationFreezeResource, error) {
+	var out VacationFreezeResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/vacation-freeze", nil, &out)
 	return out, err
 }
 
@@ -1506,9 +1568,13 @@ func (c *Client) ClearDomainTLSCert(ctx context.Context, name, domain string) (D
 // domain's automatically-managed certificate (ACME or internal; not valid
 // for a domain with a BYO certificate uploaded, see
 // handleRenewDomainCertificate's own doc comment).
-func (c *Client) RenewDomainCertificate(ctx context.Context, name, domain string) (RenewCertificateResource, error) {
+func (c *Client) RenewDomainCertificate(ctx context.Context, name, domain, reason string) (RenewCertificateResource, error) {
 	var out RenewCertificateResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/cert/renew", nil, &out)
+	var body any
+	if reason != "" {
+		body = map[string]string{"reason": reason}
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/cert/renew", body, &out)
 	return out, err
 }
 
@@ -1826,6 +1892,15 @@ func (c *Client) ListBackupVerifications(ctx context.Context, name, historyID st
 // explicit confirmation before ever reaching it.
 func (c *Client) DeleteBackup(ctx context.Context, name, historyID string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/backups/"+PathEscape(historyID), nil, nil)
+}
+
+// SetBackupPinned calls PUT (pin) or DELETE (unpin) on /api/v1/databases/{name}/backups/{historyId}/pin.
+func (c *Client) SetBackupPinned(ctx context.Context, name, historyID string, pinned bool) error {
+	method := http.MethodDelete
+	if pinned {
+		method = http.MethodPut
+	}
+	return c.do(ctx, method, "/api/v1/databases/"+PathEscape(name)+"/backups/"+PathEscape(historyID)+"/pin", nil, nil)
 }
 
 // TriggerRestore calls POST /api/v1/databases/{name}/restore: overwrites
@@ -4911,6 +4986,27 @@ func (c *Client) ReapOrphans(ctx context.Context, dryRun bool) (OrphanReport, er
 func (c *Client) StartMajorUpgrade(ctx context.Context, name, version string) (MajorUpgradeResource, error) {
 	var out MajorUpgradeResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/major-upgrade", map[string]string{"version": version, "confirm": name}, &out)
+	return out, err
+}
+
+// MajorUpgradeCheck is the go/no-go answer of GET .../major-upgrade/check.
+type MajorUpgradeCheck struct {
+	Go            bool     `json:"go"`
+	Reasons       []string `json:"reasons"`
+	MaxAgeSeconds int64    `json:"max_age_seconds"`
+	FromVersion   string   `json:"from_version"`
+	ToVersion     string   `json:"to_version"`
+	RestorePoint  *struct {
+		BackupID   string `json:"backup_id"`
+		FinishedAt string `json:"finished_at"`
+		AgeSeconds int64  `json:"age_seconds"`
+	} `json:"restore_point,omitempty"`
+}
+
+// CheckMajorUpgrade calls GET /api/v1/databases/{name}/major-upgrade/check without changing anything.
+func (c *Client) CheckMajorUpgrade(ctx context.Context, name, version string) (MajorUpgradeCheck, error) {
+	var out MajorUpgradeCheck
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/major-upgrade/check?version="+url.QueryEscape(version), nil, &out)
 	return out, err
 }
 

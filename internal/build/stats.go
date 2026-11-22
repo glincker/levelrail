@@ -35,6 +35,8 @@ type Run struct {
 	RunnerReason string        `json:"runner_reason,omitempty"`
 	Platform     string        `json:"platform,omitempty"`
 	ImageBytes   int64         `json:"image_bytes,omitempty"`
+	// PeakMemoryMB is the build cgroup high water mark, 0 when it could not be read.
+	PeakMemoryMB int `json:"peak_memory_mb,omitempty"`
 }
 
 // Trend summarises the last N builds of one app. Percentiles cover successful
@@ -146,3 +148,100 @@ func (s *stepCounter) observe(ev ProgressEvent) {
 }
 
 func (s *stepCounter) total() int { return len(s.seen) }
+
+// FleetBucket is one hour of the farm: builds started and average slots busy.
+type FleetBucket struct {
+	Start      time.Time `json:"start"`
+	Builds     int       `json:"builds"`
+	AvgSlots   float64   `json:"avg_slots"`
+	WaitP95Sec float64   `json:"wait_p95_seconds"`
+}
+
+// FleetSummary aggregates every app's builds over a window to size the farm.
+type FleetSummary struct {
+	Builds        int           `json:"builds"`
+	BuildsPerHour float64       `json:"builds_per_hour"`
+	WaitP50Sec    float64       `json:"wait_p50_seconds"`
+	WaitP95Sec    float64       `json:"wait_p95_seconds"`
+	CacheHitRatio float64       `json:"cache_hit_ratio"`
+	CacheKnown    bool          `json:"cache_known"`
+	PeakSlots     float64       `json:"peak_slots"`
+	Buckets       []FleetBucket `json:"buckets"`
+}
+
+// ComputeFleetSummary folds runs started inside the hours ending at now into
+// hourly buckets. Slots busy is build time overlapping each hour, so it needs
+// no sampling; canceled builds never waited for a slot and are skipped.
+func ComputeFleetSummary(runs []Run, now time.Time, hours int) FleetSummary {
+	if hours <= 0 {
+		hours = 1
+	}
+	end := now.UTC().Truncate(time.Hour).Add(time.Hour)
+	from := end.Add(-time.Duration(hours) * time.Hour)
+	s := FleetSummary{Buckets: make([]FleetBucket, hours)}
+	waits := make([][]float64, hours)
+	var allWaits []float64
+	var cached, total int
+	for i := range s.Buckets {
+		s.Buckets[i].Start = from.Add(time.Duration(i) * time.Hour)
+	}
+	for _, r := range runs {
+		if r.Status == RunCanceled || r.Duration < 0 {
+			continue
+		}
+		start := r.StartedAt.UTC()
+		if start.Before(from) || !start.Before(end) {
+			continue
+		}
+		s.Builds++
+		idx := int(start.Sub(from) / time.Hour)
+		s.Buckets[idx].Builds++
+		w := r.QueueWait.Seconds()
+		allWaits = append(allWaits, w)
+		waits[idx] = append(waits[idx], w)
+		if r.Status == RunSuccess && r.TotalSteps > 0 {
+			cached += r.CachedSteps
+			total += r.TotalSteps
+		}
+		stop := start.Add(r.Duration)
+		for i := idx; i < hours && s.Buckets[i].Start.Before(stop); i++ {
+			bs, be := s.Buckets[i].Start, s.Buckets[i].Start.Add(time.Hour)
+			lo, hi := maxTime(bs, start), minTime(be, stop)
+			if hi.After(lo) {
+				s.Buckets[i].AvgSlots += hi.Sub(lo).Hours()
+			}
+		}
+	}
+	for i := range s.Buckets {
+		if len(waits[i]) > 0 {
+			sort.Float64s(waits[i])
+			s.Buckets[i].WaitP95Sec = percentile(waits[i], 0.95)
+		}
+		if s.Buckets[i].AvgSlots > s.PeakSlots {
+			s.PeakSlots = s.Buckets[i].AvgSlots
+		}
+	}
+	s.BuildsPerHour = float64(s.Builds) / float64(hours)
+	if total > 0 {
+		s.CacheKnown, s.CacheHitRatio = true, float64(cached)/float64(total)
+	}
+	if len(allWaits) > 0 {
+		sort.Float64s(allWaits)
+		s.WaitP50Sec, s.WaitP95Sec = percentile(allWaits, 0.50), percentile(allWaits, 0.95)
+	}
+	return s
+}
+
+func maxTime(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
+
+func minTime(a, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
+}

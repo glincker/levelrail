@@ -82,6 +82,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/hostpressure"
+	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/repolayout"
@@ -220,6 +221,7 @@ type Router struct {
 	// same "this package never reads the environment directly"
 	// convention WithSessionTTL's own doc comment establishes.
 	requestLogThresholds    requestLogThresholds
+	slowRequests            slowRequestRing     // latest requests over the slow threshold, shown on the health page
 	presence                *telemetry.Presence // nil is valid: touches are no-ops
 	alertRules              AlertRules          // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	lb                      lbDeps              // zero value is valid: load balancer routes return 501
@@ -302,13 +304,14 @@ type Router struct {
 	registryAuthTester      RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	teardownOpts            []application.Option
 	deleteTimeout           time.Duration
-	execRuntime             NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	models                  ModelService         // nil is valid: /api/v1/models routes return 501, see WithModels
-	gpuHostDiagnoser        GPUHostDiagnoser     // nil is valid: doctor skips the detailed host GPU checks
-	publishLocks            PublishLockStore     // nil disables publish locks, see WithPublishLocks
-	deploySafety            DeploySafetyStore    // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
-	imageResolver           docker.ImageResolver // nil deploys image tags unresolved, see WithDeploySafety
-	deployGate              DeployGateStore      // nil disables the gate timeline and rollback pins, see WithDeployGate
+	execRuntime             NodeRuntimeResolver   // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	models                  ModelService          // nil is valid: /api/v1/models routes return 501, see WithModels
+	gpuHostDiagnoser        GPUHostDiagnoser      // nil is valid: doctor skips the detailed host GPU checks
+	publishLocks            PublishLockStore      // nil disables publish locks, see WithPublishLocks
+	deploySafety            DeploySafetyStore     // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageTagLister          imageupdate.TagLister // nil reads tags straight from the registry over HTTP
+	imageResolver           docker.ImageResolver  // nil deploys image tags unresolved, see WithDeploySafety
+	deployGate              DeployGateStore       // nil disables the gate timeline and rollback pins, see WithDeployGate
 	deployGateDefaults      deploysafety.Effective
 	reconcileNudger         ReconcileNudger      // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
 	certs                   CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
@@ -755,6 +758,9 @@ type Router struct {
 	cloudflareDNSTokenResolver   CloudflareDNSTokenResolver                                 // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
 	route53DNSCredentialResolver Route53DNSCredentialResolver                               // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
 	dnsVerifyProvider            func(name string) dnszones.Provider                        // nil outside tests: a client is built from the submitted credential
+	dnsTokenStore                DNSTokenStore                                              // DigitalOcean, Hetzner and Azure DNS enabled flags
+	dnsTokenSecrets              DNSTokenSecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/dns-providers return 501
+	dnsTokenProvider             func(name, credential string) (dnszones.Provider, error)   // test seam, defaults to dnszones.NewTokenProvider
 	googleCloudDNS               GoogleCloudDNSStore                                        // always set, same shape as route53DNS
 	googleCloudDNSSecrets        GoogleCloudDNSSecrets                                      // nil is valid: PUT/DELETE /api/v1/settings/google-cloud-dns return 501 and records stay unavailable
 	googleCloudDNSProvider       func(serviceAccountJSON string) (dnszones.Provider, error) // test seam, defaults to dnszones.NewGoogleCloud
@@ -830,14 +836,15 @@ type Router struct {
 	ddnsMgr                      *ddns.Manager                    // nil serves 501 on /settings/ddns
 	heartbeatSvc                 *heartbeat.Service               // nil serves 501 on /settings/heartbeat
 	jobPings                     *heartbeat.JobPinger             // nil rejects per-job heartbeat URLs
-	monitors                     MonitorService                   // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
-	parkedRetention              parkedRetentionState             // last retention run, for the dry run's next_run
-	appSummaryCache              summaryCache                     // live restarts and db size for the apps list
-	runtimeSettings              *runtimesettings.Service         // nil only in unit tests of other packages; nil serves env then default
-	changes                      changeBus                        // topic nudges for GET /api/v1/events/changes; the zero value is ready
-	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
-	policies                     PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
-	deviceFlow                   *apiRateLimiter                  // per-IP device-login-start token bucket
+	monitorsMu                   sync.RWMutex
+	monitors                     MonitorService           // nil is valid: monitor routes return 404 (monitors setting off)
+	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
+	appSummaryCache              summaryCache             // live restarts and db size for the apps list
+	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
+	changes                      changeBus                // topic nudges for GET /api/v1/events/changes; the zero value is ready
+	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
+	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
+	deviceFlow                   *apiRateLimiter          // per-IP device-login-start token bucket
 	instance                     InstanceStore
 	instanceLimit                *apiRateLimiter // per-IP budget for the public identity endpoint
 	instanceMemo                 *instanceCache
@@ -984,6 +991,9 @@ type Router struct {
 
 	// dns01ProviderCheck nil means no provider, so enabling dns01 is refused.
 	dns01ProviderCheck func(context.Context) bool
+
+	// dnsCredCache holds the last scheduled DNS credential access check.
+	dnsCredCache dnsCredentialCache
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -1115,6 +1125,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareDNS:               s,
 		route53DNS:                  s,
 		googleCloudDNS:              s,
+		dnsTokenStore:               s,
 		nodeProvisions:              s,
 		nodeProviderConns:           s,
 		packageRegistries:           s,

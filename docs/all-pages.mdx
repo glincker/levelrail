@@ -129,7 +129,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deployments page](/deployments-page): The cross-app Deployments page lists every deploy live, with filters kept in the URL, a details drawer, redeploy and rollback actions, and keyboard shortcuts.
 - [Images](/images): See every container image on a node with its size, layers and deploy lineage, promote images by digest without a rebuild, and check signatures.
 - [Deploy previews](/deploy-previews): Deploy thumbnails in three tiers, from free page metadata to a real screenshot in a short-lived browser container, with costs, cleanup and settings.
-- [Framework presets](/frameworks): Deploy Next.js, Go, React/Vite, Spring Boot and eight more frameworks with the right port, health path, storage and env hints already filled in.
+- [Framework presets](/frameworks): Deploy Next.js, Go, React/Vite, Spring Boot and many more frameworks with the right port, health path, storage and env hints already filled in.
 - [Deploy a Next.js app](/nextjs): Run a Next.js app on Levelrail with the standalone output, build time variables, the cache volume and health checks, and know the limits of multiple replicas.
 - [Next.js image cache volume](/nextjs-image-cache): Keep optimised Next.js images across deploys and replicas with an opt-in cache volume.
 - [Next.js shared cache for multiple replicas](/nextjs-shared-cache): Share the ISR page and data cache between Next.js replicas so revalidation reaches all of them.
@@ -295,7 +295,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Prometheus scrape endpoint](/prometheus-scrape): Scrape app, database, node and deploy metrics from GET /metrics with a read token.
 - [Web vitals](/web-vitals): Collect real user LCP, INP, CLS, TTFB and FCP for an app without a vendor SDK.
 - [Public status page](/status-page): An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
-- [Monitors](/monitors): Experimental http, tcp, heartbeat and tls uptime monitors with a bounded result history and hourly rollups, off unless APP_MONITORS_ENABLED is set.
+- [Monitors](/monitors): Experimental http, tcp, heartbeat, tls, dns and ping uptime monitors with a bounded result history and hourly rollups, off until the monitors.enabled runtime setting is on.
 - [External monitoring](/external-monitoring): Watch Levelrail from outside the server with the built-in public status page and the off-host heartbeat ping, and know which one answers which question.
 - [Scheduled maintenance](/scheduled-maintenance): Announce planned downtime ahead of time with a dashboard banner, a status page entry and a channel notice, and optionally hold automatic deploys for the window.
 - [Deploy policies](/deploy-policies): Guardrails checked before every deploy at organization, project and environment scope, with warn or enforce modes and an audited override.

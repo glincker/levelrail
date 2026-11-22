@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
+import { VacationFreezeCard } from '../../components/settings/VacationFreezeCard'
 import { PolicyCheckResults } from '../../components/policy/PolicyCheckResults'
 import { PolicyRuleEditor } from '../../components/policy/PolicyRuleEditor'
 import {
@@ -141,6 +142,7 @@ function DeployPoliciesPage() {
         <Banner variant="critical" title={error.message} />
       ) : null}
       {isRoot ? null : <Banner variant="info" title={t('rootOnly')} />}
+      <VacationFreezeCard isRoot={isRoot} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor="dp-scope">{t('scope.label')}</FieldLabel>

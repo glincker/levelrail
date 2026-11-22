@@ -15,6 +15,13 @@ export interface BuildHint {
   fix?: 'prune_cache'
 }
 
+export interface BuildImageBloat {
+  previous_bytes: number
+  growth_percent: number
+  layer?: string
+  layer_bytes?: number
+}
+
 // Matches internal/api's buildRow.
 export interface BuildRow {
   id: string
@@ -32,6 +39,7 @@ export interface BuildRow {
   cache_hit_ratio?: number
   image_bytes?: number
   image_delta_bytes?: number
+  image_bloat?: BuildImageBloat
   node?: string
   platform?: string
   error?: string
@@ -76,6 +84,7 @@ export interface BuildCache {
   record_count: number
   records: BuildCacheRecord[]
   nodes: { id: string; name: string }[]
+  prune_age_hours: number
 }
 
 export interface BuildCachePrune {

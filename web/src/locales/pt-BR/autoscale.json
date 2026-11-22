@@ -95,8 +95,14 @@
     "error": {
       "replicas": "Informe números inteiros de réplicas, com o máximo igual ou maior que o mínimo.",
       "target": "Informe uma meta acima de zero (até 100 para CPU e memória).",
-      "advanced": "Verifique os campos avançados: use números inteiros e minutos de pelo menos 1 segundo."
-    }
+      "advanced": "Verifique os campos avançados: use números inteiros e minutos de pelo menos 1 segundo.",
+      "gauge": "Informe um nome de gauge simples, como queue_depth."
+    },
+    "metricGauge": "Gauge do app",
+    "metricGaugeHelp": "Lê um gauge que seu app expõe no caminho de métricas.",
+    "gaugeName": "Nome do gauge",
+    "gaugeNameHelp": "O nome da métrica que seu app expõe, por exemplo queue_depth.",
+    "gaugeUnit": "unidades"
   },
   "remove": {
     "title": "Remover esta política?",

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -235,5 +236,26 @@ func TestChangesStream_ResourceTopicsScoped(t *testing.T) {
 	f.rt.changes.Publish(changeCompose, appA)
 	if got := nextChangeTopics(t, sc); !reflect.DeepEqual(got, []string{"loadbalancers", "compose"}) {
 		t.Fatalf("topics = %v, want [loadbalancers compose]", got)
+	}
+}
+
+// TestChangesStream_TopicOnlyTopics: databases and incidents reach root but
+// never a team scoped member, since their names are not app names.
+func TestChangesStream_TopicOnlyTopics(t *testing.T) {
+	f := newOrgFixture(t)
+	tenant := openChangeStream(t, f.rt, f.cookies[store.TeamRoleOwner])
+	root := openChangeStream(t, f.rt, f.root)
+	f.rt.changes.Publish(changeDatabases, "db1")
+	f.rt.changes.Publish(changeDomains, appA)
+	if got := nextChangeTopics(t, tenant); !reflect.DeepEqual(got, []string{"domains"}) {
+		t.Errorf("tenant topics = %v, want [domains]", got)
+	}
+	got := nextChangeTopics(t, root)
+	if len(got) == 1 {
+		got = append(got, nextChangeTopics(t, root)...)
+	}
+	sort.Strings(got)
+	if !reflect.DeepEqual(got, []string{"databases", "domains"}) {
+		t.Errorf("root topics = %v, want [databases domains]", got)
 	}
 }

@@ -37,6 +37,8 @@ type InboxItem struct {
 	HistoryEntry
 	Read     bool
 	Resolved bool
+	// Runbook is the rule's current runbook link or note; empty when the rule has none or was deleted.
+	Runbook string
 	// Repeats counts older identical items folded into this one; RepeatIDs are their ids.
 	Repeats   int
 	RepeatIDs []string
@@ -256,7 +258,40 @@ func (db *DB) listInbox(ctx context.Context, principal string, f InboxFilter, li
 		}
 		before = &last
 	}
+	db.fillRunbooks(ctx, out)
 	return out, nil
+}
+
+// fillRunbooks reads the runbook from the live rule; a lookup failure leaves the items without one rather than failing the Inbox.
+func (db *DB) fillRunbooks(ctx context.Context, items []InboxItem) {
+	ids := map[string]struct{}{}
+	for _, it := range items {
+		if it.RuleID != "" {
+			ids[it.RuleID] = struct{}{}
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	args := make([]any, 0, len(ids))
+	for id := range ids {
+		args = append(args, id)
+	}
+	rows, err := db.QueryContext(ctx, `SELECT id, runbook FROM alert_rules WHERE runbook != '' AND id IN (?`+strings.Repeat(",?", len(args)-1)+`)`, args...)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	books := map[string]string{}
+	for rows.Next() {
+		var id, book string
+		if rows.Scan(&id, &book) == nil {
+			books[id] = book
+		}
+	}
+	for i := range items {
+		items[i].Runbook = books[items[i].RuleID]
+	}
 }
 
 // InboxUnreadCount counts visible unread items, capped at the newest 200.

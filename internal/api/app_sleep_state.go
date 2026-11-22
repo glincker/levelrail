@@ -153,7 +153,9 @@ func (rt *Router) sleepResource(ctx context.Context, fleet *appsleep.Fleet, svc 
 			res.ColdStartMsP50 = st.P50WakeLatencyMs
 		}
 	}
-	res.WakeTiming = toWakeTimingResource(rt.wakeTiming(ctx, setting.ServiceName))
+	timing := rt.wakeTiming(ctx, setting.ServiceName)
+	res.WakeTiming = toWakeTimingResource(timing)
+	res.WakeBudgetMs = appsleep.ConfigFromEnv(nil).HoldTimeout(timing.ReadyP95Ms).Milliseconds()
 	return res
 }
 

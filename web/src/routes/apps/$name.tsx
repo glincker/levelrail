@@ -31,6 +31,7 @@ import {
 import { AppMaintenanceBanner } from '../../components/maintenance/AppMaintenanceBanner'
 import { FixReturnBanner } from '../../components/deployDetail/FixReturnBanner'
 import { TrialAppBanner } from '../../components/TrialAppBanner'
+import { AfterInstallSteps } from '../../components/AfterInstallSteps'
 import { resourceErrorComponent } from '@/components/resourceErrorComponent'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -131,6 +132,7 @@ function AppDetailLayout() {
   const banners = (
     <>
       {app.is_trial ? <TrialAppBanner app={app} /> : null}
+      <AfterInstallSteps app={app} />
       <NodeOfflineBanner conditions={conditions} nodeName={app.node_name} />
       <PendingDeployApprovalBanner appName={app.name} />
       <PublishLockBanner appName={app.name} />

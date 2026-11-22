@@ -54,6 +54,8 @@ type appSleepResource struct {
 	ColdStartMsP50 *int64 `json:"cold_start_ms_p50"`
 	// WakeTiming summarises the app's recent wakes; samples is 0 with no history.
 	WakeTiming wakeTimingResource `json:"wake_timing"`
+	// WakeBudgetMs is how long the proxy holds a request while this app wakes.
+	WakeBudgetMs int64 `json:"wake_budget_ms"`
 	// IdleLimits are the allowed and default idle minutes on this server.
 	IdleLimits sleepIdleLimits `json:"idle_limits"`
 	// EstimatedMemoryFreedBytes is the app's memory limit, null when it has none.

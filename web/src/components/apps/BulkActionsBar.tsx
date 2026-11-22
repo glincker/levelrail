@@ -1,5 +1,5 @@
 import '@/styles/material.css'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -25,10 +25,18 @@ import {
   type BulkAction,
   type BulkAppResult,
   type BulkResponse,
+  parseScaleValue,
+  parseResourceValue,
+  isResourceAction,
 } from '../../queries/appsBulk'
 import { appKeys } from '../../queries/apps'
 
-const PRIMARY: { value: BulkAction; icon: typeof PlayGlassIcon }[] = [
+type OwnAction = 'scale' | 'rollback' | 'set-memory' | 'set-cpu' | 'set-env'
+
+const PRIMARY: {
+  value: Exclude<BulkAction, OwnAction>
+  icon: typeof PlayGlassIcon
+}[] = [
   { value: 'restart', icon: RefreshCwGlassIcon },
   { value: 'redeploy', icon: RocketGlassIcon },
   { value: 'stop', icon: PauseGlassIcon },
@@ -41,13 +49,35 @@ const MORE: { value: BulkAction; needsValue: boolean }[] = [
   { value: 'remove-tag', needsValue: true },
   { value: 'set-environment', needsValue: true },
   { value: 'move-to-project', needsValue: true },
+  { value: 'scale', needsValue: true },
+  { value: 'set-memory', needsValue: true },
+  { value: 'set-cpu', needsValue: true },
+  { value: 'set-env', needsValue: true },
+  { value: 'rollback', needsValue: false },
   { value: 'delete', needsValue: false },
 ]
 
 type ValueAction =
   'add-tag' | 'remove-tag' | 'set-environment' | 'move-to-project'
 
-const DISRUPTIVE = new Set<BulkAction>(['stop', 'delete'])
+const DISRUPTIVE = new Set<BulkAction>(['stop', 'delete', 'rollback'])
+
+// Labels of the scale, rollback and resource verbs live in their own namespaces.
+const isOwnAction = (a: BulkAction): a is OwnAction =>
+  a === 'scale' || a === 'rollback' || isResourceAction(a)
+
+const ownLabelKey = (a: OwnAction) =>
+  isResourceAction(a)
+    ? (`appBulkResources:action.${a}` as const)
+    : (`appBulkScale:action.${a}` as const)
+
+// Request fields a typed value turns into; empty when the action takes none.
+const valueFields = (action: BulkAction, value: string) =>
+  (action === 'scale'
+    ? parseScaleValue(value)
+    : isResourceAction(action)
+      ? parseResourceValue(action, value)
+      : null) ?? {}
 
 const STATUS_STYLE: Record<BulkAppResult['status'], string> = {
   ok: 'text-tone-success',
@@ -59,7 +89,7 @@ const STATUS_STYLE: Record<BulkAppResult['status'], string> = {
 }
 
 function ResultList({ results }: { results: BulkAppResult[] }) {
-  const { t } = useTranslation('appRows')
+  const { t } = useTranslation(['appRows', 'appBulkResources'])
   return (
     <ul
       aria-label={t('bulkBar.resultsLabel')}
@@ -74,7 +104,15 @@ function ResultList({ results }: { results: BulkAppResult[] }) {
           <span className={STATUS_STYLE[r.status]}>
             {t(`bulkBar.status.${r.status}`)}
           </span>
-          {r.message ? (
+          {r.before !== undefined && r.after !== undefined ? (
+            <span className="w-full truncate text-xs text-muted-foreground sm:w-auto sm:max-w-[45%]">
+              {t('appBulkResources:change', {
+                before: r.before,
+                after: r.after,
+              })}
+            </span>
+          ) : null}
+          {r.message && r.before === undefined ? (
             <span className="w-full truncate text-xs text-muted-foreground sm:w-auto sm:max-w-[45%]">
               {r.message}
             </span>
@@ -96,9 +134,10 @@ function BulkDialog({
   names: string[]
   onClose: (applied: boolean) => void
 }) {
-  const { t } = useTranslation('appRows')
+  const { t } = useTranslation(['appRows', 'appBulkScale', 'appBulkResources'])
   const queryClient = useQueryClient()
   const inputId = useId()
+  const scaleFields = useMemo(() => valueFields(action, value), [action, value])
   const [plan, setPlan] = useState<BulkResponse | null>(null)
   const [applied, setApplied] = useState<BulkResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -107,7 +146,13 @@ function BulkDialog({
 
   useEffect(() => {
     let live = true
-    postBulk({ action, names, value: value || undefined, dry_run: true })
+    postBulk({
+      action,
+      names,
+      value: value || undefined,
+      ...scaleFields,
+      dry_run: true,
+    })
       .then((res) => {
         if (live) setPlan(res)
       })
@@ -117,12 +162,14 @@ function BulkDialog({
     return () => {
       live = false
     }
-  }, [action, names, value])
+  }, [action, names, value, scaleFields])
 
   const targets = (plan?.results ?? [])
     .filter((r) => r.status === 'would_apply')
     .map((r) => r.name)
-  const label = t(`bulkBar.action.${action}`)
+  const label = isOwnAction(action)
+    ? t(ownLabelKey(action))
+    : t(`bulkBar.action.${action}`)
   const confirmed = typed.trim() === String(targets.length)
 
   const apply = async () => {
@@ -133,6 +180,7 @@ function BulkDialog({
         action,
         names: targets,
         value: value || undefined,
+        ...scaleFields,
         confirm_count: targets.length,
         confirm_names: action === 'delete' ? targets : undefined,
       })
@@ -186,12 +234,16 @@ function BulkDialog({
                   className="mt-0.5 size-5 shrink-0 text-tone-warning"
                   aria-hidden="true"
                 />
-                {t(
-                  `bulkBar.warning.${action === 'delete' ? 'delete' : 'stop'}`,
-                  {
-                    count: targets.length,
-                  },
-                )}
+                {action === 'rollback'
+                  ? t('appBulkScale:warning.rollback', {
+                      count: targets.length,
+                    })
+                  : t(
+                      `bulkBar.warning.${action === 'delete' ? 'delete' : 'stop'}`,
+                      {
+                        count: targets.length,
+                      },
+                    )}
               </p>
             ) : null}
             {targets.length > 0 ? (
@@ -266,12 +318,19 @@ export function BulkActionsBar({
   canAct: boolean
   onClear: () => void
 }) {
-  const { t } = useTranslation('appRows')
+  const { t } = useTranslation(['appRows', 'appBulkScale', 'appBulkResources'])
   const [pending, setPending] = useState<BulkAction | null>(null)
   const [more, setMore] = useState<BulkAction | ''>('')
   const [value, setValue] = useState('')
   const count = selected.length
   const moreSpec = MORE.find((m) => m.value === more)
+  const valueLabel = moreSpec?.needsValue
+    ? isResourceAction(moreSpec.value)
+      ? t(`appBulkResources:value.${moreSpec.value}`)
+      : moreSpec.value === 'scale'
+        ? t('appBulkScale:value.scale')
+        : t(`bulkBar.value.${moreSpec.value as ValueAction}`)
+    : ''
 
   return (
     <>
@@ -317,15 +376,24 @@ export function BulkActionsBar({
             <option value="">{t('bulkBar.more')}</option>
             {MORE.map((m) => (
               <option key={m.value} value={m.value}>
-                {t(`bulkBar.action.${m.value}`)}
+                {isOwnAction(m.value)
+                  ? t(ownLabelKey(m.value))
+                  : t(`bulkBar.action.${m.value}`)}
               </option>
             ))}
           </select>
           {moreSpec?.needsValue ? (
             <Input
               value={value}
-              aria-label={t(`bulkBar.value.${moreSpec.value as ValueAction}`)}
-              placeholder={t(`bulkBar.value.${moreSpec.value as ValueAction}`)}
+              aria-label={valueLabel}
+              placeholder={valueLabel}
+              title={
+                isResourceAction(moreSpec.value)
+                  ? t(`appBulkResources:hint.${moreSpec.value}`)
+                  : moreSpec.value === 'scale'
+                    ? t('appBulkScale:hint.scale')
+                    : undefined
+              }
               className="h-8 w-full sm:w-44"
               onChange={(e) => {
                 setValue(e.target.value)
@@ -337,7 +405,13 @@ export function BulkActionsBar({
               type="button"
               size="sm"
               variant={more === 'delete' ? 'destructive' : 'outline'}
-              disabled={!canAct || (moreSpec?.needsValue && !value.trim())}
+              disabled={
+                !canAct ||
+                (moreSpec?.needsValue &&
+                  (more === 'scale' || isResourceAction(more)
+                    ? Object.keys(valueFields(more, value)).length === 0
+                    : !value.trim()))
+              }
               onClick={() => {
                 setPending(more)
               }}

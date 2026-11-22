@@ -78,6 +78,13 @@ type ruleResource struct {
 	FlapThreshold       int               `json:"flap_threshold,omitempty"`
 	FlapWindow          string            `json:"flap_window,omitempty"`
 
+	// Escalation: a second channel that also receives the alert once it has fired for escalate_after without an Inbox read.
+	EscalateChannelID string `json:"escalate_channel_id,omitempty"`
+	EscalateAfter     string `json:"escalate_after,omitempty"`
+
+	// Runbook is a URL or short note shown in the notification and the Inbox item.
+	Runbook string `json:"runbook,omitempty"`
+
 	// Response-only: set when an active silence or maintenance window
 	// currently mutes this rule.
 	Silenced   bool   `json:"silenced,omitempty"`
@@ -90,6 +97,9 @@ type ruleResource struct {
 	LastEvaluatedAt *time.Time `json:"last_evaluated_at,omitempty"`
 	LastValue       *float64   `json:"last_value,omitempty"`
 }
+
+// maxRunbookLen bounds the runbook text so a note cannot bloat every notification.
+const maxRunbookLen = 1000
 
 func toRuleResource(r alerting.Rule) ruleResource {
 	out := ruleResource{
@@ -116,6 +126,8 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		Labels:                r.Labels,
 		ConsecutiveFailures:   r.ConsecutiveFailures,
 		FlapThreshold:         r.FlapThreshold,
+		EscalateChannelID:     r.EscalateChannelID,
+		Runbook:               r.Runbook,
 		Firing:                r.Firing,
 		PendingSince:          r.PendingSince,
 		FiringSince:           r.FiringSince,
@@ -127,6 +139,9 @@ func toRuleResource(r alerting.Rule) ruleResource {
 	}
 	if r.RestartWindow > 0 {
 		out.RestartWindow = r.RestartWindow.String()
+	}
+	if r.EscalateAfter > 0 {
+		out.EscalateAfter = r.EscalateAfter.String()
 	}
 	if r.FlapWindow > 0 {
 		out.FlapWindow = r.FlapWindow.String()
@@ -144,10 +159,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindOOMKilled, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindJobFailing, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindNodeCPU, alerting.KindNodeMemory, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindPoolerSaturated, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindBackupCopyBehind, alerting.KindRegistryRefreshFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindCleanupFailing, alerting.KindBackupFailed, alerting.KindDeployFailed, alerting.KindMonitorDown, alerting.KindAppUnhealthy, alerting.KindAdvisoryMatch, alerting.KindVolumeUsage,
+	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindOOMKilled, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindJobFailing, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindNodeCPU, alerting.KindNodeMemory, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindPoolerSaturated, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindBackupCopyBehind, alerting.KindBackupSizeAnomaly, alerting.KindDeployDurationRegression, alerting.KindRegistryRefreshFailing, alerting.KindDNSCredentialFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindCleanupFailing, alerting.KindBackupFailed, alerting.KindDeployFailed, alerting.KindMonitorDown, alerting.KindAppUnhealthy, alerting.KindAdvisoryMatch, alerting.KindVolumeUsage,
 		alerting.KindLogPattern, alerting.KindLogLevelRate,
 		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving,
-		alerting.KindDomainTrafficDrop, alerting.KindParkedDomainCertExpiry:
+		alerting.KindDomainTrafficDrop, alerting.KindParkedDomainCertExpiry, alerting.KindDomainRegistrationExpiry:
 	default:
 		return alerting.Rule{}, fmt.Errorf("kind %q is not a supported rule kind", a.Kind)
 	}
@@ -171,13 +186,28 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	if a.ConsecutiveFailures < 0 || a.FlapThreshold < 0 {
 		return alerting.Rule{}, errors.New("consecutive_failures and flap_threshold must not be negative")
 	}
+	escalateAfter, err := parseOptionalDuration(a.EscalateAfter)
+	if err != nil {
+		return alerting.Rule{}, fmt.Errorf("escalate_after: %w", err)
+	}
+	if escalateAfter < 0 || (a.EscalateChannelID == "") != (escalateAfter == 0) {
+		return alerting.Rule{}, errors.New("escalate_channel_id and a positive escalate_after must be set together")
+	}
+
+	runbook := strings.TrimSpace(a.Runbook)
+	if len(runbook) > maxRunbookLen {
+		return alerting.Rule{}, fmt.Errorf("runbook must be at most %d characters", maxRunbookLen)
+	}
 
 	r := alerting.Rule{
+		Runbook:               runbook,
 		Severity:              a.Severity,
 		Labels:                a.Labels,
 		ConsecutiveFailures:   a.ConsecutiveFailures,
 		FlapThreshold:         a.FlapThreshold,
 		FlapWindow:            flapWindow,
+		EscalateChannelID:     a.EscalateChannelID,
+		EscalateAfter:         escalateAfter,
 		ID:                    id,
 		Name:                  a.Name,
 		Kind:                  kind,
@@ -247,6 +277,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	case alerting.KindParkedDomainCertExpiry:
 		if r.Threshold < 0 {
 			return alerting.Rule{}, errors.New("threshold (days) must not be negative for a parked_domain_cert_expiry rule")
+		}
+	case alerting.KindDomainRegistrationExpiry:
+		if r.Threshold < 0 {
+			return alerting.Rule{}, errors.New("threshold (days) must not be negative for a domain_registration_expiry rule")
 		}
 	case alerting.KindSLOBurn:
 		if r.SLO == nil {
@@ -372,6 +406,16 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 			return false
 		}
 		if !rt.requireChannelForApp(w, r, rule.ChannelID, appName, op) {
+			return false
+		}
+	}
+
+	if rule.EscalateChannelID != "" {
+		if rt.notificationChannels == nil {
+			writeError(w, http.StatusNotImplemented, "notification channels are not configured on this control plane")
+			return false
+		}
+		if !rt.requireChannelForApp(w, r, rule.EscalateChannelID, appName, op) {
 			return false
 		}
 	}

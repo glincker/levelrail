@@ -11,12 +11,36 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '../lib/pollTier'
 
 export type AutoscaleMetric =
-  'cpu_percent' | 'memory_percent' | 'requests_per_replica'
+  'cpu_percent' | 'memory_percent' | 'requests_per_replica' | `gauge:${string}`
+
+export type AutoscaleGaugeMetric = Extract<AutoscaleMetric, `gauge:${string}`>
+export type AutoscaleBuiltinMetric = Exclude<
+  AutoscaleMetric,
+  AutoscaleGaugeMetric
+>
+
+/** Narrows so callers can tell app gauges from the built-in metrics. */
+export function isGaugeMetric(
+  metric: AutoscaleMetric,
+): metric is AutoscaleGaugeMetric {
+  return metric.startsWith('gauge:')
+}
 
 export interface AutoscaleCondition {
   healthy: boolean
   reason: string
   message: string
+}
+
+export type AutoscaleDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+
+/** A window that raises the minimum replicas; no days means every day. */
+export interface AutoscaleScheduleWindow {
+  days?: AutoscaleDay[]
+  start: string
+  end: string
+  timezone?: string
+  min_replicas: number
 }
 
 export interface AutoscalePolicyFields {
@@ -31,10 +55,12 @@ export interface AutoscalePolicyFields {
   stabilization_secs: number
   max_step_up: number
   max_step_down: number
+  schedules?: AutoscaleScheduleWindow[]
 }
 
 export interface Autoscale extends AutoscalePolicyFields {
   app: string
+  effective_min: number
   effective_max: number
   current: number
   desired: number

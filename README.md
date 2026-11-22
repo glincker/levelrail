@@ -21,12 +21,13 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
   <a href="docs/roadmap.md">Roadmap</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a>
 </p>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero/hero-dark.jpg">
-  <img src="docs/assets/hero/hero-light.jpg" alt="Levelrail app metrics page showing CPU and memory charts for a healthy app, next to the headline: git push to production on your own servers" width="880" height="440">
-</picture>
-<br>
-<img src="docs/assets/demos/tour-hero.gif" alt="Animated tour of Levelrail: deploy history, node health and live app metrics" width="880" height="469">
+<p>
+  <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&color=58b1ce&labelColor=06232c&label=stars" alt="GitHub stars"></a>
+  <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?style=flat&color=58b1ce&labelColor=06232c&label=release" alt="Latest release"></a>
+  <a href="https://github.com/glincker/levelrail/blob/HEAD/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-58b1ce?labelColor=06232c" alt="License"></a>
+  <a href="https://demo.levelrail.com"><img src="https://img.shields.io/badge/live%20demo-open-58b1ce?labelColor=06232c" alt="Live demo"></a>
+</p>
+<img src="docs/assets/demos/tour-hero.gif" alt="Animated tour of Levelrail: deploy history, the apps list and per-app metrics" width="880" height="480">
 </div>
 
 v1.x. Single-server is production ready, multi-node is beta. Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).

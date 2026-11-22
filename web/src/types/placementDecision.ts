@@ -102,7 +102,21 @@ export interface SimulatedPlacement {
   unplaced?: string
 }
 
+// Reserved versus used memory per node; capacity and used are 0 when the
+// host never reported them.
+export interface NodeReservation {
+  node_id: string
+  name: string
+  cpu_milli_reserved: number
+  cpu_milli_capacity?: number
+  memory_reserved_bytes: number
+  memory_capacity_bytes?: number
+  memory_used_bytes?: number
+  memory_stranded_bytes: number
+}
+
 export interface PlacementSimulation {
+  nodes?: NodeReservation[]
   placed: SimulatedPlacement[]
   unplaced: number
   zones: ZoneSummary[]

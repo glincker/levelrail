@@ -17,10 +17,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/autoscale"
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/canary"
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/deployurls"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -32,6 +34,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/tlsowner"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
@@ -52,6 +55,12 @@ func (s *bootState) startTelemetry() {
 	collector := telemetry.NewCollector(&multiNodeStatsSource{local: client, registry: agentRegistry}, telemetryDB, metricsCollectionInterval, logger)
 	presence := telemetry.NewPresence(metricsPresenceWindow)
 	collector.SetPresence(presence, metricsIdleInterval)
+	collector.SetIntervalFunc(func() time.Duration {
+		if s.apiRouter == nil {
+			return metricsCollectionInterval
+		}
+		return s.apiRouter.RuntimeSettings().Duration(context.Background(), runtimesettings.KeyMetricsSampleInterval)
+	})
 	if s.apiRouter != nil {
 		s.apiRouter.SetPresence(presence)
 	}
@@ -153,6 +162,7 @@ func (s *bootState) startAlerting() {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	appHealth := alerting.NewAppHealthTracker()
 	alertingEngine.SetAppHealth(appHealth)
+	canary.SetDefaultSignals(alerting.NewCanarySignals(appHealth, alertingDB))
 	s.liveness().SetObserver(func(container, service string, unhealthy bool, failures int, at time.Time) {
 		appHealth.Record(container, service, unhealthy, failures, at)
 	})
@@ -167,9 +177,26 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetJobFailing(db, scheduledtask.FailureAlertWindow, scheduledtask.FailureAlertBatch)
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
 	alertingEngine.SetBackupCopy(backupCopyAlertSource{db: db}, backup.CopyLagAlertFromEnv(os.LookupEnv))
+	alertingEngine.SetBackupSizeAnomaly(backupSizeAlertSource{db: db}, func(c context.Context) alerting.BackupSizePolicy {
+		live := apiRouter.RuntimeSettings()
+		return alerting.BackupSizePolicy{
+			Percent:  live.Int(c, runtimesettings.KeyBackupSizeAnomalyPercent),
+			Baseline: live.Int(c, runtimesettings.KeyBackupSizeAnomalyBaseline),
+		}
+	})
+	alertingEngine.SetDurationRegression(durationAlertSource{db: db}, func(c context.Context) alerting.DurationRegressionPolicy {
+		live := apiRouter.RuntimeSettings()
+		return alerting.DurationRegressionPolicy{
+			Percent:  live.Int(c, runtimesettings.KeyAlertsDurationRegressionPercent),
+			Recent:   live.Int(c, runtimesettings.KeyAlertsDurationRegressionRecent),
+			Baseline: live.Int(c, runtimesettings.KeyAlertsDurationRegressionBaseline),
+		}
+	})
 	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
+	alertingEngine.SetDNSCredentials(apiRouter)
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
+	alertingEngine.SetRegistrationExpiry(dnszones.NewRDAP(netguard.NewClient(), dnszones.RDAPOptionsFromEnv()))
 	certPolicy := alerting.CertPolicyFromEnv(os.Getenv)
 	certPolicy.BaseURL = dashboardBaseURL()
 	alertingEngine.SetCertExpiryPolicy(certPolicy)
@@ -204,6 +231,9 @@ func (s *bootState) startAlerting() {
 					MinRequests:       float64(live.Int(c, runtimesettings.KeyAlertsDefault5xxMinReqs)),
 				}
 			})
+		alertingEngine.SetRenotify(func(c context.Context) time.Duration {
+			return time.Duration(live.Int(c, runtimesettings.KeyAlertsRenotifyInterval)) * time.Hour
+		}, alertingDB)
 	}
 	wireWeeklyDigest(ctx, logger, apiRouter, alertingDB, db, alertingFederator, restartTracker, emailSender, apiRouter.RuntimeSettings())
 	go func() {
@@ -315,6 +345,12 @@ func (s *bootState) startSchedulers() {
 		scheduler.DefaultRetentionHours = func(ctx context.Context) int {
 			return s.apiRouter.RuntimeSettings().Int(ctx, runtimesettings.KeyBackupDefaultRetentionHours)
 		}
+		scheduler.RunWindow = func(ctx context.Context) string {
+			return s.apiRouter.RuntimeSettings().String(ctx, runtimesettings.KeyBackupRunWindow)
+		}
+		backup.SetUploadLimit(func() int {
+			return s.apiRouter.RuntimeSettings().Int(context.Background(), runtimesettings.KeyBackupUploadKBPerSec)
+		})
 		scheduler.ComposeServices = newComposeServiceBackupRunner(db, client, agentRegistry, backupRunner)
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		walShip := newWALShipScheduler(db, client, backupRunner, func(nodeID string) bool {
@@ -547,6 +583,13 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	// Drops undo entries for deleted apps and databases once their window passes.
+	go func() {
+		if err := apiRouter.RunRecentlyDeletedSweeper(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("recently deleted sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Git OAuth access tokens refresh ahead of expiry; pasted tokens report their expiry.
 	go func() {
 		if err := apiRouter.RunGitCredentialRefresh(ctx); err != nil && !errors.Is(err, context.Canceled) {
@@ -608,6 +651,7 @@ func (s *bootState) serve() error {
 	rs, rsCtx := s.apiRouter.RuntimeSettings(), context.Background()
 	engine.SetBootPasses(bootPassDelays(logger, rs.List(rsCtx, runtimesettings.KeyBootRechecks)), rs.Duration(rsCtx, runtimesettings.KeyBootEventRecheck))
 	engine.SetResyncSource(resyncFromSettings(rsCtx, rs))
+	engine.SetEventDrivenSource(func() bool { return rs.Bool(rsCtx, runtimesettings.KeyReconcileEventDriven) })
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))

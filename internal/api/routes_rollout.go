@@ -7,5 +7,8 @@ func (rt *Router) registerRolloutRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/rollout", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetRollout))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/rollout", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutRollout))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/rollout", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteRollout))
+	mux.HandleFunc("POST /api/v1/apps/{name}/rollout/pause", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePauseRollout))
+	mux.HandleFunc("POST /api/v1/apps/{name}/rollout/resume", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleResumeRollout))
+	mux.HandleFunc("POST /api/v1/apps/{name}/rollout/abort", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleAbortRollout)))
 	rt.registerRolloutStateRoutes(mux)
 }

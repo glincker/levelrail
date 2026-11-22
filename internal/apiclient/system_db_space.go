@@ -11,6 +11,14 @@ type DBSpaceTable struct {
 	Bytes int64  `json:"bytes"`
 }
 
+// DBSpacePart is the footprint of one prunable group of tables.
+type DBSpacePart struct {
+	ID             string   `json:"id"`
+	Bytes          int64    `json:"bytes"`
+	CleanupTargets []string `json:"cleanup_targets,omitempty"`
+	Fix            string   `json:"fix,omitempty"`
+}
+
 // DBSpace is GET /api/v1/system/db-space.
 type DBSpace struct {
 	PageSize         int64          `json:"page_size"`
@@ -20,6 +28,7 @@ type DBSpace struct {
 	ReclaimableBytes int64          `json:"reclaimable_bytes"`
 	FreePercent      int            `json:"free_percent"`
 	Tables           []DBSpaceTable `json:"tables"`
+	Parts            []DBSpacePart  `json:"parts"`
 }
 
 // DBCompact is POST /api/v1/system/db-space/compact.

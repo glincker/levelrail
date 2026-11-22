@@ -60,6 +60,15 @@ func (f *fakeExec) Stop(_ context.Context, kind, name, node string) error {
 	return nil
 }
 
+func (f *fakeExec) PrePull(_ context.Context, m store.NodeMove) (string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.call("prepull " + m.Resource + "@" + m.ToNodeID); err != nil {
+		return "", err
+	}
+	return "pulled", nil
+}
+
 func (f *fakeExec) CopyVolume(_ context.Context, from, to, v string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -113,7 +122,7 @@ func (f *fakeExec) ops() []string {
 	defer f.mu.Unlock()
 	out := make([]string, 0, len(f.calls))
 	for _, c := range f.calls {
-		if !strings.HasPrefix(c, "ready ") {
+		if !strings.HasPrefix(c, "ready ") && !strings.HasPrefix(c, "prepull ") {
 			out = append(out, c)
 		}
 	}
@@ -339,5 +348,45 @@ func TestConfigFromEnv(t *testing.T) {
 	cfg := ConfigFromEnv(func(k string) (string, bool) { v, ok := env[k]; return v, ok })
 	if cfg.VerifyTimeout != 90*time.Second || cfg.MaxAttempts != 5 || cfg.Interval != 500*time.Millisecond {
 		t.Fatalf("cfg = %+v", cfg)
+	}
+}
+
+func TestMove_PrePullRunsBeforeStopAndNeverFailsTheMove(t *testing.T) {
+	for _, failPull := range []bool{false, true} {
+		s := openStore(t)
+		c := &clock{t: time.Unix(1_700_000_000, 0)}
+		f := newFakeExec()
+		if failPull {
+			f.fail["prepull"] = 10
+		}
+		r := newRunner(s, f, c)
+		m, err := r.Start(context.Background(), Request{Kind: "app", Resource: "api", FromNodeID: "a", ToNodeID: "b", Volumes: []string{"data"}})
+		if err != nil {
+			t.Fatalf("Start: %v", err)
+		}
+		m = runUntilDone(t, r, s, m.ID, c)
+		if m.Status != store.NodeMoveStatusSucceeded {
+			t.Fatalf("failPull=%v: status %q, want succeeded (%s)", failPull, m.Status, m.Error)
+		}
+		f.mu.Lock()
+		calls := strings.Join(f.calls, ",")
+		f.mu.Unlock()
+		pull, stop := strings.Index(calls, "prepull api@b"), strings.Index(calls, "stop api@a")
+		if pull < 0 || stop < 0 || pull > stop {
+			t.Fatalf("failPull=%v: prepull must run on the target before the source stops: %s", failPull, calls)
+		}
+		var step *store.NodeMoveStep
+		for i := range m.Steps {
+			if m.Steps[i].Phase == PhasePrepull {
+				step = &m.Steps[i]
+			}
+		}
+		wantOutcome := OutcomeOK
+		if failPull {
+			wantOutcome = OutcomeFailed
+		}
+		if step == nil || step.Outcome != wantOutcome {
+			t.Fatalf("failPull=%v: prepull step %+v, want outcome %s", failPull, step, wantOutcome)
+		}
 	}
 }

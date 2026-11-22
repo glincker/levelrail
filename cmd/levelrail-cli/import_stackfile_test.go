@@ -125,3 +125,198 @@ func TestImportPortainerStackNeverReadsValues(t *testing.T) {
 		}
 	}
 }
+
+const renderBlueprintFixture = `services:
+  - type: web
+    name: api
+    runtime: docker
+    image:
+      url: ghcr.io/acme/api:1.2
+    healthCheckPath: /up
+    numInstances: 2
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: appdb
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: STRIPE_KEY
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+  - type: cron
+    name: nightly
+    runtime: docker
+    image:
+      url: ghcr.io/acme/api:1.2
+    schedule: "0 3 * * *"
+    dockerCommand: ./bin/cleanup
+  - type: keyvalue
+    name: cache
+databases:
+  - name: appdb
+    postgresMajorVersion: "16"
+`
+
+func TestImportRenderBlueprintDryRun(t *testing.T) {
+	p := writeStackFixture(t, "render.yaml", renderBlueprintFixture)
+	out, errs, code := runStackFile(t, "render", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"ghcr.io/acme/api:1.2", "0 3 * * *", "engine: redis", "engine: postgres", "SESSION_SECRET", "STRIPE_KEY", "Dry run"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+const doAppSpecFixture = `name: shop
+domains:
+  - domain: shop.example.com
+services:
+  - name: web
+    http_port: 3000
+    instance_count: 2
+    run_command: bin/serve
+    image:
+      registry_type: DOCR
+      repository: shop
+      tag: v3
+    health_check:
+      http_path: /up
+    envs:
+      - key: LOG_LEVEL
+        value: info
+      - key: API_TOKEN
+        value: EV[1:topsecretvalue]
+        type: SECRET
+      - key: DATABASE_URL
+        value: ${db.DATABASE_URL}
+workers:
+  - name: queue
+    image:
+      repository: shop
+      tag: v3
+    run_command: bin/queue
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+`
+
+func TestImportDOAppSpecDryRun(t *testing.T) {
+	p := writeStackFixture(t, "app.yaml", doAppSpecFixture)
+	out, errs, code := runStackFile(t, "do-app", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"shop:v3", "shop.example.com", "API_TOKEN", "engine: postgres", "Dry run"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "topsecretvalue") {
+		t.Error("output leaks a secret value")
+	}
+}
+
+const cloudRunFixture = `apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: api
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "2"
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      containers:
+      - image: us-docker.pkg.dev/acme/svc/api:1.2
+        ports:
+        - containerPort: 9000
+        env:
+        - name: LOG_LEVEL
+          value: info
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: db-pass
+              key: latest
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+`
+
+func TestImportCloudRunServiceDryRun(t *testing.T) {
+	p := writeStackFixture(t, "service.yaml", cloudRunFixture)
+	out, errs, code := runStackFile(t, "cloud-run", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"us-docker.pkg.dev/acme/svc/api:1.2", "9000", "DB_PASS", "512Mi", "maxScale", "Dry run"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+	if _, _, code := runStackFile(t, "cloud-run", writeStackFixture(t, "x.yaml", "kind: Job\n")); code == exitOK {
+		t.Fatal("non-Service must fail")
+	}
+}
+
+func TestImportNetlifyDryRunEmitsStaticApp(t *testing.T) {
+	body := `[build]
+  command = "npm run build"
+  publish = "dist"
+  base = "web"
+  [build.environment]
+    NODE_VERSION = "20"
+    API_SECRET = "hunter2hunter2"
+
+[[redirects]]
+  from = "/old/*"
+  to = "/new/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/eu"
+  to = "/eu/home"
+  conditions = {Country = ["DE"]}
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+`
+	p := writeStackFixture(t, "netlify.toml", body)
+	out, errs, code := runStackFile(t, "netlify", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"type: static", "publish: dist", "baseDirectory: web", "NODE_VERSION", "/old/*", "X-Frame-Options", "conditions", "looks like a secret"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "hunter2") || strings.Contains(out, "/eu/home") {
+		t.Errorf("secret or skipped rule leaked:\n%s", out)
+	}
+}
+
+func TestImportFlyDryRun(t *testing.T) {
+	body := "app = \"shop-api\"\n[build]\n  image = \"ghcr.io/acme/shop:1.4\"\n[http_service]\n  internal_port = 8080\n"
+	p := writeStackFixture(t, "fly.toml", body)
+	out, errs, code := runStackFile(t, "fly", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"shop-api", "ghcr.io/acme/shop:1.4", "port: 8080"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output lacks %q:\n%s", want, out)
+		}
+	}
+}

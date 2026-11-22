@@ -183,6 +183,10 @@ func EncodeDeploymentCursor(startedAt time.Time, id string) string {
 	return base64.RawURLEncoding.EncodeToString([]byte(startedAt.UTC().Format(time.RFC3339Nano) + "|" + id))
 }
 
+// DecodeKeysetCursor parses a cursor minted by EncodeDeploymentCursor into its
+// RFC3339Nano timestamp and row id, ErrInvalidDeploymentCursor when malformed.
+func DecodeKeysetCursor(c string) (string, string, error) { return decodeDeploymentCursor(c) }
+
 func decodeDeploymentCursor(c string) (string, string, error) {
 	raw, err := base64.RawURLEncoding.DecodeString(c)
 	if err != nil {

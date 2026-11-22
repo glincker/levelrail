@@ -44,5 +44,8 @@ func (e *Engine) scheduleRequeue(name string, base time.Duration) {
 	if delay > limit {
 		delay = limit
 	}
-	time.AfterFunc(delay, e.Nudge)
+	time.AfterFunc(delay, func() {
+		e.markControllerDirty(name)
+		e.nudgeOnly()
+	})
 }

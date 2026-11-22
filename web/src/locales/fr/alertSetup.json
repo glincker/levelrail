@@ -75,6 +75,10 @@
       "parked_domain_cert_expiry": {
         "label": "Expiration du certificat d'un domaine parqué",
         "help": "Se déclenche quand un domaine parqué a moins de jours de certificat restants que la limite. Couvre tous les domaines parqués de la plateforme."
+      },
+      "domain_registration_expiry": {
+        "label": "Expiration de l'enregistrement du domaine",
+        "help": "Se déclenche quand un domaine que vous servez est à moins de la limite de sa date d'expiration chez le registrar, lue dans les données publiques du registre. Couvre tous les domaines de la plateforme."
       }
     },
     "scopeLabel": "Domaine",

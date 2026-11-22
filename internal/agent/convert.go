@@ -64,6 +64,9 @@ func resourcesToPB(r *docker.Resources) *agentpb.Resources {
 		NanoCpus:        r.NanoCPUs,
 		SwapMemoryBytes: r.SwapMemoryBytes,
 		CpusetCpus:      r.CPUSetCPUs,
+		IoReadBps:       r.IOReadBps,
+		IoWriteBps:      r.IOWriteBps,
+		NetMbit:         r.NetMbit,
 	}
 }
 
@@ -76,6 +79,9 @@ func resourcesFromPB(r *agentpb.Resources) *docker.Resources {
 		NanoCPUs:        r.NanoCpus,
 		SwapMemoryBytes: r.SwapMemoryBytes,
 		CPUSetCPUs:      r.CpusetCpus,
+		IOReadBps:       r.IoReadBps,
+		IOWriteBps:      r.IoWriteBps,
+		NetMbit:         r.NetMbit,
 	}
 }
 

@@ -31,9 +31,16 @@ export function RenewCertificateButton({
           onSuccess: (result) => {
             toast.add({
               title: `Renewal requested for ${domain}.`,
-              description: result.had_stored_certificate
-                ? 'The current certificate was cleared; a new one is issued on the next reconcile pass.'
-                : 'No certificate was on file yet; one is issued on the next reconcile pass.',
+              description: [
+                result.had_stored_certificate
+                  ? 'The current certificate was cleared; a new one is issued on the next reconcile pass.'
+                  : 'No certificate was on file yet; one is issued on the next reconcile pass.',
+                result.previous_error
+                  ? `Last CA error: ${result.explanation || result.previous_error}`
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' '),
               type: 'success',
             })
           },

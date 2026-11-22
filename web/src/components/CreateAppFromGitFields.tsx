@@ -23,7 +23,10 @@ import {
   buildInputFrom,
   connectGitSourceFor,
   createAppFromGitSchema,
+  envPayloadFrom,
+  missingEnvRows,
   repoSlugFrom,
+  type EnvHintRow,
   type FormInput,
   type FormOutput,
 } from '../lib/createAppFromGit'
@@ -40,6 +43,7 @@ import {
 } from './GitRepoSourcePicker'
 import { CreateAppFromGitNetworkFields } from './CreateAppFromGitNetworkFields'
 import { GitSourceWebhookBanner } from './GitSourceWebhookBanner'
+import { GitRepoEnvFields } from './GitRepoEnvFields'
 
 // Placeholder image tag POST /api/v1/apps is sent on step 1 of this
 // form's two-request sequence (create the app record, then trigger a
@@ -141,6 +145,8 @@ export function CreateAppFromGitFields({
   // comment for how a stale value here (the form fields hand-edited after
   // a pick) gets detected and ignored.
   const [source, setSource] = useState<GitRepoSourceValue | null>(null)
+  // Required env names the repo documents, filled in before the first deploy.
+  const [envRows, setEnvRows] = useState<EnvHintRow[]>([])
   // The latest POST /api/v1/build/detect result for whatever repo/ref is
   // currently in the form (see GitBuildSourceFields' own onDetected doc
   // comment), sent along with the build trigger purely to be stored on
@@ -211,6 +217,7 @@ export function CreateAppFromGitFields({
       connectSourceMutation.reset()
       buildMutation.reset()
       setSource(null)
+      setEnvRows([])
       setDetectedFramework(undefined)
     }
     // Only reacting to the dialog's open transition, not to reset/
@@ -319,6 +326,7 @@ export function CreateAppFromGitFields({
           values.healthCheckEnabled,
           values.healthCheckPath,
         ),
+        ...(values.buildType === 'image' ? {} : envPayloadFrom(envRows)),
       },
       {
         onSuccess: (created) => {
@@ -328,6 +336,8 @@ export function CreateAppFromGitFields({
     )
   })
 
+  const envBlocked =
+    watch('buildType') !== 'image' && missingEnvRows(envRows).length > 0
   const busy =
     createApp.isPending ||
     connectSourceMutation.isPending ||
@@ -424,6 +434,18 @@ export function CreateAppFromGitFields({
         />
       </div>
 
+      {watch('buildType') !== 'image' ? (
+        <GitRepoEnvFields
+          repoUrl={watch('repoUrl').trim()}
+          gitRef={watch('ref').trim()}
+          baseDirectory={watch('baseDirectory').trim()}
+          token={source?.token}
+          rows={envRows}
+          onRowsChange={setEnvRows}
+          disabled={buildFieldsLocked}
+        />
+      ) : null}
+
       <CreateAppFromGitNetworkFields
         register={register}
         formState={formState}
@@ -457,7 +479,7 @@ export function CreateAppFromGitFields({
       ) : null}
 
       <DialogFooter>
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" disabled={busy || envBlocked}>
           {createApp.isPending
             ? 'Creating...'
             : connectSourceMutation.isPending

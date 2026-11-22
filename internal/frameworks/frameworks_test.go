@@ -87,3 +87,53 @@ func TestDetectRemixBeatsVite(t *testing.T) {
 		}
 	}
 }
+
+func TestDetectAngularPublishDir(t *testing.T) {
+	files := map[string]string{
+		"package.json": `{"dependencies":{"@angular/core":"18"},"devDependencies":{"vite":"5"}}`,
+		"angular.json": `{"projects":{"shop":{}}}`,
+	}
+	m, ok := Detect(func(rel string) (string, bool) { v, ok := files[rel]; return v, ok })
+	if !ok || m.Preset.ID != "angular" || m.Preset.PublishDir != "dist/shop/browser" {
+		t.Fatalf("got %q %q ok=%v", m.Preset.ID, m.Preset.PublishDir, ok)
+	}
+}
+
+func TestDetectBunHintOnly(t *testing.T) {
+	cases := []struct {
+		name  string
+		files map[string]string
+		want  string
+	}{
+		{"bun beats plain express", map[string]string{"package.json": `{"dependencies":{"express":"4"}}`, "bun.lockb": ""}, "bun"},
+		{"framework beats bun", map[string]string{"package.json": `{"dependencies":{"next":"15"}}`, "bun.lock": ""}, "nextjs"},
+		{"no lockfile stays node", map[string]string{"package.json": `{"dependencies":{"express":"4"}}`}, "node"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			m, ok := Detect(func(rel string) (string, bool) { v, ok := c.files[rel]; return v, ok })
+			if !ok || m.Preset.ID != c.want {
+				t.Fatalf("got %q ok=%v, want %s", m.Preset.ID, ok, c.want)
+			}
+		})
+	}
+}
+
+func TestDetectJavaFrameworkOrder(t *testing.T) {
+	for pom, want := range map[string]string{
+		"<artifactId>quarkus-maven-plugin</artifactId><artifactId>spring-boot</artifactId>": "quarkus",
+		"<artifactId>micronaut-parent</artifactId>":                                         "micronaut",
+		"<artifactId>spring-boot-starter-parent</artifactId>":                               "spring-boot",
+	} {
+		m, ok := Detect(func(rel string) (string, bool) { return pom, rel == "pom.xml" })
+		if !ok || m.Preset.ID != want {
+			t.Fatalf("pom %s: got %q ok=%v, want %s", pom, m.Preset.ID, ok, want)
+		}
+	}
+}
+
+func TestDetectDotnetNeedsWebHost(t *testing.T) {
+	if _, ok := Detect(func(rel string) (string, bool) { return "Console.WriteLine(1);", rel == "Program.cs" }); ok {
+		t.Fatal("a console Program.cs must not match aspnet-core")
+	}
+}

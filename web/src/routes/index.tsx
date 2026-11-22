@@ -7,6 +7,7 @@ import {
 import { userListQueryOptions } from '../queries/users'
 import { useEnvironmentScope } from '../lib/environmentScope'
 import { DashboardHome } from '../components/dashboard/DashboardHome'
+import { DashboardSiteDrop } from '../components/dashboard/DashboardSiteDrop'
 import { PanelHost } from '../components/plugins/PanelHost'
 import { DashboardPending } from '@/components/dashboard/DashboardPending'
 
@@ -45,6 +46,7 @@ function DashboardPage() {
   return (
     <div className="space-y-8">
       <DashboardHome summary={summary} sample={sample} board={board} />
+      <DashboardSiteDrop />
       <PanelHost slot="dashboard" />
     </div>
   )

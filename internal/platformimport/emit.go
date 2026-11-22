@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // Emitted file names, stable so a migration PR diffs cleanly.
@@ -21,8 +22,10 @@ const (
 	EmitDatabasesFile = "databases.yaml"
 	EmitAppsFile      = "apps.yaml"
 	EmitDomainsFile   = "domains.yaml"
-	EmitSecretsFile   = "SECRETS.md"
-	EmitNotesFile     = "MIGRATION.md"
+	// EmitStaticSpecFile holds static sites as an app.yaml, which apply does not manage.
+	EmitStaticSpecFile = "app.yaml"
+	EmitSecretsFile    = "SECRETS.md"
+	EmitNotesFile      = "MIGRATION.md"
 )
 
 // EmitSecret is a secret the emitted documents reference by name. The value
@@ -66,8 +69,19 @@ type EmitApp struct {
 	Jobs        []EmitJob
 	// Policy lists proxy flags for the domain steps in MIGRATION.md.
 	Policy DomainPolicy
+	// Static, when set, emits a build.type: static service (no image, no port).
+	Static *EmitStatic
 	// Notes are follow-ups for MIGRATION.md that the documents cannot express.
 	Notes []string
+}
+
+// EmitStatic is the static site part of an app: how it is built and the
+// routing rules served with it.
+type EmitStatic struct {
+	Command, Publish, BaseDirectory string
+	Args                            map[string]string
+	Routes                          []spec.Route
+	Headers                         []spec.HeaderRule
 }
 
 // EmitConnection is a { from: { database, field } } env reference.
@@ -165,6 +179,8 @@ type emitSvc struct {
 	Hooks     *emitHooks           `yaml:"hooks,omitempty"`
 	Env       map[string]emitValue `yaml:"env,omitempty"`
 	Jobs      []emitJob            `yaml:"jobs,omitempty"`
+	Routes    []spec.Route         `yaml:"routes,omitempty"`
+	Headers   []spec.HeaderRule    `yaml:"headers,omitempty"`
 }
 
 type emitJob struct {
@@ -176,8 +192,12 @@ type emitJob struct {
 }
 
 type emitBuild struct {
-	Type  string `yaml:"type"`
-	Image string `yaml:"image"`
+	Type          string            `yaml:"type"`
+	Image         string            `yaml:"image,omitempty"`
+	BaseDirectory string            `yaml:"baseDirectory,omitempty"`
+	Command       string            `yaml:"command,omitempty"`
+	Publish       string            `yaml:"publish,omitempty"`
+	Args          map[string]string `yaml:"args,omitempty"`
 }
 
 type emitResources struct {
@@ -250,10 +270,15 @@ func EmitStack(in EmitInput, o EmitOptions) ([]EmitFile, error) {
 	sort.SliceStable(dbs, func(i, j int) bool { return dbs[i].Name < dbs[j].Name })
 
 	var appDocs, domainDocs, dbDocs []emitDoc
+	var staticApps []EmitApp
 	notes := append([]string(nil), in.Notes...)
 	owner := map[string]string{}
 	for i := range apps {
 		a := &apps[i]
+		if a.Static != nil {
+			staticApps = append(staticApps, *a)
+			continue
+		}
 		doc, secrets, err := emitAppDoc(a, o)
 		if err != nil {
 			return nil, err
@@ -312,6 +337,13 @@ func EmitStack(in EmitInput, o EmitOptions) ([]EmitFile, error) {
 			return nil, err
 		}
 		files = append(files, EmitFile{Name: g.name, Content: b})
+	}
+	if len(staticApps) > 0 {
+		b, err := emitStaticSpec(staticApps)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, EmitFile{Name: EmitStaticSpecFile, Content: b})
 	}
 	files = append(files,
 		EmitFile{Name: EmitSecretsFile, Content: []byte(renderSecrets(in.Source, o, apps, dbs))},
@@ -561,4 +593,19 @@ func policyLines(p DomainPolicy) []string {
 		out = append(out, "basic auth user "+p.BasicAuthUser+" (set a new password)")
 	}
 	return out
+}
+
+// emitStaticSpec writes the repo-level app.yaml for static sites: apply runs
+// prebuilt images only, so a static build lives in the spec file instead.
+func emitStaticSpec(apps []EmitApp) ([]byte, error) {
+	services := map[string]emitSvc{}
+	for _, a := range apps {
+		st := a.Static
+		services[a.Name] = emitSvc{
+			Build:   emitBuild{Type: spec.BuildStatic, BaseDirectory: st.BaseDirectory, Command: st.Command, Publish: st.Publish, Args: st.Args},
+			Routes:  st.Routes,
+			Headers: st.Headers,
+		}
+	}
+	return yaml.Marshal(map[string]any{"version": 1, "services": services})
 }

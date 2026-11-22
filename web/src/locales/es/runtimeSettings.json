@@ -218,6 +218,14 @@
       "title": "Política de reinicio de contenedores",
       "description": "Política de reinicio de Docker para los contenedores de apps de larga duración, para que vuelvan tras reiniciar el host o Docker. Se aplica a los contenedores creados en el siguiente despliegue o recreación."
     },
+    "buildReuseUnchanged": {
+      "title": "Reutilizar la imagen con un commit sin cambios",
+      "description": "Al volver a desplegar el mismo commit con la misma configuración de compilación se reutiliza la imagen ya compilada en este nodo en lugar de recompilar. Las compilaciones sin caché, con secretos o con atestación siempre recompilan. El siguiente despliegue usa el valor cambiado."
+    },
+    "buildRunnerMinDisk": {
+      "title": "Disco libre mínimo del runner de compilación",
+      "description": "Un nodo de compilación que informa de menos MiB de disco libre que este valor se omite en las nuevas compilaciones y se muestra como omitido en el panel de runners. 0 desactiva la comprobación. La siguiente compilación usa el valor cambiado."
+    },
     "backupLocalRoot": {
       "title": "Raíz de copias de seguridad locales",
       "description": "Directorio absoluto del plano de control que limita los destinos de copia local. Si está vacío se usa backups/ dentro del directorio de datos. La siguiente copia o restauración usa el valor nuevo; las rutas de destino son relativas a esta raíz y no pueden salir de ella."

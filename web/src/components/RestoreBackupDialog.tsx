@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
+import { RestorePreviewPanel } from './RestorePreviewPanel'
 import { useTriggerRestore } from '../queries/restoreHistory'
 import type { ApiError } from '../lib/apiError'
 import type { BackupHistoryRecord } from '../types/backupHistory'
@@ -49,6 +50,7 @@ export function RestoreBackupDialog({
       confirmButtonLabel="Restore database"
       backupId={backup.id}
       triggerRestore={triggerRestore}
+      previewDatabase={databaseName}
     />
   )
 }
@@ -64,6 +66,7 @@ export function ConfirmRestoreDialog({
   confirmButtonLabel,
   backupId,
   triggerRestore,
+  previewDatabase,
 }: {
   target: string
   confirmInputId: string
@@ -71,6 +74,8 @@ export function ConfirmRestoreDialog({
   confirmButtonLabel: string
   backupId: string
   triggerRestore: UseMutationResult<RestoreHistoryRecord, ApiError, string>
+  // Set for database restores only: volumes have no preview endpoint yet.
+  previewDatabase?: string
 }) {
   const [open, setOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
@@ -106,6 +111,12 @@ export function ConfirmRestoreDialog({
             was taken is permanently lost. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
+        {open && previewDatabase ? (
+          <RestorePreviewPanel
+            databaseName={previewDatabase}
+            backupId={backupId}
+          />
+        ) : null}
         <Field>
           <FieldLabel htmlFor={confirmInputId}>
             Type &ldquo;{target}&rdquo; to confirm

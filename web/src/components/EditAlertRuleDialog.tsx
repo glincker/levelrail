@@ -91,6 +91,7 @@ export function EditAlertRuleDialog({
 }) {
   const { t } = useTranslation('observability')
   const { t: tAlert } = useTranslation('alertSetup')
+  const { t: tRegression } = useTranslation('alertRegression')
   const [open, setOpen] = useState(false)
   const updateRule = useUpdateAlertRule(appName)
   const channelsQuery = useNotificationChannelsOptional()
@@ -131,6 +132,9 @@ export function EditAlertRuleDialog({
       consecutive_failures: rule.consecutive_failures,
       flap_threshold: rule.flap_threshold,
       flap_window: rule.flap_window,
+      escalate_channel_id: rule.escalate_channel_id,
+      escalate_after: rule.escalate_after,
+      runbook: rule.runbook,
     })
     updateRule.mutate(
       { id: rule.id, req },
@@ -209,9 +213,13 @@ export function EditAlertRuleDialog({
                             ? tAlert(
                                 'trafficKinds.kind.domain_traffic_drop.label',
                               )
-                            : tAlert(
-                                'trafficKinds.kind.parked_domain_cert_expiry.label',
-                              )
+                            : option.value === 'domain_registration_expiry'
+                              ? tAlert(
+                                  'trafficKinds.kind.domain_registration_expiry.label',
+                                )
+                              : tAlert(
+                                  'trafficKinds.kind.parked_domain_cert_expiry.label',
+                                )
                           : isAlertKindCopyKind(option.value)
                             ? alertKindLabel(t, option.value)
                             : option.label}
@@ -240,6 +248,10 @@ export function EditAlertRuleDialog({
             <AlertKindGuidance kind="email_delivery_failing" />
           ) : kind === 'cleanup_failing' ? (
             <AlertKindGuidance kind="cleanup_failing" />
+          ) : kind === 'deploy_duration_regression' ? (
+            <p className="text-sm text-muted-foreground">
+              {tRegression('hint')}
+            </p>
           ) : kind === 'deploy_failed' ||
             kind === 'job_failing' ||
             kind === 'monitor_down' ? (

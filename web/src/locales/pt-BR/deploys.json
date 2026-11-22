@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub: Webhooks do repositório, adicione a URL. O Docker Hub não envia digest, então a tag é resolvida primeiro.",
       "ghcr": "GitHub (ghcr.io): Configurações, Webhooks, tipo de conteúdo application/json, evento Packages e o segredo acima. Entregas sem assinatura são recusadas.",
       "protected": "Um push faz o deploy do digest enviado para a imagem e a tag do próprio app. Em um ambiente protegido ele gera uma aprovação."
+    },
+    "range": {
+      "label": "Faixa de versões",
+      "help": "Segue o release mais recente dentro de uma faixa, por exemplo 1.x, ^1.2.3 ou >=1.2.0 <2.0.0. Deixe vazio para seguir a tag atual.",
+      "save": "Salvar faixa",
+      "saved": "Faixa de versões salva.",
+      "invalid": "Faixa inválida. Use formas como 1.x, ^1.2.3, ~1.2.3 ou >=1.2.0 <2.0.0."
     }
   },
   "canary": {
@@ -337,7 +344,9 @@
       "typicalWithP95": "Normalmente desperta em cerca de {{typical}} (p95 {{p95}}).",
       "noneShort": "Sem dados de despertar ainda",
       "short": "Desperta em cerca de {{typical}}",
-      "shortWithP95": "Desperta em cerca de {{typical}} (p95 {{p95}})"
+      "shortWithP95": "Desperta em cerca de {{typical}} (p95 {{p95}})",
+      "last": "O último despertar levou {{last}}.",
+      "overBudget": "O despertar pode levar mais que os {{budget}} que o proxy espera, então os visitantes podem ver antes uma página de espera."
     },
     "frees": "Libera cerca de {{size}} enquanto hiberna",
     "checklistLabel": "Elegibilidade para hibernação",
@@ -793,6 +802,7 @@
     "capacityLabel": "Vagas de build em uso em {{name}}",
     "labels": "Rótulos",
     "lastBuild": "Último build:",
+    "skipped": "Ignorado para novos builds: {{reason}}",
     "noBuilds": "Nenhum build ainda",
     "cache": "Cache de build {{size}}",
     "builtOn": "Compilado em {{name}}",

@@ -33,6 +33,12 @@ const (
 	ProviderGeneric = "generic"
 	// ProviderDuckDNS is the DuckDNS preset (domains plus token).
 	ProviderDuckDNS = "duckdns"
+	// ProviderPorkbun updates records through Porkbun's API (hostnames plus apikey:secretapikey).
+	ProviderPorkbun = "porkbun"
+	// ProviderDeSEC updates records through deSEC's API (hostnames plus token).
+	ProviderDeSEC = "desec"
+	// ProviderGoDaddy updates records through GoDaddy's API (hostnames plus key:secret).
+	ProviderGoDaddy = "godaddy"
 
 	// SourceStored says the setting came from the stored row.
 	SourceStored = "stored"
@@ -121,8 +127,10 @@ func (s Settings) Config() Config {
 }
 
 func (s Settings) validate() error {
-	if s.Provider != ProviderGeneric && s.Provider != ProviderDuckDNS {
-		return errors.New("provider must be generic or duckdns")
+	switch s.Provider {
+	case ProviderGeneric, ProviderDuckDNS, ProviderPorkbun, ProviderDeSEC, ProviderGoDaddy:
+	default:
+		return errors.New("provider must be generic, duckdns, porkbun, desec or godaddy")
 	}
 	for name, n := range map[string]int{"interval_seconds": s.IntervalSecs, "probe_quorum": s.ProbeQuorum, "timeout_seconds": s.TimeoutSecs,
 		"min_update_gap_seconds": s.MinUpdateGapSecs, "reassert_seconds": s.ReassertSecs, "fail_alert_after": s.FailAlertAfter} {
@@ -213,6 +221,21 @@ func buildProvider(s Settings, target string) (Provider, error) {
 			return nil, errors.New("duckdns needs domains and a token")
 		}
 		return NewDuckDNS(s.Domains, target, cfg)
+	case ProviderPorkbun:
+		if target == "" {
+			return nil, errors.New("porkbun needs hostnames and apikey:secretapikey")
+		}
+		return NewPorkbun(s.Domains, target)
+	case ProviderDeSEC:
+		if target == "" {
+			return nil, errors.New("desec needs hostnames and an API token")
+		}
+		return NewDeSEC(s.Domains, target)
+	case ProviderGoDaddy:
+		if target == "" {
+			return nil, errors.New("godaddy needs hostnames and key:secret")
+		}
+		return NewGoDaddy(s.Domains, target)
 	default:
 		if target == "" {
 			return nil, ErrNoTarget
@@ -261,6 +284,14 @@ func (m *Manager) Get(ctx context.Context) (Resource, error) {
 func hostOf(s Settings, target string) string {
 	if s.Provider == ProviderDuckDNS {
 		return "www.duckdns.org"
+	}
+	switch s.Provider {
+	case ProviderPorkbun:
+		return "api.porkbun.com"
+	case ProviderDeSEC:
+		return "desec.io"
+	case ProviderGoDaddy:
+		return "api.godaddy.com"
 	}
 	if u, err := url.Parse(strings.ReplaceAll(target, ipPlaceholder, "203.0.113.1")); err == nil {
 		return u.Hostname()

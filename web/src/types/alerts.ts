@@ -47,6 +47,7 @@ export type AlertRuleKind =
   | 'node_cert_expiring'
   | 'log_archive_stale'
   | 'registry_refresh_failing'
+  | 'dns_credential_failing'
   | 'slo_burn'
   | 'version_skew'
   | 'log_pattern'
@@ -59,9 +60,13 @@ export type AlertRuleKind =
   | 'database_disk_high'
   | 'database_connections_high'
   | 'database_down'
+  | 'backup_failed'
+  | 'app_unhealthy'
   | 'database_backup_stale'
   | 'domain_traffic_drop'
   | 'parked_domain_cert_expiry'
+  | 'domain_registration_expiry'
+  | 'deploy_duration_regression'
 
 // log_pattern and log_level_rate only (internal/alerting.LogRuleConfig).
 export interface LogRuleConfig {
@@ -156,6 +161,9 @@ export interface AlertRule {
   consecutive_failures?: number
   flap_threshold?: number
   flap_window?: string
+  escalate_channel_id?: string
+  escalate_after?: string
+  runbook?: string
 
   // Response-only: an active silence or maintenance window mutes this rule.
   silenced?: boolean
@@ -204,6 +212,9 @@ export interface CreateAlertRuleRequest {
   consecutive_failures?: number
   flap_threshold?: number
   flap_window?: string
+  escalate_channel_id?: string
+  escalate_after?: string
+  runbook?: string
 }
 
 // Kinds that watch one of the app's scheduled jobs through scheduled_task_id.

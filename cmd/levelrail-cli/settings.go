@@ -42,6 +42,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsDeployURLCopies(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-freeze":
 		return runSettingsDeployFreeze(prog, args[1:], stdout, stderr, lookupEnv)
+	case "vacation":
+		return runSettingsVacation(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domain-automation":
 		return runSettingsDomainAutomation(prog, args[1:], stdout, stderr, lookupEnv)
 	case "beta-features":
@@ -83,6 +85,7 @@ func settingsUsage(prog string) string {
   %[1]s settings deploy-freeze show [flags]             show the fleet-wide deploy freeze windows
   %[1]s settings deploy-freeze set --cron EXPR --duration D [flags]   replace them with one window
   %[1]s settings deploy-freeze clear [flags]              clear the fleet-wide freeze windows
+  %[1]s settings vacation show|on|off [flags]            pause auto deploys and scheduled jobs for N days (on --days N)
 
 Instance-wide configuration, gated at AbilityRoot server-side on every
 write. <provider> for "settings oauth set" is one of "google", "github",

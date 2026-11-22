@@ -52,6 +52,13 @@ runs:
     # Content-addressed and shared by every job, branch, laptop and agent
     # worktree: a package whose inputs hash the same is a cache hit (build
     # and test result), which is the Go-native form of "affected only".
+    - name: Remote Go cache binary
+      if: inputs.remote-cache-bucket != '' && inputs.remote-cache-key-id != ''
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/gocacheprog
+        key: gobuildcache-v1.4.0-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}
+
     - name: Remote Go cache (GOCACHEPROG)
       if: inputs.remote-cache-bucket != '' && inputs.remote-cache-key-id != ''
       shell: bash
@@ -62,7 +69,10 @@ runs:
         SECRET: ${{ inputs.remote-cache-secret }}
         ENDPOINT: ${{ inputs.remote-cache-endpoint }}
       run: |
-        GOBIN="$RUNNER_TEMP/gocacheprog" go install github.com/richardartoul/gobuildcache@v1.4.0
+        # Reuse the binary restored by the step above; build it only on a miss.
+        if [ ! -x "$RUNNER_TEMP/gocacheprog/gobuildcache" ]; then
+          GOBIN="$RUNNER_TEMP/gocacheprog" go install github.com/richardartoul/gobuildcache@v1.4.0
+        fi
         {
           echo "GOCACHEPROG=$RUNNER_TEMP/gocacheprog/gobuildcache"
           echo "GOBUILDCACHE_BACKEND_TYPE=s3"

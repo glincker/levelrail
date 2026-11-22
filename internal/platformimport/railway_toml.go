@@ -6,9 +6,10 @@ import (
 	"strings"
 )
 
-// parseRailwayTOML reads the small TOML subset a Railway config file uses:
-// tables, dotted keys, strings, numbers, booleans and arrays of scalars.
-// Anything else is an error so nothing is silently misread.
+// parseRailwayTOML reads the small TOML subset the config importers use:
+// tables, arrays of tables, dotted keys, strings, numbers, booleans, arrays of
+// scalars and one line inline tables. Anything else is an error so nothing is
+// silently misread.
 func parseRailwayTOML(data string) (map[string]any, error) {
 	root := map[string]any{}
 	cur := root
@@ -19,7 +20,15 @@ func parseRailwayTOML(data string) (map[string]any, error) {
 			continue
 		}
 		if strings.HasPrefix(line, "[[") {
-			return nil, fmt.Errorf("line %d: arrays of tables are not supported", i+1)
+			if !strings.HasSuffix(line, "]]") {
+				return nil, fmt.Errorf("line %d: malformed table header", i+1)
+			}
+			t, err := tomlArrayTable(root, splitTOMLKey(line[2:len(line)-2]))
+			if err != nil {
+				return nil, fmt.Errorf("line %d: %w", i+1, err)
+			}
+			cur = t
+			continue
 		}
 		if strings.HasPrefix(line, "[") {
 			if !strings.HasSuffix(line, "]") {
@@ -65,6 +74,9 @@ func tomlTable(from map[string]any, path []string) (map[string]any, error) {
 			t = m
 			continue
 		}
+		if arr, isArr := next.([]any); isArr && len(arr) > 0 {
+			next = arr[len(arr)-1]
+		}
 		m, ok := next.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("%q is both a value and a table", p)
@@ -72,6 +84,26 @@ func tomlTable(from map[string]any, path []string) (map[string]any, error) {
 		t = m
 	}
 	return t, nil
+}
+
+// tomlArrayTable appends a new table to the array at path and returns it, so
+// later keys and sub-tables land in that element.
+func tomlArrayTable(root map[string]any, path []string) (map[string]any, error) {
+	parent, err := tomlTable(root, path[:len(path)-1])
+	if err != nil {
+		return nil, err
+	}
+	last := path[len(path)-1]
+	elem := map[string]any{}
+	switch cur := parent[last].(type) {
+	case nil:
+		parent[last] = []any{elem}
+	case []any:
+		parent[last] = append(cur, elem)
+	default:
+		return nil, fmt.Errorf("%q is both a value and an array of tables", last)
+	}
+	return elem, nil
 }
 
 func splitTOMLKey(k string) []string {
@@ -137,7 +169,7 @@ func parseTOMLValue(raw string) (any, error) {
 	case raw == "false":
 		return false, nil
 	case raw[0] == '{':
-		return nil, fmt.Errorf("inline tables are not supported, use a [table] header")
+		return parseTOMLInlineTable(raw)
 	case raw[0] == '[':
 		return parseTOMLArray(raw)
 	}
@@ -193,6 +225,67 @@ func parseTOMLArray(raw string) (any, error) {
 	}
 	if err := flush(); err != nil {
 		return nil, err
+	}
+	return out, nil
+}
+
+// parseTOMLInlineTable reads { key = value, ... } on one line, splitting on
+// commas outside strings and nested brackets.
+func parseTOMLInlineTable(raw string) (any, error) {
+	if !strings.HasSuffix(raw, "}") {
+		return nil, fmt.Errorf("unterminated inline table")
+	}
+	body := raw[1 : len(raw)-1]
+	out := map[string]any{}
+	var parts []string
+	var b strings.Builder
+	quote, depth := byte(0), 0
+	for i := 0; i < len(body); i++ {
+		c := body[i]
+		switch {
+		case quote != 0:
+			b.WriteByte(c)
+			if c == '\\' && quote == '"' && i+1 < len(body) {
+				i++
+				b.WriteByte(body[i])
+			} else if c == quote {
+				quote = 0
+			}
+		case c == '"' || c == '\'':
+			quote = c
+			b.WriteByte(c)
+		case c == '[' || c == '{':
+			depth++
+			b.WriteByte(c)
+		case c == ']' || c == '}':
+			depth--
+			b.WriteByte(c)
+		case c == ',' && depth == 0:
+			parts = append(parts, b.String())
+			b.Reset()
+		default:
+			b.WriteByte(c)
+		}
+	}
+	parts = append(parts, b.String())
+	for _, p := range parts {
+		if strings.TrimSpace(p) == "" {
+			continue
+		}
+		eq := strings.Index(p, "=")
+		if eq < 0 {
+			return nil, fmt.Errorf("inline table entry %q needs key = value", strings.TrimSpace(p))
+		}
+		v, err := parseTOMLValue(strings.TrimSpace(p[eq+1:]))
+		if err != nil {
+			return nil, err
+		}
+		path := splitTOMLKey(strings.TrimSpace(p[:eq]))
+		t, err := tomlTable(out, path[:len(path)-1])
+		if err != nil {
+			return nil, err
+		}
+		t[path[len(path)-1]] = v
 	}
 	return out, nil
 }

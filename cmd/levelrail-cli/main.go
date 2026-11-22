@@ -17,7 +17,10 @@ func main() {
 	// Piped stdin or stdout implies CI mode; run() only sees env so tests stay deterministic.
 	forceCI = !isTerminal(os.Stdin) || !isTerminal(os.Stdout)
 	finishHint := startUpdateHint(prog, os.Args[1:], os.Stderr, os.LookupEnv)
-	code := run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv)
+	args, noPager := extractNoPagerFlag(os.Args[1:])
+	out, stopPager := startPager(prog, args, noPager, os.Stdout, os.LookupEnv)
+	code := run(prog, args, out, os.Stderr, os.LookupEnv)
+	stopPager()
 	finishHint()
 	os.Exit(code)
 }
@@ -36,6 +39,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	rawLookupEnv = lookupEnv
 	lookupEnv = currentContextLookup(prog, envAliasLookup(lookupEnv))
+	// Hidden verb behind shell Tab completion; handled before any trust or hint machinery so it stays quiet and fast.
+	if len(args) > 0 && args[0] == "__complete" {
+		return runHiddenComplete(prog, args[1:], stdout, lookupEnv)
+	}
 	ciMode = forceCI || ciEnv(rawLookupEnv)
 	if colorDisabled(rawLookupEnv, ciMode) {
 		_ = os.Setenv(envNoColor, "1")
@@ -43,9 +50,20 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	args, debug := extractDebugFlag(args)
 	args, noColorFlag = extractNoColorFlag(args)
 	args, insecureHTTP := extractInsecureHTTPFlag(args)
+	var noInput bool
+	args, noInput = extractNoInputFlag(args)
+	ciMode = ciMode || noInput
+	var reqErr error
+	args, reqErr = extractRequestBoundFlags(args, rawLookupEnv)
+	if reqErr != nil {
+		_, _ = fmt.Fprintln(stderr, reqErr)
+		return exitUsage
+	}
 	// Always set so a previous run() in this process never leaks the opt-in.
 	apiclient.SetInsecureHTTP(insecureHTTP)
-	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
+	args, scopeFlags = extractScopeFlags(expandTemplateFlag(expandOutputShorthand(args)))
+	// Reset every run so a saved setting never leaks between calls in one process.
+	defaultOutput = readSetting(prog, settingOutput)
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()
 	if debug {
@@ -62,6 +80,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitUsage
 	}
 
+	args = expandUserAlias(prog, args)
 	syncServerBetaFeatures(prog, args, lookupEnv)
 	if rejectDisabledExperimental(prog, args, stderr) {
 		return exitUsage
@@ -74,10 +93,16 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	case "help":
 		if len(args) > 1 && (args[1] == "advanced" || args[1] == "all") {
 			_, _ = fmt.Fprint(stdout, rootUsage(prog))
+		} else if len(args) > 1 {
+			return runCommandSearch(prog, args[1:], stdout)
 		} else {
 			_, _ = fmt.Fprint(stdout, simpleUsage(prog))
 		}
 		return exitOK
+	case "link":
+		return runLink(prog, args[1:], stdout, stderr, lookupEnv)
+	case "commands":
+		return runCommands(prog, args[1:], stdout, stderr, lookupEnv)
 	case "up":
 		return runUp(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "dev":
@@ -118,6 +143,14 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runAliasedRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ls":
+		return runAliasedLs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ps":
+		return runAliasedPs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rm":
+		return runAliasedRm(prog, args[1:], stdout, stderr, lookupEnv)
+	case "alias":
+		return runAlias(prog, args[1:], stdout, stderr)
 	case "databases", "db":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "functions":
@@ -338,6 +371,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runCp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "config":
 		return runConfig(prog, args[1:], stdout, stderr, lookupEnv)
+	case "prompt":
+		return runPrompt(prog, args[1:], stdout, stderr, lookupEnv)
 	case "mcp":
 		return runMCP(prog, args[1:], stdout, stderr, lookupEnv)
 	case "docs":
@@ -501,7 +536,7 @@ Usage:
   %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
   %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
   %[1]s mcp-clients create|list|delete                      pre-register OAuth clients for remote MCP (experimental, root only)
-  %[1]s monitors create|list|results|delete                 experimental uptime monitors (http, tcp), needs APP_MONITORS_ENABLED
+  %[1]s monitors create|list|results|delete                 uptime monitors (http, tcp, tls, dns, ping, heartbeat), turn on in Settings, Security and runtime
   %[1]s env pull|push <app> [--file .env] [flags]   sync an app's env vars with a local .env file
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
@@ -637,9 +672,11 @@ Usage:
   %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s import config [dir] [--out FILE] [--strict] [--json]   offline: propose an app.yaml from Procfile, app.json and vercel.json, see "%[1]s import config -h"
   %[1]s import compose-ref [dir] [--write DIR] [--json]   offline: emit documents for the image services of compose files, see "%[1]s import compose-ref -h"
-  %[1]s import deploy-yml|portainer|railway FILE [--write DIR] [--json]   offline: emit documents from a deploy.yml, a Portainer stack or a railway.json/railway.toml, see "%[1]s import railway -h"
+  %[1]s import deploy-yml|portainer|railway|do-app|cloud-run|fly|netlify FILE [--write DIR] [--json]   offline: emit documents from a deploy.yml, a Portainer stack, a railway.json/railway.toml, a .do/app.yaml, a Cloud Run service YAML, a fly.toml or a netlify.toml, see "%[1]s import railway -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
-  %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
+  %[1]s link [<app>]                                      remember an app for this directory, so deploy, logs and env need no app name
+  %[1]s commands search <words>                           find the right command, also "%[1]s help <words>"
+  %[1]s completion bash|zsh|fish|powershell               print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s fields [RESOURCE] [flags]                         list form field descriptors (types, flags, visibility) of a resource
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call

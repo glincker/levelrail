@@ -184,6 +184,8 @@ func (rt *Router) handleUsageReport(w http.ResponseWriter, r *http.Request) {
 		Labels: visibleUsageLabels(report, rt.usageLabels(ctx)), UnpricedNodes: []string{}, IncludesUnallocated: seesIdle,
 		TelemetryAvailable: rt.telemetry != nil, GeneratedAt: now.UTC().Format(time.RFC3339),
 	}
+	rt.usageAddBuildMinutes(ctx, &report, rows)
+	resp.Report = report
 	resp.Forecast = usageForecast(period, rows, now)
 	nodes, err := rt.usageNodePrices(ctx, st, now)
 	if err != nil {
@@ -198,12 +200,40 @@ func (rt *Router) handleUsageReport(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="usage-report-%s_%s.csv"`,
 			usagecost.DayKey(period.From), usagecost.DayKey(period.To.AddDate(0, 0, -1))))
-		if err := usagecost.WriteCSV(w, settings.Currency, report, resp.Labels); err != nil {
+		write := usagecost.WriteCSV
+		if r.URL.Query().Get("group") == "team" {
+			write = usagecost.WriteTeamCSV
+		}
+		if err := write(w, settings.Currency, report, resp.Labels); err != nil {
 			rt.logger.Warn("api: usage report: write csv: " + err.Error())
 		}
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// usageAddBuildMinutes attributes recorded build time to the teams of the
+// visible apps; without build history the team totals stay at zero minutes.
+func (rt *Router) usageAddBuildMinutes(ctx context.Context, report *usagecost.Report, rows []usagecost.DailyCost) {
+	if rt.buildPerf == nil {
+		return
+	}
+	appTeam := map[string]string{}
+	for _, row := range rows {
+		if row.Kind == usagecost.KindApp {
+			appTeam[row.Name] = row.TeamID
+		}
+	}
+	runs, err := rt.buildPerf.ListAllBuildRuns(ctx, buildCenterMaxLimit)
+	if err != nil {
+		rt.logger.Warn("api: usage report: build runs: " + err.Error())
+		return
+	}
+	samples := make([]usagecost.BuildSample, 0, len(runs))
+	for _, b := range runs {
+		samples = append(samples, usagecost.BuildSample{App: b.App, StartedAt: b.StartedAt, DurationMS: b.DurationMS})
+	}
+	usagecost.AddBuildMinutes(report, samples, appTeam)
 }
 
 // visibleUsageLabels keeps only the names of groups present in the report,

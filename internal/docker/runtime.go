@@ -54,6 +54,11 @@ type Resources struct {
 	// CPUSetCPUs pins the container to specific host CPUs, Docker's own
 	// cpuset-cpus format (e.g. "0-3" or "0,2").
 	CPUSetCPUs string
+	// IOReadBps and IOWriteBps cap disk throughput in bytes per second on the
+	// data-root device; NetMbit is reported only, since Docker has no bandwidth cap.
+	IOReadBps  int64
+	IOWriteBps int64
+	NetMbit    int64
 }
 
 // GPURequest asks Docker for NVIDIA GPUs via a DeviceRequest. Count -1
@@ -166,6 +171,9 @@ type RestartPolicySyncer interface {
 // application controller (Phase 1), not here; this package
 // only needs to make a container reachable, via Ports above.
 type ContainerSpec struct {
+	// IODevice is the block device the IO caps apply to; Create fills it from
+	// the daemon data root when a cap is set and this is empty.
+	IODevice  string
 	Name      string
 	Image     string
 	Ports     []PortBinding

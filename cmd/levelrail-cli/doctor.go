@@ -1,15 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"os"
-	"strings"
-
-	"golang.org/x/term"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/hostprovider"
@@ -53,12 +47,18 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	fix := fs.Bool("fix", false, "apply safe automatic fixes after printing the plan")
 	yes := fs.Bool("yes", false, "with --fix: apply without asking for confirmation")
 	local := fs.Bool("local", false, "run only the local checks (Docker, disk, ports), never contact a control plane")
+	bundle := fs.Bool("bundle", false, "write a redacted zip (versions, doctor checks, settings, node state) to attach to a bug report")
+	bundlePath := fs.String("bundle-path", "", "with --bundle: where to write the zip (default: levelrail-doctor-bundle-<time>.zip in the current directory)")
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
 	ctx := context.Background()
+
+	if *bundle {
+		return runDoctorBundle(ctx, *bundlePath, prog, tokenFlag, apiURLFlag, profileFlag, *local, stdout, stderr, lookupEnv, jsonOut)
+	}
 
 	if *local || !doctorServerConfigured(tokenFlag, apiURLFlag, profileFlag, prog, lookupEnv) {
 		if *fix {
@@ -172,15 +172,7 @@ func applyDoctorFixes(ctx context.Context, client *Client, report systemDoctorRe
 }
 
 func confirmDoctorFix(stderr io.Writer, n int) error {
-	if f, ok := stdinSource.(*os.File); !ok || !term.IsTerminal(int(f.Fd())) { //nolint:gosec // a terminal file descriptor always fits an int
-		return errors.New("not a terminal: pass --yes to apply without confirmation")
-	}
-	_, _ = fmt.Fprintf(stderr, "Apply %d fix(es)? [y/N] ", n)
-	line, _ := bufio.NewReader(stdinSource).ReadString('\n')
-	if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
-		return errors.New("cancelled")
-	}
-	return nil
+	return confirmAction(stdinSource, stderr, fmt.Sprintf("Apply %d fix(es)", n), false, "--yes")
 }
 
 func doctorUsage(prog string) string {
@@ -217,6 +209,8 @@ Exit code is 0 if every check is ok or warn, 1 if any check fails.
 Flags:
   --fix                     apply safe automatic fixes: prints the plan first and asks to confirm
   --yes                     with --fix, apply without asking
+  --bundle                  write a redacted support zip (versions, checks, settings, node state) for a bug report
+  --bundle-path string      with --bundle: output file (default: levelrail-doctor-bundle-<time>.zip)
   --local                   run only the local checks, never contact a control plane
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)

@@ -1472,6 +1472,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 			spec.DNS = spec.DNS[:limit]
 		}
 	}
+	// The pull runs beside the network and mesh setup below instead of after it.
+	waitPrePull := c.startPrePull(ctx, spec)
+	defer waitPrePull()
 	meshHosts, err := c.databaseExtraHosts(ctx, desired)
 	if err != nil {
 		return fmt.Errorf("database mesh hosts: %w", err)
@@ -1492,6 +1495,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if ct != nil {
 		spec.OnPull = ct.onPull
 	}
+	waitPrePull()
 	stopWatch := c.watchLifecycle(ctx, tr, name, c.effectiveReadyBudget(desired))
 	id, err := c.createContainer(ctx, spec)
 	ct.created(id, err)
@@ -1520,6 +1524,31 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return err
 	}
 	return nil
+}
+
+// startPrePull begins pulling spec.Image on the node while the rest of the
+// create path runs, and returns a wait that is safe to call more than once.
+// Failures are ignored: Create pulls again and reports the real error.
+func (c *Controller) startPrePull(ctx context.Context, spec docker.ContainerSpec) func() {
+	noop := func() {}
+	puller, ok := c.runtime.(docker.ImagePuller)
+	// The local daemon keeps its traced pull in Create; only remote nodes gain from overlap.
+	if _, local := c.runtime.(*docker.Client); local {
+		return noop
+	}
+	// Username and password logins are not sent to agents, so those pulls stay with Create.
+	if !ok || spec.Image == "" || (spec.RegistryAuth != nil && spec.RegistryAuth.Bearer == "") {
+		return noop
+	}
+	auth := spec.RegistryAuth
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		if err := puller.PullImage(ctx, spec.Image, auth); err != nil {
+			slog.Debug("application: image pre-pull skipped", slog.String("image", spec.Image), slog.Any("error", err))
+		}
+	}()
+	return func() { <-done }
 }
 
 // appendStreamPorts adds stream bindings, skipping one that an existing
@@ -2450,12 +2479,15 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	// starting" apart from "already exited/OOM-killed" (docker.Client
 	// locally, the gRPC agent transport for a remote node; most test
 	// fakes don't, and gracefully just don't get the fast-fail below).
+	crashErr := make(chan error, 2)
+	if desired.Port > 0 && !cfg.IsExec() {
+		go watchPortMismatch(probeCtx, c.runtime, state.ID, desired.Port, cfg.Interval, crashErr)
+	}
 	inspector, ok := c.runtime.(docker.ExitStateInspector)
 	if !ok {
-		return c.awaitReady(ctx, desired, state.Name, readyErr, nil)
+		return c.awaitReady(ctx, desired, state.Name, readyErr, crashErr)
 	}
 
-	crashErr := make(chan error, 1)
 	go watchForCrash(probeCtx, inspector, state.Name, cfg.Interval, crashErr)
 
 	return c.awaitReady(ctx, desired, state.Name, readyErr, crashErr)
@@ -2945,6 +2977,9 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 			NanoCPUs:        desired.Resources.NanoCPUs,
 			SwapMemoryBytes: desired.Resources.SwapMemoryBytes,
 			CPUSetCPUs:      desired.Resources.CPUSetCPUs,
+			IOReadBps:       desired.Resources.IOReadBps,
+			IOWriteBps:      desired.Resources.IOWriteBps,
+			NetMbit:         desired.Resources.NetMbit,
 		}
 		if g := desired.Resources.GPU; g != nil {
 			spec.GPU = &docker.GPURequest{Count: g.Count, DeviceIDs: g.DeviceIDs}

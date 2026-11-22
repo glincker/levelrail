@@ -229,6 +229,12 @@ func trafficAlertCondition(r alertRuleResource) string {
 			days = 14
 		}
 		return fmt.Sprintf("a parked domain certificate with fewer than %d days left", days)
+	case "domain_registration_expiry":
+		days := int(r.Threshold)
+		if days <= 0 {
+			days = 30
+		}
+		return fmt.Sprintf("a domain registration with fewer than %d days left", days)
 	}
 	return "-"
 }

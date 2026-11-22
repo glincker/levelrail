@@ -23,8 +23,10 @@ import { PreferencesApplier } from '../components/account/PreferencesApplier'
 import { AppearanceSyncApplier } from '../components/account/AppearanceSyncApplier'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
+import { VacationBanner } from '../components/shell/VacationBanner'
 import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
 import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
+import { InstallCard } from '../components/InstallCard'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { UpgradeOutcomeToast } from '../components/settings/updates/UpgradeOutcomeToast'
@@ -233,6 +235,7 @@ function AppShell() {
         <LazyDemoChrome />
         <AppHeader onSearch={openPalette} />
         <ShellBanner />
+        <VacationBanner />
         <RestartBanner />
         <LocalModeBanner />
         <UpgradeGlobalBar />
@@ -241,6 +244,7 @@ function AppShell() {
         <DomainMaintenanceBanner />
         <DeviceLoginBanner />
         <SignInRequestsBanner />
+        <InstallCard />
         <main
           id={MAIN_CONTENT_ID}
           tabIndex={-1}

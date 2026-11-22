@@ -25,6 +25,7 @@ func (rt *Router) registerBuildPerformanceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/builders/{id}/pause", rt.requireAbility(AbilityWriteSensitive, rt.handlePauseBuilder))
 	mux.HandleFunc("POST /api/v1/builders/{id}/resume", rt.requireAbility(AbilityWriteSensitive, rt.handleResumeBuilder))
 	mux.HandleFunc("POST /api/v1/builders/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestBuilder))
+	mux.HandleFunc("GET /api/v1/builds/farm", rt.requireAbility(AbilityRead, rt.handleBuildFarmSummary))
 	mux.HandleFunc("GET /api/v1/builds/queue", rt.requireAbility(AbilityRead, rt.handleGetBuildQueue))
 	// Holding or killing builds stops every app's deploys, so write-sensitive; kill-all also needs step-up.
 	mux.HandleFunc("POST /api/v1/builds/queue/pause", rt.requireAbility(AbilityWriteSensitive, rt.handleBuildQueuePause))

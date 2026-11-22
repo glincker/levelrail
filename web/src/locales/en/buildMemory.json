@@ -1,0 +1,11 @@
+{
+  "title": "This build ran out of memory",
+  "peak": "The build peaked at {{peak}} MiB against a cap of {{limit}} MiB.",
+  "capOnly": "The build hit its cap of {{limit}} MiB.",
+  "setCap": "Set this app's build memory to {{value}} MiB",
+  "setCapHint": "Applies to the next build of this app only.",
+  "routeHint": "{{value}} MiB is more than this host can spare for a build. Run builds on a node with more memory instead.",
+  "routeToNode": "Choose a build node",
+  "saved": "Build memory set to {{value}} MiB. Deploy again to use it.",
+  "rootOnly": "Only an admin can change build limits."
+}

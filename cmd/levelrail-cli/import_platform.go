@@ -31,7 +31,7 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	}
 	platform := args[0]
 	if platform != "coolify" && platform != "dokploy" && platform != "caprover" && platform != "heroku" && platform != "vercel" && platform != "render" {
-		_, _ = fmt.Fprintf(stderr, "%s: unknown platform %q, want coolify, dokploy, caprover, heroku, vercel or render\n", prog, platform)
+		_, _ = fmt.Fprintf(stderr, "%s: unknown platform %q, want coolify, dokploy, caprover, heroku, vercel or render (for a fly.toml or netlify.toml use: %s import fly|netlify FILE)\n", prog, platform, prog)
 		return exitUsage
 	}
 	var f importPlatformFlags

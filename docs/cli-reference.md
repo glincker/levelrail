@@ -765,7 +765,7 @@ levelrail-cli databases clear-node <name> [flags]
 levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR] [flags]
 levelrail-cli databases public-access clear <name> [flags]
 levelrail-cli databases set-version <name> <version> [flags]
-levelrail-cli databases major-upgrade <name> --version V [flags]
+levelrail-cli databases major-upgrade <name> --version V [--check] [flags]
 levelrail-cli databases major-upgrades <name> [flags]
 levelrail-cli databases major-upgrade-rollback <name> <id> [flags]
 levelrail-cli databases major-upgrade-discard <name> <id> [flags]
@@ -1114,7 +1114,7 @@ levelrail-cli channels test <id> [flags]
 levelrail-cli channels deliveries <id> [flags]
 levelrail-cli channels quiet-hours <id> [--start HH:MM --end HH:MM [--timezone Z] | --clear]
 ```
-Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. For `telegram`, add `&message_thread_id=N` to the sendMessage URL to post into one forum topic. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
+Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`, `matrix`, `zulip`. For `telegram`, add `&message_thread_id=N` to the sendMessage URL to post into one forum topic. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
 
 ## Connections
 
@@ -1979,7 +1979,7 @@ levelrail-cli control-plane-backups help-dr
 
 Snapshots of the control plane's own database, stored under `<data dir>/control-plane-backups/`. `create` takes one now (manual snapshots are never auto-deleted), `download` saves one to `--out FILE` (or raw bytes to stdout), `verify` re-checks the checksum, SQLite integrity and schema version without restoring (exit 1 if any check fails), `delete` removes one. Snapshots never contain the master key. Restore is an offline server command, `levelrail restore-db <file>`; see [Control plane backup and restore](/control-plane-backup).
 
-The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys` subcommands drive encrypted off-box backups. `keys generate` makes an age key pair on your machine (private key to a `0600` file, public key to stdout). `schedule set` changes only the flags you pass (`--enable`, `--disable`, `--destination`, `--recipient`, `--schedule`, `--drill-schedule`, `--retain-daily`, `--retain-weekly`, `--retain-monthly`, `--escrow-destination`). `run-now` and `drill run` wait for the run and exit 1 if it failed; `drill status` exits 1 when the last drill failed or none has run. `escrow` writes the master key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never to the backup bucket). `restore-plan` prints the ordered recovery steps with the newest complete backup and the exact restore command filled in. `help-dr` prints a static runbook. Restore an off-box backup on the server with `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`. See [Disaster recovery](/disaster-recovery).
+The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys` subcommands drive encrypted off-box backups. `keys generate` makes an age key pair on your machine (private key to a `0600` file, public key to stdout). `schedule set` changes only the flags you pass (`--enable`, `--disable`, `--destination`, `--recipient`, `--schedule`, `--drill-schedule`, `--retain-daily`, `--retain-weekly`, `--retain-monthly`, `--escrow-destination`). `run-now` and `drill run` wait for the run and exit 1 if it failed; `drill status` exits 1 when the last drill failed or none has run. `escrow` writes the master key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never to the backup bucket). `restore-plan` prints the ordered recovery steps with the newest complete backup and the exact restore command filled in. `move --to-host HOST [--dns-name NAME]` takes a fresh off-box backup, writes the key bundle (`0600`) and prints the exact copy, restore and DNS cutover steps for a new server. `help-dr` prints a static runbook. Restore an off-box backup on the server with `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`. See [Disaster recovery](/disaster-recovery).
 
 ### Volume export and import
 
@@ -2170,7 +2170,7 @@ levelrail-cli settings ingress https enable [--email EMAIL] [--staging] [--wait 
 levelrail-cli settings ingress dns01 show|enable|disable [flags]
 levelrail-cli settings ingress cloudflare show|set --preset none|cloudflare [--confirm-weakening] [flags]
 levelrail-cli settings ddns show|enable|disable|status [flags]
-levelrail-cli settings ddns set [--provider generic|duckdns] [--domains LIST] [--target URL|TOKEN] [flags]
+levelrail-cli settings ddns set [--provider generic|duckdns|porkbun|desec|godaddy] [--domains LIST] [--target URL|TOKEN] [flags]
 levelrail-cli settings edge get [flags]
 levelrail-cli settings edge set [--trusted-proxies LIST] [--max-body SIZE] [--max-header SIZE] [--read-header-timeout DUR] [--idle-timeout DUR] [flags]
 levelrail-cli settings edge fix [flags]

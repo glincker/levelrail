@@ -18,6 +18,10 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }))
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({ data: { current_version: '1.5.9' } }),
+}))
+vi.mock('@/queries/updates', () => ({ updatesQueryOptions: () => ({}) }))
 vi.mock('../hooks/useBrand', () => ({ useBrand: () => ({}) }))
 vi.mock('../hooks/useIsRoot', () => ({ useIsRoot: () => isRoot }))
 
@@ -39,5 +43,16 @@ describe('HelpMenu get started entry', () => {
     await userEvent.setup().click(screen.getByRole('button'))
     await screen.findByText('shell.help.docs')
     expect(screen.queryByText('shell.help.getStarted')).toBeNull()
+  })
+})
+
+describe('HelpMenu copy details', () => {
+  it('copies support details with the version to the clipboard', async () => {
+    const user = userEvent.setup()
+    render(<HelpMenu />)
+    await user.click(screen.getByRole('button'))
+    await user.click(await screen.findByText('shell.help.copyDetails'))
+    const text = await navigator.clipboard.readText()
+    expect(text).toContain('version: 1.5.9')
   })
 })

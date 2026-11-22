@@ -59,7 +59,9 @@
     "anyMethod": "すべてのメソッド",
     "actorLabel": "実行者で絞り込み",
     "actorPlaceholder": "実行者名",
-    "exportCsv": "CSVをエクスポート(最新{{count}}行)"
+    "exportCsv": "CSVをエクスポート(一致するすべての行)",
+    "exporting": "エクスポート中...",
+    "exportFailed": "エクスポートに失敗しました。もう一度お試しください。"
   },
   "anchor": {
     "title": "監査アンカー",

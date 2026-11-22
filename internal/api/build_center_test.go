@@ -20,7 +20,7 @@ func TestAssembleBuildRows_QueueOrderAndPositions(t *testing.T) {
 		{ID: "q1", ServiceName: "api", Status: store.DeployAttemptStatusQueued, StartedAt: base, QueuedAt: ptrTime(base.Add(time.Minute))},
 		{ID: "done-new", ServiceName: "api", Status: store.DeployAttemptStatusFailed, StartedAt: base.Add(-time.Hour)},
 	}
-	rows := assembleBuildRows(attempts, nil)
+	rows := assembleBuildRows(attempts, nil, bloatPolicy{})
 	var got []string
 	for _, r := range rows {
 		got = append(got, r.ID)
@@ -51,7 +51,7 @@ func TestAssembleBuildRows_JoinsRunStatsAndImageDelta(t *testing.T) {
 		{App: "web", Tag: "web:aaa", StartedAt: base.Add(time.Second), DurationMS: 9000, Status: "success", CachedSteps: 0, TotalSteps: 4, ImageBytes: 100},
 	}
 	byID := map[string]buildRow{}
-	for _, r := range assembleBuildRows(attempts, runs) {
+	for _, r := range assembleBuildRows(attempts, runs, bloatPolicy{}) {
 		byID[r.ID] = r
 	}
 	r2 := byID["a2"]

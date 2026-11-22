@@ -288,3 +288,20 @@ func TestWriteCSVNeutralisesFormulas(t *testing.T) {
 		t.Errorf("csv = %q", out)
 	}
 }
+
+func TestTeamCSVIncludesBuildMinutes(t *testing.T) {
+	p := Period{From: time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)}
+	r := Report{Period: p, Teams: []Group{{Key: "t1", Total: 2}}}
+	AddBuildMinutes(&r, []BuildSample{
+		{App: "web", StartedAt: p.From.Add(time.Hour), DurationMS: 120000},
+		{App: "web", StartedAt: p.To.Add(time.Hour), DurationMS: 600000},
+		{App: "other", StartedAt: p.From.Add(time.Hour), DurationMS: 600000},
+	}, map[string]string{"web": "t1"})
+	var buf bytes.Buffer
+	if err := WriteTeamCSV(&buf, "USD", r, map[string]string{"team:t1": "Core"}); err != nil {
+		t.Fatal(err)
+	}
+	if out := buf.String(); !strings.Contains(out, "2026-11,Core,0.0000,0.0000,0.0000,0.0000,2.0000,2.0000") {
+		t.Errorf("csv = %q", out)
+	}
+}

@@ -17,7 +17,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { DurationInput } from '@/components/ui/duration-input'
 import { domainsQueryOptions } from '../queries/domains'
-import { PARKED_CERT_KIND } from '@/lib/alertTrafficKinds'
+import {
+  PARKED_CERT_KIND,
+  REGISTRATION_EXPIRY_KIND,
+  isDaysOnlyKind,
+} from '@/lib/alertTrafficKinds'
 
 export interface TrafficRuleFormShape {
   trafficDomain: string
@@ -49,7 +53,7 @@ export function TrafficRuleFields({
   const { t } = useTranslation('alertSetup')
   const domainsQuery = useQuery({
     ...domainsQueryOptions(),
-    enabled: kind !== PARKED_CERT_KIND,
+    enabled: !isDaysOnlyKind(kind),
   })
   const domains = (domainsQuery.data ?? []).filter(
     (d) => d.service_name === appName,
@@ -60,9 +64,11 @@ export function TrafficRuleFields({
       <p className="text-sm text-muted-foreground">
         {kind === PARKED_CERT_KIND
           ? t('trafficKinds.kind.parked_domain_cert_expiry.help')
-          : t('trafficKinds.kind.domain_traffic_drop.help')}
+          : kind === REGISTRATION_EXPIRY_KIND
+            ? t('trafficKinds.kind.domain_registration_expiry.help')
+            : t('trafficKinds.kind.domain_traffic_drop.help')}
       </p>
-      {kind === PARKED_CERT_KIND ? (
+      {isDaysOnlyKind(kind) ? (
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-days-left`}>
             {t('trafficKinds.daysLabel')}

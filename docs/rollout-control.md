@@ -42,20 +42,42 @@ If a new replica fails readiness or crash loops, the rollout stops at that
 wave. The usual crash loop rollback then applies, the same as for a single
 replica deploy.
 
+## Pause and resume
+
+A rolling deploy can be held between waves so you can inspect the new
+replicas before the rest start:
+
+```bash
+levelrail-cli rollout pause web
+levelrail-cli rollout resume web
+levelrail-cli rollout abort web
+```
+
+A pause takes effect at the next wave boundary, so a wave that already
+started finishes first. While paused, `rollout waves` and the dashboard
+show the rollout as paused at that wave, and a restart of the control
+plane keeps the pause. `rollout abort` rolls the app back to its previous
+deploy, the same as `apps rollback`, and the hold lapses because the
+release changed. The dashboard shows Pause and Resume on the rollout panel
+of a deploy. The API is `POST /api/v1/apps/{name}/rollout/pause` and
+`/resume`, both needing the deploy ability.
+
 ## Defaults
 
-Unset values come from the control plane environment:
+Unset values come from runtime settings, which you change live in Settings
+(Deploys), with `levelrail-cli settings set`, or through the API. The next
+rollout uses the new value.
 
-| Variable | Meaning |
-| --- | --- |
-| `APP_ROLLOUT_MAX_SURGE` | default `max_surge` |
-| `APP_ROLLOUT_MAX_UNAVAILABLE` | default `max_unavailable` |
-| `APP_ROLLOUT_MIN_AVAILABLE` | default `min_available` |
+| Setting | Meaning | Seeded from |
+| --- | --- | --- |
+| `rollout.max_surge` | default `max_surge` | `APP_ROLLOUT_MAX_SURGE` |
+| `rollout.max_unavailable` | default `max_unavailable` | `APP_ROLLOUT_MAX_UNAVAILABLE` |
+| `rollout.min_available` | default `min_available` | `APP_ROLLOUT_MIN_AVAILABLE` |
 
-If none are set, a rollout replaces one replica at a time and keeps every
-replica serving, which is how rolling deploys worked before these
-settings existed. An invalid env value is ignored and that default is used
-instead.
+The env variable only seeds a setting that was never saved. With nothing
+set, a rollout replaces one replica at a time and keeps every replica
+serving, which is how rolling deploys worked before these settings
+existed. An invalid value is ignored and that default is used instead.
 
 ## Disruption budget
 

@@ -36,8 +36,10 @@ export function NewSiteDialog({
   onOpenChange,
   existingNames,
   initialMode = 'drop',
+  initialSelection = null,
 }: Readonly<{
   initialMode?: Mode
+  initialSelection?: DropSelection | null
   open: boolean
   onOpenChange: (open: boolean) => void
   existingNames: readonly string[]
@@ -45,7 +47,9 @@ export function NewSiteDialog({
   const { t } = useTranslation('pagesSites')
   const { phase, run, reset } = useDropPublish()
   const [mode, setMode] = useState<Mode>(initialMode)
-  const [selection, setSelection] = useState<DropSelection | null>(null)
+  const [selection, setSelection] = useState<DropSelection | null>(
+    initialSelection,
+  )
   const [starter, setStarter] = useState<StarterId>('blank')
   const [typedName, setTypedName] = useState<string | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/domaindoctor"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -328,7 +331,21 @@ type renewCertificateResponse struct {
 	// call, not an error.
 	HadStoredCertificate bool   `json:"had_stored_certificate"`
 	Status               string `json:"status"`
+	// Reason echoes why the operator forced the renewal (audit trail).
+	Reason string `json:"reason,omitempty"`
+	// PreviousError is the CA error of the attempt this renewal replaces, so a
+	// repeat failure is visible on demand; Explanation is it in plain language.
+	PreviousError string `json:"previous_error,omitempty"`
+	Explanation   string `json:"explanation,omitempty"`
 }
+
+// renewCertificateRequest is the optional POST .../cert/renew body.
+type renewCertificateRequest struct {
+	Reason string `json:"reason"`
+}
+
+// maxRenewReasonLen caps the free-text reason so it stays a log line.
+const maxRenewReasonLen = 200
 
 // handleRenewDomainCertificate handles POST
 // /api/v1/apps/{name}/domains/{domain}/cert/renew: clears domain's stored
@@ -350,20 +367,36 @@ func (rt *Router) handleRenewDomainCertificate(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	var req renewCertificateRequest
+	if r.Body != nil && r.ContentLength != 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+	}
+	req.Reason = strings.TrimSpace(req.Reason)
+	if len(req.Reason) > maxRenewReasonLen {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("reason is longer than %d characters", maxRenewReasonLen))
+		return
+	}
+
 	hadCert, err := alerting.DeleteCertificateForDomain(r.Context(), rt.certs, rt.certs, domain)
 	if err != nil {
 		rt.internalError(w, "api: renew domain certificate failed", err, slog.String("domain", domain))
 		return
 	}
 
-	rt.nudgeReconciler()
-	rt.logger.Info("api: domain certificate renewal requested", slog.String("domain", domain), slog.Bool("had_stored_certificate", hadCert))
+	out := renewCertificateResponse{Domain: domain, HadStoredCertificate: hadCert, Status: "renewal_requested", Reason: req.Reason}
+	// Drop the old failure so GET .../cert/status afterwards reports only this attempt.
+	if f, ok := ingress.DefaultACMEFailures().Get(domain); ok {
+		out.PreviousError, out.Explanation = f.Error, domaindoctor.ExplainACME(f.Error)
+		ingress.DefaultACMEFailures().Clear(domain)
+	}
 
-	writeJSON(w, http.StatusAccepted, renewCertificateResponse{
-		Domain:               domain,
-		HadStoredCertificate: hadCert,
-		Status:               "renewal_requested",
-	})
+	rt.nudgeReconciler()
+	rt.logger.Info("api: domain certificate renewal requested", slog.String("domain", domain), slog.Bool("had_stored_certificate", hadCert), slog.String("reason", req.Reason))
+
+	writeJSON(w, http.StatusAccepted, out)
 }
 
 // annotateDomainIssues attaches the last ingress pass's per-domain problems.

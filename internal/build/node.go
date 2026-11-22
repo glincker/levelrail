@@ -86,7 +86,9 @@ type Policy struct {
 	PressureHold bool
 	// StaleAfter is the heartbeat age past which a node is skipped; zero disables the check.
 	StaleAfter time.Duration
-	Now        time.Time
+	// MinDiskFreeBytes skips a node reporting less free disk than this; zero disables the gate.
+	MinDiskFreeBytes int64
+	Now              time.Time
 	// PersonalInProduction lets personal builders build production environments that have no explicit allow-list.
 	PersonalInProduction bool
 }
@@ -196,7 +198,29 @@ func (n NodeInfo) usable(p Policy) bool {
 	if p.StaleAfter > 0 && !n.LastSeen.IsZero() && !p.Now.IsZero() && p.Now.Sub(n.LastSeen) > p.StaleAfter {
 		return false
 	}
-	return true
+	return n.diskGate(p) == ""
+}
+
+// diskGate names why a node is held back for low disk, empty when it passes or the disk is unknown.
+func (n NodeInfo) diskGate(p Policy) string {
+	if p.MinDiskFreeBytes > 0 && n.DiskFreeBytes > 0 && n.DiskFreeBytes < p.MinDiskFreeBytes {
+		return fmt.Sprintf("disk low: %d MiB free, needs %d MiB", n.DiskFreeBytes>>20, p.MinDiskFreeBytes>>20)
+	}
+	return ""
+}
+
+// SkipReason says why routing skips a runner, empty when it is usable now.
+func (n NodeInfo) SkipReason(p Policy) string {
+	if n.Local || n.ID == "" || !n.AcceptsBuildWorkloads {
+		return ""
+	}
+	if !n.usable(p) {
+		if why := n.diskGate(p); why != "" {
+			return why
+		}
+		return unusableWhy(n)
+	}
+	return ""
 }
 
 func (n NodeInfo) hasLabels(want map[string]string) bool {
@@ -253,7 +277,7 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 			if n.usable(p) {
 				return Decision{Node: n.ID, Trust: n.tier(), Reason: "pinned runner " + n.label()}
 			}
-			return Decision{Reason: "control plane: pinned runner " + n.label() + " is " + unusableWhy(n)}
+			return Decision{Reason: "control plane: pinned runner " + n.label() + " is " + n.SkipReason(p)}
 		}
 		return Decision{Reason: "control plane: pinned runner " + q.Pinned + " is not a build node"}
 	}

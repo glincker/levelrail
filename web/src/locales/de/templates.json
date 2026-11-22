@@ -395,5 +395,15 @@
       "cap_add": "Fügt einem Container Linux-Capabilities hinzu.",
       "net_admin": "Kann Netzwerkeinstellungen im Container ändern."
     }
+  },
+  "deployButton": {
+    "title": "Deploy-Button",
+    "hint": "Fügen Sie diesem Template einen Ein-Klick-Deploy-Button für README oder Webseite hinzu.",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "card": "Social-Card-Tags",
+    "markdownLabel": "Markdown-Snippet für den Deploy-Button",
+    "htmlLabel": "HTML-Snippet für den Deploy-Button",
+    "cardLabel": "Snippet mit Social-Card-Meta-Tags"
   }
 }

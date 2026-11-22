@@ -1,0 +1,9 @@
+{
+  "title": "Idle apps",
+  "description": "Apps that received no requests in the advisor window. Sleeping them frees their memory, and the saving uses your reference rates.",
+  "total": "About {{amount}} a month if all were asleep",
+  "saving": "{{amount}} a month",
+  "memory": "{{memory}} held",
+  "review": "Review advice",
+  "error": "Could not load idle apps: {{message}}"
+}

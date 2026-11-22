@@ -24,9 +24,11 @@ const DEFAULT_INTERVAL_BY_KIND: Record<MonitorKind, number> = {
   tcp: DEFAULT_INTERVAL_SECONDS,
   heartbeat: 3600,
   tls: 86400,
+  dns: DEFAULT_INTERVAL_SECONDS,
+  ping: DEFAULT_INTERVAL_SECONDS,
 }
 const DEFAULT_TLS_PORT = '443'
-const KINDS: MonitorKind[] = ['http', 'tcp', 'heartbeat', 'tls']
+const KINDS: MonitorKind[] = ['http', 'tcp', 'heartbeat', 'tls', 'dns', 'ping']
 
 function parseKind(v: string): MonitorKind {
   return KINDS.find((k) => k === v) ?? 'http'
@@ -93,6 +95,7 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
   const [created, setCreated] = useState<Monitor | null>(null)
   const [statusLink, setStatusLink] = useState(false)
   const hostKind = kind === 'tcp' || kind === 'tls'
+  const nameKind = kind === 'dns' || kind === 'ping'
   const [error, setError] = useState<string | null>(null)
 
   const effectiveName =
@@ -109,6 +112,7 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
       ...(statusLink ? { status_link: true } : {}),
       ...(kind === 'http' ? { url } : {}),
       ...(hostKind ? { host, port: Number(port) } : {}),
+      ...(nameKind ? { host } : {}),
       ...(kind === 'heartbeat' && grace
         ? { grace_seconds: Number(grace) }
         : {}),
@@ -153,6 +157,8 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
           <option value="tcp">{t('form.tcp')}</option>
           <option value="heartbeat">{t('form.heartbeat')}</option>
           <option value="tls">{t('form.tls')}</option>
+          <option value="dns">{t('form.dns')}</option>
+          <option value="ping">{t('form.ping')}</option>
         </NativeSelect>
       </div>
       {kind === 'http' ? (
@@ -166,6 +172,19 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
             value={url}
             onChange={(e) => {
               setUrl(e.target.value)
+            }}
+          />
+        </div>
+      ) : null}
+      {nameKind ? (
+        <div className="min-w-36 flex-1 space-y-1">
+          <Label htmlFor="monitor-host">{t('form.host')}</Label>
+          <Input
+            id="monitor-host"
+            required
+            value={host}
+            onChange={(e) => {
+              setHost(e.target.value)
             }}
           />
         </div>

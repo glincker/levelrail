@@ -28,6 +28,8 @@
     "tcp": "TCP",
     "heartbeat": "cronハートビート",
     "tls": "TLS証明書",
+    "dns": "DNS 検索",
+    "ping": "Ping (ICMP)",
     "grace": "猶予(秒)",
     "graceHint": "間隔を過ぎてから、ジョブを遅延とみなすまでの追加の待ち時間です。空欄にするとサーバーの既定値を使います。",
     "warnDays": "警告(日)",

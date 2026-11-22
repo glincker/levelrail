@@ -40,7 +40,7 @@ func (r runRecorder) RecordBuildRun(ctx context.Context, run build.Run) error {
 		App: run.App, Tag: run.Tag, StartedAt: run.StartedAt,
 		DurationMS: run.Duration.Milliseconds(), QueueWaitMS: run.QueueWait.Milliseconds(),
 		Status: string(run.Status), CachedSteps: run.CachedSteps, TotalSteps: run.TotalSteps, Error: run.Error,
-		NodeID: run.Node, RunnerReason: run.RunnerReason, Platform: run.Platform, ImageBytes: run.ImageBytes,
+		NodeID: run.Node, RunnerReason: run.RunnerReason, Platform: run.Platform, ImageBytes: run.ImageBytes, PeakMemoryMB: run.PeakMemoryMB,
 	})
 }
 
@@ -171,6 +171,7 @@ type buildStatsRun struct {
 	CachedSteps     int       `json:"cached_steps"`
 	TotalSteps      int       `json:"total_steps"`
 	Error           string    `json:"error,omitempty"`
+	PeakMemoryMB    int       `json:"peak_memory_mb,omitempty"`
 }
 
 type buildStatsResponse struct {
@@ -178,6 +179,8 @@ type buildStatsResponse struct {
 	Limit int             `json:"limit"`
 	Trend build.Trend     `json:"trend"`
 	Runs  []buildStatsRun `json:"runs"`
+	// MemorySuggestion is set when the newest build was killed for memory.
+	MemorySuggestion *build.MemorySuggestion `json:"memory_suggestion,omitempty"`
 }
 
 func (rt *Router) handleBuildStats(w http.ResponseWriter, r *http.Request) {
@@ -217,10 +220,11 @@ func (rt *Router) handleBuildStats(w http.ResponseWriter, r *http.Request) {
 		out.Runs = append(out.Runs, buildStatsRun{
 			StartedAt: row.StartedAt, Tag: row.Tag, Status: row.Status,
 			DurationSeconds: float64(row.DurationMS) / 1000, QueueWaitSecs: float64(row.QueueWaitMS) / 1000,
-			CachedSteps: row.CachedSteps, TotalSteps: row.TotalSteps, Error: row.Error,
+			CachedSteps: row.CachedSteps, TotalSteps: row.TotalSteps, Error: row.Error, PeakMemoryMB: row.PeakMemoryMB,
 		})
 	}
 	out.Trend = build.ComputeTrend(runs)
+	out.MemorySuggestion = rt.buildMemorySuggestion(r.Context(), name, rows)
 	writeJSON(w, http.StatusOK, out)
 }
 

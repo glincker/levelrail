@@ -139,7 +139,7 @@ func TestDetectUnchecked(t *testing.T) {
 		{name: "sinatra", fixture: "testdata/railpack-sinatra", wantProvider: "ruby", wantFramework: "Ruby"},
 		{name: "laravel", fixture: "testdata/railpack-laravel", wantProvider: "php", wantFramework: "Laravel"},
 		{name: "plain php", fixture: "testdata/railpack-php", wantProvider: "php", wantFramework: "PHP"},
-		{name: "unsupported provider reports raw provider, no framework name", fixture: "testdata/railpack-unsupported", wantProvider: "deno", wantFramework: ""},
+		{name: "deno reports its framework name", fixture: "testdata/railpack-unsupported", wantProvider: "deno", wantFramework: "Deno"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

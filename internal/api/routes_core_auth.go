@@ -163,6 +163,9 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	// Global deploy freeze windows apply to every app, so writing them is root-only.
 	mux.HandleFunc("GET /api/v1/settings/deploy-freeze", rt.requireAbility(AbilityRead, rt.handleGetGlobalDeployFreeze))
 	mux.HandleFunc("PUT /api/v1/settings/deploy-freeze", rt.requireAbility(AbilityRoot, rt.handlePutGlobalDeployFreeze))
+	mux.HandleFunc("GET /api/v1/settings/vacation-freeze", rt.requireAbility(AbilityRead, rt.handleGetVacationFreeze))
+	mux.HandleFunc("PUT /api/v1/settings/vacation-freeze", rt.requireAbility(AbilityRoot, rt.handlePutVacationFreeze))
+	mux.HandleFunc("DELETE /api/v1/settings/vacation-freeze", rt.requireAbility(AbilityRoot, rt.handleDeleteVacationFreeze))
 	mux.HandleFunc("GET /api/v1/settings/oauth", rt.requireAbility(AbilityRead, rt.handleListOAuthSettings))
 	mux.HandleFunc("PUT /api/v1/settings/oauth/{provider}", rt.requireAbility(AbilityRoot, rt.handleUpdateOAuthProviderSettings))
 

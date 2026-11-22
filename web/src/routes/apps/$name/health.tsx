@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { useIsStaticSite } from '../../../queries/staticSites'
 import { HealthCheckEditor } from '../../../components/HealthCheckEditor'
 import { AppHealthSummary } from '../../../components/apps/AppHealthSummary'
+import { AppUptimeReport } from '../../../components/apps/AppUptimeReport'
 import { StaticHealth } from '../../../components/apps/StaticHealth'
 
 // Former "health" tab, now a real deep-linkable route. Reads app data
@@ -22,6 +23,7 @@ function HealthSection() {
   return (
     <div className="space-y-6">
       <AppHealthSummary app={app} />
+      <AppUptimeReport app={name} />
       <HealthCheckEditor app={app} />
     </div>
   )

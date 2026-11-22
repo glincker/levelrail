@@ -153,3 +153,26 @@ func TestMajorUpgradeRoutes_NotConfigured(t *testing.T) {
 		t.Errorf("status = %d, want 501", rec.Code)
 	}
 }
+
+func TestMajorUpgradeCheckGoNoGo(t *testing.T) {
+	now := time.Date(2026, 11, 22, 12, 0, 0, 0, time.UTC)
+	d := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
+	ok := func(id string, age time.Duration) store.BackupHistory {
+		return store.BackupHistory{ID: id, Status: store.BackupStatusSucceeded, FinishedAt: now.Add(-age).Format(time.RFC3339)}
+	}
+	failed := store.BackupHistory{ID: "bad", Status: store.BackupStatusFailed, FinishedAt: now.Format(time.RFC3339)}
+
+	res := majorUpgradeCheck(d, "17", []store.BackupHistory{failed, ok("old", 40*time.Hour), ok("new", 2*time.Hour)}, 24*time.Hour, now)
+	if !res.Go || res.RestorePoint == nil || res.RestorePoint.BackupID != "new" || res.RestorePoint.AgeSeconds != 7200 {
+		t.Fatalf("fresh backup must be go with the newest successful restore point: %+v", res)
+	}
+	if res := majorUpgradeCheck(d, "17", []store.BackupHistory{ok("old", 40*time.Hour)}, 24*time.Hour, now); res.Go || len(res.Reasons) != 1 {
+		t.Fatalf("stale restore point must be no-go: %+v", res)
+	}
+	if res := majorUpgradeCheck(d, "17", []store.BackupHistory{failed}, 24*time.Hour, now); res.Go || res.RestorePoint != nil {
+		t.Fatalf("no successful backup must be no-go: %+v", res)
+	}
+	if res := majorUpgradeCheck(d, "16", []store.BackupHistory{ok("new", time.Hour)}, 24*time.Hour, now); res.Go {
+		t.Fatalf("an unchanged major must stay no-go: %+v", res)
+	}
+}

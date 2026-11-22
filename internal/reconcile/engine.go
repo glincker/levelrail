@@ -103,6 +103,12 @@ type Engine struct {
 	keyed      func(name string) bool
 	qmu        sync.Mutex
 	queue      *keyQueue
+
+	eventDriven       atomic.Bool
+	eventDrivenSource func() bool
+	dmu               sync.Mutex
+	dirty             dirtySet
+	idle              map[string]idleState
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -262,6 +268,13 @@ func (e *Engine) Started() bool { return e.started.Load() }
 // idempotent, level-triggered contract is what makes an extra,
 // unscheduled pass always safe to run.
 func (e *Engine) Nudge() {
+	e.markAllDirty()
+	e.nudgeOnly()
+}
+
+// nudgeOnly queues a pass without dirtying anything, for callers that mark
+// exactly what changed first.
+func (e *Engine) nudgeOnly() {
 	select {
 	case e.nudge <- struct{}{}:
 	default:
@@ -272,7 +285,8 @@ func (e *Engine) Nudge() {
 // change (such as a new probe) that makes retrying a failing controller worthwhile now.
 func (e *Engine) NudgeController(name string) {
 	e.guard.Reset(name)
-	e.Nudge()
+	e.markControllerDirty(name)
+	e.nudgeOnly()
 }
 
 // SetStore attaches persistence for reconcile status. Call it once before
@@ -311,9 +325,14 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 		e.logger.Error("listing dynamic controllers failed", slog.String("error", err.Error()))
 		return
 	}
+	dirty := e.takeDirty()
+	eventDriven := e.eventDrivenOn()
 	n += len(dynamic)
 	for _, c := range dynamic {
 		live[c.Name()] = struct{}{}
+		if e.idleSkippable(c, dirty, eventDriven) {
+			continue
+		}
 		if e.concurrent(c.Name()) {
 			e.keyQueueFor(ctx).add(c, e.now())
 			continue
@@ -327,6 +346,7 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 		q.retain(live)
 	}
 	e.persisted.forget(live)
+	e.forgetIdle(live)
 }
 
 // safeReconcile turns a controller panic into an error so one broken resource cannot crash the process.
@@ -357,6 +377,7 @@ func (e *Engine) runOne(ctx context.Context, c Controller, keyed bool) Result {
 	dur := time.Since(start)
 	e.recordController(c.Name(), dur)
 	e.costs.add(c.Name(), dur, err != nil || panicked)
+	e.recordIdle(c.Name(), result, err, panicked)
 
 	e.mu.Lock()
 	e.lastResult[c.Name()] = result
@@ -514,6 +535,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 					defer t.Stop()
 				}
 			}
+			e.markContainerDirty(ev.ContainerName)
 			e.logger.Debug("event triggered reconcile",
 				slog.String("container", ev.ContainerName),
 				slog.String("action", string(ev.Action)),

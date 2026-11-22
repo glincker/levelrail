@@ -66,6 +66,9 @@ func ValidateFreezeWindow(w store.DeployFreezeWindow) error {
 // WindowActive reports whether w covers now and, if so, when it ends. The
 // cron expression is evaluated on the wall clock of w.Timezone.
 func WindowActive(w store.DeployFreezeWindow, now time.Time) (bool, time.Time, error) {
+	if w.Scope == store.DeployFreezeScopeVacation {
+		return vacationActive(w, now)
+	}
 	sched, err := cronexpr.Parse(w.Cron)
 	if err != nil {
 		return false, time.Time{}, fmt.Errorf("freeze window %s: %w", w.ID, err)
@@ -114,7 +117,7 @@ func CheckFreeze(ctx context.Context, fs FreezeStore, serviceName string, now ti
 	if fs == nil {
 		return FreezeStatus{}, nil
 	}
-	windows, err := fs.ListDeployFreezeWindows(ctx, store.DeployFreezeScopeApp(serviceName), store.DeployFreezeScopeGlobal)
+	windows, err := fs.ListDeployFreezeWindows(ctx, store.DeployFreezeScopeApp(serviceName), store.DeployFreezeScopeGlobal, store.DeployFreezeScopeVacation)
 	if err != nil {
 		return FreezeStatus{}, fmt.Errorf("deploy: check freeze for %q: %w", serviceName, err)
 	}
@@ -132,4 +135,32 @@ func CheckFreeze(ctx context.Context, fs FreezeStore, serviceName string, now ti
 // maintenance windows; *store.DB satisfies it.
 type MaintenanceFreezeStore interface {
 	FreezeMaintenanceWindows(ctx context.Context, serviceName string, now time.Time) ([]store.DeployFreezeWindow, error)
+}
+
+// VacationWindow is the one-off freeze that starts at start and lasts days.
+func VacationWindow(start time.Time, days int, reason string) store.DeployFreezeWindow {
+	return store.DeployFreezeWindow{
+		Scope: store.DeployFreezeScopeVacation, Cron: start.UTC().Format(time.RFC3339),
+		Duration: time.Duration(days) * 24 * time.Hour, Timezone: "UTC", Reason: reason,
+	}
+}
+
+// ValidateVacationDays bounds a vacation by the same cap as any freeze window.
+func ValidateVacationDays(days int) error {
+	if days < 1 || time.Duration(days)*24*time.Hour > MaxFreezeDuration {
+		return fmt.Errorf("days must be between 1 and %d", int(MaxFreezeDuration/(24*time.Hour)))
+	}
+	return nil
+}
+
+func vacationActive(w store.DeployFreezeWindow, now time.Time) (bool, time.Time, error) {
+	start, err := time.Parse(time.RFC3339, w.Cron)
+	if err != nil {
+		return false, time.Time{}, fmt.Errorf("vacation freeze %s: start: %w", w.ID, err)
+	}
+	end := start.Add(w.Duration)
+	if now.Before(start) || !now.Before(end) {
+		return false, time.Time{}, nil
+	}
+	return true, end, nil
 }

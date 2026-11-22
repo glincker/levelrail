@@ -58,6 +58,7 @@ Leave `replicas` out. See the [`Autoscale` fields](/app-spec-reference#autoscale
 | `cpu_percent` | Average CPU over the last 2 minutes, as a percent of the app's CPU limit (`resources.cpu`). With no limit it is percent of one core. |
 | `memory_percent` | Average memory use over the last 2 minutes, as a percent of the app's memory limit. Unknown when the app has no limit. |
 | `requests_per_replica` | Requests per second measured at the ingress, divided by the current replica count. See [Traffic observability](/traffic-observability). |
+| `gauge:NAME` | A gauge your app exposes on its metrics path, for example `gauge:queue_depth`. Pick App gauge in the dashboard form and enter the name. |
 
 CPU and memory are sampled from one container per collection tick, so they read the load of a typical replica, which is what a balanced app needs.
 

@@ -14,6 +14,7 @@ func (rt *Router) registerStatusPageRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/status-page", rt.requireAbilityForResource(AbilityRead, statusPageResource, rt.handleGetStatusPage))
 	mux.HandleFunc("PUT /api/v1/status-page", rt.requireAbilityForResource(AbilityWrite, statusPageResource, rt.handlePutStatusPage))
 	mux.HandleFunc("GET /api/v1/status-page/preview", rt.requireAbilityForResource(AbilityRead, statusPageResource, rt.handleStatusPagePreview))
+	mux.HandleFunc("GET /api/v1/status-page/uptime-report", rt.requireAbilityForResource(AbilityRead, statusPageResource, rt.handleStatusUptimeReport))
 	mux.HandleFunc("GET /api/v1/status-page/components", rt.requireAbilityForResource(AbilityRead, statusPageResource, rt.handleListStatusComponents))
 	mux.HandleFunc("POST /api/v1/status-page/components", rt.requireAbilityForResource(AbilityWrite, statusPageResource, rt.handleCreateStatusComponent))
 	mux.HandleFunc("PUT /api/v1/status-page/components/{id}", rt.requireAbilityForResource(AbilityWrite, statusPageResource, rt.handleUpdateStatusComponent))

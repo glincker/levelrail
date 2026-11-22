@@ -7,6 +7,7 @@ const (
 	KeyChangesStreamMaxPerCaller = "events.changes_max_streams_per_caller"
 	KeyChangesStreamBuffer       = "events.changes_buffer"
 	KeyChangesStreamHeartbeat    = "events.changes_heartbeat"
+	KeyMaxLiveStreams            = "events.max_live_streams"
 )
 
 func init() {
@@ -15,6 +16,11 @@ func init() {
 		Title:       "Change stream: streams per caller",
 		Description: "Most live change streams one user or token may hold open at once. From 1 to 32. Extra connections get 429.",
 	}, 1, 32)
+	registerLimit(Definition{
+		Key: KeyMaxLiveStreams, Category: CategoryObservability, Default: "500", Env: "APP_MAX_LIVE_STREAMS", Apply: ApplyLive,
+		Title:       "Live streams: total cap",
+		Description: "Most log, event and progress streams the control plane serves at once. From 10 to 20000. Extra connections get 503 with Retry-After.",
+	}, 10, 20000)
 	registerLimit(Definition{
 		Key: KeyChangesStreamBuffer, Category: CategoryObservability, Default: "64", Env: "APP_CHANGES_STREAM_BUFFER", Apply: ApplyLive,
 		Title:       "Change stream: buffer per stream",

@@ -23,6 +23,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { BrandTile } from './BrandLogoBadge'
@@ -55,6 +56,7 @@ const editChannelSchema = z
     interactiveSecret: z.string().trim(),
     notifyDeviceLogin: z.boolean(),
     notifyDeviceLoginExpired: z.boolean(),
+    messageTemplate: z.string().max(2000),
   })
   .superRefine((data, ctx) => {
     // webpush has no destination to edit: every registered browser
@@ -110,6 +112,7 @@ function defaultsFromChannel(channel: NotificationChannel): EditChannelForm {
     interactiveSecret: '',
     notifyDeviceLogin: channel.notify_device_login,
     notifyDeviceLoginExpired: channel.notify_device_login_expired,
+    messageTemplate: channel.message_template ?? '',
   }
 }
 
@@ -210,6 +213,7 @@ export function EditNotificationChannelDialog({
           interactive_secret: values.interactiveSecret.trim(),
           notify_device_login: values.notifyDeviceLogin,
           notify_device_login_expired: values.notifyDeviceLoginExpired,
+          message_template: values.messageTemplate.trim(),
         },
       },
       {
@@ -389,6 +393,18 @@ export function EditNotificationChannelDialog({
               )}
             />
             <FieldLabel htmlFor="edit-channel-enabled">Enabled</FieldLabel>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="edit-channel-message-template">
+              {t('channel.messageTemplate')}
+            </FieldLabel>
+            <Textarea
+              id="edit-channel-message-template"
+              rows={3}
+              {...register('messageTemplate')}
+            />
+            <FieldHint>{t('channel.messageTemplateHint')}</FieldHint>
           </Field>
 
           <Field orientation="horizontal">

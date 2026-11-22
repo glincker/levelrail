@@ -42,7 +42,7 @@ func (S3Uploader) Upload(ctx context.Context, dest Destination, key string, r io
 	input := &s3.PutObjectInput{
 		Bucket: aws.String(dest.Bucket),
 		Key:    aws.String(key),
-		Body:   r,
+		Body:   newThrottledReader(ctx, r, currentUploadLimit()),
 	}
 
 	if _, err := uploader.Upload(ctx, input); err != nil { //nolint:staticcheck // same deprecation as NewUploader above

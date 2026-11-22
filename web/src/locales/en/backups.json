@@ -81,7 +81,14 @@
     "cancel": "Cancel",
     "started": "Restoring into {{name}}",
     "startedDescription": "Follow progress in the restore history of this volume.",
-    "failed": "Could not start the restore"
+    "failed": "Could not start the restore",
+    "stepCheck": "Check your app",
+    "checkTitle": "Restore started. Now check your app.",
+    "checkOpen": "Open your app and make sure it still loads.",
+    "checkData": "Once the restore finishes, confirm your data is back in {{name}}.",
+    "checkSwitch": "Point the app at {{name}} (its volume setting), then redeploy so it uses the restored data.",
+    "checkLink": "Open the app",
+    "done": "Done"
   },
   "policy": {
     "title": "Backup policy for {{app}}/{{volume}}",
@@ -294,6 +301,11 @@
     "done_other": "{{count}} resources scheduled",
     "someFailed_one": "{{count}} could not be scheduled.",
     "someFailed_other": "{{count}} could not be scheduled."
+  },
+  "sameDisk": {
+    "title": "If this server dies, backups die too.",
+    "body": "Every backup target is on this server's own disk. Connect storage somewhere else to keep a copy that survives.",
+    "connect": "Connect storage"
   },
   "safety": {
     "title": "Encryption and bucket safety",
@@ -622,5 +634,41 @@
     "startedTitle": "Restore test started.",
     "startedBody": "The result appears here once it finishes.",
     "startFailed": "Could not start restore test."
+  },
+  "newServer": {
+    "open": "Restore to a new server",
+    "title": "Restore to a new server",
+    "description": "Brings an app, its volumes and its databases back on another node from their latest backups. Nothing existing is overwritten.",
+    "stepChoose": "Choose app and node",
+    "stepReview": "Review",
+    "stepProgress": "Progress",
+    "app": "App",
+    "appPlaceholder": "Select an app",
+    "noApps": "No app with backed up data was found.",
+    "node": "Node",
+    "nodePlaceholder": "Select a node",
+    "noNodes": "No other node is available. Add a server first, then come back.",
+    "nodeOffline": "{{name}} (offline)",
+    "review": "These items will be restored onto {{node}}.",
+    "reviewEmpty": "There is nothing to restore for this app.",
+    "kind": { "volume": "Volume", "database": "Database" },
+    "status": {
+      "planned": "Ready",
+      "started": "Restoring",
+      "skipped": "Skipped",
+      "failed": "Failed"
+    },
+    "asName": "restored as {{name}}",
+    "nothingRestorable": "No item has a succeeded backup, so there is nothing to start.",
+    "next": "Review",
+    "back": "Back",
+    "confirm": "Restore now",
+    "cancel": "Cancel",
+    "done": "Done",
+    "planFailed": "Could not plan the restore: {{error}}",
+    "startFailed": "Could not start the restore: {{error}}",
+    "startedTitle": "Restore started",
+    "startedBody": "Each item restores in the background into a new resource on {{node}}. Follow progress in the restore history below.",
+    "openApp": "Open the app"
   }
 }

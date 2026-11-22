@@ -75,6 +75,10 @@
       "parked_domain_cert_expiry": {
         "label": "Zertifikatsablauf einer geparkten Domain",
         "help": "Löst aus, wenn für eine geparkte Domain weniger Tage Zertifikatslaufzeit übrig sind als das Limit. Umfasst jede geparkte Domain der Plattform."
+      },
+      "domain_registration_expiry": {
+        "label": "Ablauf der Domain-Registrierung",
+        "help": "Löst aus, wenn eine ausgelieferte Domain innerhalb der Frist vor ihrem Ablaufdatum beim Registrar liegt, gelesen aus öffentlichen Registerdaten. Gilt für alle Domains der Plattform."
       }
     },
     "scopeLabel": "Domain",

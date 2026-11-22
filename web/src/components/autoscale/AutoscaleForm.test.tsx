@@ -5,14 +5,17 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { AutoscaleForm } from './AutoscaleForm'
 import autoscaleEn from '../../locales/en/autoscale.json'
+import scheduleEn from '../../locales/en/autoscaleSchedule.json'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['autoscale'],
+  ns: ['autoscale', 'autoscaleSchedule'],
   defaultNS: 'autoscale',
-  resources: { en: { autoscale: autoscaleEn } },
+  resources: {
+    en: { autoscale: autoscaleEn, autoscaleSchedule: scheduleEn },
+  },
   interpolation: { escapeValue: false },
 })
 
@@ -87,6 +90,28 @@ describe('AutoscaleForm', () => {
     await user.click(screen.getByRole('button', { name: 'Save policy' }))
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ scale_down_cooldown_secs: 900 }),
+    )
+  })
+
+  it('saves a scheduled minimum window with its time zone', async () => {
+    const { onSave, user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Add a window' }))
+    await user.type(screen.getByLabelText('Time zone'), 'Europe/Berlin')
+    await user.clear(screen.getByLabelText('Minimum during the window'))
+    await user.type(screen.getByLabelText('Minimum during the window'), '3')
+    await user.click(screen.getByRole('button', { name: 'Save policy' }))
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedules: [
+          {
+            days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+            start: '08:00',
+            end: '20:00',
+            timezone: 'Europe/Berlin',
+            min_replicas: 3,
+          },
+        ],
+      }),
     )
   })
 })

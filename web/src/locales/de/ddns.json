@@ -15,11 +15,13 @@
   "provider": {
     "label": "Anbieter",
     "generic": "Generische URL",
-    "duckdns": "DuckDNS"
+    "duckdns": "DuckDNS",
+    "godaddy": "GoDaddy"
   },
   "domains": {
     "label": "DuckDNS-Domains",
-    "placeholder": "myhome,office"
+    "placeholder": "myhome,office",
+    "placeholderGodaddy": "home.example.com"
   },
   "target": {
     "labelGeneric": "Update-URL",
@@ -29,7 +31,8 @@
     "configuredNoHost": "Konfiguriert",
     "notConfigured": "Nicht konfiguriert",
     "clear": "Entfernen",
-    "cleared": "Zugangsdaten entfernt."
+    "cleared": "Zugangsdaten entfernt.",
+    "labelGodaddy": "GoDaddy Key:Secret"
   },
   "advanced": {
     "toggle": "Erweitert",

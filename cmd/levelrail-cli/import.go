@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -73,7 +74,7 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return runImportVercel(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 		case "compose-ref":
 			return runImportComposeRef(prog, args[1:], stdout, stderr, lookupEnv)
-		case "deploy-yml", "portainer", "railway":
+		case "deploy-yml", "portainer", "railway", "render", "do-app", "cloud-run", "fly", "netlify":
 			return runImportStackFile(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 		case "takeover":
 			return runImportTakeover(prog, args[1:], stdout, stderr, lookupEnv)
@@ -103,6 +104,13 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return exitCode
 	}
 
+	if sub := stackFileSubcommand(f.file); sub != "" {
+		fwd := []string{f.file}
+		if jsonOut {
+			fwd = append(fwd, "--json")
+		}
+		return runImportStackFile(prog, sub, fwd, stdout, stderr, lookupEnv)
+	}
 	text, err := importInputText(f, fs.Args())
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
@@ -380,12 +388,25 @@ func importBuildRequest(p apiclient.ImportPlan, s apiclient.ImportService) apicl
 	return req
 }
 
+// stackFileSubcommand maps -f fly.toml and -f netlify.toml to their offline
+// importers, since the plan endpoint only knows compose files and Dockerfiles.
+func stackFileSubcommand(path string) string {
+	switch strings.ToLower(filepath.Base(path)) {
+	case "fly.toml":
+		return "fly"
+	case "netlify.toml":
+		return "netlify"
+	}
+	return ""
+}
+
 func importUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s import <repo-url|image> [flags]
   %[1]s import -f compose.yaml|Dockerfile [flags]
   %[1]s import plan <compose.yaml|dir> [--json]               dry run: what would be created, what is unsupported, name conflicts
   %[1]s import --docker-run "docker run -p 80:80 nginx:1" [flags]
+  %[1]s import fly fly.toml|netlify netlify.toml [--write DIR]  offline: emit documents from a fly.toml or netlify.toml, see "%[1]s import fly -h"
   %[1]s import k8s -f <file|-> [--dry-run] [--force]          convert Kubernetes manifests into apps, see "%[1]s import k8s -h"
   %[1]s import config [dir] [--out FILE] [--strict]            offline preview of Procfile, app.json and vercel.json as an app spec
   %[1]s import config|platform ... --emit stack --out DIR   write Stack, App, Database and Domain documents plus a secrets checklist for review

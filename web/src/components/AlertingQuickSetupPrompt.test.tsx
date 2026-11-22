@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
 import { createTestQueryClient } from '@/test/testQueryClient'
+import { AllI18n } from '@/test/allI18n'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -42,9 +43,11 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
 function renderPrompt() {
   const queryClient = createTestQueryClient()
   render(
-    <QueryClientProvider client={queryClient}>
-      <AlertingQuickSetupPrompt carrierAppName="demo-app" />
-    </QueryClientProvider>,
+    <AllI18n>
+      <QueryClientProvider client={queryClient}>
+        <AlertingQuickSetupPrompt carrierAppName="demo-app" />
+      </QueryClientProvider>
+    </AllI18n>,
   )
 }
 
@@ -145,6 +148,55 @@ describe('AlertingQuickSetupPrompt', () => {
     expect(
       window.localStorage.getItem('dashboard-alerting-quick-setup-dismissed'),
     ).toBe('1')
+  })
+
+  it('creates an email channel and the down, backup failed and disk rules from one address', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >((input, init) => {
+      const url = requestUrlOf(input)
+      if (url === '/api/v1/notification-channels') {
+        if (init?.method === 'POST') {
+          return Promise.resolve(fakeJsonResponse({ id: 'chan_e' }, 201))
+        }
+        return Promise.resolve(fakeJsonResponse([]))
+      }
+      if (url === '/api/v1/apps/demo-app/alerts') {
+        return Promise.resolve(fakeJsonResponse({ id: 'rule_1' }, 201))
+      }
+      throw new Error(`unexpected fetch: ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    renderPrompt()
+
+    await user.type(
+      await screen.findByRole('textbox', { name: /your email address/i }),
+      'me@example.com',
+    )
+    await user.click(
+      screen.getByRole('button', { name: /email me about problems/i }),
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/turn on platform-wide alerting/i),
+      ).not.toBeInTheDocument()
+    })
+    const bodies = fetchMock.mock.calls
+      .filter((c) => c[1]?.method === 'POST')
+      .map((c) => JSON.parse(c[1]?.body as string) as Record<string, string>)
+    expect(bodies[0]).toMatchObject({
+      kind: 'email',
+      notify_url: 'me@example.com',
+    })
+    expect(bodies.slice(1).map((b) => b.kind)).toEqual([
+      'app_unhealthy',
+      'node_offline',
+      'backup_failed',
+      'node_disk_space',
+    ])
+    expect(bodies.slice(1).every((b) => b.channel_id === 'chan_e')).toBe(true)
   })
 
   it('dismisses and does not reappear on remount', async () => {

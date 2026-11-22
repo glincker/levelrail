@@ -121,6 +121,7 @@ type trafficResponse struct {
 	Shield         trafficShield               `json:"shield"`
 	Abuse          trafficAbuse                `json:"abuse"`
 	ErrorSpikes    []telemetry.ErrorSpike      `json:"error_spikes"`
+	SlowUpstream   *trafficSlowUpstream        `json:"slow_upstream,omitempty"`
 }
 
 func trafficSlowRouteMin() float64 {
@@ -373,6 +374,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 			resp.Countries = audienceLabels(rows, telemetry.AudienceCountry)
 		}
 	}
+	resp.SlowUpstream = slowUpstreamHint(resp.Requests, resp.Latency.P95Ms, rt.slowUpstreamThreshold(ctx), resp.SlowRoutes)
 	resp.ErrorSpikes = rt.errorSpikes(ctx, name, from, to, window)
 	resp.SLO = rt.trafficSLO(ctx, name, from, to)
 	resp.Shield = shieldCounts(ctx, rt.telemetry, name, from, to)

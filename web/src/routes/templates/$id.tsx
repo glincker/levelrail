@@ -21,6 +21,7 @@ import { TemplateTrustBadges } from '../../components/templates/TemplateTrustBad
 import { TemplateServices } from '../../components/templates/TemplateServices'
 import { TemplateWhatYouGet } from '../../components/templates/TemplateWhatYouGet'
 import { TemplateDeployForm } from '../../components/templates/TemplateDeployForm'
+import { TemplateDeployButton } from '../../components/templates/TemplateDeployButton'
 import { RelatedTemplates } from '../../components/templates/RelatedTemplates'
 import { TemplateDeployResult } from '../../components/templates/TemplateDeployResult'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
@@ -205,6 +206,7 @@ function TemplateDetailRoute() {
             compose={template.compose}
             slug={appSlug(template.id, template.name)}
           />
+          <TemplateDeployButton id={template.id} name={template.name} />
           <RelatedTemplates id={template.id} category={template.category} />
         </div>
 

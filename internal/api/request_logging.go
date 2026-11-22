@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // defaultSlowRequestThreshold/defaultCriticalRequestThreshold are
@@ -53,6 +55,12 @@ func (t requestLogThresholds) criticalOrDefault() time.Duration {
 // elapsed time, since that duration is connection lifetime, not
 // server latency.
 func requestLoggingMiddleware(logger *slog.Logger, thresholds requestLogThresholds) func(http.Handler) http.Handler {
+	return requestLoggingMiddlewareLive(logger, thresholds, nil, nil)
+}
+
+// requestLoggingMiddlewareLive is requestLoggingMiddleware with the slow band read per request
+// from slowFn (a runtime setting) and slow requests recorded into ring; either may be nil.
+func requestLoggingMiddlewareLive(logger *slog.Logger, thresholds requestLogThresholds, slowFn func() time.Duration, ring *slowRequestRing) func(http.Handler) http.Handler {
 	slow := thresholds.slowOrDefault()
 	critical := thresholds.criticalOrDefault()
 	return func(next http.Handler) http.Handler {
@@ -60,6 +68,8 @@ func requestLoggingMiddleware(logger *slog.Logger, thresholds requestLogThreshol
 			rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 			timings := &requestTimings{}
 			r = r.WithContext(context.WithValue(r.Context(), requestTimingsKey{}, timings))
+			matched := &matchedPattern{}
+			r = r.WithContext(context.WithValue(r.Context(), matchedPatternKey{}, matched))
 			start := time.Now()
 			next.ServeHTTP(rec, r)
 			duration := time.Since(start)
@@ -72,11 +82,29 @@ func requestLoggingMiddleware(logger *slog.Logger, thresholds requestLogThreshol
 				slog.Duration("duration", duration),
 			}
 
-			level := requestLogLevel(duration, requestLogThresholds{slow: slow, critical: critical}, isStreamingResponse(rec))
+			curSlow, curCritical := slow, critical
+			if slowFn != nil {
+				if d := slowFn(); d > 0 {
+					curSlow, curCritical = d, max(critical, d)
+				}
+			}
+			streaming := isStreamingResponse(rec)
+			level := requestLogLevel(duration, requestLogThresholds{slow: curSlow, critical: curCritical}, streaming)
 			if level >= slog.LevelWarn {
-				if b := timings.breakdown(); b != "" {
+				b := timings.breakdown()
+				if b != "" {
 					attrs = append(attrs, slog.String("breakdown", b))
 				}
+				if ring != nil {
+					route := matched.get(r)
+					if route == "" {
+						route = loggablePath(r.URL.Path)
+					}
+					ring.add(slowRequestEntry{At: time.Now().UTC(), Method: r.Method, Route: route, Status: rec.status, DurationMS: float64(duration) / float64(time.Millisecond), Breakdown: b})
+				}
+			}
+			if ring != nil && !streaming && strings.HasPrefix(r.URL.Path, "/api/") {
+				ring.stats.observe(r.Method, matched.get(r), rec.status, duration)
 			}
 			logger.LogAttrs(r.Context(), level, "api: request", attrs...)
 		})
@@ -176,4 +204,44 @@ func (t *requestTimings) breakdown() string {
 		out[i] = fmt.Sprintf("%s=%s", l, t.parts[l].Round(time.Millisecond))
 	}
 	return strings.Join(out, ",")
+}
+
+// liveSlowThreshold is the slow band: the saved runtime setting when a service exists, else the boot option or default.
+func (rt *Router) liveSlowThreshold() time.Duration {
+	if rt.runtimeSettings != nil {
+		if d := rt.runtimeSettings.Duration(context.Background(), runtimesettings.KeySlowRequestThreshold); d > 0 {
+			return d
+		}
+	}
+	return rt.requestLogThresholds.slowOrDefault()
+}
+
+type matchedPatternKey struct{}
+
+// matchedPattern carries the route pattern out of the inner mux: this middleware sits outside
+// request copies, so r.Pattern here would be an outer catch-all mount such as "/api/".
+type matchedPattern struct {
+	mu sync.Mutex
+	p  string
+}
+
+func (m *matchedPattern) get(r *http.Request) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.p != "" {
+		return m.p
+	}
+	return r.Pattern
+}
+
+// capturePatternMiddleware wraps the route mux and records the pattern it matched.
+func capturePatternMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		if m, ok := r.Context().Value(matchedPatternKey{}).(*matchedPattern); ok && r.Pattern != "" {
+			m.mu.Lock()
+			m.p = r.Pattern
+			m.mu.Unlock()
+		}
+	})
 }

@@ -1171,7 +1171,7 @@
       },
       "streams": {
         "title": "Live streams near the cap",
-        "hint": "New log and event streams are refused at the cap. Raise APP_MAX_LIVE_STREAMS if the host has headroom."
+        "hint": "New log and event streams are refused at the cap. Raise the live stream cap in runtime settings if the host has headroom."
       }
     },
     "banner": {
@@ -3034,7 +3034,15 @@
     "lastBuild": "Last build with the cache: {{when}}",
     "title": "Build cache",
     "titleAll": "Build cache for all apps",
-    "description": "Keep BuildKit layers in a storage destination so rebuilds skip unchanged steps. A cache problem never fails a build, it is reported as a warning."
+    "description": "Keep BuildKit layers in a storage destination so rebuilds skip unchanged steps. A cache problem never fails a build, it is reported as a warning.",
+    "pruneTitle": "Prune by age",
+    "pruneHint": "{{size}} of cache is idle and can be freed. Cache a running build holds is never removed.",
+    "pruneNode": "Build node",
+    "pruneOlder": "Older than {{days}} days",
+    "pruneUnused": "All unused",
+    "prunePreview": "{{count}} records, {{size}} would be freed.",
+    "pruneApply": "Free this space",
+    "pruneDone": "Removed {{count}} records, freed {{size}}"
   },
   "gitConnections": {
     "empty": {

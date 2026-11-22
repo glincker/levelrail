@@ -1,0 +1,45 @@
+{
+  "envHints": {
+    "title": "Umgebungsvariablen",
+    "help": "Dieses Repository dokumentiert die Variablen, die es braucht. Fülle jede vor dem ersten Deployment aus.",
+    "scanning": "Die Beispiel-Umgebungsdatei des Repositorys wird gelesen...",
+    "missing_one": "{{count}} erforderliche Variable ist leer.",
+    "missing_other": "{{count}} erforderliche Variablen sind leer.",
+    "secretHint": "Verschlüsselt gespeichert",
+    "valueLabel": "Wert für {{name}}"
+  },
+  "nextStep": {
+    "dismiss": "Diesen Vorschlag ausblenden",
+    "app_domain": {
+      "title": "Deine App ist live. Füge deine eigene Domain hinzu.",
+      "body": "Richte einen Hostnamen, der dir gehört, auf diese App, damit Leute sie unter diesem Namen erreichen.",
+      "cta": "Domain hinzufügen"
+    },
+    "first_backup": {
+      "title": "Backups aktivieren",
+      "body": "Erstelle ein erstes Backup, damit ein defekter Datenträger deine Apps nicht mit sich reißt.",
+      "cta": "Backups einrichten"
+    },
+    "notifications": {
+      "title": "Monitor und Alarm hinzufügen",
+      "body": "Erfahre von einem Absturz oder einer fehlgeschlagenen Prüfung, bevor deine Nutzer es merken.",
+      "cta": "Alarme einrichten"
+    },
+    "teammate": {
+      "title": "Teammitglied einladen",
+      "body": "Gib einer zweiten Person Zugang, damit du nicht der einzige Login bist.",
+      "cta": "Person einladen"
+    }
+  },
+  "launch": {
+    "title": "Deine App ist live",
+    "body": "Öffne sie oder scanne den Code, um sie auf dem Handy zu testen.",
+    "copy": "URL kopieren",
+    "copied": "Kopiert",
+    "share": "Link zum Teilen kopieren",
+    "shareText": "Probiere {{name}} aus:",
+    "dismiss": "Schließen",
+    "qrLabel": "QR-Code für die Live-URL",
+    "qrLoading": "QR-Code wird geladen"
+  }
+}

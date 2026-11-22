@@ -75,6 +75,10 @@
       "parked_domain_cert_expiry": {
         "label": "Expiração de certificado de domínio estacionado",
         "help": "Dispara quando um domínio estacionado tem menos dias de certificado restantes que o limite. Cobre todos os domínios estacionados da plataforma."
+      },
+      "domain_registration_expiry": {
+        "label": "Vencimento do registro de domínio",
+        "help": "Dispara quando um domínio que você serve está dentro do limite da data de vencimento no registrador, lida de dados públicos do registro. Cobre todos os domínios da plataforma."
       }
     },
     "scopeLabel": "Domínio",

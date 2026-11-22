@@ -8,7 +8,10 @@ Subcommands: list
 
 ```
 Usage:
-  levelrail-cli profile list [flags]   list configured credentials profiles
+  levelrail-cli profile list [flags]            list configured credentials profiles
+  levelrail-cli profile use <name> [--json]            make a profile the default
+  levelrail-cli profile remove <name> [--yes] [--json] delete a profile and its saved token
+  levelrail-cli profile rename <old> <new> [--json]    rename a profile
 
 A profile is a named section of the credentials file at
 ~/.config/levelrail-cli/credentials, each with its own LEVELRAIL_API_URL or APP_API_URL/LEVELRAIL_TOKEN or APP_API_TOKEN, written by

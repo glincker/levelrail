@@ -58,6 +58,8 @@ export const INTEGRATION_GLYPHS: Record<
     opsgenie: b('opsgenie'),
     webex: b('webex'),
     googlechat: b('google-chat'),
+    matrix: b('matrix-org'),
+    zulip: b('zulip'),
     webpush: u('bell'),
     generic: u('webhook'),
   },

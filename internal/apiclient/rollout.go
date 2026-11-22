@@ -19,6 +19,7 @@ type RolloutProgress struct {
 	Surge          int       `json:"surge"`
 	MaxSurge       int       `json:"max_surge"`
 	MaxUnavailable int       `json:"max_unavailable"`
+	Paused         bool      `json:"paused,omitempty"`
 	Message        string    `json:"message,omitempty"`
 	StartedAt      time.Time `json:"started_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
@@ -57,4 +58,18 @@ func (c *Client) PutRollout(ctx context.Context, appName string, req PutRolloutR
 // GetRollout calls GET /api/v1/apps/{name}/rollout.
 func (c *Client) GetRollout(ctx context.Context, appName string) (RolloutResource, error) {
 	return getJSON[RolloutResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/rollout")
+}
+
+// PauseRollout calls POST /api/v1/apps/{name}/rollout/pause.
+func (c *Client) PauseRollout(ctx context.Context, appName string) (RolloutProgress, error) {
+	var out RolloutProgress
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/rollout/pause", nil, &out)
+	return out, err
+}
+
+// ResumeRollout calls POST /api/v1/apps/{name}/rollout/resume.
+func (c *Client) ResumeRollout(ctx context.Context, appName string) (RolloutProgress, error) {
+	var out RolloutProgress
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/rollout/resume", nil, &out)
+	return out, err
 }
