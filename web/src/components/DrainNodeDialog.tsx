@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import type { DialogControl } from './dialogControl'
 import { useTranslation } from 'react-i18next'
 import { MaximizeGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
@@ -25,6 +25,10 @@ import { useNodeDrain, useStartNodeDrain } from '../queries/nodeMoves'
 import type { NodeResource } from '../types/nodeDetail'
 import { DrainStatusBadge, NodeDrainProgress } from './nodes/NodeDrainProgress'
 
+const ZoneDrainPanel = lazy(() =>
+  import('./nodes/ZoneDrainPanel').then((m) => ({ default: m.ZoneDrainPanel })),
+)
+
 // Empty string is not a valid Select item value in Base UI.
 const AUTOMATIC_VALUE = '__auto__'
 
@@ -47,6 +51,7 @@ export function DrainNodeDialog({
   }
   const [targetNodeId, setTargetNodeId] = useState(AUTOMATIC_VALUE)
   const [drainId, setDrainId] = useState<string | null>(null)
+  const [scope, setScope] = useState<'node' | 'zone'>('node')
   const { data: nodes } = useNodes()
   const start = useStartNodeDrain()
   const drain = useNodeDrain(drainId)
@@ -58,6 +63,7 @@ export function DrainNodeDialog({
     if (!next) {
       start.reset()
       setDrainId(null)
+      setScope('node')
       setTargetNodeId(AUTOMATIC_VALUE)
     }
   }
@@ -87,7 +93,22 @@ export function DrainNodeDialog({
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-lg">
-        {drainId ? (
+        {scope === 'zone' ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>{t('drain.zone.title')}</DialogTitle>
+              <DialogDescription>
+                {t('drain.zone.description')}
+              </DialogDescription>
+            </DialogHeader>
+            <Suspense fallback={null}>
+              <ZoneDrainPanel
+                initialZone={node.zone ?? ''}
+                onClose={() => handleOpenChange(false)}
+              />
+            </Suspense>
+          </>
+        ) : drainId ? (
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -164,6 +185,16 @@ export function DrainNodeDialog({
                 </SelectContent>
               </Select>
             </div>
+
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="px-0"
+              onClick={() => setScope('zone')}
+            >
+              {t('drain.zone.switch')}
+            </Button>
 
             {start.isError ? (
               <Alert variant="destructive">

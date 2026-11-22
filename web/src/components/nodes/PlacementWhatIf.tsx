@@ -8,7 +8,9 @@ import {
   useFailureSimulation,
   usePlacementSimulation,
 } from '../../queries/placementDecision'
+import { formatBytes } from '../../lib/format'
 import type {
+  NodeReservation,
   SimulatedPlacement,
   ZoneSummary,
 } from '../../types/placementDecision'
@@ -37,6 +39,62 @@ function Rows({ rows }: { rows: SimulatedPlacement[] }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+function Reservations({ nodes }: { nodes: NodeReservation[] }) {
+  const { t } = useTranslation('nodes')
+  const bytes = (n?: number) => (n ? formatBytes(n) : t('zones.whatIf.unknown'))
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full text-xs">
+        <caption className="sr-only">{t('zones.whatIf.memoryCaption')}</caption>
+        <thead className="text-left text-muted-foreground">
+          <tr>
+            <th scope="col" className="px-3 py-1.5 font-medium">
+              {t('zones.whatIf.colNode')}
+            </th>
+            <th scope="col" className="px-3 py-1.5 font-medium">
+              {t('zones.whatIf.colReserved')}
+            </th>
+            <th scope="col" className="px-3 py-1.5 font-medium">
+              {t('zones.whatIf.colCapacity')}
+            </th>
+            <th scope="col" className="px-3 py-1.5 font-medium">
+              {t('zones.whatIf.colUsed')}
+            </th>
+            <th scope="col" className="px-3 py-1.5 font-medium">
+              {t('zones.whatIf.colStranded')}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {nodes.map((n) => (
+            <tr key={n.node_id}>
+              <th scope="row" className="px-3 py-1.5 text-left font-medium">
+                {n.name || n.node_id}
+              </th>
+              <td className="px-3 py-1.5">
+                {formatBytes(n.memory_reserved_bytes)}
+              </td>
+              <td className="px-3 py-1.5">{bytes(n.memory_capacity_bytes)}</td>
+              <td className="px-3 py-1.5">{bytes(n.memory_used_bytes)}</td>
+              <td
+                className={
+                  n.memory_stranded_bytes > 0
+                    ? 'px-3 py-1.5 text-tone-warning'
+                    : 'px-3 py-1.5'
+                }
+              >
+                {n.memory_used_bytes
+                  ? formatBytes(n.memory_stranded_bytes)
+                  : t('zones.whatIf.unknown')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -177,6 +235,14 @@ function AddApps() {
         </Alert>
       ) : null}
       {sim.data ? <Rows rows={sim.data.placed} /> : null}
+      {sim.data?.nodes && sim.data.nodes.length > 0 ? (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            {t('zones.whatIf.memoryHint')}
+          </p>
+          <Reservations nodes={sim.data.nodes} />
+        </div>
+      ) : null}
     </div>
   )
 }

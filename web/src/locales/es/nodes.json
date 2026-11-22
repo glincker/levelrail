@@ -140,6 +140,30 @@
       "summary": "{{done}} de {{total}} movidos, {{failed}} con error",
       "eta": "unos {{seconds}} s restantes",
       "stalled": "Sin avance desde hace un rato. Revisa el nodo y los movimientos de abajo."
+    },
+    "zone": {
+      "switch": "Drenar una zona completa",
+      "title": "Drenar una zona",
+      "description": "Drena cada nodo de la zona de uno en uno y espera a que termine cada uno. Se detiene en el primer drenaje que no tenga éxito para que el resto siga sirviendo.",
+      "zoneLabel": "Zona",
+      "pick": "Elige una zona",
+      "minAvailable": "Mínimo disponible",
+      "hint": "Mínimo disponible es cuántos nodos fuera de la zona deben seguir en línea y programables.",
+      "dryRun": "Simulación",
+      "start": "Drenar zona",
+      "invalidMin": "El mínimo disponible debe ser un entero de al menos 1.",
+      "empty": "Ningún nodo tiene la etiqueta de zona {{zone}}.",
+      "tooFew": "Drenar esta zona dejaría {{stay}} nodo(s) disponibles, por debajo del mínimo de {{min}}.",
+      "dryRunResult": "La zona {{zone}} drenaría {{count}} nodo(s) en este orden. No se cambió nada.",
+      "stopped": "Detenido. {{left}} nodo(s) no se drenaron.",
+      "moved": "{{done}} de {{total}} movidos",
+      "step": {
+        "pending": "En espera",
+        "running": "Drenando",
+        "succeeded": "Drenado",
+        "partial": "Drenado en parte",
+        "failed": "Falló"
+      }
     }
   },
   "drains": {
@@ -206,7 +230,15 @@
       "to": "Hacia",
       "none": "Ningún nodo",
       "failed": "La simulación falló.",
-      "invalid": "Ingresa números enteros, con al menos una app."
+      "invalid": "Ingresa números enteros, con al menos una app.",
+      "unknown": "Desconocido",
+      "memoryCaption": "Memoria reservada frente a usada por nodo",
+      "memoryHint": "Memoria reservada por las apps frente a lo que cada nodo usa de verdad. La memoria varada está reservada pero inactiva.",
+      "colNode": "Nodo",
+      "colReserved": "Reservada",
+      "colCapacity": "Capacidad",
+      "colUsed": "Usada",
+      "colStranded": "Varada"
     }
   },
   "placement": {

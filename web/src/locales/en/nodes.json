@@ -140,6 +140,30 @@
       "summary": "{{done}} of {{total}} moved, {{failed}} failed",
       "eta": "about {{seconds}} s left",
       "stalled": "No progress for a while. Check the node and the moves below."
+    },
+    "zone": {
+      "switch": "Drain a whole zone instead",
+      "title": "Drain a zone",
+      "description": "Drains every node in the zone one at a time, waiting for each to finish. It stops at the first drain that does not succeed so the rest keep serving.",
+      "zoneLabel": "Zone",
+      "pick": "Pick a zone",
+      "minAvailable": "Min available",
+      "hint": "Min available is how many nodes outside the zone must stay online and schedulable.",
+      "dryRun": "Dry run",
+      "start": "Drain zone",
+      "invalidMin": "Min available must be a whole number of at least 1.",
+      "empty": "No nodes are labeled with zone {{zone}}.",
+      "tooFew": "Draining this zone would leave {{stay}} node(s) available, below the minimum of {{min}}.",
+      "dryRunResult": "Zone {{zone}} would drain {{count}} node(s) in this order. Nothing changed.",
+      "stopped": "Stopped. {{left}} node(s) were not drained.",
+      "moved": "{{done}} of {{total}} moved",
+      "step": {
+        "pending": "Waiting",
+        "running": "Draining",
+        "succeeded": "Drained",
+        "partial": "Partly drained",
+        "failed": "Failed"
+      }
     }
   },
   "drains": {
@@ -206,7 +230,15 @@
       "to": "To",
       "none": "No node",
       "failed": "Simulation failed.",
-      "invalid": "Enter whole numbers, with at least one app."
+      "invalid": "Enter whole numbers, with at least one app.",
+      "unknown": "Unknown",
+      "memoryCaption": "Reserved versus used memory per node",
+      "memoryHint": "Memory reserved by apps compared with what each node actually uses. Stranded memory is reserved but idle.",
+      "colNode": "Node",
+      "colReserved": "Reserved",
+      "colCapacity": "Capacity",
+      "colUsed": "Used",
+      "colStranded": "Stranded"
     }
   },
   "placement": {

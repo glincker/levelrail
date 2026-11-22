@@ -140,6 +140,30 @@
       "summary": "{{done}} von {{total}} verschoben, {{failed}} fehlgeschlagen",
       "eta": "noch etwa {{seconds}} s",
       "stalled": "Seit einer Weile kein Fortschritt. Prüfe den Node und die Verschiebungen unten."
+    },
+    "zone": {
+      "switch": "Stattdessen eine ganze Zone drainen",
+      "title": "Zone drainen",
+      "description": "Drained alle Nodes der Zone nacheinander und wartet jeweils auf den Abschluss. Es stoppt beim ersten Drain ohne Erfolg, damit der Rest weiter bedient.",
+      "zoneLabel": "Zone",
+      "pick": "Zone wählen",
+      "minAvailable": "Mindestens verfügbar",
+      "hint": "Mindestens verfügbar ist die Zahl der Nodes außerhalb der Zone, die online und planbar bleiben müssen.",
+      "dryRun": "Probelauf",
+      "start": "Zone drainen",
+      "invalidMin": "Mindestens verfügbar muss eine ganze Zahl ab 1 sein.",
+      "empty": "Kein Node trägt das Zonenlabel {{zone}}.",
+      "tooFew": "Das Drainen dieser Zone ließe {{stay}} Node(s) verfügbar, unter dem Minimum von {{min}}.",
+      "dryRunResult": "Zone {{zone}} würde {{count}} Node(s) in dieser Reihenfolge drainen. Nichts wurde geändert.",
+      "stopped": "Gestoppt. {{left}} Node(s) wurden nicht gedraint.",
+      "moved": "{{done}} von {{total}} verschoben",
+      "step": {
+        "pending": "Wartet",
+        "running": "Wird gedraint",
+        "succeeded": "Gedraint",
+        "partial": "Teilweise gedraint",
+        "failed": "Fehlgeschlagen"
+      }
     }
   },
   "drains": {
@@ -206,7 +230,15 @@
       "to": "Nach",
       "none": "Kein Node",
       "failed": "Die Simulation ist fehlgeschlagen.",
-      "invalid": "Geben Sie ganze Zahlen ein, mit mindestens einer App."
+      "invalid": "Geben Sie ganze Zahlen ein, mit mindestens einer App.",
+      "unknown": "Unbekannt",
+      "memoryCaption": "Reservierter und genutzter Speicher pro Node",
+      "memoryHint": "Von Apps reservierter Speicher im Vergleich zur tatsächlichen Nutzung je Node. Gestrandeter Speicher ist reserviert, aber ungenutzt.",
+      "colNode": "Node",
+      "colReserved": "Reserviert",
+      "colCapacity": "Kapazität",
+      "colUsed": "Genutzt",
+      "colStranded": "Gestrandet"
     }
   },
   "placement": {

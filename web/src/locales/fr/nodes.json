@@ -140,6 +140,30 @@
       "summary": "{{done}} sur {{total}} déplacés, {{failed}} en échec",
       "eta": "environ {{seconds}} s restantes",
       "stalled": "Aucune progression depuis un moment. Vérifiez le node et les déplacements ci-dessous."
+    },
+    "zone": {
+      "switch": "Drainer une zone entière à la place",
+      "title": "Drainer une zone",
+      "description": "Draine chaque nœud de la zone un par un, en attendant la fin de chacun. S'arrête au premier drain qui échoue pour que le reste continue de servir.",
+      "zoneLabel": "Zone",
+      "pick": "Choisir une zone",
+      "minAvailable": "Minimum disponible",
+      "hint": "Le minimum disponible est le nombre de nœuds hors de la zone qui doivent rester en ligne et planifiables.",
+      "dryRun": "Simulation",
+      "start": "Drainer la zone",
+      "invalidMin": "Le minimum disponible doit être un entier d'au moins 1.",
+      "empty": "Aucun nœud ne porte l'étiquette de zone {{zone}}.",
+      "tooFew": "Drainer cette zone laisserait {{stay}} nœud(s) disponible(s), sous le minimum de {{min}}.",
+      "dryRunResult": "La zone {{zone}} drainerait {{count}} nœud(s) dans cet ordre. Rien n'a changé.",
+      "stopped": "Arrêté. {{left}} nœud(s) n'ont pas été drainés.",
+      "moved": "{{done}} sur {{total}} déplacés",
+      "step": {
+        "pending": "En attente",
+        "running": "Drain en cours",
+        "succeeded": "Drainé",
+        "partial": "Partiellement drainé",
+        "failed": "Échec"
+      }
     }
   },
   "drains": {
@@ -208,7 +232,15 @@
       "to": "Vers",
       "none": "Aucun node",
       "failed": "Échec de la simulation.",
-      "invalid": "Saisissez des nombres entiers, avec au moins une app."
+      "invalid": "Saisissez des nombres entiers, avec au moins une app.",
+      "unknown": "Inconnu",
+      "memoryCaption": "Mémoire réservée et utilisée par nœud",
+      "memoryHint": "Mémoire réservée par les apps comparée à l'usage réel de chaque nœud. La mémoire inutilisée est réservée mais inactive.",
+      "colNode": "Nœud",
+      "colReserved": "Réservée",
+      "colCapacity": "Capacité",
+      "colUsed": "Utilisée",
+      "colStranded": "Inutilisée"
     }
   },
   "placement": {

@@ -140,6 +140,30 @@
       "summary": "已迁移 {{done}} / {{total}},失败 {{failed}}",
       "eta": "约剩 {{seconds}} 秒",
       "stalled": "已有一段时间没有进展。请检查节点和下方的迁移。"
+    },
+    "zone": {
+      "switch": "改为排空整个可用区",
+      "title": "排空可用区",
+      "description": "逐个排空该可用区内的节点，并等待每个完成。遇到第一个未成功的排空即停止，让其余节点继续提供服务。",
+      "zoneLabel": "可用区",
+      "pick": "选择可用区",
+      "minAvailable": "最少可用数",
+      "hint": "最少可用数是可用区之外必须保持在线且可调度的节点数量。",
+      "dryRun": "试运行",
+      "start": "排空可用区",
+      "invalidMin": "最少可用数必须是不小于 1 的整数。",
+      "empty": "没有节点带有可用区标签 {{zone}}。",
+      "tooFew": "排空此可用区后只剩 {{stay}} 个可用节点，低于最小值 {{min}}。",
+      "dryRunResult": "可用区 {{zone}} 将按此顺序排空 {{count}} 个节点。未做任何更改。",
+      "stopped": "已停止。有 {{left}} 个节点未被排空。",
+      "moved": "已迁移 {{done}} / {{total}}",
+      "step": {
+        "pending": "等待中",
+        "running": "排空中",
+        "succeeded": "已排空",
+        "partial": "部分排空",
+        "failed": "失败"
+      }
     }
   },
   "drains": {
@@ -204,7 +228,15 @@
       "to": "到",
       "none": "无节点",
       "failed": "模拟失败。",
-      "invalid": "请输入整数，且至少有一个应用。"
+      "invalid": "请输入整数，且至少有一个应用。",
+      "unknown": "未知",
+      "memoryCaption": "每个节点的预留与已用内存",
+      "memoryHint": "应用预留的内存与各节点实际使用量的对比。搁置内存是已预留但闲置的部分。",
+      "colNode": "节点",
+      "colReserved": "已预留",
+      "colCapacity": "容量",
+      "colUsed": "已使用",
+      "colStranded": "搁置"
     }
   },
   "placement": {

@@ -140,6 +140,30 @@
       "summary": "{{done}} de {{total}} movidos, {{failed}} com falha",
       "eta": "cerca de {{seconds}} s restantes",
       "stalled": "Sem progresso há algum tempo. Verifique o node e as movimentações abaixo."
+    },
+    "zone": {
+      "switch": "Drenar uma zona inteira",
+      "title": "Drenar uma zona",
+      "description": "Drena cada nó da zona, um de cada vez, esperando cada um terminar. Para no primeiro dreno que não tiver sucesso para que o resto continue servindo.",
+      "zoneLabel": "Zona",
+      "pick": "Escolha uma zona",
+      "minAvailable": "Mínimo disponível",
+      "hint": "Mínimo disponível é quantos nós fora da zona devem continuar online e agendáveis.",
+      "dryRun": "Simulação",
+      "start": "Drenar zona",
+      "invalidMin": "O mínimo disponível deve ser um inteiro de pelo menos 1.",
+      "empty": "Nenhum nó tem o rótulo de zona {{zone}}.",
+      "tooFew": "Drenar esta zona deixaria {{stay}} nó(s) disponíveis, abaixo do mínimo de {{min}}.",
+      "dryRunResult": "A zona {{zone}} drenaria {{count}} nó(s) nesta ordem. Nada foi alterado.",
+      "stopped": "Parado. {{left}} nó(s) não foram drenados.",
+      "moved": "{{done}} de {{total}} movidos",
+      "step": {
+        "pending": "Aguardando",
+        "running": "Drenando",
+        "succeeded": "Drenado",
+        "partial": "Parcialmente drenado",
+        "failed": "Falhou"
+      }
     }
   },
   "drains": {
@@ -208,7 +232,15 @@
       "to": "Para",
       "none": "Nenhum node",
       "failed": "A simulação falhou.",
-      "invalid": "Informe números inteiros, com pelo menos um app."
+      "invalid": "Informe números inteiros, com pelo menos um app.",
+      "unknown": "Desconhecido",
+      "memoryCaption": "Memória reservada versus usada por nó",
+      "memoryHint": "Memória reservada pelos apps comparada ao que cada nó realmente usa. Memória encalhada está reservada, mas ociosa.",
+      "colNode": "Nó",
+      "colReserved": "Reservada",
+      "colCapacity": "Capacidade",
+      "colUsed": "Usada",
+      "colStranded": "Encalhada"
     }
   },
   "placement": {
