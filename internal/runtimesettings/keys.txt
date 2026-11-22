@@ -117,10 +117,13 @@ build.cache_app_quota_gb
 build.cache_budget
 build.cache_budget_max_mb
 build.cache_budget_reserved_mb
+build.cache_node_dep_cap_gb
 build.cache_reclaim_max_records
 build.cache_reclaim_timeout
 build.cpu_percent
 build.fair_share
+build.image_bloat_min_mb
+build.image_bloat_percent
 build.memory_percent
 build.reuse_unchanged
 build.runner_min_disk_free_mb

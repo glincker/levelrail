@@ -78,6 +78,32 @@ func (c *Client) ReclaimAppCacheQuota(ctx context.Context, cacheID string, sibli
 		return AppCacheReclaim{}, fmt.Errorf("build: disk usage: %w", err)
 	}
 	victims, plan := PlanAppCacheQuota(AppCacheRecords(du, cacheID, siblings), quotaBytes, maxRecords, snapshot)
+	return c.pruneVictims(ctx, victims, plan)
+}
+
+// ReclaimNodeDependencyCache trims every dependency cache mount on this builder
+// (npm, pip, Go modules and friends, whichever app owns them) to capBytes, least
+// recently used first. It backs the per node cap on top of the per app quota.
+func (c *Client) ReclaimNodeDependencyCache(ctx context.Context, capBytes int64, maxRecords int) (AppCacheReclaim, error) {
+	if c == nil || c.bk == nil {
+		return AppCacheReclaim{}, ErrAppCacheNoBuilder
+	}
+	snapshot := time.Now()
+	du, err := c.bk.DiskUsage(ctx)
+	if err != nil {
+		return AppCacheReclaim{}, fmt.Errorf("build: disk usage: %w", err)
+	}
+	var mounts []*bkclient.UsageInfo
+	for _, r := range du {
+		if r != nil && string(r.RecordType) == cacheMountRecordType {
+			mounts = append(mounts, r)
+		}
+	}
+	victims, plan := PlanAppCacheQuota(mounts, capBytes, maxRecords, snapshot)
+	return c.pruneVictims(ctx, victims, plan)
+}
+
+func (c *Client) pruneVictims(ctx context.Context, victims []*bkclient.UsageInfo, plan AppCacheReclaim) (AppCacheReclaim, error) {
 	if len(victims) == 0 {
 		return plan, nil
 	}
@@ -94,7 +120,7 @@ func (c *Client) ReclaimAppCacheQuota(ctx context.Context, cacheID string, sibli
 			plan.Removed++
 		}
 	}()
-	err = c.bk.Prune(ctx, ch, bkclient.WithFilter(filters), bkclient.PruneAll)
+	err := c.bk.Prune(ctx, ch, bkclient.WithFilter(filters), bkclient.PruneAll)
 	close(ch)
 	<-done
 	if err != nil {

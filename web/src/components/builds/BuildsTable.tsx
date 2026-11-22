@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { RelativeTime, StatusPill } from '@/components/kit'
 import { deployLogsPath } from '../../queries/deployments'
+import { ImageBloatNote } from './ImageBloatNote'
 import { useBuildAction, type BuildRow } from '../../queries/buildCenter'
 import {
   cacheLabel,
@@ -89,6 +90,7 @@ function BuildRowItem({ row, running, nowMs, onFixCache }: RowProps) {
             {delta}
           </span>
         ) : null}
+        <ImageBloatNote bloat={row.image_bloat} />
       </span>
       <span className="min-w-0 text-muted-foreground">
         <span className="block truncate">{row.node || t('node.local')}</span>

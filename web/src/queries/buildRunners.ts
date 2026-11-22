@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { BuildImageBloat } from './buildCenter'
 import { pollMs } from '../lib/pollTier'
 
 export type RunnerKind = 'control_plane' | 'node'
@@ -65,6 +66,7 @@ export interface BuildRunnerInfo {
   runner_name?: string
   runner_reason?: string
   queue_wait_ms?: number
+  image_bloat?: BuildImageBloat
 }
 
 export const buildRunnerKeys = {

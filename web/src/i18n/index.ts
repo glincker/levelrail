@@ -127,6 +127,7 @@ export const NAMESPACES = [
   'storagePolicy',
   'storageTrend',
   'buildCenter',
+  'imageBloat',
   'functions',
   'monitors',
   'secretRotation',

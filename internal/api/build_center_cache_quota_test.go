@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -165,5 +166,32 @@ func TestCacheQuotaReportFiltersByVisibility(t *testing.T) {
 	}
 	if !l.claim("web") || l.claim("web") {
 		t.Fatal("a second reclaim of one app must not start")
+	}
+}
+
+type fakeNodeCapCacher struct {
+	fakeQuotaCacher
+	capBytes []int64
+}
+
+func (f *fakeNodeCapCacher) ReclaimNodeDependencyCache(_ context.Context, capBytes int64, _ int) (build.AppCacheReclaim, error) {
+	f.capBytes = append(f.capBytes, capBytes)
+	return build.AppCacheReclaim{}, nil
+}
+
+func TestNodeDependencyCacheCapRunsAfterBuildOnlyWhenSet(t *testing.T) {
+	fake := &fakeNodeCapCacher{}
+	rt, _, _ := newQuotaRouter(t, &fake.fakeQuotaCacher)
+	WithAppBuildCache(fake)(rt)
+	rt.AfterBuildFinish("web")
+	if len(fake.capBytes) != 0 {
+		t.Fatalf("cap off must not scan, got %v", fake.capBytes)
+	}
+	if _, err := rt.runtimeSettings.Set(context.Background(), runtimesettings.KeyBuildCacheNodeDepCapGB, json.RawMessage("2"), "test"); err != nil {
+		t.Fatal(err)
+	}
+	rt.AfterBuildFinish("web")
+	if len(fake.capBytes) != 1 || fake.capBytes[0] != 2*cacheBytesPerGiB {
+		t.Fatalf("cap bytes = %v, want one run at 2 GiB", fake.capBytes)
 	}
 }

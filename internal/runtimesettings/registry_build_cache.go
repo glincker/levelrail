@@ -5,6 +5,8 @@ import "time"
 const (
 	// KeyBuildCacheAppQuotaGB caps one app's cache mounts; 0 turns the quota off.
 	KeyBuildCacheAppQuotaGB = "build.cache_app_quota_gb"
+	// KeyBuildCacheNodeDepCapGB caps all dependency cache mounts on one build node; 0 turns it off.
+	KeyBuildCacheNodeDepCapGB = "build.cache_node_dep_cap_gb"
 	// KeyBuildCacheReclaimMaxRecords bounds how many records one reclaim run removes.
 	KeyBuildCacheReclaimMaxRecords = "build.cache_reclaim_max_records"
 	// KeyBuildCacheReclaimTimeout bounds one reclaim so a wedged builder cannot hold it.
@@ -27,6 +29,11 @@ func init() {
 		Key: KeyBuildCacheAppQuotaGB, Category: CategoryDeploys, Default: "0", Env: "APP_BUILD_CACHE_APP_QUOTA_GB", Apply: ApplyLive,
 		Title:       "Build cache: per app quota",
 		Description: "GiB of builder cache mounts one app may keep, from 0 to 10240. After each build, an app over its quota loses its least recently used cache mounts until it fits. Cache held by a running build is never removed. 0 turns the quota off.",
+	}, 0, buildCacheMaxGB)
+	registerLimit(Definition{
+		Key: KeyBuildCacheNodeDepCapGB, Category: CategoryDeploys, Default: "0", Apply: ApplyLive,
+		Title:       "Build cache: dependency cap per build node",
+		Description: "GiB of dependency cache mounts (npm, pip, Go modules and similar) all apps together may keep on one build node, from 0 to 10240. After each build, a node over the cap loses its least recently used mounts until it fits, on top of the per app quota. Cache held by a running build is never removed. 0 turns the cap off.",
 	}, 0, buildCacheMaxGB)
 	registerLimit(Definition{
 		Key: KeyBuildCacheReclaimMaxRecords, Category: CategoryDeploys, Default: "50", Env: "APP_BUILD_CACHE_RECLAIM_MAX_RECORDS", Apply: ApplyLive,

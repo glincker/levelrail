@@ -1,0 +1,6 @@
+{
+  "badge": "Image grew {{percent}}%",
+  "detail": "The image is {{percent}}% larger than the previous build ({{previous}} before).",
+  "layer": "Biggest growth: {{layer}} (+{{size}})",
+  "tuneHint": "Change the threshold with build.image_bloat_percent in Settings > Runtime."
+}

@@ -20,31 +20,32 @@ type BuildHint struct {
 
 // BuildResource is one row of the build center.
 type BuildResource struct {
-	ID              string     `json:"id"`
-	App             string     `json:"app"`
-	Status          string     `json:"status"`
-	Source          string     `json:"source"`
-	Branch          string     `json:"branch,omitempty"`
-	CommitSHA       string     `json:"commit_sha,omitempty"`
-	Image           string     `json:"image,omitempty"`
-	QueuedAt        *time.Time `json:"queued_at,omitempty"`
-	StartedAt       time.Time  `json:"started_at"`
-	FinishedAt      *time.Time `json:"finished_at,omitempty"`
-	DurationSeconds *float64   `json:"duration_seconds,omitempty"`
-	QueuePosition   int        `json:"queue_position,omitempty"`
-	CacheHitRatio   *float64   `json:"cache_hit_ratio,omitempty"`
-	ImageBytes      int64      `json:"image_bytes,omitempty"`
-	ImageDeltaBytes *int64     `json:"image_delta_bytes,omitempty"`
-	Node            string     `json:"node,omitempty"`
-	RunnerName      string     `json:"runner_name,omitempty"`
-	RunnerReason    string     `json:"runner_reason,omitempty"`
-	QueueWaitMS     int64      `json:"queue_wait_ms"`
-	Platform        string     `json:"platform,omitempty"`
-	Error           string     `json:"error,omitempty"`
-	Hint            *BuildHint `json:"hint,omitempty"`
-	LogsPath        string     `json:"logs_path"`
-	CanCancel       bool       `json:"can_cancel"`
-	CanRetry        bool       `json:"can_retry"`
+	ID              string           `json:"id"`
+	App             string           `json:"app"`
+	Status          string           `json:"status"`
+	Source          string           `json:"source"`
+	Branch          string           `json:"branch,omitempty"`
+	CommitSHA       string           `json:"commit_sha,omitempty"`
+	Image           string           `json:"image,omitempty"`
+	QueuedAt        *time.Time       `json:"queued_at,omitempty"`
+	StartedAt       time.Time        `json:"started_at"`
+	FinishedAt      *time.Time       `json:"finished_at,omitempty"`
+	DurationSeconds *float64         `json:"duration_seconds,omitempty"`
+	QueuePosition   int              `json:"queue_position,omitempty"`
+	CacheHitRatio   *float64         `json:"cache_hit_ratio,omitempty"`
+	ImageBytes      int64            `json:"image_bytes,omitempty"`
+	ImageDeltaBytes *int64           `json:"image_delta_bytes,omitempty"`
+	ImageBloat      *BuildImageBloat `json:"image_bloat,omitempty"`
+	Node            string           `json:"node,omitempty"`
+	RunnerName      string           `json:"runner_name,omitempty"`
+	RunnerReason    string           `json:"runner_reason,omitempty"`
+	QueueWaitMS     int64            `json:"queue_wait_ms"`
+	Platform        string           `json:"platform,omitempty"`
+	Error           string           `json:"error,omitempty"`
+	Hint            *BuildHint       `json:"hint,omitempty"`
+	LogsPath        string           `json:"logs_path"`
+	CanCancel       bool             `json:"can_cancel"`
+	CanRetry        bool             `json:"can_retry"`
 }
 
 // BuildCounts summarises the build center rows.
@@ -176,6 +177,14 @@ type BuildCacheReclaim struct {
 	Bounded      bool      `json:"bounded"`
 	Skipped      string    `json:"skipped,omitempty"`
 	Partial      bool      `json:"partial,omitempty"`
+}
+
+// BuildImageBloat is the warning on a build whose image grew past the bloat threshold.
+type BuildImageBloat struct {
+	PreviousBytes int64   `json:"previous_bytes"`
+	GrowthPercent float64 `json:"growth_percent"`
+	Layer         string  `json:"layer,omitempty"`
+	LayerBytes    int64   `json:"layer_bytes,omitempty"`
 }
 
 // BuildCacheQuota is the response of GET /api/v1/builds/cache/quota.

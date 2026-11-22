@@ -36,31 +36,32 @@ type buildHint struct {
 }
 
 type buildRow struct {
-	ID              string     `json:"id"`
-	App             string     `json:"app"`
-	Status          string     `json:"status"`
-	Source          string     `json:"source"`
-	Branch          string     `json:"branch,omitempty"`
-	CommitSHA       string     `json:"commit_sha,omitempty"`
-	Image           string     `json:"image,omitempty"`
-	QueuedAt        *time.Time `json:"queued_at,omitempty"`
-	StartedAt       time.Time  `json:"started_at"`
-	FinishedAt      *time.Time `json:"finished_at,omitempty"`
-	DurationSeconds *float64   `json:"duration_seconds,omitempty"`
-	QueuePosition   int        `json:"queue_position,omitempty"`
-	CacheHitRatio   *float64   `json:"cache_hit_ratio,omitempty"`
-	ImageBytes      int64      `json:"image_bytes,omitempty"`
-	ImageDeltaBytes *int64     `json:"image_delta_bytes,omitempty"`
-	Node            string     `json:"node,omitempty"`
-	RunnerName      string     `json:"runner_name,omitempty"`
-	RunnerReason    string     `json:"runner_reason,omitempty"`
-	QueueWaitMS     int64      `json:"queue_wait_ms"`
-	Platform        string     `json:"platform,omitempty"`
-	Error           string     `json:"error,omitempty"`
-	Hint            *buildHint `json:"hint,omitempty"`
-	LogsPath        string     `json:"logs_path"`
-	CanCancel       bool       `json:"can_cancel"`
-	CanRetry        bool       `json:"can_retry"`
+	ID              string      `json:"id"`
+	App             string      `json:"app"`
+	Status          string      `json:"status"`
+	Source          string      `json:"source"`
+	Branch          string      `json:"branch,omitempty"`
+	CommitSHA       string      `json:"commit_sha,omitempty"`
+	Image           string      `json:"image,omitempty"`
+	QueuedAt        *time.Time  `json:"queued_at,omitempty"`
+	StartedAt       time.Time   `json:"started_at"`
+	FinishedAt      *time.Time  `json:"finished_at,omitempty"`
+	DurationSeconds *float64    `json:"duration_seconds,omitempty"`
+	QueuePosition   int         `json:"queue_position,omitempty"`
+	CacheHitRatio   *float64    `json:"cache_hit_ratio,omitempty"`
+	ImageBytes      int64       `json:"image_bytes,omitempty"`
+	ImageDeltaBytes *int64      `json:"image_delta_bytes,omitempty"`
+	ImageBloat      *imageBloat `json:"image_bloat,omitempty"`
+	Node            string      `json:"node,omitempty"`
+	RunnerName      string      `json:"runner_name,omitempty"`
+	RunnerReason    string      `json:"runner_reason,omitempty"`
+	QueueWaitMS     int64       `json:"queue_wait_ms"`
+	Platform        string      `json:"platform,omitempty"`
+	Error           string      `json:"error,omitempty"`
+	Hint            *buildHint  `json:"hint,omitempty"`
+	LogsPath        string      `json:"logs_path"`
+	CanCancel       bool        `json:"can_cancel"`
+	CanRetry        bool        `json:"can_retry"`
 }
 
 type buildCounts struct {
@@ -137,21 +138,28 @@ func matchBuildRuns(attempts []store.DeployAttempt, runs []store.BuildRun) map[s
 	return out
 }
 
+// imageChange is one run's image size against the app's previous successful run.
+type imageChange struct {
+	Delta     int64
+	PrevBytes int64
+	PrevTag   string
+}
+
 // imageDeltas maps a successful run to its image size change against the app's
 // previous successful run, keyed like matchBuildRuns.
-func imageDeltas(runs []store.BuildRun) map[string]int64 {
+func imageDeltas(runs []store.BuildRun) map[string]imageChange {
 	asc := append([]store.BuildRun(nil), runs...)
 	sort.SliceStable(asc, func(i, j int) bool { return asc[i].StartedAt.Before(asc[j].StartedAt) })
-	prev := map[string]int64{}
-	out := map[string]int64{}
+	prev := map[string]store.BuildRun{}
+	out := map[string]imageChange{}
 	for _, r := range asc {
 		if r.Status != string(build.RunSuccess) || r.ImageBytes <= 0 {
 			continue
 		}
 		if p, ok := prev[r.App]; ok {
-			out[r.App+r.Tag+r.StartedAt.Format(time.RFC3339Nano)] = r.ImageBytes - p
+			out[r.App+r.Tag+r.StartedAt.Format(time.RFC3339Nano)] = imageChange{Delta: r.ImageBytes - p.ImageBytes, PrevBytes: p.ImageBytes, PrevTag: p.Tag}
 		}
-		prev[r.App] = r.ImageBytes
+		prev[r.App] = r
 	}
 	return out
 }
@@ -183,7 +191,7 @@ func failureHint(app, errText string) *buildHint {
 
 // assembleBuildRows joins attempts with their build runs, in queue order:
 // queued by arrival, then running, then finished newest first.
-func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun) []buildRow {
+func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun, policy bloatPolicy) []buildRow {
 	matched := matchBuildRuns(attempts, runs)
 	deltas := imageDeltas(runs)
 	rows := make([]buildRow, 0, len(attempts))
@@ -208,8 +216,10 @@ func assembleBuildRows(attempts []store.DeployAttempt, runs []store.BuildRun) []
 				ratio := float64(r.CachedSteps) / float64(r.TotalSteps)
 				row.CacheHitRatio = &ratio
 			}
-			if d, ok := deltas[r.App+r.Tag+r.StartedAt.Format(time.RFC3339Nano)]; ok {
+			if ch, ok := deltas[r.App+r.Tag+r.StartedAt.Format(time.RFC3339Nano)]; ok {
+				d := ch.Delta
 				row.ImageDeltaBytes = &d
+				row.ImageBloat = policy.check(ch, r.Tag)
 			}
 			if row.Error == "" {
 				row.Error = r.Error
@@ -332,7 +342,8 @@ func (rt *Router) buildCenterPage(r *http.Request, limit int, cursor string) ([]
 	if err != nil {
 		return nil, "", err
 	}
-	rows := assembleBuildRows(attempts, runs)
+	rows := assembleBuildRows(attempts, runs, rt.bloatPolicy(r.Context()))
+	rt.nameGrownLayers(r.Context(), rows)
 	if visible == nil {
 		return rows, next, nil
 	}

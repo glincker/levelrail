@@ -169,6 +169,7 @@ import type storage from '../locales/en/storage.json'
 import type storagePolicy from '../locales/en/storagePolicy.json'
 import type storageTrend from '../locales/en/storageTrend.json'
 import type buildCenter from '../locales/en/buildCenter.json'
+import type imageBloat from '../locales/en/imageBloat.json'
 import type functions from '../locales/en/functions.json'
 import type advisories from '../locales/en/advisories.json'
 import type monitors from '../locales/en/monitors.json'
@@ -334,6 +335,7 @@ declare module 'i18next' {
       storagePolicy: typeof storagePolicy
       storageTrend: typeof storageTrend
       buildCenter: typeof buildCenter
+      imageBloat: typeof imageBloat
       functions: typeof functions
       advisories: typeof advisories
       monitors: typeof monitors

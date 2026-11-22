@@ -126,7 +126,14 @@ func buildDelta(b apiclient.BuildResource) string {
 	if d < 0 {
 		sign, d = "-", -d
 	}
-	return fmt.Sprintf("%s (%s%s)", humanBytes(b.ImageBytes), sign, humanBytes(d))
+	out := fmt.Sprintf("%s (%s%s)", humanBytes(b.ImageBytes), sign, humanBytes(d))
+	if bl := b.ImageBloat; bl != nil {
+		out += fmt.Sprintf(" BLOAT +%.0f%%", bl.GrowthPercent)
+		if bl.Layer != "" {
+			out += " layer: " + bl.Layer
+		}
+	}
+	return out
 }
 
 func buildNodeLabel(id string) string {

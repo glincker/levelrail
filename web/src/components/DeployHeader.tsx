@@ -28,6 +28,7 @@ import { DeployRunActions } from './deployDetail/DeployRunActions'
 import { DeployReceiptButton } from './deploy/DeployReceiptButton'
 import { Button } from '@/components/ui/button'
 import { RunnerChip } from './buildRunners/RunnerChip'
+import { ImageBloatNote } from './builds/ImageBloatNote'
 import type { BuildRunnerInfo } from '../queries/buildRunners'
 
 const SHA_RE = /^[0-9a-f]{40}$/
@@ -155,6 +156,7 @@ export function DeployHeader({
               </Meta>
             ) : null}
             <RunnerChip info={build} />
+            <ImageBloatNote bloat={build?.image_bloat} />
             <Meta icon={<ClockGlassIcon className="size-5" />}>
               <RelativeTime at={attempt.started_at} live />
               <span aria-hidden="true">·</span>
