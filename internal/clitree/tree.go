@@ -264,7 +264,7 @@ var Tree = map[string]*Node{
 		"provider":             {Subs: map[string]*Node{"get": nil, "set": nil, "test": nil}},
 	}},
 	"backups": {Subs: map[string]*Node{
-		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "pin": nil, "unpin": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
+		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "pin": nil, "unpin": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restore-app": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
 		"health": nil, "protection": nil, "coverage": nil, "protect-all": nil,
 		"orphans":      {Subs: map[string]*Node{"list": nil, "reclaim": nil}},
 		"encryption":   {Subs: map[string]*Node{"get": nil, "set": nil}},

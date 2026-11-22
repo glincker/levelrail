@@ -273,3 +273,35 @@ func (c *Client) StartDatabaseRestoreTest(ctx context.Context, name string) (Res
 func (c *Client) GetDatabaseRestoreTest(ctx context.Context, name string) (RestoreTestStartResource, error) {
 	return getJSON[RestoreTestStartResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/restore-test")
 }
+
+// AppRestoreToNodeRequest is the body of POST /api/v1/apps/{name}/restore-to-node.
+type AppRestoreToNodeRequest struct {
+	NodeID string `json:"node_id"`
+	DryRun bool   `json:"dry_run,omitempty"`
+}
+
+// AppRestoreToNodeItem is one volume or database of an app restore.
+type AppRestoreToNodeItem struct {
+	Kind     string `json:"kind"`
+	Source   string `json:"source"`
+	NewName  string `json:"new_name,omitempty"`
+	BackupID string `json:"backup_id,omitempty"`
+	ID       string `json:"id,omitempty"`
+	Status   string `json:"status"`
+	Reason   string `json:"reason,omitempty"`
+}
+
+// AppRestoreToNodeResponse mirrors internal/api's appRestoreToNodeResponse.
+type AppRestoreToNodeResponse struct {
+	App    string                 `json:"app"`
+	NodeID string                 `json:"node_id"`
+	DryRun bool                   `json:"dry_run"`
+	Items  []AppRestoreToNodeItem `json:"items"`
+}
+
+// RestoreAppToNode calls POST /api/v1/apps/{name}/restore-to-node.
+func (c *Client) RestoreAppToNode(ctx context.Context, name string, req AppRestoreToNodeRequest) (AppRestoreToNodeResponse, error) {
+	var out AppRestoreToNodeResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/restore-to-node", req, &out)
+	return out, err
+}

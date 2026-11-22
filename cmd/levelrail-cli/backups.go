@@ -49,6 +49,8 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsDownload(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore":
 		return runBackupsRestore(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "restore-app":
+		return runBackupsRestoreApp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore-as-new":
 		return runBackupsRestoreAsNew(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restores":
@@ -91,6 +93,7 @@ func backupsUsage(prog string) string {
   %[1]s backups download <database> <backup-id> [flags]                stream a succeeded backup's own object to stdout
   %[1]s backups restore <database> --backup ID --confirm NAME [flags]   restore a database from a backup (destructive)
   %[1]s backups restore-as-new <database> --backup ID --new-name NAME [flags] restore a backup into a brand-new database (non-destructive)
+  %[1]s backups restore-app <app> --node NODE [--dry-run] [flags]            restore the newest backup of an app's volumes and databases as new resources on a node
   %[1]s backups restores <database> [flags]                                list restore attempt history for a database
   %[1]s backups clone-restores <database> [flags]                          list restore-as-new attempt history for a database
   %[1]s backups schedule set<database> --target ID --cron EXPR [flags] configure a recurring backup

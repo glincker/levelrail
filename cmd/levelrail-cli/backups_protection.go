@@ -450,3 +450,37 @@ func runBackupsVolumesRestore(prog string, args []string, stdout, stderr io.Writ
 		_, _ = fmt.Fprintf(stdout, "restoring into new volume %q (restore %s); follow it with \"%s app-volume-backups clone-restores %s %s\"\n", out.NewVolumeName, out.ID, prog, rest[0], rest[1])
 	})
 }
+
+func backupsRestoreAppUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s backups restore-app <app> --node NODE [--dry-run] [flags]
+                                                         restore the newest backup of every volume and linked database of an app as NEW resources on NODE (never overwrites)
+`, prog)
+}
+
+// runBackupsRestoreApp implements "backups restore-app": POST /api/v1/apps/{name}/restore-to-node.
+func runBackupsRestoreApp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	c := newProtectionCmd(prog, "backups restore-app", backupsRestoreAppUsage(prog), stdout, stderr, lookupEnv)
+	var req apiclient.AppRestoreToNodeRequest
+	c.fs.StringVar(&req.NodeID, "node", "", "node to restore onto (required)")
+	c.fs.BoolVar(&req.DryRun, "dry-run", false, "show what would be restored without creating anything")
+	rest, exit, ok := c.parse(args, 1)
+	if !ok {
+		return exit
+	}
+	if req.NodeID == "" {
+		return c.fail(newValidationError("--node is required"))
+	}
+	out, err := c.client.RestoreAppToNode(context.Background(), rest[0], req)
+	if err != nil {
+		return c.fail(fmt.Errorf("restore %s to %s: %w", rest[0], req.NodeID, err))
+	}
+	return c.render(out, func() {
+		tw := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "KIND\tSOURCE\tNEW NAME\tBACKUP\tSTATUS\tNOTE")
+		for _, it := range out.Items {
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", it.Kind, it.Source, it.NewName, it.BackupID, it.Status, it.Reason)
+		}
+		_ = tw.Flush()
+	})
+}
