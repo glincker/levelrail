@@ -416,7 +416,7 @@ var Tree = map[string]*Node{
 	"label":                    nil,
 	"explain":                  nil,
 	"rollout":                  {Subs: map[string]*Node{"pause": nil, "resume": nil, "abort": nil, "status": nil, "waves": nil, "history": nil, "undo": nil, "restart": nil, "state": nil}},
-	"config":                   {Subs: map[string]*Node{"get-contexts": nil, "current-context": nil, "use-context": nil}},
+	"config":                   {Subs: map[string]*Node{"get-contexts": nil, "current-context": nil, "use-context": nil, "set-context": nil, "delete-context": nil}},
 	"get":                      nil,
 	"describe":                 nil,
 	"delete":                   nil,
