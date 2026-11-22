@@ -107,6 +107,14 @@ func (rt *Router) handleListRecentlyDeleted(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, out)
 }
 
+// recentlyDeletedResourceFromPath scopes a restore to the deleted app or database.
+func recentlyDeletedResourceFromPath(r *http.Request) string {
+	if r.PathValue("kind") == store.RecentlyDeletedDatabase {
+		return databaseResourceFromPath(r)
+	}
+	return appResourceFromPath(r)
+}
+
 // handleRestoreRecentlyDeleted handles POST /api/v1/recently-deleted/{kind}/{name}/restore.
 // It recreates the config; secrets were erased with the original and must be set again.
 func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Request) {
