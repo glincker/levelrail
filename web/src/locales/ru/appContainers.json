@@ -1,0 +1,52 @@
+{
+  "title": "Контейнеры",
+  "count_one": "{{count}} реплика",
+  "count_few": "{{count}} реплики",
+  "count_many": "{{count}} реплик",
+  "count_other": "{{count}} реплики",
+  "loading": "Загрузка контейнеров",
+  "forbidden": "У вас нет прав на просмотр контейнеров этого приложения.",
+  "error": "Не удалось загрузить контейнеры: {{message}}",
+  "empty": {
+    "title": "Нет запущенных контейнеров",
+    "description": "Приложение остановлено или спит. Текущий статус: {{status}}."
+  },
+  "unavailable": "Недоступно",
+  "unavailableTip": "Агент не сообщает это поле для удаленных узлов.",
+  "none": "Нет",
+  "copyId": "Копировать id контейнера",
+  "copied": "Скопировано",
+  "restarts_one": "{{count}} перезапуск",
+  "restarts_few": "{{count}} перезапуска",
+  "restarts_many": "{{count}} перезапусков",
+  "restarts_other": "{{count}} перезапуска",
+  "uptime": "Работает {{duration}}",
+  "node": "Узел",
+  "fields": {
+    "image": "Образ",
+    "digest": "Дайджест",
+    "ports": "Порты",
+    "networks": "Сети",
+    "mounts": "Монтирования",
+    "limits": "Лимиты",
+    "cpu": "CPU",
+    "memory": "Память",
+    "health": "Состояние"
+  },
+  "state": {
+    "running": "Запущен",
+    "stopped": "Остановлен",
+    "other": "{{state}}"
+  },
+  "health": {
+    "healthy": "Исправен",
+    "unhealthy": "Неисправен",
+    "starting": "Запускается",
+    "none": "Нет проверки",
+    "streak": "{{count}} сбоев подряд"
+  },
+  "readOnly": "ro",
+  "limitsValue": "{{cpu}} CPU, {{memory}}",
+  "noLimit": "Без лимита",
+  "usage": "{{used}} из {{limit}}"
+}

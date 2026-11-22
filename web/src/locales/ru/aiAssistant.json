@@ -1,0 +1,13 @@
+{
+  "toolCall": {
+    "noArguments": "Без аргументов.",
+    "rejected": "Отклонено",
+    "checked": "Проверено",
+    "approved": "Одобрено",
+    "confirmationRequired": "Требуется подтверждение",
+    "approve": "Одобрить",
+    "reject": "Отклонить",
+    "actingAs": "Действует как {{user}}",
+    "actingAsWithAbility": "Действует как {{user}} с правами: {{abilities}}"
+  }
+}

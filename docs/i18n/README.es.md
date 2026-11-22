@@ -27,7 +27,7 @@ Una plataforma de despliegue autoalojada en un solo binario de Go. El plano de c
   <a href="https://github.com/glincker/levelrail/discussions">Discusiones</a>
 </p>
 <!-- i18n-nav:start -->
-<p><a href="../../README.md">English</a> &middot; <a href="README.zh-Hans.md">简体中文</a> &middot; Español &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; <a href="README.fr.md">Français</a> &middot; <a href="README.ja.md">日本語</a></p>
+<p><a href="../../README.md">English</a> &middot; <a href="README.zh-Hans.md">简体中文</a> &middot; Español &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; <a href="README.fr.md">Français</a> &middot; <a href="README.ja.md">日本語</a> &middot; <a href="README.ru.md">Русский</a></p>
 <!-- i18n-nav:end -->
 <img src="../../docs/assets/demos/product-tour.gif" alt="Recorrido por el panel de Levelrail: resumen de la flota, lista de apps, historial de despliegues y métricas integradas" width="880">
 </div>

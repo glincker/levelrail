@@ -13,6 +13,7 @@ const loaders: Record<string, Loader> = {
   'pt-BR': () => import('./loaders/pt-BR'),
   ja: () => import('./loaders/ja'),
   'zh-CN': () => import('./loaders/zh-CN'),
+  ru: () => import('./loaders/ru'),
 }
 
 export const LOADER_LANGUAGES = Object.keys(loaders)

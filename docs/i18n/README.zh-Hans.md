@@ -22,7 +22,7 @@
   <a href="https://github.com/glincker/levelrail/discussions">讨论区</a>
 </p>
 <!-- i18n-nav:start -->
-<p><a href="../../README.md">English</a> &middot; 简体中文 &middot; <a href="README.es.md">Español</a> &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; <a href="README.fr.md">Français</a> &middot; <a href="README.ja.md">日本語</a></p>
+<p><a href="../../README.md">English</a> &middot; 简体中文 &middot; <a href="README.es.md">Español</a> &middot; <a href="README.pt-BR.md">Português (BR)</a> &middot; <a href="README.de.md">Deutsch</a> &middot; <a href="README.fr.md">Français</a> &middot; <a href="README.ja.md">日本語</a> &middot; <a href="README.ru.md">Русский</a></p>
 <!-- i18n-nav:end -->
 <img src="../../docs/assets/demos/product-tour.gif" alt="Levelrail 仪表盘导览：集群概览、应用列表、部署历史和内置指标" width="880">
 </div>

@@ -1,0 +1,28 @@
+{
+  "label": "Связанные страницы",
+  "heading": "Связанное",
+  "links": {
+    "account": "Аккаунт",
+    "alertRules": "Правила оповещений",
+    "backups": "Резервные копии",
+    "certificates": "Сертификаты",
+    "cliAccess": "Доступ через CLI",
+    "dataExport": "Экспорт данных",
+    "dns": "DNS",
+    "domains": "Домены",
+    "drReport": "Отчет о восстановлении",
+    "environments": "Окружения",
+    "eventWebhooks": "Вебхуки событий",
+    "firewall": "Файервол",
+    "mobileDevices": "Мобильные устройства",
+    "network": "Сеть",
+    "notificationChannels": "Каналы уведомлений",
+    "platformHttps": "HTTPS платформы",
+    "privateNetworks": "Приватные сети",
+    "security": "Безопасность",
+    "sessionPolicy": "Политика сессий",
+    "tokens": "API-токены",
+    "traffic": "Трафик",
+    "vault": "Vault"
+  }
+}

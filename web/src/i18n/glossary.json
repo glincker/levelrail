@@ -58,7 +58,8 @@
     "pt-BR": "Brazilian Portuguese, neutral informal (voce form, pronoun dropped where natural). Sentence case.",
     "ja": "Polite form (desu/masu). No spaces between Japanese words. Keep Latin product terms as written.",
     "zh-CN": "Simplified Chinese, concise, no spaces between Chinese characters. Keep Latin product terms as written.",
-    "es": "Keep consistent with the existing Spanish files: formal usted, sentence case."
+    "es": "Keep consistent with the existing Spanish files: formal usted, sentence case.",
+    "ru": "Russian, formal address (вы), sentence case. Keep Latin product terms as written. Short imperative verbs on buttons."
   },
   "rules": [
     "Keep every {{placeholder}} and every numbered or named tag exactly as in English, including names and count.",
