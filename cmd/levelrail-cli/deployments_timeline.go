@@ -60,7 +60,11 @@ func formatImpact(im apiclient.DeployEventImpact) string {
 	if !im.Complete {
 		suffix = " (window still open)"
 	}
-	return "before " + side(im.Before) + " | after " + side(im.After) + suffix
+	gap := ""
+	if g := im.Gap; g != nil {
+		gap = fmt.Sprintf(" | cutover gap %dms (%d failed, %d queued over %dms)", g.GapMS, g.Failed, g.Queued, g.QueuedMS)
+	}
+	return "before " + side(im.Before) + " | after " + side(im.After) + gap + suffix
 }
 
 // timelineWriter prints events and folds build log lines into a count unless

@@ -272,6 +272,8 @@ deploy.approve_digest_check_timeout_seconds
 deploy.build_hook_max_cidrs
 deploy.build_hook_triggers_per_minute
 deploy.ci_gate_max_waits_per_app
+deploy.cutover_gap_queued_over
+deploy.cutover_gap_window
 deploy.drain_timeout
 deploy.explain_log_lines
 deploy.inline_source_keep

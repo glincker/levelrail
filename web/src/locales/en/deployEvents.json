@@ -89,6 +89,7 @@
     "dropped": "{{count}} earlier lines were left out to keep the replay small."
   },
   "impact": {
+    "gap": "Cutover gap {{ms}} ms: {{failed}} failed, {{queued}} queued requests",
     "title": "Traffic around cutover",
     "before": "Before",
     "after": "After",

@@ -56,6 +56,17 @@ type DeployEventImpact struct {
 	Complete  bool              `json:"complete"`
 	Before    DeployEventWindow `json:"before"`
 	After     DeployEventWindow `json:"after"`
+	Gap       *DeployEventGap   `json:"gap,omitempty"`
+}
+
+// DeployEventGap is the measured cutover gap: failed and queued edge requests.
+type DeployEventGap struct {
+	Failed    int   `json:"failed"`
+	Queued    int   `json:"queued"`
+	GapMS     int64 `json:"gap_ms"`
+	WindowMS  int64 `json:"window_ms"`
+	QueuedMS  int64 `json:"queued_over_ms"`
+	Truncated bool  `json:"truncated,omitempty"`
 }
 
 // DeployEventPhase is the time one phase took.

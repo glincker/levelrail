@@ -101,6 +101,19 @@ type Impact struct {
 	Complete  bool      `json:"complete"`
 	Before    Window    `json:"before"`
 	After     Window    `json:"after"`
+	// Gap is the failed and queued requests the edge saw around cutover; nil
+	// when the edge keeps no access log.
+	Gap *Gap `json:"gap,omitempty"`
+}
+
+// Gap is the measured cutover gap in requests and milliseconds.
+type Gap struct {
+	Failed    int   `json:"failed"`
+	Queued    int   `json:"queued"`
+	GapMS     int64 `json:"gap_ms"`
+	WindowMS  int64 `json:"window_ms"`
+	QueuedMS  int64 `json:"queued_over_ms"`
+	Truncated bool  `json:"truncated,omitempty"`
 }
 
 // Event is one entry on the timeline. ID is stable for the same underlying

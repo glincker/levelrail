@@ -46,6 +46,15 @@ export function ImpactCard({ impact }: { impact: DeployEventImpact }) {
         <Side label={t('impact.before')} window={impact.before} />
         <Side label={t('impact.after')} window={impact.after} />
       </div>
+      {impact.gap && (
+        <p className="mt-2 text-sm tabular-nums">
+          {t('impact.gap', {
+            ms: impact.gap.gap_ms,
+            failed: impact.gap.failed,
+            queued: impact.gap.queued,
+          })}
+        </p>
+      )}
       <p className="mt-2 text-xs text-muted-foreground">
         {impact.complete
           ? t('impact.window', { window: formatMs(impact.window_ms) })

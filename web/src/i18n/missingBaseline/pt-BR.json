@@ -74,6 +74,7 @@
     "common:confirmDialog.impactLead",
     "common:confirmDialog.impactVolumes_one",
     "common:confirmDialog.impactVolumes_other",
+    "deployEvents:impact.gap",
     "forms:recipes.contact.body",
     "forms:recipes.contact.title",
     "forms:recipes.feedback.body",

@@ -63,6 +63,7 @@
     "buildCenter:farm.title",
     "buildCenter:farm.waitP50",
     "buildCenter:farm.waitP95",
+    "deployEvents:impact.gap",
     "forms:recipes.contact.body",
     "forms:recipes.contact.title",
     "forms:recipes.feedback.body",

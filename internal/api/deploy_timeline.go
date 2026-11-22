@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/deploytimeline"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -176,10 +177,43 @@ func (rt *Router) timelineImpact(ctx context.Context, app string, cutover time.T
 		Before: requestWindow(ctx, rt.telemetry, app, cutover.Add(-cfg.ImpactWindow), cutover),
 		After:  requestWindow(ctx, rt.telemetry, app, cutover, end),
 	}
-	if !im.Before.HasTraffic && !im.After.HasTraffic {
+	im.Gap = rt.cutoverGap(ctx, app, cutover, now)
+	if !im.Before.HasTraffic && !im.After.HasTraffic && im.Gap == nil {
 		return nil
 	}
 	return im
+}
+
+// cutoverGap counts failed and queued edge requests either side of cutover.
+// It is nil without an edge access log or when the window saw no requests.
+func (rt *Router) cutoverGap(ctx context.Context, app string, cutover, now time.Time) *deploytimeline.Gap {
+	s, ok := rt.access.(AccessSearcher)
+	if !ok {
+		return nil
+	}
+	cfg := rt.RuntimeSettings().CutoverGap(ctx)
+	lim := rt.RuntimeSettings().AccessSearchLimits(ctx)
+	keys := s.AppKeys(app)
+	from, to := cutover.Add(-cfg.Window), cutover.Add(cfg.Window)
+	if to.After(now) {
+		to = now
+	}
+	q := ingress.AccessSearch{From: from, To: to, Limit: 1, MaxScan: lim.MaxScan}
+	if len(s.SearchAccess(keys, q).Records) == 0 {
+		return nil
+	}
+	var recs []ingress.AccessRecord
+	truncated := false
+	for _, f := range []ingress.AccessSearch{
+		{From: from, To: to, StatusMin: http.StatusInternalServerError, Limit: lim.MaxRows, MaxScan: lim.MaxScan},
+		{From: from, To: to, MinMillis: float64(cfg.QueuedOver.Milliseconds()), Limit: lim.MaxRows, MaxScan: lim.MaxScan},
+	} {
+		res := s.SearchAccess(keys, f)
+		recs = append(recs, res.Records...)
+		truncated = truncated || res.Truncated || res.Next != nil
+	}
+	g := ingress.MeasureCutoverGap(recs, cfg.Window, cfg.QueuedOver)
+	return &deploytimeline.Gap{Failed: g.Failed, Queued: g.Queued, GapMS: g.GapMS, WindowMS: g.Window, QueuedMS: g.QueuedMS, Truncated: truncated}
 }
 
 func (rt *Router) timelineInputs(ctx context.Context, a store.DeployAttempt, cfg deploytimeline.Config, now time.Time, impact *deploytimeline.Impact) deploytimeline.Inputs {
