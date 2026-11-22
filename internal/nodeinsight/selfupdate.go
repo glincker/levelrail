@@ -65,3 +65,31 @@ func DecideUpdate(f UpdateFacts) UpdateDecision {
 	}
 	return d
 }
+
+// LabelAgentCanary marks nodes whose agents update first; every other node
+// waits until all of them run the target version and are online.
+const LabelAgentCanary = "levelrail.io/agent-canary"
+
+// CanaryNode is one canary node's update state.
+type CanaryNode struct {
+	ID      string
+	Online  bool
+	Version string
+}
+
+// CanaryWait says why a non-canary node must wait for the canaries, or ""
+// when it may update. Canary nodes themselves never wait on each other.
+func CanaryWait(selfIsCanary bool, canaries []CanaryNode, target string) string {
+	if selfIsCanary || len(canaries) == 0 || target == "" {
+		return ""
+	}
+	for _, c := range canaries {
+		if !c.Online {
+			return "canary node " + c.ID + " is offline"
+		}
+		if sk := Classify(c.Version, target); sk == SkewBehind || sk == SkewUnknown {
+			return "canary node " + c.ID + " has not updated to " + target + " yet"
+		}
+	}
+	return ""
+}

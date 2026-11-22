@@ -14,6 +14,9 @@ type zoneNodeResource struct {
 	Provider  string `json:"provider,omitempty"`
 	Online    bool   `json:"online"`
 	Workloads int    `json:"workloads"`
+	// Schedulable is false for a cordoned node; rolling drains skip those.
+	Schedulable bool              `json:"schedulable"`
+	Labels      map[string]string `json:"labels,omitempty"`
 }
 
 type zonesResponse struct {
@@ -40,6 +43,7 @@ func (rt *Router) handleListZones(w http.ResponseWriter, r *http.Request) {
 		out.Nodes = append(out.Nodes, zoneNodeResource{
 			NodeID: c.ID, Name: c.Name, Zone: placement.ZoneOf(c.Labels), Region: c.Labels[placement.LabelRegion],
 			Provider: c.Labels[placement.LabelProvider], Online: c.Online, Workloads: c.Load,
+			Schedulable: c.Schedulable, Labels: c.Labels,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)

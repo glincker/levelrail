@@ -1160,3 +1160,9 @@ Move app volumes to another node.
 Per-node metrics, resource usage and patch status.
 </Card>
 </CardGroup>
+
+## Rolling zone drain, canary agent updates and stranded capacity
+
+- `levelrail nodes drain --zone ZONE [--min-available N] [--dry-run]` drains a zone one node at a time, fewest workloads first. It waits for each drain to finish, stops at the first failure and refuses to start if fewer than N nodes outside the zone would stay online.
+- Label a node `levelrail.io/agent-canary=true` to make it the canary: other nodes hold their automatic agent update until every canary runs the target version and is online. Update anyway still overrides.
+- `nodes simulate` and `GET /api/v1/nodes/placement-simulation` now include a per node report of reserved versus used memory, with the stranded amount.

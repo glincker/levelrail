@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/version"
 )
 
 // applyUpdatePolicy decides whether the agent may apply d on its own and, when
@@ -31,6 +32,11 @@ func (rt *Router) applyUpdatePolicy(ctx context.Context, n *store.Node, current 
 	}
 	d.Held = p.Held
 	apply, why := p.Evaluate(current, d.Target, time.Now())
+	if apply && d.Action == nodeinsight.UpdateInstall {
+		if wait := rt.canaryWait(ctx, n, d.Target); wait != "" {
+			apply, why = false, wait
+		}
+	}
 	d.AutoApply = apply
 	if force && consume {
 		rt.setNodeList(ctx, runtimesettings.KeyAgentUpdateForceNodes, n.ID, false)
@@ -39,6 +45,34 @@ func (rt *Router) applyUpdatePolicy(ctx context.Context, n *store.Node, current 
 		d.Waiting = why + "; to update now use Update anyway or: levelrail nodes agent-update apply " + n.ID + " --force"
 		d.Reason += " (waiting: " + why + ")"
 	}
+}
+
+// canaryWait holds a node's update until every canary-labelled node runs
+// the target; operators can still use Update anyway.
+func (rt *Router) canaryWait(ctx context.Context, n *store.Node, target string) string {
+	if rt.multiNode == nil {
+		return ""
+	}
+	labels, err := rt.multiNode.store.ListNodeLabels(ctx)
+	if err != nil {
+		return ""
+	}
+	nodes, err := rt.nodes.ListNodes(ctx)
+	if err != nil {
+		return ""
+	}
+	var canaries []nodeinsight.CanaryNode
+	for i := range nodes {
+		if labels[nodes[i].ID][nodeinsight.LabelAgentCanary] != "true" {
+			continue
+		}
+		v := nodes[i].AgentVersion
+		if rt.isLocalNodeRecord(&nodes[i]) {
+			v = version.Version
+		}
+		canaries = append(canaries, nodeinsight.CanaryNode{ID: nodes[i].ID, Online: nodes[i].Status == store.NodeStatusOnline, Version: v})
+	}
+	return nodeinsight.CanaryWait(labels[n.ID][nodeinsight.LabelAgentCanary] == "true", canaries, target)
 }
 
 // setNodeList adds or removes one node id in a list setting.

@@ -16,6 +16,8 @@ const (
 
 type placementSimulationResponse struct {
 	Request placementSimulationRequest `json:"request"`
+	// Nodes is the per node reserved versus used report behind the stranded capacity view.
+	Nodes []nodeReservation `json:"nodes"`
 	placement.Simulation
 }
 
@@ -57,6 +59,7 @@ func (rt *Router) handlePlacementSimulation(w http.ResponseWriter, r *http.Reque
 	}
 	writeJSON(w, http.StatusOK, placementSimulationResponse{
 		Request:    placementSimulationRequest{CPUMilli: int64(cpu), MemoryMiB: int64(mem), Count: count, Selector: sel.String()},
+		Nodes:      rt.nodeReservations(cands),
 		Simulation: placement.Simulate(cands, req, count),
 	})
 }
