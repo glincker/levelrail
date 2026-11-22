@@ -69,8 +69,10 @@ provider "levelrail" {
 | `levelrail_status_component` | One status page row: `kind` (`app`, `domain` or `check`), `target`, `name`, `order` | component ID |
 | `levelrail_setting` | One runtime setting (`key`, `value`); destroy resets it to the default | setting key |
 | `levelrail_node_labels` | Labels and taints on an existing node, by name | node name or ID |
+| `levelrail_dns_zone` | A DNS zone at a connected DNS provider (`force_destroy` allows deleting a zone that still holds records) | zone name |
+| `levelrail_dns_record` | One record set (name and type with all its values and `ttl`) in a zone | `zone/name/type` |
 
-Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values. `levelrail_cron_jobs` lists every scheduled job of one app, with the path and method of http jobs. `levelrail_projects` lists every project with its id and name.
+Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token. `levelrail_app_secrets` lists the secret key names, lock and age of one app, never values. `levelrail_cron_jobs` lists every scheduled job of one app, with the path and method of http jobs. `levelrail_projects` lists every project with its id and name. `levelrail_templates` lists the service template catalog, optionally for one `category`. `levelrail_latest_deploy` returns the newest deploy of one app, or the newest with a given `status`, and sets `found` to false when there is none.
 
 ## Coverage
 

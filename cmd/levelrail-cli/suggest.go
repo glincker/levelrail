@@ -183,6 +183,24 @@ func emptyHint(noun, createCmd string) string {
 	return msg
 }
 
+// undoHint is the one-line text-mode tail naming the exact command that
+// reverses a state change; args are shell-quoted when they need it.
+func undoHint(prog string, args ...string) string {
+	parts := make([]string, len(args))
+	for i, a := range args {
+		parts[i] = shellWord(a)
+	}
+	return fmt.Sprintf("undo: %s %s\n", prog, strings.Join(parts, " "))
+}
+
+// shellWord single-quotes a word that holds anything outside a safe set.
+func shellWord(s string) string {
+	if s != "" && strings.Trim(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-./:@=,") == "" {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
 func sameLetters(a, b string) bool {
 	if len(a) != len(b) {
 		return false

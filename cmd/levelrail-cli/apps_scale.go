@@ -73,6 +73,7 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", name, err))
 	}
+	prevReplicas, prevStrategy := app.Replicas, app.Strategy
 	if replicas > 0 {
 		app.Replicas = replicas
 	}
@@ -129,11 +130,26 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
 		_, _ = fmt.Fprintf(stderr, "app %q scaled to %d replica(s), strategy %s; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Replicas, updated.Strategy, prog, updated.Name)
 		printAppHuman(stdout, updated)
+		if undo := scaleUndoArgs(updated, prevReplicas, prevStrategy); len(undo) > 0 {
+			_, _ = fmt.Fprint(stderr, undoHint(prog, append([]string{"apps", "scale", updated.Name}, undo...)...))
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// scaleUndoArgs lists the flags that restore replicas and strategy; empty when neither moved.
+func scaleUndoArgs(now appResource, prevReplicas int, prevStrategy string) []string {
+	var out []string
+	if prevReplicas > 0 && now.Replicas != prevReplicas {
+		out = append(out, "--replicas", strconv.Itoa(prevReplicas))
+	}
+	if prevStrategy != "" && now.Strategy != prevStrategy {
+		out = append(out, "--strategy", prevStrategy)
+	}
+	return out
 }
 
 // parseScalePairs turns "web=2" arguments into ordered service/count pairs, rejecting every malformed one up front.

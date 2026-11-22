@@ -108,12 +108,30 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			gitApp = gerr == nil
 		}
 		printRebuildHint(hintOut, prog, name, rebuildKeys, gitApp)
+		if len(plan.New) > 0 || len(plan.Changed) > 0 {
+			printEnvUndoHint(hintOut, prog, name, plan)
+		}
 		doApply, reason := resolveEnvApply(ctx, client, apply, noApply)
 		if applyCode := afterConfigWriteReason(ctx, client, prog, name, doApply, reason, hintOut, stderr); code == exitOK {
 			code = applyCode
 		}
 	}
 	return code
+}
+
+// printEnvUndoHint names the commands that restore the old plain keys: unset for new ones, set for changed ones.
+// Previous values are never printed since they may be sensitive, so the set line carries a placeholder.
+func printEnvUndoHint(w io.Writer, prog, app string, plan envImportPlan) {
+	if len(plan.New) > 0 {
+		_, _ = fmt.Fprint(w, undoHint(prog, append([]string{"env", "unset", app}, plan.New...)...))
+	}
+	if len(plan.Changed) > 0 {
+		args := []string{"env", "set", app}
+		for _, k := range plan.Changed {
+			args = append(args, k+"=<previous value>")
+		}
+		_, _ = fmt.Fprint(w, undoHint(prog, args...))
+	}
 }
 
 // kvKeyHint trims an argument to the part before any "=" so errors never print a value.
