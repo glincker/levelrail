@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 )
 
@@ -16,8 +15,8 @@ func TestOutputNDJSONTemplateAndDefault(t *testing.T) {
 		t.Fatalf("ndjson: %q", got)
 	}
 	buf.Reset()
-	args := expandTemplateFlag([]string{"--template", "{{.name}} {{.status}}"})
-	f, err := resolveOutputFormat(false, strings.TrimPrefix(args[1], ""))
+	args := expandTemplateFlag([]string{"apps", "list", "--template", "{{.name}} {{.status}}"})
+	f, err := resolveOutputFormat(false, args[3])
 	if err != nil {
 		t.Fatal(err)
 	}

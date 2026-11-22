@@ -1030,6 +1030,10 @@ func pickFields(v any, fields []string) any {
 
 // expandTemplateFlag rewrites --template X into --output template=X so every verb gets it for free.
 func expandTemplateFlag(args []string) []string {
+	// Verbs such as init and deploy link own a --template flag, so only read-style verbs get the rewrite.
+	if !hasReadVerb(args) {
+		return args
+	}
 	out := make([]string, 0, len(args))
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -1048,4 +1052,17 @@ func expandTemplateFlag(args []string) []string {
 		out = append(out, a)
 	}
 	return out
+}
+
+func hasReadVerb(args []string) bool {
+	for _, a := range args {
+		if a == "--" {
+			return false
+		}
+		switch a {
+		case "list", "ls", "ps", "get", "get-contexts":
+			return true
+		}
+	}
+	return false
 }

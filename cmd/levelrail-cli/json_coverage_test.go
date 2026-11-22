@@ -11,6 +11,9 @@ import (
 // with the reason. Keep it short: a command that returns data or a status
 // an agent would branch on belongs on --json, not in this list.
 var jsonExempt = map[string]string{
+	"prompt":                        "prints one plain string for a shell prompt",
+	"config get":                    "prints one plain saved setting value",
+	"config set":                    "edits a local settings file, no server data",
 	"alias set":                     "edits a local config file, no server data",
 	"alias list":                    "prints local config entries, no server data",
 	"alias delete":                  "edits a local config file, no server data",
