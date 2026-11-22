@@ -756,6 +756,9 @@ type Router struct {
 	cloudflareDNSTokenResolver   CloudflareDNSTokenResolver                                 // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
 	route53DNSCredentialResolver Route53DNSCredentialResolver                               // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
 	dnsVerifyProvider            func(name string) dnszones.Provider                        // nil outside tests: a client is built from the submitted credential
+	dnsTokenStore                DNSTokenStore                                              // DigitalOcean, Hetzner and Azure DNS enabled flags
+	dnsTokenSecrets              DNSTokenSecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/dns-providers return 501
+	dnsTokenProvider             func(name, credential string) (dnszones.Provider, error)   // test seam, defaults to dnszones.NewTokenProvider
 	googleCloudDNS               GoogleCloudDNSStore                                        // always set, same shape as route53DNS
 	googleCloudDNSSecrets        GoogleCloudDNSSecrets                                      // nil is valid: PUT/DELETE /api/v1/settings/google-cloud-dns return 501 and records stay unavailable
 	googleCloudDNSProvider       func(serviceAccountJSON string) (dnszones.Provider, error) // test seam, defaults to dnszones.NewGoogleCloud
@@ -1116,6 +1119,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareDNS:               s,
 		route53DNS:                  s,
 		googleCloudDNS:              s,
+		dnsTokenStore:               s,
 		nodeProvisions:              s,
 		nodeProviderConns:           s,
 		packageRegistries:           s,

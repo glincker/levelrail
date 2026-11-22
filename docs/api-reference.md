@@ -331,6 +331,10 @@ Endpoints for:
 | POST | /api/v1/settings/cloud-connections/oracle | AbilityRoot | handleCreateOracleConnection |
 | POST | /api/v1/auth/tokens/{id}/rotate | Public | handleRotateToken |
 | GET | /api/v1/auth/dev-login | Public | handleDevLogin |
+| GET | /api/v1/settings/dns-providers/{provider} | AbilityRead | handleGetDNSTokenProvider |
+| PUT | /api/v1/settings/dns-providers/{provider} | AbilityRoot | handleUpdateDNSTokenProvider |
+| DELETE | /api/v1/settings/dns-providers/{provider} | AbilityRoot | handleDisconnectDNSTokenProvider |
+| POST | /api/v1/settings/dns-providers/{provider}/test | AbilityRoot | handleTestDNSTokenProvider |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

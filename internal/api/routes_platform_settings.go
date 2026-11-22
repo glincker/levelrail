@@ -76,6 +76,10 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateGoogleCloudDNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectGoogleCloudDNS))
 	mux.HandleFunc("POST /api/v1/settings/google-cloud-dns/test", rt.requireAbility(AbilityRoot, rt.handleTestGoogleCloudDNS))
+	mux.HandleFunc("GET /api/v1/settings/dns-providers/{provider}", rt.requireAbility(AbilityRead, rt.handleGetDNSTokenProvider))
+	mux.HandleFunc("PUT /api/v1/settings/dns-providers/{provider}", rt.requireAbility(AbilityRoot, rt.handleUpdateDNSTokenProvider))
+	mux.HandleFunc("DELETE /api/v1/settings/dns-providers/{provider}", rt.requireAbility(AbilityRoot, rt.handleDisconnectDNSTokenProvider))
+	mux.HandleFunc("POST /api/v1/settings/dns-providers/{provider}/test", rt.requireAbility(AbilityRoot, rt.handleTestDNSTokenProvider))
 
 	// External HashiCorp Vault (instance-level, one connection per
 	// control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier

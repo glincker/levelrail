@@ -267,6 +267,7 @@ type Store interface {
 	CloudflareDNSStore
 	Route53DNSStore
 	GoogleCloudDNSStore
+	DNSTokenStore
 	NodeProvisionStore
 	NodeProviderConnectionStore
 	PackageRegistryStore

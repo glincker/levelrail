@@ -24,6 +24,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsRoute53DNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "google-cloud-dns":
 		return runDomainsGoogleCloudDNS(prog, args[1:], stdout, stderr, lookupEnv)
+	case "dns-connect":
+		return runDomainsDNSProvider(prog, args[1:], stdout, stderr, lookupEnv)
 	case "basic-auth":
 		return runDomainsBasicAuth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth-gate":
@@ -131,6 +133,7 @@ func domainsUsage(prog string) string {
   %[1]s domains cloudflare-dns <verb> [flags]   configure wildcard-domain ACME DNS-01 via Cloudflare
   %[1]s domains route53-dns <verb> [flags]      configure wildcard-domain ACME DNS-01 via Route53
   %[1]s domains google-cloud-dns <verb> [flags] connect Google Cloud DNS for records and wildcard certificates
+  %[1]s domains dns-connect <verb> --provider NAME [flags] connect DigitalOcean, Hetzner or Azure DNS, that DNS provider for records and wildcard certificates
   %[1]s domains basic-auth <verb> [flags]       protect an app's domain with HTTP Basic Auth
   %[1]s domains auth-gate <verb> [flags]        check every request with your auth service or built-in sign-in
   %[1]s domains limits <verb> [flags]           cap a domain's request body size and upstream timeouts

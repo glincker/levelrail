@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2371 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2375 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -706,6 +706,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/dns-provider-plugin", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDNSProviderPlugin", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/dns-provider-plugin", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetDNSProviderPlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/dns-provider/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestDNSProvider", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/settings/dns-providers/{provider}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDisconnectDNSTokenProvider", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/dns-providers/{provider}", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDNSTokenProvider", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/dns-providers/{provider}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateDNSTokenProvider", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/dns-providers/{provider}/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestDNSTokenProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/domain-automation", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDomainAutomation", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/domain-automation", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateDomainAutomation", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/settings/google-cloud-dns", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDisconnectGoogleCloudDNS", Description: ""},

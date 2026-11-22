@@ -218,6 +218,7 @@ var Tree = map[string]*Node{
 		"cloudflare-dns":       {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"route53-dns":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"google-cloud-dns":     {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "test": nil}},
+		"dns-connect":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "test": nil}},
 		"basic-auth":           {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"auth-gate":            {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "log": nil, "revoke": nil}},
 		"limits":               {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},

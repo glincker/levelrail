@@ -107,6 +107,11 @@ func (rt *Router) activeDNSProvider(ctx context.Context) string {
 	if key, err := rt.googleCloudDNSKey(ctx); err == nil && key != "" {
 		return dnsProviderGoogleCloud
 	}
+	for _, name := range dnszones.TokenProviders {
+		if cred, err := rt.dnsTokenCredential(ctx, name); err == nil && cred != "" {
+			return name
+		}
+	}
 	return dnsProviderNone
 }
 

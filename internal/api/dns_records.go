@@ -151,10 +151,18 @@ func (rt *Router) resolveDNSRecordManager(ctx context.Context, domain string) (d
 	}
 
 	mgr, err = rt.resolveGoogleCloudRecordManager(ctx)
+	if err != nil {
+		return nil, "", "", err
+	}
+	if mgr != nil {
+		return mgr, dnszones.ProviderGoogleCloud, zone, nil
+	}
+
+	mgr, name, err := rt.resolveDNSTokenRecordManager(ctx)
 	if err != nil || mgr == nil {
 		return nil, "", "", err
 	}
-	return mgr, dnszones.ProviderGoogleCloud, zone, nil
+	return mgr, name, zone, nil
 }
 
 func (rt *Router) resolveCloudflareRecordManager(ctx context.Context) (dnsrecords.Manager, error) {

@@ -137,6 +137,10 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 		return t, err
 	}
 	mgr, err := rt.resolveGoogleCloudRecordManager(ctx)
+	provider := dnsProviderGoogleCloud
+	if err == nil && mgr == nil {
+		mgr, provider, err = rt.resolveDNSTokenRecordManager(ctx)
+	}
 	if err != nil || mgr == nil {
 		return nil, err
 	}
@@ -149,7 +153,7 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 	if err != nil {
 		return nil, err
 	}
-	return &dnsTarget{Manager: mgr, Provider: dnsProviderGoogleCloud, Zone: zone}, nil
+	return &dnsTarget{Manager: mgr, Provider: provider, Zone: zone}, nil
 }
 
 // route53DNSTarget matches domain against the zones the credentials list,
