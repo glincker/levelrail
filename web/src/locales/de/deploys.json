@@ -335,7 +335,9 @@
       "typicalWithP95": "Wacht üblicherweise in etwa {{typical}} auf (p95 {{p95}}).",
       "noneShort": "Noch keine Aufwachdaten",
       "short": "Wacht in etwa {{typical}} auf",
-      "shortWithP95": "Wacht in etwa {{typical}} auf (p95 {{p95}})"
+      "shortWithP95": "Wacht in etwa {{typical}} auf (p95 {{p95}})",
+      "last": "Der letzte Start dauerte {{last}}.",
+      "overBudget": "Starts können länger dauern als die {{budget}}, die der Proxy wartet. Besucher sehen dann zuerst eine Warteseite."
     },
     "frees": "Gibt im Ruhezustand etwa {{size}} frei",
     "checklistLabel": "Eignung für den Ruhezustand",

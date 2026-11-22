@@ -720,11 +720,39 @@ async function startApp(name: string): Promise<AppDetail> {
   return (await res.json()) as AppDetail
 }
 
+// Flips suspended in the cached detail at once and returns a rollback
+// snapshot, so Stop and Start feel instant while the server reconciles.
+function optimisticSuspended(
+  queryClient: QueryClient,
+  name: string,
+  suspended: boolean,
+) {
+  const key = appKeys.detail(name)
+  void queryClient.cancelQueries({ queryKey: key, exact: true })
+  const previous = queryClient.getQueryData<AppDetail>(key)
+  if (previous) {
+    queryClient.setQueryData(key, { ...previous, suspended })
+  }
+  return { previous }
+}
+
+function rollbackDetail(
+  queryClient: QueryClient,
+  name: string,
+  ctx: { previous: AppDetail | undefined } | undefined,
+) {
+  if (ctx?.previous) {
+    queryClient.setQueryData(appKeys.detail(name), ctx.previous)
+  }
+}
+
 export function useStopApp() {
   const queryClient = useQueryClient()
   return useMutation({
     meta: { errorToast: false },
     mutationFn: stopApp,
+    onMutate: (name: string) => optimisticSuspended(queryClient, name, true),
+    onError: (_err, name, ctx) => rollbackDetail(queryClient, name, ctx),
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
       invalidateAppList(queryClient)
@@ -736,6 +764,8 @@ export function useStartApp() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: startApp,
+    onMutate: (name: string) => optimisticSuspended(queryClient, name, false),
+    onError: (_err, name, ctx) => rollbackDetail(queryClient, name, ctx),
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
       invalidateAppList(queryClient)

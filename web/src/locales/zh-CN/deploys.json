@@ -333,7 +333,9 @@
       "typicalWithP95": "通常约 {{typical}} 唤醒(p95 {{p95}})。",
       "noneShort": "暂无唤醒数据",
       "short": "约 {{typical}} 唤醒",
-      "shortWithP95": "约 {{typical}} 唤醒(p95 {{p95}})"
+      "shortWithP95": "约 {{typical}} 唤醒(p95 {{p95}})",
+      "last": "上次唤醒耗时 {{last}}。",
+      "overBudget": "唤醒可能超过代理等待的 {{budget}},访问者可能先看到等待页面。"
     },
     "frees": "休眠时可释放约 {{size}}",
     "checklistLabel": "休眠资格",

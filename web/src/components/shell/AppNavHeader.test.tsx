@@ -22,7 +22,10 @@ vi.mock('../../queries/deploys', () => ({
   useDeployStatus: () => ({ data: [] }),
 }))
 vi.mock('./useRequestRateSpark', () => ({ useRequestRateSpark: () => [] }))
-vi.mock('../../queries/appSleep', () => ({ useAppAsleep: () => false }))
+vi.mock('../../queries/appSleep', () => ({
+  useAppAsleep: () => false,
+  usePrewakeSleepingApp: () => undefined,
+}))
 
 describe('AppNavHeader', () => {
   it('renders the name from the route when the app is missing (404)', () => {

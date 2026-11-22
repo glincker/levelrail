@@ -333,7 +333,9 @@
       "typicalWithP95": "通常は約 {{typical}} で起動します(p95 {{p95}})。",
       "noneShort": "起動データはまだありません",
       "short": "約 {{typical}} で起動",
-      "shortWithP95": "約 {{typical}} で起動(p95 {{p95}})"
+      "shortWithP95": "約 {{typical}} で起動(p95 {{p95}})",
+      "last": "直近の起動には {{last}} かかりました。",
+      "overBudget": "起動がプロキシの待機時間 {{budget}} を超える場合があり、訪問者には先に待機ページが表示されることがあります。"
     },
     "frees": "スリープ中は約 {{size}} を解放",
     "checklistLabel": "スリープの適格性",

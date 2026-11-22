@@ -335,7 +335,9 @@
       "typicalWithP95": "Usually wakes in about {{typical}} (p95 {{p95}}).",
       "noneShort": "No wake data yet",
       "short": "Wakes in about {{typical}}",
-      "shortWithP95": "Wakes in about {{typical}} (p95 {{p95}})"
+      "shortWithP95": "Wakes in about {{typical}} (p95 {{p95}})",
+      "last": "Last wake took {{last}}.",
+      "overBudget": "Wakes can take longer than the {{budget}} the proxy waits, so visitors may see a waking page first."
     },
     "frees": "Frees about {{size}} while asleep",
     "checklistLabel": "Sleep eligibility",

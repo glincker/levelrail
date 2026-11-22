@@ -335,7 +335,9 @@
       "typicalWithP95": "Normalmente se reactiva en unos {{typical}} (p95 {{p95}}).",
       "noneShort": "Aún no hay datos de reactivación",
       "short": "Se reactiva en unos {{typical}}",
-      "shortWithP95": "Se reactiva en unos {{typical}} (p95 {{p95}})"
+      "shortWithP95": "Se reactiva en unos {{typical}} (p95 {{p95}})",
+      "last": "El último despertar tardó {{last}}.",
+      "overBudget": "Despertar puede tardar más de los {{budget}} que espera el proxy, así que los visitantes pueden ver primero una página de espera."
     },
     "frees": "Libera unos {{size}} mientras está suspendida",
     "checklistLabel": "Requisitos para suspender",

@@ -337,7 +337,9 @@
       "typicalWithP95": "Normalmente desperta em cerca de {{typical}} (p95 {{p95}}).",
       "noneShort": "Sem dados de despertar ainda",
       "short": "Desperta em cerca de {{typical}}",
-      "shortWithP95": "Desperta em cerca de {{typical}} (p95 {{p95}})"
+      "shortWithP95": "Desperta em cerca de {{typical}} (p95 {{p95}})",
+      "last": "O último despertar levou {{last}}.",
+      "overBudget": "O despertar pode levar mais que os {{budget}} que o proxy espera, então os visitantes podem ver antes uma página de espera."
     },
     "frees": "Libera cerca de {{size}} enquanto hiberna",
     "checklistLabel": "Elegibilidade para hibernação",

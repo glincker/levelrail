@@ -1,6 +1,7 @@
 // /api/v1/apps/{name}/sleep (internal/api/app_sleep.go): stop an idle app and
 // wake it on the next request.
 
+import { useEffect, useRef } from 'react'
 import {
   queryOptions,
   useMutation,
@@ -30,6 +31,8 @@ export interface AppSleep {
   // Null when the app has no memory limit.
   estimated_memory_freed_bytes: number | null
   wake_timing: WakeTiming
+  // How long the proxy holds a request while the app wakes; absent on older servers.
+  wake_budget_ms?: number
   idle_limits: IdleLimits
 }
 
@@ -188,6 +191,29 @@ export function useAppSleepActions(appName: string) {
     onSuccess,
   })
   return { setIdle, wake, sleepNow, applyFix }
+}
+
+/** usePrewakeSleepingApp starts a sleeping app once when its page opens, so Open and Logs are ready sooner. */
+export function usePrewakeSleepingApp(appName: string): void {
+  const { data } = useQuery({
+    ...appSleepQueryOptions(appName),
+    staleTime: 15_000,
+    retry: false,
+  })
+  const { wake } = useAppSleepActions(appName)
+  const prewoken = useRef<string | null>(null)
+  const sleeping = data?.sleeping ?? false
+  const mutate = wake.mutate
+  useEffect(() => {
+    if (!sleeping) {
+      prewoken.current = null
+      return
+    }
+    if (prewoken.current === appName) return
+    prewoken.current = appName
+    // A viewer without deploy rights gets a 403; the manual button still reports it.
+    mutate()
+  }, [sleeping, appName, mutate])
 }
 
 /** useAppAsleep reports whether the app is asleep, without suspending or failing the page. */

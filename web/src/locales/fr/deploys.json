@@ -337,7 +337,9 @@
       "typicalWithP95": "Se réveille généralement en environ {{typical}} (p95 {{p95}}).",
       "noneShort": "Aucune donnée de réveil pour l'instant",
       "short": "Se réveille en environ {{typical}}",
-      "shortWithP95": "Se réveille en environ {{typical}} (p95 {{p95}})"
+      "shortWithP95": "Se réveille en environ {{typical}} (p95 {{p95}})",
+      "last": "Le dernier réveil a pris {{last}}.",
+      "overBudget": "Un réveil peut dépasser les {{budget}} d'attente du proxy : les visiteurs verront d'abord une page de réveil."
     },
     "frees": "Libère environ {{size}} en veille",
     "checklistLabel": "Éligibilité à la veille",
