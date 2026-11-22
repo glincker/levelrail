@@ -121,7 +121,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMeOnboardingRoutes(mux)
 	rt.registerMePreferencesRoutes(mux)
 
-	h := rt.stackLockMiddleware(mux)
+	h := rt.stackLockMiddleware(capturePatternMiddleware(mux))
 	h = rt.bodyLimitMiddleware(h)
 	h = rt.streamDrainMiddleware(h)
 	h = rt.accountEventMiddleware(h)

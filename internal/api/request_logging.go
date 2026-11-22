@@ -68,6 +68,8 @@ func requestLoggingMiddlewareLive(logger *slog.Logger, thresholds requestLogThre
 			rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 			timings := &requestTimings{}
 			r = r.WithContext(context.WithValue(r.Context(), requestTimingsKey{}, timings))
+			matched := &matchedPattern{}
+			r = r.WithContext(context.WithValue(r.Context(), matchedPatternKey{}, matched))
 			start := time.Now()
 			next.ServeHTTP(rec, r)
 			duration := time.Since(start)
@@ -94,7 +96,7 @@ func requestLoggingMiddlewareLive(logger *slog.Logger, thresholds requestLogThre
 					attrs = append(attrs, slog.String("breakdown", b))
 				}
 				if ring != nil {
-					route := r.Pattern
+					route := matched.get(r)
 					if route == "" {
 						route = loggablePath(r.URL.Path)
 					}
@@ -102,7 +104,7 @@ func requestLoggingMiddlewareLive(logger *slog.Logger, thresholds requestLogThre
 				}
 			}
 			if ring != nil && !streaming && strings.HasPrefix(r.URL.Path, "/api/") {
-				ring.stats.observe(r.Method, r.Pattern, rec.status, duration)
+				ring.stats.observe(r.Method, matched.get(r), rec.status, duration)
 			}
 			logger.LogAttrs(r.Context(), level, "api: request", attrs...)
 		})
@@ -212,4 +214,34 @@ func (rt *Router) liveSlowThreshold() time.Duration {
 		}
 	}
 	return rt.requestLogThresholds.slowOrDefault()
+}
+
+type matchedPatternKey struct{}
+
+// matchedPattern carries the route pattern out of the inner mux: this middleware sits outside
+// request copies, so r.Pattern here would be an outer catch-all mount such as "/api/".
+type matchedPattern struct {
+	mu sync.Mutex
+	p  string
+}
+
+func (m *matchedPattern) get(r *http.Request) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.p != "" {
+		return m.p
+	}
+	return r.Pattern
+}
+
+// capturePatternMiddleware wraps the route mux and records the pattern it matched.
+func capturePatternMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		if m, ok := r.Context().Value(matchedPatternKey{}).(*matchedPattern); ok && r.Pattern != "" {
+			m.mu.Lock()
+			m.p = r.Pattern
+			m.mu.Unlock()
+		}
+	})
 }
