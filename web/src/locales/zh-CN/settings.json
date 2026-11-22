@@ -2992,7 +2992,15 @@
     "lastBuild": "上次使用缓存的构建：{{when}}",
     "title": "构建缓存",
     "titleAll": "所有应用的构建缓存",
-    "description": "将 BuildKit 层保存在存储目标中，使重建时可以跳过未变化的步骤。缓存问题绝不会导致构建失败，只会以警告形式报告。"
+    "description": "将 BuildKit 层保存在存储目标中，使重建时可以跳过未变化的步骤。缓存问题绝不会导致构建失败，只会以警告形式报告。",
+    "pruneTitle": "按时长清理",
+    "pruneHint": "{{size}} 缓存处于空闲状态，可以释放。正在运行的构建所占用的缓存不会被删除。",
+    "pruneNode": "构建节点",
+    "pruneOlder": "超过 {{days}} 天",
+    "pruneUnused": "全部未使用",
+    "prunePreview": "{{count}} 条记录，将释放 {{size}}。",
+    "pruneApply": "释放空间",
+    "pruneDone": "已删除 {{count}} 条记录，释放 {{size}}"
   },
   "gitConnections": {
     "empty": {

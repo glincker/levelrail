@@ -8,9 +8,17 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate } from '../../lib/format'
 import { formatDimension } from '../../lib/placementFormat'
+import { useNodePools, useSetAppPool } from '../../queries/nodePools'
 import { usePlacementDecision } from '../../queries/placementDecision'
 import type { NodeMoveKind } from '../../types/nodeMoves'
 import type {
@@ -99,6 +107,51 @@ function DecisionBlock({
   )
 }
 
+const NO_POOL = '__none__'
+
+// Targets an app at a named pool instead of repeating selectors per app.
+// Hidden when no pool exists or the control plane has no multi-node support.
+function PoolPicker({ app }: { app: string }) {
+  const { t } = useTranslation('nodes')
+  const pools = useNodePools()
+  const setPool = useSetAppPool(app)
+  if (!pools.data || pools.data.length === 0) return null
+  return (
+    <div className="space-y-1">
+      <label
+        htmlFor={`pool-${app}`}
+        className="text-sm font-medium text-foreground"
+      >
+        {t('pools.pickerLabel')}
+      </label>
+      <Select
+        value={NO_POOL}
+        onValueChange={(v) => {
+          if (v !== null) setPool.mutate(v === NO_POOL ? '' : v)
+        }}
+      >
+        <SelectTrigger id={`pool-${app}`} className="w-full sm:w-64">
+          <SelectValue placeholder={t('pools.pickerPlaceholder')} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_POOL}>{t('pools.none')}</SelectItem>
+          {pools.data.map((p) => (
+            <SelectItem key={p.name} value={p.name}>
+              {p.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-xs text-muted-foreground">{t('pools.pickerHint')}</p>
+      {setPool.isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {setPool.error.message}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
 // Why an app or database runs where it does: the recorded decision (which
 // nodes were considered, which were refused and why, the winner) and a
 // fresh evaluation of every node right now.
@@ -138,6 +191,7 @@ export function PlacementDecisionPanel({
   const { recorded, preview } = decision.data
   return (
     <div className="space-y-4">
+      {kind === 'app' ? <PoolPicker app={name} /> : null}
       {recorded ? (
         <div className="space-y-2">
           <Badge variant="outline">

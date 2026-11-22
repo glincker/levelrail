@@ -1277,5 +1277,21 @@
       "queued": "Queued for the next agent check",
       "disclaimer": "Skips the maintenance window and hold. The update is still signature verified and rolls back on failure."
     }
+  },
+  "pools": {
+    "title": "Node pools",
+    "description": "Name a group of nodes by a label selector. Apps pick the pool instead of repeating the selector.",
+    "empty": "No pools yet. Create one, for example ssd with disk=ssd.",
+    "remove": "Remove {{name}}",
+    "nameLabel": "Pool name",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Selector",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Save pool",
+    "selectorInvalid": "Use key=value pairs separated by commas.",
+    "pickerLabel": "Node pool",
+    "pickerPlaceholder": "No pool",
+    "none": "No pool",
+    "pickerHint": "The pool's labels are added to this app's own placement selector."
   }
 }

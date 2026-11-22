@@ -53,6 +53,7 @@ type buildCacheResponse struct {
 	RecordCount      int                        `json:"record_count"`
 	Records          []buildCacheRecordResource `json:"records"`
 	Nodes            []buildCacheNode           `json:"nodes"`
+	PruneAgeHours    int                        `json:"prune_age_hours"`
 }
 
 type buildCachePruneRequest struct {
@@ -112,7 +113,7 @@ func (rt *Router) buildCacheNodeList(r *http.Request) []buildCacheNode {
 // handleBuildCache handles GET /api/v1/builds/cache?node=: BuildKit cache usage of one node.
 func (rt *Router) handleBuildCache(w http.ResponseWriter, r *http.Request) {
 	nodeID := r.URL.Query().Get("node")
-	resp := buildCacheResponse{Node: nodeID, Records: []buildCacheRecordResource{}, Nodes: rt.buildCacheNodeList(r)}
+	resp := buildCacheResponse{Node: nodeID, Records: []buildCacheRecordResource{}, Nodes: rt.buildCacheNodeList(r), PruneAgeHours: rt.cachePruneAgeHours(r.Context())}
 	admin, ok := rt.buildCacheFor(w, nodeID)
 	if !ok {
 		return
@@ -145,7 +146,7 @@ func (rt *Router) handleBuildCachePrune(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	hours := defaultCachePruneAgeHrs
+	hours := rt.cachePruneAgeHours(r.Context())
 	if req.OlderThanHours != nil {
 		hours = *req.OlderThanHours
 	}

@@ -84,6 +84,7 @@ export interface BuildCache {
   record_count: number
   records: BuildCacheRecord[]
   nodes: { id: string; name: string }[]
+  prune_age_hours: number
 }
 
 export interface BuildCachePrune {

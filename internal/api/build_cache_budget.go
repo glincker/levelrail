@@ -130,4 +130,12 @@ func (rt *Router) doctorCheckBuildCacheBudget(ctx context.Context) doctorCheckRe
 		Message: fmt.Sprintf("Build cache uses %d MiB of its %d MiB budget", used, budget)}
 }
 
+// cachePruneAgeHours is the live idle age the prune presets use.
+func (rt *Router) cachePruneAgeHours(ctx context.Context) int {
+	if rt.runtimeSettings == nil {
+		return defaultCachePruneAgeHrs
+	}
+	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyBuildCachePruneAgeHours)
+}
+
 func mibOf(b int64) int64 { return b >> 20 }

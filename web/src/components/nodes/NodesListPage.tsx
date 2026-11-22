@@ -11,6 +11,7 @@ import { NodesTable } from '../../components/NodesTable'
 import { BuildersSection } from '../builders/BuildersSection'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
+import { NodePoolsCard } from '../../components/nodes/NodePoolsCard'
 import { ZoneSpreadCard } from '../../components/nodes/ZoneSpreadCard'
 import { ResilienceCard } from '../../components/nodes/ResilienceCard'
 import { LazyNodeDomainsCard } from '../../components/nodes/LazyNodeOnboarding'
@@ -113,6 +114,7 @@ export function NodeListView({
           </div>
         </>
       ) : null}
+      {nodes.length > 0 && !solo ? <NodePoolsCard /> : null}
       <ZoneSpreadCard />
       <LazyNodeDomainsCard />
       <ResilienceCard />

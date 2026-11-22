@@ -11,12 +11,24 @@ const (
 	KeyBuildCacheReclaimMaxRecords = "build.cache_reclaim_max_records"
 	// KeyBuildCacheReclaimTimeout bounds one reclaim so a wedged builder cannot hold it.
 	KeyBuildCacheReclaimTimeout = "build.cache_reclaim_timeout"
+	// KeyBuildCachePruneAgeHours is the idle age the dashboard "older than" prune offers.
+	KeyBuildCachePruneAgeHours = "build.cache_prune_age_hours"
+	// KeyBuildWarmBaseImages lists base images build nodes keep pulled; empty turns warming off.
+	KeyBuildWarmBaseImages = "build.warm_base_images"
+	// KeyBuildWarmBaseInterval is how often the warm list is pulled again.
+	KeyBuildWarmBaseInterval = "build.warm_base_interval"
+	// KeyBuildWarmBaseTimeout bounds one image pull on one node.
+	KeyBuildWarmBaseTimeout = "build.warm_base_timeout"
 )
 
 const (
 	buildCacheMaxGB               = 10240
 	buildCacheReclaimTimeoutFloor = 10 * time.Second
 	buildCacheReclaimTimeoutCeil  = 30 * time.Minute
+	buildWarmIntervalFloor        = 5 * time.Minute
+	buildWarmIntervalCeil         = 7 * 24 * time.Hour
+	buildWarmTimeoutFloor         = 30 * time.Second
+	buildWarmTimeoutCeil          = time.Hour
 )
 
 // ClampBuildCacheReclaimTimeout forces an env seeded timeout into its safe range.
@@ -45,5 +57,27 @@ func init() {
 		CheckValue:  durationRangeCheck(buildCacheReclaimTimeoutFloor, buildCacheReclaimTimeoutCeil),
 		Title:       "Build cache: reclaim timeout",
 		Description: "How long one quota reclaim may take, from 10s to 30m. A reclaim that runs out of time stops, and what it already freed is still reported and audited.",
+	})
+	registerLimit(Definition{
+		Key: KeyBuildCachePruneAgeHours, Category: CategoryDeploys, Default: "168", Apply: ApplyLive,
+		Title:       "Build cache: prune age",
+		Description: "Hours a build cache record must sit idle before the build cache card offers to prune it, from 1 to 8760. The default of 168 is 7 days. Records a running build holds are never pruned.",
+	}, 1, 8760)
+	Register(Definition{
+		Key: KeyBuildWarmBaseImages, Category: CategoryDeploys, Kind: KindStringList, Default: "", Apply: ApplyLive,
+		Title:       "Build nodes: warm base images",
+		Description: "Base images such as node:22, python:3.13 or golang:1.24 that every online build node pulls in the background, so a first build skips the base pull. Empty turns warming off.",
+	})
+	Register(Definition{
+		Key: KeyBuildWarmBaseInterval, Category: CategoryDeploys, Kind: KindDuration, Default: "6h", Apply: ApplyLive,
+		CheckValue:  durationRangeCheck(buildWarmIntervalFloor, buildWarmIntervalCeil),
+		Title:       "Build nodes: warm interval",
+		Description: "How often the warm base image list is pulled again, from 5m to 7d, so tags that moved are refreshed.",
+	})
+	Register(Definition{
+		Key: KeyBuildWarmBaseTimeout, Category: CategoryDeploys, Kind: KindDuration, Default: "10m", Apply: ApplyLive,
+		CheckValue:  durationRangeCheck(buildWarmTimeoutFloor, buildWarmTimeoutCeil),
+		Title:       "Build nodes: warm pull timeout",
+		Description: "How long one warm base image pull on one node may take, from 30s to 1h. A pull that runs out of time is skipped until the next round.",
 	})
 }

@@ -52,6 +52,10 @@ type Router struct {
 
 	// recorder signs and stores a record for a digest a remote builder pushed.
 	recorder RecordSigner
+
+	// warmImages and warmPull feed WarmBaseImages; either nil turns warming off.
+	warmImages func(ctx context.Context) []string
+	warmPull   func(ctx context.Context, nodeID, ref string) error
 }
 
 // RouterOption configures optional Router behavior.
@@ -87,6 +91,12 @@ func WithRouterSlotLimit(f func(ctx context.Context, app string) int) RouterOpti
 // flipping build.transfer_mode applies live. Incomplete config falls back to tar.
 func WithRouterTransfer(f func(ctx context.Context) TransferConfig) RouterOption {
 	return func(r *Router) { r.transfer = f }
+}
+
+// WithRouterWarm enables base image warming: images is read each round so the
+// setting applies live, and pull pulls one ref into one node's own image store.
+func WithRouterWarm(images func(ctx context.Context) []string, pull func(ctx context.Context, nodeID, ref string) error) RouterOption {
+	return func(r *Router) { r.warmImages, r.warmPull = images, pull }
 }
 
 // NewRouter builds a Router over local. nodes and remote may both be nil,
@@ -301,4 +311,63 @@ func (r *Router) dispatch(ctx context.Context, nodeID string, req RemoteRequest,
 		return nil, err
 	}
 	return res, nil
+}
+
+// WarmReport is one warming round: pulls that worked and the failures by node and image.
+type WarmReport struct {
+	Pulled   int
+	Failures []string
+}
+
+// WarmBaseImages pulls the warm list onto every online, undrained build node.
+// One failing node or image never stops the rest, and a slow node is bounded by timeout.
+func (r *Router) WarmBaseImages(ctx context.Context, timeout time.Duration) WarmReport {
+	var rep WarmReport
+	if r.nodes == nil || r.warmImages == nil || r.warmPull == nil {
+		return rep
+	}
+	images := r.warmImages(ctx)
+	if len(images) == 0 {
+		return rep
+	}
+	nodes, err := r.nodes(ctx)
+	if err != nil {
+		rep.Failures = append(rep.Failures, "list build nodes: "+err.Error())
+		return rep
+	}
+	for _, n := range nodes {
+		if n.Local || n.ID == "" || !n.AcceptsBuildWorkloads || !n.Online || n.Draining {
+			continue
+		}
+		for _, ref := range images {
+			if ctx.Err() != nil {
+				return rep
+			}
+			pullCtx, cancel := context.WithTimeout(ctx, timeout)
+			err := r.warmPull(pullCtx, n.ID, ref)
+			cancel()
+			if err != nil {
+				rep.Failures = append(rep.Failures, fmt.Sprintf("%s on %s: %v", ref, n.Name, err))
+				continue
+			}
+			rep.Pulled++
+		}
+	}
+	return rep
+}
+
+// RunBaseWarm warms once, then again after every interval until ctx ends. The
+// interval and timeout are read each round so a settings change applies live.
+func (r *Router) RunBaseWarm(ctx context.Context, interval, timeout func(ctx context.Context) time.Duration) {
+	for {
+		rep := r.WarmBaseImages(ctx, timeout(ctx))
+		for _, f := range rep.Failures {
+			r.logger.Warn("build: warm base image failed", slog.String("detail", f))
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(interval(ctx)):
+		}
+	}
 }

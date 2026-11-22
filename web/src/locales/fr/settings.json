@@ -1,0 +1,12 @@
+{
+  "buildCache": {
+    "pruneTitle": "Nettoyer par ancienneté",
+    "pruneHint": "{{size}} de cache sont inutilisés et peuvent être libérés. Le cache d'un build en cours n'est jamais supprimé.",
+    "pruneNode": "Nœud de build",
+    "pruneOlder": "Plus de {{days}} jours",
+    "pruneUnused": "Tout ce qui est inutilisé",
+    "prunePreview": "{{count}} entrées, {{size}} seraient libérés.",
+    "pruneApply": "Libérer l'espace",
+    "pruneDone": "{{count}} entrées supprimées, {{size}} libérés"
+  }
+}

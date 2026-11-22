@@ -3076,7 +3076,15 @@
     "lastBuild": "Último build com o cache: {{when}}",
     "title": "Cache de build",
     "titleAll": "Cache de build de todos os apps",
-    "description": "Mantenha camadas do BuildKit em um destino de armazenamento para que os rebuilds pulem etapas inalteradas. Um problema no cache nunca faz um build falhar, ele é reportado como aviso."
+    "description": "Mantenha camadas do BuildKit em um destino de armazenamento para que os rebuilds pulem etapas inalteradas. Um problema no cache nunca faz um build falhar, ele é reportado como aviso.",
+    "pruneTitle": "Limpar por idade",
+    "pruneHint": "{{size}} de cache estão sem uso e podem ser liberados. O cache de um build em andamento nunca é removido.",
+    "pruneNode": "Nó de build",
+    "pruneOlder": "Mais de {{days}} dias",
+    "pruneUnused": "Tudo que não está em uso",
+    "prunePreview": "{{count}} registros, {{size}} seriam liberados.",
+    "pruneApply": "Liberar espaço",
+    "pruneDone": "{{count}} registros removidos, {{size}} liberados"
   },
   "gitConnections": {
     "empty": {

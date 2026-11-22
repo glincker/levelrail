@@ -1291,5 +1291,21 @@
       "queued": "Na fila para a próxima verificação do agente",
       "disclaimer": "Ignora a janela de manutenção e a retenção. A atualização continua verificada por assinatura e é revertida em caso de falha."
     }
+  },
+  "pools": {
+    "title": "Pools de nós",
+    "description": "Dê nome a um grupo de nós por um seletor de rótulos. Os apps escolhem o pool em vez de repetir o seletor.",
+    "empty": "Ainda não há pools. Crie um, por exemplo ssd com disk=ssd.",
+    "remove": "Remover {{name}}",
+    "nameLabel": "Nome do pool",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Seletor",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Salvar pool",
+    "selectorInvalid": "Use pares chave=valor separados por vírgulas.",
+    "pickerLabel": "Pool de nós",
+    "pickerPlaceholder": "Sem pool",
+    "none": "Sem pool",
+    "pickerHint": "Os rótulos do pool são somados ao seletor de posicionamento próprio deste app."
   }
 }

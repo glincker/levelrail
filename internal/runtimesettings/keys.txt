@@ -118,6 +118,7 @@ build.cache_budget
 build.cache_budget_max_mb
 build.cache_budget_reserved_mb
 build.cache_node_dep_cap_gb
+build.cache_prune_age_hours
 build.cache_reclaim_max_records
 build.cache_reclaim_timeout
 build.cpu_percent
@@ -131,6 +132,9 @@ build.stage_log_tail_lines
 build.transfer_bearer_ttl
 build.transfer_mode
 build.transfer_push_ttl
+build.warm_base_images
+build.warm_base_interval
+build.warm_base_timeout
 builds.memory_limit_mb
 builds.setting_value_max_bytes
 bulk.concurrency

@@ -1261,5 +1261,21 @@
       "queued": "次のエージェント確認で実行します",
       "disclaimer": "メンテナンスウィンドウと保留を無視します。更新は引き続き署名検証され、失敗時はロールバックされます。"
     }
+  },
+  "pools": {
+    "title": "ノードプール",
+    "description": "ラベルセレクターでノードのグループに名前を付けます。アプリはセレクターを繰り返す代わりにプールを選びます。",
+    "empty": "プールはまだありません。たとえば disk=ssd の ssd を作成します。",
+    "remove": "{{name}} を削除",
+    "nameLabel": "プール名",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "セレクター",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "プールを保存",
+    "selectorInvalid": "キー=値の組をカンマで区切って入力してください。",
+    "pickerLabel": "ノードプール",
+    "pickerPlaceholder": "プールなし",
+    "none": "プールなし",
+    "pickerHint": "プールのラベルは、このアプリ自身の配置セレクターに追加されます。"
   }
 }

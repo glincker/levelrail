@@ -2667,7 +2667,15 @@
     "unknownError": "Error desconocido",
     "update": "Actualizar",
     "useRemote": "Usar la caché remota",
-    "usingDefault": "Usando la caché de compilación por defecto para todas las apps. Guarde una configuración abajo para reemplazarla en esta app."
+    "usingDefault": "Usando la caché de compilación por defecto para todas las apps. Guarde una configuración abajo para reemplazarla en esta app.",
+    "pruneTitle": "Limpiar por antigüedad",
+    "pruneHint": "{{size}} de caché están sin uso y se pueden liberar. La caché de una compilación en curso nunca se elimina.",
+    "pruneNode": "Nodo de compilación",
+    "pruneOlder": "Más de {{days}} días",
+    "pruneUnused": "Todo lo sin uso",
+    "prunePreview": "{{count}} registros, se liberarían {{size}}.",
+    "pruneApply": "Liberar espacio",
+    "pruneDone": "{{count}} registros eliminados, {{size}} liberados"
   },
   "builtInRegistry": {
     "activeBody": "Sirviendo imágenes en {{host}}. Las apps pueden descargar desde él sin una credencial aquí.",

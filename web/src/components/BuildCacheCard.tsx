@@ -30,6 +30,8 @@ import {
   useRemoveBuildCache,
   useSetBuildCache,
 } from '../queries/buildCache'
+import { useBuildCache } from '../queries/buildCenter'
+import { useNodeCachePrune } from '../queries/buildCachePrune'
 import { useStorageDestinationsOptional } from '../queries/storage'
 import type {
   BuildCacheMode,
@@ -278,6 +280,123 @@ function CacheForm({
   )
 }
 
+// Prunes the builder's own layer cache by idle age. Records a running build
+// holds are never candidates, so "all unused" cannot touch an active build.
+function NodeCachePrune() {
+  const { t } = useTranslation('settings')
+  const [node, setNode] = useState('')
+  const [hours, setHours] = useState<number | null>(null)
+  const cache = useBuildCache(node)
+  const prune = useNodeCachePrune(node)
+  if (cache.isPending || !cache.data?.supported) return null
+
+  const presets = [
+    {
+      hours: cache.data.prune_age_hours,
+      label: t('buildCache.pruneOlder', {
+        days: Math.max(1, Math.round(cache.data.prune_age_hours / 24)),
+      }),
+    },
+    { hours: 0, label: t('buildCache.pruneUnused') },
+  ]
+  const preview = prune.data && !prune.data.applied ? prune.data : null
+
+  return (
+    <div className="mt-6 space-y-3 border-t border-border pt-4">
+      <p className="text-sm font-medium text-foreground">
+        {t('buildCache.pruneTitle')}
+      </p>
+      <p className="text-sm text-muted-foreground">
+        {t('buildCache.pruneHint', {
+          size: formatBytes(cache.data.reclaimable_bytes),
+        })}
+      </p>
+      {cache.data.nodes.length > 1 ? (
+        <Field>
+          <FieldLabel htmlFor="build-cache-prune-node">
+            {t('buildCache.pruneNode')}
+          </FieldLabel>
+          <Select
+            value={node}
+            onValueChange={(v) => {
+              if (v === null) return
+              setNode(v)
+              setHours(null)
+              prune.reset()
+            }}
+          >
+            <SelectTrigger id="build-cache-prune-node" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {cache.data.nodes.map((n) => (
+                <SelectItem key={n.id} value={n.id}>
+                  {n.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        {presets.map((p) => (
+          <Button
+            key={p.hours}
+            type="button"
+            variant={hours === p.hours ? 'default' : 'outline'}
+            disabled={prune.isPending}
+            onClick={() => {
+              setHours(p.hours)
+              prune.mutate({ hours: p.hours, apply: false })
+            }}
+          >
+            {p.label}
+          </Button>
+        ))}
+      </div>
+      {prune.isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {prune.error.message}
+        </p>
+      ) : null}
+      {preview && hours !== null ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-foreground">
+            {t('buildCache.prunePreview', {
+              count: preview.candidate_count,
+              size: formatBytes(preview.would_free_bytes),
+            })}
+          </p>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={prune.isPending || preview.candidate_count === 0}
+            onClick={() => {
+              prune.mutate(
+                { hours, apply: true },
+                {
+                  onSuccess: (res) => {
+                    setHours(null)
+                    toast.add({
+                      title: t('buildCache.pruneDone', {
+                        count: res.removed_count,
+                        size: formatBytes(res.freed_bytes),
+                      }),
+                      type: 'success',
+                    })
+                  },
+                },
+              )
+            }}
+          >
+            {t('buildCache.pruneApply')}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 // BuildKit remote cache controls for one app (appName) or the default for
 // every app (appName ''). Bucket credentials never reach the browser.
 export function BuildCacheCard({ appName }: { appName: string }) {
@@ -363,7 +482,10 @@ export function BuildCacheCard({ appName }: { appName: string }) {
         </CardTitle>
         <CardDescription>{t('buildCache.description')}</CardDescription>
       </CardHeader>
-      <CardContent>{body}</CardContent>
+      <CardContent>
+        {body}
+        {appName === '' ? <NodeCachePrune /> : null}
+      </CardContent>
     </Card>
   )
 }

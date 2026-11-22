@@ -1277,5 +1277,21 @@
       "queued": "Für die nächste Agent-Prüfung vorgemerkt",
       "disclaimer": "Überspringt Wartungsfenster und Sperre. Das Update wird weiterhin per Signatur geprüft und bei einem Fehler zurückgerollt."
     }
+  },
+  "pools": {
+    "title": "Node-Pools",
+    "description": "Benenne eine Gruppe von Nodes über einen Label-Selektor. Apps wählen den Pool, statt den Selektor zu wiederholen.",
+    "empty": "Noch keine Pools. Lege einen an, zum Beispiel ssd mit disk=ssd.",
+    "remove": "{{name}} entfernen",
+    "nameLabel": "Pool-Name",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Selektor",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Pool speichern",
+    "selectorInvalid": "Verwende Schlüssel=Wert-Paare, durch Kommas getrennt.",
+    "pickerLabel": "Node-Pool",
+    "pickerPlaceholder": "Kein Pool",
+    "none": "Kein Pool",
+    "pickerHint": "Die Labels des Pools werden zum eigenen Platzierungs-Selektor dieser App hinzugefügt."
   }
 }

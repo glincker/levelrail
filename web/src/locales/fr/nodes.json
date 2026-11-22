@@ -1291,5 +1291,21 @@
       "queued": "Planifié pour la prochaine vérification de l'agent",
       "disclaimer": "Ignore la fenêtre de maintenance et le blocage. La mise à jour reste vérifiée par signature et est annulée en cas d'échec."
     }
+  },
+  "pools": {
+    "title": "Pools de nœuds",
+    "description": "Nommez un groupe de nœuds par un sélecteur de labels. Les apps choisissent le pool au lieu de répéter le sélecteur.",
+    "empty": "Aucun pool pour l'instant. Créez-en un, par exemple ssd avec disk=ssd.",
+    "remove": "Retirer {{name}}",
+    "nameLabel": "Nom du pool",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Sélecteur",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Enregistrer le pool",
+    "selectorInvalid": "Utilisez des paires clé=valeur séparées par des virgules.",
+    "pickerLabel": "Pool de nœuds",
+    "pickerPlaceholder": "Aucun pool",
+    "none": "Aucun pool",
+    "pickerHint": "Les labels du pool s'ajoutent au sélecteur de placement propre à cette app."
   }
 }

@@ -1277,5 +1277,21 @@
       "queued": "En cola para la próxima comprobación del agente",
       "disclaimer": "Omite la ventana de mantenimiento y la retención. La actualización sigue verificándose por firma y se revierte si falla."
     }
+  },
+  "pools": {
+    "title": "Grupos de nodos",
+    "description": "Da nombre a un grupo de nodos con un selector de etiquetas. Las apps eligen el grupo en lugar de repetir el selector.",
+    "empty": "Aún no hay grupos. Crea uno, por ejemplo ssd con disk=ssd.",
+    "remove": "Quitar {{name}}",
+    "nameLabel": "Nombre del grupo",
+    "namePlaceholder": "ssd",
+    "selectorLabel": "Selector",
+    "selectorPlaceholder": "disk=ssd, zone=a",
+    "save": "Guardar grupo",
+    "selectorInvalid": "Usa pares clave=valor separados por comas.",
+    "pickerLabel": "Grupo de nodos",
+    "pickerPlaceholder": "Sin grupo",
+    "none": "Sin grupo",
+    "pickerHint": "Las etiquetas del grupo se suman al selector de ubicación propio de esta app."
   }
 }
