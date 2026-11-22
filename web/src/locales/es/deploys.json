@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub: Webhooks del repositorio, añade la URL. Docker Hub no envía el digest, así que primero se resuelve la etiqueta.",
       "ghcr": "GitHub (ghcr.io): Settings, Webhooks, tipo application/json, evento Packages y el secreto de arriba. Se rechazan las entregas sin firma.",
       "protected": "Un push despliega el digest publicado de la imagen y etiqueta de esta app. En un entorno protegido crea una aprobación en su lugar."
+    },
+    "range": {
+      "label": "Rango de versiones",
+      "help": "Sigue la versión más reciente dentro de un rango, por ejemplo 1.x, ^1.2.3 o >=1.2.0 <2.0.0. Déjalo vacío para seguir la etiqueta actual.",
+      "save": "Guardar rango",
+      "saved": "Rango de versiones guardado.",
+      "invalid": "Rango no válido. Usa formas como 1.x, ^1.2.3, ~1.2.3 o >=1.2.0 <2.0.0."
     }
   },
   "canary": {

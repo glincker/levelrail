@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub: Webhooks do repositório, adicione a URL. O Docker Hub não envia digest, então a tag é resolvida primeiro.",
       "ghcr": "GitHub (ghcr.io): Configurações, Webhooks, tipo de conteúdo application/json, evento Packages e o segredo acima. Entregas sem assinatura são recusadas.",
       "protected": "Um push faz o deploy do digest enviado para a imagem e a tag do próprio app. Em um ambiente protegido ele gera uma aprovação."
+    },
+    "range": {
+      "label": "Faixa de versões",
+      "help": "Segue o release mais recente dentro de uma faixa, por exemplo 1.x, ^1.2.3 ou >=1.2.0 <2.0.0. Deixe vazio para seguir a tag atual.",
+      "save": "Salvar faixa",
+      "saved": "Faixa de versões salva.",
+      "invalid": "Faixa inválida. Use formas como 1.x, ^1.2.3, ~1.2.3 ou >=1.2.0 <2.0.0."
     }
   },
   "canary": {

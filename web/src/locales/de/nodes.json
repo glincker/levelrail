@@ -268,7 +268,18 @@
     "moveHere": "Auf diesen Server verschieben",
     "movedHere": "Jetzt auf diesem Server platziert.",
     "moveFailed": "Das Verschieben auf diesen Server war nicht möglich.",
-    "domainWarnings": "Warnungen zu Fehlerdomänen"
+    "domainWarnings": "Warnungen zu Fehlerdomänen",
+    "warm": {
+      "title": "Image vorwärmen",
+      "hint": "Zieht das Image dieser App vorab auf gewählten Nodes, damit Verschiebung oder Failover schnell starten.",
+      "switchAria": "Image auf gewählten Nodes vorhalten",
+      "nodesLabel": "Vorgewärmte Nodes",
+      "addLabel": "Label hinzufügen",
+      "save": "Warm-Ziele speichern",
+      "saved": "Warm-Ziele gespeichert.",
+      "cleared": "Warm-Ziele entfernt.",
+      "saveFailed": "Warm-Ziele konnten nicht gespeichert werden"
+    }
   },
   "allocation": {
     "title": "Kapazität",

@@ -270,7 +270,18 @@
     "moveHere": "Déplacer vers ce serveur",
     "movedHere": "Désormais placé sur ce serveur.",
     "moveFailed": "Impossible de le déplacer vers ce serveur.",
-    "domainWarnings": "Avertissements sur les domaines de défaillance"
+    "domainWarnings": "Avertissements sur les domaines de défaillance",
+    "warm": {
+      "title": "Garder l'image au chaud",
+      "hint": "Télécharge à l'avance l'image de cette app sur les nœuds choisis pour qu'un déplacement ou un basculement démarre vite.",
+      "switchAria": "Garder l'image téléchargée sur les nœuds choisis",
+      "nodesLabel": "Nœuds au chaud",
+      "addLabel": "Ajouter un label",
+      "save": "Enregistrer les cibles",
+      "saved": "Cibles enregistrées.",
+      "cleared": "Cibles supprimées.",
+      "saveFailed": "Impossible d'enregistrer les cibles"
+    }
   },
   "allocation": {
     "title": "Capacité",

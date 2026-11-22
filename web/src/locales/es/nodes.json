@@ -268,7 +268,18 @@
     "moveHere": "Mover a este servidor",
     "movedHere": "Ahora está en este servidor.",
     "moveFailed": "No se pudo mover a este servidor.",
-    "domainWarnings": "Avisos de dominio de fallo"
+    "domainWarnings": "Avisos de dominio de fallo",
+    "warm": {
+      "title": "Mantener la imagen caliente",
+      "hint": "Descarga de antemano la imagen de esta app en los nodos elegidos para que un traslado o failover arranque rápido.",
+      "switchAria": "Mantener la imagen descargada en los nodos elegidos",
+      "nodesLabel": "Nodos calientes",
+      "addLabel": "Añadir etiqueta",
+      "save": "Guardar destinos calientes",
+      "saved": "Destinos calientes guardados.",
+      "cleared": "Destinos calientes eliminados.",
+      "saveFailed": "No se pudieron guardar los destinos calientes"
+    }
   },
   "allocation": {
     "title": "Capacidad",

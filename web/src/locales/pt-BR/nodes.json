@@ -270,7 +270,18 @@
     "moveHere": "Mover para este servidor",
     "movedHere": "Agora posicionado neste servidor.",
     "moveFailed": "Não foi possível movê-lo para este servidor.",
-    "domainWarnings": "Avisos de domínio de falha"
+    "domainWarnings": "Avisos de domínio de falha",
+    "warm": {
+      "title": "Manter a imagem aquecida",
+      "hint": "Baixa antecipadamente a imagem deste app nos nós escolhidos para que uma mudança ou failover inicie rápido.",
+      "switchAria": "Manter a imagem baixada nos nós escolhidos",
+      "nodesLabel": "Nós aquecidos",
+      "addLabel": "Adicionar rótulo",
+      "save": "Salvar destinos",
+      "saved": "Destinos salvos.",
+      "cleared": "Destinos removidos.",
+      "saveFailed": "Não foi possível salvar os destinos"
+    }
   },
   "allocation": {
     "title": "Capacidade",

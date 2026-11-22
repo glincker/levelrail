@@ -268,7 +268,18 @@
     "moveHere": "Move to this server",
     "movedHere": "Now placed on this server.",
     "moveFailed": "Could not move it to this server.",
-    "domainWarnings": "Failure domain warnings"
+    "domainWarnings": "Failure domain warnings",
+    "warm": {
+      "title": "Keep image warm",
+      "hint": "Pre-pull this app's image on chosen nodes so a move or failover starts fast.",
+      "switchAria": "Keep the image pulled on chosen nodes",
+      "nodesLabel": "Warm nodes",
+      "addLabel": "Add label",
+      "save": "Save warm targets",
+      "saved": "Warm targets saved.",
+      "cleared": "Warm targets cleared.",
+      "saveFailed": "Could not save warm targets"
+    }
   },
   "allocation": {
     "title": "Capacity",

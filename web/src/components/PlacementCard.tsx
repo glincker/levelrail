@@ -25,6 +25,7 @@ import type { NodeMoveKind, Placement } from '../types/nodeMoves'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 import { LabelRowsEditor } from './nodes/LabelRowsEditor'
 import { TolerationsSection } from './nodes/TolerationsSection'
+import { WarmTargetsSection } from './nodes/WarmTargetsSection'
 import { PlacementDecisionPanel } from './nodes/PlacementDecisionPanel'
 import { useNodeNames } from './nodes/useNodeNames'
 import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
@@ -220,6 +221,8 @@ function PlacementBody({
           placement={placement}
         />
       ) : null}
+
+      {kind === 'app' ? <WarmTargetsSection name={name} /> : null}
 
       <div className="space-y-1.5">
         <p className="text-sm font-medium text-foreground">

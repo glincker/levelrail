@@ -266,7 +266,18 @@
     "moveHere": "迁移到此服务器",
     "movedHere": "现已放置在此服务器上。",
     "moveFailed": "无法将其迁移到此服务器。",
-    "domainWarnings": "故障域警告"
+    "domainWarnings": "故障域警告",
+    "warm": {
+      "title": "保持镜像预热",
+      "hint": "在所选节点上提前拉取此应用的镜像，使迁移或故障转移更快启动。",
+      "switchAria": "在所选节点上保持镜像已拉取",
+      "nodesLabel": "预热节点",
+      "addLabel": "添加标签",
+      "save": "保存预热目标",
+      "saved": "预热目标已保存。",
+      "cleared": "预热目标已清除。",
+      "saveFailed": "无法保存预热目标"
+    }
   },
   "allocation": {
     "title": "容量",

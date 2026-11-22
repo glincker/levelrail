@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub:仓库的 Webhooks,添加该 URL。Docker Hub 不发送摘要,因此会先解析标签。",
       "ghcr": "GitHub(ghcr.io):设置、Webhooks,内容类型 application/json,事件 Packages,并使用上面的密钥。未签名的投递会被拒绝。",
       "protected": "一次推送会为此应用自身的镜像和标签部署被推送的摘要。在受保护的环境中则会改为提交审批。"
+    },
+    "range": {
+      "label": "版本范围",
+      "help": "跟随范围内的最新发布，例如 1.x、^1.2.3 或 >=1.2.0 <2.0.0。留空则跟随当前标签。",
+      "save": "保存范围",
+      "saved": "版本范围已保存。",
+      "invalid": "范围无效。请使用 1.x、^1.2.3、~1.2.3 或 >=1.2.0 <2.0.0 这类形式。"
     }
   },
   "canary": {

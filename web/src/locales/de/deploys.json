@@ -181,6 +181,13 @@
       "dockerhub": "Docker Hub: Webhooks des Repositorys, URL hinzufügen. Docker Hub sendet keinen Digest, daher wird der Tag zuerst aufgelöst.",
       "ghcr": "GitHub (ghcr.io): Einstellungen, Webhooks, Inhaltstyp application/json, Ereignis Packages und das Secret oben. Unsignierte Zustellungen werden abgelehnt.",
       "protected": "Ein Push deployt den gepushten Digest für das eigene Image und den Tag dieser App. In einer geschützten Umgebung stellt er stattdessen eine Genehmigung aus."
+    },
+    "range": {
+      "label": "Versionsbereich",
+      "help": "Folgt dem neuesten Release in einem Bereich, zum Beispiel 1.x, ^1.2.3 oder >=1.2.0 <2.0.0. Leer lassen, um dem aktuellen Tag zu folgen.",
+      "save": "Bereich speichern",
+      "saved": "Versionsbereich gespeichert.",
+      "invalid": "Kein gültiger Bereich. Nutze Formen wie 1.x, ^1.2.3, ~1.2.3 oder >=1.2.0 <2.0.0."
     }
   },
   "canary": {
