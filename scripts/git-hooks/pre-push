@@ -96,13 +96,21 @@ if [ "$fail" -eq 0 ]; then
 	fi
 fi
 
+# One diff, reused by the Go lanes, the web checks and the kit check below.
+all_changed=""
+base_known=0
+if git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+	base_known=1
+	all_changed="$(git diff --name-only "$base_ref...HEAD" 2>/dev/null)"
+fi
+
 scope="ALL"
 if [ "$fail" -eq 0 ] && command -v jq >/dev/null 2>&1; then
 	# Best-effort: a fetch failure (offline, no network) just means the
 	# affected-set is computed against whatever the base ref is already
 	# known locally, which only risks over-selecting, never under.
 	git fetch origin "${base_ref#origin/}" --quiet 2>/dev/null || true
-	if git rev-parse --verify --quiet $base_ref >/dev/null; then
+	if [ "$base_known" -eq 1 ]; then
 		affected_out="$(scripts/affected-go-packages.sh $base_ref 2>/dev/null || echo ALL)"
 		if [ -z "$affected_out" ]; then
 			scope="NONE"
@@ -149,7 +157,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	# dependent that no longer builds; dependents' behavior and the coverage
 	# gate are CI's job (ci.yml) and nightly.yml's. Set
 	# LEVELRAIL_PUSH_SCOPE=affected to get the old dependents-included run.
-	changed_files="$(git diff --name-only $base_ref...HEAD -- '*.go' 2>/dev/null)"
+	changed_files="$(printf '%s\n' "$all_changed" | grep '\.go$' || true)"
 	fast_pkgs=""
 	for d in $(printf '%s\n' "$changed_files" | xargs -n1 dirname 2>/dev/null | sort -u); do
 		case "$d" in test/e2e* | internal/api | kit | kit/* | integrations/terraform-provider | integrations/terraform-provider/* | tools | tools/*) continue ;; esac
@@ -243,12 +251,11 @@ if [ -n "$build_pid" ]; then
 	fi
 fi
 
-# tsc -b moved here from pre-commit: one type check per push, not per commit.
-# Runs whenever the pushed range touches web/ (a missing base falls back to
-# checking, never skipping).
+# One web type check and bundle budget per push, not per commit. A missing
+# base falls back to checking, never skipping.
 if [ "$fail" -eq 0 ]; then
-	if git rev-parse --verify --quiet "$base_ref" >/dev/null; then
-		web_changed="$(git diff --name-only "$base_ref...HEAD" -- web/ 2>/dev/null)"
+	if [ "$base_known" -eq 1 ]; then
+		web_changed="$(printf '%s\n' "$all_changed" | grep '^web/' || true)"
 	else
 		web_changed="web/"
 	fi
@@ -260,6 +267,15 @@ if [ "$fail" -eq 0 ]; then
 		elif ! scripts/ensure-route-tree.sh; then
 			fail=1
 		elif ! ( cd web && slot_run tsc env NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=${LEVELRAIL_HOOK_NODE_HEAP_MB:-8192}}" node_modules/.bin/tsc -b ) 2>&1; then
+			fail=1
+		fi
+	fi
+	# CI's Bundle size budget failed on pushes this hook let through. Skipped
+	# silently without node_modules; LEVELRAIL_PUSH_BUNDLE=off opts out.
+	if [ "$fail" -eq 0 ] && [ "${LEVELRAIL_PUSH_BUNDLE:-on}" != off ] && [ -d web/node_modules ] \
+		&& { [ "$base_known" -eq 0 ] || printf '%s\n' "$all_changed" | grep -q '^web/src/'; }; then
+		echo "pre-push: web build + bundle size budget"
+		if ! ( cd web && slot_run vite env NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=${LEVELRAIL_HOOK_NODE_HEAP_MB:-8192}}" node_modules/.bin/vite build >/dev/null && node scripts/check-bundle-size.js ) 2>&1; then
 			fail=1
 		fi
 	fi
@@ -285,8 +301,8 @@ fi
 
 # kit/ is a nested module: `go test ./...` above never reaches it. It is small,
 # so run the whole module whenever the branch touched it.
-if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet $base_ref >/dev/null \
-	&& [ -n "$(git diff --name-only $base_ref...HEAD -- kit/ 2>/dev/null)" ]; then
+if [ "$fail" -eq 0 ] && [ "$base_known" -eq 1 ] \
+	&& printf '%s\n' "$all_changed" | grep -q '^kit/'; then
 	kit_cov="$(mktemp -t levelrail-kit-coverage.XXXXXX)"
 	echo "pre-push: go test -short (kit)"
 	if ! go -C kit test -short -coverprofile="$kit_cov" ./... 2>&1; then
