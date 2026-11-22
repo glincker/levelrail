@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -218,7 +217,7 @@ func buildIaCRequest(af *applyFlags, lookupEnv func(string) (string, bool)) (api
 func confirmApply(stderr io.Writer, af *applyFlags, plan iac.Plan) error {
 	for _, f := range af.files {
 		if f == "-" {
-			return errors.New("stdin holds the files, so confirmation is not possible: pass --yes")
+			return newValidationError("stdin holds the files, so confirmation is not possible: pass --yes")
 		}
 	}
 	q := fmt.Sprintf("Apply %d change(s)", plan.Summary.Create+plan.Summary.Update+plan.Summary.Delete)

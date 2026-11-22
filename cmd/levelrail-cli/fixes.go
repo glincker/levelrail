@@ -1,16 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
-
-	"golang.org/x/term"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -114,13 +109,5 @@ func printFixDetail(out io.Writer, f apiclient.Fix) {
 }
 
 func confirmFixApply(stderr io.Writer) error {
-	if f, ok := stdinSource.(*os.File); !ok || !term.IsTerminal(int(f.Fd())) { //nolint:gosec // a terminal file descriptor always fits an int
-		return errors.New("not a terminal: pass --yes to apply without confirmation")
-	}
-	_, _ = fmt.Fprint(stderr, "Apply this fix? [y/N] ")
-	line, _ := bufio.NewReader(stdinSource).ReadString('\n')
-	if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
-		return errors.New("cancelled")
-	}
-	return nil
+	return confirmAction(stdinSource, stderr, "Apply this fix", false, "--yes")
 }

@@ -1,16 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
-
-	"golang.org/x/term"
 )
 
 // runAuthDevicesGroup routes "auth devices trusted <verb>" and keeps the older
@@ -123,13 +118,5 @@ func runAuthTrustedRevoke(prog string, args []string, stdout, stderr io.Writer, 
 // confirmDestructive asks on the terminal; without one the caller must pass
 // --yes, so a pipe or CI job never revokes or deletes by accident.
 func confirmDestructive(stderr io.Writer, prompt string) error {
-	if f, ok := stdinSource.(*os.File); !ok || ciMode || !term.IsTerminal(int(f.Fd())) { //nolint:gosec // a terminal file descriptor always fits an int
-		return errors.New("not a terminal: pass --yes to confirm")
-	}
-	_, _ = fmt.Fprintf(stderr, "%s [y/N] ", prompt)
-	line, _ := bufio.NewReader(stdinSource).ReadString('\n')
-	if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
-		return errors.New("cancelled")
-	}
-	return nil
+	return confirmAction(stdinSource, stderr, strings.TrimSuffix(prompt, "?"), false, "--yes")
 }

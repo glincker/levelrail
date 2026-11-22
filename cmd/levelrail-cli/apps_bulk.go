@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -80,11 +79,9 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			return exitOK
 		}
 		if !yes {
-			_, _ = fmt.Fprintf(stderr, "%s %d app(s): %s\nProceed? [y/N] ", req.Action, len(targets), strings.Join(targets, ", "))
-			line, _ := bufio.NewReader(stdin).ReadString('\n')
-			if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
-				_, _ = fmt.Fprintln(stderr, "aborted")
-				return exitUsage
+			q := fmt.Sprintf("%s %d app(s): %s", req.Action, len(targets), strings.Join(targets, ", "))
+			if err := confirmAction(stdin, stderr, q, false, "--yes"); err != nil {
+				return reportError(stdout, stderr, jsonOut, err)
 			}
 		}
 		req.Names = targets

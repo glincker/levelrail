@@ -11,7 +11,7 @@ func TestRun_AppsDelete(t *testing.T) {
 	srv, gotPath, gotMethod := newNoContentEchoServer(t)
 	defer srv.Close()
 
-	stdout, _ := runCLIExpectOK(t, []string{"apps", "delete", "web", "--api-url", srv.URL})
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "delete", "web", "--api-url", srv.URL, "--yes"})
 	if *gotMethod != http.MethodDelete || *gotPath != "/api/v1/apps/web" {
 		t.Errorf("request = %s %s, want DELETE /api/v1/apps/web", *gotMethod, *gotPath)
 	}
@@ -24,7 +24,7 @@ func TestRun_AppsDelete_JSON(t *testing.T) {
 	srv, _, _ := newNoContentEchoServer(t)
 	defer srv.Close()
 
-	stdout, _ := runCLIExpectOK(t, []string{"apps", "delete", "web", "--api-url", srv.URL, "--json"})
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "delete", "web", "--api-url", srv.URL, "--json", "--yes"})
 	if !strings.Contains(stdout, `"deleted": true`) {
 		t.Errorf("stdout = %q, want {\"deleted\": true}", stdout)
 	}
@@ -33,7 +33,7 @@ func TestRun_AppsDelete_JSON(t *testing.T) {
 func TestRun_AppsDelete_NotFound(t *testing.T) {
 	srv := newJSONErrorServer(t, http.StatusNotFound, `{"error":"app not found"}`)
 
-	stderr := runCLIExpectAPIError(t, []string{"apps", "delete", "ghost", "--api-url", srv.URL})
+	stderr := runCLIExpectAPIError(t, []string{"apps", "delete", "ghost", "--api-url", srv.URL, "--yes"})
 	if !strings.Contains(stderr, "app not found") {
 		t.Errorf("stderr = %q, want the server's error message", stderr)
 	}
@@ -64,8 +64,22 @@ func TestRun_AppsDelete_TeardownPending(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	stdout, _ := runCLIExpectOK(t, []string{"apps", "delete", "web", "--api-url", srv.URL})
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "delete", "web", "--api-url", srv.URL, "--yes"})
 	if !strings.Contains(stdout, "not removed yet") || !strings.Contains(stdout, "node offline") {
 		t.Errorf("stdout = %q, want a pending-teardown message with the cause", stdout)
+	}
+}
+
+func TestRun_AppsDelete_NeedsYesWithoutTerminal(t *testing.T) {
+	srv, gotPath, _ := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	var stdout, stderr strings.Builder
+	got := run("levelrail-cli-test", []string{"apps", "delete", "web", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d", got, exitValidation)
+	}
+	if !strings.Contains(stderr.String(), "pass --yes") || *gotPath != "" {
+		t.Errorf("stderr = %q, path = %q, want a fail-fast naming --yes and no request", stderr.String(), *gotPath)
 	}
 }
