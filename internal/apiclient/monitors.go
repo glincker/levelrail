@@ -37,6 +37,7 @@ type Monitor struct {
 	GraceSeconds        int               `json:"grace_seconds,omitempty"`
 	WarnDays            int               `json:"warn_days,omitempty"`
 	CritDays            int               `json:"crit_days,omitempty"`
+	NodeID              string            `json:"node_id,omitempty"`
 	PingPath            string            `json:"ping_path,omitempty"`
 	CreatedAt           time.Time         `json:"created_at,omitempty"`
 }

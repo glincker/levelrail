@@ -61,6 +61,8 @@ type Spec struct {
 	// WarnDays and CritDays override the APP_MONITOR_TLS_* thresholds for one TLS monitor.
 	WarnDays int `json:"warn_days,omitempty"`
 	CritDays int `json:"crit_days,omitempty"`
+	// NodeID names the node the probe should run from; empty means the control plane.
+	NodeID string `json:"node_id,omitempty"`
 }
 
 // Monitor is one check definition.
@@ -100,6 +102,8 @@ type Rollup struct {
 	LatSum    int64
 	LatMax    int
 }
+
+var nodeIDRe = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
 
 var headerNameRe = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
 
@@ -152,6 +156,14 @@ func Validate(m Monitor, cfg Config) error {
 	}
 	if m.Spec.LinkConfirmFailures < 0 || m.Spec.LinkRecoverySeconds < 0 {
 		return bad("status link confirm failures and recovery seconds cannot be negative")
+	}
+	if m.Spec.NodeID != "" {
+		if m.Kind == KindHeartbeat {
+			return bad("a heartbeat monitor receives pings and cannot run from a node")
+		}
+		if !nodeIDRe.MatchString(m.Spec.NodeID) {
+			return bad("node id must be 1 to 64 letters, digits, dot, dash or underscore")
+		}
 	}
 	if m.Kind == KindHeartbeat {
 		return validateHeartbeat(m.Spec, cfg, bad)

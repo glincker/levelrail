@@ -46,6 +46,7 @@ func TestMonitors_CreateListResultsDelete(t *testing.T) {
 	for name, bad := range map[string]string{
 		"below floor":             `{"name":"x","kind":"http","url":"https://example.com","interval_seconds":1,"timeout_ms":500}`,
 		"private host":            `{"name":"x","kind":"tcp","host":"127.0.0.1","port":80,"interval_seconds":60,"timeout_ms":1000}`,
+		"unknown node":            `{"name":"x","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"node_id":"no-such-node"}`,
 		"headers without a vault": `{"name":"x","kind":"http","url":"https://example.com","interval_seconds":60,"timeout_ms":1000,"headers":{"X-Probe":"value"}}`,
 	} {
 		if r := apiDo(t, rt, cookie, http.MethodPost, "/api/v1/monitors", bad); r.Code != http.StatusBadRequest {

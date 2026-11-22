@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // MonitorService is the engine the monitor routes drive. A nil service means the feature is off.
@@ -72,6 +73,8 @@ type monitorRequest struct {
 	GraceSeconds int `json:"grace_seconds"`
 	WarnDays     int `json:"warn_days"`
 	CritDays     int `json:"crit_days"`
+	// NodeID runs the probe from that node instead of the control plane.
+	NodeID string `json:"node_id"`
 }
 
 // monitorLinkRequest is the PATCH body: status page link settings and the enabled flag.
@@ -105,6 +108,7 @@ type monitorResource struct {
 	GraceSeconds        int                   `json:"grace_seconds,omitempty"`
 	WarnDays            int                   `json:"warn_days,omitempty"`
 	CritDays            int                   `json:"crit_days,omitempty"`
+	NodeID              string                `json:"node_id,omitempty"`
 	// PingPath is the public heartbeat path including its secret; only create and rotate return it, once.
 	PingPath  string    `json:"ping_path,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
@@ -120,7 +124,7 @@ func toMonitorResource(m monitor.Monitor) monitorResource {
 		HeaderNames: m.Spec.HeaderNames, Expect: m.Spec.Expect, Contains: m.Spec.Contains,
 		FollowRedirects: m.Spec.FollowRedirects, Host: m.Spec.Host, Port: m.Spec.Port, StatusLink: m.Spec.StatusLink,
 		LinkConfirmFailures: m.Spec.LinkConfirmFailures, LinkRecoverySeconds: m.Spec.LinkRecoverySeconds, GraceSeconds: m.Spec.GraceSeconds,
-		WarnDays: m.Spec.WarnDays, CritDays: m.Spec.CritDays, PingPath: pingPath(m), CreatedAt: m.CreatedAt}
+		WarnDays: m.Spec.WarnDays, CritDays: m.Spec.CritDays, NodeID: m.Spec.NodeID, PingPath: pingPath(m), CreatedAt: m.CreatedAt}
 }
 
 func pingPath(m monitor.Monitor) string {
@@ -201,7 +205,13 @@ func (rt *Router) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
 		Spec: monitor.Spec{URL: req.URL, Method: req.Method, Expect: req.Expect, Contains: req.Contains,
 			FollowRedirects: req.FollowRedirects, Host: req.Host, Port: req.Port,
 			StatusLink: req.StatusLink, LinkConfirmFailures: req.LinkConfirmFailures, LinkRecoverySeconds: req.LinkRecoverySeconds,
-			GraceSeconds: req.GraceSeconds, WarnDays: req.WarnDays, CritDays: req.CritDays}}
+			GraceSeconds: req.GraceSeconds, WarnDays: req.WarnDays, CritDays: req.CritDays, NodeID: req.NodeID}}
+	if req.NodeID != "" && rt.nodes != nil {
+		if _, err := rt.nodes.GetNode(r.Context(), req.NodeID); errors.Is(err, store.ErrNodeNotFound) {
+			writeError(w, http.StatusBadRequest, "node not found")
+			return
+		}
+	}
 	created, err := svc.Create(r.Context(), monitor.CreateInput{Monitor: m, Headers: req.Headers})
 	if err != nil {
 		rt.monitorError(w, "create monitor", err)

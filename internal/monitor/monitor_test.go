@@ -118,6 +118,21 @@ func TestHTTPCheck(t *testing.T) {
 	}
 }
 
+func TestValidateNodeID(t *testing.T) {
+	m := Normalize(Monitor{Name: "n", Kind: KindTCP, Interval: time.Minute, Timeout: time.Second, Spec: Spec{Host: "example.com", Port: 80, NodeID: "node-1"}})
+	if err := Validate(m, testConfig()); err != nil {
+		t.Fatalf("valid node id rejected: %v", err)
+	}
+	m.Spec.NodeID = "bad id/x"
+	if err := Validate(m, testConfig()); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("bad node id error = %v, want ErrInvalid", err)
+	}
+	hb := Normalize(Monitor{Name: "h", Kind: KindHeartbeat, Interval: time.Hour, Spec: Spec{NodeID: "node-1"}})
+	if err := Validate(hb, testConfig()); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("heartbeat with node = %v, want ErrInvalid", err)
+	}
+}
+
 func TestTCPCheck(t *testing.T) {
 	t.Setenv(netguard.AllowPrivateEnv, "true")
 	ln, err := net.Listen("tcp", "127.0.0.1:0")

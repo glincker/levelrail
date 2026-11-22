@@ -83,7 +83,7 @@ func parseExpect(s string) ([]apiclient.MonitorRange, error) {
 }
 
 func monitorsCreateCommand() apiCmd {
-	var name, kind, urlStr, method, expect, contains, host string
+	var name, kind, urlStr, method, expect, contains, host, nodeID string
 	var port int
 	var follow, statusLink bool
 	var linkConfirm, warnDays, critDays int
@@ -101,6 +101,7 @@ func monitorsCreateCommand() apiCmd {
 			fs.StringVar(&contains, "contains", "", "text that must appear in the start of the response body")
 			fs.BoolVar(&follow, "follow-redirects", false, "follow redirects up to the server limit")
 			fs.StringVar(&host, "host", "", "host to connect to or resolve (tcp, tls, dns and ping kinds)")
+			fs.StringVar(&nodeID, "node", "", "node id to run the probe from (default: the control plane)")
 			fs.IntVar(&port, "port", 0, "port to connect to (tcp kind; tls defaults to 443)")
 			fs.DurationVar(&interval, "interval", interval, "time between checks")
 			fs.DurationVar(&timeout, "timeout", timeout, "per check timeout")
@@ -130,7 +131,7 @@ func monitorsCreateCommand() apiCmd {
 			m := apiclient.Monitor{Name: name, Kind: kind, IntervalSeconds: int(interval / time.Second), TimeoutMS: int(timeout / time.Millisecond),
 				URL: urlStr, Method: method, Headers: hdr, Expect: ranges, Contains: contains, FollowRedirects: follow, Host: host, Port: port,
 				StatusLink: statusLink, LinkConfirmFailures: linkConfirm, LinkRecoverySeconds: int(linkRecovery / time.Second),
-				GraceSeconds: int(grace / time.Second), WarnDays: warnDays, CritDays: critDays}
+				GraceSeconds: int(grace / time.Second), WarnDays: warnDays, CritDays: critDays, NodeID: nodeID}
 			created, err := c.CreateMonitor(ctx, m)
 			return created, func(w io.Writer) {
 				_, _ = fmt.Fprintf(w, "monitor %s created: %s (%s every %ds)\n", created.ID, created.Name, created.Kind, created.IntervalSeconds)
