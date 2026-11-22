@@ -10,6 +10,7 @@ import {
   abilityFromMessage,
   isSafeServerText,
   isTimeoutError,
+  kindFromMessage,
   type ErrorKind,
 } from './errorCatalog'
 
@@ -17,6 +18,8 @@ export interface ErrorText {
   title?: string
   message: string
   action?: string
+  // Safe server text shown after the plain explanation when it adds detail.
+  raw?: string
 }
 
 type Translate = (key: string, defaultValue: string) => string
@@ -28,12 +31,14 @@ function kindOf(err: unknown, raw: string): ErrorKind | undefined {
     // A generic status code must not hide a more specific status mapping.
     return (
       byCode ??
+      kindFromMessage(raw) ??
       STATUS_KIND[err.status] ??
       (err.status >= 500 ? 'serverError' : undefined)
     )
   }
   if (isTimeoutError(err)) return 'timeout'
-  return err instanceof TypeError ? 'network' : undefined
+  if (err instanceof TypeError) return 'network'
+  return kindFromMessage(raw)
 }
 
 function build(err: unknown, tr: Translate): ErrorText {
@@ -58,11 +63,13 @@ function build(err: unknown, tr: Translate): ErrorText {
     ability ? text.replace('{{ability}}', ability) : text
   const keepServer = KEEP_SERVER_TEXT.has(kind) && safe
   const title = tr(`${base}.title`, '') || undefined
+  const message = keepServer
+    ? raw
+    : fill(tr(`${base}.message`, safe ? raw : generic))
   return {
     title,
-    message: keepServer
-      ? raw
-      : fill(tr(`${base}.message`, safe ? raw : generic)),
+    message,
+    raw: safe && raw !== message ? raw : undefined,
     action:
       fill(tr(`${base}.action`, '')) ||
       (RETRYABLE.has(kind) ? retry : undefined),

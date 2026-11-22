@@ -1,5 +1,11 @@
 {
-  "missing": [],
+  "missing": [
+    "common:apiError.friendly.badToken.action",
+    "common:apiError.friendly.badToken.message",
+    "common:apiError.friendly.badToken.title",
+    "common:apiError.whatThisMeans",
+    "pagesSites:dashDrop.prompt"
+  ],
   "knownIssues": [
     "cdn:edge.pipelineLabel: lost protected term \"Git\"",
     "common:cliConsole.helpIntro: placeholders or tags differ from en",

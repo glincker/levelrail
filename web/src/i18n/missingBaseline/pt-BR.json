@@ -1,4 +1,10 @@
 {
-  "missing": [],
+  "missing": [
+    "common:apiError.friendly.badToken.action",
+    "common:apiError.friendly.badToken.message",
+    "common:apiError.friendly.badToken.title",
+    "common:apiError.whatThisMeans",
+    "pagesSites:dashDrop.prompt"
+  ],
   "knownIssues": []
 }

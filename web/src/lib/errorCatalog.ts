@@ -23,6 +23,7 @@ export const ERROR_KINDS = [
   'stepUp',
   'portConflict',
   'emailNotConfigured',
+  'badToken',
 ] as const
 
 export type ErrorKind = (typeof ERROR_KINDS)[number]
@@ -60,6 +61,26 @@ export const CODE_KIND: Record<string, ErrorKind> = {
   step_up_session_only: 'stepUp',
   published_port_conflict: 'portConflict',
   email_not_configured: 'emailNotConfigured',
+  bad_credentials: 'badToken',
+  token_expired: 'badToken',
+}
+
+// Build and runtime failures arrive as free text, so match the common ones.
+const MESSAGE_KIND: ReadonlyArray<readonly [RegExp, ErrorKind]> = [
+  [/no space left on device|disk quota exceeded/i, 'diskFull'],
+  [
+    /address already in use|port is already allocated|EADDRINUSE/i,
+    'portConflict',
+  ],
+  [/toomanyrequests|rate limit|too many requests/i, 'rateLimited'],
+  [
+    /bad credentials|invalid (access )?token|token (has )?expired|authentication failed/i,
+    'badToken',
+  ],
+]
+
+export function kindFromMessage(message: string): ErrorKind | undefined {
+  return MESSAGE_KIND.find(([re]) => re.test(message))?.[1]
 }
 
 export const STATUS_KIND: Record<number, ErrorKind> = {
