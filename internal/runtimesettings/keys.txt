@@ -579,10 +579,13 @@ retention.app_history_days
 retention.audit_log_days
 retention.audit_security_days
 retention.auth_expired_days
+retention.deploy_attempt_days
 retention.email_log_days
 retention.event_webhook_days
 retention.expired_token_days
 retention.forge_status_days
+retention.max_rows_per_app
+retention.node_event_days
 retention.probe_attempt_days
 retention.recently_deleted_days
 retention.restore_history_days

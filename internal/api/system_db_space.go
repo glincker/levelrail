@@ -44,8 +44,8 @@ const spacePartMetrics = "metrics"
 // spacePartPrunes names the cleanup targets that prune each part. A part with no entry here
 // is pruned by a health fix instead.
 var spacePartPrunes = map[string][]string{
-	store.SpacePartDeploys: {cleanup.TargetProbeAttempts, cleanup.TargetForgeStatus},
-	store.SpacePartEvents:  {cleanup.TargetAppHistory},
+	store.SpacePartDeploys: {cleanup.TargetProbeAttempts, cleanup.TargetForgeStatus, cleanup.TargetDeployHistory},
+	store.SpacePartEvents:  {cleanup.TargetAppHistory, cleanup.TargetNodeEvents},
 	store.SpacePartAudit:   {cleanup.TargetAuditLog},
 }
 

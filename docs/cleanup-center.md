@@ -34,6 +34,8 @@ Docker objects (stopped containers, images, build cache, orphaned volumes, old d
 | `deploys.forge_status` | Commit statuses posted to a git forge, shown on the app timeline | `retention.forge_status_days` | 30 days | `APP_RETENTION_FORGE_STATUS_DAYS` | none |
 | `deploys.probe_attempts` | Per-attempt readiness probe detail | `retention.probe_attempt_days` | 90 days | `APP_RETENTION_PROBE_ATTEMPT_DAYS` | none |
 | `deploys.app_history` | App lifecycle events, scheduled deploy history, last canary outcomes | `retention.app_history_days` | 90 days | `APP_RETENTION_APP_HISTORY_DAYS` | none |
+| `deploys.deploy_history` | Finished deploy attempts and their probe detail. Unfinished, pinned and the newest succeeded deploy of each app are kept | `retention.deploy_attempt_days` | 365 days | none | none |
+| `observability.node_events` | Node status changes and node security events | `retention.node_event_days` | 90 days | none | none |
 | `observability.usage_cost` | Daily cost showback snapshots | `retention.usage_cost_days` | 90 days | `APP_RETENTION_USAGE_COST_DAYS` | none |
 | `observability.status_incidents` | Resolved incidents and completed maintenance | `retention.status_incident_days` | 365 days | `APP_RETENTION_STATUS_INCIDENT_DAYS` | none |
 | `docker.containers`, `docker.images`, `docker.build_cache`, `docker.volumes`, `deploys.attempts` | Janitor stages, read only | the janitor policy | see [automatic cleanup](/janitor) | none | none |
@@ -92,3 +94,7 @@ A target that cannot use a cutoff (it deletes by count or by status) implements 
 ## Not covered yet
 
 Registry blob garbage collection, remote node stores, log size caps and scheduled VACUUM are not part of the cleanup center. Security audit tables, the auth library audit events and upgrade history are not covered: their floors and append-only rules stay as they are.
+
+## Row limit per app
+
+`retention.max_rows_per_app` caps app events and finished deploy attempts at the newest N rows for each app, on top of the day windows. It runs with those windows, so a window of 0 days keeps everything. The default 0 means no row limit.

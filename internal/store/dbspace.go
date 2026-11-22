@@ -43,7 +43,8 @@ type DBSpacePart struct {
 
 // spacePartTables lists only the tables a cleanup target can prune, so a part's size and its prune action agree.
 var spacePartTables = map[string]string{
-	string(RetentionProbeAttempts): SpacePartDeploys, string(RetentionForgeStatus): SpacePartDeploys,
+	string(RetentionProbeAttempts): SpacePartDeploys, string(RetentionForgeStatus): SpacePartDeploys, string(RetentionDeployAttempts): SpacePartDeploys,
+	string(RetentionNodeStatus): SpacePartEvents, string(RetentionNodeSecurity): SpacePartEvents,
 	string(RetentionAppEvents): SpacePartEvents, string(RetentionAppSchedule): SpacePartEvents, string(RetentionCanaryOutcomes): SpacePartEvents,
 	string(CleanupAuditLog): SpacePartAudit,
 }

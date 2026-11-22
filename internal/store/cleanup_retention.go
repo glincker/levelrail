@@ -29,6 +29,9 @@ const (
 	RetentionCanaryOutcomes  RetentionTable = "canary_outcomes"
 	RetentionUsageCostDaily  RetentionTable = "usage_cost_daily"
 	RetentionStatusIncidents RetentionTable = "status_incidents"
+	RetentionDeployAttempts  RetentionTable = "deploy_attempts"
+	RetentionNodeStatus      RetentionTable = "node_status_events"
+	RetentionNodeSecurity    RetentionTable = "node_security_events"
 
 	RetentionMCPOAuthRequests RetentionTable = "mcp_oauth_requests"
 	RetentionMCPOAuthRefresh  RetentionTable = "mcp_oauth_refresh"
@@ -47,7 +50,11 @@ const (
 type retentionSpec struct {
 	stats, countOlder, deleteOlder string
 	arg                            func(time.Time) any
-	parse                          func(string) (time.Time, error)
+	// beforeDelete clears rows that reference the ones deleteOlder is about to remove; it takes the same cutoff.
+	beforeDelete string
+	// capCount and capDelete bound rows per app by count, for rows not older than the cutoff; they take (cutoff, max[, limit]).
+	capCount, capDelete string
+	parse               func(string) (time.Time, error)
 }
 
 func argMicro(t time.Time) any { return t.UTC().UnixMicro() }
@@ -87,6 +94,16 @@ func parseDriverTime(s string) (time.Time, error) {
 	return t.UTC(), nil
 }
 
+func argUnixMilli(t time.Time) any { return t.UTC().UnixMilli() }
+
+func parseUnixMilli(s string) (time.Time, error) {
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("store: parse unix millis %q: %w", s, err)
+	}
+	return time.UnixMilli(n).UTC(), nil
+}
+
 func argRFC3339(t time.Time) any { return t.UTC().Format(time.RFC3339) }
 
 func argRFC3339Nano(t time.Time) any { return t.UTC().Format(time.RFC3339Nano) }
@@ -96,6 +113,20 @@ func argEventTime(t time.Time) any { return t.UTC().Format(appEventTimeFormat) }
 func argDay(t time.Time) any { return t.UTC().Format(usageCostDayLayout) }
 
 func parseDay(s string) (time.Time, error) { return time.Parse(usageCostDayLayout, s) }
+
+// appEventsOverCap selects the events ranked beyond the newest ?2 of their app.
+const appEventsOverCap = `SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY app_name ORDER BY created_at DESC, id DESC) AS rn FROM app_events) WHERE rn > ?2`
+
+// deployAttemptKept lists the attempts a prune never removes: unfinished ones, pinned ones and the newest succeeded
+// deploy of each service, which is what the app currently runs and rolls back to.
+const deployAttemptKept = `status NOT IN ('succeeded', 'failed', 'superseded', 'canceled', 'refused')
+	OR id IN (SELECT deploy_attempt_id FROM deploy_pins)
+	OR id IN (SELECT deploy_attempt_id FROM rollback_pins)
+	OR id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY service_name ORDER BY started_at DESC, id DESC) AS rn
+		FROM deploy_attempts WHERE status = 'succeeded') WHERE rn = 1)`
+
+const deployAttemptsOverCap = `SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY service_name ORDER BY started_at DESC, id DESC) AS rn
+	FROM deploy_attempts WHERE NOT (` + deployAttemptKept + `)) WHERE rn > ?2`
 
 var retentionTables = map[RetentionTable]retentionSpec{
 	RetentionAuthSessions: {
@@ -165,6 +196,8 @@ var retentionTables = map[RetentionTable]retentionSpec{
 		stats:       `SELECT COUNT(*), COALESCE(MIN(created_at), '') FROM app_events`,
 		countOlder:  `SELECT COUNT(*) FROM app_events WHERE created_at < ?`,
 		deleteOlder: `DELETE FROM app_events WHERE id IN (SELECT id FROM app_events WHERE created_at < ? LIMIT ?)`,
+		capCount:    `SELECT COUNT(*) FROM app_events WHERE created_at >= ?1 AND id IN (` + appEventsOverCap + `)`,
+		capDelete:   `DELETE FROM app_events WHERE id IN (SELECT id FROM app_events WHERE created_at >= ?1 AND id IN (` + appEventsOverCap + `) LIMIT ?3)`,
 	},
 	RetentionForgeStatus: {
 		arg: argEventTime, parse: parseDriverTime,
@@ -216,6 +249,28 @@ var retentionTables = map[RetentionTable]retentionSpec{
 		stats:       `SELECT COUNT(*), COALESCE(CAST(MIN(created_at) AS TEXT), '') FROM mcp_oauth_grants`,
 		countOlder:  `SELECT COUNT(*) FROM mcp_oauth_grants WHERE revoked_at < ?1 OR expires_at < ?1`,
 		deleteOlder: `DELETE FROM mcp_oauth_grants WHERE rowid IN (SELECT rowid FROM mcp_oauth_grants WHERE revoked_at < ?1 OR expires_at < ?1 LIMIT ?2)`,
+	},
+	// Probe detail goes first because it references its attempt.
+	RetentionDeployAttempts: {
+		arg: argRFC3339Nano, parse: parseDriverTime,
+		stats:        `SELECT COUNT(*), COALESCE(MIN(started_at), '') FROM deploy_attempts`,
+		countOlder:   `SELECT COUNT(*) FROM deploy_attempts WHERE started_at < ? AND NOT (` + deployAttemptKept + `)`,
+		beforeDelete: `DELETE FROM probe_attempts WHERE deploy_attempt_id IN (SELECT id FROM deploy_attempts WHERE started_at < ? AND NOT (` + deployAttemptKept + `))`,
+		deleteOlder:  `DELETE FROM deploy_attempts WHERE id IN (SELECT id FROM deploy_attempts WHERE started_at < ? AND NOT (` + deployAttemptKept + `) LIMIT ?)`,
+		capCount:     `SELECT COUNT(*) FROM deploy_attempts WHERE started_at >= ?1 AND id IN (` + deployAttemptsOverCap + `)`,
+		capDelete:    `DELETE FROM deploy_attempts WHERE id IN (SELECT id FROM deploy_attempts WHERE started_at >= ?1 AND id IN (` + deployAttemptsOverCap + `) LIMIT ?3)`,
+	},
+	RetentionNodeStatus: {
+		arg: argRFC3339Nano, parse: parseDriverTime,
+		stats:       `SELECT COUNT(*), COALESCE(MIN(created_at), '') FROM node_status_events`,
+		countOlder:  `SELECT COUNT(*) FROM node_status_events WHERE created_at < ?`,
+		deleteOlder: `DELETE FROM node_status_events WHERE id IN (SELECT id FROM node_status_events WHERE created_at < ? LIMIT ?)`,
+	},
+	RetentionNodeSecurity: {
+		arg: argUnixMilli, parse: parseUnixMilli,
+		stats:       `SELECT COUNT(*), COALESCE(CAST(MIN(last_at) AS TEXT), '') FROM node_security_events`,
+		countOlder:  `SELECT COUNT(*) FROM node_security_events WHERE last_at < ?`,
+		deleteOlder: `DELETE FROM node_security_events WHERE id IN (SELECT id FROM node_security_events WHERE last_at < ? LIMIT ?)`,
 	},
 	RetentionStatusIncidents: {
 		arg: argRFC3339Nano, parse: parseDriverTime,
@@ -273,9 +328,60 @@ func (db *DB) RetentionDeleteOlder(ctx context.Context, t RetentionTable, cutoff
 		if err := ctx.Err(); err != nil {
 			return total, fmt.Errorf("store: purge %s: %w", t, err)
 		}
+		if spec.beforeDelete != "" {
+			if _, err := db.ExecContext(ctx, spec.beforeDelete, spec.arg(cutoff)); err != nil {
+				return total, fmt.Errorf("store: purge %s dependents: %w", t, err)
+			}
+		}
 		res, err := db.ExecContext(ctx, spec.deleteOlder, spec.arg(cutoff), batch)
 		if err != nil {
 			return total, fmt.Errorf("store: purge %s: %w", t, err)
+		}
+		n, _ := res.RowsAffected()
+		total += n
+		if n < int64(batch) {
+			return total, nil
+		}
+	}
+}
+
+// RetentionCountOverCap counts the rows beyond the newest keep per app that are not older than cutoff
+// (older ones are RetentionCountOlder's). A table without a row cap, or keep <= 0, counts 0.
+func (db *DB) RetentionCountOverCap(ctx context.Context, t RetentionTable, cutoff time.Time, keep int) (int64, error) {
+	spec, ok := retentionTables[t]
+	if !ok || spec.capCount == "" || keep <= 0 {
+		return 0, nil
+	}
+	var n int64
+	if err := db.QueryRowContext(ctx, spec.capCount, spec.arg(cutoff), keep).Scan(&n); err != nil {
+		return 0, fmt.Errorf("store: count over cap %s: %w", t, err)
+	}
+	return n, nil
+}
+
+// RetentionDeleteOverCap removes the rows RetentionCountOverCap counts, in batches. Run it after the age
+// pass so the newest keep rows per app are what is left.
+func (db *DB) RetentionDeleteOverCap(ctx context.Context, t RetentionTable, cutoff time.Time, keep, batch int) (int64, error) {
+	spec, ok := retentionTables[t]
+	if !ok || spec.capDelete == "" || keep <= 0 {
+		return 0, nil
+	}
+	if batch <= 0 {
+		batch = retentionDefaultBatchSize
+	}
+	var total int64
+	for {
+		if err := ctx.Err(); err != nil {
+			return total, fmt.Errorf("store: cap %s: %w", t, err)
+		}
+		if t == RetentionDeployAttempts {
+			if _, err := db.ExecContext(ctx, `DELETE FROM probe_attempts WHERE deploy_attempt_id IN (SELECT id FROM deploy_attempts WHERE started_at >= ?1 AND id IN (`+deployAttemptsOverCap+`))`, spec.arg(cutoff), keep); err != nil {
+				return total, fmt.Errorf("store: cap %s dependents: %w", t, err)
+			}
+		}
+		res, err := db.ExecContext(ctx, spec.capDelete, spec.arg(cutoff), keep, batch)
+		if err != nil {
+			return total, fmt.Errorf("store: cap %s: %w", t, err)
 		}
 		n, _ := res.RowsAffected()
 		total += n
