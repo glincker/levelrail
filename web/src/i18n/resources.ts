@@ -99,6 +99,7 @@ import type restorePreview from '../locales/en/restorePreview.json'
 import type backups from '../locales/en/backups.json'
 import type backupPins from '../locales/en/backupPins.json'
 import type alertEscalation from '../locales/en/alertEscalation.json'
+import type alertRunbook from '../locales/en/alertRunbook.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type forms from '../locales/en/forms.json'
 import type splitTesting from '../locales/en/splitTesting.json'
@@ -266,6 +267,7 @@ declare module 'i18next' {
       restorePreview: typeof restorePreview
       backupPins: typeof backupPins
       alertEscalation: typeof alertEscalation
+      alertRunbook: typeof alertRunbook
       sleepHistory: typeof sleepHistory
       forms: typeof forms
       splitTesting: typeof splitTesting

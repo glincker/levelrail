@@ -28,6 +28,8 @@ import type { Severity } from '../types/alertNoise'
 
 const SEVERITIES: Severity[] = ['info', 'warning', 'critical']
 const NO_CHANNEL = 'none'
+// Mirrors the API's runbook length limit.
+const RUNBOOK_MAX = 1000
 const GO_DURATION = /^(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 
 // A PUT replaces the whole rule, so the request restates every editable
@@ -51,6 +53,7 @@ function ruleToRequest(rule: AlertRule): CreateAlertRuleRequest {
     notify_url: rule.channel_id ? undefined : rule.notify_url,
     notify_kind: rule.channel_id ? undefined : rule.notify_kind,
     enabled: rule.enabled,
+    runbook: rule.runbook,
   }
 }
 
@@ -103,6 +106,8 @@ export function RuleNoiseDialog({
   const [escMinutes, setEscMinutes] = useState(
     rule.escalate_after ? String(durationMinutes(rule.escalate_after)) : '',
   )
+  const { t: tr } = useTranslation('alertRunbook')
+  const [runbook, setRunbook] = useState(rule.runbook ?? '')
   const [formError, setFormError] = useState('')
   const update = useUpdateAlertRule(appName)
 
@@ -131,6 +136,10 @@ export function RuleNoiseDialog({
       setFormError(t('needBoth'))
       return
     }
+    if (runbook.trim().length > RUNBOOK_MAX) {
+      setFormError(tr('tooLong', { max: RUNBOOK_MAX }))
+      return
+    }
     setFormError('')
     update.mutate(
       {
@@ -145,6 +154,7 @@ export function RuleNoiseDialog({
           escalate_channel_id:
             escChannel === NO_CHANNEL ? undefined : escChannel,
           escalate_after: minutes > 0 ? `${minutes}m` : undefined,
+          runbook: runbook.trim() || undefined,
         },
       },
       {
@@ -299,6 +309,18 @@ export function RuleNoiseDialog({
             </Field>
           </div>
           <p className="text-xs text-muted-foreground">{t('afterHint')}</p>
+          <Field>
+            <FieldLabel htmlFor="noise-runbook">{tr('fieldLabel')}</FieldLabel>
+            <Input
+              id="noise-runbook"
+              placeholder={tr('fieldPlaceholder')}
+              value={runbook}
+              onChange={(e) => {
+                setRunbook(e.target.value)
+              }}
+            />
+          </Field>
+          <p className="text-xs text-muted-foreground">{tr('fieldHint')}</p>
           {formError || update.isError ? (
             <p role="alert" className="text-sm text-destructive">
               {formError || update.error?.message}

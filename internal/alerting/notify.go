@@ -208,6 +208,7 @@ type genericPayload struct {
 	ChangesLink   string           `json:"changes_link,omitempty"`
 	LogsLink      string           `json:"logs_link,omitempty"`
 	DeployLink    string           `json:"deploy_link,omitempty"`
+	Runbook       string           `json:"runbook,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -233,6 +234,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		DeployLink:           ev.DeployLink,
 		SLONotice:            ev.SLONotice,
 		LogNotice:            ev.LogNotice,
+		Runbook:              ev.Rule.Runbook,
 	}
 	if ev.Changes != nil {
 		payload.RecentChanges = ev.Changes.Changes[:min(len(ev.Changes.Changes), changes.NotifyMaxLines)]
@@ -656,12 +658,20 @@ func summaryTextCapped(ev Event, limit int) string {
 
 func changesSuffix(ev Event) string {
 	if ev.Changes == nil || ev.Resolved {
-		return linksSuffix(ev)
+		return linksSuffix(ev) + runbookSuffix(ev)
 	}
 	if block := changes.NotifyBlock(*ev.Changes, ev.ChangesLink); block != "" {
-		return "\n" + block + linksSuffix(ev)
+		return "\n" + block + linksSuffix(ev) + runbookSuffix(ev)
 	}
-	return linksSuffix(ev)
+	return linksSuffix(ev) + runbookSuffix(ev)
+}
+
+// runbookSuffix tells the responder what to do; it stays off resolved messages.
+func runbookSuffix(ev Event) string {
+	if ev.Resolved || ev.Rule.Runbook == "" {
+		return ""
+	}
+	return "\nRunbook: " + ev.Rule.Runbook
 }
 
 func summaryBody(ev Event) string {

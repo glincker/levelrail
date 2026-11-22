@@ -2596,6 +2596,7 @@ type CreateAlertRuleRequest struct {
 	FlapWindow          string            `json:"flap_window,omitempty"`
 	EscalateChannelID   string            `json:"escalate_channel_id,omitempty"`
 	EscalateAfter       string            `json:"escalate_after,omitempty"`
+	Runbook             string            `json:"runbook,omitempty"`
 }
 
 // UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
@@ -4006,6 +4007,7 @@ type AlertRuleResource struct {
 	FlapWindow          string            `json:"flap_window,omitempty"`
 	EscalateChannelID   string            `json:"escalate_channel_id,omitempty"`
 	EscalateAfter       string            `json:"escalate_after,omitempty"`
+	Runbook             string            `json:"runbook,omitempty"`
 	Silenced            bool              `json:"silenced,omitempty"`
 	SilencedBy          string            `json:"silenced_by,omitempty"`
 

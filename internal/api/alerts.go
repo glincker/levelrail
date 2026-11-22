@@ -82,6 +82,9 @@ type ruleResource struct {
 	EscalateChannelID string `json:"escalate_channel_id,omitempty"`
 	EscalateAfter     string `json:"escalate_after,omitempty"`
 
+	// Runbook is a URL or short note shown in the notification and the Inbox item.
+	Runbook string `json:"runbook,omitempty"`
+
 	// Response-only: set when an active silence or maintenance window
 	// currently mutes this rule.
 	Silenced   bool   `json:"silenced,omitempty"`
@@ -94,6 +97,9 @@ type ruleResource struct {
 	LastEvaluatedAt *time.Time `json:"last_evaluated_at,omitempty"`
 	LastValue       *float64   `json:"last_value,omitempty"`
 }
+
+// maxRunbookLen bounds the runbook text so a note cannot bloat every notification.
+const maxRunbookLen = 1000
 
 func toRuleResource(r alerting.Rule) ruleResource {
 	out := ruleResource{
@@ -121,6 +127,7 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		ConsecutiveFailures:   r.ConsecutiveFailures,
 		FlapThreshold:         r.FlapThreshold,
 		EscalateChannelID:     r.EscalateChannelID,
+		Runbook:               r.Runbook,
 		Firing:                r.Firing,
 		PendingSince:          r.PendingSince,
 		FiringSince:           r.FiringSince,
@@ -187,7 +194,13 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		return alerting.Rule{}, errors.New("escalate_channel_id and a positive escalate_after must be set together")
 	}
 
+	runbook := strings.TrimSpace(a.Runbook)
+	if len(runbook) > maxRunbookLen {
+		return alerting.Rule{}, fmt.Errorf("runbook must be at most %d characters", maxRunbookLen)
+	}
+
 	r := alerting.Rule{
+		Runbook:               runbook,
 		Severity:              a.Severity,
 		Labels:                a.Labels,
 		ConsecutiveFailures:   a.ConsecutiveFailures,

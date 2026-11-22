@@ -178,6 +178,9 @@ type Rule struct {
 	EscalateChannelID string
 	EscalateAfter     time.Duration
 
+	// Runbook is a URL or short note telling the responder what to do; it rides on the notification and the Inbox item.
+	Runbook string
+
 	// Evaluation state, read-only from a caller's perspective: only the
 	// evaluator (evaluate.go, crashloop.go) writes these, via
 	// UpdateState below.
@@ -211,8 +214,8 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			backup_resource_kind, backup_database_name, backup_service_name, backup_volume_name,
 			channel_id, notify_url, notify_kind, enabled,
 			severity, labels_json, consecutive_failures, flap_threshold, flap_window_seconds,
-			slo_json, log_rule_json, escalate_channel_id, escalate_after_seconds, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			slo_json, log_rule_json, escalate_channel_id, escalate_after_seconds, runbook, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -241,6 +244,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			log_rule_json = excluded.log_rule_json,
 			escalate_channel_id = excluded.escalate_channel_id,
 			escalate_after_seconds = excluded.escalate_after_seconds,
+			runbook = excluded.runbook,
 			updated_at = excluded.updated_at
 	`,
 		r.ID, r.Name, string(r.Kind), r.ResourceID,
@@ -249,7 +253,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 		r.BackupResourceKind, r.BackupDatabaseName, r.BackupServiceName, r.BackupVolumeName,
 		nullIfEmpty(r.ChannelID), r.NotifyURL, string(r.NotifyKind), boolToInt(r.Enabled),
 		severityOrDefault(r.Severity), encodeLabels(r.Labels), r.ConsecutiveFailures, r.FlapThreshold, int64(r.FlapWindow.Seconds()),
-		encodeSLO(r.SLO), encodeLogRule(r.LogRule), r.EscalateChannelID, int64(r.EscalateAfter.Seconds()), now, now,
+		encodeSLO(r.SLO), encodeLogRule(r.LogRule), r.EscalateChannelID, int64(r.EscalateAfter.Seconds()), r.Runbook, now, now,
 	)
 	if err != nil {
 		return fmt.Errorf("alerting: save rule %q: %w", r.ID, err)
@@ -379,7 +383,7 @@ const ruleSelectColumns = `
 		r.channel_id, COALESCE(c.notify_url, r.notify_url), COALESCE(c.kind, r.notify_kind),
 		r.enabled, c.enabled,
 		r.severity, r.labels_json, r.consecutive_failures, r.flap_threshold, r.flap_window_seconds,
-		r.slo_json, r.log_rule_json, r.escalate_channel_id, r.escalate_after_seconds,
+		r.slo_json, r.log_rule_json, r.escalate_channel_id, r.escalate_after_seconds, r.runbook,
 		r.pending_since, r.firing, r.firing_since, r.last_evaluated_at, r.last_value
 	FROM alert_rules r
 	LEFT JOIN notification_channels c ON c.id = r.channel_id`
@@ -409,7 +413,7 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 		&channelID, &r.NotifyURL, &notifyKind,
 		&enabledInt, &channelEnabled,
 		&r.Severity, &labelsJSON, &r.ConsecutiveFailures, &r.FlapThreshold, &flapWindowSeconds,
-		&sloJSON, &logRuleJSON, &r.EscalateChannelID, &escalateAfterSeconds,
+		&sloJSON, &logRuleJSON, &r.EscalateChannelID, &escalateAfterSeconds, &r.Runbook,
 		&pendingSince, &firingInt, &firingSince, &lastEvaluatedAt, &lastValue,
 	)
 	if err != nil {

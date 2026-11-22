@@ -75,6 +75,7 @@ export function EditLogRuleDialog({
       flap_window: rule.flap_window,
       escalate_channel_id: rule.escalate_channel_id,
       escalate_after: rule.escalate_after,
+      runbook: rule.runbook,
       log_rule: next,
     }
     updateRule.mutate(
