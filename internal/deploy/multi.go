@@ -67,29 +67,7 @@ var ErrNoServices = errors.New("deploy: no services to deploy")
 
 // DeploySpec fans out req into N independent Deploy calls, one per
 // service key, under one store.App (created if AppName has none yet,
-// reused otherwise: p.apps.GetAppByName then SaveApp, App.ID == App.Name
-// by this method's own convention, matching migrations/0039_apps.sql's
-// backfill convention for a pre-existing single-service app). The app
-// row is created before any service's build starts, so a partially
-// failed fan-out still leaves every successfully-deployed sibling
-// linked to a real AppID.
-//
-// Each service key's build failure is captured in that key's own
-// ServiceOutcome.Err and does not block any other key's build or
-// deploy, matching the reconciler's own "one broken resource must not
-// block convergence of everything else" principle
-// (internal/reconcile/engine.go's ReconcileAll doc comment): a caller
-// gets back one outcome per service key, in deterministic (sorted key)
-// order, and must inspect each Err individually rather than treating
-// this call's own returned error as "did it work." The returned error
-// is non-nil only for a failure that blocks every service alike
-// (req.Services empty, or the app row itself couldn't be created or
-// reused); once fan-out begins, DeploySpec itself always returns a nil
-// error and lets each ServiceOutcome carry its own.
-//
-// progress, if non-nil, is called with each service key's own
-// build.ProgressEvent stream, so a caller can tell which service a
-// given progress line belongs to.
+// reused otherwise: p.apps.GetAppByName then SaveApp, App.ID == App.Name.
 func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress func(serviceKey string, ev build.ProgressEvent)) ([]ServiceOutcome, error) {
 	var warnings []string
 	if len(req.Services) == 0 {

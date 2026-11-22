@@ -1,9 +1,6 @@
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 export type TeamRole = 'owner' | 'admin' | 'developer' | 'viewer'
 
@@ -126,10 +123,9 @@ export function teamEventsQueryOptions(id: string, enabled: boolean) {
 function useTeamMutation<TVars, TOut = void>(
   fn: (vars: TVars) => Promise<TOut>,
 ) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: teamKeys.all }),
+  return useApiMutation({
+    fn: fn,
+    invalidate: [teamKeys.all],
   })
 }
 

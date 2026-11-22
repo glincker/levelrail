@@ -1,11 +1,8 @@
 // Fetchers for /api/v1/deploy-policies (internal/api/deploy_policy.go).
 
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions, useMutation } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 export type PolicyScope = 'org' | 'project' | 'environment'
 export type PolicyMode = 'off' | 'warn' | 'enforce'
@@ -108,22 +105,20 @@ export function deployPoliciesQueryOptions() {
 }
 
 export function useSaveDeployPolicy() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (v: { scope: PolicyScope; id: string; rules: PolicyRules }) =>
+  return useApiMutation({
+    fn: (v: { scope: PolicyScope; id: string; rules: PolicyRules }) =>
       request<DeployPolicy>('PUT', scopePath(v.scope, v.id), {
         rules: v.rules,
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: deployPolicyKeys.all }),
+    invalidate: [deployPolicyKeys.all],
   })
 }
 
 export function useClearDeployPolicy() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (v: { scope: PolicyScope; id: string }) =>
+  return useApiMutation({
+    fn: (v: { scope: PolicyScope; id: string }) =>
       request<DeployPolicy>('DELETE', scopePath(v.scope, v.id)),
-    onSuccess: () => qc.invalidateQueries({ queryKey: deployPolicyKeys.all }),
+    invalidate: [deployPolicyKeys.all],
   })
 }
 

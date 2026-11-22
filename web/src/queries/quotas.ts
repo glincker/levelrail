@@ -1,9 +1,6 @@
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 export type QuotaScope = 'team' | 'project'
 
@@ -75,18 +72,16 @@ export function quotaQueryOptions(scope: QuotaScope, id: string) {
 }
 
 export function useSetQuota(scope: QuotaScope, id: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (limits: QuotaLimits) =>
+  return useApiMutation({
+    fn: (limits: QuotaLimits) =>
       request<QuotaResource>('PUT', quotaPath(scope, id), limits),
-    onSuccess: () => qc.invalidateQueries({ queryKey: quotaKeys.all }),
+    invalidate: [quotaKeys.all],
   })
 }
 
 export function useClearQuota(scope: QuotaScope, id: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: () => request<QuotaResource>('DELETE', quotaPath(scope, id)),
-    onSuccess: () => qc.invalidateQueries({ queryKey: quotaKeys.all }),
+  return useApiMutation({
+    fn: () => request<QuotaResource>('DELETE', quotaPath(scope, id)),
+    invalidate: [quotaKeys.all],
   })
 }

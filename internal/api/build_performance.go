@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -244,9 +243,8 @@ func (rt *Router) handleSetBuildLimits(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "build limits are not available on this control plane")
 		return
 	}
-	var req buildLimitOverrides
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<12)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[buildLimitOverrides](w, r, 1<<12)
+	if !ok {
 		return
 	}
 	if req.empty() {
@@ -332,9 +330,8 @@ func (rt *Router) handleSetAppBuildLimits(w http.ResponseWriter, r *http.Request
 	if !ok {
 		return
 	}
-	var req buildLimitOverrides
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<12)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[buildLimitOverrides](w, r, 1<<12)
+	if !ok {
 		return
 	}
 	req.MaxConcurrent = nil

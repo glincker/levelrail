@@ -1,44 +1,6 @@
 // Package mesh implements the mesh controller: the
 // reconcile.Controller that keeps the WireGuard mesh and the internal DNS
-// zone converged on whatever the store currently says the fleet and its
-// placements look like.
-//
-// Like internal/reconcile/ingress, and unlike the per-resource
-// application and database controllers, this reconciles the whole fleet
-// in one pass. That is not a convenience: a mesh is a property of the set
-// of nodes, not of any one node, and every node's peer list changes when
-// any node's key or address changes. There is no coherent
-// "reconcile one node's mesh" operation to build.
-//
-// Each pass:
-//
-//  1. Reads every node and every placement from the store. Nothing about
-//     the fleet is cached between passes, the same level-triggered
-//     reconciler contract every controller in this codebase follows.
-//  2. Distributes mesh configuration through internal/network.Coordinator,
-//     which allocates any missing addresses, plans a full mesh, and sends
-//     each node its own config.
-//  3. Persists whatever the nodes reported back (their public keys) plus
-//     any newly allocated address, so the next pass plans from it.
-//  4. Rebuilds the internal DNS record set from the same node data and
-//     the current placements, and swaps it into the resolver.
-//
-// Ordering matters between 3 and 4 and only in one direction: DNS records
-// are built from the same in-memory inventory the distribution pass just
-// updated, not from a re-read of the store, so a node whose address was
-// allocated this very pass resolves immediately rather than one pass
-// later.
-//
-// What this controller does not do, and why:
-//
-//   - It does not create or own the Mesh device. That belongs to whoever
-//     builds the process (the control plane's own node) or to the agent
-//     (a remote node), because a Mesh is a live handle on a kernel
-//     interface with a lifetime tied to the process, not to a reconcile
-//     pass.
-//   - It does not point containers at the DNS server. See
-//     internal/network's dns_server.go for exactly what that needs and
-//     why it is a separate change.
+// zone converged on whatever the store currently says the fleet and its.
 package mesh
 
 import (

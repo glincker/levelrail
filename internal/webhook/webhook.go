@@ -1,32 +1,6 @@
 // Package webhook is the git integration: a GitHub push-webhook
 // receiver that verifies the request signature, extracts the pushed
-// commit SHA, fetches the repository at that SHA to a local checkout, and
-// hands the result to internal/deploy's Pipeline, the same
-// pipeline a manual deploy trigger will use once the HTTP API
-// exists.
-//
-// Handler is an http.Handler, not a standalone server: the
-// HTTP API package mounts it at whatever path it chooses, so this package
-// must never call http.ListenAndServe itself.
-//
-// Scope boundary: Config is deliberately static, single-app configuration
-// (one secret, one repo, one branch, one spec.Service). This phase's
-// exit criterion is a single app, thesvg.org, deploying from a git
-// push; this package does not build a multi-tenant "which repo maps to
-// which app.yaml" registry, since designing that now would be exactly the
-// speculative-ahead-of-a-real-second-app work the project's engineering
-// standards warn against.
-// A second app arriving is the trigger to revisit this, not a hypothesis
-// about one arriving.
-//
-// That second app has now arrived: internal/api's own multi-app git
-// source registry (git_sources.go, git_webhook.go) reuses this package's
-// verified signature/payload logic (VerifySignature, ParsePushEvent,
-// MaxPayloadBytes, Config.TargetRef) rather than duplicating it, but
-// lives in internal/api because turning a stored app back into a full
-// spec.Service already lives there too (specServiceFromDesired). Handler
-// and Config above are unchanged and still back the original single-app,
-// env-var-configured path.
+// commit SHA, fetches the repository at that SHA to a local checkout, and.
 package webhook
 
 import (

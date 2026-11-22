@@ -5,7 +5,6 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery,
-  useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { runsQuery } from '../lib/cleanup'
@@ -17,6 +16,7 @@ import type {
   CleanupRunFilters,
   CleanupRunsPage,
 } from '../types/cleanup'
+import { useApiMutation } from './useApiMutation'
 
 const BASE = '/api/v1/cleanup'
 
@@ -74,9 +74,8 @@ export function usePreviewCleanup() {
 }
 
 export function useRunCleanup() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (v: { id: string; days: number }) =>
+  return useApiMutation({
+    fn: async (v: { id: string; days: number }) =>
       json<CleanupResult>(
         await fetch(
           `${BASE}/${encodeURIComponent(v.id)}/run`,
@@ -84,15 +83,13 @@ export function useRunCleanup() {
         ),
         'run cleanup',
       ),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: cleanupKeys.all }),
+    invalidate: [cleanupKeys.all],
   })
 }
 
 export function useSetCleanupMode() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (v: { id: string; mode: CleanupMode }) => {
+  return useApiMutation({
+    fn: async (v: { id: string; mode: CleanupMode }) => {
       const res = await fetch(
         `${BASE}/${encodeURIComponent(v.id)}/mode`,
         send({ mode: v.mode }, 'PUT'),
@@ -104,8 +101,7 @@ export function useSetCleanupMode() {
         )
       }
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: cleanupKeys.all }),
+    invalidate: [cleanupKeys.all],
   })
 }
 

@@ -1,10 +1,6 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  keepPreviousData,
-} from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 export type SearchKind =
   | 'app'
@@ -162,21 +158,19 @@ async function send(
 }
 
 export function useSaveSearch() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (v: { name: string; query: string }) =>
+  return useApiMutation({
+    fn: async (v: { name: string; query: string }) =>
       (await (await send(`${BASE}/saved`, 'POST', v)).json()) as SavedSearch,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['search-saved'] }),
+    invalidate: [['search-saved']],
   })
 }
 
 export function useDeleteSavedSearch() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
+  return useApiMutation({
+    fn: async (id: string) => {
       await send(`${BASE}/saved/${encodeURIComponent(id)}`, 'DELETE')
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['search-saved'] }),
+    invalidate: [['search-saved']],
   })
 }
 

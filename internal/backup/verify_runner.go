@@ -56,26 +56,7 @@ func (r *VerifyRunner) now() time.Time {
 
 // VerifyBackup re-downloads backupHistoryID's stored object and checks it
 // for corruption, recording the attempt in store.BackupVerification
-// throughout: a running row before any work starts, then passed or failed
-// once it's done. verificationID is minted by the caller
-// (internal/api's handleVerifyBackup), the same "generate the ID before
-// the first write" convention RunBackup's own doc comment describes;
-// VerifyBackup is expected to run in a goroutine the caller has already
-// detached, for the same reason RunBackup is.
-//
-// Refuses (the same as RunRestore) to proceed against a backup whose
-// Status is not store.BackupStatusSucceeded: a running or failed attempt
-// has no complete object at its recorded key worth verifying.
-//
-// engine is passed by the caller (internal/api resolves it from the
-// database's own store.DesiredDatabase, the same "caller resolves
-// engine, this package only consumes it" convention RunBackup's own
-// engine parameter already establishes) rather than looked up here: it
-// only sharpens the format check below (validateFormat), it is never
-// required for the checksum/size checks that carry most of this
-// function's real value, so an empty engine (e.g. the parent database
-// was since deleted) still runs a meaningful, if slightly less specific,
-// verification rather than failing outright.
+// throughout: a running row before any work starts, then passed or failed.
 func (r *VerifyRunner) VerifyBackup(ctx context.Context, verificationID, backupHistoryID, engine, checkedBy string) error {
 	startedAt := r.now()
 

@@ -30,6 +30,8 @@ expect "docs/self-host/seaweedfs.mdx" "docs codegen" "fanin locales"
 expect "scripts/newtool/main.go" "fanin execgate" "docs"
 expect "internal/agentupdate/agentupdate.go" "agentupdate" "docs locales"
 expect "cmd/levelrail-agent/main.go" "agentupdate" "docs"
+expect "scripts/idle-footprint-baseline.json" "perfbudget" "fanin docs"
+expect "web/vite.config.ts" "perfbudget" "fanin"
 expect "README.txt" "dashes" "docs codegen fanin execgate clitree"
 
 [ "$fail" -eq 0 ] && echo "preflight_test: ok"

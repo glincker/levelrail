@@ -1,64 +1,6 @@
 // Package ingress implements the ingress controller: the
 // reconcile.Controller that keeps Caddy's config (internal/ingress, ADR
 // 005) in sync with every service that declares domains.
-//
-// ADR 005's Verified section is the load-bearing finding this controller
-// is built around: caddy.Load (what Driver.Apply calls) replaces Caddy's
-// entire process-wide config on every call, there is no per-app
-// incremental update. So unlike the application controller
-// (internal/reconcile/application), which reconciles one named service
-// at a time, this controller reconciles all of them in a single pass:
-// every Reconcile call lists every desired service, derives a complete
-// desired ingress.Config from whichever of them currently have a running
-// backend, and applies that whole document. This fits the reconciler
-// contract's level-triggered philosophy directly (re-derive from current
-// state every time, assume nothing about a previous call), it just means the
-// unit of reconciliation for ingress is "all routable services," not one
-// resource.
-//
-// A follow-up this package's own doc comment used to flag as open is now
-// closed: real ACME (ADR 005's Verified section names this exact gap,
-// "must be spot-checked against a real domain... not assumed to follow
-// automatically") is available as an opt-in, platform-wide toggle
-// (store.IngressSettings.ACMEEnabled, read fresh every Reconcile via
-// ServiceStore.GetIngressSettings), not the default: Caddy's internal
-// (self-signed, offline) issuer remains what every route gets unless an
-// operator explicitly turns ACME on through PUT /api/v1/settings/ingress
-// (internal/api), so an upgrading deployment's behavior is unchanged
-// until it opts in. When enabled, every currently-routed host shares one
-// automation policy pointed at real ACME instead of the internal issuer;
-// see internal/ingress.BuildRoutesConfig's own doc comment on
-// RoutesOptions.ACMEEnabled for why this pass deliberately does not mix
-// ACME and internal issuers across different hosts in the same reconcile.
-//
-// The platform primary domain (store.IngressSettings.PrimaryDomain) is
-// this same settings row's second, independent field: when set, this
-// controller adds one more reverse-proxy route (WithDashboardDial) for
-// the control plane's own dashboard, sharing the same claimedHosts dedup
-// and the same TLS automation policy as every app/static-site route.
-//
-// Two further gaps this package's own doc comment used to flag as open
-// here are also closed:
-//
-//   - Certificate storage no longer has to stay on Caddy's default
-//     file-system storage module (internal/ingress.FileStorage).
-//     WithCertStore points it at internal/ingress.SQLiteStorage instead,
-//     a certmagic.Storage backed by internal/store's SQLite, so
-//     multiple ingress-driving processes sharing that database share
-//     cert state, per the ingress design's requirement that certificate
-//     storage live in the database rather than each independently
-//     re-obtaining a certificate for a domain another one already has.
-//   - Domain uniqueness across separate deploys over time (not just
-//     within a single app.yaml, which internal/spec's Validate() already
-//     enforced) is now enforced where desired state is actually
-//     written: store.SaveDesiredService rejects a save with
-//     *store.ErrDomainTaken if any domain is already claimed by a
-//     different service (see migrations/0011_service_domains.sql). This
-//     controller also carries a defense-in-depth guard in Reconcile
-//     (firstDuplicateHost) for any pre-existing data written before that
-//     constraint existed: it never builds two routes for the same host
-//     in one pass, logging and skipping whichever service loses the
-//     race within this reconcile.
 package ingress
 
 import (
@@ -88,24 +30,6 @@ import (
 
 // ServiceStore is the narrow surface this controller needs from
 // internal/store, so tests can fake it without a real database.
-// *store.DB satisfies this. Unlike application.ServiceStore (one named
-// service), this controller needs every known service in one call: see
-// the package doc comment for why ingress reconciles as a single whole
-// pass rather than per-service.
-//
-// ListStaticSites is the static-site bypass of the
-// container reconciler (migrations/0015_static_sites.sql,
-// internal/store.StaticSite): a static site is never a
-// store.DesiredService (no image, no port, nothing to converge to a
-// running container), so it needs its own listing call, read fresh on
-// every Reconcile exactly like ListDesiredServices, rather than being
-// threaded through the container-service shape as a special case.
-// GetIngressSettings is read fresh on every Reconcile, the same
-// "never cache, re-derive from current state every call" principle
-// ListDesiredServices/ListStaticSites already follow: an operator
-// toggling ACME on or setting a primary domain through PUT
-// /api/v1/settings/ingress (internal/api) must take effect on this
-// controller's very next reconcile pass, not require a restart.
 type ServiceStore interface {
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	ListStaticSites(ctx context.Context) ([]store.StaticSite, error)
@@ -780,28 +704,7 @@ func (c *Controller) Name() string { return "ingress" }
 
 // Reconcile implements reconcile.Controller. It lists every desired
 // service and every static site (store.StaticSite, the
-// container-free bypass, migrations/0015_static_sites.sql), builds one
-// reverse-proxy route per service that both declares domains and
-// currently has a running, port-published container, one file_server
-// route per static site that declares domains, and applies the
-// resulting whole Config to Caddy in a single call (see the package doc
-// comment for why this can't be done incrementally). Both kinds of route
-// share one claimedHosts pass so a container service and a static site
-// can never both route the same host within one apply, the same
-// defense-in-depth firstDuplicateHost already gave container services
-// alone before static sites existed.
-//
-// A service with no valid backend right now (mid-deploy, crashed, never
-// deployed) is not a reconcile failure: it's simply left out of this
-// pass's config, logged at debug level, and picked up automatically once
-// a later reconcile finds it running (this controller and the
-// application controller both re-run on every Docker event and resync
-// tick, per the shared Engine). A static site never has this problem:
-// there is no container to wait for, so every static site with domains
-// is routed the moment internal/deploy.Pipeline has saved it, on this
-// controller's very next reconcile. Only a genuine failure to list
-// desired state, build the config, or apply it to Caddy is reported as
-// an error.
+// container-free bypass, migrations/0015_static_sites.sql), builds one.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	pass := ingress.BeginPass()
 	c.issues.reset()

@@ -1,21 +1,6 @@
 // Package prompb implements the small subset of Prometheus's remote-read
 // wire protocol needed for a Prometheus remote read endpoint
-// (ReadRequest/ReadResponse and their
-// nested messages), by hand, using google.golang.org/protobuf's
-// low-level protowire primitives (already a transitive dependency, no
-// new module).
-//
-// Deliberately not github.com/prometheus/prometheus/prompb: that's the
-// full Prometheus server module, known in practice to drag in a much
-// heavier dependency tree than the handful of stable, simple messages
-// this package actually needs, the same reasoning ADR 009 already
-// applied against embedding VictoriaMetrics's storage engine for the
-// metrics store itself. The remote-read wire format (field numbers,
-// message shapes) has been stable for years across the Prometheus/
-// Thanos/Cortex/Grafana Mimir ecosystem, precisely because changing it
-// would break every tool that speaks it; hand-encoding against that
-// stable, public contract is a reasonable trade for staying dependency-
-// light, unlike hand-rolling an internal format Levelrail alone reads.
+// (ReadRequest/ReadResponse and their.
 package prompb
 
 import (

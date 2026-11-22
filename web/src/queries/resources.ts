@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { usageKeys } from './usage'
+import { useApiMutation } from './useApiMutation'
 
 export type ResourceKind =
   'app' | 'database' | 'node' | 'domain' | 'bucket' | 'network'
@@ -154,9 +155,8 @@ export function useConsoleViews() {
 }
 
 export function useSaveConsoleView() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (v: { name: string; query: string }) =>
+  return useApiMutation({
+    fn: (v: { name: string; query: string }) =>
       request<ConsoleView>(
         '/api/v1/resources/views',
         {
@@ -166,19 +166,18 @@ export function useSaveConsoleView() {
         },
         'save view',
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: resourceKeys.views() }),
+    invalidate: [resourceKeys.views()],
   })
 }
 
 export function useDeleteConsoleView() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) =>
+  return useApiMutation({
+    fn: (id: string) =>
       request<void>(
         `/api/v1/resources/views/${encodeURIComponent(id)}`,
         { method: 'DELETE' },
         'delete view',
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: resourceKeys.views() }),
+    invalidate: [resourceKeys.views()],
   })
 }

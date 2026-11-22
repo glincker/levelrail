@@ -30,28 +30,7 @@ type S3Uploader struct{}
 
 // Upload writes r to dest.Bucket under key using the AWS SDK's S3
 // upload manager rather than a raw PutObject call, because size is
-// frequently -1 here: Runner streams a database dump straight from a
-// running pg_dump/mysqldump process into Upload while the dump is still
-// in flight, so there is no Content-Length to give PutObject and no
-// seekable body to compute one from. The upload manager handles this by
-// buffering r into fixed-size parts and issuing an S3 multipart upload,
-// which needs no upfront length. The size parameter goes unused (named
-// _ below, the same convention this package's own test fakes already
-// use for it): it is a hint for implementations that can act on it (see
-// backup.go's own doc comment on Uploader), and this one cannot, since
-// the manager sizes itself from r as it streams regardless of what is
-// passed.
-//
-// This intentionally uses feature/s3/manager rather than its
-// replacement, feature/s3/transfermanager: as of this writing
-// transfermanager's UploadObject takes a Body that must support Len()
-// or Seek() to size itself, which a streaming pg_dump/mysqldump pipe
-// cannot provide, and its own maintainers describe the unknown-size
-// streaming case as unsupported. feature/s3/manager is marked
-// deprecated in its doc comments but not removed or broken; it is the
-// only one of the two that actually does what Runner needs. Revisit
-// this once transfermanager grows real support for an unbounded
-// io.Reader body.
+// frequently -1 here: Runner streams a database dump straight from a.
 func (S3Uploader) Upload(ctx context.Context, dest Destination, key string, r io.Reader, _ int64) error {
 	client, err := newS3Client(ctx, dest)
 	if err != nil {

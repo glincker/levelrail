@@ -1,14 +1,10 @@
 // Tag manager calls (create, rename, delete, apps per tag). Kept out of
 // queries/tags.ts so the main chunk, which imports that file, stays small.
 
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { tagKeys, type Tag } from './tags'
+import { useApiMutation } from './useApiMutation'
 
 export interface TagApp {
   name: string
@@ -58,10 +54,9 @@ export function useTagApps(tagId: string, enabled: boolean) {
 }
 
 function useTagMutation<V>(fn: (v: V) => Promise<unknown>) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: fn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: tagKeys.all }),
+  return useApiMutation({
+    fn: fn,
+    invalidate: [tagKeys.all],
   })
 }
 

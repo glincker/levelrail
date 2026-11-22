@@ -83,24 +83,6 @@ func (r *Runner) now() time.Time {
 }
 
 // RunBackup dumps databaseName (running in containerName under engine)
-// and uploads the result to targetID, recording the attempt in
-// store.BackupHistory throughout: a running row before any work starts,
-// then succeeded or failed once it's done. historyID is minted by the
-// caller (internal/api, the same "generate the ID before the first
-// write" convention store.BackupTarget's own doc comment describes) so
-// the caller can return it in an HTTP response immediately without
-// waiting for the backup to finish; RunBackup itself is expected to run
-// in a goroutine the caller has already detached; see internal/api's
-// handleTriggerBackup for how it starts, and this file's own tests for
-// the exact happy-path and every-failure-point sequencing this describes.
-//
-// Every failure path (target not found, secret resolution, dump, upload)
-// finishes the history row as BackupStatusFailed with a real error
-// message rather than leaving it stuck at BackupStatusRunning: the one
-// exception is a failure to even write FinishBackupHistory itself, which
-// RunBackup can't recover from and returns as-is, the same "give up
-// honestly rather than mask it" the reconcilers elsewhere in this
-// codebase already follow when their own condition-write fails.
 func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine, containerName, targetID string) error {
 	if err := checkDiskSpace(resolveWorkDir(r.WorkDir)); err != nil {
 		return err

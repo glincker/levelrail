@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -249,7 +250,11 @@ func TestDetectRuntimeSocketSkipsDeadSocket(t *testing.T) {
 		return "", false
 	}
 	probe := func(os string) RuntimeInfo {
-		return detectRuntimeSocketProbe(env, socketExists, dialableSocket, os)
+		// Only paths under the temp home count, so a real daemon on this host cannot leak in.
+		inHome := func(p string) bool { return strings.HasPrefix(p, home) }
+		exists := func(p string) bool { return inHome(p) && socketExists(p) }
+		dial := func(p string) bool { return inHome(p) && dialableSocket(p) }
+		return detectRuntimeSocketProbe(env, exists, dial, os)
 	}
 
 	// Only a dead candidate: keep the first existing one.

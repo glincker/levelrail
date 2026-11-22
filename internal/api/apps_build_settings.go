@@ -105,9 +105,8 @@ func (rt *Router) handleGetAppBuildSettings(w http.ResponseWriter, r *http.Reque
 func (rt *Router) handleSetAppBuildSettings(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ctx := withRequestOrigin(r.Context(), r)
-	var req setAppBuildSettingsRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[setAppBuildSettingsRequest](w, r, 16<<10)
+	if !ok {
 		return
 	}
 	if rt.buildSettings == nil {

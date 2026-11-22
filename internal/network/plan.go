@@ -2,28 +2,6 @@ package network
 
 // This file: the full-mesh decision. Given what the control plane knows
 // about every node, produce the DeviceConfig for one specific node.
-//
-// This is the smallest possible expression of ADR 006's central choice,
-// and it is deliberately kept that way so the choice is auditable in one
-// function: "every other ready node becomes a direct peer of this one."
-// The rejected alternative (hub-and-spoke, where each node peers only
-// with the control plane and the control plane forwards) is ruled out by
-// ADR 006 in one line, but it is worth being explicit about why, because
-// it is the shape that falls out naturally if nobody decides otherwise:
-//
-//   - Hub-and-spoke doubles the latency of every cross-node call and puts
-//     the whole fleet's east-west traffic through one process. That is
-//     exactly the "gets heavier as resource count grows" failure this
-//     project exists to avoid in the first place.
-//   - It makes the control plane a hard dependency of the data path. A
-//     control plane restart, which is otherwise a completely safe
-//     operation (every reconciler is level-triggered and resumes), would
-//     sever every inter-service connection in the fleet.
-//   - It gains nothing WireGuard does not already do: a full mesh of N
-//     nodes is N*(N-1)/2 peer relationships, but each node only holds
-//     N-1 peer entries, and a peer entry is a public key and an
-//     endpoint. At the 1-to-10 machines this project targets, that is at
-//     most nine entries per node.
 
 import (
 	"fmt"
@@ -71,25 +49,6 @@ func (o PlanOptions) keepalive() time.Duration {
 }
 
 // Plan computes the DeviceConfig for selfID from the full node inventory.
-//
-// The returned config's PrivateKey is deliberately zero: this runs on the
-// control plane, which does not have and must never have any node's
-// private key (see DeviceConfig's own doc comment). The node fills it in
-// from its own local key file before calling Apply.
-//
-// A node in the inventory that is not Ready (no public key yet, no
-// address yet) is skipped as a peer rather than treated as an error. Node
-// enrollment (ADR 003) and mesh readiness are separate events, and a
-// fleet where one machine enrolled thirty seconds ago must still be able
-// to mesh the machines that are ready. The consequence is that the mesh
-// converges over successive passes rather than atomically, which is the
-// same level-triggered convergence every other controller in this
-// codebase already has, not a weaker guarantee.
-//
-// selfID itself does not need to be Ready. A node that has not yet
-// reported a key still gets a valid plan naming its peers, which is
-// exactly what it needs on its very first pass: it is the act of applying
-// that plan that produces the key it will report back.
 func Plan(selfID string, nodes []NodeInfo, opts PlanOptions) (DeviceConfig, error) {
 	if selfID == "" {
 		return DeviceConfig{}, fmt.Errorf("%w: no node ID given", ErrUnknownNode)

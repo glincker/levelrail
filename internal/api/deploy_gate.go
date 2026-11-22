@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -303,9 +302,8 @@ func (rt *Router) handlePutDeploySafety(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	var req deploySafetyOverrides
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<14)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[deploySafetyOverrides](w, r, 1<<14)
+	if !ok {
 		return
 	}
 	settings, err := req.toStore(svc.Name)

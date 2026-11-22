@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -136,9 +135,8 @@ func (rt *Router) handleCreateAlertSilence(w http.ResponseWriter, r *http.Reques
 	if !rt.alertNoiseReady(w) {
 		return
 	}
-	var req createSilenceRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[createSilenceRequest](w, r, 1<<16)
+	if !ok {
 		return
 	}
 	now := time.Now()
@@ -194,9 +192,8 @@ func (rt *Router) handleSilenceAlertRule(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: silence alert rule: load rule failed", err)
 		return
 	}
-	var req createSilenceRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[createSilenceRequest](w, r, 1<<16)
+	if !ok {
 		return
 	}
 	req.Matchers = alerting.SilenceMatcher{RuleIDs: []string{rule.ID}}
@@ -290,9 +287,8 @@ func (rt *Router) handleCreateMaintenanceWindow(w http.ResponseWriter, r *http.R
 	if !rt.alertNoiseReady(w) {
 		return
 	}
-	var req maintenanceWindowResource
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[maintenanceWindowResource](w, r, 1<<16)
+	if !ok {
 		return
 	}
 	id, err := alerting.NewMaintenanceWindowID()
@@ -331,9 +327,8 @@ func (rt *Router) handleUpdateMaintenanceWindow(w http.ResponseWriter, r *http.R
 		rt.internalError(w, "api: update maintenance window: load failed", err)
 		return
 	}
-	var req maintenanceWindowResource
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[maintenanceWindowResource](w, r, 1<<16)
+	if !ok {
 		return
 	}
 	mw, err := req.toWindow(id, existing.CreatedBy)

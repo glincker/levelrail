@@ -99,37 +99,7 @@ const egressReadyMarkerPath = "/run/levelrail-egress-ready"
 
 // egressBootScript installs the enforcement rules once, resolves the
 // allowlist into the ipset synchronously so egressReadyMarkerPath is
-// only ever written once both halves of enforcement (the DROP policy
-// and a populated ipset, not just the former) are actually in place,
-// then loops forever re-resolving on an interval. The iptables rule set
-// itself is installed exactly once and never touched again: the ipset
-// it matches against is swapped, so a resolve cycle never leaves a
-// window where the OUTPUT chain has no rules installed at all.
-//
-// No package install here: egressImage already ships iptables, ipset,
-// and getent, so this runs immediately with no network dependency at
-// boot (egressImage's own doc comment).
-//
-// Baseline traffic kept open, conservatively, so this can never make an
-// app unreachable purely by enforcing egress: loopback (lo), replies to
-// any connection the app itself received (ESTABLISHED,RELATED, which
-// covers inbound traffic from Caddy ingress and its own responses, since
-// egress enforcement only ever touches the OUTPUT chain, never INPUT),
-// and DNS (port 53, both protocols, to any resolver) since without it no
-// host in the allowlist could ever be resolved in the first place.
-//
-// A real limitation, not solved here: there is a window between the app
-// container starting (open egress, Docker's own default) and this
-// script finishing its first ipset/iptables setup where egress is
-// briefly unrestricted. Closing that race would need the rules installed
-// before the app's own process starts taking traffic, which the sidecar
-// model (a second container joining the netns after the first exists)
-// cannot guarantee order for. Documented, not silently accepted.
-//
-// Another: enforcement is IPv4 only (iptables, not ip6tables). An
-// allowed host's IPv6 (AAAA) addresses are resolved and deliberately
-// skipped, not added to this IPv4-only ipset; if the app container ever
-// has IPv6 connectivity, that path is unenforced.
+// only ever written once both halves of enforcement (the DROP policy.
 const egressBootScript = `set -e
 
 IPSET=` + egressIPSetName + `

@@ -1,9 +1,6 @@
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 export interface BootstrapScript {
   id: string
@@ -67,9 +64,8 @@ export interface SaveScriptVars {
 }
 
 export function useSaveBootstrapScript() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ id, name, body }: SaveScriptVars) => {
+  return useApiMutation({
+    fn: async ({ id, name, body }: SaveScriptVars) => {
       await call(
         id ? `${BASE}/${encodeURIComponent(id)}` : BASE,
         'save script',
@@ -80,18 +76,17 @@ export function useSaveBootstrapScript() {
         },
       )
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    invalidate: [KEY],
   })
 }
 
 export function useDeleteBootstrapScript() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
+  return useApiMutation({
+    fn: async (id: string) => {
       await call(`${BASE}/${encodeURIComponent(id)}`, 'delete script', {
         method: 'DELETE',
       })
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    invalidate: [KEY],
   })
 }

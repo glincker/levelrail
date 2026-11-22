@@ -1,35 +1,6 @@
 // Package network is ADR 006's WireGuard mesh: the abstraction that ADR
 // 006 says "has to be designed in Phase 1 as an interface, not a concrete
-// WireGuard dependency" and that, until now, did not exist at
-// all (the directory the project's repo layout reserves for it was empty).
-//
-// The split this package draws, and why:
-//
-//   - Everything that decides *what the mesh should look like* (Plan,
-//     AllocateAddress, BuildRecords, Coordinator) is pure Go over plain
-//     values. It needs no root, no kernel module, no TUN device, and no
-//     network. It is therefore table-driven testable, which matters
-//     because it is where the actual product decisions live: full mesh
-//     rather than hub-and-spoke, which node an app's DNS name points at,
-//     what happens when a node reports a key that collides with another.
-//   - Everything that *makes the kernel agree with that decision*
-//     (Device, uapi.go, detect.go) is deliberately thin, and is the only
-//     part that touches wireguard-go, privileged syscalls, or /sys. It
-//     cannot be unit tested without root; what it can do is be small
-//     enough that a human reviewing it can see it is a faithful
-//     translation of a DeviceConfig, and no more.
-//
-// That boundary is the same one internal/docker already draws between
-// Runtime (the narrow surface controllers depend on) and Client (the
-// part that actually talks to a daemon), and it exists here for the same
-// reason: the interesting failure modes are in the decisions, not in the
-// syscalls.
-//
-// This package deliberately does not import internal/brand. The DNS zone
-// is derived from a short name passed in by the caller (see Zone), so
-// nothing here embeds a product name, matching the rule that no product
-// name string appears anywhere in source, and the package stays testable
-// without loading brand.yaml.
+// WireGuard dependency" and that, until now, did not exist at.
 package network
 
 import (

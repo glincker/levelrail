@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '../lib/pollTier'
+import { useApiMutation } from './useApiMutation'
 
 export type TimelineWindow = '24h' | '168h' | '720h'
 
@@ -124,9 +125,8 @@ export function useNodeVersionSkew() {
 
 // Queues a one-time Update anyway for the node; it never turns on automatic updates.
 export function useUpdateAgentAnyway() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
+  return useApiMutation({
+    fn: async (id: string) => {
       const res = await fetch(
         `/api/v1/nodes/${encodeURIComponent(id)}/agent-update/override`,
         { method: 'POST' },
@@ -138,6 +138,6 @@ export function useUpdateAgentAnyway() {
         )
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: nodeInsightKeys.skew() }),
+    invalidate: [nodeInsightKeys.skew()],
   })
 }

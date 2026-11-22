@@ -48,22 +48,6 @@ type GitHubAppConnection struct {
 // GitHubAppSecretsKey is the internal/secrets serviceName the GitHub
 // App's client_secret, webhook_secret, and PEM private key are stored
 // under (envKeys "client_secret", "webhook_secret", "private_key").
-// Mirrors BackupTargetSecretsKey's exact shape: a function, not a
-// literal repeated at each call site, so internal/api and
-// internal/githubapp can never drift into computing this two different
-// ways.
-//
-// A fixed constant, not parameterized by an ID like
-// BackupTargetSecretsKey(targetID) is: there is only ever one GitHub
-// App connection per control plane (github_app_connections is a
-// singleton table, id=1 only), unlike backup targets which are
-// one-per-connected-bucket. The "/" makes this string structurally
-// impossible to collide with a real service name: every real
-// desired_services row name is validated as a Docker-container/
-// DNS-label-safe token (see internal/spec's service name validation)
-// and can never contain a "/", the same reasoning
-// BackupTargetSecretsKey's own doc comment gives for its
-// "backup-target/"+targetID shape.
 func GitHubAppSecretsKey() string {
 	return "github-app/connection"
 }

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -105,9 +104,8 @@ func (rt *Router) handleSetAIProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := r.PathValue("id")
-	var req setAIProviderRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, aiProviderBodyLimit)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[setAIProviderRequest](w, r, aiProviderBodyLimit)
+	if !ok {
 		return
 	}
 	view, res, err := rt.aiVault.Set(r.Context(), id, ai.SetInput{APIKey: req.APIKey, BaseURL: req.BaseURL, DefaultModel: req.DefaultModel}, true)

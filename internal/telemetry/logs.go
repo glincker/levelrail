@@ -17,44 +17,7 @@ import (
 
 // This file (logs.go) is the node-local log store: read a container's
 // log stream directly from the Docker Engine API
-// (never the json-file driver's on-disk files), chunk it into batches,
-// index it for full-text search, and flag
-// lines that parse as JSON so a future log viewer can
-// render them distinctly. Lives in the same package and the same
-// telemetry.db as store.go's metric samples: ADR 008 frames metrics and
-// logs as the same "node-local telemetry" category, and ADR 009's
-// write-isolation reasoning was applied against internal/store
-// specifically (a desired-state database with an entirely different
-// write pattern), not against telemetry's own two data domains, which
-// share both a write cadence (bursty, per-batch writes) and a retention
-// model (a periodic delete-older-than sweep).
-//
-// LogCollector.StreamOne is also the single point every line passes
-// through on its way in from Docker, which makes it the natural hook for
-// a live viewer, not just the persisted store: when a LogBroadcaster
-// (broadcast.go) is configured, StreamOne publishes each line to it the
-// moment it arrives, before batching or writing it anywhere, so a
-// currently-connected SSE viewer (internal/api's live log route) sees
-// output as fast as this collector itself does, independent of how
-// stale WriteLogBatch's own batching threshold might otherwise make a
-// query against the store.
-//
-// Compression (the log store's "chunk, compress, index" design goal):
-// deliberately not an explicit step here. FTS5 (see
-// migrations/0002_log_entries.sql) needs plaintext access to message to
-// build and query its token index; compressing message at the row level
-// would mean decompressing before every search, which defeats the point
-// of having an index at all, or storing both a compressed and an
-// uncompressed copy, which is worse than not compressing. The goal
-// "compress" is meant to solve (don't let a log firehose bloat storage
-// unchecked) is instead solved by: batched writes (fewer, larger
-// transactions, see logBatchMaxLines/
-// logBatchMaxWait below) rather than one write per line, FTS5's
-// external-content mode (log_entries_fts stores token postings only, not
-// a second copy of every message), and the same bounded-retention sweep
-// ADR 009 already applies to metric_samples. This mirrors ADR 009's own
-// reasoning template: purpose-built and sized to this project's actual
-// scale, not a general-purpose system's feature set.
+// (never the json-file driver's on-disk files), chunk it into batches.
 const (
 	// logBatchMaxLines is how many buffered lines trigger an immediate
 	// flush to SQLite, regardless of how long they took to accumulate.

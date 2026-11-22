@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -205,9 +204,8 @@ func (rt *Router) handleTransferAppImportImages(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusNotImplemented, "this control plane has no node runtime to load images into")
 		return
 	}
-	var req appImportImagesTransferRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxAppImportBody)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[appImportImagesTransferRequest](w, r, maxAppImportBody)
+	if !ok {
 		return
 	}
 	target, creds, tunnel, err := rt.imageMoveSource(sess, req)

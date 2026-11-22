@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -23,9 +22,8 @@ type validateSpecResponse struct {
 
 // handleValidateSpec checks an app.yaml body with the same rules as deploy time, without deploying or saving.
 func (rt *Router) handleValidateSpec(w http.ResponseWriter, r *http.Request) {
-	var req validateSpecRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, validateSpecBodyLimit)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[validateSpecRequest](w, r, validateSpecBodyLimit)
+	if !ok {
 		return
 	}
 	parsed, issues := spec.ValidateDocument([]byte(req.YAML))

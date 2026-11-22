@@ -1,13 +1,9 @@
 // Function triggers and the async invocation queue (internal/api/function_triggers.go).
 
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '@/lib/pollTier'
+import { useApiMutation } from './useApiMutation'
 
 export interface FunctionWebhook {
   url: string
@@ -102,9 +98,8 @@ export function useDeadLetters() {
 }
 
 export function useSetWebhook(name: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (input: { path: string; rotate: boolean }) =>
+  return useApiMutation({
+    fn: (input: { path: string; rotate: boolean }) =>
       request<FunctionWebhook>(
         `/api/v1/functions/${encodeURIComponent(name)}/triggers/webhook`,
         'set webhook',
@@ -114,45 +109,42 @@ export function useSetWebhook(name: string) {
           body: JSON.stringify(input),
         },
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: triggerKeys.all }),
+    invalidate: [triggerKeys.all],
   })
 }
 
 export function useDisableWebhook(name: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: () =>
+  return useApiMutation({
+    fn: () =>
       request<void>(
         `/api/v1/functions/${encodeURIComponent(name)}/triggers/webhook`,
         'disable webhook',
         { method: 'DELETE' },
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: triggerKeys.all }),
+    invalidate: [triggerKeys.all],
   })
 }
 
 export function useRetryInvocation() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) =>
+  return useApiMutation({
+    fn: (id: string) =>
       request<void>(
         `/api/v1/function-invocations/${encodeURIComponent(id)}/retry`,
         'retry invocation',
         { method: 'POST' },
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: triggerKeys.all }),
+    invalidate: [triggerKeys.all],
   })
 }
 
 export function useDiscardInvocation() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) =>
+  return useApiMutation({
+    fn: (id: string) =>
       request<void>(
         `/api/v1/function-invocations/${encodeURIComponent(id)}`,
         'discard invocation',
         { method: 'DELETE' },
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: triggerKeys.all }),
+    invalidate: [triggerKeys.all],
   })
 }

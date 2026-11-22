@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -312,9 +311,8 @@ func (rt *Router) handleAttentionDismiss(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
-	var req attentionDismissRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, dismissBodyMaxBytes)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[attentionDismissRequest](w, r, dismissBodyMaxBytes)
+	if !ok {
 		return
 	}
 	if len(req.ItemKeys) > 0 {

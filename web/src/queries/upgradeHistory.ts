@@ -1,13 +1,10 @@
 // Recorded control plane version transitions for Settings > Updates
 // (internal/api/updates_history.go).
 
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { updatesKeys } from './updates'
+import { useApiMutation } from './useApiMutation'
 
 export type UpgradeKind =
   | 'installed'
@@ -82,9 +79,8 @@ export function upgradeHistoryQueryOptions() {
 }
 
 export function useAckUpgrade() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string): Promise<UpgradeHistoryItem> => {
+  return useApiMutation({
+    fn: async (id: string): Promise<UpgradeHistoryItem> => {
       const res = await fetch(
         `/api/v1/updates/history/${encodeURIComponent(id)}/ack`,
         { method: 'POST' },
@@ -97,6 +93,6 @@ export function useAckUpgrade() {
       }
       return (await res.json()) as UpgradeHistoryItem
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: historyKey }),
+    invalidate: [historyKey],
   })
 }

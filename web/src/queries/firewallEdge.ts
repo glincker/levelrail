@@ -1,10 +1,6 @@
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 const BASE = '/api/v1/firewall/edge'
 const REFRESH_MS = 30_000
@@ -272,10 +268,9 @@ export function useFirewallAudit() {
 }
 
 function useInvalidating<V, R>(fn: (v: V) => Promise<R>) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: firewallKeys.all }),
+  return useApiMutation({
+    fn: fn,
+    invalidate: [firewallKeys.all],
   })
 }
 

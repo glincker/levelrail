@@ -33,30 +33,7 @@ type LogReader interface {
 
 // Logs streams a container's log output, demultiplexed into a channel of
 // individually stream-tagged, timestamped lines. Reads directly from the
-// Docker Engine API's log endpoint, per the observability design rule
-// that logs never come from the json-file driver's on-disk files,
-// matching Events' own channel-based streaming shape rather than a
-// blocking read loop.
-//
-// Docker multiplexes stdout and stderr into a single byte stream with an
-// 8-byte frame header per chunk whenever a container wasn't created with
-// a TTY, which is every container this codebase creates (ContainerSpec
-// has no TTY field, so container.Config.Tty is always Docker's zero
-// value, false). stdcopy.StdCopy is the SDK's own demultiplexer for that
-// framing, used here rather than hand-parsing the header format.
-//
-// follow keeps the stream open and delivering new lines as the container
-// produces them; without it, the stream ends once currently-buffered
-// output is drained. since, if non-zero, asks Docker to only return
-// lines at or after that time (a resume point for a caller that already
-// ingested everything before it); the zero value returns everything
-// Docker still has buffered.
-//
-// The returned channels close together once the underlying log stream
-// ends, for any reason: the container stopped, ctx was cancelled, or a
-// read error occurred. A read error is reported on the error channel
-// before both channels close; ctx cancellation and a clean stream end
-// report no error, matching Events' own convention.
+// Docker Engine API's log endpoint, per the observability design rule.
 func (c *Client) Logs(ctx context.Context, containerID string, follow bool, since time.Time) (<-chan LogLine, <-chan error) {
 	out := make(chan LogLine)
 	errCh := make(chan error, 1)

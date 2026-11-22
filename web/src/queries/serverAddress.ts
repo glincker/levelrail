@@ -1,12 +1,8 @@
 // GET/PUT /api/v1/system/server-address (internal/api/server_address.go):
 // the public addresses DNS records must point at, with an operator override.
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 export interface ServerAddressPair {
   ipv4?: string
@@ -67,9 +63,8 @@ export function useServerAddress(domain = '', enabled = true) {
 }
 
 export function useSetServerAddress() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (override: ServerAddressPair) => {
+  return useApiMutation({
+    fn: async (override: ServerAddressPair) => {
       const res = await fetch(PATH, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -89,6 +84,6 @@ export function useSetServerAddress() {
       }
       return (await res.json()) as ServerAddress
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: serverAddressKeys.all }),
+    invalidate: [serverAddressKeys.all],
   })
 }

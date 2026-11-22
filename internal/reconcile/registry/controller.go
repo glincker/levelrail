@@ -1,22 +1,6 @@
 // Package registry implements the reconcile.Controller that converges a
 // single, platform-wide desired state (store.RegistrySettings plus a
-// generated password in internal/secrets) to a running or absent
-// registry:2 container: Levelrail's own built-in image registry, so a
-// multi-node deployment gets a BuildKit cache/distribution backend
-// (internal/build's WithCacheRegistry) without an operator first signing
-// up for an external one.
-//
-// Shaped after internal/reconcile/cloudflaretunnel's Controller: a
-// single, unnamed, platform-wide container, created and started through
-// docker.Runtime like every other container this codebase manages, never
-// shelled out to. Unlike cloudflared, this container is stateful (a named
-// volume for image blobs, mirroring internal/reconcile/database's own
-// volume handling) and needs its own login credential: the registry
-// image's htpasswd auth is written from an env-injected bcrypt hash at
-// container start (see htpasswdBootScript), rather than fronting an
-// unauthenticated registry with the ingress layer alone, so the published
-// port is never usable without the generated credential even if reached
-// directly, bypassing the embedded Caddy ingress.
+// generated password in internal/secrets) to a running or absent.
 package registry
 
 import (

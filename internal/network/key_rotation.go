@@ -1,48 +1,6 @@
 package network
 
 // This file: operator-triggered WireGuard key rotation.
-//
-// The constraint that shapes everything here: a WireGuard device has
-// exactly one private key at a time (device.IpcSet's own "private_key="
-// line replaces it outright, see EncodeUAPI). There is no way to make a
-// single device answer to both an old and a new key at once, the way a
-// TLS cert rotation can serve two certs from two listeners during a
-// cutover window. So "rotate this node's key with zero packet loss"
-// would require standing up a second device with a second identity and
-// running both until every peer has switched, which is a materially
-// bigger change (a second TUN interface, a second listen port, a
-// decision about which one carries real traffic during the overlap) than
-// this pass is willing to risk shipping without a live multi-node rig to
-// prove it against.
-//
-// What ships instead, and it is a deliberate simplification, not a
-// silently cut corner: rotation is "rotate now." RotateKey generates a
-// fresh keypair, makes it the node's live identity immediately, and
-// returns. That is the same event that already happens, uncontrolled,
-// when a node's data directory is wiped and it comes back up with a
-// freshly generated key (see Coordinator.foldIdentity's own doc comment:
-// "the only way it happens is a node that lost its key file... the old
-// key is genuinely dead"). This codebase already accepts that case's
-// transient partition as ordinary, converging over the next couple of
-// reconcile passes the same way any other inventory change does. What
-// this file adds on top is the part that case does not have: a
-// deliberate, observable, resumable operation instead of an implicit
-// side effect, with RotationStatus making "has the fleet actually caught
-// up yet" a real answer instead of a guess.
-//
-// A rotation is "confirmed" once one full Distribute pass completes with
-// no failed nodes after the rotation started: that is the strongest
-// signal this package can produce without inventing a per-peer
-// acknowledgement protocol, because Coordinator's only view of a remote
-// node is whether ApplyMesh succeeded, and a pass with zero failures
-// means every node in the fleet just accepted its current peer list,
-// including whatever entry names this node's new key. It is not a
-// per-peer handshake proof (that lives one layer down, in a live
-// Mesh.Status() read against the UAPI, which is a per-node local fact
-// Coordinator has no way to reach for a remote node); it is the best
-// fleet-wide signal available at this layer, and it is exactly what an
-// operator watching a rotation needs: "is this done, or is something
-// still stuck."
 
 import (
 	"context"
@@ -202,22 +160,7 @@ func (c *Coordinator) RotationStatusFor(nodeID string) (RotationStatus, bool) {
 
 // RotateKey generates a fresh private key for this sink's own node, makes
 // it live on the mesh immediately (reapplying the last config this sink
-// sent, with the new key in place of the old), and returns the identity
-// change. nodeID must match this sink's own node, the same restriction
-// ApplyMesh already enforces.
-//
-// "Makes it live immediately" means calling mesh.Apply with the new
-// private key before this method returns, rather than waiting for the
-// next scheduled ApplyMesh from a Distribute pass: an operator who just
-// clicked "rotate key" should not have to wait out an arbitrary reconcile
-// interval to see the device actually holding the new key, and Apply is
-// cheap and idempotent regardless of who calls it (Mesh's own contract).
-//
-// If persistFn is set (WithKeyPersistFunc), it is called with the new
-// key before the swap and must succeed first: persisting the new key is
-// what makes it survive a restart, and applying a key that failed to
-// persist would leave the node holding an identity its own key file does
-// not agree with, unrecoverable without operator intervention.
+// sent, with the new key in place of the old), and returns the identity.
 func (s *LocalSink) RotateKey(ctx context.Context, nodeID string) (RotationResult, error) {
 	if nodeID != s.nodeID {
 		return RotationResult{}, fmt.Errorf("%w: local sink is node %q, was asked to rotate %q",

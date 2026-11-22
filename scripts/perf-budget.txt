@@ -1,0 +1,11 @@
+# Static performance budgets (scripts/check-perf-budget.sh). Lowering a number is the
+# goal; raising one needs a reason in the PR. Idle values are baseline +10%.
+web_dist_mb 40
+embedded_js_kb 6000
+embedded_css_kb 600
+embedded_svg_kb 2000
+embedded_map_kb 0
+idle_rss_mb 238
+idle_goroutines 143
+idle_loops 47
+idle_cpu_pct 1

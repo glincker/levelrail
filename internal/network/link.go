@@ -2,25 +2,7 @@ package network
 
 // This file: SystemLinkConfigurator, a real implementation of the
 // LinkConfigurator seam device.go documents and deliberately leaves
-// unimplemented there ("a netlink dependency or a few hundred lines of
-// platform-specific, root-only, untestable syscall marshalling. Neither
-// belongs in the same change as the mesh's decision logic"). That
-// reasoning still holds for a *netlink-based* implementation; this is a
-// smaller, different thing. wg-quick(8) itself does not talk to netlink
-// directly either, on any platform: it shells out to ip(8)/ifconfig(8),
-// the same system tools every operator's own manual "bring this
-// interface up" muscle memory already uses. This file does exactly that,
-// nothing more: two short external-command invocations per OS, small
-// enough for a reviewer to see it is a faithful translation of "assign
-// addr to iface and bring it up," the identical "auditable in a few
-// lines" bar NewDevice's own doc comment sets for what belongs here
-// versus what needs its own dedicated change.
-//
-// Requires the process already hold whatever privilege creating the TUN
-// device itself required (CAP_NET_ADMIN, or root on a platform that has
-// no finer-grained capability); this file does not change that
-// requirement, only fulfills the interface configuration NewDevice's own
-// doc comment says nothing here does without a LinkConfigurator supplied.
+// unimplemented there ("a netlink dependency or a few hundred lines of.
 
 import (
 	"context"

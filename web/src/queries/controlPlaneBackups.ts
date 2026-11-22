@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 export interface ControlPlaneBackup {
   name: string
@@ -86,11 +87,9 @@ export async function verifyControlPlaneBackup(
 }
 
 export function useVerifyControlPlaneBackup() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: verifyControlPlaneBackup,
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: controlPlaneBackupKeys.all }),
+  return useApiMutation({
+    fn: verifyControlPlaneBackup,
+    invalidate: [controlPlaneBackupKeys.all],
   })
 }
 
@@ -103,11 +102,9 @@ export function useControlPlaneBackups() {
 }
 
 export function useCreateControlPlaneBackup() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: createControlPlaneBackup,
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: controlPlaneBackupKeys.all }),
+  return useApiMutation({
+    fn: createControlPlaneBackup,
+    invalidate: [controlPlaneBackupKeys.all],
   })
 }
 

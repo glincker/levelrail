@@ -18,6 +18,7 @@ import type {
   CreateAssetBucketInput,
   UpdateAssetBucketInput,
 } from '../types/assets'
+import { useApiMutation } from './useApiMutation'
 
 export const assetKeys = {
   all: ['assets'] as const,
@@ -257,9 +258,8 @@ export async function uploadAsset({
 }
 
 export function useUploadAsset() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: uploadAsset,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: assetKeys.all }),
+  return useApiMutation({
+    fn: uploadAsset,
+    invalidate: [assetKeys.all],
   })
 }

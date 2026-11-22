@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -33,9 +32,8 @@ type dockerLintRequest struct {
 }
 
 func (rt *Router) handleDockerLint(w http.ResponseWriter, r *http.Request) {
-	var req dockerLintRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxDockerLintBody)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[dockerLintRequest](w, r, maxDockerLintBody)
+	if !ok {
 		return
 	}
 	if strings.TrimSpace(req.Dockerfile) == "" {

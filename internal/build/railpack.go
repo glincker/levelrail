@@ -29,25 +29,7 @@ import (
 
 // This file: the Railpack integration, scoped to node, golang, java,
 // python, ruby, and php (see supportedRailpackProviders). Railpack
-// (github.com/railwayapp/railpack) is a real, embeddable Go library, not
-// a CLI wrapped by exec.Command: core.GenerateBuildPlan inspects a source
-// directory and returns Railpack's own build IR (a graph of named steps,
-// not a Dockerfile), and buildkit.ConvertPlanToLLB turns that IR directly
-// into a BuildKit llb.State plus an OCI image config. Both facts mean a
-// Railpack build cannot reuse newSolveOpt (solve.go), which is built
-// entirely around the dockerfile.v0 frontend: it needs its own solve
-// path, built here, that hands BuildKit a marshaled llb.Definition
-// instead of a Dockerfile frontend, and carries the image config Railpack
-// computed as an exporter attribute since there's no Dockerfile FROM/CMD
-// for BuildKit to read it from otherwise. A real third-party
-// integration, unbindapp/unbind-api, does exactly this.
-//
-// Everything below reuses the existing hijacked-/grpc BuildKit connection
-// (client.go's Client.bk) and the same relayProgress/loadImage helpers
-// build.go already established for the Dockerfile path: a Railpack build
-// still exports a docker-save-style tar and loads it into the local image
-// store via the Docker Engine API, never a registry push, and still
-// reports progress on the same build.ProgressEvent channel.
+// (github.com/railwayapp/railpack) is a real, embeddable Go library, not.
 
 // RailpackRequest describes a single Railpack-detected build: no
 // Dockerfile, no user-authored build steps, just a source directory

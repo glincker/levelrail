@@ -10,6 +10,7 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys } from './apps'
 import { databaseKeys } from './databases'
 import { deployApprovalKeys } from './deployApprovals'
+import { useApiMutation } from './useApiMutation'
 
 export const globalEnvironmentKeys = {
   all: ['global-environments'] as const,
@@ -62,9 +63,8 @@ export interface EnvironmentInput {
 }
 
 export function useSaveEnvironment() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, ...input }: EnvironmentInput & { id?: string }) =>
+  return useApiMutation({
+    fn: ({ id, ...input }: EnvironmentInput & { id?: string }) =>
       id
         ? request<GlobalEnvironment>(
             `/api/v1/environments/${encodeURIComponent(id)}`,
@@ -76,28 +76,19 @@ export function useSaveEnvironment() {
             json('POST', input),
             'create environment',
           ),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: globalEnvironmentKeys.all }),
+    invalidate: [globalEnvironmentKeys.all],
   })
 }
 
 export function useSetEnvironmentProtectedGlobal() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      id,
-      protectedFlag,
-    }: {
-      id: string
-      protectedFlag: boolean
-    }) =>
+  return useApiMutation({
+    fn: ({ id, protectedFlag }: { id: string; protectedFlag: boolean }) =>
       request<GlobalEnvironment>(
         `/api/v1/environments/${encodeURIComponent(id)}`,
         json('PATCH', { protected: protectedFlag }),
         'update environment',
       ),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: globalEnvironmentKeys.all }),
+    invalidate: [globalEnvironmentKeys.all],
   })
 }
 

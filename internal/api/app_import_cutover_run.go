@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -177,9 +176,8 @@ func (rt *Router) handleStartAppImportCutover(w http.ResponseWriter, r *http.Req
 	if !ok {
 		return
 	}
-	var req cutoverStartRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxAppImportBody)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[cutoverStartRequest](w, r, maxAppImportBody)
+	if !ok {
 		return
 	}
 	if req.Mode != cutover.ModeDryRun && req.Mode != cutover.ModeSwitch {

@@ -3,24 +3,6 @@ package network
 // This file: the internal DNS, the half that decides what a
 // name means. The half that speaks the DNS wire protocol is in
 // dns_server.go.
-//
-// What this exists to make true, in the words of Phase 3's own exit
-// criterion: "you add a second server from the UI, move an app to it, and
-// the app's internal database connection keeps working across machines."
-// A connection string is a literal string sitting in an environment
-// variable in a running container. Nothing re-writes it when the database
-// moves to another machine, and nothing can: the container is not
-// restarted, the env var is not re-injected, and even if it were, every
-// other service holding that string would still have the old one. So the
-// string has to have been a name from the start, and the name has to
-// resolve to wherever the service is now.
-//
-// That is the entire design constraint, and it is why records are keyed
-// by service name and resolve to the *node's* mesh address rather than to
-// anything about the container. A container's identity changes on every
-// deploy (new ID, new bridge IP, possibly a new host port); the node's
-// mesh address does not change until the service is moved, and moving it
-// is exactly the event that should change the answer.
 
 import (
 	"fmt"
@@ -128,25 +110,6 @@ type RecordSet struct {
 
 // BuildRecords turns placements plus the node inventory into the complete
 // record set for zone.
-//
-// selfID is the control plane's own node ID, needed to resolve the empty
-// NodeID that 0009's schema uses for "local". Passing it explicitly
-// rather than having this function guess (say, "the first node in the
-// list") keeps the one piece of ambient context this needs visible at the
-// call site.
-//
-// Two name families are produced:
-//
-//   - <service>.<zone> for every placement. This is the one that matters:
-//     it is what goes in a connection string.
-//   - <node-name>.node.<zone> for every ready node. Under a .node label so
-//     a node called "db" can never collide with a service called "db",
-//     which is otherwise a genuinely likely name for both.
-//
-// A duplicate service name is an error rather than a skipped record:
-// two services answering to one name means whichever record won would
-// silently take the other's traffic, and unlike an unresolved placement
-// there is no correct partial answer to give.
 func BuildRecords(zone, selfID string, placements []Placement, nodes []NodeInfo) (RecordSet, error) {
 	if zone == "" {
 		return RecordSet{}, fmt.Errorf("network: build dns records: zone is empty")

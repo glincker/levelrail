@@ -10,6 +10,7 @@ import type {
   PipelineWebhookRequest,
 } from '../types/pipelines'
 import { jsonInit, pipelineKeys, requestJson } from './pipelines'
+import { useApiMutation } from './useApiMutation'
 
 function base(app: string): string {
   return `/api/v1/apps/${encodeURIComponent(app)}`
@@ -76,44 +77,38 @@ export function usePipelineWebhookDeliveries(
 }
 
 export function useSetPipelineWebhook(app: string, name: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (req: PipelineWebhookRequest) =>
+  return useApiMutation({
+    fn: (req: PipelineWebhookRequest) =>
       requestJson<PipelineWebhook>(
         webhookPath(app, name),
         'update pipeline webhook',
         jsonInit('PUT', req),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: pipelineExtraKeys.webhook(app, name) }),
+    invalidate: [pipelineExtraKeys.webhook(app, name)],
   })
 }
 
 export function useRotatePipelineWebhook(app: string, name: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: () =>
+  return useApiMutation({
+    fn: () =>
       requestJson<PipelineWebhook>(
         `${webhookPath(app, name)}/rotate`,
         'rotate pipeline webhook',
         jsonInit('POST'),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: pipelineExtraKeys.webhook(app, name) }),
+    invalidate: [pipelineExtraKeys.webhook(app, name)],
   })
 }
 
 export function useDeletePipelineWebhook(app: string, name: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: () =>
+  return useApiMutation({
+    fn: () =>
       requestJson<void>(
         webhookPath(app, name),
         'delete pipeline webhook',
         jsonInit('DELETE'),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: pipelineExtraKeys.webhook(app, name) }),
+    invalidate: [pipelineExtraKeys.webhook(app, name)],
   })
 }
 

@@ -24,6 +24,7 @@ RULES=(
 	'^web/src/(locales|i18n)/|locales'
 	'^web/src/(locales|i18n)/|localecheck'
 	'^docs/|docs'
+	'^(scripts/idle-footprint|scripts/perf-budget\.txt|scripts/check-perf-budget\.sh|web/vite\.config\.ts|web/embed|web/vite-plugins/)|perfbudget'
 )
 # Guards that run on every invocation.
 ALWAYS=(dashes)
@@ -39,6 +40,7 @@ guard_cmd() {
 	validate-templates) echo "go run ./scripts/validate-templates" ;;
 	codegen) echo "scripts/code-gen-check.sh" ;;
 	fanin) echo "scripts/check-fanin.sh" ;;
+	perfbudget) echo "scripts/check-perf-budget.sh" ;;
 	execgate) echo "go test ./test/execgate" ;;
 	agentupdate) echo "go test ./test/agentupdateguard" ;;
 	runtimesettings) echo "go test ./internal/runtimesettings" ;;

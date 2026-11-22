@@ -16,36 +16,7 @@ const broadcastBufferSize = 256
 
 // LogBroadcaster fans out every log line LogCollector.StreamOne receives
 // to whichever SSE viewers are currently watching that line's
-// ResourceID, live, the moment it arrives. It exists for the same reason
-// internal/deploylog.Recorder exists for build/deploy output:
-// persistence alone (WriteLogBatch, batched up to logBatchMaxWait behind
-// real time) is fine for a historical search but not for a view labeled
-// "live", which needs to feel instant.
-//
-// Deliberately simpler than deploylog.Recorder, in one specific way:
-// there is no Start/Finish lifecycle here. A deploy attempt has a real
-// bounded shape (started, eventually finishes, gets evicted), a
-// container's ResourceID does not: a service can be redeployed,
-// restarted, or have zero subscribers for most of its life, with no
-// single moment that means "this resource is done, stop remembering
-// it." So LogBroadcaster never eagerly allocates state for a resource,
-// only when something actually calls Subscribe, and Unsubscribe cleans
-// up empty entries rather than relying on a Finish call that has no
-// natural trigger here. There is also no "lines so far" in-memory replay
-// (contrast Recorder.Snapshot): that job belongs to the persisted store
-// (QueryLogs) via internal/api's live-log handler, which backfills
-// recent context from there before calling Subscribe, since only the
-// store, not this in-memory broadcaster, survives a control plane
-// restart.
-//
-// One instance is shared across every LogCollector.StreamOne goroutine
-// (the publishing side, one per currently-running container) and every
-// live-log SSE handler request (the subscribing side), the same
-// "exactly one shared instance, wired once at startup" shape
-// deploylog.Recorder's own package doc comment establishes for build
-// logs: a viewer connected through the HTTP API must see the same lines
-// the collector is receiving directly from Docker, which only works if
-// both sides publish to and read from the same subscriber set.
+// ResourceID, live, the moment it arrives. It exists for the same reason.
 type LogBroadcaster struct {
 	mu   sync.Mutex
 	subs map[string][]chan LogEntry // keyed by ResourceID

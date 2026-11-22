@@ -1,40 +1,4 @@
 // Package database implements the managed database controller:
-// the reconcile.Controller that converges a store-backed
-// store.DesiredDatabase to a running, volume-backed container, the same
-// architectural pattern internal/reconcile/application already
-// establishes (level-triggered, deterministic naming, a narrow store
-// interface for testability), applied to a database instead of a built
-// application image.
-//
-// Redis and Postgres diverge deliberately:
-//
-// Redis can run safely with no password configured. That is not the
-// recommended production posture, but it is not an active vulnerability
-// the way unauthenticated Postgres is, so this controller reconciles
-// Redis for real: create, mount its volume, start, report Ready. That
-// "not an active vulnerability" reasoning assumes internal-network-only
-// reachability; PubliclyAccessible (migrations/0026_database_public_access.sql)
-// breaks that assumption for a passwordless Redis, so the operator UI
-// carries an explicit warning when enabling it rather than this
-// controller silently refusing, matching the project's operator-trust
-// posture elsewhere (no built-in service mesh or per-resource firewall).
-//
-// Postgres cannot run safely without credentials: database auth needs
-// the same envelope-encrypted secret storage the secrets design specifies
-// (internal/secrets.Manager), which exists but is only
-// wired into this controller when the control plane itself has a
-// master key configured (cmd/levelrail's dynamicSource calls
-// postgresCredentialsFor and passes the result via
-// WithPostgresCredentials below). Without one, Reconcile refuses to
-// start Postgres at all and reports a loud, explicit condition
-// explaining why, mirroring how internal/deploy.requireNoUnresolvedEnv
-// fails loudly rather than silently deploying a container missing
-// values it needs, rather than starting it in trust-auth mode (no
-// password) as a "temporary" workaround. Controller carries an
-// optional postgresCredentials field, nil whenever no master key is
-// configured or credential generation itself fails for this pass, so
-// Postgres support activates purely by populating it, no restructuring
-// of this controller needed either way.
 package database
 
 import (
@@ -982,22 +946,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 
 // ensureWALArchiveWritable chowns postgresWALArchivePath to the
 // postgres image's own postgres user/group inside target, root:root by
-// default the moment a fresh named Docker volume is first mounted (no
-// Dockerfile-level chown runs against a bind target it wasn't built
-// expecting), which otherwise makes every archive_command invocation
-// fail with a permission error until fixed (proven against a real
-// container while building this feature: archive_command's cp silently
-// failed, pg_stat_archiver.failed_count climbed, and pg_backup_stop's
-// wait_for_archive hung indefinitely as a direct result). Run via
-// Runtime.Exec, which this codebase's docker.Client implementation runs
-// as the container's raw default user (root, before the image's own
-// entrypoint gosu's down to postgres for the server process itself, see
-// internal/backup's ContainerBaseBackuper.BaseBackup for the identical
-// reliance elsewhere), so this needs no separate privilege escalation.
-// Idempotent and cheap (a single stat-and-maybe-chown pass over an
-// otherwise-small directory), so running it on every reconcile pass
-// while PITR is active, not only right after a fresh create, keeps this
-// self-healing if something else ever resets the volume's ownership.
+// default the moment a fresh named Docker volume is first mounted (no.
 func (c *Controller) ensureWALArchiveWritable(ctx context.Context, target string) error {
 	rc, err := c.runtime.Exec(ctx, target, []string{"chown", "-R", "postgres:postgres", postgresWALArchivePath})
 	if err != nil {

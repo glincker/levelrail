@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { pollMs } from '../lib/pollTier'
+import { useApiMutation } from './useApiMutation'
 
 // Matches internal/api's pendingJoinTokenResource.
 export interface PendingJoinToken {
@@ -38,9 +39,8 @@ export function usePendingJoinTokens() {
 
 // id undefined revokes every pending token.
 export function useRevokeJoinTokens() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (id?: string): Promise<{ revoked: number }> => {
+  return useApiMutation({
+    fn: async (id?: string): Promise<{ revoked: number }> => {
       const res = await fetch(id ? `${URL}/${encodeURIComponent(id)}` : URL, {
         method: 'DELETE',
       })
@@ -55,6 +55,6 @@ export function useRevokeJoinTokens() {
       }
       return (await res.json()) as { revoked: number }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    invalidate: [KEY],
   })
 }

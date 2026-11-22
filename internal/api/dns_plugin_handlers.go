@@ -47,9 +47,8 @@ func (rt *Router) handleSetDNSProviderPlugin(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusNotImplemented, "domain automation is not supported by this store")
 		return
 	}
-	var req setDNSProviderPluginRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, domainAutomationMaxBody)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[setDNSProviderPluginRequest](w, r, domainAutomationMaxBody)
+	if !ok {
 		return
 	}
 	ov := rt.storedAutomation(r.Context())

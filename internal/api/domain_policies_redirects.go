@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -319,9 +318,8 @@ func (rt *Router) handleSetDomainCanonical(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	var req canonicalRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[canonicalRequest](w, r, 8<<10)
+	if !ok {
 		return
 	}
 	status := req.StatusCode
@@ -455,9 +453,8 @@ func (rt *Router) handleSetDomainAliases(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	var req aliasesRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32<<10)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[aliasesRequest](w, r, 32<<10)
+	if !ok {
 		return
 	}
 	status := req.StatusCode

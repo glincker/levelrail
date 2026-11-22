@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useApiMutation } from './useApiMutation'
 
 // Matches internal/archive.Bundle.
 export interface ArchiveBundle {
@@ -110,10 +111,9 @@ export function useArchiveRows(id: string, table: string, offset: number) {
 }
 
 function useArchiveMutation<V, T>(fn: (v: V) => Promise<T>) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: archiveKeys.all }),
+  return useApiMutation({
+    fn: fn,
+    invalidate: [archiveKeys.all],
   })
 }
 

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -142,9 +141,8 @@ func (rt *Router) handleBuildCache(w http.ResponseWriter, r *http.Request) {
 
 // handleBuildCachePrune handles POST /api/v1/builds/cache/prune. Without apply it only previews.
 func (rt *Router) handleBuildCachePrune(w http.ResponseWriter, r *http.Request) {
-	var req buildCachePruneRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<12)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[buildCachePruneRequest](w, r, 1<<12)
+	if !ok {
 		return
 	}
 	hours := defaultCachePruneAgeHrs

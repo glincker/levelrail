@@ -1,25 +1,6 @@
 // Package githubapp implements the GitHub App manifest registration
 // flow, App-level JWT signing (RS256, per GitHub's own App
-// authentication spec), and the small slice of the GitHub REST API this
-// control plane needs once an App is connected: minting installation
-// access tokens, listing an installation's repositories, and listing a
-// repository's branches.
-//
-// This package holds no store or internal/secrets dependency: it is a
-// pure GitHub API client plus manifest/JWT construction, the same
-// "narrow, single-purpose, no upward dependency" shape internal/backup's
-// S3 client wrapper keeps. internal/api owns orchestration (persisting
-// credentials, resolving the private key back out, deciding ability
-// tiers); this package only knows how to talk to github.com and
-// api.github.com.
-//
-// Deliberately does not implement webhook delivery handling: this
-// control plane's manifest declares a webhook URL (GitHub's manifest
-// schema requires hook_attributes.url) but sets hook_attributes.active
-// to false, so GitHub never actually sends a delivery there. Building
-// real webhook-driven auto-deploy is explicit, separate, future scope,
-// not something this package pretends to support by declaring an active
-// endpoint it doesn't implement.
+// authentication spec), and the small slice of the GitHub REST API this.
 package githubapp
 
 import "fmt"
@@ -52,29 +33,6 @@ type HookAttributes struct {
 }
 
 // BuildManifest builds the manifest for a fresh App registration.
-// appName is the App's display name on GitHub, expected to already be
-// brand-derived and deployment-unique by the caller (internal/api's
-// handleStartGitHubAppRegistration appends the operator's own primary
-// domain to brand.Brand.Name, since App names must be unique across all
-// of GitHub and a bare brand name would collide across every operator
-// running this same control plane). baseURL is this control plane's own
-// public, reachable origin (https://<primary domain>, no trailing
-// slash): every URL below is baseURL plus a fixed, already-routed path.
-//
-// cfg supplies the permissions and webhook events requested
-// (ManifestConfig's own doc comment covers why these two are the
-// config-driven fields and nothing else here is). HookAttributes.Active
-// stays false regardless of cfg.DefaultEvents: no route in this
-// codebase handles a delivery to hook_attributes.url yet (see this
-// package's own doc comment), so activating it would just mean GitHub
-// sends webhooks into a 404. DefaultEvents can still be configured in
-// advance of that route existing; it has no effect until Active is
-// wired to it alongside the real handler. Public is false: this App is
-// registered for one operator's own account/org, not for other GitHub
-// users to discover and install. RequestOAuthOnInstall is false: this
-// integration only ever authenticates as the App/installation, never as
-// the installing GitHub user, so there is no use for a user-level OAuth
-// token.
 func BuildManifest(appName, baseURL string, cfg ManifestConfig) Manifest {
 	return Manifest{
 		Name: appName,
