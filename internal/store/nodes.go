@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -286,10 +287,19 @@ type NodeStatusEvent struct {
 // ListNodeStatusEvents returns a node's most recent status transitions,
 // newest first.
 func (db *DB) ListNodeStatusEvents(ctx context.Context, nodeID string, limit int) ([]NodeStatusEvent, error) {
+	return db.ListNodeStatusEventsBefore(ctx, nodeID, 0, limit)
+}
+
+// ListNodeStatusEventsBefore is ListNodeStatusEvents resuming strictly below
+// beforeID (0 for the newest page), a keyset that stays stable as rows arrive.
+func (db *DB) ListNodeStatusEventsBefore(ctx context.Context, nodeID string, beforeID int64, limit int) ([]NodeStatusEvent, error) {
+	if beforeID <= 0 {
+		beforeID = math.MaxInt64
+	}
 	rows, err := db.QueryContext(ctx, `
 		SELECT id, node_id, from_status, to_status, created_at
-		FROM node_status_events WHERE node_id = ? ORDER BY id DESC LIMIT ?
-	`, nodeID, limit)
+		FROM node_status_events WHERE node_id = ? AND id < ? ORDER BY id DESC LIMIT ?
+	`, nodeID, beforeID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("store: list status events for node %q: %w", nodeID, err)
 	}

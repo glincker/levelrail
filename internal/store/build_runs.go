@@ -82,6 +82,33 @@ func (db *DB) ListBuildAttempts(ctx context.Context, limit int) ([]DeployAttempt
 		DeployAttemptSourceImage, DeployAttemptSourceCompose, limit)
 }
 
+// ListBuildAttemptsPage is ListBuildAttempts resuming strictly after cursor (a
+// keyset position from EncodeDeploymentCursor, "" for the first page).
+func (db *DB) ListBuildAttemptsPage(ctx context.Context, limit int, cursor string) ([]DeployAttempt, error) {
+	if limit <= 0 || limit > buildRunsListMaxRows+1 {
+		limit = buildRunsListMaxRows + 1
+	}
+	if cursor == "" {
+		return db.queryDeployAttempts(ctx, "build", `source NOT IN (?, ?) ORDER BY started_at DESC, id DESC LIMIT ?`,
+			DeployAttemptSourceImage, DeployAttemptSourceCompose, limit)
+	}
+	ts, id, err := decodeDeploymentCursor(cursor)
+	if err != nil {
+		return nil, err
+	}
+	return db.queryDeployAttempts(ctx, "build", `source NOT IN (?, ?) AND (started_at < ? OR (started_at = ? AND id < ?)) ORDER BY started_at DESC, id DESC LIMIT ?`,
+		DeployAttemptSourceImage, DeployAttemptSourceCompose, ts, ts, id, limit)
+}
+
+// ListAllBuildRunsBefore returns the newest builds that started before the
+// given RFC3339Nano timestamp, so a deep build page still joins its stats.
+func (db *DB) ListAllBuildRunsBefore(ctx context.Context, limit int, before string) ([]BuildRun, error) {
+	if limit <= 0 || limit > buildRunsListMaxRows {
+		limit = buildRunsListMaxRows
+	}
+	return db.queryBuildRuns(ctx, `WHERE started_at < ? ORDER BY id DESC LIMIT ?`, before, limit)
+}
+
 func (db *DB) queryBuildRuns(ctx context.Context, clause string, args ...any) ([]BuildRun, error) {
 	rows, err := db.QueryContext(ctx, `SELECT app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error, node_id, runner_reason, platform, image_bytes
 		FROM build_runs `+clause, args...) //nolint:gosec // clause is a package-internal constant

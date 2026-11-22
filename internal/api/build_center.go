@@ -279,22 +279,62 @@ func countBuildRows(rows []buildRow) buildCounts {
 	return c
 }
 
+// buildPager is the optional keyset extension of BuildPerformanceStore; the
+// SQLite store implements it.
+type buildPager interface {
+	ListBuildAttemptsPage(ctx context.Context, limit int, cursor string) ([]store.DeployAttempt, error)
+	ListAllBuildRunsBefore(ctx context.Context, limit int, before string) ([]store.BuildRun, error)
+}
+
 func (rt *Router) buildCenterRows(r *http.Request, limit int) ([]buildRow, error) {
-	attempts, err := rt.buildPerf.ListBuildAttempts(r.Context(), limit)
-	if err != nil {
-		return nil, err
+	rows, _, err := rt.buildCenterPage(r, limit, "")
+	return rows, err
+}
+
+// buildCenterPage returns one page of builds after cursor plus the cursor of
+// the next page ("" when exhausted). Without a pager store it is one capped page.
+func (rt *Router) buildCenterPage(r *http.Request, limit int, cursor string) ([]buildRow, string, error) {
+	var (
+		attempts []store.DeployAttempt
+		runs     []store.BuildRun
+		next     string
+		err      error
+	)
+	if pager, ok := rt.buildPerf.(buildPager); ok {
+		attempts, err = pager.ListBuildAttemptsPage(r.Context(), limit+1, cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		if len(attempts) > limit {
+			attempts = attempts[:limit]
+			last := attempts[len(attempts)-1]
+			next = store.EncodeDeploymentCursor(last.StartedAt, last.ID)
+		}
+		if cursor == "" {
+			runs, err = rt.buildPerf.ListAllBuildRuns(r.Context(), buildCenterMaxLimit)
+		} else {
+			// A run starts shortly after its attempt, so widen the bound by the match slack.
+			ts, _, _ := store.DecodeKeysetCursor(cursor)
+			at, _ := time.Parse(time.RFC3339Nano, ts)
+			runs, err = pager.ListAllBuildRunsBefore(r.Context(), buildCenterMaxLimit, at.Add(buildRunMatchSlack).UTC().Format(time.RFC3339Nano))
+		}
+	} else {
+		attempts, err = rt.buildPerf.ListBuildAttempts(r.Context(), limit)
+		if err != nil {
+			return nil, "", err
+		}
+		runs, err = rt.buildPerf.ListAllBuildRuns(r.Context(), buildCenterMaxLimit)
 	}
-	runs, err := rt.buildPerf.ListAllBuildRuns(r.Context(), buildCenterMaxLimit)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	visible, err := rt.visibleAppNames(r)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	rows := assembleBuildRows(attempts, runs)
 	if visible == nil {
-		return rows, nil
+		return rows, next, nil
 	}
 	allowed := make(map[string]bool, len(visible))
 	for _, n := range visible {
@@ -306,7 +346,7 @@ func (rt *Router) buildCenterRows(r *http.Request, limit int) ([]buildRow, error
 			kept = append(kept, row)
 		}
 	}
-	return kept, nil
+	return kept, next, nil
 }
 
 func (rt *Router) buildCenterReady(w http.ResponseWriter) bool {
@@ -326,10 +366,17 @@ func (rt *Router) handleListBuilds(w http.ResponseWriter, r *http.Request) {
 	if limit <= 0 || limit > buildCenterMaxLimit {
 		limit = buildCenterDefaultLimit
 	}
-	rows, err := rt.buildCenterRows(r, limit)
+	cursor, ok := parseKeysetCursor(w, r)
+	if !ok {
+		return
+	}
+	rows, next, err := rt.buildCenterPage(r, limit, cursor)
 	if err != nil {
 		rt.internalError(w, "api: list builds failed", err)
 		return
+	}
+	if next != "" {
+		w.Header().Set(nextCursorHeader, next)
 	}
 	app, status := r.URL.Query().Get("app"), r.URL.Query().Get("status")
 	if app != "" || status != "" {
