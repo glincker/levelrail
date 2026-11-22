@@ -31,9 +31,7 @@ type BackupCopy struct {
 
 // GetBackupCopySettings calls GET /api/v1/backups/copy-settings.
 func (c *Client) GetBackupCopySettings(ctx context.Context) (BackupCopySettings, error) {
-	var out BackupCopySettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/backups/copy-settings", nil, &out)
-	return out, err
+	return getJSON[BackupCopySettings](ctx, c, "/api/v1/backups/copy-settings")
 }
 
 // SetBackupCopySettings calls PUT /api/v1/backups/copy-settings.
@@ -50,7 +48,5 @@ func (c *Client) ListBackupCopies(ctx context.Context, limit int) ([]BackupCopy,
 	if limit > 0 {
 		path += "?limit=" + strconv.Itoa(limit)
 	}
-	var out []BackupCopy
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]BackupCopy](ctx, c, path)
 }

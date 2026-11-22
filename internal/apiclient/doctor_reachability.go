@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // ReachabilityProbe is one local dial of a port.
@@ -34,7 +33,5 @@ type Reachability struct {
 
 // GetReachability reads GET /api/v1/doctor/reachability.
 func (c *Client) GetReachability(ctx context.Context) (Reachability, error) {
-	var out Reachability
-	err := c.do(ctx, http.MethodGet, "/api/v1/doctor/reachability", nil, &out)
-	return out, err
+	return getJSON[Reachability](ctx, c, "/api/v1/doctor/reachability")
 }

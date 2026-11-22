@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -25,7 +24,5 @@ type SlowStatements struct {
 
 // GetSlowStatements calls GET /api/v1/system/slow-statements.
 func (c *Client) GetSlowStatements(ctx context.Context) (SlowStatements, error) {
-	var out SlowStatements
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/slow-statements", nil, &out)
-	return out, err
+	return getJSON[SlowStatements](ctx, c, "/api/v1/system/slow-statements")
 }

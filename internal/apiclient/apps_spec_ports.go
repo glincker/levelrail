@@ -38,7 +38,5 @@ func (c *Client) ValidateAppSpec(ctx context.Context, app, yaml string) (Validat
 
 // AppListeningPorts reports which container ports the running app listens on.
 func (c *Client) AppListeningPorts(ctx context.Context, app string) (ListeningPortsResult, error) {
-	var out ListeningPortsResult
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/listening-ports", nil, &out)
-	return out, err
+	return getJSON[ListeningPortsResult](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/listening-ports")
 }

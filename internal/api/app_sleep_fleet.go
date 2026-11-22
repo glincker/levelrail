@@ -99,6 +99,22 @@ type appListSleep struct {
 	Since       *time.Time `json:"since,omitempty"`
 }
 
+// sleepRowsForApps keeps only the rows of the listed apps so a page does not
+// build entries for the whole fleet.
+func sleepRowsForApps(rows []store.AppSleep, names []string) []store.AppSleep {
+	want := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		want[n] = struct{}{}
+	}
+	out := make([]store.AppSleep, 0, len(names))
+	for _, a := range rows {
+		if _, ok := want[a.ServiceName]; ok {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
 func sleepByApp(rows []store.AppSleep) map[string]appListSleep {
 	m := make(map[string]appListSleep, len(rows))
 	for _, a := range rows {

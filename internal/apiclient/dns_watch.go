@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -22,14 +21,10 @@ type DomainWatch struct {
 
 // ListDomainWatches calls GET /api/v1/domains/watch.
 func (c *Client) ListDomainWatches(ctx context.Context) ([]DomainWatch, error) {
-	var out []DomainWatch
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/watch", nil, &out)
-	return out, err
+	return getJSON[[]DomainWatch](ctx, c, "/api/v1/domains/watch")
 }
 
 // GetDomainWatch calls GET /api/v1/domains/{domain}/watch.
 func (c *Client) GetDomainWatch(ctx context.Context, domain string) (DomainWatch, error) {
-	var out DomainWatch
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/"+PathEscape(domain)+"/watch", nil, &out)
-	return out, err
+	return getJSON[DomainWatch](ctx, c, "/api/v1/domains/"+PathEscape(domain)+"/watch")
 }

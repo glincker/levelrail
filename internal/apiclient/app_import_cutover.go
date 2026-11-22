@@ -124,9 +124,7 @@ func cutoverPath(session, item string) string {
 
 // AppImportCutoverPlan calls GET .../items/{item}/cutover/plan.
 func (c *Client) AppImportCutoverPlan(ctx context.Context, session, item string) (ImportCutoverPlan, error) {
-	var out ImportCutoverPlan
-	err := c.do(ctx, http.MethodGet, cutoverPath(session, item)+"/plan", nil, &out)
-	return out, err
+	return getJSON[ImportCutoverPlan](ctx, c, cutoverPath(session, item)+"/plan")
 }
 
 // StartAppImportCutover calls POST .../items/{item}/cutover/runs.
@@ -147,9 +145,7 @@ func (c *Client) AppImportCutoverRuns(ctx context.Context, session, item string)
 
 // AppImportCutoverRun calls GET .../items/{item}/cutover/runs/{run}.
 func (c *Client) AppImportCutoverRun(ctx context.Context, session, item, run string) (ImportCutoverRun, error) {
-	var out ImportCutoverRun
-	err := c.do(ctx, http.MethodGet, cutoverPath(session, item)+"/runs/"+url.PathEscape(run), nil, &out)
-	return out, err
+	return getJSON[ImportCutoverRun](ctx, c, cutoverPath(session, item)+"/runs/"+url.PathEscape(run))
 }
 
 // RollbackAppImportCutover calls POST .../cutover/runs/{run}/rollback.

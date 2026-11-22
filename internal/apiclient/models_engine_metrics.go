@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -48,7 +47,5 @@ func (c *Client) GetModelEngineMetrics(ctx context.Context, name string, since t
 	if since > 0 {
 		q.Set("since", since.String())
 	}
-	var out EngineMetricsReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/models/"+PathEscape(name)+"/engine-metrics?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[EngineMetricsReport](ctx, c, "/api/v1/models/"+PathEscape(name)+"/engine-metrics?"+q.Encode())
 }

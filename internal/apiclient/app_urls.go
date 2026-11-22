@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // AppURLAddress is one way to reach an app, from GET /api/v1/apps/{name}/urls.
@@ -28,7 +27,5 @@ type AppURLs struct {
 
 // GetAppURLs calls GET /api/v1/apps/{name}/urls.
 func (c *Client) GetAppURLs(ctx context.Context, app string) (AppURLs, error) {
-	var out AppURLs
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/urls", nil, &out)
-	return out, err
+	return getJSON[AppURLs](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/urls")
 }

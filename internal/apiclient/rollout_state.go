@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -35,7 +34,5 @@ type RolloutStateResource struct {
 
 // GetRolloutState calls GET /api/v1/apps/{name}/rollout/state.
 func (c *Client) GetRolloutState(ctx context.Context, appName string) (RolloutStateResource, error) {
-	var out RolloutStateResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/rollout/state", nil, &out)
-	return out, err
+	return getJSON[RolloutStateResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/rollout/state")
 }

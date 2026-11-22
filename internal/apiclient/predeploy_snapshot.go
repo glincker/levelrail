@@ -37,9 +37,7 @@ type RollbackWithDataResult struct {
 
 // GetPredeploySnapshotSettings calls GET /api/v1/apps/{name}/predeploy-snapshot.
 func (c *Client) GetPredeploySnapshotSettings(ctx context.Context, app string) (PredeploySnapshotSettings, error) {
-	var out PredeploySnapshotSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/predeploy-snapshot", nil, &out)
-	return out, err
+	return getJSON[PredeploySnapshotSettings](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/predeploy-snapshot")
 }
 
 // SetPredeploySnapshotSettings calls PUT /api/v1/apps/{name}/predeploy-snapshot.
@@ -51,9 +49,7 @@ func (c *Client) SetPredeploySnapshotSettings(ctx context.Context, app string, s
 
 // ListPredeploySnapshots calls GET /api/v1/apps/{name}/predeploy-snapshots.
 func (c *Client) ListPredeploySnapshots(ctx context.Context, app string) ([]PredeploySnapshot, error) {
-	var out []PredeploySnapshot
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/predeploy-snapshots", nil, &out)
-	return out, err
+	return getJSON[[]PredeploySnapshot](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/predeploy-snapshots")
 }
 
 // RollbackWithData calls POST /api/v1/apps/{name}/deploys/{deployId}/rollback-with-data.

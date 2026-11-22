@@ -18,9 +18,7 @@ func domainSearchVisibilityPath(name, domain string) string {
 
 // GetDomainSearchVisibility calls GET .../domains/{domain}/search-visibility.
 func (c *Client) GetDomainSearchVisibility(ctx context.Context, name, domain string) (DomainSearchVisibilityResource, error) {
-	var out DomainSearchVisibilityResource
-	err := c.do(ctx, http.MethodGet, domainSearchVisibilityPath(name, domain), nil, &out)
-	return out, err
+	return getJSON[DomainSearchVisibilityResource](ctx, c, domainSearchVisibilityPath(name, domain))
 }
 
 // SetDomainSearchVisibility calls PUT .../domains/{domain}/search-visibility.

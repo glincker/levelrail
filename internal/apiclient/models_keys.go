@@ -94,9 +94,7 @@ func modelKeysPath(name string) string { return "/api/v1/models/" + PathEscape(n
 
 // ListModelKeys calls GET /api/v1/models/{name}/keys.
 func (c *Client) ListModelKeys(ctx context.Context, name string) ([]ModelKeyResource, error) {
-	var out []ModelKeyResource
-	err := c.do(ctx, http.MethodGet, modelKeysPath(name), nil, &out)
-	return out, err
+	return getJSON[[]ModelKeyResource](ctx, c, modelKeysPath(name))
 }
 
 // CreateModelKey calls POST /api/v1/models/{name}/keys.
@@ -108,7 +106,7 @@ func (c *Client) CreateModelKey(ctx context.Context, name string, req CreateMode
 
 // RevokeModelKey calls DELETE /api/v1/models/{name}/keys/{id}.
 func (c *Client) RevokeModelKey(ctx context.Context, name, id string) error {
-	return c.do(ctx, http.MethodDelete, modelKeysPath(name)+"/"+PathEscape(id), nil, nil)
+	return c.del(ctx, modelKeysPath(name)+"/"+PathEscape(id))
 }
 
 // RotateModelKey calls POST /api/v1/models/{name}/keys/{id}/rotate. A nil
@@ -129,7 +127,5 @@ func (c *Client) GetModelUsage(ctx context.Context, name string, since time.Dura
 	if since > 0 {
 		q.Set("since", since.String())
 	}
-	var out ModelUsageReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/models/"+PathEscape(name)+"/usage?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[ModelUsageReport](ctx, c, "/api/v1/models/"+PathEscape(name)+"/usage?"+q.Encode())
 }

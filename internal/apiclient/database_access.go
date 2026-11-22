@@ -214,9 +214,7 @@ func dbPath(name, suffix string) string {
 
 // ListDatabaseUsers calls GET /api/v1/databases/{name}/users.
 func (c *Client) ListDatabaseUsers(ctx context.Context, name string) ([]DatabaseUser, error) {
-	var out []DatabaseUser
-	err := c.do(ctx, http.MethodGet, dbPath(name, "/users"), nil, &out)
-	return out, err
+	return getJSON[[]DatabaseUser](ctx, c, dbPath(name, "/users"))
 }
 
 // CreateDatabaseUser calls POST /api/v1/databases/{name}/users.
@@ -244,7 +242,7 @@ func (c *Client) SetDatabaseUserLogin(ctx context.Context, name, role string, lo
 
 // DeleteDatabaseUser calls DELETE /api/v1/databases/{name}/users/{role}.
 func (c *Client) DeleteDatabaseUser(ctx context.Context, name, role string) error {
-	return c.do(ctx, http.MethodDelete, dbPath(name, "/users/"+PathEscape(role)), nil, nil)
+	return c.del(ctx, dbPath(name, "/users/"+PathEscape(role)))
 }
 
 // IssueDatabaseTemp calls POST /api/v1/databases/{name}/access/temp.
@@ -257,21 +255,17 @@ func (c *Client) IssueDatabaseTemp(ctx context.Context, name, preset string, ttl
 
 // ListDatabaseTemp calls GET /api/v1/databases/{name}/access/temp.
 func (c *Client) ListDatabaseTemp(ctx context.Context, name string) (DatabaseTempList, error) {
-	var out DatabaseTempList
-	err := c.do(ctx, http.MethodGet, dbPath(name, "/access/temp"), nil, &out)
-	return out, err
+	return getJSON[DatabaseTempList](ctx, c, dbPath(name, "/access/temp"))
 }
 
 // RevokeDatabaseTemp calls DELETE /api/v1/databases/{name}/access/temp/{id}.
 func (c *Client) RevokeDatabaseTemp(ctx context.Context, name, id string) error {
-	return c.do(ctx, http.MethodDelete, dbPath(name, "/access/temp/"+PathEscape(id)), nil, nil)
+	return c.del(ctx, dbPath(name, "/access/temp/"+PathEscape(id)))
 }
 
 // GetDatabaseWho calls GET /api/v1/databases/{name}/access/principals.
 func (c *Client) GetDatabaseWho(ctx context.Context, name string) (DatabaseWho, error) {
-	var out DatabaseWho
-	err := c.do(ctx, http.MethodGet, dbPath(name, "/access/principals"), nil, &out)
-	return out, err
+	return getJSON[DatabaseWho](ctx, c, dbPath(name, "/access/principals"))
 }
 
 // GrantDatabaseAccess calls POST /api/v1/databases/{name}/access/grants.
@@ -283,9 +277,7 @@ func (c *Client) GrantDatabaseAccess(ctx context.Context, name string, req Datab
 
 // GetDatabaseNetwork calls GET /api/v1/databases/{name}/network.
 func (c *Client) GetDatabaseNetwork(ctx context.Context, name string) (DatabaseNetwork, error) {
-	var out DatabaseNetwork
-	err := c.do(ctx, http.MethodGet, dbPath(name, "/network"), nil, &out)
-	return out, err
+	return getJSON[DatabaseNetwork](ctx, c, dbPath(name, "/network"))
 }
 
 // PreviewDatabaseRules calls POST /api/v1/databases/{name}/network/rules/preview.
@@ -304,7 +296,7 @@ func (c *Client) ApplyDatabaseRules(ctx context.Context, name string, req Databa
 
 // RemoveDatabaseRules calls DELETE /api/v1/databases/{name}/network/rules.
 func (c *Client) RemoveDatabaseRules(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, dbPath(name, "/network/rules"), nil, nil)
+	return c.del(ctx, dbPath(name, "/network/rules"))
 }
 
 // DatabaseScopeVerdict is one referencing app's fate under a scope.

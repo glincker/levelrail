@@ -63,9 +63,7 @@ const edgeSettingsPath = "/api/v1/settings/ingress/edge"
 
 // GetEdgeSettings calls GET /api/v1/settings/ingress/edge.
 func (c *Client) GetEdgeSettings(ctx context.Context) (EdgeSettings, error) {
-	var out EdgeSettings
-	err := c.do(ctx, http.MethodGet, edgeSettingsPath, nil, &out)
-	return out, err
+	return getJSON[EdgeSettings](ctx, c, edgeSettingsPath)
 }
 
 // UpdateEdgeSettings calls PUT /api/v1/settings/ingress/edge.
@@ -84,9 +82,7 @@ func (c *Client) ApplyDetectedProxy(ctx context.Context) (EdgeSettings, error) {
 
 // GetAppIngressLimits calls GET /api/v1/apps/{name}/ingress-limits.
 func (c *Client) GetAppIngressLimits(ctx context.Context, app string) (AppIngressLimits, error) {
-	var out AppIngressLimits
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/ingress-limits", nil, &out)
-	return out, err
+	return getJSON[AppIngressLimits](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/ingress-limits")
 }
 
 // SetAppIngressLimits calls PUT /api/v1/apps/{name}/ingress-limits; a nil cap clears the override.

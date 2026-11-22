@@ -119,16 +119,12 @@ type addPluginKeyInput struct {
 
 // ListPlugins calls GET /api/v1/plugins.
 func (c *Client) ListPlugins(ctx context.Context) ([]Plugin, error) {
-	var out []Plugin
-	err := c.do(ctx, http.MethodGet, "/api/v1/plugins", nil, &out)
-	return out, err
+	return getJSON[[]Plugin](ctx, c, "/api/v1/plugins")
 }
 
 // GetPlugin calls GET /api/v1/plugins/{name}.
 func (c *Client) GetPlugin(ctx context.Context, name string) (Plugin, error) {
-	var out Plugin
-	err := c.do(ctx, http.MethodGet, "/api/v1/plugins/"+PathEscape(name), nil, &out)
-	return out, err
+	return getJSON[Plugin](ctx, c, "/api/v1/plugins/"+PathEscape(name))
 }
 
 // InstallPlugin calls POST /api/v1/plugins. The plugin is recorded but not approved or started.
@@ -161,14 +157,12 @@ func (c *Client) DisablePlugin(ctx context.Context, name string) (Plugin, error)
 
 // RemovePlugin calls DELETE /api/v1/plugins/{name}.
 func (c *Client) RemovePlugin(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/plugins/"+PathEscape(name), nil, nil)
+	return c.del(ctx, "/api/v1/plugins/"+PathEscape(name))
 }
 
 // ListPluginKeys calls GET /api/v1/plugin-keys.
 func (c *Client) ListPluginKeys(ctx context.Context) ([]PluginKey, error) {
-	var out []PluginKey
-	err := c.do(ctx, http.MethodGet, "/api/v1/plugin-keys", nil, &out)
-	return out, err
+	return getJSON[[]PluginKey](ctx, c, "/api/v1/plugin-keys")
 }
 
 // AddPluginKey calls POST /api/v1/plugin-keys.
@@ -180,7 +174,7 @@ func (c *Client) AddPluginKey(ctx context.Context, name, publicKey string) (Plug
 
 // RemovePluginKey calls DELETE /api/v1/plugin-keys/{id}.
 func (c *Client) RemovePluginKey(ctx context.Context, keyID string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/plugin-keys/"+PathEscape(keyID), nil, nil)
+	return c.del(ctx, "/api/v1/plugin-keys/"+PathEscape(keyID))
 }
 
 // InspectPlugin calls POST /api/v1/plugins/inspect. Nothing is installed.

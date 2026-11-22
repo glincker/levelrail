@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -48,7 +47,5 @@ func (c *Client) GetCDNOverview(ctx context.Context, window string) (CDNOverview
 	if window != "" {
 		path += "?window=" + url.QueryEscape(window)
 	}
-	var out CDNOverview
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[CDNOverview](ctx, c, path)
 }

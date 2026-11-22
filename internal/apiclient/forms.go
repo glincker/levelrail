@@ -95,9 +95,7 @@ func (f FormSubmissionFilter) values() string {
 
 // ListForms lists an app's forms.
 func (c *Client) ListForms(ctx context.Context, app string) (FormsList, error) {
-	var out FormsList
-	err := c.do(ctx, http.MethodGet, formPath(app, ""), nil, &out)
-	return out, err
+	return getJSON[FormsList](ctx, c, formPath(app, ""))
 }
 
 // CreateForm adds a form to an app.
@@ -116,14 +114,12 @@ func (c *Client) UpdateForm(ctx context.Context, app, form string, req FormReque
 
 // DeleteForm removes a form and all of its submissions.
 func (c *Client) DeleteForm(ctx context.Context, app, form string) error {
-	return c.do(ctx, http.MethodDelete, formPath(app, form), nil, nil)
+	return c.del(ctx, formPath(app, form))
 }
 
 // ListFormSubmissions returns one page of a form's inbox.
 func (c *Client) ListFormSubmissions(ctx context.Context, app, form string, f FormSubmissionFilter) (FormSubmissionsPage, error) {
-	var out FormSubmissionsPage
-	err := c.do(ctx, http.MethodGet, formPath(app, form)+"/submissions"+f.values(), nil, &out)
-	return out, err
+	return getJSON[FormSubmissionsPage](ctx, c, formPath(app, form)+"/submissions"+f.values())
 }
 
 // ExportFormSubmissions downloads matching submissions as CSV.
@@ -141,7 +137,7 @@ func (c *Client) MarkFormSubmissionSpam(ctx context.Context, app, form string, i
 
 // DeleteFormSubmission removes one submission.
 func (c *Client) DeleteFormSubmission(ctx context.Context, app, form string, id int64) error {
-	return c.do(ctx, http.MethodDelete, formPath(app, form)+"/submissions/"+strconv.FormatInt(id, 10), nil, nil)
+	return c.del(ctx, formPath(app, form)+"/submissions/"+strconv.FormatInt(id, 10))
 }
 
 // FormTestResult is the outcome of a test submission.
@@ -154,9 +150,7 @@ type FormTestResult struct {
 
 // GetFormFields returns the form's designer schema as JSON.
 func (c *Client) GetFormFields(ctx context.Context, app, form string) (json.RawMessage, error) {
-	var out json.RawMessage
-	err := c.do(ctx, http.MethodGet, formPath(app, form)+"/fields", nil, &out)
-	return out, err
+	return getJSON[json.RawMessage](ctx, c, formPath(app, form)+"/fields")
 }
 
 // SetFormFields replaces the form's designer schema (fields, success message, allowed origins).
@@ -195,5 +189,5 @@ func (c *Client) ListStaticSiteSubmissions(ctx context.Context, site string, lim
 // DeleteStaticSiteSubmission removes one submission of a form on a site.
 func (c *Client) DeleteStaticSiteSubmission(ctx context.Context, site, form string, id int64) error {
 	p := "/api/v1/static-sites/" + PathEscape(site) + "/submissions/" + PathEscape(form) + "/" + strconv.FormatInt(id, 10)
-	return c.do(ctx, http.MethodDelete, p, nil, nil)
+	return c.del(ctx, p)
 }

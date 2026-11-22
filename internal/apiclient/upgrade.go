@@ -65,16 +65,12 @@ type EdgeGuidance struct {
 
 // GetUpdatePreflight calls GET /api/v1/updates/preflight.
 func (c *Client) GetUpdatePreflight(ctx context.Context) (UpdatePreflight, error) {
-	var out UpdatePreflight
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/preflight", nil, &out)
-	return out, err
+	return getJSON[UpdatePreflight](ctx, c, "/api/v1/updates/preflight")
 }
 
 // RecheckUpdatePreflight is GetUpdatePreflight bypassing the release cache.
 func (c *Client) RecheckUpdatePreflight(ctx context.Context) (UpdatePreflight, error) {
-	var out UpdatePreflight
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/preflight?refresh=1", nil, &out)
-	return out, err
+	return getJSON[UpdatePreflight](ctx, c, "/api/v1/updates/preflight?refresh=1")
 }
 
 // ReleaseHistoryItem is one release in GET /api/v1/updates/releases.
@@ -112,9 +108,7 @@ func (c *Client) GetReleaseHistory(ctx context.Context, channel string) (Release
 	if channel != "" {
 		path += "?channel=" + url.QueryEscape(channel)
 	}
-	var out ReleaseHistory
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[ReleaseHistory](ctx, c, path)
 }
 
 // RollbackBackup is a restore point in a rollback plan.
@@ -177,7 +171,5 @@ func (c *Client) StartRollback(ctx context.Context, version string) (RollbackSta
 
 // GetRollbackPlan calls GET /api/v1/updates/rollback-plan.
 func (c *Client) GetRollbackPlan(ctx context.Context, version string) (RollbackPlan, error) {
-	var out RollbackPlan
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/rollback-plan?version="+url.QueryEscape(version), nil, &out)
-	return out, err
+	return getJSON[RollbackPlan](ctx, c, "/api/v1/updates/rollback-plan?version="+url.QueryEscape(version))
 }

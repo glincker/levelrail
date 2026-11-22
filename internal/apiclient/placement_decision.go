@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -91,14 +90,10 @@ type NodeAllocations struct {
 
 // GetPlacementDecision calls GET /api/v1/{apps|databases}/{name}/placement/decision.
 func (c *Client) GetPlacementDecision(ctx context.Context, kind, name string) (PlacementDecisionView, error) {
-	var out PlacementDecisionView
-	err := c.do(ctx, http.MethodGet, movePath(kind, name)+"/placement/decision", nil, &out)
-	return out, err
+	return getJSON[PlacementDecisionView](ctx, c, movePath(kind, name)+"/placement/decision")
 }
 
 // GetNodeAllocations calls GET /api/v1/nodes/allocations.
 func (c *Client) GetNodeAllocations(ctx context.Context) (NodeAllocations, error) {
-	var out NodeAllocations
-	err := c.do(ctx, http.MethodGet, "/api/v1/nodes/allocations", nil, &out)
-	return out, err
+	return getJSON[NodeAllocations](ctx, c, "/api/v1/nodes/allocations")
 }

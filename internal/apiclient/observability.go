@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -49,9 +48,7 @@ func (c *Client) QueryAppMetricsSeries(ctx context.Context, name, metric string,
 	if opt.Compare {
 		q.Set("compare", "previous")
 	}
-	var out MetricsSeriesResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/metrics?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[MetricsSeriesResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/metrics?"+q.Encode())
 }
 
 // InvestigateSummary is one window's request health.
@@ -112,9 +109,7 @@ func (c *Client) InvestigateApp(ctx context.Context, name string, from, to time.
 	q := url.Values{}
 	q.Set("from", from.UTC().Format(time.RFC3339))
 	q.Set("to", to.UTC().Format(time.RFC3339))
-	var out InvestigationResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/investigate?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[InvestigationResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/investigate?"+q.Encode())
 }
 
 // FailureContextLine is one log line of a failure context.
@@ -151,9 +146,7 @@ type FailureContextResource struct {
 
 // GetFailureContext calls GET /api/v1/apps/{name}/failure-context.
 func (c *Client) GetFailureContext(ctx context.Context, name string) (FailureContextResource, error) {
-	var out FailureContextResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/failure-context", nil, &out)
-	return out, err
+	return getJSON[FailureContextResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/failure-context")
 }
 
 // LogSearch selects stored log lines with the structured filters.
@@ -210,7 +203,5 @@ func (c *Client) SearchAppLogs(ctx context.Context, name string, s LogSearch) (L
 	if s.Limit > 0 {
 		q.Set("limit", strconv.Itoa(s.Limit))
 	}
-	var out LogSearchResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/logs?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[LogSearchResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/logs?"+q.Encode())
 }

@@ -15,9 +15,7 @@ type AppGitHubActionsResource struct {
 
 // GetAppGitHubActions calls GET /api/v1/apps/{name}/github-actions.
 func (c *Client) GetAppGitHubActions(ctx context.Context, name string) (AppGitHubActionsResource, error) {
-	var out AppGitHubActionsResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/github-actions", nil, &out)
-	return out, err
+	return getJSON[AppGitHubActionsResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/github-actions")
 }
 
 // SetAppGitHubActions calls PUT /api/v1/apps/{name}/github-actions.

@@ -130,16 +130,12 @@ func (c *Client) CreateMigrationSession(ctx context.Context, src HubSource) (Hub
 
 // ListMigrationSessions lists sessions without their items.
 func (c *Client) ListMigrationSessions(ctx context.Context) ([]HubSession, error) {
-	var out []HubSession
-	err := c.do(ctx, http.MethodGet, hubBase, nil, &out)
-	return out, err
+	return getJSON[[]HubSession](ctx, c, hubBase)
 }
 
 // GetMigrationSession returns one session's plan and progress.
 func (c *Client) GetMigrationSession(ctx context.Context, id string) (HubSession, error) {
-	var out HubSession
-	err := c.do(ctx, http.MethodGet, hubBase+"/"+url.PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[HubSession](ctx, c, hubBase+"/"+url.PathEscape(id))
 }
 
 // SelectMigrationItems updates the selection and names of a session.
@@ -188,7 +184,7 @@ type HubConnection struct {
 
 // DeleteMigrationSession removes a session and the password held for it.
 func (c *Client) DeleteMigrationSession(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, hubBase+"/"+url.PathEscape(id), nil, nil)
+	return c.del(ctx, hubBase+"/"+url.PathEscape(id))
 }
 
 // SetMigrationSessionStep moves a session to a later wizard step.
@@ -204,16 +200,12 @@ func (c *Client) SetMigrationSessionStep(ctx context.Context, id, step string) (
 // MigrationSessionReceipt returns the receipt undecoded, so a saved copy keeps
 // every field the server sent, including ones this client does not know yet.
 func (c *Client) MigrationSessionReceipt(ctx context.Context, id string) (json.RawMessage, error) {
-	var out json.RawMessage
-	err := c.do(ctx, http.MethodGet, hubBase+"/"+url.PathEscape(id)+"/receipt", nil, &out)
-	return out, err
+	return getJSON[json.RawMessage](ctx, c, hubBase+"/"+url.PathEscape(id)+"/receipt")
 }
 
 // MigrationConnection returns a verified database's connection without secrets.
 func (c *Client) MigrationConnection(ctx context.Context, id, db string) (HubConnection, error) {
-	var out HubConnection
-	err := c.do(ctx, http.MethodGet, hubBase+"/"+url.PathEscape(id)+"/items/"+url.PathEscape(db)+"/connection", nil, &out)
-	return out, err
+	return getJSON[HubConnection](ctx, c, hubBase+"/"+url.PathEscape(id)+"/items/"+url.PathEscape(db)+"/connection")
 }
 
 // RevealMigrationConnection returns the connection with its secret values;

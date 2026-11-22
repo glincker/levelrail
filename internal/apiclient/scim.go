@@ -24,9 +24,7 @@ type SCIMTokenCreated struct {
 
 // ListSCIMTokens calls GET /api/v1/sso/scim/tokens.
 func (c *Client) ListSCIMTokens(ctx context.Context) ([]SCIMToken, error) {
-	var out []SCIMToken
-	err := c.do(ctx, http.MethodGet, "/api/v1/sso/scim/tokens", nil, &out)
-	return out, err
+	return getJSON[[]SCIMToken](ctx, c, "/api/v1/sso/scim/tokens")
 }
 
 // CreateSCIMToken calls POST /api/v1/sso/scim/tokens.
@@ -45,7 +43,7 @@ func (c *Client) RotateSCIMToken(ctx context.Context, id string) (SCIMTokenCreat
 
 // RevokeSCIMToken calls DELETE /api/v1/sso/scim/tokens/{id}.
 func (c *Client) RevokeSCIMToken(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/sso/scim/tokens/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/sso/scim/tokens/"+PathEscape(id))
 }
 
 // SetSCIMDefaultRole calls PUT /api/v1/sso/settings with the directory default role.

@@ -190,6 +190,7 @@ func (rt *Router) otherMembersReadable(ctx context.Context, app string, asMember
 
 // X-Total-Count is the match count before paging; without limit the full filtered set is returned.
 func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
+	r = r.WithContext(withMeshPathMemo(r.Context()))
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
 		rt.internalError(w, "api: list apps: store lacks filtered listing", errNoFilteredList)
@@ -255,7 +256,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 
 	var sleepRows map[string]appListSleep
 	if rows, err := rt.appSleep.ListAppSleep(r.Context()); err == nil {
-		sleepRows = sleepByApp(rows)
+		sleepRows = sleepByApp(sleepRowsForApps(rows, appNames))
 	}
 
 	placement := rt.placementResolver(r.Context())
@@ -397,6 +398,7 @@ type appsSummaryResource struct {
 // counts over the same filters and visibility as the list, so a dashboard
 // can show tiles without downloading every app.
 func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
+	r = r.WithContext(withMeshPathMemo(r.Context()))
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
 		rt.internalError(w, "api: apps summary: store lacks filtered listing", errNoFilteredList)

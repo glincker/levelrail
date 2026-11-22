@@ -100,9 +100,7 @@ type KeyPolicyUpdate struct {
 
 // GetEncryptionKeys calls GET /api/v1/system/encryption-keys.
 func (c *Client) GetEncryptionKeys(ctx context.Context) (EncryptionKeysStatus, error) {
-	var out EncryptionKeysStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/encryption-keys", nil, &out)
-	return out, err
+	return getJSON[EncryptionKeysStatus](ctx, c, "/api/v1/system/encryption-keys")
 }
 
 // RotateDEK calls POST /api/v1/system/encryption-keys/rotate for one app, or

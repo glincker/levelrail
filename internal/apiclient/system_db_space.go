@@ -55,9 +55,7 @@ type SystemProcesses struct {
 
 // GetDBSpace calls GET /api/v1/system/db-space.
 func (c *Client) GetDBSpace(ctx context.Context) (DBSpace, error) {
-	var out DBSpace
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/db-space", nil, &out)
-	return out, err
+	return getJSON[DBSpace](ctx, c, "/api/v1/system/db-space")
 }
 
 // CompactDB calls POST /api/v1/system/db-space/compact.
@@ -69,7 +67,5 @@ func (c *Client) CompactDB(ctx context.Context, force bool) (DBCompact, error) {
 
 // GetSystemProcesses calls GET /api/v1/system/processes.
 func (c *Client) GetSystemProcesses(ctx context.Context) (SystemProcesses, error) {
-	var out SystemProcesses
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/processes", nil, &out)
-	return out, err
+	return getJSON[SystemProcesses](ctx, c, "/api/v1/system/processes")
 }

@@ -45,7 +45,7 @@ export function projectTopologyQueryOptions(projectId: string) {
 export function useLiveProjectTopology(projectId: string) {
   return useSuspenseQuery({
     ...projectTopologyQueryOptions(projectId),
-    refetchInterval: pollMs('live'),
+    refetchInterval: pollMs('steady'),
   })
 }
 

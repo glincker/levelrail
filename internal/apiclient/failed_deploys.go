@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 )
 
@@ -20,7 +19,5 @@ func (c *Client) ListFailedDeploys(ctx context.Context, since string) ([]FailedD
 	if since != "" {
 		path += "?since=" + url.QueryEscape(since)
 	}
-	var out []FailedDeployResource
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]FailedDeployResource](ctx, c, path)
 }

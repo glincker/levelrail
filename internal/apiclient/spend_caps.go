@@ -74,9 +74,7 @@ func appBudgetPath(app string) string {
 // GetAppBudget calls GET /api/v1/apps/{name}/budget; an app with no budget
 // fails with an APIError of status 404.
 func (c *Client) GetAppBudget(ctx context.Context, app string) (AppBudget, error) {
-	var out AppBudget
-	err := c.do(ctx, http.MethodGet, appBudgetPath(app), nil, &out)
-	return out, err
+	return getJSON[AppBudget](ctx, c, appBudgetPath(app))
 }
 
 // SetAppBudget calls PUT /api/v1/apps/{name}/budget.
@@ -88,21 +86,17 @@ func (c *Client) SetAppBudget(ctx context.Context, app string, u AppBudgetUpdate
 
 // ClearAppBudget calls DELETE /api/v1/apps/{name}/budget.
 func (c *Client) ClearAppBudget(ctx context.Context, app string) error {
-	return c.do(ctx, http.MethodDelete, appBudgetPath(app), nil, nil)
+	return c.del(ctx, appBudgetPath(app))
 }
 
 // GetAppBudgetHistory calls GET /api/v1/apps/{name}/budget/history.
 func (c *Client) GetAppBudgetHistory(ctx context.Context, app string) (AppBudgetHistory, error) {
-	var out AppBudgetHistory
-	err := c.do(ctx, http.MethodGet, appBudgetPath(app)+"/history", nil, &out)
-	return out, err
+	return getJSON[AppBudgetHistory](ctx, c, appBudgetPath(app)+"/history")
 }
 
 // ListAppBudgets calls GET /api/v1/costs/app-caps.
 func (c *Client) ListAppBudgets(ctx context.Context) (AppBudgets, error) {
-	var out AppBudgets
-	err := c.do(ctx, http.MethodGet, "/api/v1/costs/app-caps", nil, &out)
-	return out, err
+	return getJSON[AppBudgets](ctx, c, "/api/v1/costs/app-caps")
 }
 
 // DryRunAppBudget calls POST /api/v1/apps/{name}/budget/dry-run.

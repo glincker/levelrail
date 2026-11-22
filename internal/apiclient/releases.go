@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // ReleaseResource is one release in GET /api/v1/apps/{name}/releases.
@@ -33,7 +32,5 @@ type AppReleasesResource struct {
 
 // ListAppReleases calls GET /api/v1/apps/{name}/releases.
 func (c *Client) ListAppReleases(ctx context.Context, name string) (AppReleasesResource, error) {
-	var out AppReleasesResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/releases", nil, &out)
-	return out, err
+	return getJSON[AppReleasesResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/releases")
 }

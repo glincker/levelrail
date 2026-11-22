@@ -82,9 +82,7 @@ type DomainLifecycleResult struct {
 
 // ListParkedDomains calls GET /api/v1/domains/parked.
 func (c *Client) ListParkedDomains(ctx context.Context) ([]ParkedDomain, error) {
-	var out []ParkedDomain
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/parked", nil, &out)
-	return out, err
+	return getJSON[[]ParkedDomain](ctx, c, "/api/v1/domains/parked")
 }
 
 // ParkedRetentionItem is one parked domain the retention job would delete.
@@ -105,9 +103,7 @@ type ParkedRetentionPlan struct {
 
 // ParkedRetention calls GET /api/v1/domains/parked/retention.
 func (c *Client) ParkedRetention(ctx context.Context) (ParkedRetentionPlan, error) {
-	var out ParkedRetentionPlan
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/parked/retention", nil, &out)
-	return out, err
+	return getJSON[ParkedRetentionPlan](ctx, c, "/api/v1/domains/parked/retention")
 }
 
 // ParkDomain calls POST /api/v1/domains/park.
@@ -139,7 +135,7 @@ func (c *Client) AttachParkedDomainTo(ctx context.Context, domain string, req Do
 
 // DeleteParkedDomain calls DELETE /api/v1/domains/parked/{domain}.
 func (c *Client) DeleteParkedDomain(ctx context.Context, domain string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/domains/parked/"+url.PathEscape(domain), nil, nil)
+	return c.del(ctx, "/api/v1/domains/parked/"+url.PathEscape(domain))
 }
 
 // DomainBatchItem is one domain of a bulk request; the fields used depend on the action.

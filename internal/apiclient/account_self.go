@@ -52,9 +52,7 @@ func (c *Client) MyActivity(ctx context.Context, opts MyActivityOptions) (MyActi
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out MyActivity
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[MyActivity](ctx, c, path)
 }
 
 // MyCredentials mirrors internal/api's myCredentialsResponse: live sessions
@@ -66,9 +64,7 @@ type MyCredentials struct {
 
 // MyCredentials calls GET /api/v1/auth/my-credentials.
 func (c *Client) MyCredentials(ctx context.Context) (MyCredentials, error) {
-	var out MyCredentials
-	err := c.do(ctx, http.MethodGet, "/api/v1/auth/my-credentials", nil, &out)
-	return out, err
+	return getJSON[MyCredentials](ctx, c, "/api/v1/auth/my-credentials")
 }
 
 // Preferences mirrors internal/api's preferencesResource.
@@ -82,9 +78,7 @@ type Preferences struct {
 
 // GetPreferences calls GET /api/v1/auth/preferences.
 func (c *Client) GetPreferences(ctx context.Context) (Preferences, error) {
-	var out Preferences
-	err := c.do(ctx, http.MethodGet, "/api/v1/auth/preferences", nil, &out)
-	return out, err
+	return getJSON[Preferences](ctx, c, "/api/v1/auth/preferences")
 }
 
 // PutPreferences calls PUT /api/v1/auth/preferences, replacing every field.
@@ -111,9 +105,7 @@ func (c *Client) StartAccountExport(ctx context.Context) (AccountExport, error) 
 
 // AccountExportStatus calls GET /api/v1/auth/export/{id}.
 func (c *Client) AccountExportStatus(ctx context.Context, id string) (AccountExport, error) {
-	var out AccountExport
-	err := c.do(ctx, http.MethodGet, "/api/v1/auth/export/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[AccountExport](ctx, c, "/api/v1/auth/export/"+PathEscape(id))
 }
 
 // DownloadAccountExport calls GET /api/v1/auth/export/{id}/download and returns the zip.
@@ -123,5 +115,5 @@ func (c *Client) DownloadAccountExport(ctx context.Context, id string) ([]byte, 
 
 // UnlinkProvider calls DELETE /api/v1/auth/link/{provider}.
 func (c *Client) UnlinkProvider(ctx context.Context, provider string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/auth/link/"+PathEscape(provider), nil, nil)
+	return c.del(ctx, "/api/v1/auth/link/"+PathEscape(provider))
 }

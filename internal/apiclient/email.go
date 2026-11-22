@@ -82,9 +82,7 @@ func (c *Client) SendTestEmail(ctx context.Context, to string) (EmailTestResult,
 
 // GetEmailStatus calls GET /api/v1/settings/email/status.
 func (c *Client) GetEmailStatus(ctx context.Context) (EmailStatus, error) {
-	var out EmailStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/email/status", nil, &out)
-	return out, err
+	return getJSON[EmailStatus](ctx, c, "/api/v1/settings/email/status")
 }
 
 // CheckEmailDomain calls GET /api/v1/settings/email/domain-check; an empty domain uses the From address's domain.
@@ -113,7 +111,5 @@ func (c *Client) ListEmailDeliveries(ctx context.Context, q EmailDeliveryQuery) 
 	if len(v) > 0 {
 		path += "?" + v.Encode()
 	}
-	var out EmailDeliveryList
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[EmailDeliveryList](ctx, c, path)
 }

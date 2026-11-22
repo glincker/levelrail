@@ -48,7 +48,7 @@ export function composeStackQueryOptions(appId: string) {
     queryKey: composeKeys.stack(appId),
     queryFn: () =>
       request<ComposeStack>(appPath(appId), {}, 'load compose stack failed'),
-    refetchInterval: pollMs('live'),
+    refetchInterval: pollMs('steady'),
   })
 }
 

@@ -221,3 +221,19 @@ func TestChangesStream_HeartbeatClamped(t *testing.T) {
 		}
 	}
 }
+
+// TestChangesStream_ResourceTopicsScoped: load balancer, job and compose
+// nudges for another team's app never reach the caller, and every message is
+// preceded by a heartbeat ping the helper checks.
+func TestChangesStream_ResourceTopicsScoped(t *testing.T) {
+	f := newTeamFixture(t)
+	sc := openChangeStream(t, f.rt, f.cookies[store.TeamRoleOwner])
+	f.rt.changes.Publish(changeLoadBalancers, appB)
+	f.rt.changes.Publish(changeScheduledTasks, appB)
+	f.rt.changes.Publish(changeCompose, appB)
+	f.rt.changes.Publish(changeLoadBalancers, appA)
+	f.rt.changes.Publish(changeCompose, appA)
+	if got := nextChangeTopics(t, sc); !reflect.DeepEqual(got, []string{"loadbalancers", "compose"}) {
+		t.Fatalf("topics = %v, want [loadbalancers compose]", got)
+	}
+}

@@ -60,16 +60,12 @@ func (c *Client) CreatePolicy(ctx context.Context, req PolicyRequest) (PolicyRes
 
 // ListPolicies calls GET /api/v1/iam/policies.
 func (c *Client) ListPolicies(ctx context.Context) ([]PolicyResource, error) {
-	var out []PolicyResource
-	err := c.do(ctx, http.MethodGet, policiesCollectionPath, nil, &out)
-	return out, err
+	return getJSON[[]PolicyResource](ctx, c, policiesCollectionPath)
 }
 
 // GetPolicy calls GET /api/v1/iam/policies/{id}.
 func (c *Client) GetPolicy(ctx context.Context, id string) (PolicyResource, error) {
-	var out PolicyResource
-	err := c.do(ctx, http.MethodGet, policiesPath+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[PolicyResource](ctx, c, policiesPath+PathEscape(id))
 }
 
 // UpdatePolicy calls PUT /api/v1/iam/policies/{id}.
@@ -81,7 +77,7 @@ func (c *Client) UpdatePolicy(ctx context.Context, id string, req PolicyRequest)
 
 // DeletePolicy calls DELETE /api/v1/iam/policies/{id}.
 func (c *Client) DeletePolicy(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, policiesPath+PathEscape(id), nil, nil)
+	return c.del(ctx, policiesPath+PathEscape(id))
 }
 
 // AttachPolicy calls POST /api/v1/iam/policies/{id}/attachments.
@@ -92,12 +88,10 @@ func (c *Client) AttachPolicy(ctx context.Context, id string, req AttachPolicyRe
 // DetachPolicy calls DELETE
 // /api/v1/iam/policies/{id}/attachments/{principalType}/{principalID}.
 func (c *Client) DetachPolicy(ctx context.Context, id, principalType, principalID string) error {
-	return c.do(ctx, http.MethodDelete, policiesPath+PathEscape(id)+"/attachments/"+PathEscape(principalType)+"/"+PathEscape(principalID), nil, nil)
+	return c.del(ctx, policiesPath+PathEscape(id)+"/attachments/"+PathEscape(principalType)+"/"+PathEscape(principalID))
 }
 
 // ListPolicyAttachments calls GET /api/v1/iam/policies/{id}/attachments.
 func (c *Client) ListPolicyAttachments(ctx context.Context, id string) ([]PolicyAttachmentResource, error) {
-	var out []PolicyAttachmentResource
-	err := c.do(ctx, http.MethodGet, policiesPath+PathEscape(id)+"/attachments", nil, &out)
-	return out, err
+	return getJSON[[]PolicyAttachmentResource](ctx, c, policiesPath+PathEscape(id)+"/attachments")
 }

@@ -56,7 +56,5 @@ func (c *Client) DNSQueries(ctx context.Context, q url.Values) (DNSQueriesResult
 
 // DNSStats calls GET /api/v1/dns/stats.
 func (c *Client) DNSStats(ctx context.Context) (DNSStatsResult, error) {
-	var out DNSStatsResult
-	err := c.do(ctx, http.MethodGet, "/api/v1/dns/stats", nil, &out)
-	return out, err
+	return getJSON[DNSStatsResult](ctx, c, "/api/v1/dns/stats")
 }

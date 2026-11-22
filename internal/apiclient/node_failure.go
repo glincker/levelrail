@@ -48,9 +48,7 @@ type NodeFailureSummary struct {
 
 // GetNodeFailure calls GET /api/v1/nodes/{id}/failure.
 func (c *Client) GetNodeFailure(ctx context.Context, id string) (NodeFailureStatus, error) {
-	var out NodeFailureStatus
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/failure", nil, &out)
-	return out, err
+	return getJSON[NodeFailureStatus](ctx, c, nodePath(id)+"/failure")
 }
 
 // SetNodeFailurePolicy calls PUT /api/v1/nodes/{id}/failure-policy.

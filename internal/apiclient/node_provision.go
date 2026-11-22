@@ -137,9 +137,7 @@ func nodeProvidersPath() string { return "/api/v1/node-providers" }
 
 // ListNodeProviders calls GET /api/v1/node-providers.
 func (c *Client) ListNodeProviders(ctx context.Context) ([]NodeProviderResource, error) {
-	var out []NodeProviderResource
-	err := c.do(ctx, http.MethodGet, nodeProvidersPath(), nil, &out)
-	return out, err
+	return getJSON[[]NodeProviderResource](ctx, c, nodeProvidersPath())
 }
 
 // SetNodeProviderCredential calls POST /api/v1/node-providers.
@@ -159,14 +157,12 @@ func (c *Client) TestNodeProvider(ctx context.Context, provider string) (NodePro
 
 // DisconnectNodeProvider calls DELETE /api/v1/node-providers/{provider}.
 func (c *Client) DisconnectNodeProvider(ctx context.Context, provider string) error {
-	return c.do(ctx, http.MethodDelete, nodeProvidersPath()+"/"+PathEscape(provider), nil, nil)
+	return c.del(ctx, nodeProvidersPath()+"/"+PathEscape(provider))
 }
 
 // ListNodeProviderRegions calls GET /api/v1/node-providers/{provider}/regions.
 func (c *Client) ListNodeProviderRegions(ctx context.Context, provider string) ([]NodeProviderRegionResource, error) {
-	var out []NodeProviderRegionResource
-	err := c.do(ctx, http.MethodGet, nodeProvidersPath()+"/"+PathEscape(provider)+"/regions", nil, &out)
-	return out, err
+	return getJSON[[]NodeProviderRegionResource](ctx, c, nodeProvidersPath()+"/"+PathEscape(provider)+"/regions")
 }
 
 // ListNodeProviderSizes calls GET
@@ -177,9 +173,7 @@ func (c *Client) ListNodeProviderSizes(ctx context.Context, provider, region str
 	if region != "" {
 		path += "?region=" + url.QueryEscape(region)
 	}
-	var out []NodeProviderSizeResource
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]NodeProviderSizeResource](ctx, c, path)
 }
 
 func nodeProvisionsPath() string { return "/api/v1/node-provisions" }
@@ -193,16 +187,12 @@ func (c *Client) CreateNodeProvision(ctx context.Context, req CreateNodeProvisio
 
 // ListNodeProvisions calls GET /api/v1/node-provisions.
 func (c *Client) ListNodeProvisions(ctx context.Context) ([]NodeProvisionResource, error) {
-	var out []NodeProvisionResource
-	err := c.do(ctx, http.MethodGet, nodeProvisionsPath(), nil, &out)
-	return out, err
+	return getJSON[[]NodeProvisionResource](ctx, c, nodeProvisionsPath())
 }
 
 // GetNodeProvision calls GET /api/v1/node-provisions/{id}.
 func (c *Client) GetNodeProvision(ctx context.Context, id string) (NodeProvisionResource, error) {
-	var out NodeProvisionResource
-	err := c.do(ctx, http.MethodGet, nodeProvisionsPath()+"/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[NodeProvisionResource](ctx, c, nodeProvisionsPath()+"/"+PathEscape(id))
 }
 
 // DestroyNodeProvision calls DELETE /api/v1/node-provisions/{id}. force
@@ -224,7 +214,5 @@ func (c *Client) GetNodeProviderCapabilities(ctx context.Context, provider strin
 	if refresh {
 		path += "?refresh=1"
 	}
-	var out ProviderCapabilities
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[ProviderCapabilities](ctx, c, path)
 }

@@ -37,9 +37,7 @@ func (c *Client) VerifyMigration(ctx context.Context, req MigrationVerifyRequest
 
 // LatestMigrationVerify calls GET /api/v1/migrations/verify/latest.
 func (c *Client) LatestMigrationVerify(ctx context.Context) (MigrationVerifyReport, error) {
-	var out MigrationVerifyReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/migrations/verify/latest", nil, &out)
-	return out, err
+	return getJSON[MigrationVerifyReport](ctx, c, "/api/v1/migrations/verify/latest")
 }
 
 // MigrationPlanReport is the read-only plan of a source platform.
@@ -132,9 +130,7 @@ func (c *Client) ListMigrationChecklists(ctx context.Context) ([]MigrationCheckl
 
 // GetMigrationChecklist calls GET /api/v1/migration/checklists/{app}.
 func (c *Client) GetMigrationChecklist(ctx context.Context, app string) (MigrationChecklist, error) {
-	var out MigrationChecklist
-	err := c.do(ctx, http.MethodGet, "/api/v1/migration/checklists/"+url.PathEscape(app), nil, &out)
-	return out, err
+	return getJSON[MigrationChecklist](ctx, c, "/api/v1/migration/checklists/"+url.PathEscape(app))
 }
 
 // StepMigrationChecklist calls POST /api/v1/migration/checklists/{app}/steps/{step}.

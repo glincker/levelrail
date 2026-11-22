@@ -99,9 +99,7 @@ func mailAppQuery(path, app string) string {
 
 // MailBackups calls GET /api/v1/mail/backups.
 func (c *Client) MailBackups(ctx context.Context, app string) (MailBackups, error) {
-	var out MailBackups
-	err := c.do(ctx, http.MethodGet, mailAppQuery("/api/v1/mail/backups", app), nil, &out)
-	return out, err
+	return getJSON[MailBackups](ctx, c, mailAppQuery("/api/v1/mail/backups", app))
 }
 
 // RunMailBackup calls POST /api/v1/mail/backups and returns the started job.
@@ -126,9 +124,7 @@ func (c *Client) RestoreMailBackup(ctx context.Context, app, id, confirm string,
 
 // MailStorage calls GET /api/v1/mail/storage.
 func (c *Client) MailStorage(ctx context.Context, app string) (MailStorage, error) {
-	var out MailStorage
-	err := c.do(ctx, http.MethodGet, mailAppQuery("/api/v1/mail/storage", app), nil, &out)
-	return out, err
+	return getJSON[MailStorage](ctx, c, mailAppQuery("/api/v1/mail/storage", app))
 }
 
 // SetMailStorage calls PUT /api/v1/mail/storage.

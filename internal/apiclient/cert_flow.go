@@ -71,9 +71,7 @@ func (c *Client) CertPreflight(ctx context.Context, domain, email string, stagin
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out CertPreflight
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[CertPreflight](ctx, c, path)
 }
 
 // GetCertificate asks for a real certificate for domain.
@@ -85,7 +83,5 @@ func (c *Client) GetCertificate(ctx context.Context, domain string, req GetCertR
 
 // DomainCertStatus reads the progress and details of domain's certificate.
 func (c *Client) DomainCertStatus(ctx context.Context, domain string) (DomainCertStatus, error) {
-	var out DomainCertStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/"+url.PathEscape(domain)+"/cert/status", nil, &out)
-	return out, err
+	return getJSON[DomainCertStatus](ctx, c, "/api/v1/domains/"+url.PathEscape(domain)+"/cert/status")
 }

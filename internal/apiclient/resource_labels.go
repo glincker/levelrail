@@ -12,9 +12,7 @@ type LabelSet struct {
 
 // GetResourceLabels calls GET /api/v1/{path}/{name}/labels for apps, databases, stacks or nodes.
 func (c *Client) GetResourceLabels(ctx context.Context, path, name string) (LabelSet, error) {
-	var out LabelSet
-	err := c.do(ctx, http.MethodGet, "/api/v1/"+path+"/"+PathEscape(name)+"/labels", nil, &out)
-	return out, err
+	return getJSON[LabelSet](ctx, c, "/api/v1/"+path+"/"+PathEscape(name)+"/labels")
 }
 
 // PatchResourceLabels sets and removes keys in one call; nodes only have a replace route, so it is merged here.

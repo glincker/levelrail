@@ -68,9 +68,7 @@ type MonitorResults struct {
 
 // ListMonitors calls GET /api/v1/monitors.
 func (c *Client) ListMonitors(ctx context.Context) ([]Monitor, error) {
-	var out []Monitor
-	err := c.do(ctx, http.MethodGet, "/api/v1/monitors", nil, &out)
-	return out, err
+	return getJSON[[]Monitor](ctx, c, "/api/v1/monitors")
 }
 
 // CreateMonitor calls POST /api/v1/monitors.
@@ -110,7 +108,7 @@ func (c *Client) RotateMonitorToken(ctx context.Context, id string) (Monitor, er
 
 // DeleteMonitor calls DELETE /api/v1/monitors/{id}.
 func (c *Client) DeleteMonitor(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/monitors/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/monitors/"+PathEscape(id))
 }
 
 // MonitorResultsFor calls GET /api/v1/monitors/{id}/results.
@@ -126,7 +124,5 @@ func (c *Client) MonitorResultsFor(ctx context.Context, id, window string, limit
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out MonitorResults
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[MonitorResults](ctx, c, path)
 }

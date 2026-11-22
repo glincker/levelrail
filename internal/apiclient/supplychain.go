@@ -115,9 +115,7 @@ func deploymentPath(name, id, leaf string) string {
 
 // GetSupplyChain calls GET /api/v1/apps/{name}/supply-chain.
 func (c *Client) GetSupplyChain(ctx context.Context, name string) (SupplyChainSettings, error) {
-	var out SupplyChainSettings
-	err := c.do(ctx, http.MethodGet, supplyChainPath(name), nil, &out)
-	return out, err
+	return getJSON[SupplyChainSettings](ctx, c, supplyChainPath(name))
 }
 
 // SetSupplyChain calls PUT /api/v1/apps/{name}/supply-chain.
@@ -136,9 +134,7 @@ func (c *Client) OverrideSupplyChainGate(ctx context.Context, name, reason strin
 
 // GetSBOM calls GET /api/v1/apps/{name}/deployments/{id}/sbom.
 func (c *Client) GetSBOM(ctx context.Context, name, id string) (SBOMSummary, error) {
-	var out SBOMSummary
-	err := c.do(ctx, http.MethodGet, deploymentPath(name, id, "sbom"), nil, &out)
-	return out, err
+	return getJSON[SBOMSummary](ctx, c, deploymentPath(name, id, "sbom"))
 }
 
 // DownloadSBOM fetches the raw SBOM document of one deployment.
@@ -175,9 +171,7 @@ func (c *Client) DownloadSBOM(ctx context.Context, name, id string) ([]byte, err
 
 // GetVulnerabilities calls GET /api/v1/apps/{name}/deployments/{id}/vulnerabilities.
 func (c *Client) GetVulnerabilities(ctx context.Context, name, id string) (VulnReport, error) {
-	var out VulnReport
-	err := c.do(ctx, http.MethodGet, deploymentPath(name, id, "vulnerabilities"), nil, &out)
-	return out, err
+	return getJSON[VulnReport](ctx, c, deploymentPath(name, id, "vulnerabilities"))
 }
 
 // ScanDeployment calls POST /api/v1/apps/{name}/deployments/{id}/scan.
@@ -198,9 +192,7 @@ const supplyChainDefaultPath = "/api/v1/settings/supply-chain"
 
 // GetSupplyChainDefault calls GET /api/v1/settings/supply-chain.
 func (c *Client) GetSupplyChainDefault(ctx context.Context) (SupplyChainDefault, error) {
-	var out SupplyChainDefault
-	err := c.do(ctx, http.MethodGet, supplyChainDefaultPath, nil, &out)
-	return out, err
+	return getJSON[SupplyChainDefault](ctx, c, supplyChainDefaultPath)
 }
 
 // SetSupplyChainDefault calls PUT /api/v1/settings/supply-chain.

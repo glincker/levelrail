@@ -43,9 +43,7 @@ type EffectiveSessionPolicy struct {
 
 // ListSessionPolicies calls GET /api/v1/security/session-policies.
 func (c *Client) ListSessionPolicies(ctx context.Context) ([]SessionPolicy, error) {
-	var out []SessionPolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/security/session-policies", nil, &out)
-	return out, err
+	return getJSON[[]SessionPolicy](ctx, c, "/api/v1/security/session-policies")
 }
 
 // SetSessionPolicy calls PUT /api/v1/security/session-policies/{team_id}.
@@ -57,12 +55,10 @@ func (c *Client) SetSessionPolicy(ctx context.Context, teamID string, req Sessio
 
 // ClearSessionPolicy calls DELETE /api/v1/security/session-policies/{team_id}.
 func (c *Client) ClearSessionPolicy(ctx context.Context, teamID string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/security/session-policies/"+PathEscape(teamID), nil, nil)
+	return c.del(ctx, "/api/v1/security/session-policies/"+PathEscape(teamID))
 }
 
 // EffectiveSessionPolicy calls GET /api/v1/security/session-policy/effective.
 func (c *Client) EffectiveSessionPolicy(ctx context.Context) (EffectiveSessionPolicy, error) {
-	var out EffectiveSessionPolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/security/session-policy/effective", nil, &out)
-	return out, err
+	return getJSON[EffectiveSessionPolicy](ctx, c, "/api/v1/security/session-policy/effective")
 }

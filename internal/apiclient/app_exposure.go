@@ -80,9 +80,7 @@ func exposurePath(name, suffix string) string {
 
 // GetAppExposure calls GET /api/v1/apps/{name}/exposure.
 func (c *Client) GetAppExposure(ctx context.Context, name string) (AppExposureResource, error) {
-	var out AppExposureResource
-	err := c.do(ctx, http.MethodGet, exposurePath(name, ""), nil, &out)
-	return out, err
+	return getJSON[AppExposureResource](ctx, c, exposurePath(name, ""))
 }
 
 // PreviewAppExposure calls POST /api/v1/apps/{name}/exposure/preview.

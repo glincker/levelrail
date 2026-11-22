@@ -28,9 +28,7 @@ func restartSchedulePath(name string) string {
 
 // GetAppRestartSchedule reads the app's restart schedule.
 func (c *Client) GetAppRestartSchedule(ctx context.Context, name string) (AppRestartSchedule, error) {
-	var out AppRestartSchedule
-	err := c.do(ctx, http.MethodGet, restartSchedulePath(name), nil, &out)
-	return out, err
+	return getJSON[AppRestartSchedule](ctx, c, restartSchedulePath(name))
 }
 
 // SetAppRestartSchedule sets a cron or "@every <duration>" restart schedule.

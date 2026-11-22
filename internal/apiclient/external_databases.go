@@ -100,16 +100,12 @@ func (c *Client) AdoptExternalDatabase(ctx context.Context, req ExternalDatabase
 
 // ListExternalDatabaseCandidates calls GET /api/v1/external-databases/candidates.
 func (c *Client) ListExternalDatabaseCandidates(ctx context.Context, nodeID string) ([]ExternalDatabaseCandidate, error) {
-	var out []ExternalDatabaseCandidate
-	err := c.do(ctx, http.MethodGet, externalDatabasesPath+"/candidates?node_id="+url.QueryEscape(nodeID), nil, &out)
-	return out, err
+	return getJSON[[]ExternalDatabaseCandidate](ctx, c, externalDatabasesPath+"/candidates?node_id="+url.QueryEscape(nodeID))
 }
 
 // ListExternalDatabases calls GET /api/v1/external-databases.
 func (c *Client) ListExternalDatabases(ctx context.Context) ([]ExternalDatabase, error) {
-	var out []ExternalDatabase
-	err := c.do(ctx, http.MethodGet, externalDatabasesPath, nil, &out)
-	return out, err
+	return getJSON[[]ExternalDatabase](ctx, c, externalDatabasesPath)
 }
 
 // ProbeExternalDatabase calls POST /api/v1/external-databases/{name}/probe.
@@ -126,5 +122,5 @@ func (c *Client) DeleteExternalDatabase(ctx context.Context, name string, force 
 	if force {
 		path += "?force=true"
 	}
-	return c.do(ctx, http.MethodDelete, path, nil, nil)
+	return c.del(ctx, path)
 }

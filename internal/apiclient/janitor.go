@@ -93,16 +93,12 @@ type JanitorStatus struct {
 
 // GetJanitor calls GET /api/v1/system/janitor.
 func (c *Client) GetJanitor(ctx context.Context) (JanitorStatus, error) {
-	var out JanitorStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/janitor", nil, &out)
-	return out, err
+	return getJSON[JanitorStatus](ctx, c, "/api/v1/system/janitor")
 }
 
 // ListJanitorRuns calls GET /api/v1/system/janitor/runs.
 func (c *Client) ListJanitorRuns(ctx context.Context, limit int) ([]JanitorReport, error) {
-	var out []JanitorReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/janitor/runs?limit="+strconv.Itoa(limit), nil, &out)
-	return out, err
+	return getJSON[[]JanitorReport](ctx, c, "/api/v1/system/janitor/runs?limit="+strconv.Itoa(limit))
 }
 
 // UpdateJanitorPolicy calls PUT /api/v1/system/janitor/policy.

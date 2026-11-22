@@ -30,9 +30,7 @@ func expiryPath(name string) string {
 
 // GetAppExpiry reads the app's expiry.
 func (c *Client) GetAppExpiry(ctx context.Context, name string) (AppExpiry, error) {
-	var out AppExpiry
-	err := c.do(ctx, http.MethodGet, expiryPath(name), nil, &out)
-	return out, err
+	return getJSON[AppExpiry](ctx, c, expiryPath(name))
 }
 
 // SetAppExpiry schedules the app's expiry; confirm must be the app name when deleteData is set.

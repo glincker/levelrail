@@ -37,9 +37,7 @@ type ScheduledMaintenanceRequest struct {
 
 // ListScheduledMaintenance calls GET /api/v1/scheduled-maintenance.
 func (c *Client) ListScheduledMaintenance(ctx context.Context) ([]ScheduledMaintenanceResource, error) {
-	var out []ScheduledMaintenanceResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/scheduled-maintenance", nil, &out)
-	return out, err
+	return getJSON[[]ScheduledMaintenanceResource](ctx, c, "/api/v1/scheduled-maintenance")
 }
 
 // CreateScheduledMaintenance calls POST /api/v1/scheduled-maintenance.
@@ -51,14 +49,12 @@ func (c *Client) CreateScheduledMaintenance(ctx context.Context, req ScheduledMa
 
 // DeleteScheduledMaintenance calls DELETE /api/v1/scheduled-maintenance/{id}.
 func (c *Client) DeleteScheduledMaintenance(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/scheduled-maintenance/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/scheduled-maintenance/"+PathEscape(id))
 }
 
 // ListFleetMaintenance calls GET /api/v1/maintenance/domains.
 func (c *Client) ListFleetMaintenance(ctx context.Context) (FleetMaintenanceResource, error) {
-	var out FleetMaintenanceResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/maintenance/domains", nil, &out)
-	return out, err
+	return getJSON[FleetMaintenanceResource](ctx, c, "/api/v1/maintenance/domains")
 }
 
 // PreviewMaintenancePage calls POST /api/v1/maintenance/preview.

@@ -64,9 +64,7 @@ type PreviewPruneResult struct {
 
 // GetPreview calls GET /api/v1/apps/{name}/preview.
 func (c *Client) GetPreview(ctx context.Context, name string) (PreviewStatus, error) {
-	var out PreviewStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/preview", nil, &out)
-	return out, err
+	return getJSON[PreviewStatus](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/preview")
 }
 
 // SetPreview calls PUT /api/v1/apps/{name}/preview.

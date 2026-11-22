@@ -43,9 +43,7 @@ func functionPath(name, leaf string) string {
 
 // GetFunctionSettings calls GET /api/v1/functions/{name}/settings.
 func (c *Client) GetFunctionSettings(ctx context.Context, name string) (FunctionSettings, error) {
-	var out FunctionSettings
-	err := c.do(ctx, http.MethodGet, functionPath(name, "settings"), nil, &out)
-	return out, err
+	return getJSON[FunctionSettings](ctx, c, functionPath(name, "settings"))
 }
 
 // SetFunctionSettings calls PUT /api/v1/functions/{name}/settings.

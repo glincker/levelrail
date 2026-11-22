@@ -88,16 +88,12 @@ func emailProviderPath(id string) string {
 
 // ListEmailProviders calls GET /api/v1/settings/email/providers: the primary first, then the backup if any.
 func (c *Client) ListEmailProviders(ctx context.Context) (EmailProviderList, error) {
-	var out EmailProviderList
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/email/providers", nil, &out)
-	return out, err
+	return getJSON[EmailProviderList](ctx, c, "/api/v1/settings/email/providers")
 }
 
 // GetEmailProvider calls GET /api/v1/settings/email/providers/{id}.
 func (c *Client) GetEmailProvider(ctx context.Context, id string) (EmailProvider, error) {
-	var out EmailProvider
-	err := c.do(ctx, http.MethodGet, emailProviderPath(id), nil, &out)
-	return out, err
+	return getJSON[EmailProvider](ctx, c, emailProviderPath(id))
 }
 
 // CreateEmailProvider calls POST /api/v1/settings/email/providers.
@@ -116,7 +112,7 @@ func (c *Client) UpdateEmailProvider(ctx context.Context, id string, req EmailPr
 
 // DeleteEmailProvider calls DELETE /api/v1/settings/email/providers/{id}.
 func (c *Client) DeleteEmailProvider(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, emailProviderPath(id), nil, nil)
+	return c.del(ctx, emailProviderPath(id))
 }
 
 // TestEmailProvider calls POST /api/v1/settings/email/providers/{id}/test: one send through that provider alone.

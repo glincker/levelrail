@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -58,7 +57,5 @@ func (c *Client) GitSourceCommits(ctx context.Context, name, branch string, refr
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out GitSourceCommits
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[GitSourceCommits](ctx, c, path)
 }

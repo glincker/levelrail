@@ -32,16 +32,12 @@ type SetSecretRotationPolicyRequest struct {
 
 // ListSecretRotation calls GET /api/v1/apps/{name}/secret-rotation.
 func (c *Client) ListSecretRotation(ctx context.Context, name string) ([]SecretRotationPolicyResource, error) {
-	var out []SecretRotationPolicyResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/secret-rotation", nil, &out)
-	return out, err
+	return getJSON[[]SecretRotationPolicyResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/secret-rotation")
 }
 
 // ListAllSecretRotation calls GET /api/v1/secret-rotation (root only).
 func (c *Client) ListAllSecretRotation(ctx context.Context) ([]SecretRotationPolicyResource, error) {
-	var out []SecretRotationPolicyResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/secret-rotation", nil, &out)
-	return out, err
+	return getJSON[[]SecretRotationPolicyResource](ctx, c, "/api/v1/secret-rotation")
 }
 
 // SetSecretRotation calls PUT /api/v1/apps/{name}/secrets/{key}/rotation.
@@ -53,7 +49,7 @@ func (c *Client) SetSecretRotation(ctx context.Context, name, key string, req Se
 
 // DeleteSecretRotation calls DELETE /api/v1/apps/{name}/secrets/{key}/rotation.
 func (c *Client) DeleteSecretRotation(ctx context.Context, name, key string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/rotation", nil, nil)
+	return c.del(ctx, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/rotation")
 }
 
 // RotateSecretValue calls POST /api/v1/apps/{name}/secrets/{key}/rotate. An

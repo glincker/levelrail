@@ -65,16 +65,12 @@ func (c *Client) ListV2Fields(ctx context.Context, path, labelSelector, fieldSel
 	if enc := q.Encode(); enc != "" {
 		p += "?" + enc
 	}
-	var out V2List
-	err := c.do(ctx, http.MethodGet, p, nil, &out)
-	return out, err
+	return getJSON[V2List](ctx, c, p)
 }
 
 // GetV2 calls GET /api/v2/{path}/{name}.
 func (c *Client) GetV2(ctx context.Context, path, name string) (V2Object, error) {
-	var out V2Object
-	err := c.do(ctx, http.MethodGet, "/api/v2/"+path+"/"+PathEscape(name), nil, &out)
-	return out, err
+	return getJSON[V2Object](ctx, c, "/api/v2/"+path+"/"+PathEscape(name))
 }
 
 // V2ApplyOptions are the query parameters of a server-side apply.

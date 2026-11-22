@@ -16,9 +16,7 @@ type SystemRestart struct {
 
 // GetSystemRestart calls GET /api/v1/system/restart.
 func (c *Client) GetSystemRestart(ctx context.Context) (SystemRestart, error) {
-	var out SystemRestart
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/restart", nil, &out)
-	return out, err
+	return getJSON[SystemRestart](ctx, c, "/api/v1/system/restart")
 }
 
 // RestartControlPlane calls POST /api/v1/system/restart.

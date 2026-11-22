@@ -65,9 +65,7 @@ func dnsProviderPath(app string) string {
 
 // GetDNSProvider reads the instance default, or an app's effective choice when app is set.
 func (c *Client) GetDNSProvider(ctx context.Context, app string) (DNSProviderState, error) {
-	var out DNSProviderState
-	err := c.do(ctx, http.MethodGet, dnsProviderPath(app), nil, &out)
-	return out, err
+	return getJSON[DNSProviderState](ctx, c, dnsProviderPath(app))
 }
 
 // SetDNSProvider writes the instance default, or an app's override when app is set.

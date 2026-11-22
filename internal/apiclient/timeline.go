@@ -75,16 +75,12 @@ type EditDomainsResult struct {
 
 // GetAppEnvironmentDomains calls GET /api/v1/apps/{name}/environment-domains.
 func (c *Client) GetAppEnvironmentDomains(ctx context.Context, name string) (AppEnvironmentDomains, error) {
-	var out AppEnvironmentDomains
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/environment-domains", nil, &out)
-	return out, err
+	return getJSON[AppEnvironmentDomains](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/environment-domains")
 }
 
 // GetIngressConnectivity calls GET /api/v1/ingress/connectivity.
 func (c *Client) GetIngressConnectivity(ctx context.Context) (IngressConnectivity, error) {
-	var out IngressConnectivity
-	err := c.do(ctx, http.MethodGet, "/api/v1/ingress/connectivity", nil, &out)
-	return out, err
+	return getJSON[IngressConnectivity](ctx, c, "/api/v1/ingress/connectivity")
 }
 
 // EditAppDomains calls PATCH /api/v1/apps/{name}/domains, which changes only
@@ -114,16 +110,12 @@ func (c *Client) GetAppTimeline(ctx context.Context, name string, limit int, bef
 	if enc := q.Encode(); enc != "" {
 		path += "?" + enc
 	}
-	var out TimelineResponse
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[TimelineResponse](ctx, c, path)
 }
 
 // GetPendingChanges calls GET /api/v1/apps/{name}/pending-changes.
 func (c *Client) GetPendingChanges(ctx context.Context, name string) (PendingChanges, error) {
-	var out PendingChanges
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/pending-changes", nil, &out)
-	return out, err
+	return getJSON[PendingChanges](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/pending-changes")
 }
 
 // ApplyPendingChanges calls POST /api/v1/apps/{name}/apply-pending.
@@ -150,5 +142,5 @@ func (c *Client) DeleteSecret(ctx context.Context, name, key string, force bool)
 	if force {
 		path += "?force=true"
 	}
-	return c.do(ctx, http.MethodDelete, path, nil, nil)
+	return c.del(ctx, path)
 }

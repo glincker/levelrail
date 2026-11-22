@@ -43,9 +43,7 @@ type AdvisoriesResource struct {
 
 // GetAdvisories returns the feed state and the running images that match it.
 func (c *Client) GetAdvisories(ctx context.Context) (AdvisoriesResource, error) {
-	var out AdvisoriesResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/security/advisories", nil, &out)
-	return out, err
+	return getJSON[AdvisoriesResource](ctx, c, "/api/v1/security/advisories")
 }
 
 // AdvisoryRefreshResult is the reply of POST /api/v1/apps/{name}/advisory-refresh.

@@ -40,9 +40,7 @@ type RegistryCredentialUsage struct {
 
 // ListPackageRegistries calls GET /api/v1/package-registries.
 func (c *Client) ListPackageRegistries(ctx context.Context) ([]PackageRegistryResource, error) {
-	var out []PackageRegistryResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/package-registries", nil, &out)
-	return out, err
+	return getJSON[[]PackageRegistryResource](ctx, c, "/api/v1/package-registries")
 }
 
 // CreatePackageRegistry calls POST /api/v1/package-registries.
@@ -54,7 +52,7 @@ func (c *Client) CreatePackageRegistry(ctx context.Context, req CreatePackageReg
 
 // DeletePackageRegistry calls DELETE /api/v1/package-registries/{id}.
 func (c *Client) DeletePackageRegistry(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/package-registries/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/package-registries/"+PathEscape(id))
 }
 
 // TestPackageRegistry calls POST /api/v1/package-registries/{id}/test.
@@ -66,7 +64,5 @@ func (c *Client) TestPackageRegistry(ctx context.Context, id string) (NodeProvid
 
 // GetRegistryCredentialUsage calls GET /api/v1/registry-credentials/{id}/usage.
 func (c *Client) GetRegistryCredentialUsage(ctx context.Context, id string) (RegistryCredentialUsage, error) {
-	var out RegistryCredentialUsage
-	err := c.do(ctx, http.MethodGet, "/api/v1/registry-credentials/"+PathEscape(id)+"/usage", nil, &out)
-	return out, err
+	return getJSON[RegistryCredentialUsage](ctx, c, "/api/v1/registry-credentials/"+PathEscape(id)+"/usage")
 }

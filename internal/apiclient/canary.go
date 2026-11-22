@@ -64,9 +64,7 @@ func canaryPath(appName string) string { return "/api/v1/apps/" + PathEscape(app
 
 // GetCanary calls GET /api/v1/apps/{name}/canary.
 func (c *Client) GetCanary(ctx context.Context, appName string) (CanaryResource, error) {
-	var out CanaryResource
-	err := c.do(ctx, http.MethodGet, canaryPath(appName), nil, &out)
-	return out, err
+	return getJSON[CanaryResource](ctx, c, canaryPath(appName))
 }
 
 // StartCanary calls POST /api/v1/apps/{name}/canary. A weight of 0 uses the server default.

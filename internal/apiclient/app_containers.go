@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -71,7 +70,5 @@ type AppContainer struct {
 
 // ListAppContainers calls GET /api/v1/apps/{name}/containers.
 func (c *Client) ListAppContainers(ctx context.Context, name string) ([]AppContainer, error) {
-	var out []AppContainer
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/containers", nil, &out)
-	return out, err
+	return getJSON[[]AppContainer](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/containers")
 }

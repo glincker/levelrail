@@ -67,16 +67,12 @@ type OAuthSSOEvaluation struct {
 
 // ListOAuthSSOPolicies calls GET /api/v1/sso/oidc.
 func (c *Client) ListOAuthSSOPolicies(ctx context.Context) ([]OAuthSSOPolicy, error) {
-	var out []OAuthSSOPolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/sso/oidc", nil, &out)
-	return out, err
+	return getJSON[[]OAuthSSOPolicy](ctx, c, "/api/v1/sso/oidc")
 }
 
 // GetOAuthSSOPolicy calls GET /api/v1/sso/oidc/{provider}.
 func (c *Client) GetOAuthSSOPolicy(ctx context.Context, provider string) (OAuthSSOPolicy, error) {
-	var out OAuthSSOPolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/sso/oidc/"+PathEscape(provider), nil, &out)
-	return out, err
+	return getJSON[OAuthSSOPolicy](ctx, c, "/api/v1/sso/oidc/"+PathEscape(provider))
 }
 
 // SetOAuthSSOPolicy calls PUT /api/v1/sso/oidc/{provider}.

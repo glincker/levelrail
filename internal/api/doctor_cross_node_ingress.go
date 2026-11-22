@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -44,7 +46,7 @@ func (rt *Router) meshIngressBlock(ctx context.Context, svc store.DesiredService
 	if rt.meshPaths == nil {
 		return hosts, "mesh networking is off on this control plane (set APP_MESH_ENABLED=1 and restart it)", true
 	}
-	path, err := rt.meshPaths.Path(ctx, svc.NodeID)
+	path, err := meshPathMemoFrom(ctx).resolve(ctx, rt.meshPaths, svc.NodeID)
 	if err != nil {
 		return hosts, fmt.Sprintf("the mesh path to the node could not be read: %s", err), true
 	}
@@ -144,4 +146,45 @@ func (rt *Router) doctorNodeNames(ctx context.Context) map[string]string {
 		names[n.ID] = n.Name
 	}
 	return names
+}
+
+type meshPathMemoKey struct{}
+
+// meshPathMemo remembers one mesh path answer per node for the life of a request,
+// so a list of many apps on one node resolves that node once.
+type meshPathMemo struct {
+	mu    sync.Mutex
+	paths map[string]meshPathAnswer
+}
+
+type meshPathAnswer struct {
+	path meshpath.Path
+	err  error
+}
+
+func withMeshPathMemo(ctx context.Context) context.Context {
+	return context.WithValue(ctx, meshPathMemoKey{}, &meshPathMemo{paths: map[string]meshPathAnswer{}})
+}
+
+func meshPathMemoFrom(ctx context.Context) *meshPathMemo {
+	m, _ := ctx.Value(meshPathMemoKey{}).(*meshPathMemo)
+	return m
+}
+
+// resolve falls through to the resolver when the request carries no memo.
+func (m *meshPathMemo) resolve(ctx context.Context, r meshpath.Resolver, nodeID string) (meshpath.Path, error) {
+	if m == nil {
+		return r.Path(ctx, nodeID)
+	}
+	m.mu.Lock()
+	a, ok := m.paths[nodeID]
+	m.mu.Unlock()
+	if ok {
+		return a.path, a.err
+	}
+	p, err := r.Path(ctx, nodeID)
+	m.mu.Lock()
+	m.paths[nodeID] = meshPathAnswer{path: p, err: err}
+	m.mu.Unlock()
+	return p, err
 }

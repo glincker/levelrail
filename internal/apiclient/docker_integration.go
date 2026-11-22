@@ -54,9 +54,7 @@ type DockerHealthResource struct {
 
 // GetDockerHealth calls GET /api/v1/docker/health.
 func (c *Client) GetDockerHealth(ctx context.Context) (DockerHealthResource, error) {
-	var out DockerHealthResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/docker/health", nil, &out)
-	return out, err
+	return getJSON[DockerHealthResource](ctx, c, "/api/v1/docker/health")
 }
 
 // ImageStatusResource is the GET /api/v1/apps/{name}/image-status response.
@@ -74,7 +72,5 @@ type ImageStatusResource struct {
 
 // GetImageStatus calls GET /api/v1/apps/{name}/image-status.
 func (c *Client) GetImageStatus(ctx context.Context, appName string) (ImageStatusResource, error) {
-	var out ImageStatusResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/image-status", nil, &out)
-	return out, err
+	return getJSON[ImageStatusResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/image-status")
 }

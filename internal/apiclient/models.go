@@ -144,16 +144,12 @@ type NodeGPUResource struct {
 
 // ListModels calls GET /api/v1/models.
 func (c *Client) ListModels(ctx context.Context) ([]ModelResource, error) {
-	var out []ModelResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/models", nil, &out)
-	return out, err
+	return getJSON[[]ModelResource](ctx, c, "/api/v1/models")
 }
 
 // GetModel calls GET /api/v1/models/{name}.
 func (c *Client) GetModel(ctx context.Context, name string) (ModelResource, error) {
-	var out ModelResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/models/"+PathEscape(name), nil, &out)
-	return out, err
+	return getJSON[ModelResource](ctx, c, "/api/v1/models/"+PathEscape(name))
 }
 
 // CreateModel calls POST /api/v1/models. The response carries the API key
@@ -166,7 +162,7 @@ func (c *Client) CreateModel(ctx context.Context, req CreateModelRequest) (Creat
 
 // DeleteModel calls DELETE /api/v1/models/{name}.
 func (c *Client) DeleteModel(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/models/"+PathEscape(name), nil, nil)
+	return c.del(ctx, "/api/v1/models/"+PathEscape(name))
 }
 
 // RestartModel calls POST /api/v1/models/{name}/restart.
@@ -207,9 +203,7 @@ func (c *Client) StreamModelLogs(ctx context.Context, name string, onEntry func(
 
 // ListGPUNodes calls GET /api/v1/gpus.
 func (c *Client) ListGPUNodes(ctx context.Context) ([]GPUNodeResource, error) {
-	var out []GPUNodeResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/gpus", nil, &out)
-	return out, err
+	return getJSON[[]GPUNodeResource](ctx, c, "/api/v1/gpus")
 }
 
 // SetModelResidency calls PUT /api/v1/models/{name}/residency.

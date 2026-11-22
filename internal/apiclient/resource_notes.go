@@ -21,9 +21,7 @@ type ResourceNotesUpdate struct {
 
 // GetResourceNotes calls GET /api/v1/{kind}/{name}/notes, kind being apps or databases.
 func (c *Client) GetResourceNotes(ctx context.Context, kind, name string) (ResourceNotes, error) {
-	var out ResourceNotes
-	err := c.do(ctx, http.MethodGet, "/api/v1/"+kind+"/"+PathEscape(name)+"/notes", nil, &out)
-	return out, err
+	return getJSON[ResourceNotes](ctx, c, "/api/v1/"+kind+"/"+PathEscape(name)+"/notes")
 }
 
 // SetResourceNotes calls PUT /api/v1/{kind}/{name}/notes.

@@ -49,16 +49,12 @@ func appImportImagesPath(id string) string {
 
 // AppImportImages calls GET .../sessions/{id}/images.
 func (c *Client) AppImportImages(ctx context.Context, id string) (AppImportImages, error) {
-	var out AppImportImages
-	err := c.do(ctx, http.MethodGet, appImportImagesPath(id), nil, &out)
-	return out, err
+	return getJSON[AppImportImages](ctx, c, appImportImagesPath(id))
 }
 
 // AppImportImagesStatus calls GET .../sessions/{id}/images/status.
 func (c *Client) AppImportImagesStatus(ctx context.Context, id string) (AppImportImages, error) {
-	var out AppImportImages
-	err := c.do(ctx, http.MethodGet, appImportImagesPath(id)+"/status", nil, &out)
-	return out, err
+	return getJSON[AppImportImages](ctx, c, appImportImagesPath(id)+"/status")
 }
 
 // TransferAppImportImages calls POST .../sessions/{id}/images/transfer.

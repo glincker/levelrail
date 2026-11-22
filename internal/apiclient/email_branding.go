@@ -34,9 +34,7 @@ type EmailBrandingPreview struct {
 
 // GetEmailBranding calls GET /api/v1/settings/email/branding.
 func (c *Client) GetEmailBranding(ctx context.Context) (EmailBranding, error) {
-	var out EmailBranding
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/email/branding", nil, &out)
-	return out, err
+	return getJSON[EmailBranding](ctx, c, "/api/v1/settings/email/branding")
 }
 
 // UpdateEmailBranding calls PUT /api/v1/settings/email/branding, replacing the whole branding.

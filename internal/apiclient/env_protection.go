@@ -81,9 +81,7 @@ type BoundEnvEntry struct {
 
 // ListBoundEnv calls GET /api/v1/apps/{name}/env/bound.
 func (c *Client) ListBoundEnv(ctx context.Context, app string) ([]BoundEnvEntry, error) {
-	var out []BoundEnvEntry
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/env/bound", nil, &out)
-	return out, err
+	return getJSON[[]BoundEnvEntry](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/env/bound")
 }
 
 // EnvSettings mirrors GET /api/v1/apps/{name}/env/settings.
@@ -108,9 +106,7 @@ type EnvSettingsUpdate struct {
 
 // GetEnvSettings calls GET /api/v1/apps/{name}/env/settings.
 func (c *Client) GetEnvSettings(ctx context.Context, app string) (EnvSettings, error) {
-	var out EnvSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/env/settings", nil, &out)
-	return out, err
+	return getJSON[EnvSettings](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/env/settings")
 }
 
 // UpdateEnvSettings calls PUT /api/v1/apps/{name}/env/settings.

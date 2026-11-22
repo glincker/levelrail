@@ -23,23 +23,17 @@ type DeployStepEvent struct {
 
 // ListCloneRestores calls GET /api/v1/databases/{name}/clone-restores.
 func (c *Client) ListCloneRestores(ctx context.Context, name string) ([]CloneRestoreResource, error) {
-	var out []CloneRestoreResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/clone-restores", nil, &out)
-	return out, err
+	return getJSON[[]CloneRestoreResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/clone-restores")
 }
 
 // ListVolumeCloneRestores calls GET /api/v1/apps/{name}/volumes/{volume}/clone-restores.
 func (c *Client) ListVolumeCloneRestores(ctx context.Context, name, volume string) ([]VolumeCloneRestoreResource, error) {
-	var out []VolumeCloneRestoreResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/volumes/"+PathEscape(volume)+"/clone-restores", nil, &out)
-	return out, err
+	return getJSON[[]VolumeCloneRestoreResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/volumes/"+PathEscape(volume)+"/clone-restores")
 }
 
 // GetDatabaseStatus calls GET /api/v1/databases/{name}/status.
 func (c *Client) GetDatabaseStatus(ctx context.Context, name string) ([]ConditionResource, error) {
-	var out []ConditionResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/status", nil, &out)
-	return out, err
+	return getJSON[[]ConditionResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/status")
 }
 
 // StreamDeploySteps calls GET /api/v1/apps/{name}/deploys/{deployId}/steps

@@ -56,7 +56,5 @@ func (c *Client) PutRollout(ctx context.Context, appName string, req PutRolloutR
 
 // GetRollout calls GET /api/v1/apps/{name}/rollout.
 func (c *Client) GetRollout(ctx context.Context, appName string) (RolloutResource, error) {
-	var out RolloutResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/rollout", nil, &out)
-	return out, err
+	return getJSON[RolloutResource](ctx, c, "/api/v1/apps/"+PathEscape(appName)+"/rollout")
 }

@@ -178,7 +178,7 @@ export function useAppLoadBalancerStatus(appName: string, enabled: boolean) {
         'fetch load balancer status',
       ),
     enabled,
-    refetchInterval: pollMs('live'),
+    refetchInterval: pollMs('steady'),
   })
 }
 

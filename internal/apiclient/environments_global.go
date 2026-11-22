@@ -56,9 +56,7 @@ type MoveEnvironmentResult struct {
 
 // ListAllEnvironments calls GET /api/v1/environments.
 func (c *Client) ListAllEnvironments(ctx context.Context) ([]GlobalEnvironmentResource, error) {
-	var out []GlobalEnvironmentResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/environments", nil, &out)
-	return out, err
+	return getJSON[[]GlobalEnvironmentResource](ctx, c, "/api/v1/environments")
 }
 
 // CreateGlobalEnvironment calls POST /api/v1/environments.
@@ -82,7 +80,7 @@ func (c *Client) DeleteEnvironmentMoveTo(ctx context.Context, id, moveTo string)
 	if moveTo != "" {
 		path += "?move_to=" + url.QueryEscape(moveTo)
 	}
-	return c.do(ctx, http.MethodDelete, path, nil, nil)
+	return c.del(ctx, path)
 }
 
 // MoveAppEnvironment calls PUT /api/v1/apps/{name}/environment.
@@ -101,14 +99,10 @@ func (c *Client) MoveDatabaseEnvironment(ctx context.Context, name string, req M
 
 // ListAppsInEnvironment calls GET /api/v1/apps?environment=<id or name>.
 func (c *Client) ListAppsInEnvironment(ctx context.Context, environment string) ([]AppResource, error) {
-	var out []AppResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps?environment="+url.QueryEscape(environment), nil, &out)
-	return out, err
+	return getJSON[[]AppResource](ctx, c, "/api/v1/apps?environment="+url.QueryEscape(environment))
 }
 
 // ListDatabasesInEnvironment calls GET /api/v1/databases?environment=<id or name>.
 func (c *Client) ListDatabasesInEnvironment(ctx context.Context, environment string) ([]DatabaseResource, error) {
-	var out []DatabaseResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases?environment="+url.QueryEscape(environment), nil, &out)
-	return out, err
+	return getJSON[[]DatabaseResource](ctx, c, "/api/v1/databases?environment="+url.QueryEscape(environment))
 }

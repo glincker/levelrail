@@ -25,16 +25,12 @@ type BootstrapScriptRequest struct {
 
 // ListBootstrapScripts calls GET /api/v1/bootstrap-scripts.
 func (c *Client) ListBootstrapScripts(ctx context.Context) ([]BootstrapScriptResource, error) {
-	var out []BootstrapScriptResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/bootstrap-scripts", nil, &out)
-	return out, err
+	return getJSON[[]BootstrapScriptResource](ctx, c, "/api/v1/bootstrap-scripts")
 }
 
 // GetBootstrapScript calls GET /api/v1/bootstrap-scripts/{id}.
 func (c *Client) GetBootstrapScript(ctx context.Context, id string) (BootstrapScriptResource, error) {
-	var out BootstrapScriptResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/bootstrap-scripts/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[BootstrapScriptResource](ctx, c, "/api/v1/bootstrap-scripts/"+PathEscape(id))
 }
 
 // CreateBootstrapScript calls POST /api/v1/bootstrap-scripts.
@@ -46,5 +42,5 @@ func (c *Client) CreateBootstrapScript(ctx context.Context, req BootstrapScriptR
 
 // DeleteBootstrapScript calls DELETE /api/v1/bootstrap-scripts/{id}.
 func (c *Client) DeleteBootstrapScript(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/bootstrap-scripts/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/bootstrap-scripts/"+PathEscape(id))
 }

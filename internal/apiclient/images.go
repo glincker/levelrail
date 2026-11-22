@@ -162,9 +162,7 @@ func (c *Client) ListImages(ctx context.Context, node string, keepPerApp int) (I
 	if keepPerApp >= 0 {
 		q.Set("keep_per_app", strconv.Itoa(keepPerApp))
 	}
-	var out ImageListResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/images?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[ImageListResource](ctx, c, "/api/v1/images?"+q.Encode())
 }
 
 // GetImageLayers calls GET /api/v1/images/layers.
@@ -173,9 +171,7 @@ func (c *Client) GetImageLayers(ctx context.Context, node, id string) (ImageLaye
 	if node != "" {
 		q.Set("node", node)
 	}
-	var out ImageLayersResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/images/layers?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[ImageLayersResource](ctx, c, "/api/v1/images/layers?"+q.Encode())
 }
 
 // RunImageGC calls POST /api/v1/images/gc.

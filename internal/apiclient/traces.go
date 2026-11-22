@@ -54,9 +54,7 @@ func tracingPath(app string) string { return "/api/v1/apps/" + PathEscape(app) +
 
 // GetTracing calls GET /api/v1/apps/{name}/tracing.
 func (c *Client) GetTracing(ctx context.Context, app string) (TracingResource, error) {
-	var out TracingResource
-	err := c.do(ctx, http.MethodGet, tracingPath(app), nil, &out)
-	return out, err
+	return getJSON[TracingResource](ctx, c, tracingPath(app))
 }
 
 // EnableTracing calls POST /api/v1/apps/{name}/tracing: creates or rotates
@@ -69,7 +67,7 @@ func (c *Client) EnableTracing(ctx context.Context, app string) (TracingResource
 
 // DisableTracing calls DELETE /api/v1/apps/{name}/tracing.
 func (c *Client) DisableTracing(ctx context.Context, app string) error {
-	return c.do(ctx, http.MethodDelete, tracingPath(app), nil, nil)
+	return c.del(ctx, tracingPath(app))
 }
 
 // ListTraces calls GET /api/v1/apps/{name}/traces.
@@ -94,14 +92,10 @@ func (c *Client) ListTraces(ctx context.Context, app string, o TraceListOptions)
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out []TraceSummary
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]TraceSummary](ctx, c, path)
 }
 
 // GetTrace calls GET /api/v1/apps/{name}/traces/{id}.
 func (c *Client) GetTrace(ctx context.Context, app, traceID string) ([]TraceSpan, error) {
-	var out []TraceSpan
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/traces/"+PathEscape(traceID), nil, &out)
-	return out, err
+	return getJSON[[]TraceSpan](ctx, c, "/api/v1/apps/"+PathEscape(app)+"/traces/"+PathEscape(traceID))
 }

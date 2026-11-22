@@ -119,9 +119,7 @@ func (c *Client) ListMigrationAgentSessions(ctx context.Context) ([]MigrationAge
 
 // GetMigrationAgentSession calls GET /api/v1/migration/agent/sessions/{id}.
 func (c *Client) GetMigrationAgentSession(ctx context.Context, id string) (MigrationAgentDetail, error) {
-	var out MigrationAgentDetail
-	err := c.do(ctx, http.MethodGet, migrationAgentPath+"/"+url.PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[MigrationAgentDetail](ctx, c, migrationAgentPath+"/"+url.PathEscape(id))
 }
 
 // DiscoverMigrationAgent calls POST /api/v1/migration/agent/sessions/{id}/discover.
@@ -145,5 +143,5 @@ func (c *Client) VerifyMigrationAgent(ctx context.Context, id, app string, targe
 
 // RevokeMigrationAgentSession calls DELETE /api/v1/migration/agent/sessions/{id}.
 func (c *Client) RevokeMigrationAgentSession(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, migrationAgentPath+"/"+url.PathEscape(id), nil, nil)
+	return c.del(ctx, migrationAgentPath+"/"+url.PathEscape(id))
 }

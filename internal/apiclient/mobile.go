@@ -40,12 +40,10 @@ func (c *Client) CreateMobilePairing(ctx context.Context, proof *StepUpProof) (M
 
 // ListMobileDevices calls GET /api/v1/mobile/devices.
 func (c *Client) ListMobileDevices(ctx context.Context) ([]MobileDevice, error) {
-	var out []MobileDevice
-	err := c.do(ctx, http.MethodGet, "/api/v1/mobile/devices", nil, &out)
-	return out, err
+	return getJSON[[]MobileDevice](ctx, c, "/api/v1/mobile/devices")
 }
 
 // RevokeMobileDevice calls DELETE /api/v1/mobile/devices/{id}.
 func (c *Client) RevokeMobileDevice(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/mobile/devices/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/mobile/devices/"+PathEscape(id))
 }

@@ -114,9 +114,7 @@ func appCachePath(name, tail string) string {
 
 // GetAppCache calls GET /api/v1/apps/{name}/cache.
 func (c *Client) GetAppCache(ctx context.Context, name string) (AppCacheResource, error) {
-	var out AppCacheResource
-	err := c.do(ctx, http.MethodGet, appCachePath(name, ""), nil, &out)
-	return out, err
+	return getJSON[AppCacheResource](ctx, c, appCachePath(name, ""))
 }
 
 // PurgeAppCache calls POST /api/v1/apps/{name}/cache/purge.
@@ -128,9 +126,7 @@ func (c *Client) PurgeAppCache(ctx context.Context, name string, req AppCachePur
 
 // ListAppCachePurges calls GET /api/v1/apps/{name}/cache/purges.
 func (c *Client) ListAppCachePurges(ctx context.Context, name string) (CachePurgesResource, error) {
-	var out CachePurgesResource
-	err := c.do(ctx, http.MethodGet, appCachePath(name, "/purges"), nil, &out)
-	return out, err
+	return getJSON[CachePurgesResource](ctx, c, appCachePath(name, "/purges"))
 }
 
 // ApplyAppCachePreset calls POST /api/v1/apps/{name}/cache/preset; domain
@@ -146,7 +142,5 @@ func (c *Client) ApplyAppCachePreset(ctx context.Context, name, domain string) (
 
 // GetSystemCache calls GET /api/v1/system/cache.
 func (c *Client) GetSystemCache(ctx context.Context) (SystemCacheResource, error) {
-	var out SystemCacheResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/cache", nil, &out)
-	return out, err
+	return getJSON[SystemCacheResource](ctx, c, "/api/v1/system/cache")
 }

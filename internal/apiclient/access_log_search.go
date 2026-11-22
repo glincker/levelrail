@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -36,7 +35,5 @@ type AccessSearchResource struct {
 // SearchAccessLog calls GET /api/v1/logs/access with the given filters
 // (app, host, method, path, q, status, status_min, status_max, min_ms, since, from, to, limit, cursor).
 func (c *Client) SearchAccessLog(ctx context.Context, filters url.Values) (AccessSearchResource, error) {
-	var out AccessSearchResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/logs/access?"+filters.Encode(), nil, &out)
-	return out, err
+	return getJSON[AccessSearchResource](ctx, c, "/api/v1/logs/access?"+filters.Encode())
 }

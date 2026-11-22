@@ -315,6 +315,7 @@ func (rt *Router) handleRedeployCompose(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	rt.nudgeReconciler()
+	rt.changes.Publish(changeCompose, appID)
 	writeJSON(w, http.StatusAccepted, map[string]any{"app_id": appID, "restarted": restarted})
 }
 
@@ -406,5 +407,6 @@ func (rt *Router) handleComposeDown(w http.ResponseWriter, r *http.Request) {
 	if len(volumeErrors) > 0 {
 		resp["volume_errors"] = volumeErrors
 	}
+	rt.changes.Publish(changeCompose, appID)
 	writeJSON(w, http.StatusOK, resp)
 }

@@ -39,9 +39,7 @@ type SetupGuideResource struct {
 
 // GetSetupGuide calls GET /api/v1/setup/guide.
 func (c *Client) GetSetupGuide(ctx context.Context) (SetupGuideResource, error) {
-	var out SetupGuideResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/setup/guide", nil, &out)
-	return out, err
+	return getJSON[SetupGuideResource](ctx, c, "/api/v1/setup/guide")
 }
 
 // SetSetupGuideStep calls PUT /api/v1/setup/guide/steps/{id}; state is

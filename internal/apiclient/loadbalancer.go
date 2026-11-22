@@ -50,9 +50,7 @@ type LoadBalancerArtifact struct {
 
 // GetLoadBalancer calls GET /api/v1/apps/{name}/loadbalancer.
 func (c *Client) GetLoadBalancer(ctx context.Context, name string) (LoadBalancerResource, error) {
-	var out LoadBalancerResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/loadbalancer", nil, &out)
-	return out, err
+	return getJSON[LoadBalancerResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/loadbalancer")
 }
 
 // SetLoadBalancer calls PUT /api/v1/apps/{name}/loadbalancer.
@@ -64,14 +62,12 @@ func (c *Client) SetLoadBalancer(ctx context.Context, name string, cfg LoadBalan
 
 // DeleteLoadBalancer calls DELETE /api/v1/apps/{name}/loadbalancer.
 func (c *Client) DeleteLoadBalancer(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/loadbalancer", nil, nil)
+	return c.del(ctx, "/api/v1/apps/"+PathEscape(name)+"/loadbalancer")
 }
 
 // GetLoadBalancerStatus calls GET /api/v1/apps/{name}/loadbalancer/status.
 func (c *Client) GetLoadBalancerStatus(ctx context.Context, name string) (LoadBalancerStatus, error) {
-	var out LoadBalancerStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/loadbalancer/status", nil, &out)
-	return out, err
+	return getJSON[LoadBalancerStatus](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/loadbalancer/status")
 }
 
 // LoadBalancerHistory is GET /api/v1/apps/{name}/loadbalancer/history's body.
@@ -118,7 +114,5 @@ func (c *Client) SetLoadBalancerUpstreamState(ctx context.Context, name, id, sta
 
 // ExportLoadBalancer calls GET /api/v1/apps/{name}/loadbalancer/export.
 func (c *Client) ExportLoadBalancer(ctx context.Context, name, format string) (LoadBalancerArtifact, error) {
-	var out LoadBalancerArtifact
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/loadbalancer/export?format="+url.QueryEscape(format), nil, &out)
-	return out, err
+	return getJSON[LoadBalancerArtifact](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/loadbalancer/export?format="+url.QueryEscape(format))
 }

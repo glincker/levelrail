@@ -28,9 +28,7 @@ func buildHooksPath(appName string) string {
 
 // ListBuildHooks calls GET /api/v1/apps/{name}/build-hooks.
 func (c *Client) ListBuildHooks(ctx context.Context, appName string) ([]BuildHookResource, error) {
-	var out []BuildHookResource
-	err := c.do(ctx, http.MethodGet, buildHooksPath(appName), nil, &out)
-	return out, err
+	return getJSON[[]BuildHookResource](ctx, c, buildHooksPath(appName))
 }
 
 // CreateBuildHook calls POST /api/v1/apps/{name}/build-hooks; the secret URL comes back once.
@@ -65,5 +63,5 @@ func (c *Client) RotateBuildHook(ctx context.Context, appName, id string) (Build
 
 // RevokeBuildHook calls DELETE /api/v1/apps/{name}/build-hooks/{id}.
 func (c *Client) RevokeBuildHook(ctx context.Context, appName, id string) error {
-	return c.do(ctx, http.MethodDelete, buildHooksPath(appName)+"/"+PathEscape(id), nil, nil)
+	return c.del(ctx, buildHooksPath(appName)+"/"+PathEscape(id))
 }

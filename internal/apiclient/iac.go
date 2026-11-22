@@ -109,7 +109,5 @@ func (c *Client) ExportIaCOne(ctx context.Context, project, app, database, node 
 		q.Set("app", app)
 	}
 	q.Set("include_env_values", fmt.Sprint(includeEnvValues))
-	var out iac.ExportResult
-	err := c.do(ctx, http.MethodGet, "/api/v1/export?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[iac.ExportResult](ctx, c, "/api/v1/export?"+q.Encode())
 }

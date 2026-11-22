@@ -64,9 +64,7 @@ func eventWebhookPath(id string) string { return "/api/v1/event-webhooks/" + Pat
 
 // ListEventWebhooks calls GET /api/v1/event-webhooks.
 func (c *Client) ListEventWebhooks(ctx context.Context) ([]EventWebhookResource, error) {
-	var out []EventWebhookResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/event-webhooks", nil, &out)
-	return out, err
+	return getJSON[[]EventWebhookResource](ctx, c, "/api/v1/event-webhooks")
 }
 
 // CreateEventWebhook calls POST /api/v1/event-webhooks.
@@ -85,7 +83,7 @@ func (c *Client) UpdateEventWebhook(ctx context.Context, id string, req UpdateEv
 
 // DeleteEventWebhook calls DELETE /api/v1/event-webhooks/{id}.
 func (c *Client) DeleteEventWebhook(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, eventWebhookPath(id), nil, nil)
+	return c.del(ctx, eventWebhookPath(id))
 }
 
 // TestEventWebhook calls POST /api/v1/event-webhooks/{id}/test.
@@ -104,9 +102,7 @@ func (c *Client) RotateEventWebhookSecret(ctx context.Context, id string) (Event
 
 // ListEventWebhookDeliveries calls GET /api/v1/event-webhooks/{id}/deliveries.
 func (c *Client) ListEventWebhookDeliveries(ctx context.Context, id string) ([]EventDeliveryResource, error) {
-	var out []EventDeliveryResource
-	err := c.do(ctx, http.MethodGet, eventWebhookPath(id)+"/deliveries", nil, &out)
-	return out, err
+	return getJSON[[]EventDeliveryResource](ctx, c, eventWebhookPath(id)+"/deliveries")
 }
 
 // ReplayEventWebhookDelivery calls POST /api/v1/event-webhook-deliveries/{id}/replay.

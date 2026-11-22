@@ -134,7 +134,7 @@ func (c *Client) RotatePipelineWebhook(ctx context.Context, app, name string) (P
 
 // DeletePipelineWebhook calls DELETE .../pipelines/{name}/webhook.
 func (c *Client) DeletePipelineWebhook(ctx context.Context, app, name string) error {
-	return c.do(ctx, http.MethodDelete, pipelinePath(app, "pipelines", name, "webhook"), nil, nil)
+	return c.del(ctx, pipelinePath(app, "pipelines", name, "webhook"))
 }
 
 // ListPipelineWebhookDeliveries calls GET .../webhook/deliveries.

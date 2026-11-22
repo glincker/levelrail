@@ -68,7 +68,5 @@ func (c *Client) ListFunctionInvocations(ctx context.Context, name string, limit
 	if limit > 0 {
 		path += "?limit=" + strconv.Itoa(limit)
 	}
-	var out FunctionInvocations
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[FunctionInvocations](ctx, c, path)
 }

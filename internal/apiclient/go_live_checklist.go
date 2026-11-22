@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -87,7 +86,5 @@ func (c *Client) GoLiveChecklist(ctx context.Context, app, domain string) (GoLiv
 	if domain != "" {
 		path += "?domain=" + url.QueryEscape(domain)
 	}
-	var out GoLiveChecklist
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[GoLiveChecklist](ctx, c, path)
 }

@@ -91,9 +91,7 @@ func (c *Client) ListConsoleResources(ctx context.Context, q ConsoleQuery) (Cons
 	if len(v) > 0 {
 		path += "?" + v.Encode()
 	}
-	var out ConsoleList
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[ConsoleList](ctx, c, path)
 }
 
 // BulkTagResources calls POST /api/v1/resources/tags/bulk.
@@ -105,9 +103,7 @@ func (c *Client) BulkTagResources(ctx context.Context, req ConsoleBulkTagRequest
 
 // ListConsoleViews calls GET /api/v1/resources/views.
 func (c *Client) ListConsoleViews(ctx context.Context) ([]ConsoleView, error) {
-	var out []ConsoleView
-	err := c.do(ctx, http.MethodGet, "/api/v1/resources/views", nil, &out)
-	return out, err
+	return getJSON[[]ConsoleView](ctx, c, "/api/v1/resources/views")
 }
 
 // SaveConsoleView calls POST /api/v1/resources/views.
@@ -119,5 +115,5 @@ func (c *Client) SaveConsoleView(ctx context.Context, name, query string) (Conso
 
 // DeleteConsoleView calls DELETE /api/v1/resources/views/{id}.
 func (c *Client) DeleteConsoleView(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/resources/views/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/resources/views/"+PathEscape(id))
 }

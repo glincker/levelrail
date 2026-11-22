@@ -19,9 +19,7 @@ type DefaultAlert struct {
 
 // ListDefaultAlerts calls GET /api/v1/alert-defaults.
 func (c *Client) ListDefaultAlerts(ctx context.Context) ([]DefaultAlert, error) {
-	var out []DefaultAlert
-	err := c.do(ctx, http.MethodGet, "/api/v1/alert-defaults", nil, &out)
-	return out, err
+	return getJSON[[]DefaultAlert](ctx, c, "/api/v1/alert-defaults")
 }
 
 // SetDefaultAlertEnabled calls PUT /api/v1/alert-defaults/{id}.

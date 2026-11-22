@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 )
 
 // DeployTargetNode is one node a workload can be placed on.
@@ -27,7 +26,5 @@ type DeployTargetGroup struct {
 
 // ListDeployTargets calls GET /api/v1/deploy-targets.
 func (c *Client) ListDeployTargets(ctx context.Context) ([]DeployTargetGroup, error) {
-	var out []DeployTargetGroup
-	err := c.do(ctx, http.MethodGet, "/api/v1/deploy-targets", nil, &out)
-	return out, err
+	return getJSON[[]DeployTargetGroup](ctx, c, "/api/v1/deploy-targets")
 }

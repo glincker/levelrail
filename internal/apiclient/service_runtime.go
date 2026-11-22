@@ -65,9 +65,7 @@ func serviceRuntimePath(app, service string) string {
 
 // GetServiceRuntime calls GET /api/v1/apps/{name}/services/{service}/runtime.
 func (c *Client) GetServiceRuntime(ctx context.Context, app, service string) (ServiceRuntime, error) {
-	var out ServiceRuntime
-	err := c.do(ctx, http.MethodGet, serviceRuntimePath(app, service), nil, &out)
-	return out, err
+	return getJSON[ServiceRuntime](ctx, c, serviceRuntimePath(app, service))
 }
 
 // SetServiceRuntime calls PUT .../runtime. The body replaces every editable key; revision comes from a prior get.

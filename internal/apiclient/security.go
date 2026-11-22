@@ -121,9 +121,7 @@ func withUserID(path, userID string) string {
 
 // GetSecurityPosture calls GET /api/v1/security/posture.
 func (c *Client) GetSecurityPosture(ctx context.Context) (SecurityPosture, error) {
-	var out SecurityPosture
-	err := c.do(ctx, http.MethodGet, "/api/v1/security/posture", nil, &out)
-	return out, err
+	return getJSON[SecurityPosture](ctx, c, "/api/v1/security/posture")
 }
 
 // HSTSHost is one probed public host.
@@ -144,9 +142,7 @@ type HSTSStatus struct {
 
 // GetHSTS calls GET /api/v1/security/hsts (root).
 func (c *Client) GetHSTS(ctx context.Context) (HSTSStatus, error) {
-	var out HSTSStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/security/hsts", nil, &out)
-	return out, err
+	return getJSON[HSTSStatus](ctx, c, "/api/v1/security/hsts")
 }
 
 // SetHSTS calls PUT /api/v1/security/hsts (root); enabling is refused unless the probe passes.
@@ -158,9 +154,7 @@ func (c *Client) SetHSTS(ctx context.Context, enabled bool) (HSTSStatus, error) 
 
 // GetSecurityPolicy calls GET /api/v1/security/policy.
 func (c *Client) GetSecurityPolicy(ctx context.Context) (SecurityPolicy, error) {
-	var out SecurityPolicy
-	err := c.do(ctx, http.MethodGet, "/api/v1/security/policy", nil, &out)
-	return out, err
+	return getJSON[SecurityPolicy](ctx, c, "/api/v1/security/policy")
 }
 
 // UpdateSecurityPolicy calls PUT /api/v1/security/policy (root).
@@ -173,14 +167,12 @@ func (c *Client) UpdateSecurityPolicy(ctx context.Context, in SecurityPolicyUpda
 // ListSecuritySessions calls GET /api/v1/security/sessions; userID is
 // empty for the caller's own account, another account needs root.
 func (c *Client) ListSecuritySessions(ctx context.Context, userID string) (SecuritySessions, error) {
-	var out SecuritySessions
-	err := c.do(ctx, http.MethodGet, withUserID("/api/v1/security/sessions", userID), nil, &out)
-	return out, err
+	return getJSON[SecuritySessions](ctx, c, withUserID("/api/v1/security/sessions", userID))
 }
 
 // RevokeSecuritySession calls DELETE /api/v1/security/sessions/{id}.
 func (c *Client) RevokeSecuritySession(ctx context.Context, id, userID string) error {
-	return c.do(ctx, http.MethodDelete, withUserID("/api/v1/security/sessions/"+PathEscape(id), userID), nil, nil)
+	return c.del(ctx, withUserID("/api/v1/security/sessions/"+PathEscape(id), userID))
 }
 
 // RevokeOtherSecuritySessions calls POST /api/v1/security/sessions/revoke-others.

@@ -42,9 +42,7 @@ const statusWebhooksPath = "/api/v1/status-page/webhooks"
 
 // ListStatusWebhooks calls GET /api/v1/status-page/webhooks.
 func (c *Client) ListStatusWebhooks(ctx context.Context) ([]StatusWebhook, error) {
-	var out []StatusWebhook
-	err := c.do(ctx, http.MethodGet, statusWebhooksPath, nil, &out)
-	return out, err
+	return getJSON[[]StatusWebhook](ctx, c, statusWebhooksPath)
 }
 
 // CreateStatusWebhook calls POST /api/v1/status-page/webhooks.
@@ -70,12 +68,10 @@ func (c *Client) TestStatusWebhook(ctx context.Context, id string) (StatusWebhoo
 
 // DeleteStatusWebhook calls DELETE /api/v1/status-page/webhooks/{id}.
 func (c *Client) DeleteStatusWebhook(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, statusWebhooksPath+"/"+PathEscape(id), nil, nil)
+	return c.del(ctx, statusWebhooksPath+"/"+PathEscape(id))
 }
 
 // ListStatusWebhookDeliveries calls GET /api/v1/status-page/webhooks/{id}/deliveries.
 func (c *Client) ListStatusWebhookDeliveries(ctx context.Context, id string) ([]StatusWebhookDelivery, error) {
-	var out []StatusWebhookDelivery
-	err := c.do(ctx, http.MethodGet, statusWebhooksPath+"/"+PathEscape(id)+"/deliveries", nil, &out)
-	return out, err
+	return getJSON[[]StatusWebhookDelivery](ctx, c, statusWebhooksPath+"/"+PathEscape(id)+"/deliveries")
 }

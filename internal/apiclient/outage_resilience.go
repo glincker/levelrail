@@ -32,9 +32,7 @@ type OutageReport struct {
 
 // GetResilience calls GET /api/v1/system/resilience.
 func (c *Client) GetResilience(ctx context.Context) (OutageReport, error) {
-	var out OutageReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/resilience", nil, &out)
-	return out, err
+	return getJSON[OutageReport](ctx, c, "/api/v1/system/resilience")
 }
 
 // SimulateResilience calls POST /api/v1/system/resilience/simulate (a dry run, nothing is stopped).

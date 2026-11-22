@@ -44,9 +44,7 @@ type UnderAttackRequest struct {
 
 // GetDomainShield calls GET .../domains/{domain}/shield.
 func (c *Client) GetDomainShield(ctx context.Context, name, domain string) (ShieldPolicyResource, error) {
-	var out ShieldPolicyResource
-	err := c.do(ctx, http.MethodGet, domainPolicyPath(name, domain, trafficpolicy.KindShield), nil, &out)
-	return out, err
+	return getJSON[ShieldPolicyResource](ctx, c, domainPolicyPath(name, domain, trafficpolicy.KindShield))
 }
 
 // SetDomainShield calls PUT .../domains/{domain}/shield.
@@ -105,7 +103,5 @@ func (c *Client) StopUnderAttack(ctx context.Context, name, domain string) (Shie
 
 // ShieldBots calls GET /api/v1/system/shield/bots.
 func (c *Client) ShieldBots(ctx context.Context) (ShieldBotList, error) {
-	var out ShieldBotList
-	err := c.do(ctx, http.MethodGet, "/api/v1/system/shield/bots", nil, &out)
-	return out, err
+	return getJSON[ShieldBotList](ctx, c, "/api/v1/system/shield/bots")
 }

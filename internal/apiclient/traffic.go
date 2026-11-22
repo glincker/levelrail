@@ -149,9 +149,7 @@ type ActivityPage struct {
 
 // TrafficSummary calls GET /api/v1/traffic/summary.
 func (c *Client) TrafficSummary(ctx context.Context) (TrafficSummary, error) {
-	var out TrafficSummary
-	err := c.do(ctx, http.MethodGet, "/api/v1/traffic/summary", nil, &out)
-	return out, err
+	return getJSON[TrafficSummary](ctx, c, "/api/v1/traffic/summary")
 }
 
 // DomainDoctor calls POST /api/v1/apps/{name}/domains/{domain}/doctor.
@@ -201,9 +199,7 @@ func (c *Client) DomainActivity(ctx context.Context, domain string, limit int, b
 	if enc := q.Encode(); enc != "" {
 		path += "?" + enc
 	}
-	var out ActivityPage
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[ActivityPage](ctx, c, path)
 }
 
 // DomainCutoverResult is the test-before-you-switch checklist.
@@ -220,9 +216,7 @@ type CutoverCertificate struct {
 
 // DomainCutover calls GET /api/v1/domains/{domain}/cutover.
 func (c *Client) DomainCutover(ctx context.Context, domain string) (DomainCutoverResult, error) {
-	var out DomainCutoverResult
-	err := c.do(ctx, http.MethodGet, "/api/v1/domains/"+PathEscape(domain)+"/cutover", nil, &out)
-	return out, err
+	return getJSON[DomainCutoverResult](ctx, c, "/api/v1/domains/"+PathEscape(domain)+"/cutover")
 }
 
 // DomainCutoverCertificate calls POST /api/v1/domains/{domain}/cutover/certificate.
@@ -253,7 +247,5 @@ func (c *Client) DomainVerify(ctx context.Context, domain string, expectIPs []st
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out DomainVerifyReport
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[DomainVerifyReport](ctx, c, path)
 }

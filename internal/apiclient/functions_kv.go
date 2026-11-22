@@ -53,16 +53,12 @@ func (c *Client) ListFunctionKV(ctx context.Context, name, prefix string, limit 
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out FunctionKVList
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[FunctionKVList](ctx, c, path)
 }
 
 // GetFunctionKV calls GET /api/v1/functions/{name}/kv/value.
 func (c *Client) GetFunctionKV(ctx context.Context, name, key string) (FunctionKVValue, error) {
-	var out FunctionKVValue
-	err := c.do(ctx, http.MethodGet, functionPath(name, "kv/value")+"?key="+url.QueryEscape(key), nil, &out)
-	return out, err
+	return getJSON[FunctionKVValue](ctx, c, functionPath(name, "kv/value")+"?key="+url.QueryEscape(key))
 }
 
 // PutFunctionKV calls PUT /api/v1/functions/{name}/kv/value; a ttl of zero keeps the key.
@@ -73,7 +69,7 @@ func (c *Client) PutFunctionKV(ctx context.Context, name, key, value string, ttl
 
 // DeleteFunctionKV calls DELETE /api/v1/functions/{name}/kv/value.
 func (c *Client) DeleteFunctionKV(ctx context.Context, name, key string) error {
-	return c.do(ctx, http.MethodDelete, functionPath(name, "kv/value")+"?key="+url.QueryEscape(key), nil, nil)
+	return c.del(ctx, functionPath(name, "kv/value")+"?key="+url.QueryEscape(key))
 }
 
 // RotateFunctionKVToken calls POST /api/v1/functions/{name}/kv/token, enabling the store or replacing its token.

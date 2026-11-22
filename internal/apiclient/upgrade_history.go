@@ -49,9 +49,7 @@ type UpgradeHistory struct {
 
 // GetUpgradeHistory calls GET /api/v1/updates/history.
 func (c *Client) GetUpgradeHistory(ctx context.Context) (UpgradeHistory, error) {
-	var out UpgradeHistory
-	err := c.do(ctx, http.MethodGet, "/api/v1/updates/history", nil, &out)
-	return out, err
+	return getJSON[UpgradeHistory](ctx, c, "/api/v1/updates/history")
 }
 
 // AckUpgrade calls POST /api/v1/updates/history/{id}/ack.

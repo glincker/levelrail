@@ -25,9 +25,7 @@ func (c *Client) ListFrameworks(ctx context.Context) ([]frameworks.Preset, error
 
 // GetFramework calls GET /api/v1/frameworks/{id}.
 func (c *Client) GetFramework(ctx context.Context, id string) (frameworks.Preset, error) {
-	var out frameworks.Preset
-	err := c.do(ctx, http.MethodGet, "/api/v1/frameworks/"+url.PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[frameworks.Preset](ctx, c, "/api/v1/frameworks/"+url.PathEscape(id))
 }
 
 // GetFrameworkDockerfile calls GET /api/v1/frameworks/{id}/dockerfile.

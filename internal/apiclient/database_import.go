@@ -28,9 +28,7 @@ func databaseImportPath(name string) string {
 
 // CheckDatabaseImport calls GET /api/v1/databases/{name}/import.
 func (c *Client) CheckDatabaseImport(ctx context.Context, name string) (DatabaseImportCheck, error) {
-	var out DatabaseImportCheck
-	err := c.do(ctx, http.MethodGet, databaseImportPath(name), nil, &out)
-	return out, err
+	return getJSON[DatabaseImportCheck](ctx, c, databaseImportPath(name))
 }
 
 // ImportDatabase streams a dump to POST /api/v1/databases/{name}/import; force replaces existing data and needs the typed name as confirm.

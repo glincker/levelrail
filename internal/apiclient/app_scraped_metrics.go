@@ -37,9 +37,7 @@ type AppScrapedMetricsResource struct {
 
 // GetAppScrapeTarget reads where an app's own metrics are scraped from.
 func (c *Client) GetAppScrapeTarget(ctx context.Context, name string) (AppScrapeTargetResource, error) {
-	var out AppScrapeTargetResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/scrape-target", nil, &out)
-	return out, err
+	return getJSON[AppScrapeTargetResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/scrape-target")
 }
 
 // SetAppScrapeTarget sets the container port and path the control plane scrapes.
@@ -52,7 +50,7 @@ func (c *Client) SetAppScrapeTarget(ctx context.Context, name string, port int, 
 
 // DeleteAppScrapeTarget stops scraping an app.
 func (c *Client) DeleteAppScrapeTarget(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/scrape-target", nil, nil)
+	return c.del(ctx, "/api/v1/apps/"+PathEscape(name)+"/scrape-target")
 }
 
 // QueryAppScrapedMetrics lists scraped names when metric is empty, else one metric's series.
@@ -67,7 +65,5 @@ func (c *Client) QueryAppScrapedMetrics(ctx context.Context, name, metric string
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out AppScrapedMetricsResource
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[AppScrapedMetricsResource](ctx, c, path)
 }

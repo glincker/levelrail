@@ -92,9 +92,7 @@ func sleepPath(appName string) string { return "/api/v1/apps/" + PathEscape(appN
 
 // GetAppSleep calls GET /api/v1/apps/{name}/sleep.
 func (c *Client) GetAppSleep(ctx context.Context, appName string) (AppSleepResource, error) {
-	var out AppSleepResource
-	err := c.do(ctx, http.MethodGet, sleepPath(appName), nil, &out)
-	return out, err
+	return getJSON[AppSleepResource](ctx, c, sleepPath(appName))
 }
 
 // SetAppSleep calls PUT /api/v1/apps/{name}/sleep; 0 minutes turns sleeping off.
@@ -149,9 +147,7 @@ type SleepFleet struct {
 
 // ListSleepFleet calls GET /api/v1/sleep.
 func (c *Client) ListSleepFleet(ctx context.Context) (SleepFleet, error) {
-	var out SleepFleet
-	err := c.do(ctx, http.MethodGet, "/api/v1/sleep", nil, &out)
-	return out, err
+	return getJSON[SleepFleet](ctx, c, "/api/v1/sleep")
 }
 
 // SleepAppNow calls POST /api/v1/apps/{name}/sleep/now.
@@ -215,7 +211,5 @@ func (c *Client) GetSleepHistory(ctx context.Context, appName, since string, lim
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out SleepHistory
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[SleepHistory](ctx, c, path)
 }

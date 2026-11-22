@@ -61,7 +61,7 @@ export function loadBalancerListQueryOptions(params: LoadBalancerListParams) {
   return queryOptions({
     queryKey: loadBalancerListKeys.list(params),
     queryFn: () => fetchLoadBalancers(params),
-    refetchInterval: pollMs('live'),
+    refetchInterval: pollMs('steady'),
     placeholderData: keepPreviousData,
   })
 }

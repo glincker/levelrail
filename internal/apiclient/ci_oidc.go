@@ -47,9 +47,7 @@ type CIToken struct {
 
 // ListCITrusts calls GET /api/v1/apps/{name}/ci/trusts.
 func (c *Client) ListCITrusts(ctx context.Context, name string) ([]CITrust, error) {
-	var out []CITrust
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/ci/trusts", nil, &out)
-	return out, err
+	return getJSON[[]CITrust](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/ci/trusts")
 }
 
 // CreateCITrust calls POST /api/v1/apps/{name}/ci/trusts.
@@ -61,14 +59,12 @@ func (c *Client) CreateCITrust(ctx context.Context, name string, req CITrustRequ
 
 // DeleteCITrust calls DELETE /api/v1/apps/{name}/ci/trusts/{id}.
 func (c *Client) DeleteCITrust(ctx context.Context, name, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/ci/trusts/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/apps/"+PathEscape(name)+"/ci/trusts/"+PathEscape(id))
 }
 
 // GetCIWorkflow calls GET /api/v1/apps/{name}/ci/workflow.
 func (c *Client) GetCIWorkflow(ctx context.Context, name string) (CIWorkflow, error) {
-	var out CIWorkflow
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/ci/workflow", nil, &out)
-	return out, err
+	return getJSON[CIWorkflow](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/ci/workflow")
 }
 
 // ExchangeCIToken calls POST /api/v1/ci/oidc-exchange with a CI identity token.
@@ -109,7 +105,5 @@ type CITemplates struct {
 
 // GetCITemplates calls GET /api/v1/apps/{name}/ci/templates.
 func (c *Client) GetCITemplates(ctx context.Context, name string) (CITemplates, error) {
-	var out CITemplates
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/ci/templates", nil, &out)
-	return out, err
+	return getJSON[CITemplates](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/ci/templates")
 }

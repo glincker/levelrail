@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -46,7 +45,5 @@ type AppHealthExplainResource struct {
 
 // GetAppHealthExplain calls GET /api/v1/apps/{name}/health-explain.
 func (c *Client) GetAppHealthExplain(ctx context.Context, name string) (AppHealthExplainResource, error) {
-	var out AppHealthExplainResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/health-explain", nil, &out)
-	return out, err
+	return getJSON[AppHealthExplainResource](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/health-explain")
 }

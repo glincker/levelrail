@@ -86,9 +86,7 @@ type NodeSecurityEvent struct {
 
 // GetNodeTrust calls GET /api/v1/nodes/{id}/security.
 func (c *Client) GetNodeTrust(ctx context.Context, id string) (NodeTrust, error) {
-	var out NodeTrust
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/security", nil, &out)
-	return out, err
+	return getJSON[NodeTrust](ctx, c, nodePath(id)+"/security")
 }
 
 // ListNodeSecurityEvents calls GET /api/v1/nodes/{id}/security/events.
@@ -105,9 +103,7 @@ func (c *Client) ListNodeSecurityEvents(ctx context.Context, id, outcome string,
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
-	var out []NodeSecurityEvent
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]NodeSecurityEvent](ctx, c, path)
 }
 
 // NodeCertDrillStep is one step of a certificate rotation drill.

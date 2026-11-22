@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -29,7 +28,5 @@ type DNSAuthority struct {
 
 // DNSAuthority calls GET /api/v1/dns/authority.
 func (c *Client) DNSAuthority(ctx context.Context, domain string) (DNSAuthority, error) {
-	var out DNSAuthority
-	err := c.do(ctx, http.MethodGet, "/api/v1/dns/authority?"+url.Values{"domain": {domain}}.Encode(), nil, &out)
-	return out, err
+	return getJSON[DNSAuthority](ctx, c, "/api/v1/dns/authority?"+url.Values{"domain": {domain}}.Encode())
 }

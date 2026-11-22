@@ -17,7 +17,5 @@ func (c *Client) CoolifyExitReport(ctx context.Context, req PlatformImportReques
 
 // AppImportExitReport calls GET /api/v1/migration/apps/sessions/{id}/exit-report.
 func (c *Client) AppImportExitReport(ctx context.Context, id string) (coolifyexit.Report, error) {
-	var out coolifyexit.Report
-	err := c.do(ctx, http.MethodGet, appImportPath+"/sessions/"+url.PathEscape(id)+"/exit-report", nil, &out)
-	return out, err
+	return getJSON[coolifyexit.Report](ctx, c, appImportPath+"/sessions/"+url.PathEscape(id)+"/exit-report")
 }

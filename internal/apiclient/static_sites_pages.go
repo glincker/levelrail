@@ -68,9 +68,7 @@ func (c *Client) CreateStaticSite(ctx context.Context, name string, domains []st
 
 // GetStaticSite calls GET /api/v1/static-sites/{name}.
 func (c *Client) GetStaticSite(ctx context.Context, name string) (StaticSiteDetail, error) {
-	var out StaticSiteDetail
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name), nil, &out)
-	return out, err
+	return getJSON[StaticSiteDetail](ctx, c, "/api/v1/static-sites/"+PathEscape(name))
 }
 
 // AddStaticSiteDomain calls POST /api/v1/static-sites/{name}/domains.
@@ -82,9 +80,7 @@ func (c *Client) AddStaticSiteDomain(ctx context.Context, name, domain string) (
 
 // StaticSiteDomainStatus calls GET /api/v1/static-sites/{name}/domains/{domain}/status.
 func (c *Client) StaticSiteDomainStatus(ctx context.Context, name, domain string) (StaticSiteDomain, error) {
-	var out StaticSiteDomain
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/domains/"+PathEscape(strings.ToLower(domain))+"/status?diagnose=1", nil, &out)
-	return out, err
+	return getJSON[StaticSiteDomain](ctx, c, "/api/v1/static-sites/"+PathEscape(name)+"/domains/"+PathEscape(strings.ToLower(domain))+"/status?diagnose=1")
 }
 
 // StaticSiteCheck is one finding of a site health check.
@@ -107,9 +103,7 @@ type StaticSiteChecks struct {
 
 // StaticSiteChecks calls GET /api/v1/static-sites/{name}/checks.
 func (c *Client) StaticSiteChecks(ctx context.Context, name string) (StaticSiteChecks, error) {
-	var out StaticSiteChecks
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(name)+"/checks", nil, &out)
-	return out, err
+	return getJSON[StaticSiteChecks](ctx, c, "/api/v1/static-sites/"+PathEscape(name)+"/checks")
 }
 
 // StaticSiteTraffic calls GET /api/v1/static-sites/{name}/traffic for a 24h or 7d window.

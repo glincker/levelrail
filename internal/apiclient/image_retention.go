@@ -58,9 +58,7 @@ func imageRetentionPath(app string) string {
 
 // GetImageRetention calls GET /api/v1/apps/{name}/image-retention.
 func (c *Client) GetImageRetention(ctx context.Context, app string) (ImageRetentionResource, error) {
-	var out ImageRetentionResource
-	err := c.do(ctx, http.MethodGet, imageRetentionPath(app), nil, &out)
-	return out, err
+	return getJSON[ImageRetentionResource](ctx, c, imageRetentionPath(app))
 }
 
 // SetImageRetention calls PUT /api/v1/apps/{name}/image-retention.

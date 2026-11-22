@@ -161,9 +161,7 @@ func (c *Client) PreviewCompose(ctx context.Context, composeYAML []byte, profile
 
 // GetComposeStack calls GET /api/v1/apps/{name}/compose.
 func (c *Client) GetComposeStack(ctx context.Context, name string) (ComposeStack, error) {
-	var out ComposeStack
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/compose", nil, &out)
-	return out, err
+	return getJSON[ComposeStack](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/compose")
 }
 
 // ListComposeRevisions calls GET /api/v1/apps/{name}/compose/revisions.
@@ -177,9 +175,7 @@ func (c *Client) ListComposeRevisions(ctx context.Context, name string) ([]Compo
 
 // GetComposeRevision calls GET /api/v1/apps/{name}/compose/revisions/{revision}.
 func (c *Client) GetComposeRevision(ctx context.Context, name string, revision int) (ComposeRevision, error) {
-	var out ComposeRevision
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/compose/revisions/"+strconv.Itoa(revision), nil, &out)
-	return out, err
+	return getJSON[ComposeRevision](ctx, c, "/api/v1/apps/"+PathEscape(name)+"/compose/revisions/"+strconv.Itoa(revision))
 }
 
 // RollbackComposeStack calls POST /api/v1/apps/{name}/compose/rollback; revision 0 means the previous one.

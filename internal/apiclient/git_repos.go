@@ -110,9 +110,7 @@ func (c *Client) ListGitRepos(ctx context.Context, p GitRepoListParams) (GitRepo
 	if p.Refresh {
 		q.Set("refresh", "1")
 	}
-	var out GitRepoListResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/git/repos?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[GitRepoListResource](ctx, c, "/api/v1/git/repos?"+q.Encode())
 }
 
 // GitWebhookRegistrationResource mirrors internal/api's gitWebhookRegistrationResource.
@@ -187,9 +185,7 @@ func (c *Client) ListGitConnections(ctx context.Context, provider string) ([]Git
 	if provider != "" {
 		path += "?provider=" + url.QueryEscape(provider)
 	}
-	var out []GitProviderConnectionResource
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]GitProviderConnectionResource](ctx, c, path)
 }
 
 // CreateGitConnection calls POST /api/v1/git-connections.
@@ -257,9 +253,7 @@ func (c *Client) DisconnectGitConnection(ctx context.Context, id string) (GitDis
 
 // ListGitConnectionBranches calls GET /api/v1/git-connections/{id}/branches?repo=.
 func (c *Client) ListGitConnectionBranches(ctx context.Context, id, repo string) ([]GitAppBranchResource, error) {
-	var out []GitAppBranchResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/git-connections/"+PathEscape(id)+"/branches?repo="+url.QueryEscape(repo), nil, &out)
-	return out, err
+	return getJSON[[]GitAppBranchResource](ctx, c, "/api/v1/git-connections/"+PathEscape(id)+"/branches?repo="+url.QueryEscape(repo))
 }
 
 // UseGitConnectionRepoAsSource calls POST /api/v1/git-connections/{id}/use-as-source.

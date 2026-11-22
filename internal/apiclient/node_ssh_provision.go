@@ -85,14 +85,10 @@ func sshNodeProvisionsPath() string { return "/api/v1/ssh-node-provisions" }
 
 // ListSSHNodeProvisions calls GET /api/v1/ssh-node-provisions.
 func (c *Client) ListSSHNodeProvisions(ctx context.Context) ([]SSHNodeProvisionResource, error) {
-	var out []SSHNodeProvisionResource
-	err := c.do(ctx, http.MethodGet, sshNodeProvisionsPath(), nil, &out)
-	return out, err
+	return getJSON[[]SSHNodeProvisionResource](ctx, c, sshNodeProvisionsPath())
 }
 
 // GetSSHNodeProvision calls GET /api/v1/ssh-node-provisions/{id}.
 func (c *Client) GetSSHNodeProvision(ctx context.Context, id string) (SSHNodeProvisionResource, error) {
-	var out SSHNodeProvisionResource
-	err := c.do(ctx, http.MethodGet, sshNodeProvisionsPath()+"/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[SSHNodeProvisionResource](ctx, c, sshNodeProvisionsPath()+"/"+PathEscape(id))
 }

@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -30,7 +29,5 @@ func (c *Client) ListAppMetricsSummary(ctx context.Context, names []string) ([]A
 		q.Set("names", strings.Join(names, ","))
 		path += "?" + q.Encode()
 	}
-	var out []AppMetricsSummary
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[[]AppMetricsSummary](ctx, c, path)
 }

@@ -98,16 +98,12 @@ func exportDestinationPath(id string) string {
 
 // ListExportDestinations calls GET /api/v1/export/destinations.
 func (c *Client) ListExportDestinations(ctx context.Context) ([]ExportDestinationResource, error) {
-	var out []ExportDestinationResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/export/destinations", nil, &out)
-	return out, err
+	return getJSON[[]ExportDestinationResource](ctx, c, "/api/v1/export/destinations")
 }
 
 // GetExportDestination calls GET /api/v1/export/destinations/{id}.
 func (c *Client) GetExportDestination(ctx context.Context, id string) (ExportDestinationResource, error) {
-	var out ExportDestinationResource
-	err := c.do(ctx, http.MethodGet, exportDestinationPath(id), nil, &out)
-	return out, err
+	return getJSON[ExportDestinationResource](ctx, c, exportDestinationPath(id))
 }
 
 // CreateExportDestination calls POST /api/v1/export/destinations.
@@ -126,7 +122,7 @@ func (c *Client) UpdateExportDestination(ctx context.Context, id string, req Upd
 
 // DeleteExportDestination calls DELETE /api/v1/export/destinations/{id}.
 func (c *Client) DeleteExportDestination(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, exportDestinationPath(id), nil, nil)
+	return c.del(ctx, exportDestinationPath(id))
 }
 
 // TestExportDestination calls POST /api/v1/export/destinations/{id}/test.

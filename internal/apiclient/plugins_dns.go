@@ -27,9 +27,7 @@ func (c *Client) TestPlugin(ctx context.Context, name string) (PluginTestResult,
 
 // GetDNSProviderPlugin calls GET /api/v1/settings/dns-provider-plugin.
 func (c *Client) GetDNSProviderPlugin(ctx context.Context) (DNSProviderPlugin, error) {
-	var out DNSProviderPlugin
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/dns-provider-plugin", nil, &out)
-	return out, err
+	return getJSON[DNSProviderPlugin](ctx, c, "/api/v1/settings/dns-provider-plugin")
 }
 
 // SetDNSProviderPlugin calls PUT /api/v1/settings/dns-provider-plugin. An empty name selects the built-in client.

@@ -25,9 +25,7 @@ type AppBuildCacheClearResult struct {
 
 // GetAppBuildCache calls GET /api/v1/apps/{name}/build-cache.
 func (c *Client) GetAppBuildCache(ctx context.Context, app string) (AppBuildCache, error) {
-	var out AppBuildCache
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+url.PathEscape(app)+"/build-cache", nil, &out)
-	return out, err
+	return getJSON[AppBuildCache](ctx, c, "/api/v1/apps/"+url.PathEscape(app)+"/build-cache")
 }
 
 // ClearAppBuildCache calls DELETE /api/v1/apps/{name}/build-cache.

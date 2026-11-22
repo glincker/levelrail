@@ -34,7 +34,7 @@ func (c *Client) UpdateRole(ctx context.Context, id string, req RoleRequest) (Ro
 
 // DeleteRole calls DELETE /api/v1/roles/{id}.
 func (c *Client) DeleteRole(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/roles/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/roles/"+PathEscape(id))
 }
 
 // SetUserRole calls PUT /api/v1/users/{id}/role.
@@ -46,9 +46,7 @@ func (c *Client) SetUserRole(ctx context.Context, userID, roleID string) (UserRe
 
 // GetUserEnvironmentGrants calls GET /api/v1/users/{id}/environment-grants.
 func (c *Client) GetUserEnvironmentGrants(ctx context.Context, userID string) (EnvironmentGrants, error) {
-	var out EnvironmentGrants
-	err := c.do(ctx, http.MethodGet, "/api/v1/users/"+PathEscape(userID)+"/environment-grants", nil, &out)
-	return out, err
+	return getJSON[EnvironmentGrants](ctx, c, "/api/v1/users/"+PathEscape(userID)+"/environment-grants")
 }
 
 // SetUserEnvironmentGrants calls PUT /api/v1/users/{id}/environment-grants.

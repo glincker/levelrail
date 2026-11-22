@@ -31,9 +31,7 @@ func (c *Client) ListFunctions(ctx context.Context, window string) (FunctionsLis
 	if window != "" {
 		path += "?window=" + url.QueryEscape(window)
 	}
-	var out FunctionsList
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[FunctionsList](ctx, c, path)
 }
 
 // FunctionRuntime is one starter runtime from GET /api/v1/functions/runtimes.
@@ -50,9 +48,7 @@ type FunctionRuntimes struct {
 
 // ListFunctionRuntimes calls GET /api/v1/functions/runtimes.
 func (c *Client) ListFunctionRuntimes(ctx context.Context) (FunctionRuntimes, error) {
-	var out FunctionRuntimes
-	err := c.do(ctx, http.MethodGet, "/api/v1/functions/runtimes", nil, &out)
-	return out, err
+	return getJSON[FunctionRuntimes](ctx, c, "/api/v1/functions/runtimes")
 }
 
 // FunctionRoute is one path a function answers on at a domain.
@@ -78,9 +74,7 @@ func (c *Client) SetFunctionRoute(ctx context.Context, name string, r FunctionRo
 
 // ListFunctionRoutes calls GET /api/v1/functions/{name}/route.
 func (c *Client) ListFunctionRoutes(ctx context.Context, name string) (FunctionRoutes, error) {
-	var out FunctionRoutes
-	err := c.do(ctx, http.MethodGet, functionRoutePath(name), nil, &out)
-	return out, err
+	return getJSON[FunctionRoutes](ctx, c, functionRoutePath(name))
 }
 
 // DeleteFunctionRoutes calls DELETE /api/v1/functions/{name}/route; an empty domain or path matches all.
@@ -96,5 +90,5 @@ func (c *Client) DeleteFunctionRoutes(ctx context.Context, name, domain, path st
 	if len(q) > 0 {
 		p += "?" + q.Encode()
 	}
-	return c.do(ctx, http.MethodDelete, p, nil, nil)
+	return c.del(ctx, p)
 }

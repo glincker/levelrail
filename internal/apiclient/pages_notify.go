@@ -30,9 +30,7 @@ type PagesNotifyUpdate struct {
 
 // GetPagesNotify reads a site's deploy notification settings.
 func (c *Client) GetPagesNotify(ctx context.Context, site string) (PagesNotify, error) {
-	var out PagesNotify
-	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites/"+PathEscape(site)+"/notify", nil, &out)
-	return out, err
+	return getJSON[PagesNotify](ctx, c, "/api/v1/static-sites/"+PathEscape(site)+"/notify")
 }
 
 // PutPagesNotify updates the switch, the event filter or attaches a channel.
@@ -44,5 +42,5 @@ func (c *Client) PutPagesNotify(ctx context.Context, site string, u PagesNotifyU
 
 // ResetPagesNotify drops the filter so the site notifies on every outcome again.
 func (c *Client) ResetPagesNotify(ctx context.Context, site string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/static-sites/"+PathEscape(site)+"/notify", nil, nil)
+	return c.del(ctx, "/api/v1/static-sites/"+PathEscape(site)+"/notify")
 }

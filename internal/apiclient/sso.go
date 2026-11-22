@@ -94,16 +94,12 @@ type SSOSettings struct {
 
 // ListSAMLConnections calls GET /api/v1/sso/saml/connections.
 func (c *Client) ListSAMLConnections(ctx context.Context) ([]SAMLConnection, error) {
-	var out []SAMLConnection
-	err := c.do(ctx, http.MethodGet, "/api/v1/sso/saml/connections", nil, &out)
-	return out, err
+	return getJSON[[]SAMLConnection](ctx, c, "/api/v1/sso/saml/connections")
 }
 
 // GetSAMLConnection calls GET /api/v1/sso/saml/connections/{id}.
 func (c *Client) GetSAMLConnection(ctx context.Context, id string) (SAMLConnection, error) {
-	var out SAMLConnection
-	err := c.do(ctx, http.MethodGet, "/api/v1/sso/saml/connections/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[SAMLConnection](ctx, c, "/api/v1/sso/saml/connections/"+PathEscape(id))
 }
 
 // CreateSAMLConnection calls POST /api/v1/sso/saml/connections.
@@ -122,7 +118,7 @@ func (c *Client) UpdateSAMLConnection(ctx context.Context, id string, req SAMLCo
 
 // DeleteSAMLConnection calls DELETE /api/v1/sso/saml/connections/{id}.
 func (c *Client) DeleteSAMLConnection(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/sso/saml/connections/"+PathEscape(id), nil, nil)
+	return c.del(ctx, "/api/v1/sso/saml/connections/"+PathEscape(id))
 }
 
 // ImportSAMLMetadata calls POST /api/v1/sso/saml/connections/{id}/metadata.
@@ -142,9 +138,7 @@ func (c *Client) SAMLSPMetadata(ctx context.Context, id string) ([]byte, error) 
 
 // ListSSOGroupMappings calls GET /api/v1/sso/group-mappings.
 func (c *Client) ListSSOGroupMappings(ctx context.Context) (SSOGroupMappings, error) {
-	var out SSOGroupMappings
-	err := c.do(ctx, http.MethodGet, "/api/v1/sso/group-mappings", nil, &out)
-	return out, err
+	return getJSON[SSOGroupMappings](ctx, c, "/api/v1/sso/group-mappings")
 }
 
 // ReplaceSSOGroupMappings calls PUT /api/v1/sso/group-mappings.
@@ -156,9 +150,7 @@ func (c *Client) ReplaceSSOGroupMappings(ctx context.Context, req SSOGroupMappin
 
 // GetSSOSettings calls GET /api/v1/sso/settings.
 func (c *Client) GetSSOSettings(ctx context.Context) (SSOSettings, error) {
-	var out SSOSettings
-	err := c.do(ctx, http.MethodGet, "/api/v1/sso/settings", nil, &out)
-	return out, err
+	return getJSON[SSOSettings](ctx, c, "/api/v1/sso/settings")
 }
 
 // SetSSOEnforce calls PUT /api/v1/sso/settings.

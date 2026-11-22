@@ -67,9 +67,7 @@ type NodeVersionSkew struct {
 
 // GetNodeDoctor calls GET /api/v1/nodes/{id}/doctor.
 func (c *Client) GetNodeDoctor(ctx context.Context, id string) (NodeDoctor, error) {
-	var out NodeDoctor
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/doctor", nil, &out)
-	return out, err
+	return getJSON[NodeDoctor](ctx, c, nodePath(id)+"/doctor")
 }
 
 // GetNodeTimeline calls GET /api/v1/nodes/{id}/timeline. An empty window uses the server default.
@@ -78,16 +76,12 @@ func (c *Client) GetNodeTimeline(ctx context.Context, id, window string) (NodeTi
 	if window != "" {
 		path += "?window=" + url.QueryEscape(window)
 	}
-	var out NodeTimeline
-	err := c.do(ctx, http.MethodGet, path, nil, &out)
-	return out, err
+	return getJSON[NodeTimeline](ctx, c, path)
 }
 
 // GetNodeVersionSkew calls GET /api/v1/nodes/version-skew.
 func (c *Client) GetNodeVersionSkew(ctx context.Context) (NodeVersionSkew, error) {
-	var out NodeVersionSkew
-	err := c.do(ctx, http.MethodGet, nodesCollectionPath()+"/version-skew", nil, &out)
-	return out, err
+	return getJSON[NodeVersionSkew](ctx, c, nodesCollectionPath()+"/version-skew")
 }
 
 // NodeAgentUpdate mirrors internal/nodeinsight.UpdateDecision.
@@ -105,9 +99,7 @@ type NodeAgentUpdate struct {
 
 // GetNodeAgentUpdate calls GET /api/v1/nodes/{id}/agent-update.
 func (c *Client) GetNodeAgentUpdate(ctx context.Context, id string) (NodeAgentUpdate, error) {
-	var out NodeAgentUpdate
-	err := c.do(ctx, http.MethodGet, nodePath(id)+"/agent-update", nil, &out)
-	return out, err
+	return getJSON[NodeAgentUpdate](ctx, c, nodePath(id)+"/agent-update")
 }
 
 // NodeAgentUpdateControl calls POST or DELETE on /api/v1/nodes/{id}/agent-update/{hold|override}.

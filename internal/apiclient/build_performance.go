@@ -90,9 +90,7 @@ func (c *Client) GetBuildStats(ctx context.Context, app string, limit int) (Buil
 
 // GetBuildLimits calls GET /api/v1/build-limits.
 func (c *Client) GetBuildLimits(ctx context.Context) (BuildLimits, error) {
-	var out BuildLimits
-	err := c.do(ctx, http.MethodGet, "/api/v1/build-limits", nil, &out)
-	return out, err
+	return getJSON[BuildLimits](ctx, c, "/api/v1/build-limits")
 }
 
 // SetBuildLimits calls PUT /api/v1/build-limits.
@@ -111,9 +109,7 @@ func (c *Client) ResetBuildLimits(ctx context.Context) (BuildLimits, error) {
 
 // GetAppBuildLimits calls GET /api/v1/apps/{name}/build-limits.
 func (c *Client) GetAppBuildLimits(ctx context.Context, app string) (AppBuildLimits, error) {
-	var out AppBuildLimits
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+url.PathEscape(app)+"/build-limits", nil, &out)
-	return out, err
+	return getJSON[AppBuildLimits](ctx, c, "/api/v1/apps/"+url.PathEscape(app)+"/build-limits")
 }
 
 // SetAppBuildLimits calls PUT /api/v1/apps/{name}/build-limits.
@@ -150,7 +146,5 @@ type BuildSpeed struct {
 
 // GetBuildSpeed calls GET /api/v1/apps/{name}/build-speed.
 func (c *Client) GetBuildSpeed(ctx context.Context, app string) (BuildSpeed, error) {
-	var out BuildSpeed
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+url.PathEscape(app)+"/build-speed", nil, &out)
-	return out, err
+	return getJSON[BuildSpeed](ctx, c, "/api/v1/apps/"+url.PathEscape(app)+"/build-speed")
 }

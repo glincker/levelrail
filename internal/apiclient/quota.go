@@ -42,9 +42,7 @@ func quotaPath(scope, id string) string {
 
 // GetQuota calls GET /api/v1/{teams|projects}/{id}/quota.
 func (c *Client) GetQuota(ctx context.Context, scope, id string) (QuotaResource, error) {
-	var out QuotaResource
-	err := c.do(ctx, http.MethodGet, quotaPath(scope, id), nil, &out)
-	return out, err
+	return getJSON[QuotaResource](ctx, c, quotaPath(scope, id))
 }
 
 // SetQuota calls PUT /api/v1/{teams|projects}/{id}/quota.

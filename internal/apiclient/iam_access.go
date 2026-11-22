@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 )
 
@@ -93,21 +92,15 @@ type IAMAnalysis struct {
 // SimulateIAM calls GET /api/v1/iam/simulate.
 func (c *Client) SimulateIAM(ctx context.Context, principalType, principalID, action, resource string) (IAMSimulation, error) {
 	q := url.Values{"principal_type": {principalType}, "principal_id": {principalID}, "action": {action}, "resource": {resource}}
-	var out IAMSimulation
-	err := c.do(ctx, http.MethodGet, "/api/v1/iam/simulate?"+q.Encode(), nil, &out)
-	return out, err
+	return getJSON[IAMSimulation](ctx, c, "/api/v1/iam/simulate?"+q.Encode())
 }
 
 // IAMEffectivePermissions calls GET /api/v1/iam/principals/{type}/{id}/effective.
 func (c *Client) IAMEffectivePermissions(ctx context.Context, principalType, principalID string) (IAMEffective, error) {
-	var out IAMEffective
-	err := c.do(ctx, http.MethodGet, "/api/v1/iam/principals/"+PathEscape(principalType)+"/"+PathEscape(principalID)+"/effective", nil, &out)
-	return out, err
+	return getJSON[IAMEffective](ctx, c, "/api/v1/iam/principals/"+PathEscape(principalType)+"/"+PathEscape(principalID)+"/effective")
 }
 
 // AnalyzeIAM calls GET /api/v1/iam/analyze.
 func (c *Client) AnalyzeIAM(ctx context.Context) (IAMAnalysis, error) {
-	var out IAMAnalysis
-	err := c.do(ctx, http.MethodGet, "/api/v1/iam/analyze", nil, &out)
-	return out, err
+	return getJSON[IAMAnalysis](ctx, c, "/api/v1/iam/analyze")
 }
