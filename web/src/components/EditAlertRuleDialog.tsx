@@ -209,9 +209,13 @@ export function EditAlertRuleDialog({
                             ? tAlert(
                                 'trafficKinds.kind.domain_traffic_drop.label',
                               )
-                            : tAlert(
-                                'trafficKinds.kind.parked_domain_cert_expiry.label',
-                              )
+                            : option.value === 'domain_registration_expiry'
+                              ? tAlert(
+                                  'trafficKinds.kind.domain_registration_expiry.label',
+                                )
+                              : tAlert(
+                                  'trafficKinds.kind.parked_domain_cert_expiry.label',
+                                )
                           : isAlertKindCopyKind(option.value)
                             ? alertKindLabel(t, option.value)
                             : option.label}

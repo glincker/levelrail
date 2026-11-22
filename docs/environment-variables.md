@@ -536,6 +536,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_QUERY_MAX_SQL_BYTES` | [`database_viewer.max_sql_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_TIMEOUT` | [`database_viewer.query_timeout`](/runtime-settings#observability) | `15s` |
 | `APP_DB_SCHEMA_MAX_ROWS` | [`database_viewer.schema_max_rows`](/runtime-settings#observability) | `5000` |
+| `APP_MAJOR_UPGRADE_RESTORE_POINT_MAX_AGE_HOURS` | [`databases.major_upgrade_restore_point_max_age_hours`](/runtime-settings#observability) | `24` |
 | `APP_DB_COMPACT_MIN_FREE_PERCENT` | [`db.compact_min_free_percent`](/runtime-settings#observability) | `10` |
 | `APP_DB_SPACE_REPORT_ROWS` | [`db.space_report_rows`](/runtime-settings#observability) | `20` |
 | `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |

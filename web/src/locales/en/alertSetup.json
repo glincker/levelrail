@@ -75,6 +75,10 @@
       "parked_domain_cert_expiry": {
         "label": "Parked domain certificate expiry",
         "help": "Fires when a parked domain has fewer days of certificate left than the limit. Covers every parked domain on the platform."
+      },
+      "domain_registration_expiry": {
+        "label": "Domain registration expiry",
+        "help": "Fires when a domain you serve is within the limit of its registrar expiration date, read from public registry data. Covers every domain on the platform."
       }
     },
     "scopeLabel": "Domain",
@@ -88,7 +92,7 @@
     "minRequestsLabel": "Minimum requests yesterday",
     "minRequestsHelp": "Skip the check when yesterday had fewer requests than this, so quiet domains do not alert.",
     "daysLabel": "Days left",
-    "daysHelp": "Fires when a parked domain's certificate has fewer days left than this."
+    "daysHelp": "Fires when fewer days than this are left."
   },
   "emailQuick": {
     "label": "Your email address",

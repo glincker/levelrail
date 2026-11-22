@@ -7,7 +7,9 @@ import { toast } from '@/components/ui/toast'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { usePITRStatus } from '../queries/pitr'
 import {
+  formatRestorePointAge,
   useDiscardMajorUpgradeSnapshot,
+  useMajorUpgradeCheck,
   useMajorUpgrades,
   useRollbackMajorUpgrade,
   useStartMajorUpgrade,
@@ -137,6 +139,8 @@ export function MajorUpgradeCard({ database }: { database: DatabaseResource }) {
   const [confirm, setConfirm] = useState('')
   const running = history.data?.some((u) => u.status === 'running') ?? false
   const pitrOn = usePITRStatus(name).data?.enabled === true
+  const check = useMajorUpgradeCheck(name, version.trim())
+  const verdict = check.data
 
   return (
     <Card>
@@ -204,6 +208,34 @@ export function MajorUpgradeCard({ database }: { database: DatabaseResource }) {
               : t('majorUpgrade.start')}
           </Button>
         </div>
+        {verdict ? (
+          <div className="flex flex-col gap-1 text-sm" role="status">
+            <p
+              className={
+                verdict.go ? 'font-medium' : 'font-medium text-destructive'
+              }
+            >
+              {verdict.go
+                ? t('majorUpgrade.checkGo')
+                : t('majorUpgrade.checkNoGo')}
+            </p>
+            <p className="text-muted-foreground">
+              {verdict.restore_point
+                ? t('majorUpgrade.restorePoint', {
+                    age: formatRestorePointAge(
+                      verdict.restore_point.age_seconds,
+                    ),
+                    limit: formatRestorePointAge(verdict.max_age_seconds),
+                  })
+                : t('majorUpgrade.noRestorePoint')}
+            </p>
+            {verdict.reasons.map((reason) => (
+              <p key={reason} className="text-xs text-destructive">
+                {reason}
+              </p>
+            ))}
+          </div>
+        ) : null}
         {start.isError ? (
           <p className="text-sm text-destructive" role="alert">
             {start.error.message}

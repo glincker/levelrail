@@ -169,6 +169,10 @@
     "failedTitle": "No se pudo iniciar la restauración."
   },
   "majorUpgrade": {
+    "checkGo": "Adelante: existe un punto de restauración reciente.",
+    "checkNoGo": "No: corrige los puntos siguientes antes de actualizar.",
+    "restorePoint": "El punto de restauración más reciente tiene {{age}} (límite {{limit}}).",
+    "noRestorePoint": "Aún no hay una copia correcta, así que no hay punto de restauración.",
     "title": "Actualización de versión mayor",
     "description": "Actualiza esta base de datos entre versiones mayores mediante volcado y restauración. Está fuera de línea mientras se ejecuta. Primero se copian los datos anteriores a un snapshot de rollback, y si algo falla después se revierte automáticamente.",
     "versionLabel": "Versión mayor de destino",

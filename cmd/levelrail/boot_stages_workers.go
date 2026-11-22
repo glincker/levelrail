@@ -21,6 +21,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/deployurls"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -32,6 +33,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/tlsowner"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
@@ -184,6 +186,7 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetDNSCredentials(apiRouter)
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
+	alertingEngine.SetRegistrationExpiry(dnszones.NewRDAP(netguard.NewClient(), dnszones.RDAPOptionsFromEnv()))
 	certPolicy := alerting.CertPolicyFromEnv(os.Getenv)
 	certPolicy.BaseURL = dashboardBaseURL()
 	alertingEngine.SetCertExpiryPolicy(certPolicy)

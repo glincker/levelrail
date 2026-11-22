@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2383 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2384 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -829,6 +829,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs/download", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDownloadDatabaseLogs", Description: "Plain-text export of a bounded window, same AbilityRead boundary as the query route."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs/stream", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleLiveDatabaseLogStream", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrade", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleMajorUpgrade", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/major-upgrade/check", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleMajorUpgradeCheck", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/major-upgrades", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListMajorUpgrades", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrades/{id}/rollback", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRollbackMajorUpgrade", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/major-upgrades/{id}/snapshot", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDiscardMajorUpgradeSnapshot", Description: ""},

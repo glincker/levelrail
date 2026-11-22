@@ -1020,6 +1020,7 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/restore-test | AbilityWriteSensitive | handleStartDatabaseRestoreTest |
 | GET | /api/v1/databases/{name}/restore-test | AbilityRead | handleGetDatabaseRestoreTest |
 | GET | /api/v1/databases/{name}/restore-preview | AbilityRead | handleDatabaseRestorePreview |
+| GET | /api/v1/databases/{name}/major-upgrade/check | AbilityRead | handleMajorUpgradeCheck |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

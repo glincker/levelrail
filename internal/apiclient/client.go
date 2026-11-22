@@ -4943,6 +4943,27 @@ func (c *Client) StartMajorUpgrade(ctx context.Context, name, version string) (M
 	return out, err
 }
 
+// MajorUpgradeCheck is the go/no-go answer of GET .../major-upgrade/check.
+type MajorUpgradeCheck struct {
+	Go            bool     `json:"go"`
+	Reasons       []string `json:"reasons"`
+	MaxAgeSeconds int64    `json:"max_age_seconds"`
+	FromVersion   string   `json:"from_version"`
+	ToVersion     string   `json:"to_version"`
+	RestorePoint  *struct {
+		BackupID   string `json:"backup_id"`
+		FinishedAt string `json:"finished_at"`
+		AgeSeconds int64  `json:"age_seconds"`
+	} `json:"restore_point,omitempty"`
+}
+
+// CheckMajorUpgrade calls GET /api/v1/databases/{name}/major-upgrade/check without changing anything.
+func (c *Client) CheckMajorUpgrade(ctx context.Context, name, version string) (MajorUpgradeCheck, error) {
+	var out MajorUpgradeCheck
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/major-upgrade/check?version="+url.QueryEscape(version), nil, &out)
+	return out, err
+}
+
 // ListMajorUpgrades calls GET /api/v1/databases/{name}/major-upgrades.
 func (c *Client) ListMajorUpgrades(ctx context.Context, name string) ([]MajorUpgradeResource, error) {
 	var out []MajorUpgradeResource

@@ -65,6 +65,7 @@ export type AlertRuleKind =
   | 'database_backup_stale'
   | 'domain_traffic_drop'
   | 'parked_domain_cert_expiry'
+  | 'domain_registration_expiry'
 
 // log_pattern and log_level_rate only (internal/alerting.LogRuleConfig).
 export interface LogRuleConfig {

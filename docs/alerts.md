@@ -13,7 +13,7 @@ A rule has a kind, and the kind decides what it watches. The kinds in `internal/
 
 - Apps: `threshold` (a metric, a comparator and a value, held for a duration), `crashloop`, `oom_killed`, `slo_burn`, `log_pattern`, `log_level_rate`, `deploy_failed`.
 - Jobs: `scheduled_task_failure`, `scheduled_task_missed`, `scheduled_task_running_long`, `job_failing`. See [Scheduled jobs](/scheduled-jobs).
-- Certificates and domains: `cert_expiry`, `cert_expiring`, `cert_renewal_stalled`, `parked_domain_cert_expiry`, `domain_health`, `domain_not_resolving`, `domain_traffic_drop`.
+- Certificates and domains: `cert_expiry`, `cert_expiring`, `cert_renewal_stalled`, `parked_domain_cert_expiry`, `domain_health`, `domain_not_resolving`, `domain_registration_expiry`, `domain_traffic_drop`.
 - Nodes and resource pressure: `node_offline`, `node_disk_space`, `node_host_guardrail`, `node_resource_usage`, `node_cpu`, `node_memory`, `node_cert_expiring`, `volume_usage`, `patch_status`, `version_skew`. See [Host pressure](/host-pressure).
 - Databases: `database_down`, `database_connections_high`, `database_disk_high`, `database_backup_failing`, `database_backup_stale`, `pooler_saturated`.
 - Backups and exports: `backup_failed`, `backup_missing`, `backup_copy_behind`, `control_plane_backup_stale`, `restore_drill_failed`, `log_archive_stale`, `export_behind`.

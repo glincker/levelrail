@@ -133,3 +133,31 @@ func TestEngineTick_DomainLifecycleKindsSkipWithoutSources(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+type fakeRegistration map[string]time.Time
+
+func (f fakeRegistration) Expiration(_ context.Context, domain string) (time.Time, bool) {
+	t, ok := f[domain]
+	return t, ok
+}
+
+func TestEvaluateDomainRegistrationExpiry(t *testing.T) {
+	now := time.Date(2026, 11, 2, 12, 0, 0, 0, time.UTC)
+	list := fakeDomainList{domains: []store.ServiceDomain{
+		{Domain: "www.soon.com", ServiceName: "web"}, {Domain: "api.soon.com", ServiceName: "api"},
+		{Domain: "later.org", ServiceName: "web"}, {Domain: "unknown.net", ServiceName: "web"},
+	}}
+	e := newTrafficTestEngine(newFakeRuleStore(), nil, nil, &spyNotifier{})
+	e.SetTrafficSources(list, nil)
+	e.SetRegistrationExpiry(fakeRegistration{"soon.com": now.Add(10 * 24 * time.Hour), "later.org": now.Add(200 * 24 * time.Hour)})
+	r := Rule{ID: "rx", Kind: KindDomainRegistrationExpiry}
+
+	fired, notices, err := e.EvaluateDomainRegistrationExpiry(context.Background(), r, now)
+	if err != nil || !fired.Firing || len(notices) != 1 {
+		t.Fatalf("firing=%v notices=%v err=%v, want one notice for soon.com", fired.Firing, notices, err)
+	}
+	r.Threshold = 5
+	if next, _, _ := e.EvaluateDomainRegistrationExpiry(context.Background(), r, now); next.Firing {
+		t.Error("threshold 5 days should not fire at 10 days left")
+	}
+}

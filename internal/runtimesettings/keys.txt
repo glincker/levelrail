@@ -243,6 +243,7 @@ database_viewer.schema_max_rows
 databases.bulk_concurrency
 databases.bulk_max_items
 databases.import_max_bytes
+databases.major_upgrade_restore_point_max_age_hours
 databases.params_max_connections
 databases.params_max_memory_mb
 databases.pooler_default

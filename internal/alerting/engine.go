@@ -764,7 +764,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
-		case KindCertExpiring, KindCertRenewalStalled, KindDomainNotResolving, KindDomainTrafficDrop, KindParkedDomainCertExpiry:
+		case KindCertExpiring, KindCertRenewalStalled, KindDomainNotResolving, KindDomainTrafficDrop, KindParkedDomainCertExpiry, KindDomainRegistrationExpiry:
 			var skip bool
 			var notices []string
 			next, notices, skip, err = e.evaluateTrafficKind(ctx, r, now)

@@ -147,7 +147,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindOOMKilled, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindJobFailing, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindNodeCPU, alerting.KindNodeMemory, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindPoolerSaturated, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindBackupCopyBehind, alerting.KindBackupSizeAnomaly, alerting.KindRegistryRefreshFailing, alerting.KindDNSCredentialFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindCleanupFailing, alerting.KindBackupFailed, alerting.KindDeployFailed, alerting.KindMonitorDown, alerting.KindAppUnhealthy, alerting.KindAdvisoryMatch, alerting.KindVolumeUsage,
 		alerting.KindLogPattern, alerting.KindLogLevelRate,
 		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving,
-		alerting.KindDomainTrafficDrop, alerting.KindParkedDomainCertExpiry:
+		alerting.KindDomainTrafficDrop, alerting.KindParkedDomainCertExpiry, alerting.KindDomainRegistrationExpiry:
 	default:
 		return alerting.Rule{}, fmt.Errorf("kind %q is not a supported rule kind", a.Kind)
 	}
@@ -247,6 +247,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	case alerting.KindParkedDomainCertExpiry:
 		if r.Threshold < 0 {
 			return alerting.Rule{}, errors.New("threshold (days) must not be negative for a parked_domain_cert_expiry rule")
+		}
+	case alerting.KindDomainRegistrationExpiry:
+		if r.Threshold < 0 {
+			return alerting.Rule{}, errors.New("threshold (days) must not be negative for a domain_registration_expiry rule")
 		}
 	case alerting.KindSLOBurn:
 		if r.SLO == nil {

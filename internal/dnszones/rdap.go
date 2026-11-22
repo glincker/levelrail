@@ -40,9 +40,10 @@ func RDAPOptionsFromEnv() RDAPOptions {
 }
 
 type rdapItem struct {
-	hint RegistrarHint
-	ok   bool
-	at   time.Time
+	hint    RegistrarHint
+	ok      bool
+	expires time.Time
+	at      time.Time
 }
 
 // RDAP looks up registrars through the IANA bootstrap. The client must be
@@ -65,41 +66,55 @@ func NewRDAP(client *http.Client, opts RDAPOptions) *RDAP {
 
 // Registrar returns the domain's registrar, ok false on any failure.
 func (r *RDAP) Registrar(ctx context.Context, domain string) (RegistrarHint, bool) {
+	it, ok := r.item(ctx, domain)
+	return it.hint, ok && it.ok
+}
+
+// Expiration returns the registrar expiration date, ok false when the lookup
+// failed or the registry publishes no expiration event.
+func (r *RDAP) Expiration(ctx context.Context, domain string) (time.Time, bool) {
+	it, ok := r.item(ctx, domain)
+	return it.expires, ok && !it.expires.IsZero()
+}
+
+func (r *RDAP) item(ctx context.Context, domain string) (rdapItem, bool) {
 	domain = NormalizeDomain(domain)
 	if !strings.Contains(domain, ".") {
-		return RegistrarHint{}, false
+		return rdapItem{}, false
 	}
 	r.mu.Lock()
 	if it, ok := r.m[domain]; ok && time.Since(it.at) < r.opts.CacheTTL {
 		r.mu.Unlock()
-		return it.hint, it.ok
+		return it, true
 	}
 	r.mu.Unlock()
 	v, _, _ := r.sf.Do(domain, func() (any, error) {
 		lctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), r.opts.Timeout)
 		defer cancel()
-		it := rdapItem{at: time.Now()}
-		it.hint, it.ok = r.lookup(lctx, domain)
+		it := r.lookup(lctx, domain)
+		it.at = time.Now()
 		r.mu.Lock()
 		r.m[domain] = it
 		r.mu.Unlock()
 		return it, nil
 	})
-	it := v.(rdapItem)
-	return it.hint, it.ok
+	return v.(rdapItem), true
 }
 
-func (r *RDAP) lookup(ctx context.Context, domain string) (RegistrarHint, bool) {
+func (r *RDAP) lookup(ctx context.Context, domain string) rdapItem {
 	bases, err := r.bases(ctx, domain[strings.LastIndex(domain, ".")+1:])
 	if err != nil || len(bases) == 0 {
-		return RegistrarHint{}, false
+		return rdapItem{}
 	}
 	base := strings.TrimSuffix(bases[0], "/")
 	body, err := r.get(ctx, base+"/domain/"+url.PathEscape(domain))
 	if err != nil {
-		return RegistrarHint{}, false
+		return rdapItem{}
 	}
-	return ParseRDAPRegistrar(body)
+	var it rdapItem
+	it.hint, it.ok = ParseRDAPRegistrar(body)
+	it.expires, _ = ParseRDAPExpiration(body)
+	return it
 }
 
 func (r *RDAP) bases(ctx context.Context, tld string) ([]string, error) {
@@ -225,4 +240,26 @@ func ParseRDAPRegistrar(body []byte) (RegistrarHint, bool) {
 		}
 	}
 	return RegistrarHint{}, false
+}
+
+// ParseRDAPExpiration reads the registration expiration event date.
+func ParseRDAPExpiration(body []byte) (time.Time, bool) {
+	var doc struct {
+		Events []struct {
+			Action string `json:"eventAction"`
+			Date   string `json:"eventDate"`
+		} `json:"events"`
+	}
+	if err := json.Unmarshal(body, &doc); err != nil {
+		return time.Time{}, false
+	}
+	for _, e := range doc.Events {
+		if e.Action != "expiration" {
+			continue
+		}
+		if t, err := time.Parse(time.RFC3339, e.Date); err == nil {
+			return t.UTC(), true
+		}
+	}
+	return time.Time{}, false
 }

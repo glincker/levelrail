@@ -97,6 +97,7 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/pitr-restore", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleTriggerPITRRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/pitr-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListPITRRestoreHistory))
 	mux.HandleFunc("POST /api/v1/databases/{name}/major-upgrade", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleMajorUpgrade))
+	mux.HandleFunc("GET /api/v1/databases/{name}/major-upgrade/check", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleMajorUpgradeCheck))
 	mux.HandleFunc("GET /api/v1/databases/{name}/major-upgrades", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListMajorUpgrades))
 	mux.HandleFunc("POST /api/v1/databases/{name}/major-upgrades/{id}/rollback", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleRollbackMajorUpgrade))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/major-upgrades/{id}/snapshot", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDiscardMajorUpgradeSnapshot))

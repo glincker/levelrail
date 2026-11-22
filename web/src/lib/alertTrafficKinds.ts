@@ -1,5 +1,6 @@
 export const TRAFFIC_DROP_KIND = 'domain_traffic_drop'
 export const PARKED_CERT_KIND = 'parked_domain_cert_expiry'
+export const REGISTRATION_EXPIRY_KIND = 'domain_registration_expiry'
 
 export const TRAFFIC_DROP_DEFAULTS = {
   window: '1h',
@@ -7,6 +8,7 @@ export const TRAFFIC_DROP_DEFAULTS = {
   minRequests: 20,
 } as const
 export const PARKED_CERT_DEFAULT_DAYS = 14
+export const REGISTRATION_EXPIRY_DEFAULT_DAYS = 30
 
 const MAX_WINDOW_SECONDS = 24 * 3600
 
@@ -47,5 +49,14 @@ export function domainFromResourceId(resourceId: string | undefined): string {
 }
 
 export function isTrafficKind(kind: string): boolean {
-  return kind === TRAFFIC_DROP_KIND || kind === PARKED_CERT_KIND
+  return (
+    kind === TRAFFIC_DROP_KIND ||
+    kind === PARKED_CERT_KIND ||
+    kind === REGISTRATION_EXPIRY_KIND
+  )
+}
+
+// Kinds whose only field is a day count and that watch the whole platform.
+export function isDaysOnlyKind(kind: string): boolean {
+  return kind === PARKED_CERT_KIND || kind === REGISTRATION_EXPIRY_KIND
 }
