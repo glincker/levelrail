@@ -78,6 +78,10 @@ type ruleResource struct {
 	FlapThreshold       int               `json:"flap_threshold,omitempty"`
 	FlapWindow          string            `json:"flap_window,omitempty"`
 
+	// Escalation: a second channel that also receives the alert once it has fired for escalate_after without an Inbox read.
+	EscalateChannelID string `json:"escalate_channel_id,omitempty"`
+	EscalateAfter     string `json:"escalate_after,omitempty"`
+
 	// Response-only: set when an active silence or maintenance window
 	// currently mutes this rule.
 	Silenced   bool   `json:"silenced,omitempty"`
@@ -116,6 +120,7 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		Labels:                r.Labels,
 		ConsecutiveFailures:   r.ConsecutiveFailures,
 		FlapThreshold:         r.FlapThreshold,
+		EscalateChannelID:     r.EscalateChannelID,
 		Firing:                r.Firing,
 		PendingSince:          r.PendingSince,
 		FiringSince:           r.FiringSince,
@@ -127,6 +132,9 @@ func toRuleResource(r alerting.Rule) ruleResource {
 	}
 	if r.RestartWindow > 0 {
 		out.RestartWindow = r.RestartWindow.String()
+	}
+	if r.EscalateAfter > 0 {
+		out.EscalateAfter = r.EscalateAfter.String()
 	}
 	if r.FlapWindow > 0 {
 		out.FlapWindow = r.FlapWindow.String()
@@ -171,6 +179,13 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	if a.ConsecutiveFailures < 0 || a.FlapThreshold < 0 {
 		return alerting.Rule{}, errors.New("consecutive_failures and flap_threshold must not be negative")
 	}
+	escalateAfter, err := parseOptionalDuration(a.EscalateAfter)
+	if err != nil {
+		return alerting.Rule{}, fmt.Errorf("escalate_after: %w", err)
+	}
+	if escalateAfter < 0 || (a.EscalateChannelID == "") != (escalateAfter == 0) {
+		return alerting.Rule{}, errors.New("escalate_channel_id and a positive escalate_after must be set together")
+	}
 
 	r := alerting.Rule{
 		Severity:              a.Severity,
@@ -178,6 +193,8 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		ConsecutiveFailures:   a.ConsecutiveFailures,
 		FlapThreshold:         a.FlapThreshold,
 		FlapWindow:            flapWindow,
+		EscalateChannelID:     a.EscalateChannelID,
+		EscalateAfter:         escalateAfter,
 		ID:                    id,
 		Name:                  a.Name,
 		Kind:                  kind,
@@ -376,6 +393,16 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 			return false
 		}
 		if !rt.requireChannelForApp(w, r, rule.ChannelID, appName, op) {
+			return false
+		}
+	}
+
+	if rule.EscalateChannelID != "" {
+		if rt.notificationChannels == nil {
+			writeError(w, http.StatusNotImplemented, "notification channels are not configured on this control plane")
+			return false
+		}
+		if !rt.requireChannelForApp(w, r, rule.EscalateChannelID, appName, op) {
 			return false
 		}
 	}

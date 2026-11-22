@@ -71,6 +71,7 @@ export const NAMESPACES = [
   'deployContexts',
   'backups',
   'backupPins',
+  'alertEscalation',
   'sleepHistory',
   'forms',
   'gitBuild',

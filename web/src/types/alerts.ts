@@ -160,6 +160,8 @@ export interface AlertRule {
   consecutive_failures?: number
   flap_threshold?: number
   flap_window?: string
+  escalate_channel_id?: string
+  escalate_after?: string
 
   // Response-only: an active silence or maintenance window mutes this rule.
   silenced?: boolean
@@ -208,6 +210,8 @@ export interface CreateAlertRuleRequest {
   consecutive_failures?: number
   flap_threshold?: number
   flap_window?: string
+  escalate_channel_id?: string
+  escalate_after?: string
 }
 
 // Kinds that watch one of the app's scheduled jobs through scheduled_task_id.

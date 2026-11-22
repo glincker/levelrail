@@ -73,6 +73,8 @@ export function EditLogRuleDialog({
       consecutive_failures: rule.consecutive_failures,
       flap_threshold: rule.flap_threshold,
       flap_window: rule.flap_window,
+      escalate_channel_id: rule.escalate_channel_id,
+      escalate_after: rule.escalate_after,
       log_rule: next,
     }
     updateRule.mutate(

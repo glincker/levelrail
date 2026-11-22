@@ -2594,6 +2594,8 @@ type CreateAlertRuleRequest struct {
 	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
 	FlapThreshold       int               `json:"flap_threshold,omitempty"`
 	FlapWindow          string            `json:"flap_window,omitempty"`
+	EscalateChannelID   string            `json:"escalate_channel_id,omitempty"`
+	EscalateAfter       string            `json:"escalate_after,omitempty"`
 }
 
 // UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
@@ -4002,6 +4004,8 @@ type AlertRuleResource struct {
 	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
 	FlapThreshold       int               `json:"flap_threshold,omitempty"`
 	FlapWindow          string            `json:"flap_window,omitempty"`
+	EscalateChannelID   string            `json:"escalate_channel_id,omitempty"`
+	EscalateAfter       string            `json:"escalate_after,omitempty"`
 	Silenced            bool              `json:"silenced,omitempty"`
 	SilencedBy          string            `json:"silenced_by,omitempty"`
 

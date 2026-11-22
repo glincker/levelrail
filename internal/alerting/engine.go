@@ -87,6 +87,7 @@ type Engine struct {
 	certFacts                   map[string][]CertFact
 	certReminded                map[string]time.Time
 	renotified                  map[string]time.Time
+	escalated                   map[string]time.Time
 	renotifyEvery               func(context.Context) time.Duration
 	acks                        AckSource
 	clock                       func() time.Time
@@ -821,6 +822,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 			}
 		case becameResolved:
 			e.renotifyMark(r.ID, now, false)
+			e.escalationMark(r.ID, time.Time{}, false)
 			if r.Kind == KindCertExpiry {
 				e.certReminderReset(r.ID, now, false)
 				if certSuperseded {
@@ -835,6 +837,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 			}
 			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "", "")
 		case stillFiring:
+			if e.escalationDue(ctx, next, now) {
+				e.escalate(ctx, next, Event{Rule: next})
+			}
 			if e.renotifyDue(ctx, next, now) {
 				e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice)
 			}
