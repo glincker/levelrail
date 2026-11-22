@@ -31,6 +31,14 @@ func (db *DB) Compact(ctx context.Context) error {
 	if err := db.QueryRowContext(ctx, `PRAGMA freelist_count`).Scan(&free); err != nil {
 		return fmt.Errorf("telemetry: freelist_count: %w", err)
 	}
+	var mode int
+	if err := db.QueryRowContext(ctx, `PRAGMA auto_vacuum`).Scan(&mode); err == nil && mode == 2 && free > 0 {
+		// Incremental databases return free pages cheaply without a full rewrite.
+		if _, err := db.ExecContext(ctx, `PRAGMA incremental_vacuum`); err != nil {
+			return fmt.Errorf("telemetry: incremental vacuum: %w", err)
+		}
+		return nil
+	}
 	if pages == 0 || float64(free)/float64(pages) <= vacuumFreeRatio {
 		return nil
 	}
