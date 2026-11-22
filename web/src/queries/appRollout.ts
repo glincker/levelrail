@@ -22,7 +22,7 @@ export interface RolloutResolved {
 
 export interface RolloutProgress {
   active: boolean
-  phase: 'rolling' | 'complete' | 'failed'
+  phase: 'rolling' | 'paused' | 'complete' | 'failed'
   wave: number
   waves: number
   desired: number
@@ -32,6 +32,7 @@ export interface RolloutProgress {
   surge: number
   max_surge: number
   max_unavailable: number
+  paused?: boolean
   message?: string
   started_at?: string
   updated_at?: string
@@ -129,6 +130,30 @@ export function useResetRolloutPolicy(appName: string) {
           ),
         )
       }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: appRolloutKeys.rollout(appName),
+      }),
+  })
+}
+
+/** POST pause holds the rolling deploy before its next wave; resume lets it continue. */
+export function useHoldRollout(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<RolloutProgress, ApiError, 'pause' | 'resume'>({
+    mutationFn: async (verb) => {
+      const res = await fetch(
+        `/api/v1/apps/${encodeURIComponent(appName)}/rollout/${verb}`,
+        { method: 'POST' },
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `${verb} rollout failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as RolloutProgress
     },
     onSuccess: () =>
       queryClient.invalidateQueries({

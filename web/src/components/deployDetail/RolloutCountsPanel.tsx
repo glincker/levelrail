@@ -1,5 +1,12 @@
-import { LayersGlassIcon } from '@thesvg/ui-react'
-import { useAppRollout } from '../../queries/appRollout'
+import {
+  LayersGlassIcon,
+  PauseGlassIcon,
+  PlayGlassIcon,
+} from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
+import { useAppRollout, useHoldRollout } from '../../queries/appRollout'
 import { useDeployDetailT } from './useDeployDetailT'
 
 function Stat({ label, value }: { label: string; value: number }) {
@@ -16,10 +23,22 @@ function Stat({ label, value }: { label: string; value: number }) {
 /** RolloutCountsPanel shows rolling rollout wave and replica counts; hidden otherwise. */
 export function RolloutCountsPanel({ appName }: { appName: string }) {
   const { t } = useDeployDetailT()
+  const { t: tHold } = useTranslation('rolloutHold')
   const { data } = useAppRollout(appName)
+  const hold = useHoldRollout(appName)
   const p = data?.progress
   if (!data || data.strategy !== 'rolling' || !p) return null
   const policy = data.policy
+  const paused = p.paused === true
+  const toggle = () =>
+    hold.mutate(paused ? 'resume' : 'pause', {
+      onError: (err) =>
+        toast.add({
+          title: tHold('failed'),
+          description: err.message,
+          type: 'error',
+        }),
+    })
   return (
     <section
       aria-label={t('rollout.counts.title')}
@@ -38,6 +57,28 @@ export function RolloutCountsPanel({ appName }: { appName: string }) {
         <Stat label={t('rollout.counts.unavailable')} value={p.unavailable} />
         <Stat label={t('rollout.counts.surge')} value={p.surge} />
       </dl>
+      {paused ? (
+        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+          {tHold('pausedHint', { wave: p.wave })}
+        </span>
+      ) : null}
+      {p.active ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={hold.isPending}
+          title={paused ? undefined : tHold('pauseHint')}
+          onClick={toggle}
+        >
+          {paused ? (
+            <PlayGlassIcon className="size-4" aria-hidden="true" />
+          ) : (
+            <PauseGlassIcon className="size-4" aria-hidden="true" />
+          )}
+          {paused ? tHold('resume') : tHold('pause')}
+        </Button>
+      ) : null}
       {policy ? (
         <span className="ml-auto text-xs text-muted-foreground">
           {t('rollout.counts.policy', {

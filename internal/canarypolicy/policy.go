@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -94,8 +95,27 @@ func DefaultLimits(getenv func(string) string) Limits {
 	return l
 }
 
-// OSEnv reads the process environment, the getenv the daemon passes in.
-func OSEnv(k string) string { return os.Getenv(k) }
+var liveEnv atomic.Pointer[func(string) string]
+
+// SetLiveEnv points the defaults at the runtime settings so a change applies
+// to the next stage or release. nil goes back to the process environment alone.
+func SetLiveEnv(f func(string) string) {
+	if f == nil {
+		liveEnv.Store(nil)
+		return
+	}
+	liveEnv.Store(&f)
+}
+
+// OSEnv asks the live settings first, then the process environment.
+func OSEnv(k string) string {
+	if f := liveEnv.Load(); f != nil {
+		if v := (*f)(k); v != "" {
+			return v
+		}
+	}
+	return os.Getenv(k)
+}
 
 func envFloat(getenv func(string) string, key string) (float64, bool) {
 	v := strings.TrimSpace(getenv(key))

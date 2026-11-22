@@ -43,6 +43,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 	}
 	rt.runtimeSettings = svc
 	runtimesettings.BindRuntimeLimits(svc)
+	runtimesettings.BindRolloutDefaults(svc)
 	build.SetNetworkResolver(func(ctx context.Context) (string, error) { return svc.StringChecked(ctx, build.KeyBuildNetwork) })
 	wireBuildCacheSettings(svc)
 	wireBuildRunnerSettings(svc)

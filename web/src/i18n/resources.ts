@@ -59,6 +59,7 @@ import type firstRun from '../locales/en/firstRun.json'
 import type newAppNoGit from '../locales/en/newAppNoGit.json'
 import type appOverview from '../locales/en/appOverview.json'
 import type webVitals from '../locales/en/webVitals.json'
+import type rolloutHold from '../locales/en/rolloutHold.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -230,6 +231,7 @@ declare module 'i18next' {
       newAppNoGit: typeof newAppNoGit
       appOverview: typeof appOverview
       webVitals: typeof webVitals
+      rolloutHold: typeof rolloutHold
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess

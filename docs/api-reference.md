@@ -802,6 +802,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/env-diff | AbilityRead | handleEnvDiff |
 | POST | /api/v1/apps/{name}/revert | AbilityWrite | handleRevertApp |
 | POST | /api/v1/apps/{name}/restore-to-node | AbilityWriteSensitive | handleAppRestoreToNode |
+| POST | /api/v1/apps/{name}/rollout/pause | AbilityDeploy | handlePauseRollout |
+| POST | /api/v1/apps/{name}/rollout/resume | AbilityDeploy | handleResumeRollout |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 

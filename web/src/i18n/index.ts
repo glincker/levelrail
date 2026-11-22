@@ -187,6 +187,7 @@ export const NAMESPACES = [
   'newAppNoGit',
   'appOverview',
   'webVitals',
+  'rolloutHold',
   'integrations',
   'clusters',
   'cloudProvider',

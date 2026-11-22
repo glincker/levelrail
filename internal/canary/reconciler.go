@@ -85,8 +85,10 @@ type Reconciler struct {
 	dials   *Dials
 	actions Actions
 	limits  Limits
-	now     func() time.Time
-	logger  *slog.Logger
+	// limitsSrc re-reads the global limits each tick so settings apply live.
+	limitsSrc func() Limits
+	now       func() time.Time
+	logger    *slog.Logger
 
 	mu      sync.Mutex
 	windows map[string]*window
@@ -103,11 +105,33 @@ func NewReconciler(s Store, stats Stats, dials *Dials, actions Actions, limits L
 	return &Reconciler{store: s, stats: stats, dials: dials, actions: actions, limits: limits, now: now, logger: logger, windows: make(map[string]*window)}
 }
 
+// SetLimitsSource makes the global limits live: src is read before each tick.
+func (r *Reconciler) SetLimitsSource(src func() Limits) {
+	r.mu.Lock()
+	r.limitsSrc = src
+	r.mu.Unlock()
+}
+
+// refreshLimits adopts the live limits and reports the tick to wait next.
+func (r *Reconciler) refreshLimits() time.Duration {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.limitsSrc != nil {
+		r.limits = r.limitsSrc()
+	}
+	return r.limits.Tick
+}
+
 // Run reconciles every tick until ctx is done.
 func (r *Reconciler) Run(ctx context.Context) {
-	t := time.NewTicker(r.limits.Tick)
+	tick := r.refreshLimits()
+	t := time.NewTicker(tick)
 	defer t.Stop()
 	for {
+		if next := r.refreshLimits(); next != tick {
+			tick = next
+			t.Reset(tick)
+		}
 		if err := r.Reconcile(ctx); err != nil {
 			r.logger.WarnContext(ctx, "canary: reconcile failed", slog.String("error", err.Error()))
 		}

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2385 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2387 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -452,6 +452,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteRollout", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRollout", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutRollout", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/rollout/pause", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePauseRollout", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/rollout/resume", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResumeRollout", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollout/state", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRolloutState", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/save-as-template", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSaveAppAsTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSchedule", Description: "Scheduled deploys (app_schedule.go): a per-app cron schedule that redeploys the latest commit on a branch, checked by internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive split as git-source just above."},

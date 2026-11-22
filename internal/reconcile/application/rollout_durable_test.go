@@ -85,3 +85,42 @@ func TestRollout_CrashedReplicaDoesNotCountTowardFloor(t *testing.T) {
 		}
 	}
 }
+
+func TestRollout_PauseHoldsAfterWaveAndResumes(t *testing.T) {
+	t.Setenv(rolloutpolicy.EnvMaxSurge, "1")
+	t.Cleanup(func() { rolloutpolicy.ClearHold("pausesvc") })
+	rolloutpolicy.Record("pausesvc", rolloutpolicy.Progress{Active: true, Phase: rolloutpolicy.PhaseRolling})
+	if _, ok := rolloutpolicy.RequestPause("pausesvc"); !ok {
+		t.Fatal("RequestPause refused an active rollout")
+	}
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "pausesvc", Image: "img:v1", Port: 80, Strategy: "rolling", Replicas: 2}
+	c := New("pausesvc", &fakeStore{svc: desired}, rt)
+
+	res, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("held Reconcile() error = %v", err)
+	}
+	if rt.count() != 1 {
+		t.Fatalf("containers while paused = %d, want 1 (one wave done)", rt.count())
+	}
+	if p, _ := rolloutpolicy.Lookup("pausesvc"); !p.Paused || p.Phase != rolloutpolicy.PhasePaused || p.Wave != 2 {
+		t.Fatalf("progress = %+v, want paused before wave 2", p)
+	}
+	if len(res.Conditions) == 0 || res.Conditions[0].Reason != "RolloutPaused" {
+		t.Fatalf("conditions = %+v, want RolloutPaused", res.Conditions)
+	}
+
+	if _, err := c.Reconcile(context.Background()); err != nil || rt.count() != 1 {
+		t.Fatalf("second held pass: err = %v, containers = %d, want still 1", err, rt.count())
+	}
+	if _, ok := rolloutpolicy.Resume("pausesvc"); !ok {
+		t.Fatal("Resume found nothing to resume")
+	}
+	if _, err := c.Reconcile(context.Background()); err != nil || rt.count() != 2 {
+		t.Fatalf("resumed pass: err = %v, containers = %d, want 2", err, rt.count())
+	}
+	if p, _ := rolloutpolicy.Lookup("pausesvc"); p.Paused || p.Phase != rolloutpolicy.PhaseComplete {
+		t.Fatalf("progress after resume = %+v, want complete and not paused", p)
+	}
+}

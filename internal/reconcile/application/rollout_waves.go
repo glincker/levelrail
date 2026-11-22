@@ -46,6 +46,9 @@ func (c *Controller) hydrateProgress(ctx context.Context) bool {
 		return false
 	}
 	rolloutpolicy.Record(c.serviceName, p)
+	if p.Active && p.Paused {
+		rolloutpolicy.RestorePause(c.serviceName)
+	}
 	return p.Active
 }
 
@@ -105,6 +108,9 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 		wave := targets[lo:hi]
 		pre := 0
 		prog.Wave = w + 1
+		if w > 0 && c.holdBeforeWave(ctx, targets, wave, lo, &prog) {
+			return notReady("RolloutPaused", fmt.Errorf("rollout paused before wave %d of %d", w+1, waves)), nil
+		}
 		if res.MaxUnavailable > 0 {
 			if missing := c.missingTargets(ctx, wave); missing > 0 {
 				pre = c.retireOld(ctx, targets, desired, min(res.MaxUnavailable, missing), floor)
@@ -133,10 +139,24 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
 	}
 	if anyDeployed || resumed {
+		rolloutpolicy.ClearHold(c.serviceName)
 		prog.Phase, prog.Active, prog.Message = rolloutpolicy.PhaseComplete, false, ""
 		c.noteProgress(ctx, targets, len(targets), &prog)
 	}
 	return c.finishReconcile(ctx, targets, desired, anyDeployed)
+}
+
+// holdBeforeWave pauses at a wave boundary the operator asked to stop at. A
+// wave whose replicas already run is not a boundary, so a pass that restarts
+// after the request walks past the finished waves first.
+func (c *Controller) holdBeforeWave(ctx context.Context, targets, wave []string, lo int, p *rolloutpolicy.Progress) bool {
+	if c.missingTargets(ctx, wave) == 0 || !rolloutpolicy.ShouldHold(c.serviceName, targets[0]) {
+		return false
+	}
+	p.Paused, p.Phase = true, rolloutpolicy.PhasePaused
+	p.Message = fmt.Sprintf("paused before wave %d, resume to continue or roll back to abort", p.Wave)
+	c.noteProgress(ctx, targets, lo, p)
+	return true
 }
 
 type waveFailure struct {
@@ -276,6 +296,7 @@ func (c *Controller) noteProgress(ctx context.Context, targets []string, updated
 		}
 	}
 	p.Updated = updated
+	p.Paused = rolloutpolicy.Held(c.serviceName)
 	p.Ready = min(p.Desired, updated+oldRunning)
 	p.Unavailable = max(0, p.Desired-p.Ready)
 	p.Surge = max(0, updated+old-p.Desired)

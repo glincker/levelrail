@@ -127,6 +127,13 @@ build.transfer_push_ttl
 builds.memory_limit_mb
 builds.setting_value_max_bytes
 bulk.max_pause_seconds
+canary.interval
+canary.max_error_rate
+canary.max_p95_ratio
+canary.min_requests
+canary.p95_floor_ms
+canary.stages
+canary.tick
 cdn.purge_history
 certificates.weekly_issue_warn
 cleanup.enabled
@@ -593,6 +600,9 @@ retention.revoked_token_days
 retention.status_incident_days
 retention.usage_cost_days
 retention.webhook_delivery_days
+rollout.max_surge
+rollout.max_unavailable
+rollout.min_available
 runtime.dns_max
 runtime.extra_hosts_max
 runtime.pids_limit_max

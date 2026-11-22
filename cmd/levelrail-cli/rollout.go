@@ -6,7 +6,7 @@ import (
 )
 
 // rolloutVerbs maps each rollout verb onto the existing apps subcommand it forwards to.
-// pause and resume are absent on purpose: no API holds a rollout open, freeze windows are cron based.
+// pause and resume hold a rolling deploy open between waves; abort rolls back through apps rollback.
 var rolloutVerbs = map[string][]string{
 	"status":  {"wait"},
 	"history": {"deploys", "list"},
@@ -24,8 +24,9 @@ func runRollout(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		_, _ = fmt.Fprint(stdout, rolloutUsage(prog))
 		return exitOK
 	case "pause", "resume":
-		_, _ = fmt.Fprintf(stderr, "%s: rollout %s is not available: there is no API to hold a rollout open. Use \"%s apps freeze\" for scheduled deploy windows or \"%s apps stop\" to stop an app.\n", prog, args[0], prog, prog)
-		return exitUsage
+		return runRolloutHold(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+	case "abort":
+		return runRolloutAbort(prog, args[1:], stdout, stderr, lookupEnv)
 	case "waves":
 		return runRolloutWaves(prog, args[1:], stdout, stderr, lookupEnv)
 	case "state":
@@ -52,6 +53,10 @@ func rolloutUsage(prog string) string {
                                        wave, updated, ready, unavailable and surge counts
   %[1]s rollout state <app> [--json]     show the health gate, traffic flip and hold countdown of the
                                        newest release (thresholds are the app's deploy-safety settings)
+  %[1]s rollout pause <app>              hold a rolling deploy before its next wave
+  %[1]s rollout resume <app>             let a paused rolling deploy continue
+  %[1]s rollout abort <app> [flags]      roll the app back to its previous deploy (same as apps
+                                       rollback), which also releases a paused rollout
   %[1]s rollout history <app> [flags]    list deploy attempts, newest first (same as apps deploys list)
   %[1]s rollout undo <app> [flags]       roll back to the previous deploy (same as apps rollback)
   %[1]s rollout restart <app> [flags]    restart the app (same as apps restart)
@@ -59,7 +64,7 @@ func rolloutUsage(prog string) string {
 Each verb forwards its flags to the apps command named above, so run
 "%[1]s apps wait --help" and the like for the full flag list.
 
-rollout pause and rollout resume do not exist: no API holds a rollout open.
-For scheduled deploy windows see "%[1]s apps freeze".
+A pause takes effect at the next wave boundary of a rolling deploy, so the
+waves already started finish first. For scheduled deploy windows see "%[1]s apps freeze".
 `, prog)
 }
