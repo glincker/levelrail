@@ -343,7 +343,8 @@ func (f failRunner) Run(context.Context, ...string) ([]byte, error) { return nil
 // dir2 returns the nearest existing directory so a statfs works before the first join.
 func dir2(dir string) string {
 	for d := dir; ; d = filepath.Dir(d) {
-		if _, err := os.Stat(d); err == nil || filepath.Dir(d) == d {
+		_, err := os.Stat(d) //nolint:gosec // operator-supplied path, stat only
+		if err == nil || filepath.Dir(d) == d {
 			return d
 		}
 	}

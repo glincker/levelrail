@@ -225,7 +225,7 @@ func oracleCredentialValueOpt(req setNodeProviderCredentialRequest, requireSubne
 	if err := cloudconn.ValidateOracle(cred); err != nil {
 		return "", "the Oracle credential is not valid: " + sanitizeProviderErr(err)
 	}
-	encoded, err := json.Marshal(oracleStoredCredential{
+	encoded, err := json.Marshal(oracleStoredCredential{ //nolint:gosec // credential blob written to the encrypted store
 		TenancyOCID: req.TenancyOCID, UserOCID: req.UserOCID, Fingerprint: req.Fingerprint, PrivateKeyPEM: req.PrivateKeyPEM,
 		Region: req.Region, CompartmentOCID: req.CompartmentOCID, SubnetOCID: req.SubnetOCID,
 	}) //nolint:gosec // sealed by nodeProviderSecrets.SetValue, never logged or returned

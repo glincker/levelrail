@@ -201,13 +201,14 @@ func envInt(lookupEnv func(string) (string, bool), key string, def int) int {
 // are skipped with a note, so nothing outside root is ever read.
 func scanComposeDir(root string, maxDepth int, maxBytes int64) (composeScan, error) {
 	var out composeScan
-	info, err := os.Stat(root)
+	info, err := os.Stat(root) //nolint:gosec // operator-supplied directory, read only
 	if err != nil {
 		return out, fmt.Errorf("read %s: %w", root, err)
 	}
 	if !info.IsDir() {
 		return out, newValidationError("%s is not a directory", root)
 	}
+	//nolint:gosec // symlinks are skipped below, nothing outside root is read
 	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
