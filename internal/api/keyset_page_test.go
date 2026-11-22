@@ -87,3 +87,45 @@ func TestKeysetPaging_DeployAttemptsAndNodeEvents(t *testing.T) {
 		t.Fatalf("second page = %d events, next %q", len(second), next)
 	}
 }
+
+func TestKeysetPaging_AppsList(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	for _, n := range []string{"a1", "a2", "a3", "a4", "a5"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: n, Image: "levelrail/web:1", Port: 3000}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// An app added behind the cursor must not shift or repeat later pages.
+	var names []string
+	path, injected := "/api/v1/apps?limit=2", false
+	for {
+		rec, next := getPage(t, rt, cookie, path)
+		var page []appListResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &page); err != nil {
+			t.Fatal(err)
+		}
+		for _, a := range page {
+			names = append(names, a.Name)
+		}
+		if !injected {
+			injected = true
+			if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "a0", Image: "levelrail/web:1", Port: 3000}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if next == "" {
+			break
+		}
+		path = "/api/v1/apps?limit=2&cursor=" + next
+	}
+	if fmt.Sprint(names) != "[a1 a2 a3 a4 a5]" {
+		t.Fatalf("paged names = %v", names)
+	}
+	bad := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(bad, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps?cursor=bogus", ""))
+	if bad.Code != http.StatusBadRequest {
+		t.Fatalf("bad cursor = %d, want 400", bad.Code)
+	}
+}

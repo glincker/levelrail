@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"strconv"
@@ -41,6 +42,35 @@ func listAppHeads(ctx context.Context, apps any, f store.AppListFilter) ([]store
 	return nil, errNoFilteredList
 }
 
+// appCursorPrefix tags the opaque next_cursor so a cursor from another list is rejected.
+const appCursorPrefix = "app:"
+
+func encodeAppCursor(name string) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(appCursorPrefix + name))
+}
+
+func decodeAppCursor(c string) (string, bool) {
+	raw, err := base64.RawURLEncoding.DecodeString(c)
+	if err != nil || !strings.HasPrefix(string(raw), appCursorPrefix) || len(raw) == len(appCursorPrefix) {
+		return "", false
+	}
+	return strings.TrimPrefix(string(raw), appCursorPrefix), true
+}
+
+// afterNames keeps the part of a rank-ordered name list that follows the
+// cursor app, so a page resumes in place even when apps came or went.
+func afterNames(names []string, cursor string) []string {
+	if cursor == "" {
+		return names
+	}
+	for i, n := range names {
+		if n == cursor {
+			return names[i+1:]
+		}
+	}
+	return nil
+}
+
 func parseAppListFilter(r *http.Request) store.AppListFilter {
 	q := r.URL.Query()
 	f := store.AppListFilter{
@@ -76,6 +106,11 @@ func parseAppListFilter(r *http.Request) store.AppListFilter {
 	}
 	if n, err := strconv.Atoi(q.Get("offset")); err == nil && n > 0 {
 		f.Offset = n
+	}
+	if c := strings.TrimSpace(q.Get("cursor")); c != "" {
+		if name, ok := decodeAppCursor(c); ok {
+			f.AfterName, f.Offset = name, 0
+		}
 	}
 	return f
 }
@@ -201,6 +236,12 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: list apps: resolve caller failed", err)
 		return
 	}
+	if c := strings.TrimSpace(r.URL.Query().Get("cursor")); c != "" {
+		if _, ok := decodeAppCursor(c); !ok {
+			writeError(w, http.StatusBadRequest, "cursor is not valid")
+			return
+		}
+	}
 	f := parseAppListFilter(r)
 	match, err := rt.labelFilter(r, store.LabelKindApp)
 	if err != nil {
@@ -312,6 +353,10 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		out = append(out, item)
 	}
 	w.Header().Set("X-Total-Count", strconv.Itoa(total))
+	// More rows remain when this page did not reach the end of the match set.
+	if f.Limit > 0 && len(svcs) > 0 && f.Offset+len(svcs) < total {
+		w.Header().Set(nextCursorHeader, encodeAppCursor(svcs[len(svcs)-1].Name))
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -410,7 +455,7 @@ func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f := parseAppListFilter(r)
-	f.Limit, f.Offset = 0, 0
+	f.Limit, f.Offset, f.AfterName = 0, 0, ""
 	svcs, err := listAppHeads(r.Context(), fs, f)
 	if err != nil {
 		rt.internalError(w, "api: apps summary failed", err)
