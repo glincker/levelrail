@@ -75,3 +75,87 @@ func TestAzureListAndCredential(t *testing.T) {
 		t.Fatal("incomplete credential accepted")
 	}
 }
+
+func TestPorkbunCredentialAndUpsert(t *testing.T) {
+	for _, bad := range []string{"", "onlykey", `{"api_key":"k"}`} {
+		if _, err := NewPorkbun(bad); err == nil {
+			t.Fatalf("credential %q accepted", bad)
+		}
+	}
+	var calls []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var b map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&b)
+		if b["apikey"] != "pk1" || b["secretapikey"] != "sk1" {
+			t.Errorf("keys missing from body: %v", b)
+		}
+		calls = append(calls, r.URL.Path)
+		switch r.URL.Path {
+		case "/dns/retrieve/example.com":
+			_, _ = w.Write([]byte(`{"status":"SUCCESS","records":[{"id":"7","name":"www.example.com","type":"A","content":"1.1.1.1","ttl":"600"},{"id":"8","name":"www.example.com","type":"A","content":"2.2.2.2","ttl":"600"}]}`))
+		case "/dns/create/example.com":
+			if b["name"] != "www" || b["content"] != "3.3.3.3" {
+				t.Errorf("created %v", b)
+			}
+			_, _ = w.Write([]byte(`{"status":"SUCCESS"}`))
+		default:
+			_, _ = w.Write([]byte(`{"status":"SUCCESS"}`))
+		}
+	}))
+	defer srv.Close()
+	p, err := NewPorkbun("pk1:sk1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetBaseURL(srv.URL, srv.Client())
+	z := Zone{ID: "example.com", Name: "example.com"}
+	if err := p.UpsertRecordSet(context.Background(), z, RecordSet{Name: "www", Type: "A", TTL: 600, Values: []string{"1.1.1.1", "3.3.3.3"}}); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"/dns/retrieve/example.com", "/dns/create/example.com", "/dns/delete/example.com/8"}
+	if !slices.Equal(calls, want) {
+		t.Fatalf("calls = %v, want %v", calls, want)
+	}
+}
+
+func TestPorkbunErrorStatus(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"status":"ERROR","message":"Invalid API key"}`))
+	}))
+	defer srv.Close()
+	p, _ := NewPorkbun("a:b")
+	p.SetBaseURL(srv.URL, srv.Client())
+	if _, err := p.ListZones(context.Background()); err == nil {
+		t.Fatal("ERROR status was not surfaced")
+	}
+}
+
+func TestDeSECApexTXTRoundTrip(t *testing.T) {
+	var gotPath string
+	var gotBody desecRRSet
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Token tok" {
+			t.Errorf("missing token header")
+		}
+		if r.Method == http.MethodPut {
+			gotPath = r.URL.Path
+			_ = json.NewDecoder(r.Body).Decode(&gotBody)
+			return
+		}
+		_, _ = w.Write([]byte(`[{"subname":"","type":"SOA","ttl":3600,"records":["x"]},{"subname":"_acme-challenge","type":"TXT","ttl":3600,"records":["\"abc def\""]}]`))
+	}))
+	defer srv.Close()
+	d := NewDeSEC("tok")
+	d.SetBaseURL(srv.URL, srv.Client())
+	z := Zone{ID: "example.com", Name: "example.com"}
+	sets, err := d.ListRecordSets(context.Background(), z)
+	if err != nil || len(sets) != 1 || sets[0].Values[0] != "abc def" {
+		t.Fatalf("sets = %+v, err = %v", sets, err)
+	}
+	if err := d.UpsertRecordSet(context.Background(), z, RecordSet{Name: Apex, Type: "TXT", TTL: 3600, Values: []string{"hello world"}}); err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/domains/example.com/rrsets/@/TXT/" || gotBody.SubName != "" || gotBody.Records[0] != `"hello world"` {
+		t.Fatalf("put %s %+v", gotPath, gotBody)
+	}
+}

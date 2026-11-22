@@ -196,7 +196,13 @@ function DdnsForm({
   }
 
   const targetLabel =
-    provider === 'duckdns' ? t('target.labelDuckdns') : t('target.labelGeneric')
+    provider === 'duckdns'
+      ? t('target.labelDuckdns')
+      : provider === 'porkbun'
+        ? t('target.labelPorkbun')
+        : provider === 'desec'
+          ? t('target.labelDesec')
+          : t('target.labelGeneric')
   const targetHint = settings.target_configured
     ? settings.host
       ? t('target.configured', { host: settings.host })
@@ -256,16 +262,26 @@ function DdnsForm({
               <NativeSelect id="ddns-provider" {...register('provider')}>
                 <option value="generic">{t('provider.generic')}</option>
                 <option value="duckdns">{t('provider.duckdns')}</option>
+                <option value="porkbun">{t('provider.porkbun')}</option>
+                <option value="desec">{t('provider.desec')}</option>
               </NativeSelect>
             </Field>
-            {provider === 'duckdns' ? (
+            {provider !== 'generic' ? (
               <Field>
                 <FieldLabel htmlFor="ddns-domains">
-                  {t('domains.label')}
+                  {provider === 'duckdns'
+                    ? t('domains.label')
+                    : t('domains.labelHosts')}
                 </FieldLabel>
                 <Input
                   id="ddns-domains"
-                  placeholder={t('domains.placeholder')}
+                  placeholder={
+                    provider === 'porkbun'
+                      ? t('domains.placeholderPorkbun')
+                      : provider === 'desec'
+                        ? t('domains.placeholderDesec')
+                        : t('domains.placeholder')
+                  }
                   {...register('domains')}
                 />
               </Field>
@@ -281,7 +297,7 @@ function DdnsForm({
               />
             )}
           </div>
-          {provider === 'duckdns' ? (
+          {provider !== 'generic' ? (
             <TargetField
               id="ddns-target"
               label={targetLabel}

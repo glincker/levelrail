@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ProviderRecordGuide } from './ProviderRecordGuide'
 import type { DomainCheckResult } from '../../queries/domainCheck'
@@ -46,6 +46,18 @@ describe('ProviderRecordGuide', () => {
       'href',
       expect.stringContaining('developers.cloudflare.com'),
     )
+  })
+
+  it('copies the host and value', () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.assign(navigator, { clipboard: { writeText } })
+    render(
+      <ProviderRecordGuide check={check('godaddy')} domain="app.example.com" />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: 'providerGuide.copyValue' }),
+    )
+    expect(writeText).toHaveBeenCalledWith('203.0.113.7')
   })
 
   it.each(['other', 'unknown', undefined] as const)('hides for %s', (p) => {

@@ -15,15 +15,22 @@
   "provider": {
     "label": "Provider",
     "generic": "Generic URL",
-    "duckdns": "DuckDNS"
+    "duckdns": "DuckDNS",
+    "porkbun": "Porkbun",
+    "desec": "deSEC"
   },
   "domains": {
     "label": "DuckDNS domains",
-    "placeholder": "myhome,office"
+    "placeholder": "myhome,office",
+    "labelHosts": "Hostnames to update",
+    "placeholderPorkbun": "home.example.com",
+    "placeholderDesec": "home.example.dedyn.io"
   },
   "target": {
     "labelGeneric": "Update URL",
     "labelDuckdns": "DuckDNS token",
+    "labelPorkbun": "Porkbun apikey:secretapikey",
+    "labelDesec": "deSEC API token",
     "placeholder": "Paste to set or replace",
     "configured": "Configured ({{host}})",
     "configuredNoHost": "Configured",

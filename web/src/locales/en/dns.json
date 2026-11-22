@@ -358,6 +358,8 @@
     },
     "record": "Add an A record with host {{host}} and value {{value}}. A TTL of 300 seconds is fine.",
     "proxyOff": "Turn the orange cloud (proxy) off for this record until the certificate is issued.",
+    "copyHost": "Copy host",
+    "copyValue": "Copy value",
     "docs": "{{provider}} DNS docs"
   },
   "verification": {

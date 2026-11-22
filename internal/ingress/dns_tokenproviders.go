@@ -12,7 +12,7 @@ import (
 )
 
 // TokenDNSProvider is the wire shape for the in-repo Caddy modules
-// dns.providers.digitalocean, .hetzner and .azure, used as a DNSChallengeConfig's
+// dns.providers.digitalocean, .hetzner, .azure, .porkbun and .desec, used as a DNSChallengeConfig's
 // Provider. Credential is an API token, or the credential JSON for Azure.
 type TokenDNSProvider struct {
 	Name       string `json:"name"`
@@ -21,7 +21,7 @@ type TokenDNSProvider struct {
 
 func (p TokenDNSProvider) dnsProviderModule() any { return p }
 
-// tokenDNSModule is shared by the three modules, all backed by dnsrecords.ZoneManager
+// tokenDNSModule is shared by the modules, all backed by dnsrecords.ZoneManager
 // so these providers need no third-party libdns module.
 type tokenDNSModule struct {
 	Credential string `json:"credential,omitempty"`
@@ -54,6 +54,12 @@ type DigitalOceanDNSModule struct{ tokenDNSModule }
 // HetznerDNSModule is dns.providers.hetzner.
 type HetznerDNSModule struct{ tokenDNSModule }
 
+// PorkbunDNSModule is dns.providers.porkbun.
+type PorkbunDNSModule struct{ tokenDNSModule }
+
+// DeSECDNSModule is dns.providers.desec.
+type DeSECDNSModule struct{ tokenDNSModule }
+
 // AzureDNSModule is dns.providers.azure.
 type AzureDNSModule struct{ tokenDNSModule }
 
@@ -61,7 +67,27 @@ func init() {
 	caddy.RegisterModule(&DigitalOceanDNSModule{})
 	caddy.RegisterModule(&HetznerDNSModule{})
 	caddy.RegisterModule(&AzureDNSModule{})
+	caddy.RegisterModule(&PorkbunDNSModule{})
+	caddy.RegisterModule(&DeSECDNSModule{})
 }
+
+// CaddyModule implements caddy.Module.
+func (*PorkbunDNSModule) CaddyModule() caddy.ModuleInfo {
+	return caddy.ModuleInfo{ID: "dns.providers.porkbun", New: func() caddy.Module { return new(PorkbunDNSModule) }}
+}
+
+// CaddyModule implements caddy.Module.
+func (*DeSECDNSModule) CaddyModule() caddy.ModuleInfo {
+	return caddy.ModuleInfo{ID: "dns.providers.desec", New: func() caddy.Module { return new(DeSECDNSModule) }}
+}
+
+// Provision implements caddy.Provisioner.
+func (m *PorkbunDNSModule) Provision(caddy.Context) error {
+	return m.provision(dnszones.ProviderPorkbun)
+}
+
+// Provision implements caddy.Provisioner.
+func (m *DeSECDNSModule) Provision(caddy.Context) error { return m.provision(dnszones.ProviderDeSEC) }
 
 // CaddyModule implements caddy.Module.
 func (*DigitalOceanDNSModule) CaddyModule() caddy.ModuleInfo {
@@ -95,6 +121,8 @@ var (
 	_ caddy.Provisioner     = (*DigitalOceanDNSModule)(nil)
 	_ caddy.Provisioner     = (*HetznerDNSModule)(nil)
 	_ caddy.Provisioner     = (*AzureDNSModule)(nil)
+	_ caddy.Provisioner     = (*PorkbunDNSModule)(nil)
+	_ caddy.Provisioner     = (*DeSECDNSModule)(nil)
 	_ libdns.RecordAppender = (*DigitalOceanDNSModule)(nil)
 	_ libdns.RecordDeleter  = (*AzureDNSModule)(nil)
 )

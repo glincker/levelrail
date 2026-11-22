@@ -3,7 +3,7 @@ package dnszones
 import "fmt"
 
 // TokenProviders lists the providers connected with one stored credential, in tie-break order.
-var TokenProviders = []string{ProviderDigitalOcean, ProviderHetzner, ProviderAzure}
+var TokenProviders = []string{ProviderDigitalOcean, ProviderHetzner, ProviderAzure, ProviderPorkbun, ProviderDeSEC}
 
 // IsTokenProvider reports whether name is one of TokenProviders.
 func IsTokenProvider(name string) bool {
@@ -16,7 +16,8 @@ func IsTokenProvider(name string) bool {
 }
 
 // NewTokenProvider builds the provider called name from its stored credential:
-// an API token for DigitalOcean and Hetzner, the credential JSON for Azure.
+// an API token for DigitalOcean, Hetzner and deSEC, the credential JSON for Azure,
+// and key:secret (or JSON) for Porkbun.
 func NewTokenProvider(name, credential string) (Provider, error) {
 	switch name {
 	case ProviderDigitalOcean:
@@ -25,6 +26,10 @@ func NewTokenProvider(name, credential string) (Provider, error) {
 		return NewHetzner(credential), nil
 	case ProviderAzure:
 		return NewAzure(credential)
+	case ProviderPorkbun:
+		return NewPorkbun(credential)
+	case ProviderDeSEC:
+		return NewDeSEC(credential), nil
 	}
 	return nil, fmt.Errorf("dnszones: unknown provider %q", name)
 }

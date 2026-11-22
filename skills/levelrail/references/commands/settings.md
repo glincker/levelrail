@@ -127,7 +127,7 @@ Subcommands: disable, enable, set, show, status
 ```
 Usage:
   levelrail-cli settings ddns show [flags]
-  levelrail-cli settings ddns set [--provider generic|duckdns] [--domains LIST] [--target URL|TOKEN | --clear-target] [tuning flags] [flags]
+  levelrail-cli settings ddns set [--provider generic|duckdns|porkbun|desec] [--domains LIST] [--target URL|TOKEN | --clear-target] [tuning flags] [flags]
   levelrail-cli settings ddns enable|disable [flags]
   levelrail-cli settings ddns status [flags]
 
@@ -135,7 +135,7 @@ Keeps a DNS record pointed at this host's public IPv4. The stored setting
 wins and applies at once, no restart; APP_DDNS_* env values are only the
 defaults used until something is stored.
 
-The target (generic: an update URL containing {ip}; duckdns: the token) is
+The target (generic: an update URL containing {ip}; duckdns and desec: the token; porkbun: apikey:secretapikey) is
 stored encrypted and only its host is shown. Pass --target - to read it from
 stdin, or set LEVELRAIL_DDNS_TARGET, to keep it out of shell history. --clear-target removes
 the stored target; an empty --target is refused so a clear is never silent.
