@@ -11,6 +11,9 @@ Usage:
   levelrail-cli config get-contexts [flags]        list saved profiles, marking the current one
   levelrail-cli config current-context [flags]     print the active profile name
   levelrail-cli config use-context <name> [flags]  make a profile the default
+  levelrail-cli config set-context <name> [--api-url U] [--team T] [--project P] [--rename NEW]
+                                           create or update a context
+  levelrail-cli config delete-context <name> [--yes]  remove a context and its saved token
 
 Flags (all verbs):
   --json            print the result as JSON, nothing else

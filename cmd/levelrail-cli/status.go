@@ -20,11 +20,28 @@ func runStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "status", "print status as JSON to stdout and nothing else", stderr)
 	wo := registerWatch(fs, lookupEnv)
+	allProfilesP := registerAllProfiles(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, statusUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+
+	if *allProfilesP {
+		return wo.run(stdout, jsonOut, func() int {
+			results, err := runAcrossProfiles(prog, lookupEnv, func(c *Client) (any, error) {
+				return c.GetSystemStatus(context.Background())
+			})
+			if err != nil {
+				return reportError(stdout, stderr, jsonOut, err)
+			}
+			return renderAcrossProfiles(stdout, stderr, of, results, func(data any) {
+				if st, ok := data.(systemStatusResource); ok {
+					printSystemStatusHuman(stdout, st)
+				}
+			})
+		})
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -63,6 +80,7 @@ Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --all-profiles       run against every saved profile, each row tagged with its profile
   --watch                  redraw the fleet status on an interval until Ctrl+C
   --interval duration  redraw interval with --watch (env LEVELRAIL_WATCH_INTERVAL, default 5s)
   --json                    print status as JSON to stdout, nothing else

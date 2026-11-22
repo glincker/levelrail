@@ -17,6 +17,7 @@ Flags:
   --token string          API token (default: LEVELRAIL_TOKEN or APP_API_TOKEN env var, then the credentials file)
   --api-url string       control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --all-profiles       run against every saved profile, each row tagged with its profile
   --watch                  redraw the fleet status on an interval until Ctrl+C
   --interval duration  redraw interval with --watch (env LEVELRAIL_WATCH_INTERVAL, default 5s)
   --json                    print status as JSON to stdout, nothing else

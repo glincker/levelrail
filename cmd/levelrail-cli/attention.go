@@ -29,11 +29,35 @@ func buildAttentionItems(in attentionInput) []attentionItem { return attention.B
 // Status page. Exit code is 1 when any item is critical.
 func runAttention(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "attention", "print attention items as a JSON array to stdout and nothing else", stderr)
+	allProfilesP := registerAllProfiles(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, attentionUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+	if *allProfilesP {
+		results, err := runAcrossProfiles(prog, lookupEnv, func(c *Client) (any, error) {
+			return attention.Collect(context.Background(), c)
+		})
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		code := renderAcrossProfiles(stdout, stderr, of, results, func(data any) {
+			if items, ok := data.([]attentionItem); ok {
+				printAttentionHuman(stdout, items)
+			}
+		})
+		for _, r := range results {
+			if items, ok := r.Data.([]attentionItem); ok {
+				for _, it := range items {
+					if it.Severity == attentionCritical {
+						return exitUsage
+					}
+				}
+			}
+		}
+		return code
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
@@ -110,6 +134,7 @@ Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --all-profiles       run against every saved profile, each row tagged with its profile
   --json                    print attention items as a JSON array to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing

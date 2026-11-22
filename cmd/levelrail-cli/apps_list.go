@@ -16,6 +16,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	environmentFlag := fs.String("environment", "", "only apps in this environment (name or id)")
 	startingTokenFlag := fs.String("starting-token", "", "resume from the next_token a previous --max-items call printed, to fetch the next page")
 	lo := registerListOpts(fs)
+	allProfilesP := registerAllProfiles(fs)
 	wo := registerWatch(fs, lookupEnv)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps list [flags]\n\nLists every app the caller's token can read. --json always prints a bare\narray. With --max-items or --starting-token, next_token and total_count go\nto stderr as \"next_token=N total_count=M\", so a script can page through a\nlarge fleet without the stdout shape changing. JSON rows carry app_kind and\npreview.state (none, queued, rendering, ready or failed), and summary with restarts and, for\ndatabases, db_size_bytes when the node answered in time; the table omits them.\n\nFlags:\n", prog)
@@ -25,6 +26,37 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+
+	if *allProfilesP {
+		return wo.run(stdout, jsonOut, func() int {
+			if *maxItemsFlag != 0 || *startingTokenFlag != "" {
+				return reportError(stdout, stderr, jsonOut, newValidationError("apps list: --all-profiles cannot be combined with --max-items or --starting-token"))
+			}
+			results, err := runAcrossProfiles(prog, lookupEnv, func(c *Client) (any, error) {
+				var apps []appResource
+				var err error
+				if *environmentFlag != "" {
+					apps, err = c.ListAppsInEnvironment(context.Background(), *environmentFlag)
+				} else {
+					apps, err = c.ListApps(context.Background())
+				}
+				if err != nil {
+					return nil, err
+				}
+				apps = applyListOpts(apps, lo)
+				fillPreviewState(apps)
+				return apps, nil
+			})
+			if err != nil {
+				return reportError(stdout, stderr, jsonOut, err)
+			}
+			return renderAcrossProfiles(stdout, stderr, of, results, func(data any) {
+				if apps, ok := data.([]appResource); ok {
+					printAppsTable(stdout, apps)
+				}
+			})
+		})
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -513,4 +514,106 @@ func readLineUnbuffered(in io.Reader) string {
 			return strings.TrimSpace(sb.String())
 		}
 	}
+}
+
+func registerAllProfiles(fs *flag.FlagSet) *bool {
+	return fs.Bool("all-profiles", false, "run against every saved profile and tag each row with its profile (a failing profile is reported, the rest still run)")
+}
+
+type profileResult struct {
+	Profile string
+	Data    any
+	Err     error
+}
+
+// perProfileEnv hides token and URL env vars so one profile's credentials never reach another server.
+func perProfileEnv(next func(string) (string, bool)) func(string) (string, bool) {
+	return func(key string) (string, bool) {
+		switch key {
+		case envAPIToken, envLevelrailToken, envAPIURL, envLevelrailAPIURL, envProfile:
+			return "", false
+		}
+		return next(key)
+	}
+}
+
+// runAcrossProfiles builds one client per saved profile and tolerates per-profile failure.
+func runAcrossProfiles(prog string, lookupEnv func(string) (string, bool), fn func(c *Client) (any, error)) ([]profileResult, error) {
+	names, err := savedProfileNames(prog)
+	if err != nil {
+		return nil, fmt.Errorf("list profiles: %w", err)
+	}
+	if len(names) == 0 {
+		return nil, newValidationError("no saved profiles, run \"%s auth login\" first", prog)
+	}
+	env := perProfileEnv(lookupEnv)
+	results := make([]profileResult, 0, len(names))
+	for _, name := range names {
+		res := profileResult{Profile: name}
+		if resolveToken("", env, prog, name) == "" {
+			res.Err = fmt.Errorf("not signed in, run \"%s auth login --profile %s\"", prog, name)
+		} else {
+			res.Data, res.Err = fn(apiClientFromFlags(prog, "", "", name, env))
+		}
+		results = append(results, res)
+	}
+	return results, nil
+}
+
+// profileTaggedRows flattens results into JSON rows that each carry a "profile" field.
+func profileTaggedRows(results []profileResult) []map[string]any {
+	rows := []map[string]any{}
+	for _, r := range results {
+		if r.Err != nil || r.Data == nil {
+			continue
+		}
+		raw, err := json.Marshal(r.Data)
+		if err != nil {
+			continue
+		}
+		var list []map[string]any
+		if json.Unmarshal(raw, &list) != nil {
+			var one map[string]any
+			if json.Unmarshal(raw, &one) != nil {
+				continue
+			}
+			list = []map[string]any{one}
+		}
+		for _, row := range list {
+			row["profile"] = r.Profile
+			rows = append(rows, row)
+		}
+	}
+	return rows
+}
+
+// renderAcrossProfiles prints tagged JSON rows, or one titled section per profile for tables.
+// The exit code is non-zero when any profile failed.
+func renderAcrossProfiles(stdout, stderr io.Writer, of outputFlags, results []profileResult, printOne func(data any)) int {
+	var firstErr error
+	for _, r := range results {
+		if r.Err != nil {
+			_, _ = fmt.Fprintf(stderr, "profile %s: %v\n", r.Profile, r.Err)
+			if firstErr == nil {
+				firstErr = r.Err
+			}
+		}
+	}
+	rows := profileTaggedRows(results)
+	if err := renderResult(stdout, of.Format, of.Query, rows, func() {
+		for _, r := range results {
+			if r.Err != nil {
+				continue
+			}
+			_, _ = fmt.Fprintf(stdout, "== profile %s ==\n", r.Profile)
+			printOne(r.Data)
+		}
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if firstErr != nil {
+		return exitCodeForError(firstErr)
+	}
+	return exitOK
 }
