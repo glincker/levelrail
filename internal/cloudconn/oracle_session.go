@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -34,6 +35,8 @@ func OracleReloginCommand(profile string) string {
 // applies live without this package importing the settings service. Negative means unset.
 var oracleSessionMinSeconds atomic.Int64
 
+var jwtSegmentRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
 func init() { oracleSessionMinSeconds.Store(-1) }
 
 // SetOracleSessionMinSeconds records the relogin window in seconds.
@@ -54,6 +57,11 @@ func OracleSessionExpiry(token string) (time.Time, error) {
 	parts := strings.Split(strings.TrimSpace(token), ".")
 	if len(parts) != 3 || len(token) > oracleMaxSecretBytes() {
 		return time.Time{}, invalid("session token is not a JWT")
+	}
+	for _, seg := range parts {
+		if !jwtSegmentRe.MatchString(seg) {
+			return time.Time{}, invalid("session token is not a JWT")
+		}
 	}
 	raw, err := base64.RawURLEncoding.DecodeString(strings.TrimRight(parts[1], "="))
 	if err != nil {

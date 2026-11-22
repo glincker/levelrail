@@ -261,7 +261,7 @@ func TestSSODeviceTokenEndedCodes(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := &SSOClient{HTTP: srv.Client(), OIDCBase: func(string) string { return srv.URL }, PortalBase: func(string) string { return srv.URL }}
-	if _, err := c.DeviceToken(context.Background(), "r", SSOBundle{}, "d", time.Now()); !errors.Is(err, ErrSSOSlowDown) {
+	if _, err := c.DeviceToken(context.Background(), "eu-west-1", SSOBundle{}, "d", time.Now()); !errors.Is(err, ErrSSOSlowDown) {
 		t.Fatalf("want slow down, got %v", err)
 	}
 }
@@ -286,5 +286,50 @@ func TestSSOSettingsApplyLive(t *testing.T) {
 	cur.RenewPercent = 500 // out of range falls back to the default
 	if got := SSOCurrentSettings().RenewPercent; got != 80 {
 		t.Fatalf("out of range value must fall back, got %d", got)
+	}
+}
+
+func TestSSOClientRefusesUnsafeRegionBeforeAnyCall(t *testing.T) {
+	f := newFakeSSO(t)
+	c := f.client()
+	for _, region := range []string{"eu-west-1.evil.test/", "x@host", "eu-west-1:443#", ""} {
+		if _, err := c.Register(context.Background(), region, "https://d-1.awsapps.com/start", "n"); err == nil {
+			t.Fatalf("region %q was accepted", region)
+		}
+		if _, err := c.ListAccounts(context.Background(), region, "tok", 5); err == nil {
+			t.Fatalf("portal region %q was accepted", region)
+		}
+	}
+}
+
+func TestOracleSessionExpiryRejectsOddSegments(t *testing.T) {
+	for _, tok := range []string{"a.b.c d", "a.\"b\".c", "a,b.c.d", "a.b.c\n", ".b.c"} {
+		if _, err := OracleSessionExpiry(tok); err == nil {
+			t.Fatalf("token %q was accepted", tok)
+		}
+	}
+}
+
+func TestSSOBrokerSurfacesSealFailureAndRetries(t *testing.T) {
+	f := newFakeSSO(t)
+	b := NewSSOBroker(f.client())
+	now := time.Now()
+	b.now = func() time.Time { return now }
+	fail := true
+	var writes int
+	b.SetPersist(func(context.Context, string, []byte) error {
+		if fail {
+			return errors.New("sealed store down")
+		}
+		writes++
+		return nil
+	})
+	seed := bundleJSON(SSOBundle{ClientID: "cid", ClientSecret: "s", AccessToken: "old", AccessExpiresAt: now.Add(-time.Hour).Unix(), RefreshToken: "refresh-1", UpdatedAt: 1})
+	if _, err := b.Credentials(context.Background(), ssoConn(), seed); err == nil {
+		t.Fatal("a failed seal must be reported")
+	}
+	fail = false
+	if _, err := b.Credentials(context.Background(), ssoConn(), seed); err != nil || writes != 1 {
+		t.Fatalf("retry = %v writes %d", err, writes)
 	}
 }

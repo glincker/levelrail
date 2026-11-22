@@ -173,6 +173,14 @@ func validateSSOConfig(cfg Config) error {
 	return nil
 }
 
+// ssoEndpoint validates the region first so it can never alter the host the request goes to.
+func ssoEndpoint(base func(string) string, region, path string) (string, error) {
+	if !awsRegionRe.MatchString(region) {
+		return "", invalid("sso_region must be an AWS region such as eu-west-1")
+	}
+	return base(region) + path, nil
+}
+
 func (c *SSOClient) do(ctx context.Context, method, endpoint string, hdr map[string]string, in, out any) error {
 	set := SSOCurrentSettings()
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(set.TimeoutSeconds)*time.Second)
@@ -251,7 +259,11 @@ func (c *SSOClient) Register(ctx context.Context, region, startURL, clientName s
 	}
 	in := map[string]any{"clientName": clientName, "clientType": "public", "scopes": []string{ssoScope},
 		"grantTypes": []string{ssoGrantDevice, ssoGrantRefresh}, "issuerUrl": startURL}
-	if err := c.do(ctx, http.MethodPost, c.OIDCBase(region)+"/client/register", nil, in, &out); err != nil {
+	ep, err := ssoEndpoint(c.OIDCBase, region, "/client/register")
+	if err != nil {
+		return SSOBundle{}, err
+	}
+	if err := c.do(ctx, http.MethodPost, ep, nil, in, &out); err != nil {
 		return SSOBundle{}, err
 	}
 	if out.ClientID == "" || out.ClientSecret == "" {
@@ -272,7 +284,11 @@ func (c *SSOClient) StartDevice(ctx context.Context, region, startURL string, b 
 		Interval    int    `json:"interval"`
 	}
 	in := map[string]string{"clientId": b.ClientID, "clientSecret": b.ClientSecret, "startUrl": startURL}
-	if err := c.do(ctx, http.MethodPost, c.OIDCBase(region)+"/device_authorization", nil, in, &out); err != nil {
+	ep, err := ssoEndpoint(c.OIDCBase, region, "/device_authorization")
+	if err != nil {
+		return SSODevice{}, err
+	}
+	if err := c.do(ctx, http.MethodPost, ep, nil, in, &out); err != nil {
 		return SSODevice{}, err
 	}
 	secretmask.Add(out.DeviceCode)
@@ -291,7 +307,11 @@ type ssoTokenResp struct {
 func (c *SSOClient) token(ctx context.Context, region string, in map[string]string, b SSOBundle, now time.Time) (SSOBundle, error) {
 	in["clientId"], in["clientSecret"] = b.ClientID, b.ClientSecret
 	var out ssoTokenResp
-	if err := c.do(ctx, http.MethodPost, c.OIDCBase(region)+"/token", nil, in, &out); err != nil {
+	ep, err := ssoEndpoint(c.OIDCBase, region, "/token")
+	if err != nil {
+		return b, err
+	}
+	if err := c.do(ctx, http.MethodPost, ep, nil, in, &out); err != nil {
 		return b, err
 	}
 	if out.AccessToken == "" {
@@ -330,7 +350,11 @@ func (c *SSOClient) Refresh(ctx context.Context, region string, b SSOBundle, now
 }
 
 func (c *SSOClient) portalGet(ctx context.Context, region, path, token string, q url.Values, out any) error {
-	return c.do(ctx, http.MethodGet, c.PortalBase(region)+path+"?"+q.Encode(), map[string]string{"x-amz-sso_bearer_token": token}, nil, out)
+	ep, err := ssoEndpoint(c.PortalBase, region, path)
+	if err != nil {
+		return err
+	}
+	return c.do(ctx, http.MethodGet, ep+"?"+q.Encode(), map[string]string{"x-amz-sso_bearer_token": token}, nil, out)
 }
 
 // ListAccounts pages through the accounts the signed in user may use, up to max.
@@ -438,6 +462,7 @@ type ssoEntry struct {
 	renewAt time.Time
 	bundle  SSOBundle
 	have    bool
+	unsaved bool // a refreshed bundle that could not be sealed yet, retried on the next call
 }
 
 // SSOBroker keeps role credentials per account, refreshes the access token lazily and records
@@ -490,17 +515,25 @@ func ssoSkew() time.Duration {
 
 func ssoRenewPercent() int { return SSOCurrentSettings().RenewPercent }
 
-func (b *SSOBroker) save(ctx context.Context, name string, e *ssoEntry, nb SSOBundle) {
+// save keeps the bundle in memory and seals it; a seal failure is returned and retried later.
+func (b *SSOBroker) save(ctx context.Context, name string, e *ssoEntry, nb SSOBundle) error {
 	e.bundle = nb
 	b.mu.Lock()
 	fn := b.persist
 	b.mu.Unlock()
 	if fn == nil {
-		return
+		return nil
 	}
-	if raw, err := json.Marshal(nb); err == nil { //nolint:gosec // sealed bundle, never logged
-		_ = fn(ctx, name, raw)
+	raw, err := json.Marshal(nb) //nolint:gosec // sealed bundle, never logged
+	if err != nil {
+		return err
 	}
+	if err := fn(ctx, name, raw); err != nil {
+		e.unsaved = true
+		return errors.New("cloudconn: aws sso bundle could not be stored")
+	}
+	e.unsaved = false
+	return nil
 }
 
 // refresh swaps the refresh token for a new access token; an ended session is recorded, not retried.
@@ -509,7 +542,9 @@ func (b *SSOBroker) refresh(ctx context.Context, c Connection, e *ssoEntry, cur 
 	if cur.RefreshToken != "" && (cur.ClientExpiresAt == 0 || now.Unix() < cur.ClientExpiresAt) {
 		nb, err := b.Client.Refresh(ctx, c.Config.SSORegion, cur, now)
 		if err == nil {
-			b.save(ctx, c.Name, e, nb)
+			if err := b.save(ctx, c.Name, e, nb); err != nil {
+				return nb, err
+			}
 			return nb, nil
 		}
 		var he *SSOHTTPError
@@ -518,7 +553,9 @@ func (b *SSOBroker) refresh(ctx context.Context, c Connection, e *ssoEntry, cur 
 		}
 	}
 	cur.NeedsRelogin, cur.UpdatedAt = true, now.UnixMilli()
-	b.save(ctx, c.Name, e, cur)
+	if err := b.save(ctx, c.Name, e, cur); err != nil {
+		return cur, err
+	}
 	return cur, ErrSSONeedsRelogin
 }
 
@@ -537,6 +574,11 @@ func (b *SSOBroker) Credentials(ctx context.Context, c Connection, raw []byte) (
 	}
 	if e.bundle.UpdatedAt > cur.UpdatedAt {
 		cur = e.bundle
+	}
+	if e.unsaved {
+		if err := b.save(ctx, c.Name, e, cur); err != nil {
+			return AWSKeys{}, err
+		}
 	}
 	if cur.NeedsRelogin {
 		return AWSKeys{}, ErrSSONeedsRelogin

@@ -14,13 +14,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/doauth"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
 	doOAuthCallbackPath = "/api/v1/cloud-accounts/oauth/digitalocean/callback"
-	doOAuthRefreshKey   = "oauth_refresh_token" //nolint:gosec // secret key name, not a credential
-	doOAuthExpiresKey   = "oauth_expires_at"
+	doOAuthRefreshKey   = "oauth_refresh_token" //nolint:gosec // legacy layout key, read only for migration
+	doOAuthExpiresKey   = "oauth_expires_at"    // legacy layout key, read only for migration
 	doOAuthStatePrefix  = "do-oauth"
 )
 
@@ -99,8 +100,8 @@ func (rt *Router) handleDOOAuthStart(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: base url for digitalocean oauth failed", err)
 		return
 	}
-	_, pid, _, perr := rt.callerPrincipal(r)
-	if perr != nil || pid == "" {
+	pid, pok := rt.doOAuthOwner(r)
+	if !pok {
 		writeError(w, http.StatusUnauthorized, "sign in to connect DigitalOcean")
 		return
 	}
@@ -140,7 +141,7 @@ func (rt *Router) handleDOOAuthCallback(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "state parameter is invalid, expired, or already used")
 		return
 	}
-	if _, pid, _, perr := rt.callerPrincipal(r); perr != nil || pid != parts[1] {
+	if pid, pok := rt.doOAuthOwner(r); !pok || pid != parts[1] {
 		writeError(w, http.StatusForbidden, "this authorization was started by a different session")
 		return
 	}
@@ -177,16 +178,90 @@ func (rt *Router) handleDOOAuthCallback(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, base+"/settings/cloud-accounts?connected="+url.QueryEscape(id), http.StatusFound)
 }
 
+// doOAuthOwner resolves the user a request acts for: a session user, or the owner of a bearer token,
+// so a CLI start and the browser callback of the same person agree.
+func (rt *Router) doOAuthOwner(r *http.Request) (string, bool) {
+	if pinned, ok := rt.currentPinnedSession(r); ok && pinned.userID != "" {
+		return pinned.userID, true
+	}
+	if uid, ok := rt.currentSessionUserID(r); ok && uid != "" {
+		return uid, true
+	}
+	if token, ok := bearerToken(r); ok {
+		if rec, err := rt.lookupBearerToken(r.Context(), token); err == nil && rec.OwnerUserID != "" {
+			return rec.OwnerUserID, true
+		}
+	}
+	return "", false
+}
+
+// doOAuthBundle is the single sealed value that holds both tokens and the expiry.
+type doOAuthBundle struct {
+	Access    string `json:"access"`
+	Refresh   string `json:"refresh"`
+	ExpiresAt int64  `json:"expires_at"`
+}
+
+func newDOOAuthBundle(t doauth.Tokens, keepRefresh string) doOAuthBundle {
+	b := doOAuthBundle{Access: t.Access, Refresh: t.Refresh, ExpiresAt: time.Now().Add(t.ExpiresIn).Unix()}
+	if b.Refresh == "" {
+		b.Refresh = keepRefresh
+	}
+	secretmask.Add(b.Access)
+	secretmask.Add(b.Refresh)
+	return b
+}
+
+func (rt *Router) saveDOOAuthBundle(ctx context.Context, ref string, b doOAuthBundle) error {
+	raw, err := json.Marshal(b) //nolint:gosec // sealed bundle, never logged
+	if err != nil {
+		return err
+	}
+	return rt.nodeProviderSecrets.SetValue(ctx, ref, store.NodeProviderTokenEnvKey, string(raw))
+}
+
 func (rt *Router) saveDOOAuthTokens(ctx context.Context, a store.CloudAccount, t doauth.Tokens) error {
-	ref := cloudAccountSecretRef(a)
-	if err := rt.nodeProviderSecrets.SetValue(ctx, ref, store.NodeProviderTokenEnvKey, t.Access); err != nil {
-		return err
+	return rt.saveDOOAuthBundle(ctx, cloudAccountSecretRef(a), newDOOAuthBundle(t, ""))
+}
+
+// loadDOOAuthBundle reads the sealed bundle and still understands the older three value layout.
+func (rt *Router) loadDOOAuthBundle(ctx context.Context, ref string) (b doOAuthBundle, legacy bool, err error) {
+	v, err := rt.nodeProviderSecrets.Resolve(ctx, ref, store.NodeProviderTokenEnvKey)
+	if err != nil {
+		return b, false, err
 	}
-	if err := rt.nodeProviderSecrets.SetValue(ctx, ref, doOAuthRefreshKey, t.Refresh); err != nil {
-		return err
+	if strings.HasPrefix(strings.TrimSpace(v), "{") {
+		if err := json.Unmarshal([]byte(v), &b); err != nil {
+			return b, false, errors.New("stored token bundle is not readable")
+		}
+		return b, false, nil
 	}
-	exp := time.Now().Add(t.ExpiresIn).Unix()
-	return rt.nodeProviderSecrets.SetValue(ctx, ref, doOAuthExpiresKey, strconv.FormatInt(exp, 10))
+	b.Access = v
+	b.Refresh, _ = rt.nodeProviderSecrets.Resolve(ctx, ref, doOAuthRefreshKey)
+	rawExp, err := rt.nodeProviderSecrets.Resolve(ctx, ref, doOAuthExpiresKey)
+	if err != nil {
+		return b, true, err
+	}
+	if b.ExpiresAt, err = strconv.ParseInt(rawExp, 10, 64); err != nil {
+		return b, true, errors.New("stored token expiry is not readable")
+	}
+	return b, true, nil
+}
+
+// doOAuthAccountLive re-reads the account so a disabled or deleted one never gets tokens written back.
+func (rt *Router) doOAuthAccountLive(ctx context.Context, id string) bool {
+	st, ok := rt.cloudAcctStore()
+	if !ok {
+		return true
+	}
+	a, err := st.GetCloudAccount(ctx, id)
+	return err == nil && a.Status != store.CloudAccountStatusDisabled
+}
+
+// doOAuthDetached keeps a refresh and its save from being cut short by a client that went away,
+// because the provider rotates the refresh token on use and a lost write strands the account.
+func (rt *Router) doOAuthDetached(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(ctx), 2*rt.doOAuthClient(ctx).Timeout)
 }
 
 // doOAuthAccessToken returns a usable access token, refreshing it first when it is near expiry.
@@ -195,55 +270,70 @@ func (rt *Router) doOAuthAccessToken(ctx context.Context, a store.CloudAccount) 
 	unlock := rt.gitOAuthLocks.lock("do-oauth:" + a.ID)
 	defer unlock()
 	ref := cloudAccountSecretRef(a)
-	access, err := rt.nodeProviderSecrets.Resolve(ctx, ref, store.NodeProviderTokenEnvKey)
+	cur, legacy, err := rt.loadDOOAuthBundle(ctx, ref)
 	if err != nil {
 		return "", err
 	}
-	rawExp, err := rt.nodeProviderSecrets.Resolve(ctx, ref, doOAuthExpiresKey)
-	if err != nil {
-		return "", err
+	if time.Now().Add(rt.doOAuthLead(ctx)).Before(time.Unix(cur.ExpiresAt, 0)) && cur.Access != "" {
+		return cur.Access, nil
 	}
-	exp, err := strconv.ParseInt(rawExp, 10, 64)
-	if err != nil {
-		return "", errors.New("stored token expiry is not readable")
-	}
-	if time.Now().Add(rt.doOAuthLead(ctx)).Before(time.Unix(exp, 0)) {
-		return access, nil
-	}
-	refresh, err := rt.nodeProviderSecrets.Resolve(ctx, ref, doOAuthRefreshKey)
-	if err != nil || refresh == "" {
+	if cur.Refresh == "" {
 		return "", errors.New("the DigitalOcean authorization expired, connect the account again")
 	}
 	clientID, secret := rt.doOAuthCreds(ctx)
 	if clientID == "" || secret == "" {
 		return "", errors.New("DigitalOcean OAuth is not configured")
 	}
-	tok, err := rt.doOAuthClient(ctx).Refresh(ctx, clientID, secret, refresh)
+	dctx, cancel := rt.doOAuthDetached(ctx)
+	defer cancel()
+	if !rt.doOAuthAccountLive(dctx, a.ID) {
+		return "", errors.New("the cloud account is disabled")
+	}
+	tok, err := rt.doOAuthClient(dctx).Refresh(dctx, clientID, secret, cur.Refresh)
 	if err != nil {
 		return "", errors.New("the DigitalOcean authorization could not be refreshed, connect the account again")
 	}
-	if tok.Refresh == "" {
-		tok.Refresh = refresh
+	next := newDOOAuthBundle(tok, cur.Refresh)
+	if !rt.doOAuthAccountLive(dctx, a.ID) {
+		return "", errors.New("the cloud account is disabled")
 	}
-	if err := rt.saveDOOAuthTokens(ctx, a, tok); err != nil {
+	if err := rt.saveDOOAuthBundle(dctx, ref, next); err != nil {
 		return "", err
 	}
-	return tok.Access, nil
+	if legacy {
+		_ = rt.nodeProviderSecrets.SetValue(dctx, ref, doOAuthRefreshKey, "")
+		_ = rt.nodeProviderSecrets.SetValue(dctx, ref, doOAuthExpiresKey, "0")
+	}
+	return next.Access, nil
 }
 
-// revokeDOOAuthAccount revokes the token at DigitalOcean on delete or disable, then blanks the refresh token locally.
+// revokeDOOAuthAccount revokes both tokens at DigitalOcean on delete or disable, then blanks them locally.
+// It takes the refresh lock so it cannot interleave with a rotation in flight.
 func (rt *Router) revokeDOOAuthAccount(ctx context.Context, a store.CloudAccount) {
 	if !isDigitalOceanOAuthAccount(a) || rt.nodeProviderSecrets == nil {
 		return
 	}
+	unlock := rt.gitOAuthLocks.lock("do-oauth:" + a.ID)
+	defer unlock()
 	ref := cloudAccountSecretRef(a)
-	access, err := rt.nodeProviderSecrets.Resolve(ctx, ref, store.NodeProviderTokenEnvKey)
+	cur, _, err := rt.loadDOOAuthBundle(ctx, ref)
 	if err != nil {
 		return
 	}
-	if err := rt.doOAuthClient(ctx).Revoke(ctx, access); err != nil {
-		rt.logger.Warn("api: revoke digitalocean oauth token failed", slog.String("account", a.ID))
+	dctx, cancel := rt.doOAuthDetached(ctx)
+	defer cancel()
+	cl := rt.doOAuthClient(dctx)
+	for _, tok := range []string{cur.Access, cur.Refresh} {
+		if tok == "" {
+			continue
+		}
+		if err := cl.Revoke(dctx, tok); err != nil {
+			rt.logger.Warn("api: revoke digitalocean oauth token failed", slog.String("account", a.ID))
+		}
 	}
-	_ = rt.nodeProviderSecrets.SetValue(ctx, ref, doOAuthRefreshKey, "")
-	_ = rt.nodeProviderSecrets.SetValue(ctx, ref, doOAuthExpiresKey, "0")
+	if err := rt.saveDOOAuthBundle(dctx, ref, doOAuthBundle{}); err != nil {
+		rt.logger.Warn("api: blank digitalocean oauth tokens failed", slog.String("account", a.ID))
+	}
+	_ = rt.nodeProviderSecrets.SetValue(dctx, ref, doOAuthRefreshKey, "")
+	_ = rt.nodeProviderSecrets.SetValue(dctx, ref, doOAuthExpiresKey, "0")
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -89,7 +90,7 @@ func startDO(t *testing.T, rt *Router, cookie *http.Cookie) string {
 
 func TestDigitalOceanOAuthGateAndFlow(t *testing.T) {
 	fake := &fakeDOToken{expires: 3600}
-	rt, cookie, sec := doOAuthRouter(t, fake)
+	rt, cookie, _ := doOAuthRouter(t, fake)
 
 	rec := provReq(rt, cookie, t, http.MethodGet, "/api/v1/cloud-accounts/oauth/digitalocean/start", "")
 	if rec.Code != http.StatusConflict {
@@ -132,7 +133,11 @@ func TestDigitalOceanOAuthGateAndFlow(t *testing.T) {
 		t.Fatalf("fresh token = %q %v refreshes %d", tok, err, fake.refresh)
 	}
 	// Force expiry, then race callers: one refresh, rotated token stored.
-	_ = sec.s.SetValue(t.Context(), acct.CredentialRef, doOAuthExpiresKey, "1")
+	cur, _, _ := rt.loadDOOAuthBundle(t.Context(), acct.CredentialRef)
+	cur.ExpiresAt = 1
+	if err := rt.saveDOOAuthBundle(t.Context(), acct.CredentialRef, cur); err != nil {
+		t.Fatal(err)
+	}
 	var wg sync.WaitGroup
 	for range 5 {
 		wg.Add(1)
@@ -148,7 +153,49 @@ func TestDigitalOceanOAuthGateAndFlow(t *testing.T) {
 		t.Fatalf("refresh calls = %d, want 1", fake.refresh)
 	}
 
-	if rec := provReq(rt, cookie, t, http.MethodDelete, "/api/v1/cloud-accounts/"+acct.ID, ""); rec.Code != http.StatusNoContent || fake.revoked != 1 {
+	if rec := provReq(rt, cookie, t, http.MethodDelete, "/api/v1/cloud-accounts/"+acct.ID, ""); rec.Code != http.StatusNoContent || fake.revoked != 2 {
 		t.Fatalf("delete = %d revoked %d", rec.Code, fake.revoked)
+	}
+}
+
+func TestDigitalOceanOAuthLegacyLayoutIsRead(t *testing.T) {
+	fake := &fakeDOToken{expires: 3600}
+	rt, _, sec := doOAuthRouter(t, fake)
+	acct := store.CloudAccount{ID: "digitalocean-old", Provider: "digitalocean", AuthMethod: "oauth", CredentialRef: cloudAccountSecretPref + "digitalocean-old"}
+	ctx := t.Context()
+	_ = sec.s.SetValue(ctx, acct.CredentialRef, store.NodeProviderTokenEnvKey, "access-old")
+	_ = sec.s.SetValue(ctx, acct.CredentialRef, doOAuthRefreshKey, "refresh-old")
+	_ = sec.s.SetValue(ctx, acct.CredentialRef, doOAuthExpiresKey, strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10))
+	if tok, err := rt.doOAuthAccessToken(ctx, acct); err != nil || tok != "access-old" {
+		t.Fatalf("legacy token = %q %v", tok, err)
+	}
+}
+
+func TestDigitalOceanOAuthCLIStartCompletesInBrowser(t *testing.T) {
+	fake := &fakeDOToken{expires: 3600}
+	rt, cookie, _ := doOAuthRouter(t, fake)
+	setSetting(t, rt, runtimesettings.KeyCloudOAuthDOClientID, `"cid"`)
+	setSetting(t, rt, runtimesettings.KeyCloudOAuthDOClientSecret, `"sec"`)
+	probe := authedRequest(t, cookie, http.MethodGet, "/", "")
+	owner, ok := rt.currentSessionUserID(probe)
+	if !ok {
+		t.Fatal("no session user")
+	}
+	plain := "do-oauth-cli-token"
+	if err := rt.tokens.SaveAPIToken(t.Context(), store.APIToken{ID: "tok_cli", Name: "cli", TokenHash: hashToken(plain),
+		Abilities: []string{AbilityRead, AbilityWrite, AbilityWriteSensitive, AbilityRoot}, OwnerUserID: owner}); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, bearerRequest(http.MethodGet, "/api/v1/cloud-accounts/oauth/digitalocean/start", "", plain))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("cli start = %d %s", rec.Code, rec.Body.String())
+	}
+	var out doOAuthStartResponse
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	u, _ := url.Parse(out.URL)
+	cb := "/api/v1/cloud-accounts/oauth/digitalocean/callback?code=good&state=" + u.Query().Get("state")
+	if rec := provReq(rt, cookie, t, http.MethodGet, cb, ""); rec.Code != http.StatusFound {
+		t.Fatalf("browser callback = %d %s", rec.Code, rec.Body.String())
 	}
 }

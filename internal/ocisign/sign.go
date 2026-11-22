@@ -83,6 +83,9 @@ func (s Signer) Sign(req *http.Request, body []byte) error {
 	if s.Key == nil || s.KeyID == "" {
 		return errors.New("ocisign: signer has no key")
 	}
+	if strings.ContainsAny(s.KeyID, "\",\\ \t\r\n") {
+		return errors.New("ocisign: key id has characters that are not allowed")
+	}
 	if req.URL == nil || (req.URL.Scheme != "https" && !s.AllowInsecure) {
 		return errors.New("ocisign: refusing to sign a non-HTTPS request")
 	}

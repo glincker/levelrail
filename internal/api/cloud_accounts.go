@@ -432,6 +432,7 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	st, _ := rt.cloudAcctStore()
+	configChanged := false
 	var req updateCloudAccountRequest
 	if err := decodeJSONBody(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -478,6 +479,15 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 			}
 		}
 		a.Config, _ = json.Marshal(cfg)
+		if a.Provider == cloudconn.ProviderAWS && len(req.Config) > 0 {
+			var merged cloudconn.Config
+			_ = json.Unmarshal(a.Config, &merged)
+			if err := rt.awsProvider().ValidateConfig(merged, a.AuthMethod); err != nil {
+				writeError(w, http.StatusBadRequest, "the account settings are not valid")
+				return
+			}
+		}
+		configChanged = true
 	}
 	if req.ExternalID != "" {
 		if !isAWSRoleAccount(a) || rt.nodeProviderSecrets == nil {
@@ -506,6 +516,9 @@ func (rt *Router) handleUpdateCloudAccount(w http.ResponseWriter, r *http.Reques
 	if err := st.UpdateCloudAccount(r.Context(), a); err != nil {
 		rt.internalError(w, "api: update cloud account failed", err, slog.String("account", a.ID))
 		return
+	}
+	if configChanged {
+		rt.forgetSSOAccount(a)
 	}
 	rt.nodeProviderCatalog.invalidate(a.Provider)
 	rt.providerCaps.invalidate(a.Provider)

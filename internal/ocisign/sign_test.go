@@ -145,3 +145,13 @@ func TestSessionKeyIDSignsAndVerifies(t *testing.T) {
 		t.Fatalf("got %d", resp.StatusCode)
 	}
 }
+
+func TestSignRefusesUnsafeKeyID(t *testing.T) {
+	key, _ := rsa.GenerateKey(rand.Reader, 2048)
+	for _, id := range []string{`ST$a"b`, "ST$a,b", "ST$a b", "ST$a\nb"} {
+		req := httptest.NewRequest(http.MethodGet, "https://example.test/x", nil)
+		if err := (Signer{KeyID: id, Key: key}).Sign(req, nil); err == nil {
+			t.Fatalf("key id %q was accepted", id)
+		}
+	}
+}

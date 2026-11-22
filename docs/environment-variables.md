@@ -73,6 +73,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_ALLOW_PROTECTED_DELETE` | [`cloud.allow_protected_delete`](/runtime-settings#security) | `false` |
 | `APP_CLOUD_AWS_SSO_MAX_ACCOUNTS` | [`cloud.aws.sso.max_accounts`](/runtime-settings#security) | `100` |
 | `APP_CLOUD_AWS_MAX_RESPONSE_BYTES` | [`cloud.aws.sso.max_response_bytes`](/runtime-settings#security) | `4194304` |
+| `APP_CLOUD_AWS_SSO_MAX_SESSIONS` | [`cloud.aws.sso.max_sessions`](/runtime-settings#security) | `20` |
 | `APP_CLOUD_AWS_SSO_RENEW_PERCENT` | [`cloud.aws.sso.renew_percent`](/runtime-settings#security) | `80` |
 | `APP_CLOUD_AWS_SSO_TIMEOUT_SECONDS` | [`cloud.aws.sso.timeout_seconds`](/runtime-settings#security) | `15` |
 | `APP_CLOUD_AWS_SSO_TOKEN_SKEW_SECONDS` | [`cloud.aws.sso.token_skew_seconds`](/runtime-settings#security) | `60` |

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -116,6 +118,9 @@ func TestAWSSSOLoginSelectAndRelogin(t *testing.T) {
 	if code != http.StatusOK || !strings.Contains(body, cloudconn.ClassNeedsRelogin) {
 		t.Fatalf("verify = %d %s", code, body)
 	}
+	if code, body = teamDo(t, rt, http.MethodPatch, "/api/v1/cloud-accounts/aws-sso-prod", `{"config":{"sso_region":"eu-west-1.example.test/x"}}`, withCookie(cookie)); code != http.StatusBadRequest {
+		t.Fatalf("invalid config update = %d %s", code, body)
+	}
 	code, body = do("relogin", `{"account_id":"aws-sso-prod"}`)
 	if code != http.StatusOK || json.Unmarshal([]byte(body), &st) != nil {
 		t.Fatalf("relogin start = %d %s", code, body)
@@ -169,5 +174,70 @@ func TestAWSSSODisableAndDeleteForgetCachedKeys(t *testing.T) {
 	}
 	if code, b := teamDo(t, rt, http.MethodPost, "/api/v1/cloud-accounts/aws-sso-prod/verify", "", withCookie(cookie)); code != http.StatusOK || !strings.Contains(b, cloudconn.ClassNeedsRelogin) {
 		t.Fatalf("disable must drop cached keys: %d %s", code, b)
+	}
+}
+
+func TestAWSSSOConcurrentPollAndSelectAreSafe(t *testing.T) {
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	t.Setenv("AWS_CONFIG_FILE", t.TempDir()+"/none")
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", t.TempDir()+"/none")
+	srv := ssoFakeServer(t)
+	rt, cookie, _ := connectTestRouter(t, &fakeNodeProvisioner{})
+	broker := cloudconn.NewSSOBroker(&cloudconn.SSOClient{HTTP: srv.Client(), OIDCBase: func(string) string { return srv.URL }, PortalBase: func(string) string { return srv.URL }})
+	rt.SetCloudProviders(cloudconn.Registry{cloudconn.ProviderAWS: cloudconn.NewAWSProvider(cloudconn.AWSOptions{
+		SSO: broker, NewSTS: func(aws.Config) cloudconn.STSAPI { return ssoFakeSTS{} }})})
+	h := rt.Handler() // built once: Handler registers routes and is not safe to call concurrently
+	do := func(path, body string) (int, string) {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/cloud-accounts/aws/sso/"+path, body))
+		return rec.Code, rec.Body.String()
+	}
+	_, body := do("start", `{"start_url":"https://d-1.awsapps.com/start","region":"eu-west-1"}`)
+	var st ssoStartResponse
+	if json.Unmarshal([]byte(body), &st) != nil || st.SessionID == "" {
+		t.Fatalf("start = %s", body)
+	}
+	awsSSOSessions.Lock()
+	awsSSOSessions.m[st.SessionID].interval = 0
+	awsSSOSessions.Unlock()
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Add(1)
+		go func() { defer wg.Done(); do("poll", `{"session_id":"`+st.SessionID+`"}`) }()
+	}
+	wg.Wait()
+	var created atomic.Int32
+	sel := `{"session_id":"` + st.SessionID + `","account_id":"111122223333","role_name":"Admin"}`
+	for range 4 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if code, _ := do("select", sel); code == http.StatusCreated {
+				created.Add(1)
+			}
+		}()
+	}
+	wg.Wait()
+	if created.Load() != 1 {
+		t.Fatalf("one login must create exactly one account, got %d", created.Load())
+	}
+}
+
+func TestAWSSSOSessionCapAndPrincipalBinding(t *testing.T) {
+	old := awsSSOSessions.m
+	awsSSOSessions.m = map[string]*ssoSession{}
+	t.Cleanup(func() { awsSSOSessions.m = old })
+	exp := time.Now().Add(time.Hour)
+	for range 2 {
+		if _, err := putSSOSession(&ssoSession{principal: "user:u1", expires: exp}, 2); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := putSSOSession(&ssoSession{principal: "user:u1", expires: exp}, 2); err == nil {
+		t.Fatal("the cap must refuse a third live session")
+	}
+	id, _ := putSSOSession(&ssoSession{principal: "user:u1", expires: exp}, 0)
+	if _, ok := getSSOSession(id, "token:u1"); ok {
+		t.Fatal("a session must stay bound to its principal type and id")
 	}
 }

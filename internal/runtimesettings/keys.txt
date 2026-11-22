@@ -124,6 +124,7 @@ cloud.allow_protected_delete
 cloud.aws.name_prefix
 cloud.aws.sso.max_accounts
 cloud.aws.sso.max_response_bytes
+cloud.aws.sso.max_sessions
 cloud.aws.sso.renew_percent
 cloud.aws.sso.timeout_seconds
 cloud.aws.sso.token_skew_seconds

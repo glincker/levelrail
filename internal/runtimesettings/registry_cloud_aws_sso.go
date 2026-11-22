@@ -5,6 +5,7 @@ const (
 	KeyCloudAWSSSORenewPercent     = "cloud.aws.sso.renew_percent"
 	KeyCloudAWSSSOTokenSkew        = "cloud.aws.sso.token_skew_seconds" //nolint:gosec // setting key, not a credential
 	KeyCloudAWSSSOMaxAccounts      = "cloud.aws.sso.max_accounts"
+	KeyCloudAWSSSOMaxSessions      = "cloud.aws.sso.max_sessions"
 	KeyCloudAWSSSOTimeout          = "cloud.aws.sso.timeout_seconds"
 	KeyCloudAWSSSOMaxResponseBytes = "cloud.aws.sso.max_response_bytes"
 )
@@ -27,6 +28,12 @@ func init() {
 		Env: "APP_CLOUD_AWS_SSO_MAX_ACCOUNTS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 1000),
 		Title:       "AWS SSO: accounts listed at login",
 		Description: "Most accounts read from IAM Identity Center when someone signs in, from 1 to 1000. The next login applies a changed value.",
+	})
+	Register(Definition{
+		Key: KeyCloudAWSSSOMaxSessions, Category: CategorySecurity, Kind: KindInt, Default: "20",
+		Env: "APP_CLOUD_AWS_SSO_MAX_SESSIONS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 500),
+		Title:       "AWS SSO: sign in sessions at once",
+		Description: "Most AWS SSO sign in sessions that may be open at the same time, from 1 to 500. The next sign in applies a changed value.",
 	})
 	Register(Definition{
 		Key: KeyCloudAWSSSOTimeout, Category: CategorySecurity, Kind: KindInt, Default: "15",

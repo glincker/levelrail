@@ -19,17 +19,19 @@ import (
 
 // ssoSession is the server side half of one device login; tokens never reach the browser.
 type ssoSession struct {
-	actor    string
-	region   string
-	startURL string
-	bound    string // existing account id for a relogin
-	reg      cloudconn.SSOBundle
-	device   cloudconn.SSODevice
-	interval time.Duration
-	lastPoll time.Time
-	expires  time.Time
-	token    *cloudconn.SSOBundle
-	accounts []ssoAccountWire
+	mu        sync.Mutex // held across poll and select so concurrent calls cannot both act on one login
+	consumed  bool
+	principal string
+	region    string
+	startURL  string
+	bound     string // existing account id for a relogin
+	reg       cloudconn.SSOBundle
+	device    cloudconn.SSODevice
+	interval  time.Duration
+	lastPoll  time.Time
+	expires   time.Time
+	token     *cloudconn.SSOBundle
+	accounts  []ssoAccountWire
 }
 
 type ssoAccountWire struct {
@@ -43,7 +45,9 @@ var awsSSOSessions = struct {
 	m map[string]*ssoSession
 }{m: map[string]*ssoSession{}}
 
-func putSSOSession(s *ssoSession) (string, error) {
+var errSSOTooManySessions = errors.New("too many login sessions in progress")
+
+func putSSOSession(s *ssoSession, limit int) (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -57,15 +61,18 @@ func putSSOSession(s *ssoSession) (string, error) {
 			delete(awsSSOSessions.m, k)
 		}
 	}
+	if limit > 0 && len(awsSSOSessions.m) >= limit {
+		return "", errSSOTooManySessions
+	}
 	awsSSOSessions.m[id] = s
 	return id, nil
 }
 
-func getSSOSession(id, actor string) (*ssoSession, bool) {
+func getSSOSession(id, principal string) (*ssoSession, bool) {
 	awsSSOSessions.Lock()
 	defer awsSSOSessions.Unlock()
 	s := awsSSOSessions.m[id]
-	if s == nil || s.actor != actor || time.Now().After(s.expires) {
+	if s == nil || s.principal != principal || time.Now().After(s.expires) {
 		delete(awsSSOSessions.m, id)
 		return nil, false
 	}
@@ -87,6 +94,22 @@ func (rt *Router) forgetSSOAccount(a store.CloudAccount) {
 	if isAWSSSOAccount(a) {
 		rt.awsProvider().SSOBroker().Forget(a.ID)
 	}
+}
+
+// ssoPrincipal binds a login to the principal type and id, never to a display name.
+func (rt *Router) ssoPrincipal(r *http.Request) string {
+	t, id, _, err := rt.callerPrincipal(r)
+	if err != nil || id == "" {
+		return ""
+	}
+	return t + ":" + id
+}
+
+func (rt *Router) ssoMaxSessions() int {
+	if rt.runtimeSettings == nil {
+		return 20
+	}
+	return rt.runtimeSettings.Int(context.Background(), runtimesettings.KeyCloudAWSSSOMaxSessions)
 }
 
 // ssoSettings reads the live cloud.aws.sso.* values; a router without settings keeps the defaults.
@@ -159,9 +182,18 @@ func (rt *Router) beginSSO(w http.ResponseWriter, r *http.Request, startURL, reg
 		writeError(w, http.StatusBadGateway, "the AWS sign in service refused the login")
 		return
 	}
-	s := &ssoSession{actor: rt.nodeProviderActor(r), region: region, startURL: startURL, bound: bound, reg: reg, device: dev,
+	principal := rt.ssoPrincipal(r)
+	if principal == "" {
+		writeError(w, http.StatusUnauthorized, "sign in to connect AWS")
+		return
+	}
+	s := &ssoSession{principal: principal, region: region, startURL: startURL, bound: bound, reg: reg, device: dev,
 		interval: time.Duration(dev.Interval) * time.Second, expires: time.Now().Add(time.Duration(dev.ExpiresIn) * time.Second)}
-	id, err := putSSOSession(s)
+	id, err := putSSOSession(s, rt.ssoMaxSessions())
+	if errors.Is(err, errSSOTooManySessions) {
+		writeError(w, http.StatusTooManyRequests, "too many logins are in progress, try again shortly")
+		return
+	}
 	if err != nil {
 		rt.internalError(w, "api: mint aws sso session failed", err)
 		return
@@ -221,8 +253,14 @@ func (rt *Router) handleAWSSSOPoll(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	s, ok := getSSOSession(req.SessionID, rt.nodeProviderActor(r))
+	s, ok := getSSOSession(req.SessionID, rt.ssoPrincipal(r))
 	if !ok {
+		writeError(w, http.StatusGone, "the login session is gone, start again")
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.consumed {
 		writeError(w, http.StatusGone, "the login session is gone, start again")
 		return
 	}
@@ -288,6 +326,7 @@ func (rt *Router) finishSSORelogin(w http.ResponseWriter, r *http.Request, id st
 	}
 	rt.awsProvider().SSOBroker().Forget(s.bound)
 	rt.auditCloud(r, "cloud.aws_sso.relogin", map[string]any{"account": s.bound})
+	s.consumed = true
 	dropSSOSession(id)
 	writeJSON(w, http.StatusOK, ssoPollResponse{Status: "done", AccountID: s.bound})
 }
@@ -316,8 +355,14 @@ func (rt *Router) handleAWSSSOSelect(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	s, ok := getSSOSession(req.SessionID, rt.nodeProviderActor(r))
-	if !ok || s.token == nil || s.bound != "" {
+	s, ok := getSSOSession(req.SessionID, rt.ssoPrincipal(r))
+	if !ok {
+		writeError(w, http.StatusGone, "the login session is gone, start again")
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.consumed || s.token == nil || s.bound != "" {
 		writeError(w, http.StatusGone, "the login session is gone, start again")
 		return
 	}
@@ -375,6 +420,15 @@ func (rt *Router) handleAWSSSOSelect(w http.ResponseWriter, r *http.Request) {
 	bundle, _ := json.Marshal(s.token) //nolint:gosec // sealed bundle, never logged
 	ctx, cancel := context.WithTimeout(r.Context(), nodeProviderTestTimeout)
 	defer cancel()
+	// Consumed under the session lock before any outbound check; a failure below hands it back for a retry.
+	s.consumed = true
+	created := false
+	defer func() {
+		if !created {
+			s.consumed = false
+			rt.awsProvider().SSOBroker().Forget(id)
+		}
+	}()
 	if res := rt.checkCloudAccount(ctx, acct, string(bundle)); !res.OK {
 		writeJSON(w, http.StatusUnprocessableEntity, res)
 		return
@@ -387,6 +441,7 @@ func (rt *Router) handleAWSSSOSelect(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create cloud account failed", err, slog.String("account", id))
 		return
 	}
+	created = true
 	dropSSOSession(req.SessionID)
 	rt.nodeProviderCatalog.invalidate(acct.Provider)
 	got, _ := st.GetCloudAccount(r.Context(), id)
