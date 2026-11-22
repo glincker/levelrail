@@ -38,3 +38,19 @@ func TestLiveSlowThresholdRecordsRequest(t *testing.T) {
 		t.Fatalf("ring = %+v, want one entry for /api/v1/apps", got)
 	}
 }
+
+func TestRouteStatsAggregateByPatternAndRank(t *testing.T) {
+	var s routeStats
+	s.observe("GET", "/api/v1/apps/{id}", 200, 10*time.Millisecond)
+	s.observe("GET", "/api/v1/apps/{id}", 500, 30*time.Millisecond)
+	s.observe("GET", "/api/v1/ping", 200, time.Millisecond)
+	s.observe("GET", "", 404, time.Millisecond)
+	got := s.top(2)
+	if len(got) != 2 || got[0].Route != "/api/v1/apps/{id}" || got[0].Count != 2 || got[0].Errors != 1 || got[0].MaxMS < 30 || got[0].AvgMS < 19 {
+		t.Fatalf("top = %+v, want the apps route first with count 2, one error, max 30, avg 20", got)
+	}
+	s.reset()
+	if len(s.top(5)) != 0 {
+		t.Fatal("reset left routes behind")
+	}
+}

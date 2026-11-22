@@ -14,6 +14,8 @@ The control plane watches its own saturation so a busy instance tells you before
 - Live streams: open log, deploy and event streams against the cap.
 - Footprint: resident memory, OS threads, CPU, the metrics database size, the soft memory limit, and every background loop with its interval, last run and share of a core. See [Performance budget](/performance-budget).
 
+Two hot lists answer what to fix first at scale. **Busiest API routes** ranks route patterns (not raw paths, so `/apps/{id}` is one row) by total time with calls, 5xx errors, average and max. **Costliest database statements** ranks statement shapes (literals redacted) the same way. Both are in `hot_routes` and `db.hot_statements` of the health response, top 10 each, kept in memory since start, and cleared by the `reset_slow_log` fix. Streams are excluded from the route list. At most 1024 routes and 512 distinct statements are tracked, so memory stays flat.
+
 Latency covers statements issued through the store, over the last 512 queries. Slow statements keep the SQL text only, never arguments.
 
 ## Findings and fixes

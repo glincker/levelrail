@@ -133,6 +133,7 @@ export interface CPHealth {
     wal_bytes: number
     db_bytes: number
     recent_slow: CPHealthSlowQuery[]
+    hot_statements?: CPHealthHotStatement[]
   }
   reconcile: {
     passes: number
@@ -164,6 +165,25 @@ export interface CPHealth {
   findings: CPHealthFinding[]
   slow_request_threshold_ms?: number
   slow_requests?: CPHealthSlowRequest[]
+  hot_routes?: CPHealthHotRoute[]
+}
+
+export interface CPHealthHotRoute {
+  method: string
+  route: string
+  count: number
+  errors: number
+  total_ms: number
+  avg_ms: number
+  max_ms: number
+}
+
+export interface CPHealthHotStatement {
+  sql: string
+  count: number
+  total_ms: number
+  avg_ms: number
+  max_ms: number
 }
 
 export interface CPHealthSlowRequest {
@@ -181,7 +201,12 @@ export function normalizeCPHealth(h: CPHealth): CPHealth {
     ...h,
     findings: h.findings ?? [],
     slow_requests: h.slow_requests ?? [],
-    db: { ...h.db, recent_slow: h.db?.recent_slow ?? [] },
+    hot_routes: h.hot_routes ?? [],
+    db: {
+      ...h.db,
+      recent_slow: h.db?.recent_slow ?? [],
+      hot_statements: h.db?.hot_statements ?? [],
+    },
     reconcile: h.reconcile && {
       ...h.reconcile,
       guard: h.reconcile.guard && {

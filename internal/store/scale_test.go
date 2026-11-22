@@ -146,3 +146,17 @@ func TestDBMetricsSlowQueryAndCheckpoint(t *testing.T) {
 		t.Fatalf("optimize: %v", err)
 	}
 }
+
+func TestHotStatementsAggregateCountsAndReset(t *testing.T) {
+	m := newDBMetrics("")
+	for range 3 {
+		m.observe("SELECT * FROM apps WHERE id = 'a'", 4*time.Millisecond)
+	}
+	m.observe("SELECT 1", time.Millisecond)
+	m.mu.Lock()
+	got := m.hotStatements()
+	m.mu.Unlock()
+	if len(got) != 2 || got[0].Count != 3 || got[0].TotalMS < 12 || got[0].SQL != "SELECT * FROM apps WHERE id = ?" {
+		t.Fatalf("hot = %+v, want the apps statement first with 3 runs and the literal redacted", got)
+	}
+}

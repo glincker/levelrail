@@ -101,6 +101,9 @@ func requestLoggingMiddlewareLive(logger *slog.Logger, thresholds requestLogThre
 					ring.add(slowRequestEntry{At: time.Now().UTC(), Method: r.Method, Route: route, Status: rec.status, DurationMS: float64(duration) / float64(time.Millisecond), Breakdown: b})
 				}
 			}
+			if ring != nil && !streaming && strings.HasPrefix(r.URL.Path, "/api/") {
+				ring.stats.observe(r.Method, r.Pattern, rec.status, duration)
+			}
 			logger.LogAttrs(r.Context(), level, "api: request", attrs...)
 		})
 	}

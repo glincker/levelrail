@@ -18,6 +18,9 @@ const (
 	envSlowQueryMS     = "APP_DB_SLOW_QUERY_MS"
 	defaultSlowQueryMS = 200
 	slowQueryKeep      = 50
+	// Bounds on the per statement aggregate: distinct raw statements tracked and rows reported.
+	hotStatementTrack  = 512
+	hotStatementReport = 10
 	latencyWindow      = 512
 	walSizeLimitBytes  = 64 << 20
 	maxLoggedStatement = 160
@@ -36,6 +39,20 @@ type SlowQuery struct {
 	At         time.Time `json:"at"`
 }
 
+// HotStatement aggregates one statement shape: how often it ran and what it cost.
+type HotStatement struct {
+	SQL     string  `json:"sql"`
+	Count   int64   `json:"count"`
+	TotalMS float64 `json:"total_ms"`
+	AvgMS   float64 `json:"avg_ms"`
+	MaxMS   float64 `json:"max_ms"`
+}
+
+type stmtAgg struct {
+	count       int64
+	total, peak time.Duration
+}
+
 // DBMetrics is a point in time view of database pressure.
 type DBMetrics struct {
 	Queries         int64       `json:"queries"`
@@ -50,6 +67,8 @@ type DBMetrics struct {
 	WALBytes        int64       `json:"wal_bytes"`
 	DBBytes         int64       `json:"db_bytes"`
 	RecentSlow      []SlowQuery `json:"recent_slow"`
+	// HotStatements are the statements with the most total time since start (or the last reset).
+	HotStatements []HotStatement `json:"hot_statements"`
 	// Read pool figures. ReadPoolSize is 0 when reads share the writer connection.
 	ReadPoolEnabled bool    `json:"read_pool_enabled"`
 	ReadPoolSize    int     `json:"read_pool_size"`
@@ -67,6 +86,7 @@ type dbMetrics struct {
 	ringN     int
 	recent    []SlowQuery
 	path      string
+	stmts     map[string]*stmtAgg // keyed by raw text, redacted only when reported
 }
 
 func newDBMetrics(path string) *dbMetrics {
@@ -86,6 +106,7 @@ func (m *dbMetrics) observe(query string, d time.Duration) {
 	m.queries++
 	m.ring[m.ringN%latencyWindow] = d
 	m.ringN++
+	m.aggregate(query, d)
 	if d < m.slowAfter {
 		return
 	}
@@ -95,6 +116,52 @@ func (m *dbMetrics) observe(query string, d time.Duration) {
 	if len(m.recent) > slowQueryKeep {
 		m.recent = m.recent[len(m.recent)-slowQueryKeep:]
 	}
+}
+
+// aggregate must run under m.mu. Past the track bound new statements are not added, so memory stays flat.
+func (m *dbMetrics) aggregate(query string, d time.Duration) {
+	a := m.stmts[query]
+	if a == nil {
+		if len(m.stmts) >= hotStatementTrack {
+			return
+		}
+		if m.stmts == nil {
+			m.stmts = map[string]*stmtAgg{}
+		}
+		a = &stmtAgg{}
+		m.stmts[query] = a
+	}
+	a.count++
+	a.total += d
+	a.peak = max(a.peak, d)
+}
+
+// hotStatements must run under m.mu. It merges raw statements that redact to the same text.
+func (m *dbMetrics) hotStatements() []HotStatement {
+	merged := map[string]*stmtAgg{}
+	for q, a := range m.stmts {
+		k := redactStatement(q)
+		g := merged[k]
+		if g == nil {
+			g = &stmtAgg{}
+			merged[k] = g
+		}
+		g.count += a.count
+		g.total += a.total
+		g.peak = max(g.peak, a.peak)
+	}
+	out := make([]HotStatement, 0, len(merged))
+	for k, g := range merged {
+		ms := func(d time.Duration) float64 { return float64(d) / float64(time.Millisecond) }
+		out = append(out, HotStatement{SQL: k, Count: g.count, TotalMS: ms(g.total), AvgMS: ms(g.total) / float64(g.count), MaxMS: ms(g.peak)})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].TotalMS != out[j].TotalMS {
+			return out[i].TotalMS > out[j].TotalMS
+		}
+		return out[i].SQL < out[j].SQL
+	})
+	return out[:min(len(out), hotStatementReport)]
 }
 
 // ExecContext times the statement for the slow query log.
@@ -143,6 +210,7 @@ func (db *DB) Metrics() DBMetrics {
 	out.Queries, out.SlowQueries = m.queries, m.slow
 	out.SlowThresholdMS = int(m.slowAfter / time.Millisecond)
 	out.RecentSlow = append([]SlowQuery(nil), m.recent...)
+	out.HotStatements = m.hotStatements()
 	path := m.path
 	m.mu.Unlock()
 	sort.Slice(win, func(i, j int) bool { return win[i] < win[j] })
@@ -164,13 +232,13 @@ func (db *DB) Metrics() DBMetrics {
 	return out
 }
 
-// ResetSlowQueries clears the slow query counter and list.
+// ResetSlowQueries clears the slow query counter, list and per statement totals.
 func (db *DB) ResetSlowQueries() {
 	if db.m == nil {
 		return
 	}
 	db.m.mu.Lock()
-	db.m.slow, db.m.recent = 0, nil
+	db.m.slow, db.m.recent, db.m.stmts = 0, nil, nil
 	db.m.mu.Unlock()
 }
 

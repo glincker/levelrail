@@ -13,6 +13,7 @@ import type paletteSettings from '../locales/en/paletteSettings.json'
 import type projectExport from '../locales/en/projectExport.json'
 import type projectClone from '../locales/en/projectClone.json'
 import type slowRequests from '../locales/en/slowRequests.json'
+import type hotSpots from '../locales/en/hotSpots.json'
 import type buildLogs from '../locales/en/buildLogs.json'
 import type storageParts from '../locales/en/storageParts.json'
 import type installCard from '../locales/en/installCard.json'
@@ -385,6 +386,7 @@ declare module 'i18next' {
       projectExport: typeof projectExport
       projectClone: typeof projectClone
       slowRequests: typeof slowRequests
+      hotSpots: typeof hotSpots
       buildLogs: typeof buildLogs
       storageParts: typeof storageParts
       installCard: typeof installCard

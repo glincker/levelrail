@@ -151,6 +151,7 @@ type cpHealthResource struct {
 
 	SlowRequestThresholdMS float64            `json:"slow_request_threshold_ms"`
 	SlowRequests           []slowRequestEntry `json:"slow_requests"`
+	HotRoutes              []routeStat        `json:"hot_routes"`
 }
 
 type cpRuntime struct {
@@ -237,6 +238,7 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 	res.Spool = spool.Usage()
 	res.SlowRequestThresholdMS = durMS(rt.liveSlowThreshold())
 	res.SlowRequests = rt.slowRequests.snapshot()
+	res.HotRoutes = rt.slowRequests.stats.top(routeStatReport)
 	proc := footprint.ReadProc()
 	res.Footprint = cpFootprint{
 		RSSBytes: proc.RSSBytes, Threads: proc.Threads, OpenFDs: proc.OpenFDs, CPUPercent: proc.CPUPercent,
@@ -308,6 +310,12 @@ func (r *cpHealthResource) normalizeSlices() {
 	if r.Footprint.Goroutines == nil {
 		r.Footprint.Goroutines = []footprint.SubsystemCount{}
 	}
+	if r.HotRoutes == nil {
+		r.HotRoutes = []routeStat{}
+	}
+	if r.DB.HotStatements == nil {
+		r.DB.HotStatements = []store.HotStatement{}
+	}
 	if r.DB.RecentSlow == nil {
 		r.DB.RecentSlow = []store.SlowQuery{}
 	}
@@ -371,6 +379,7 @@ func (rt *Router) handleCPHealthFix(w http.ResponseWriter, r *http.Request) {
 		err = p.DB.Optimize(r.Context())
 	case cphealth.FixResetSlowLog:
 		p.DB.ResetSlowQueries()
+		rt.slowRequests.stats.reset()
 	case cphealth.FixTelemetryPrune:
 		if p.Telemetry == nil {
 			writeError(w, http.StatusNotImplemented, "metrics database is not available")

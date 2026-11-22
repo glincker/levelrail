@@ -200,6 +200,7 @@ export const NAMESPACES = [
   'cloudProvider',
   'cloudAccounts',
   'slowRequests',
+  'hotSpots',
   'buildLogs',
   'storageParts',
   'installCard',
