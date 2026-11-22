@@ -15,6 +15,8 @@ func zshCompletionScript(prog string) string {
 
 	b.WriteString(renderChildrenFunc(fmt.Sprintf("_%s_children", ident)))
 	b.WriteString("\n")
+	b.WriteString(renderFlagsFunc(fmt.Sprintf("_%s_flags", ident)))
+	b.WriteString("\n")
 
 	fmt.Fprintf(&b, `_%[1]s() {
   local path w children
@@ -40,6 +42,9 @@ func zshCompletionScript(prog string) string {
     return
   fi
   children="$(_%[1]s_children "$path")"
+  case "${words[CURRENT]}" in
+    -*) children="$(_%[1]s_flags "$path")" ;;
+  esac
   opts=(${=children} %[2]s)
   _describe 'command' opts
 }

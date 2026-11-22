@@ -672,7 +672,7 @@ Usage:
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s link [<app>]                                      remember an app for this directory, so deploy, logs and env need no app name
   %[1]s commands search <words>                           find the right command, also "%[1]s help <words>"
-  %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
+  %[1]s completion bash|zsh|fish|powershell               print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s fields [RESOURCE] [flags]                         list form field descriptors (types, flags, visibility) of a resource
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call

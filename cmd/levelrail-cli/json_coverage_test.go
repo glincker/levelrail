@@ -39,6 +39,7 @@ var jsonExempt = map[string]string{
 	"completion bash":               "prints a shell script meant to be sourced",
 	"completion zsh":                "prints a shell script meant to be sourced",
 	"completion fish":               "prints a shell script meant to be sourced",
+	"completion powershell":         "prints a shell script meant to be sourced",
 	"control-plane-backups help-dr": "prints a static runbook, no data to structure",
 	"tui":                           "interactive full-screen UI, needs a TTY and has no machine output",
 	"functions init":                "writes local starter files, no API call or data to structure",
