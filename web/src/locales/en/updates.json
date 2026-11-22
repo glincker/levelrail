@@ -834,5 +834,17 @@
       "pending": "Waiting for the window",
       "running": "Running"
     }
+  },
+  "skipped": {
+    "title": "What changed since your version",
+    "loading": "Loading release notes...",
+    "none": "You are on the newest release, or the release notes could not be fetched.",
+    "breaking": "Breaking changes"
+  },
+  "uptimeReport": {
+    "title": "Monthly uptime",
+    "month": "Month",
+    "loading": "Loading uptime...",
+    "none": "No uptime data for this month. Add the app to the status page to start recording."
   }
 }

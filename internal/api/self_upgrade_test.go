@@ -63,6 +63,9 @@ func TestSelfUpgradePlan(t *testing.T) {
 	if len(plan.Breaking) != 2 || plan.Breaking[0].Version != "v1.1.0" || plan.Breaking[1].ID != "ports" {
 		t.Fatalf("breaking = %+v", plan.Breaking)
 	}
+	if len(plan.Skipped) != 2 || plan.Skipped[0].Version != "v1.1.0" || len(plan.Skipped[1].Breaking) != 1 {
+		t.Fatalf("skipped = %+v", plan.Skipped)
+	}
 	if !plan.CanApply || !strings.Contains(plan.Command, "--ack") {
 		t.Fatalf("plan = %+v", plan)
 	}

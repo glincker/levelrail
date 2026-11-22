@@ -23,6 +23,7 @@ import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
 import { PostUpgradeVerify } from '../../components/settings/PostUpgradeVerify'
 import { UpdateStatusHeader } from '../../components/settings/updates/UpdateStatusHeader'
 import { AutoUpdatesCard } from '../../components/settings/updates/AutoUpdatesCard'
+import { SkippedNotes } from '../../components/settings/updates/SkippedNotes'
 import { LazySection } from '../../components/settings/updates/LazySection'
 import {
   ATTEMPTS_SECTION_ID,
@@ -106,6 +107,9 @@ function UpdatesSettingsPage() {
           <UpgradeAttempts currentVersion={status.current_version} />
           <UpgradeHistory />
           <PostUpgradeVerify />
+        </LazySection>
+        <LazySection title={t('skipped.title')}>
+          <SkippedNotes />
         </LazySection>
         <LazySection title={t('quick.more.checks')}>
           <UpgradePreflight hideEdgeGuidance />

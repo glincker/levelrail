@@ -44,7 +44,14 @@ export interface MigrationDryRunResult {
   to_schema: number
 }
 
+export interface SelfUpgradeSkipped {
+  version: string
+  notes: string
+  breaking: SelfUpgradeBreaking[]
+}
+
 export interface SelfUpgradePlan {
+  skipped?: SelfUpgradeSkipped[]
   current_version: string
   target_version: string
   breaking: SelfUpgradeBreaking[]

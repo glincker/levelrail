@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2398 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2392 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2003,6 +2003,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/status-page/incidents/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusIncident", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/incidents/{id}/updates", Ability: "AbilityWrite", Group: "Other", Handler: "handlePostStatusIncidentUpdate", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page/preview", Ability: "AbilityRead", Group: "Other", Handler: "handleStatusPagePreview", Description: ""},
+	{Method: "GET", Path: "/api/v1/status-page/uptime-report", Ability: "AbilityRead", Group: "Other", Handler: "handleStatusUptimeReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page/webhooks", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusWebhooks", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/webhooks", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStatusWebhook", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/status-page/webhooks/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusWebhook", Description: ""},

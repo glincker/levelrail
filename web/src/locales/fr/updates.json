@@ -823,5 +823,17 @@
       "pending": "En attente de la fenêtre",
       "running": "En cours"
     }
+  },
+  "skipped": {
+    "title": "Ce qui a changé depuis votre version",
+    "loading": "Chargement des notes de version...",
+    "none": "Vous êtes sur la dernière version, ou les notes n'ont pas pu être récupérées.",
+    "breaking": "Changements incompatibles"
+  },
+  "uptimeReport": {
+    "title": "Disponibilité mensuelle",
+    "month": "Mois",
+    "loading": "Chargement de la disponibilité...",
+    "none": "Aucune donnée de disponibilité ce mois-ci. Ajoutez l'app à la page d'état pour commencer l'enregistrement."
   }
 }

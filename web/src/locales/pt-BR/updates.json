@@ -823,5 +823,17 @@
       "pending": "Aguardando a janela",
       "running": "Em andamento"
     }
+  },
+  "skipped": {
+    "title": "O que mudou desde a sua versão",
+    "loading": "Carregando notas da versão...",
+    "none": "Você está na versão mais recente, ou não foi possível buscar as notas.",
+    "breaking": "Mudanças incompatíveis"
+  },
+  "uptimeReport": {
+    "title": "Disponibilidade mensal",
+    "month": "Mês",
+    "loading": "Carregando disponibilidade...",
+    "none": "Sem dados de disponibilidade neste mês. Adicione o app à página de status para começar a registrar."
   }
 }
