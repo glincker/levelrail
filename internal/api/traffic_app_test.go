@@ -112,3 +112,17 @@ func TestTopRoutes_RanksByRequestsAndSkipsOverflow(t *testing.T) {
 		t.Fatalf("topRoutes = %+v", got)
 	}
 }
+
+func TestSlowUpstreamHint(t *testing.T) {
+	slow := []trafficRoute{{Route: "/a"}, {Route: "/b"}, {Route: "/c"}, {Route: "/d"}}
+	if slowUpstreamHint(5, 9000, 1500, slow) != nil {
+		t.Fatal("too few requests must not raise the hint")
+	}
+	if slowUpstreamHint(100, 900, 1500, slow) != nil {
+		t.Fatal("fast upstream must not raise the hint")
+	}
+	h := slowUpstreamHint(100, 2000, 1500, slow)
+	if h == nil || len(h.Routes) != slowUpstreamRouteCount || h.ThresholdMs != 1500 {
+		t.Fatalf("unexpected hint: %+v", h)
+	}
+}

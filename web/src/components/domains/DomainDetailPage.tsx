@@ -11,6 +11,7 @@ import { certExpiryDate } from '../../lib/certStatus'
 import { proxyCertTrusted } from '../../lib/dnsPill'
 import { useAbilities } from '../../hooks/useAbilities'
 import { certificatesQueryOptions } from '../../queries/certificates'
+import { trafficDetailQueryOptions } from '../../queries/trafficDetail'
 import { DomainAuthGateControl } from '../DomainAuthGateControl'
 import { DomainBasicAuthControl } from '../DomainBasicAuthControl'
 import { DomainDnsRecordsControl } from '../DomainDnsRecordsControl'
@@ -77,6 +78,8 @@ export function DomainDetailPage({
   )
   const { data: certs } = useQuery(certificatesQueryOptions())
   const cert = certs?.find((c) => c.domain === domain)
+  const { data: traffic } = useQuery(trafficDetailQueryOptions(appName, '1h'))
+  const slowUpstream = traffic?.slow_upstream
   const input: ReadinessInput | undefined = data && {
     status: data.status,
     verdict: data.verdict,
@@ -132,6 +135,22 @@ export function DomainDetailPage({
           </li>
         </ol>
       </nav>
+
+      {slowUpstream ? (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-card px-4 py-2 text-sm"
+        >
+          {t('detail.slowUpstream', { ms: Math.round(slowUpstream.p95_ms) })}{' '}
+          <Link
+            to="/apps/$name/traffic"
+            params={{ name: appName }}
+            className="underline"
+          >
+            {t('detail.slowUpstreamLink')}
+          </Link>
+        </p>
+      ) : null}
 
       <header className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
         <div className="min-w-0">

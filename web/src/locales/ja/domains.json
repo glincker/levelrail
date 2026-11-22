@@ -1324,6 +1324,8 @@
     "staticSite": "静的サイト"
   },
   "detail": {
+    "slowUpstream": "このアプリの応答が遅くなっています。リクエストの95%が{{ms}}ミリ秒以上かかっています。",
+    "slowUpstreamLink": "遅いルートを見る",
     "description": "{{app}} 上のこのドメインの設定です。",
     "allSettings": "すべての設定",
     "routing": "ルーティング",

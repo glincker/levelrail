@@ -1324,6 +1324,8 @@
     "staticSite": "静态站点"
   },
   "detail": {
+    "slowUpstream": "此应用响应缓慢：95% 的请求耗时 {{ms}} 毫秒或更长。",
+    "slowUpstreamLink": "查看慢速路由",
     "description": "此域名在 {{app}} 上的设置。",
     "allSettings": "所有设置",
     "routing": "路由",

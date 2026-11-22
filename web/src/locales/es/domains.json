@@ -1334,6 +1334,8 @@
     "staticSite": "Sitio estático"
   },
   "detail": {
+    "slowUpstream": "Esta app responde despacio: el 95 % de las solicitudes tarda {{ms}} ms o más.",
+    "slowUpstreamLink": "Ver rutas lentas",
     "description": "Ajustes de este dominio en {{app}}.",
     "allSettings": "Todos los ajustes",
     "routing": "Enrutamiento",

@@ -1334,6 +1334,8 @@
     "staticSite": "Static site"
   },
   "detail": {
+    "slowUpstream": "This app is answering slowly: 95% of requests take {{ms}} ms or more.",
+    "slowUpstreamLink": "See slow routes",
     "description": "Settings for this domain on {{app}}.",
     "allSettings": "All settings",
     "routing": "Routing",

@@ -45,6 +45,8 @@ type CertInfo struct {
 	Status string
 	// Internal marks a self-signed or local-CA certificate the platform issues by design.
 	Internal bool
+	// OriginCA marks a CDN origin certificate the user imported; it is never renewed automatically.
+	OriginCA bool
 }
 
 // Certificate expiry buckets reported by CertExpiryStatus.
@@ -112,6 +114,7 @@ func ListCertificates(ctx context.Context, source CertSource, warningWindow time
 			NotAfter:  cert.NotAfter,
 			Status:    CertExpiryStatus(cert.NotAfter, now, warningWindow),
 			Internal:  isInternalCert(cert, key),
+			OriginCA:  isOriginCACert(cert),
 		})
 	}
 
@@ -125,6 +128,12 @@ func isInternalCert(cert *x509.Certificate, key string) bool {
 	}
 	parts := strings.Split(key, "/")
 	return len(parts) > 2 && parts[1] == "local"
+}
+
+// isOriginCACert spots a CDN origin certificate by its issuer name.
+func isOriginCACert(cert *x509.Certificate) bool {
+	cn, org := strings.ToLower(cert.Issuer.CommonName), strings.ToLower(strings.Join(cert.Issuer.Organization, " "))
+	return strings.Contains(cn, "cloudflare origin") || strings.Contains(org, "cloudflare")
 }
 
 // parseLeafCertificate parses the first certificate in a PEM-encoded
