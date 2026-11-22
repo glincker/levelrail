@@ -14,6 +14,7 @@ import { AlertTemplatePicker } from './AlertTemplatePicker'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
 import { LogRuleCondition } from './LogRuleCondition'
+import { EditLogRuleDialog } from './EditLogRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { RuleNoiseDialog } from './RuleNoiseDialog'
 import { RecentChanges } from './RecentChanges'
@@ -276,7 +277,9 @@ export function AlertRulesPanel({
                     ruleName={rule.name}
                   />
                   <RuleNoiseDialog appName={appName} rule={rule} />
-                  {rule.log_rule ? null : (
+                  {rule.log_rule ? (
+                    <EditLogRuleDialog appName={appName} rule={rule} />
+                  ) : (
                     <EditAlertRuleDialog
                       appName={appName}
                       rule={rule}

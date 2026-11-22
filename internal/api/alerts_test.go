@@ -864,3 +864,34 @@ func TestAlertRoutes_RequireAuth(t *testing.T) {
 		})
 	}
 }
+
+// A log rule edit changes its threshold and window without recreating it.
+func TestHandleUpdateAlertRule_LogRuleInPlace(t *testing.T) {
+	t.Parallel()
+	rt, db, adb := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	ctx := context.Background()
+	if err := adb.SaveRule(ctx, alerting.Rule{ID: "l1", Name: "errs", Kind: alerting.KindLogPattern, ResourceID: "service:web", Enabled: true, LogRule: &alerting.LogRuleConfig{Query: "timeout", Count: 5}}); err != nil {
+		t.Fatalf("seed rule: %v", err)
+	}
+
+	body := `{"name":"errs","kind":"log_pattern","enabled":true,"log_rule":{"query":"timeout","count":20,"window_seconds":600}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/alerts/l1", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	got, err := adb.GetRule(ctx, "l1")
+	if err != nil || got.LogRule == nil || got.LogRule.Count != 20 || got.LogRule.WindowSeconds != 600 {
+		t.Fatalf("rule = %+v, err = %v", got, err)
+	}
+
+	bad := `{"name":"errs","kind":"log_pattern","enabled":true,"log_rule":{"query":"timeout","count":0}}`
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/alerts/l1", bad))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid edit status = %d, want 400", rec.Code)
+	}
+}

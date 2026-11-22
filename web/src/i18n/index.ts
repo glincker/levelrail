@@ -30,6 +30,7 @@ export const NAMESPACES = [
   'logPipeline',
   'logBudgets',
   'alertSetup',
+  'logRuleEdit',
   'environments',
   'stacks',
   'iacForm',

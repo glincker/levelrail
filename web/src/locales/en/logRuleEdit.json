@@ -1,0 +1,12 @@
+{
+  "trigger": "Edit",
+  "title": "Edit log rule",
+  "description": "Change the threshold, window or cooldown. The rule keeps its id and firing state.",
+  "count": "Match count that fires",
+  "perMinute": "Lines per minute that fires",
+  "windowMinutes": "Window (minutes)",
+  "cooldownMinutes": "Cooldown (minutes)",
+  "save": "Save changes",
+  "saving": "Saving...",
+  "updated": "Log rule \"{{name}}\" updated."
+}

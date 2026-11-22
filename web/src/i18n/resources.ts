@@ -35,6 +35,7 @@ import type access from '../locales/en/access.json'
 import type logPipeline from '../locales/en/logPipeline.json'
 import type logBudgets from '../locales/en/logBudgets.json'
 import type alertSetup from '../locales/en/alertSetup.json'
+import type logRuleEdit from '../locales/en/logRuleEdit.json'
 import type environments from '../locales/en/environments.json'
 import type stacks from '../locales/en/stacks.json'
 import type iacForm from '../locales/en/iacForm.json'
@@ -202,6 +203,7 @@ declare module 'i18next' {
       logPipeline: typeof logPipeline
       logBudgets: typeof logBudgets
       alertSetup: typeof alertSetup
+      logRuleEdit: typeof logRuleEdit
       environments: typeof environments
       stacks: typeof stacks
       iacForm: typeof iacForm
