@@ -173,6 +173,13 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetJobFailing(db, scheduledtask.FailureAlertWindow, scheduledtask.FailureAlertBatch)
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
 	alertingEngine.SetBackupCopy(backupCopyAlertSource{db: db}, backup.CopyLagAlertFromEnv(os.LookupEnv))
+	alertingEngine.SetBackupSizeAnomaly(backupSizeAlertSource{db: db}, func(c context.Context) alerting.BackupSizePolicy {
+		live := apiRouter.RuntimeSettings()
+		return alerting.BackupSizePolicy{
+			Percent:  live.Int(c, runtimesettings.KeyBackupSizeAnomalyPercent),
+			Baseline: live.Int(c, runtimesettings.KeyBackupSizeAnomalyBaseline),
+		}
+	})
 	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))

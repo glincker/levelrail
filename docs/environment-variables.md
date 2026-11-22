@@ -670,6 +670,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | [`backup.hook_max_output_bytes`](/runtime-settings#data-retention) | `4096` |
 | `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | [`backup.hook_timeout_seconds`](/runtime-settings#data-retention) | `60` |
+| `APP_BACKUP_SIZE_ANOMALY_BASELINE` | [`backup.size_anomaly_baseline`](/runtime-settings#data-retention) | `3` |
+| `APP_BACKUP_SIZE_ANOMALY_PERCENT` | [`backup.size_anomaly_percent`](/runtime-settings#data-retention) | `25` |
 | `APP_COMPOSE_RESTORE_TIMEOUT` | [`backups.compose_restore_timeout`](/runtime-settings#data-retention) | `2h` |
 | `APP_BACKUP_DRILL_INTERVAL_HOURS` | [`backups.drill_interval_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_BACKUP_DRILL_MAX_CONCURRENT` | [`backups.drill_max_concurrent`](/runtime-settings#data-retention) | `2` |

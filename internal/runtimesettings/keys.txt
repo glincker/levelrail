@@ -82,6 +82,8 @@ backup.sftp_max_connections
 backup.sftp_max_depth
 backup.sftp_max_entries
 backup.sftp_scan_per_minute
+backup.size_anomaly_baseline
+backup.size_anomaly_percent
 backup.webdav_allow_private_networks
 backup.webdav_header_timeout
 backup.webdav_idle_timeout

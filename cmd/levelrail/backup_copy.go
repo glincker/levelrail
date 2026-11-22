@@ -49,3 +49,36 @@ func (s backupCopyAlertSource) PendingBackupCopies(ctx context.Context) ([]alert
 	}
 	return out, nil
 }
+
+// backupSizeAlertSource feeds kind=backup_size_anomaly rules from recent backup history.
+type backupSizeAlertSource struct{ db *store.DB }
+
+// backupSizeHistoryRows bounds the history read; older rows cannot matter to a small baseline.
+const backupSizeHistoryRows = 2000
+
+// RecentBackupSizes implements alerting.BackupSizeSource.
+func (s backupSizeAlertSource) RecentBackupSizes(ctx context.Context) ([]alerting.BackupSizeSeries, error) {
+	rows, err := s.db.ListAllBackupHistory(ctx, backupSizeHistoryRows, nil)
+	if err != nil {
+		return nil, err
+	}
+	idx := map[string]int{}
+	var out []alerting.BackupSizeSeries
+	for _, h := range rows {
+		if h.Status != store.BackupStatusSucceeded {
+			continue
+		}
+		name := h.DatabaseName
+		if h.ResourceKind == store.BackupResourceKindVolume {
+			name = h.ServiceName + "/" + h.VolumeName
+		}
+		i, ok := idx[name]
+		if !ok {
+			i = len(out)
+			idx[name] = i
+			out = append(out, alerting.BackupSizeSeries{Resource: name})
+		}
+		out[i].Sizes = append(out[i].Sizes, h.SizeBytes)
+	}
+	return out, nil
+}

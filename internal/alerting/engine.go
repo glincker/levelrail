@@ -110,6 +110,8 @@ type Engine struct {
 	exportHealth      ExportHealthSource
 	backupCopy        BackupCopySource
 	backupCopyDefault time.Duration
+	backupSize        BackupSizeSource
+	backupSizePolicy  func(context.Context) BackupSizePolicy
 
 	registryRefresh RegistryRefreshSource
 
@@ -236,6 +238,11 @@ func (e *Engine) SetExportHealth(src ExportHealthSource) { e.exportHealth = src 
 // SetBackupCopy enables kind=backup_copy_behind rules; defaultLag applies when a rule sets no ForDuration.
 func (e *Engine) SetBackupCopy(src BackupCopySource, defaultLag time.Duration) {
 	e.backupCopy, e.backupCopyDefault = src, defaultLag
+}
+
+// SetBackupSizeAnomaly enables kind=backup_size_anomaly rules; policy is read on every tick so settings apply live.
+func (e *Engine) SetBackupSizeAnomaly(src BackupSizeSource, policy func(context.Context) BackupSizePolicy) {
+	e.backupSize, e.backupSizePolicy = src, policy
 }
 
 // SetRestoreDrills enables kind=restore_drill_failed rules.
@@ -681,6 +688,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindBackupSizeAnomaly:
+			if e.backupSize == nil || e.backupSizePolicy == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateBackupSizeAnomaly(ctx, e.backupSize, e.backupSizePolicy(ctx), r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindRegistryRefreshFailing:
 			if e.registryRefresh == nil {
 				continue
@@ -895,7 +911,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindBackupSizeAnomaly || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

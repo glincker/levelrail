@@ -103,6 +103,7 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"cleanup-failing", "Data cleanup is failing", KindCleanupFailing, SeverityWarning},
 		{"node-cert-expiring", "Node certificate expiring", KindNodeCertExpiring, SeverityWarning},
 		{"backup-copy-behind", "Backup copy is behind", KindBackupCopyBehind, SeverityWarning},
+		{"backup-size-anomaly", "A backup is far smaller than usual", KindBackupSizeAnomaly, SeverityWarning},
 		{"export-behind", "Export destination failing", KindExportBehind, SeverityWarning},
 		{"registry-refresh-failing", "Registry credential refresh failing", KindRegistryRefreshFailing, SeverityWarning},
 		{"log-archive-stale", "Log archive failing", KindLogArchiveStale, SeverityWarning},

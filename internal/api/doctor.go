@@ -84,7 +84,7 @@ type systemDoctorResponse struct {
 
 // Always 200: a failed check is reported in the body, not as a 5xx.
 func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
-	resp, err := rt.doctorReport(r.Context())
+	resp, err := rt.doctorReport(r.Context(), r.URL.Query().Get("refresh") == "1")
 	if err != nil {
 		rt.internalError(w, "api: system doctor", err)
 		return
@@ -99,8 +99,10 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 }
 
 // doctorReport runs the checks once per dashboard cache ttl. The report
-// does not depend on the caller, so one entry serves every viewer.
-func (rt *Router) doctorReport(ctx context.Context) (systemDoctorResponse, error) {
+// does not depend on the caller, so one entry serves every viewer. A stale
+// entry is served at once and refreshed in the background; refresh=1 forces
+// a live run that also replaces the cached entry.
+func (rt *Router) doctorReport(ctx context.Context, refresh bool) (systemDoctorResponse, error) {
 	if rt.demo != nil {
 		return demoDoctorReport(), nil
 	}
@@ -108,11 +110,18 @@ func (rt *Router) doctorReport(ctx context.Context) (systemDoctorResponse, error
 	if rt.dash.ttl <= 0 {
 		return rt.runDoctorChecks(ctx), nil
 	}
-	v, err := rt.dash.get(ctx, "doctor", func(ctx context.Context) (any, error) {
+	load := func(ctx context.Context) (any, error) {
 		runCtx, cancel := context.WithTimeout(ctx, doctorRunTimeout)
 		defer cancel()
 		return rt.runDoctorChecks(runCtx), nil
-	})
+	}
+	var v any
+	var err error
+	if refresh {
+		v, err = rt.dash.load("doctor", load)
+	} else {
+		v, err = rt.dash.get(ctx, "doctor", load)
+	}
 	if err != nil {
 		return systemDoctorResponse{}, err
 	}
