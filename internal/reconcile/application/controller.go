@@ -2450,12 +2450,15 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	// starting" apart from "already exited/OOM-killed" (docker.Client
 	// locally, the gRPC agent transport for a remote node; most test
 	// fakes don't, and gracefully just don't get the fast-fail below).
+	crashErr := make(chan error, 2)
+	if desired.Port > 0 && !cfg.IsExec() {
+		go watchPortMismatch(probeCtx, c.runtime, state.ID, desired.Port, cfg.Interval, crashErr)
+	}
 	inspector, ok := c.runtime.(docker.ExitStateInspector)
 	if !ok {
-		return c.awaitReady(ctx, desired, state.Name, readyErr, nil)
+		return c.awaitReady(ctx, desired, state.Name, readyErr, crashErr)
 	}
 
-	crashErr := make(chan error, 1)
 	go watchForCrash(probeCtx, inspector, state.Name, cfg.Interval, crashErr)
 
 	return c.awaitReady(ctx, desired, state.Name, readyErr, crashErr)

@@ -512,6 +512,7 @@ func (s *bootState) startReconciler() {
 	s.setupDNS01Check()
 	engine.SetSource(dynamicSource(sourceDeps))
 	engine.SetKeyed(application.IsServiceControllerName)
+	engine.SetEventDriven(true)
 	scheduledTaskRunner.Specs = newJobSpecBuilder(sourceDeps)
 	scheduledTaskRunner.Resolver = func(nodeID string) (docker.Runtime, error) {
 		return resolveNodeTransport(client, agentRegistry, runtimeNodeID(sourceDeps, nodeID))
