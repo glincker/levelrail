@@ -487,6 +487,9 @@
     "notReady": "Nicht bereit",
     "rerun": "Erneut prüfen",
     "running": "Prüfung läuft",
+    "deep": "Tiefenprüfung starten",
+    "deepRunning": "Tiefenprüfung läuft",
+    "deepTitle": "Tiefenprüfung",
     "failed": "Die Bereitschaftsprüfung konnte nicht laufen.",
     "fix": "Lösung",
     "status": {

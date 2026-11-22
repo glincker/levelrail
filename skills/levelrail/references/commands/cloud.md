@@ -31,7 +31,7 @@ Subcommands: add, grants, list, probe, regions, rm, verify
 
 ```
 Usage:
-  levelrail-cli cloud doctor [--account ID] [--json]
+  levelrail-cli cloud doctor [--account ID] [--deep] [--json]
   levelrail-cli cloud accounts list|verify|probe|regions|rm|grants [ID]
   levelrail-cli cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   levelrail-cli cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
@@ -59,7 +59,7 @@ Subcommands: acm, audit, cleanup-plan, cloudfront, ecr, elasticache, guard, idle
 
 ```
 Usage:
-  levelrail-cli cloud doctor [--account ID] [--json]
+  levelrail-cli cloud doctor [--account ID] [--deep] [--json]
   levelrail-cli cloud accounts list|verify|probe|regions|rm|grants [ID]
   levelrail-cli cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   levelrail-cli cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]
@@ -729,7 +729,7 @@ Subcommands: policy-kit
 
 ```
 Usage:
-  levelrail-cli cloud doctor [--account ID] [--json]
+  levelrail-cli cloud doctor [--account ID] [--deep] [--json]
   levelrail-cli cloud accounts list|verify|probe|regions|rm|grants [ID]
   levelrail-cli cloud accounts add ID --provider P [--method M] [--region R] [--role-arn ARN] [--account-id ID] [--external-id X] [--label L] [--team T]
   levelrail-cli cloud accounts add ID --provider oracle --tenancy OCID --user OCID --fingerprint FP --compartment OCID --region R [--subnet OCID]

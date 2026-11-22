@@ -487,6 +487,9 @@
     "notReady": "Not ready",
     "rerun": "Run again",
     "running": "Checking",
+    "deep": "Run deep check",
+    "deepRunning": "Deep checking",
+    "deepTitle": "Deep check",
     "failed": "Could not run the readiness check.",
     "fix": "Fix",
     "status": {

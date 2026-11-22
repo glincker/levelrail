@@ -487,6 +487,9 @@
     "notReady": "未就绪",
     "rerun": "重新检查",
     "running": "检查中",
+    "deep": "运行深度检查",
+    "deepRunning": "正在深度检查",
+    "deepTitle": "深度检查",
     "failed": "无法运行就绪检查。",
     "fix": "修复",
     "status": {

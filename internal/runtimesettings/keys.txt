@@ -131,6 +131,9 @@ cloud.aws.sso.token_skew_seconds
 cloud.cloudfront.max_invalidation_paths
 cloud.connections_enabled
 cloud.default_monthly_cost_limit
+cloud.doctor.deep_min_interval_seconds
+cloud.doctor.deep_parallel
+cloud.doctor.deep_timeout_seconds
 cloud.engine_cpus
 cloud.engine_deny_addresses
 cloud.engine_image

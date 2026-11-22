@@ -28,6 +28,19 @@ func printDoctor(out io.Writer, report cloudRow) {
 			_, _ = fmt.Fprintf(out, "     fix: %s\n", fix)
 		}
 	}
+	var ok, warn, fail int
+	for _, raw := range steps {
+		s, _ := raw.(map[string]any)
+		switch s["status"] {
+		case "ok":
+			ok++
+		case "warn":
+			warn++
+		case "fail":
+			fail++
+		}
+	}
+	_, _ = fmt.Fprintf(out, "summary: %d pass, %d warn, %d fail\n", ok, warn, fail)
 	if ready, _ := report["ready"].(bool); ready {
 		_, _ = fmt.Fprintln(out, "ready: no step failed")
 	} else {
@@ -37,13 +50,20 @@ func printDoctor(out io.Writer, report cloudRow) {
 
 func runCloudDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var account string
+	var deep bool
 	setup := func(fs *flag.FlagSet) {
+		fs.BoolVar(&deep, "deep", false, "also run one read only call per enabled service (needs --account)")
 		fs.StringVar(&account, "account", "", "check one cloud account; without it the control plane preflight runs")
 	}
 	return cloudCall(prog, "cloud doctor", args, stdout, stderr, lookupEnv, setup, func(c *apiclient.Client, _ []string, _ outputFlags) (any, func(), error) {
 		path := "/doctor/preflight"
 		if id := strings.TrimSpace(account); id != "" {
 			path = "/" + url.PathEscape(id) + "/doctor"
+			if deep {
+				path += "?deep=1"
+			}
+		} else if deep {
+			return nil, nil, fmt.Errorf("--deep needs --account")
 		}
 		var out cloudRow
 		err := c.CloudRequest(context.Background(), "GET", path, nil, &out)

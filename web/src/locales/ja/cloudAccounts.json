@@ -487,6 +487,9 @@
     "notReady": "未完了",
     "rerun": "再実行",
     "running": "確認中",
+    "deep": "詳細チェックを実行",
+    "deepRunning": "詳細チェック中",
+    "deepTitle": "詳細チェック",
     "failed": "準備状況の確認を実行できませんでした。",
     "fix": "対処",
     "status": {

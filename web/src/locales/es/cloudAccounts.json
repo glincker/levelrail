@@ -487,6 +487,9 @@
     "notReady": "No listo",
     "rerun": "Ejecutar de nuevo",
     "running": "Comprobando",
+    "deep": "Ejecutar comprobación profunda",
+    "deepRunning": "Comprobando a fondo",
+    "deepTitle": "Comprobación profunda",
     "failed": "No se pudo ejecutar la comprobación.",
     "fix": "Solución",
     "status": {

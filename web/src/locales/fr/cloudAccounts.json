@@ -487,6 +487,9 @@
     "notReady": "Pas prêt",
     "rerun": "Relancer",
     "running": "Vérification",
+    "deep": "Lancer le contrôle approfondi",
+    "deepRunning": "Contrôle approfondi en cours",
+    "deepTitle": "Contrôle approfondi",
     "failed": "La vérification n'a pas pu s'exécuter.",
     "fix": "Correction",
     "status": {

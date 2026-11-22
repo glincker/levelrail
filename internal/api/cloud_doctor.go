@@ -452,18 +452,18 @@ func doctorOracleAllowanceStep(enabled bool, a1ocpu, a1mem, micro int) doctorSte
 	return s
 }
 
-func (rt *Router) doctorOracleAccount(ctx context.Context, a store.CloudAccount) []doctorStep {
+func (rt *Router) doctorOracleAccount(ctx context.Context, a store.CloudAccount) ([]doctorStep, []cloudconn.CapabilityResult) {
 	linked := doctorStep{ID: "oracle.account", Title: "Account with API key", Status: doctorOK, Detail: "An API key is stored for this account."}
 	rt.syncOracleSessionWindow(ctx)
 	if oracleSessionNeedsRelogin(a) {
 		return []doctorStep{{ID: "oracle.session", Title: "Browser session", Status: doctorFail,
-			Detail: "The stored session expired or ends within minutes.", Fix: "Run " + cloudconn.OracleReloginCommand("") + ", then replace the session."}}
+			Detail: "The stored session expired or ends within minutes.", Fix: "Run " + cloudconn.OracleReloginCommand("") + ", then replace the session."}}, nil
 	}
 	cred, err := rt.oracleAccountCredential(ctx, a, "")
 	if err != nil {
 		linked.Status, linked.Detail = doctorFail, "No readable API key is stored for this account."
 		linked.Fix = "Add the account again with the tenancy, user, fingerprint and private key."
-		return []doctorStep{linked}
+		return []doctorStep{linked}, nil
 	}
 	steps := []doctorStep{linked}
 	res, perr := rt.oracleProber().ProbeCapabilities(ctx, cred)
@@ -478,7 +478,23 @@ func (rt *Router) doctorOracleAccount(ctx context.Context, a store.CloudAccount)
 		rt.oracleLimit(ctx, runtimesettings.KeyProvisionOracleMaxA1OCPU, "APP_PROVISION_ORACLE_MAX_A1_OCPU"),
 		rt.oracleLimit(ctx, runtimesettings.KeyProvisionOracleMaxA1MemoryGB, "APP_PROVISION_ORACLE_MAX_A1_MEMORY_GB"),
 		rt.oracleLimit(ctx, runtimesettings.KeyProvisionOracleMaxE2Micro, "APP_PROVISION_ORACLE_MAX_E2_MICRO"),
-	))
+	)), res
+}
+
+// deepGate lets only an operator or root run the deep check, and spaces repeat runs per account.
+func (rt *Router) deepGate(w http.ResponseWriter, r *http.Request, a store.CloudAccount) bool {
+	ok := false
+	gate := rt.requireCloudAccess(cloudAuthzRef{rt: rt}, store.CloudActionOperate, cloudAccountFromPath, func(http.ResponseWriter, *http.Request) { ok = true })
+	gate(w, r)
+	if !ok {
+		return false
+	}
+	if !rt.deepAllowed(a.ID) {
+		w.Header().Set("Retry-After", "10")
+		writeError(w, http.StatusTooManyRequests, "the deep check ran moments ago, wait and try again")
+		return false
+	}
+	return true
 }
 
 func (rt *Router) handleCloudAccountDoctor(w http.ResponseWriter, r *http.Request) {
@@ -486,17 +502,26 @@ func (rt *Router) handleCloudAccountDoctor(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
+	deep := r.URL.Query().Get("deep") == "1"
+	if deep && !rt.deepGate(w, r, a) {
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), nodeProviderTestTimeout*3)
 	defer cancel()
 	var steps []doctorStep
+	var oracleRes []cloudconn.CapabilityResult
 	switch {
 	case isAWSBrokeredAccount(a):
 		steps = rt.doctorAWSAccount(ctx, a)
 	case isOracleAccount(a):
-		steps = rt.doctorOracleAccount(ctx, a)
+		steps, oracleRes = rt.doctorOracleAccount(ctx, a)
+	case deep && (a.Provider == cloudconn.ProviderDigitalOcean || a.Provider == cloudconn.ProviderHetzner):
 	default:
 		steps = []doctorStep{{ID: "account.supported", Title: "Readiness checks", Status: doctorSkip,
 			Detail: "The doctor covers AWS role and Vault accounts and Oracle accounts."}}
+	}
+	if deep {
+		steps = append(steps, rt.deepDoctorSteps(ctx, a, oracleRes)...)
 	}
 	writeJSON(w, http.StatusOK, newDoctorReport(a.Provider, steps))
 }
