@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -445,6 +446,31 @@ func TestHandleRenewDomainCertificate_Success(t *testing.T) {
 	key := "certificates/internal/app.example.com/app.example.com.crt"
 	if _, err := db.GetCertStorageValue(context.Background(), key); !errors.Is(err, store.ErrCertStorageKeyNotFound) {
 		t.Errorf("GetCertStorageValue(%q) error = %v, want ErrCertStorageKeyNotFound after renewal", key, err)
+	}
+}
+
+func TestHandleRenewDomainCertificate_ReasonAndPreviousCAError(t *testing.T) {
+	rt, db := newTestRouter(t)
+	seedAppWithDomain(t, db)
+	cookie := loginTestSession(t, rt, db)
+	const caErr = "urn:ietf:params:acme:error:rateLimited: too many certificates"
+	ingress.DefaultACMEFailures().Record(ingress.ACMEFailure{Identifier: "app.example.com", Error: caErr, At: time.Now()})
+	t.Cleanup(func() { ingress.DefaultACMEFailures().Clear("app.example.com") })
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/domains/app.example.com/cert/renew", `{"reason":"  rotate key  "}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	var got renewCertificateResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Reason != "rotate key" || got.PreviousError != caErr {
+		t.Errorf("reason = %q, previous_error = %q, want trimmed reason and the CA error", got.Reason, got.PreviousError)
+	}
+	if _, ok := ingress.DefaultACMEFailures().Get("app.example.com"); ok {
+		t.Error("old failure still recorded, want it cleared so status shows only the new attempt")
 	}
 }
 

@@ -4395,6 +4395,9 @@ type RenewCertificateResource struct {
 	Domain               string `json:"domain"`
 	HadStoredCertificate bool   `json:"had_stored_certificate"`
 	Status               string `json:"status"`
+	Reason               string `json:"reason,omitempty"`
+	PreviousError        string `json:"previous_error,omitempty"`
+	Explanation          string `json:"explanation,omitempty"`
 }
 
 // OAuthProviderSettingsResource mirrors internal/api's

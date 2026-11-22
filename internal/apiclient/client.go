@@ -1535,9 +1535,13 @@ func (c *Client) ClearDomainTLSCert(ctx context.Context, name, domain string) (D
 // domain's automatically-managed certificate (ACME or internal; not valid
 // for a domain with a BYO certificate uploaded, see
 // handleRenewDomainCertificate's own doc comment).
-func (c *Client) RenewDomainCertificate(ctx context.Context, name, domain string) (RenewCertificateResource, error) {
+func (c *Client) RenewDomainCertificate(ctx context.Context, name, domain, reason string) (RenewCertificateResource, error) {
 	var out RenewCertificateResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/cert/renew", nil, &out)
+	var body any
+	if reason != "" {
+		body = map[string]string{"reason": reason}
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/cert/renew", body, &out)
 	return out, err
 }
 

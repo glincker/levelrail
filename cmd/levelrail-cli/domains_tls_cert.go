@@ -6,6 +6,9 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // domainsTLSCertJSONUsage is every domains tls-cert subcommand's --json
@@ -62,8 +65,14 @@ Run "%[1]s domains tls-cert <subcommand> -h" for a subcommand's own flags.
 
 func runDomainsTLSCertRenew(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains tls-cert renew", domainsTLSCertJSONUsage, stderr)
+	var reason string
+	var wait bool
+	var timeout time.Duration
+	fs.StringVar(&reason, "reason", "", "why you are forcing the renewal (logged, max 200 characters)")
+	fs.BoolVar(&wait, "wait", false, "wait for the new certificate and print the CA error if it fails")
+	fs.DurationVar(&timeout, "timeout", certDefaultWait, "how long --wait waits")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains tls-cert renew <app> <domain> [flags]\n\nForces re-issuance of <domain>'s automatically-managed certificate (ACME\nor internal) by clearing its stored state and nudging the reconcile loop.\nFails with a conflict if <domain> currently has an operator-uploaded\ncertificate (\"%[1]s domains tls-cert clear\" it first).\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains tls-cert renew <app> <domain> [--reason TEXT] [--wait] [flags]\n\nForces re-issuance of <domain>'s automatically-managed certificate (ACME\nor internal) by clearing its stored state and nudging the reconcile loop.\n--wait shows the CA's error when the new attempt fails. Fails with a conflict if <domain> currently has an operator-uploaded\ncertificate (\"%[1]s domains tls-cert clear\" it first).\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -80,14 +89,51 @@ func runDomainsTLSCertRenew(prog string, args []string, stdout, stderr io.Writer
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	result, err := client.RenewDomainCertificate(context.Background(), appName, domain)
+	ctx := context.Background()
+	result, err := client.RenewDomainCertificate(ctx, appName, domain, strings.TrimSpace(reason))
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("renew certificate for domain %q: %w", domain, err))
 	}
+	out := renewResult{RenewCertificateResource: result}
+	if wait {
+		st, werr := waitForCert(ctx, client, strings.ToLower(domain), apiclient.DomainCertStatus{State: certPending}, timeout)
+		if werr != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("certificate status for %q: %w", domain, werr))
+		}
+		out.Certificate = &st
+	}
 
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+	code := writeScheduledTaskResult(stdout, stderr, of, out, func() {
 		_, _ = fmt.Fprintf(stdout, "certificate renewal requested for domain %q (had a stored certificate: %t)\n", result.Domain, result.HadStoredCertificate)
+		if result.PreviousError != "" {
+			_, _ = fmt.Fprintf(stdout, "previous CA error: %s\n", result.PreviousError)
+		}
+		if st := out.Certificate; st != nil {
+			printRenewOutcome(stdout, *st)
+		}
 	})
+	if code == exitOK && out.Certificate != nil && out.Certificate.State == certFailed {
+		return exitAPIError
+	}
+	return code
+}
+
+// renewResult is the --json shape of "tls-cert renew": the request result plus
+// the certificate state after --wait.
+type renewResult struct {
+	apiclient.RenewCertificateResource
+	Certificate *apiclient.DomainCertStatus `json:"certificate,omitempty"`
+}
+
+func printRenewOutcome(out io.Writer, st apiclient.DomainCertStatus) {
+	switch st.State {
+	case certIssued:
+		_, _ = fmt.Fprintf(out, "certificate issued by %s\n", st.Issuer)
+	case certFailed:
+		_, _ = fmt.Fprintf(out, "renewal failed: %s\nCA said:  %s\n", st.Explanation, st.Error)
+	default:
+		_, _ = fmt.Fprintf(out, "certificate state: %s\n", st.State)
+	}
 }
 
 func runDomainsTLSCertGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
