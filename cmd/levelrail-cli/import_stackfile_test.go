@@ -171,3 +171,98 @@ func TestImportRenderBlueprintDryRun(t *testing.T) {
 		}
 	}
 }
+
+const doAppSpecFixture = `name: shop
+domains:
+  - domain: shop.example.com
+services:
+  - name: web
+    http_port: 3000
+    instance_count: 2
+    run_command: bin/serve
+    image:
+      registry_type: DOCR
+      repository: shop
+      tag: v3
+    health_check:
+      http_path: /up
+    envs:
+      - key: LOG_LEVEL
+        value: info
+      - key: API_TOKEN
+        value: EV[1:topsecretvalue]
+        type: SECRET
+      - key: DATABASE_URL
+        value: ${db.DATABASE_URL}
+workers:
+  - name: queue
+    image:
+      repository: shop
+      tag: v3
+    run_command: bin/queue
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+`
+
+func TestImportDOAppSpecDryRun(t *testing.T) {
+	p := writeStackFixture(t, "app.yaml", doAppSpecFixture)
+	out, errs, code := runStackFile(t, "do-app", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"shop:v3", "shop.example.com", "API_TOKEN", "engine: postgres", "Dry run"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "topsecretvalue") {
+		t.Error("output leaks a secret value")
+	}
+}
+
+const cloudRunFixture = `apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: api
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "2"
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      containers:
+      - image: us-docker.pkg.dev/acme/svc/api:1.2
+        ports:
+        - containerPort: 9000
+        env:
+        - name: LOG_LEVEL
+          value: info
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: db-pass
+              key: latest
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+`
+
+func TestImportCloudRunServiceDryRun(t *testing.T) {
+	p := writeStackFixture(t, "service.yaml", cloudRunFixture)
+	out, errs, code := runStackFile(t, "cloud-run", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"us-docker.pkg.dev/acme/svc/api:1.2", "9000", "DB_PASS", "512Mi", "maxScale", "Dry run"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+	if _, _, code := runStackFile(t, "cloud-run", writeStackFixture(t, "x.yaml", "kind: Job\n")); code == exitOK {
+		t.Fatal("non-Service must fail")
+	}
+}

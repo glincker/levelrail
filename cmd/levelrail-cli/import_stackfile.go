@@ -37,6 +37,10 @@ func stackFileUsage(prog, sub string) string {
 		what = "a render.yaml Blueprint (services, databases, cron jobs; no variable values)"
 	case "railway":
 		what = "a railway.json or railway.toml (build and deploy settings, no variable values)"
+	case "do-app":
+		what = "a .do/app.yaml spec (services, workers, jobs, databases; SECRET values never read)"
+	case "cloud-run":
+		what = "a Cloud Run service YAML from gcloud run services describe --format export"
 	}
 	return fmt.Sprintf(`Usage:
   %[1]s import %[2]s FILE [--stack NAME] [--project NAME] [--environment NAME] [--image-repo REPO] [--write DIR [--force]] [--json]
@@ -94,6 +98,13 @@ func runImportStackFile(prog, sub string, args []string, stdout, stderr io.Write
 		fallback = stackNameFromDir(filepath.Dir(path))
 	case "railway":
 		in, err = platformimport.RailwayToEmit(data, fallback, filepath.Base(path))
+	case "do-app":
+		in, err = platformimport.DOAppSpecToEmit(data)
+	case "cloud-run":
+		in, err = platformimport.KnativeServiceToEmit(data)
+		if len(in.Apps) > 0 {
+			fallback = in.Apps[0].Name
+		}
 	default:
 		in, err = platformimport.DeployYMLToEmit(data)
 		if len(in.Apps) > 0 {
