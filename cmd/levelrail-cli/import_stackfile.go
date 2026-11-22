@@ -37,6 +37,10 @@ func stackFileUsage(prog, sub string) string {
 		what = "a render.yaml Blueprint (services, databases, cron jobs; no variable values)"
 	case "railway":
 		what = "a railway.json or railway.toml (build and deploy settings, no variable values)"
+	case "fly":
+		what = "a fly.toml (app, build image, env, http_service port and checks, vm size, release command; no secrets)"
+	case "netlify":
+		what = "a netlify.toml (build command, publish and base, redirects, headers) as a static site App"
 	case "do-app":
 		what = "a .do/app.yaml spec (services, workers, jobs, databases; SECRET values never read)"
 	case "cloud-run":
@@ -98,6 +102,13 @@ func runImportStackFile(prog, sub string, args []string, stdout, stderr io.Write
 		fallback = stackNameFromDir(filepath.Dir(path))
 	case "railway":
 		in, err = platformimport.RailwayToEmit(data, fallback, filepath.Base(path))
+	case "fly":
+		in, err = platformimport.FlyTOMLToEmit(data, fallback, filepath.Base(path))
+		if err == nil && len(in.Apps) > 0 {
+			fallback = in.Apps[0].Name
+		}
+	case "netlify":
+		in, err = platformimport.NetlifyTOMLToEmit(data, fallback, filepath.Base(path))
 	case "do-app":
 		in, err = platformimport.DOAppSpecToEmit(data)
 	case "cloud-run":

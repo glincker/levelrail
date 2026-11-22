@@ -16,6 +16,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/compose"
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 const (
@@ -174,6 +175,12 @@ func printComposeRef(stdout, stderr io.Writer, stack string, files []platformimp
 func validateEmitFiles(files []platformimport.EmitFile) error {
 	var srcs []iac.Source
 	for _, f := range files {
+		if f.Name == platformimport.EmitStaticSpecFile {
+			if _, err := spec.Parse(f.Content); err != nil {
+				return err
+			}
+			continue
+		}
 		if strings.HasSuffix(f.Name, ".yaml") && f.Name != platformimport.EmitStackFile {
 			srcs = append(srcs, iac.Source{Name: f.Name, Data: f.Content})
 		}

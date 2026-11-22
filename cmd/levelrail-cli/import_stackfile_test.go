@@ -266,3 +266,57 @@ func TestImportCloudRunServiceDryRun(t *testing.T) {
 		t.Fatal("non-Service must fail")
 	}
 }
+
+func TestImportNetlifyDryRunEmitsStaticApp(t *testing.T) {
+	body := `[build]
+  command = "npm run build"
+  publish = "dist"
+  base = "web"
+  [build.environment]
+    NODE_VERSION = "20"
+    API_SECRET = "hunter2hunter2"
+
+[[redirects]]
+  from = "/old/*"
+  to = "/new/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/eu"
+  to = "/eu/home"
+  conditions = {Country = ["DE"]}
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+`
+	p := writeStackFixture(t, "netlify.toml", body)
+	out, errs, code := runStackFile(t, "netlify", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"type: static", "publish: dist", "baseDirectory: web", "NODE_VERSION", "/old/*", "X-Frame-Options", "conditions", "looks like a secret"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "hunter2") || strings.Contains(out, "/eu/home") {
+		t.Errorf("secret or skipped rule leaked:\n%s", out)
+	}
+}
+
+func TestImportFlyDryRun(t *testing.T) {
+	body := "app = \"shop-api\"\n[build]\n  image = \"ghcr.io/acme/shop:1.4\"\n[http_service]\n  internal_port = 8080\n"
+	p := writeStackFixture(t, "fly.toml", body)
+	out, errs, code := runStackFile(t, "fly", p)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s %s", code, out, errs)
+	}
+	for _, want := range []string{"shop-api", "ghcr.io/acme/shop:1.4", "port: 8080"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output lacks %q:\n%s", want, out)
+		}
+	}
+}
