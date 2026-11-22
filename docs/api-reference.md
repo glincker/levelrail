@@ -793,6 +793,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/build-runner | AbilityDeploy | handleClearAppBuildRunner |
 | PUT | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handlePinDeploy |
 | DELETE | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handleUnpinDeploy |
+| GET | /api/v1/apps/{name}/health-explain | AbilityRead | handleGetAppHealthExplain |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -1009,6 +1010,8 @@ Endpoints for:
 | DELETE | /api/v1/databases/{name}/params/pending | AbilityWrite | handleDiscardDatabaseParams |
 | POST | /api/v1/databases/{name}/params/apply | AbilityWriteSensitive | handleApplyDatabaseParams |
 | GET | /api/v1/databases/{name}/logs/download | AbilityRead | handleDownloadDatabaseLogs |
+| POST | /api/v1/databases/{name}/restore-test | AbilityWriteSensitive | handleStartDatabaseRestoreTest |
+| GET | /api/v1/databases/{name}/restore-test | AbilityRead | handleGetDatabaseRestoreTest |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

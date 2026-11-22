@@ -52,3 +52,16 @@ func TestDNSProviderFlagsArePerProvider(t *testing.T) {
 		t.Fatalf("route53 flags wrong: %v", flags)
 	}
 }
+
+func TestDescriptorMultiFlagRepeatsIntoOneList(t *testing.T) {
+	for _, name := range []string{fielddesc.EventWebhook, fielddesc.StatusWebhook} {
+		fs := flag.NewFlagSet("t", flag.ContinueOnError)
+		flags := registerDescriptorFlags(fs, name)
+		if err := fs.Parse([]string{"--event", "a,b", "--event", "c"}); err != nil {
+			t.Fatal(err)
+		}
+		if got := *flags["event"]; got != "a,b,c" {
+			t.Errorf("%s: event = %q, want a,b,c", name, got)
+		}
+	}
+}

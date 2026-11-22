@@ -55,6 +55,8 @@ type importFlags struct {
 func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) > 0 {
 		switch args[0] {
+		case "plan":
+			return runImportPlanCmd(prog, args[1:], stdout, stderr, lookupEnv)
 		case "platform":
 			return runImportPlatform(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 		case "apps":
@@ -233,6 +235,7 @@ func printImportPlan(out io.Writer, p apiclient.ImportPlan) {
 			_, _ = fmt.Fprintf(out, "  vol  %s\n", volumeText(v))
 		}
 	}
+	printImportStack(out, p)
 	if len(p.Warnings) > 0 {
 		_, _ = fmt.Fprintln(out, "\nwarnings:")
 		for _, w := range p.Warnings {
@@ -381,6 +384,7 @@ func importUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s import <repo-url|image> [flags]
   %[1]s import -f compose.yaml|Dockerfile [flags]
+  %[1]s import plan <compose.yaml|dir> [--json]               dry run: what would be created, what is unsupported, name conflicts
   %[1]s import --docker-run "docker run -p 80:80 nginx:1" [flags]
   %[1]s import k8s -f <file|-> [--dry-run] [--force]          convert Kubernetes manifests into apps, see "%[1]s import k8s -h"
   %[1]s import config [dir] [--out FILE] [--strict]            offline preview of Procfile, app.json and vercel.json as an app spec

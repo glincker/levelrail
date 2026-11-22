@@ -13,6 +13,7 @@ import type { VariantProps } from 'class-variance-authority'
 import { Skeleton } from '@/components/ui/skeleton'
 import { buttonVariants } from '@/components/ui/button'
 import { useAppHealthScore } from '../queries/healthScore'
+import { AppHealthExplainLine } from './AppHealthExplainLine'
 import type { HealthScoreStatus } from '../types/healthScore'
 import { ApiError } from '../lib/apiError'
 
@@ -110,6 +111,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
           </div>
         ) : (
           <>
+            <AppHealthExplainLine appName={appName} />
             <p className="mb-2 text-sm text-muted-foreground">
               {actionable.length === 0
                 ? t('healthScore.allClear')

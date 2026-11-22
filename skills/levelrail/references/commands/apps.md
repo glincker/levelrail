@@ -1078,13 +1078,14 @@ levelrail-cli: unknown trust subcommand "--help" (want list, add or remove)
 
 ## levelrail-cli apps health
 
-Subcommands: clear, discover, get, set
+Subcommands: clear, discover, explain, get, set
 
 ```
 Usage:
   levelrail-cli apps health get <name> [flags]                                    show an app's readiness and liveness probes
   levelrail-cli apps health set <name> --probe readiness|liveness [probe flags]   set one probe, keeping the other as-is
   levelrail-cli apps health clear <name> [--probe readiness|liveness]             remove one probe, or both
+  levelrail-cli apps health explain <name>                                       say why an app is red or amber and what to try next
   levelrail-cli apps health discover <name>                                      actively probe well-known paths, report what each one really did
 
 A probe is either an HTTP(S) check (--path, with --scheme, --host,

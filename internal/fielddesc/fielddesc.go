@@ -45,6 +45,8 @@ type Field struct {
 	Flag string `json:"flag,omitempty"`
 	// FlagFile marks a flag that takes a file path whose content becomes the value.
 	FlagFile bool `json:"flag_file,omitempty"`
+	// Multi marks a flag that may repeat or take a comma list, joined into one value.
+	Multi bool `json:"multi,omitempty"`
 	// FormOnly marks a field the CLI infers instead of taking a flag.
 	FormOnly bool `json:"form_only,omitempty"`
 	// Placeholder and HelpURL are language neutral hints the dashboard shows beside the input.

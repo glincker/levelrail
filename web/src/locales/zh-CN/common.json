@@ -113,6 +113,19 @@
     "allClear": "所有检查均已通过。无需你处理。",
     "needsAction": "需要处理"
   },
+  "healthExplain": {
+    "label": "原因",
+    "failingCheck": "检查 {{target}} 自 {{since}} 起失败",
+    "restarts": "重启次数：{{n}}",
+    "crashloop": "崩溃循环",
+    "lastDeploy": "最近一次部署：{{status}}",
+    "logError": "最近错误：{{line}}",
+    "next": {
+      "apply_preset": "尝试健康预设 {{preset}}",
+      "rollback": "回滚到上一次部署",
+      "view_logs": "查看日志"
+    }
+  },
   "logs": {
     "previousContainerEnded": "上一个容器实例已结束",
     "copyLineAria": "复制此日志行",

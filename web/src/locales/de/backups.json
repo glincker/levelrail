@@ -612,5 +612,15 @@
         }
       }
     }
+  },
+  "restoreTest": {
+    "button": "Wiederherstellung testen",
+    "neverRun": "Letzter Wiederherstellungstest: noch nie ausgeführt",
+    "running": "Wiederherstellungstest läuft",
+    "ok": "Letzter Wiederherstellungstest: ok {{when}}, {{seconds}} s, {{size}}",
+    "failed": "Letzter Wiederherstellungstest: fehlgeschlagen {{when}}, {{seconds}} s",
+    "startedTitle": "Wiederherstellungstest gestartet.",
+    "startedBody": "Das Ergebnis erscheint hier, sobald er fertig ist.",
+    "startFailed": "Wiederherstellungstest konnte nicht gestartet werden."
   }
 }

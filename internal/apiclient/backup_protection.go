@@ -256,3 +256,30 @@ func (c *Client) ScanSFTPHostKey(ctx context.Context, endpoint string) (SFTPHost
 	err := c.do(ctx, http.MethodPost, "/api/v1/backup-targets/sftp-host-key", map[string]string{"endpoint": endpoint}, &out)
 	return out, err
 }
+
+// RestoreTestStartResource mirrors internal/api's restoreTestResource.
+type RestoreTestStartResource struct {
+	ID         string `json:"id"`
+	BackupID   string `json:"backup_id"`
+	Status     string `json:"status"`
+	Stage      string `json:"stage,omitempty"`
+	Bytes      int64  `json:"bytes,omitempty"`
+	DurationMS int64  `json:"duration_ms,omitempty"`
+	Error      string `json:"error,omitempty"`
+	StartedAt  string `json:"started_at,omitempty"`
+	FinishedAt string `json:"finished_at,omitempty"`
+}
+
+// StartDatabaseRestoreTest calls POST /api/v1/databases/{name}/restore-test.
+func (c *Client) StartDatabaseRestoreTest(ctx context.Context, name string) (RestoreTestStartResource, error) {
+	var out RestoreTestStartResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/restore-test", struct{}{}, &out)
+	return out, err
+}
+
+// GetDatabaseRestoreTest calls GET /api/v1/databases/{name}/restore-test.
+func (c *Client) GetDatabaseRestoreTest(ctx context.Context, name string) (RestoreTestStartResource, error) {
+	var out RestoreTestStartResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/restore-test", nil, &out)
+	return out, err
+}

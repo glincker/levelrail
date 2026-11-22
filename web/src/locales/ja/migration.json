@@ -770,6 +770,11 @@
     "required": "デプロイ前に必要: {{keys}}",
     "back": "戻る",
     "deploying": "デプロイ中...",
+    "willCreate": "作成されるもの",
+    "secretRefs": "シークレットの値は表示されません。シークレット参照: {{keys}}",
+    "unsupported": "引き継がれない項目",
+    "instead": "代替案: {{alternative}}",
+    "conflicts": "すでに使われている名前",
     "deploy": "デプロイ"
   },
   "takeover": {

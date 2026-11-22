@@ -612,5 +612,15 @@
         }
       }
     }
+  },
+  "restoreTest": {
+    "button": "Test restore",
+    "neverRun": "Last restore test: never run",
+    "running": "Restore test running",
+    "ok": "Last restore test: ok {{when}}, {{seconds}}s, {{size}}",
+    "failed": "Last restore test: failed {{when}}, {{seconds}}s",
+    "startedTitle": "Restore test started.",
+    "startedBody": "The result appears here once it finishes.",
+    "startFailed": "Could not start restore test."
   }
 }

@@ -603,5 +603,15 @@
         }
       }
     }
+  },
+  "restoreTest": {
+    "button": "测试恢复",
+    "neverRun": "上次恢复测试：从未运行",
+    "running": "恢复测试运行中",
+    "ok": "上次恢复测试：成功 {{when}}，{{seconds}} 秒，{{size}}",
+    "failed": "上次恢复测试：失败 {{when}}，{{seconds}} 秒",
+    "startedTitle": "恢复测试已开始。",
+    "startedBody": "完成后结果会显示在此处。",
+    "startFailed": "无法开始恢复测试。"
   }
 }

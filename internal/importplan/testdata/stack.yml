@@ -1,0 +1,22 @@
+services:
+  web:
+    image: ghcr.io/acme/web:1.2.0
+    ports: ["8080:3000"]
+    privileged: true
+    environment:
+      DATABASE_PASSWORD: hunter2hunter2
+      PUBLIC_URL: https://shop.example.com
+    labels:
+      traefik.http.routers.web.rule: "Host(`shop.example.com`)"
+    volumes:
+      - uploads:/data
+    depends_on: [db]
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: s3cretvalue
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  uploads: {}
+  pgdata: {}

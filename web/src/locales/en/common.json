@@ -113,6 +113,19 @@
     "allClear": "All checks pass. Nothing needs your attention.",
     "needsAction": "Needs action"
   },
+  "healthExplain": {
+    "label": "Why",
+    "failingCheck": "Check {{target}} failing since {{since}}",
+    "restarts": "Restarts: {{n}}",
+    "crashloop": "Crashloop",
+    "lastDeploy": "Last deploy: {{status}}",
+    "logError": "Last error: {{line}}",
+    "next": {
+      "apply_preset": "Try the {{preset}} health preset",
+      "rollback": "Roll back to the previous deploy",
+      "view_logs": "Check the logs"
+    }
+  },
   "logs": {
     "previousContainerEnded": "Previous container instance ended",
     "copyLineAria": "Copy this log line",

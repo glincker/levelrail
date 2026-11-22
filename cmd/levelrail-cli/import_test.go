@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -162,5 +164,37 @@ func TestImportInputValidation(t *testing.T) {
 	}
 	if code := run("cli", []string{"import", "nginx", "--docker-run", "docker run x"}, &out, &errb, envMap()); code == exitOK {
 		t.Error("two inputs must fail")
+	}
+}
+
+func TestImportPlanSubcommandPreviewsOnly(t *testing.T) {
+	f := &importFake{plan: apiclient.ImportPlan{
+		Source: "compose", SuggestedName: "stack", Deploy: "compose",
+		Resources:   []apiclient.ImportResource{{Kind: "app", Name: "stack", Detail: "2 services"}},
+		Unsupported: []apiclient.ImportUnsupported{{Service: "web", Feature: "privileged", Reason: "not run", Alternative: "grant caps"}},
+		Conflicts:   []apiclient.ImportConflict{{Kind: "app", Name: "stack"}},
+		SecretRefs:  []string{"db/POSTGRES_PASSWORD"},
+	}}
+	srv := newImportServer(t, f)
+	defer srv.Close()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "compose.yaml"), []byte("services:\n  web:\n    image: nginx:1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb bytes.Buffer
+	code := runImport("levelrail", []string{"plan", dir, "--api-url", srv.URL}, &out, &errb, func(string) (string, bool) { return "", false })
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, errb.String())
+	}
+	for _, want := range []string{"will create:", "not carried over:", "name conflicts", "db/POSTGRES_PASSWORD"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("missing %q in %s", want, out.String())
+		}
+	}
+	if len(f.requests) != 1 {
+		t.Fatalf("requests: %v", f.requests)
+	}
+	if code := runImport("levelrail", []string{"plan", dir, "--deploy"}, &out, &errb, nil); code != 2 {
+		t.Fatalf("deploy flag exit %d", code)
 	}
 }

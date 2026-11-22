@@ -152,6 +152,7 @@
     "empty": "Aún no hay suscriptores de webhook.",
     "events": "Eventos",
     "eventsHint": "Déjalos todos sin marcar para recibir todos los eventos. Solo se envían los incidentes publicados y los nombres públicos de los componentes.",
+    "fieldsFailed": "No se pudieron cargar los campos del formulario. Recarga la página e inténtalo de nuevo.",
     "intro": "Los webhooks firmados avisan a tus sistemas cuando cambia un incidente o un componente. Cada solicitud incluye los encabezados X-Signature y X-Timestamp; verifícalos con el secreto que se muestra una sola vez al añadir el suscriptor.",
     "label": "Etiqueta",
     "labelPlaceholder": "Etiqueta (opcional)",
@@ -173,5 +174,18 @@
     "testFailed": "El ping de prueba falló: {{error}}",
     "testOk": "Ping de prueba entregado, el receptor respondió HTTP {{code}}.",
     "url": "URL del webhook"
+  },
+  "fields": {
+    "webhook": {
+      "url": {
+        "help": "URL HTTPS que recibe los eventos firmados."
+      },
+      "label": {
+        "help": "Nombre corto para este suscriptor."
+      },
+      "events": {
+        "help": "Deja todo sin marcar para recibir cada evento."
+      }
+    }
   }
 }

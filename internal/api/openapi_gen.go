@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2361 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2364 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -328,6 +328,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppHealth", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/health", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealth", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppHealth", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/health-explain", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealthExplain", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/health-score", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealthScore", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/health/discover", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDiscoverAppHealth", Description: "Health check auto-detect (apps_health_discover.go): AbilityRead, the same tier GET .../diagnose already uses for an active probe against a running container (routes.go), since this changes nothing and only reads what the container's own HTTP port already exposes."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/hook-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHookRuns", Description: "Latest pre/post-deploy hook outcome (apps_hooks.go, internal/reconcile/application's own HookRunRecorder). Read-only, same ability tier as the group route just above."},
@@ -861,6 +862,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseQueryHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/query/write", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseQueryWrite", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseResourceRecommendation", Description: "Resource right-sizing, the database counterpart to GET /apps/{name}/resource-recommendation above (database_resource_recommendation.go)."},
+	{Method: "GET", Path: "/api/v1/databases/{name}/restore-test", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseRestoreTest", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/restore-test", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleStartDatabaseRestoreTest", Description: "Restore test: newest backup into a throwaway container, result kept in the drill history."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/saved-queries", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseSavedQueries", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/saved-queries", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleSaveDatabaseQuery", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/saved-queries/{id}", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDeleteDatabaseSavedQuery", Description: ""},

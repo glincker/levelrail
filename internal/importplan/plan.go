@@ -104,6 +104,9 @@ func Plan(ctx context.Context, in Input, deps Deps) (*DeploymentPlan, error) {
 		return nil, err
 	}
 	finalize(p, in)
+	if kind == SourceCompose {
+		enrichStack(p, []byte(in.Text))
+	}
 	return p, nil
 }
 

@@ -113,6 +113,19 @@
     "allClear": "Todas as verificações passam. Nada requer a sua atenção.",
     "needsAction": "Requer ação"
   },
+  "healthExplain": {
+    "label": "Por quê",
+    "failingCheck": "A verificação {{target}} falha desde {{since}}",
+    "restarts": "Reinícios: {{n}}",
+    "crashloop": "Loop de falhas",
+    "lastDeploy": "Último deploy: {{status}}",
+    "logError": "Último erro: {{line}}",
+    "next": {
+      "apply_preset": "Tente o preset de saúde {{preset}}",
+      "rollback": "Reverter para o deploy anterior",
+      "view_logs": "Verifique os logs"
+    }
+  },
   "logs": {
     "previousContainerEnded": "A instância anterior do container terminou",
     "copyLineAria": "Copiar esta linha de log",

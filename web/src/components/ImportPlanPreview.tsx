@@ -135,6 +135,65 @@ export function ImportPlanPreview({
         </Alert>
       ) : null}
 
+      {(plan.resources ?? []).length > 0 ? (
+        <div className="space-y-1 text-sm" data-testid="import-resources">
+          <p className="font-medium">{t('importPlan.willCreate')}</p>
+          <ul className="space-y-0.5 text-xs text-muted-foreground">
+            {(plan.resources ?? []).map((r) => (
+              <li key={`${r.kind}-${r.name}`}>
+                <Badge variant="outline" className="mr-2">
+                  {r.kind}
+                </Badge>
+                <span className="font-mono">{r.name}</span>
+                {r.detail ? ` (${r.detail})` : ''}
+              </li>
+            ))}
+          </ul>
+          {(plan.secret_refs ?? []).length > 0 ? (
+            <p className="text-xs text-muted-foreground">
+              {t('importPlan.secretRefs', {
+                keys: (plan.secret_refs ?? []).join(', '),
+              })}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {(plan.unsupported ?? []).length > 0 ? (
+        <Alert data-testid="import-unsupported">
+          <TriangleAlertGlassIcon
+            className="text-tone-warning"
+            size="1.7em"
+            aria-hidden="true"
+          />
+          <AlertTitle>{t('importPlan.unsupported')}</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc space-y-1 pl-4">
+              {(plan.unsupported ?? []).map((u) => (
+                <li key={`${u.service ?? ''}-${u.feature}`}>
+                  {u.service ? `${u.service} ` : ''}
+                  {u.feature}: {u.reason}.{' '}
+                  {u.alternative
+                    ? t('importPlan.instead', { alternative: u.alternative })
+                    : ''}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {(plan.conflicts ?? []).length > 0 ? (
+        <Alert variant="destructive" data-testid="import-conflicts">
+          <AlertTitle>{t('importPlan.conflicts')}</AlertTitle>
+          <AlertDescription>
+            {(plan.conflicts ?? [])
+              .map((c) => `${c.kind} ${c.name}`)
+              .join(', ')}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-sm">
           <span className="font-medium">{t('importPlan.appName')}</span>

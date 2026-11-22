@@ -186,9 +186,33 @@ func registerDescriptorFlagsWhen(fs *flag.FlagSet, resource string, values map[s
 			fs.Bool(f.Name, false, f.Usage)
 			continue
 		}
+		if f.Multi {
+			dst := new(string)
+			fs.Var(joinedFlag{dst}, f.Name, f.Usage)
+			out[f.Name] = dst
+			continue
+		}
 		out[f.Name] = fs.String(f.Name, "", f.Usage)
 	}
 	return out
+}
+
+// joinedFlag lets a descriptor flag repeat: every value is appended to one comma list.
+type joinedFlag struct{ dst *string }
+
+func (j joinedFlag) String() string {
+	if j.dst == nil {
+		return ""
+	}
+	return *j.dst
+}
+
+func (j joinedFlag) Set(v string) error {
+	if *j.dst != "" {
+		*j.dst += ","
+	}
+	*j.dst += v
+	return nil
 }
 
 // backupTargetDescriptorProblem runs the shared field registry and words the first problem

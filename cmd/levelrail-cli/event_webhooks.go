@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/fielddesc"
 )
 
 func eventWebhooksUsage(prog string) string {
@@ -93,9 +94,8 @@ func runEventWebhookList(prog string, args []string, stdout, stderr io.Writer, l
 }
 
 func runEventWebhookCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var name, url string
 	var disabled bool
-	var events csvListFlag
+	var descFlags map[string]*string
 	usage := fmt.Sprintf(`Usage:
   %[1]s event-webhooks create --name NAME --url URL [flags]
 
@@ -106,17 +106,18 @@ Flags:
   --disabled        create the webhook paused
 %[2]s`, prog, commonFlagsHelp)
 	c, code, ok := parseCLICall(prog, "event-webhooks create", usage, args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
-		fs.StringVar(&name, "name", "", "webhook name")
-		fs.StringVar(&url, "url", "", "endpoint URL")
-		fs.Var(&events, "event", "event types to deliver")
+		descFlags = registerDescriptorFlags(fs, fielddesc.EventWebhook)
 		fs.BoolVar(&disabled, "disabled", false, "create paused")
 	})
 	if !ok {
 		return code
 	}
+	name, url := *descFlags["name"], *descFlags["url"]
 	if name == "" || url == "" {
 		return c.invalid("--name and --url are required")
 	}
+	var events csvListFlag
+	_ = events.Set(*descFlags["event"])
 	enabled := !disabled
 	created, err := c.client.CreateEventWebhook(context.Background(), apiclient.CreateEventWebhookRequest{
 		Name: name, URL: url, Enabled: &enabled, Events: events,

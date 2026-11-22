@@ -152,6 +152,7 @@
     "empty": "Aucun abonné webhook pour l'instant.",
     "events": "Événements",
     "eventsHint": "Laissez tout décoché pour recevoir chaque événement. Seuls les incidents publiés et les noms publics de composants sont jamais envoyés.",
+    "fieldsFailed": "Les champs du formulaire n'ont pas pu être chargés. Rechargez la page et réessayez.",
     "intro": "Les webhooks signés informent vos systèmes quand un incident ou un composant change. Chaque requête porte les en-têtes X-Signature et X-Timestamp ; vérifiez-les avec le secret affiché une seule fois lors de l'ajout de l'abonné.",
     "label": "Libellé",
     "labelPlaceholder": "Libellé (facultatif)",
@@ -173,5 +174,18 @@
     "testFailed": "Échec du ping de test : {{error}}",
     "testOk": "Ping de test livré, le récepteur a répondu HTTP {{code}}.",
     "url": "URL du webhook"
+  },
+  "fields": {
+    "webhook": {
+      "url": {
+        "help": "URL HTTPS qui reçoit les événements signés."
+      },
+      "label": {
+        "help": "Nom court pour cet abonné."
+      },
+      "events": {
+        "help": "Laissez tout décoché pour recevoir chaque événement."
+      }
+    }
   }
 }

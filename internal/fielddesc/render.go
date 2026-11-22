@@ -12,6 +12,7 @@ type FlagSpec struct {
 	Usage string
 	File  bool
 	Bool  bool
+	Multi bool
 }
 
 // FlagSpecs lists each distinct flag once, in field order. Variants that share a wire
@@ -34,7 +35,7 @@ func (r Resource) flagSpecs(values map[string]string) []FlagSpec {
 			continue
 		}
 		seen[f.Flag] = true
-		out = append(out, FlagSpec{Name: f.Flag, Key: f.Key, Usage: f.Doc, File: f.FlagFile, Bool: f.Type == TypeBool})
+		out = append(out, FlagSpec{Name: f.Flag, Key: f.Key, Usage: f.Doc, File: f.FlagFile, Bool: f.Type == TypeBool, Multi: f.Multi})
 	}
 	return out
 }

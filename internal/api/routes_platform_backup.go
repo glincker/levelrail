@@ -11,6 +11,9 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// History listing is ordinary AbilityRead.
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleTriggerBackup))
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListBackupHistory))
+	// Restore test: newest backup into a throwaway container, result kept in the drill history.
+	mux.HandleFunc("POST /api/v1/databases/{name}/restore-test", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleStartDatabaseRestoreTest))
+	mux.HandleFunc("GET /api/v1/databases/{name}/restore-test", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabaseRestoreTest))
 
 	// Instance-wide backup history across every database and app volume,
 	// the aggregated counterpart of the per-resource routes above and

@@ -113,6 +113,19 @@
     "allClear": "すべてのチェックに合格しました。対応が必要な項目はありません。",
     "needsAction": "要対応"
   },
+  "healthExplain": {
+    "label": "理由",
+    "failingCheck": "チェック {{target}} が {{since}} から失敗しています",
+    "restarts": "再起動: {{n}}",
+    "crashloop": "クラッシュループ",
+    "lastDeploy": "直近のデプロイ: {{status}}",
+    "logError": "直近のエラー: {{line}}",
+    "next": {
+      "apply_preset": "ヘルスプリセット {{preset}} を試してください",
+      "rollback": "前のデプロイにロールバック",
+      "view_logs": "ログを確認"
+    }
+  },
   "logs": {
     "previousContainerEnded": "前のコンテナインスタンスが終了しました",
     "copyLineAria": "このログ行をコピー",

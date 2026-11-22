@@ -35,6 +35,7 @@ import { DeleteBackupDialog } from './DeleteBackupDialog'
 import { RestoreHistoryTable } from './RestoreHistoryTable'
 import { CloneRestoreDialog } from './CloneRestoreDialog'
 import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
+import { RestoreTestRow } from './backups/RestoreTestRow'
 import { BackupScheduleForm } from './BackupScheduleForm'
 import { BackupScheduleSuggestion } from './backups/BackupScheduleSuggestion'
 import { EncryptedBackupBadge } from './EncryptedBackupBadge'
@@ -480,6 +481,7 @@ export function BackupsSection({ database }: { database: DatabaseResource }) {
         <BackupScheduleSuggestion database={database} />
         <BackupScheduleForm database={database} />
         <TriggerBackupRow databaseName={databaseName} />
+        <RestoreTestRow databaseName={databaseName} />
         <BackupHistoryTable databaseName={databaseName} />
         <RestoreHistoryTable databaseName={databaseName} />
         <CloneRestoreHistoryTable databaseName={databaseName} />

@@ -21,7 +21,8 @@
     "cancel": "Abbrechen",
     "submit": "Webhook hinzufügen",
     "submitting": "Wird hinzugefügt",
-    "done": "Fertig"
+    "done": "Fertig",
+    "fieldsFailed": "Die Formularfelder konnten nicht geladen werden. Laden Sie die Seite neu und versuchen Sie es erneut."
   },
   "card": {
     "allEvents": "Alle Ereignisse",
@@ -58,6 +59,17 @@
       "pending": "Ausstehend",
       "delivered": "Zugestellt",
       "dead": "Dead Letter"
+    }
+  },
+  "fields": {
+    "name": {
+      "help": "Eine kurze Bezeichnung für diesen Empfänger."
+    },
+    "url": {
+      "help": "HTTPS-Endpunkt, der die signierten POST-Anfragen erhält."
+    },
+    "events": {
+      "help": "Durch Komma getrennte Typen oder Familien wie apps.*. Leer lassen, um jedes Ereignis zu erhalten."
     }
   }
 }

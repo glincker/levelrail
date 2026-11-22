@@ -603,5 +603,15 @@
         }
       }
     }
+  },
+  "restoreTest": {
+    "button": "リストアをテスト",
+    "neverRun": "前回のリストアテスト: 未実行",
+    "running": "リストアテスト実行中",
+    "ok": "前回のリストアテスト: 成功 {{when}}、{{seconds}}秒、{{size}}",
+    "failed": "前回のリストアテスト: 失敗 {{when}}、{{seconds}}秒",
+    "startedTitle": "リストアテストを開始しました。",
+    "startedBody": "完了するとここに結果が表示されます。",
+    "startFailed": "リストアテストを開始できませんでした。"
   }
 }

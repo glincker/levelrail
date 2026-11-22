@@ -612,5 +612,15 @@
         }
       }
     }
+  },
+  "restoreTest": {
+    "button": "Probar restauración",
+    "neverRun": "Última prueba de restauración: nunca ejecutada",
+    "running": "Prueba de restauración en curso",
+    "ok": "Última prueba de restauración: correcta {{when}}, {{seconds}} s, {{size}}",
+    "failed": "Última prueba de restauración: fallida {{when}}, {{seconds}} s",
+    "startedTitle": "Prueba de restauración iniciada.",
+    "startedBody": "El resultado aparece aquí cuando termine.",
+    "startFailed": "No se pudo iniciar la prueba de restauración."
   }
 }

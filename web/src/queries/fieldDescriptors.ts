@@ -61,4 +61,6 @@ export const FIELD_RESOURCES = {
   notificationChannel: 'notification-channels',
   dnsProvider: 'dns-providers',
   registryCredential: 'registry-credentials',
+  eventWebhook: 'event-webhooks',
+  statusWebhook: 'status-page-webhooks',
 } as const

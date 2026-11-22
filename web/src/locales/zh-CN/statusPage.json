@@ -152,6 +152,7 @@
     "empty": "暂无 Webhook 订阅者。",
     "events": "事件",
     "eventsHint": "全部不勾选则接收所有事件。只会发送已发布的事件和公开的组件名称。",
+    "fieldsFailed": "无法加载表单字段。请刷新页面后重试。",
     "intro": "已签名的 Webhook 会在事件或组件发生变化时通知你的系统。每个请求都带有 X-Signature 和 X-Timestamp 请求头;请使用添加订阅者时仅显示一次的密钥来验证它们。",
     "label": "标签",
     "labelPlaceholder": "标签(可选)",
@@ -173,5 +174,18 @@
     "testFailed": "测试 ping 失败:{{error}}",
     "testOk": "测试 ping 已投递,接收端返回 HTTP {{code}}。",
     "url": "Webhook URL"
+  },
+  "fields": {
+    "webhook": {
+      "url": {
+        "help": "接收已签名事件的 HTTPS URL。"
+      },
+      "label": {
+        "help": "此订阅方的简短名称。"
+      },
+      "events": {
+        "help": "全部不勾选则接收所有事件。"
+      }
+    }
   }
 }

@@ -621,5 +621,15 @@
         }
       }
     }
+  },
+  "restoreTest": {
+    "button": "Testar restauração",
+    "neverRun": "Último teste de restauração: nunca executado",
+    "running": "Teste de restauração em andamento",
+    "ok": "Último teste de restauração: ok {{when}}, {{seconds}} s, {{size}}",
+    "failed": "Último teste de restauração: falhou {{when}}, {{seconds}} s",
+    "startedTitle": "Teste de restauração iniciado.",
+    "startedBody": "O resultado aparece aqui quando terminar.",
+    "startFailed": "Não foi possível iniciar o teste de restauração."
   }
 }

@@ -31,6 +31,8 @@ func runAppsHealth(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsHealthSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runAppsHealthClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "explain":
+		return runAppsHealthExplain(prog, args[1:], stdout, stderr, lookupEnv)
 	case "discover":
 		return runAppsHealthDiscover(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -45,6 +47,7 @@ func appsHealthUsage(prog string) string {
   %[1]s apps health get <name> [flags]                                    show an app's readiness and liveness probes
   %[1]s apps health set <name> --probe readiness|liveness [probe flags]   set one probe, keeping the other as-is
   %[1]s apps health clear <name> [--probe readiness|liveness]             remove one probe, or both
+  %[1]s apps health explain <name>                                       say why an app is red or amber and what to try next
   %[1]s apps health discover <name>                                      actively probe well-known paths, report what each one really did
 
 A probe is either an HTTP(S) check (--path, with --scheme, --host,

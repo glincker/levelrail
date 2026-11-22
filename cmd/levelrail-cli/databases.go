@@ -43,6 +43,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesStatus(prog, rest, stdout, stderr, lookupEnv)
 	case "stop":
 		return runDatabasesStop(prog, rest, stdout, stderr, lookupEnv)
+	case "restore-test":
+		return runDatabasesRestoreTest(prog, rest, stdout, stderr, lookupEnv)
 	case "start":
 		return runDatabasesStart(prog, rest, stdout, stderr, lookupEnv)
 	case "bulk":
@@ -162,6 +164,7 @@ func databasesUsage(prog string) string {
   %[1]s databases delete <name> [flags]  stop and remove a database, keep its data volume (--force if apps use it)
   %[1]s databases stop <name> [flags]     stop a database's container, keep its data
   %[1]s databases start <name> [flags]    bring a stopped database's container back
+  %[1]s databases restore-test <name> [flags]  restore the newest backup into a throwaway container and report ok or failed
   %[1]s databases bulk start|stop|backup <names...|--selector S> [--dry-run] [--confirm-count N]  one audited call for many databases
   %[1]s databases resource-recommendation <name> [flags]  suggest memory/CPU limits from historical usage
   %[1]s databases metrics <name> --metric NAME [flags]  query a database's metric time series

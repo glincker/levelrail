@@ -54,6 +54,24 @@ export interface ImportService {
   restart?: string
 }
 
+export interface ImportResource {
+  kind: string
+  name: string
+  detail?: string
+}
+
+export interface ImportUnsupported {
+  service?: string
+  feature: string
+  reason: string
+  alternative?: string
+}
+
+export interface ImportConflict {
+  kind: string
+  name: string
+}
+
 export interface ImportPlan {
   source: ImportSource
   suggested_name: string
@@ -65,6 +83,10 @@ export interface ImportPlan {
   domain_suggestion?: string
   warnings: ImportWarning[]
   missing_required_env: string[]
+  resources?: ImportResource[]
+  secret_refs?: string[]
+  unsupported?: ImportUnsupported[]
+  conflicts?: ImportConflict[]
 }
 
 export interface ImportPlanRequest {
