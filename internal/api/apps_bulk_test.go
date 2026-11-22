@@ -210,3 +210,20 @@ func TestBulkApps_ScaleAndRollback(t *testing.T) {
 		t.Errorf("rollback without history = %q, want skipped", got)
 	}
 }
+
+func TestBulkApps_SelectByProject(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedScheduledTaskApp(t, db, "web")
+	seedScheduledTaskApp(t, db, "worker")
+	if err := db.SaveProject(context.Background(), store.Project{ID: "p1", Name: "shop", CreatedAt: "2026-10-01T00:00:00Z"}); err != nil {
+		t.Fatalf("seed project: %v", err)
+	}
+	if err := db.UpdateServiceProject(context.Background(), "web", "p1"); err != nil {
+		t.Fatalf("assign project: %v", err)
+	}
+	code, resp := bulkCall(t, rt, cookie, `{"action":"restart","project":"p1","dry_run":true}`)
+	if got := bulkStatuses(resp); code != http.StatusMultiStatus || len(got) != 1 || got["web"] != bulkStatusWouldRun {
+		t.Errorf("project selection = %d %+v", code, got)
+	}
+}

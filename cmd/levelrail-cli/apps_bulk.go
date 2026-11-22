@@ -14,11 +14,12 @@ import (
 func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps bulk", "print the per-app results as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsBulkUsage(prog)) }
-	var tag, env, names string
+	var tag, env, project, names string
 	var dryRun, yes, haltOnFail bool
 	var batch, pause, replicas, minReplicas, maxReplicas int
 	fs.StringVar(&tag, "tag", "", "select every app carrying this tag")
 	fs.StringVar(&env, "env", "", "select every app in this environment (name or ID)")
+	fs.StringVar(&project, "project", "", "select every app in this project (ID)")
 	fs.StringVar(&names, "names", "", "comma-separated app names to act on")
 	fs.BoolVar(&dryRun, "dry-run", false, "show what would be applied without changing anything")
 	fs.IntVar(&batch, "batch", 0, "apply in waves of this many apps (0 runs them all in one pass)")
@@ -38,7 +39,7 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		_, _ = fmt.Fprintf(stderr, "%s: apps bulk requires an action and, for add-tag, remove-tag, set-environment and move-to-project, a value\n\n%s", prog, appsBulkUsage(prog))
 		return exitUsage
 	}
-	req := apiclient.BulkAppsRequest{Action: rest[0], Tag: tag, Environment: env, DryRun: dryRun, BatchSize: batch, PauseSeconds: pause, HaltOnFail: haltOnFail}
+	req := apiclient.BulkAppsRequest{Action: rest[0], Tag: tag, Environment: env, Project: project, DryRun: dryRun, BatchSize: batch, PauseSeconds: pause, HaltOnFail: haltOnFail}
 	if len(rest) == 2 {
 		req.Value = rest[1]
 	}
@@ -53,8 +54,8 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			req.Names = append(req.Names, n)
 		}
 	}
-	if len(req.Names) == 0 && tag == "" && env == "" {
-		_, _ = fmt.Fprintf(stderr, "%s: select apps with --tag, --env or --names\n", prog)
+	if len(req.Names) == 0 && tag == "" && env == "" && project == "" {
+		_, _ = fmt.Fprintf(stderr, "%s: select apps with --tag, --env, --project or --names\n", prog)
 		return exitUsage
 	}
 
@@ -87,7 +88,7 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			}
 		}
 		req.Names = targets
-		req.Tag, req.Environment = "", ""
+		req.Tag, req.Environment, req.Project = "", "", ""
 		req.ConfirmCount = len(targets)
 		if req.Action == "delete" {
 			req.ConfirmNames = targets
@@ -115,7 +116,7 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 
 func appsBulkUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps bulk <action> [value] (--tag T | --env E | --names a,b) [--dry-run] [--yes]
+  %[1]s apps bulk <action> [value] (--tag T | --env E | --project P | --names a,b) [--dry-run] [--yes]
       [--batch N] [--pause SECONDS] [--halt-on-fail]
 
 Actions: redeploy, restart, stop, start, add-tag <tag>, remove-tag <tag>,
@@ -130,7 +131,7 @@ are also confirmed by count server side. delete always lists the exact apps it r
 protected environments (deploy those individually).
 
 Flags:
-  --tag string, --env string, --names string   select target apps
+  --tag, --env, --project, --names   select target apps
   --replicas N, --min N, --max M                scale targets
   --dry-run                                     show what would happen, change nothing
   --yes                                         skip the confirmation prompt

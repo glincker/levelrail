@@ -13,6 +13,7 @@ type BulkAppsRequest struct {
 	Names        []string `json:"names,omitempty"`
 	Tag          string   `json:"tag,omitempty"`
 	Environment  string   `json:"environment,omitempty"`
+	Project      string   `json:"project,omitempty"`
 	Value        string   `json:"value,omitempty"`
 	DryRun       bool     `json:"dry_run,omitempty"`
 	ConfirmNames []string `json:"confirm_names,omitempty"`

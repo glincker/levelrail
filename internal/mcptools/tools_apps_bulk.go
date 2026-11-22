@@ -13,6 +13,7 @@ type bulkAppsInput struct {
 	Names        []string `json:"names,omitempty" jsonschema:"app names to act on; alternatively select by tag or environment"`
 	Tag          string   `json:"tag,omitempty" jsonschema:"select every app carrying this tag"`
 	Environment  string   `json:"environment,omitempty" jsonschema:"select every app in this environment (name or ID)"`
+	Project      string   `json:"project,omitempty" jsonschema:"select every app in this project ID"`
 	Value        string   `json:"value,omitempty" jsonschema:"the tag, environment or project ID for add-tag, remove-tag, set-environment and move-to-project"`
 	DryRun       bool     `json:"dry_run,omitempty" jsonschema:"list what would be applied and change nothing"`
 	Replicas     *int     `json:"replicas,omitempty" jsonschema:"scale: replicas for apps without autoscale"`
@@ -38,7 +39,7 @@ func registerBulkAppTools(server *mcp.Server, client *apiclient.Client) {
 			return nil, apiclient.BulkAppsResponse{}, fmt.Errorf("bulk apps: use bulk_delete_apps to delete")
 		}
 		resp, err := client.BulkApps(ctx, apiclient.BulkAppsRequest{
-			Action: in.Action, Names: in.Names, Tag: in.Tag, Environment: in.Environment, Value: in.Value, DryRun: in.DryRun,
+			Action: in.Action, Names: in.Names, Tag: in.Tag, Environment: in.Environment, Project: in.Project, Value: in.Value, DryRun: in.DryRun,
 			Replicas: in.Replicas, MinReplicas: in.MinReplicas, MaxReplicas: in.MaxReplicas, ConfirmCount: in.ConfirmCount,
 		})
 		if err != nil {

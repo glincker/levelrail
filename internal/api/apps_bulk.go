@@ -60,6 +60,8 @@ type bulkAppsRequest struct {
 	Names       []string `json:"names,omitempty"`
 	Tag         string   `json:"tag,omitempty"`
 	Environment string   `json:"environment,omitempty"`
+	// Project selects every app in this project ID; it combines with Tag and Environment.
+	Project string `json:"project,omitempty"`
 	// Value is the tag, environment ID or name, or project ID the action applies.
 	Value  string `json:"value,omitempty"`
 	DryRun bool   `json:"dry_run,omitempty"`
@@ -148,7 +150,7 @@ func (rt *Router) handleBulkApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(names) == 0 {
-		writeError(w, http.StatusBadRequest, "no target apps: set names, tag or environment")
+		writeError(w, http.StatusBadRequest, "no target apps: set names, tag, environment or project")
 		return
 	}
 	if maxN := rt.bulkLimit(r.Context(), runtimesettings.KeyBulkMaxApps); len(names) > maxN {
@@ -278,14 +280,14 @@ func (rt *Router) resolveBulkTargets(ctx context.Context, req bulkAppsRequest) (
 		slices.Sort(names)
 		return slices.Compact(names), nil
 	}
-	if req.Tag == "" && req.Environment == "" {
+	if req.Tag == "" && req.Environment == "" && req.Project == "" {
 		return nil, nil
 	}
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
 		return nil, errNoFilteredList
 	}
-	f := store.AppListFilter{Environment: req.Environment}
+	f := store.AppListFilter{Environment: req.Environment, ProjectID: req.Project}
 	if req.Tag != "" {
 		f.Tags = []string{req.Tag}
 	}
