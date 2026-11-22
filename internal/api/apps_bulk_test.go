@@ -288,6 +288,10 @@ func TestBulkApps_SetMemoryCPUEnvDryRunAndQuota(t *testing.T) {
 	if bulkStatuses(resp)["b-app"] != bulkStatusOK || resp.Results[0].Before != "(unset)" || resp.Results[0].After != "debug" {
 		t.Fatalf("set-env = %+v", resp)
 	}
+	_, resp = bulkCall(t, rt, cookie, `{"action":"set-env","names":["b-app"],"env_key":"API_TOKEN","env_value":"s3cret-value","dry_run":true}`)
+	if r := resp.Results[0]; r.After != "(hidden)" || strings.Contains(r.Message, "s3cret-value") {
+		t.Errorf("secret-looking env result = %+v, want a hidden value", r)
+	}
 	svc, err := db.GetDesiredService(ctx, "b-app")
 	if err != nil || svc.Env["LOG_LEVEL"] != "debug" || svc.Resources.NanoCPUs != 500000000 || svc.Resources.MemoryBytes != 512<<20 {
 		t.Errorf("b-app = %+v err=%v", svc, err)

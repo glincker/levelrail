@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"maps"
 
+	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -82,8 +83,10 @@ func (rt *Router) bulkResources(ctx context.Context, req bulkAppsRequest, svc st
 		}
 		after = *req.EnvValue
 		if had && old == after {
-			return bulkStatusSkipped, "already set to that value", before, after
+			return bulkStatusSkipped, "already set to that value", bulkMaskEnv(req.EnvKey, before), bulkMaskEnv(req.EnvKey, after)
 		}
+		// Results and the dashboard table must not echo secret-looking values.
+		defer func() { before, after = bulkMaskEnv(req.EnvKey, before), bulkMaskEnv(req.EnvKey, after) }()
 		if next.Env == nil {
 			next.Env = map[string]string{}
 		}
@@ -105,7 +108,18 @@ func (rt *Router) bulkResources(ctx context.Context, req bulkAppsRequest, svc st
 		return bulkStatusError, req.Action + " failed", before, after
 	}
 	rt.nudgeReconciler()
+	if req.Action == bulkActionSetEnv {
+		return bulkStatusOK, "", before, after
+	}
 	return bulkStatusOK, before + " to " + after, before, after
+}
+
+// bulkMaskEnv hides the value of a secret-looking variable in bulk results.
+func bulkMaskEnv(key, v string) string {
+	if v == "(unset)" || !importplan.KeyLooksSecret(key) {
+		return v
+	}
+	return "(hidden)"
 }
 
 func bulkEnvKeyIsReference(svc store.DesiredService, key string) bool {
