@@ -2,6 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState, type ReactNode } from 'react'
 import { FilterChips } from './FilterChips'
 import { useTranslation } from 'react-i18next'
+import { Term } from '@/components/ui/term'
 import {
   ArrowLeftRightGlassIcon,
   GlobeGlassIcon,
@@ -164,14 +165,16 @@ export function DomainsTable({
       },
       {
         id: 'dns',
-        header: t('page.col.dns'),
+        header: <Term term="aRecord">{t('page.col.dns')}</Term>,
+        cardLabel: t('page.col.dns'),
         priority: 2,
         width: 'w-28',
         cell: (d) => <DomainDnsCell domain={d} />,
       },
       {
         id: 'certificate',
-        header: t('page.col.certificate'),
+        header: <Term term="cert">{t('page.col.certificate')}</Term>,
+        cardLabel: t('page.col.certificate'),
         priority: 2,
         width: 'w-36',
         cell: (d) => (

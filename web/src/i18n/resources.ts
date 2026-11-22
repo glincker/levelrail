@@ -66,6 +66,7 @@ import type upgradeSafety from '../locales/en/upgradeSafety.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
 import type canvas from '../locales/en/canvas.json'
 import type mailServer from '../locales/en/mailServer.json'
+import type glossary from '../locales/en/glossary.json'
 import type dnsSetup from '../locales/en/dnsSetup.json'
 import type dnsProviders from '../locales/en/dnsProviders.json'
 import type ddns from '../locales/en/ddns.json'
@@ -226,6 +227,7 @@ declare module 'i18next' {
       infraCanvas: typeof infraCanvas
       canvas: typeof canvas
       mailServer: typeof mailServer
+      glossary: typeof glossary
       dnsSetup: typeof dnsSetup
       dnsProviders: typeof dnsProviders
       platformSettings: typeof platformSettings

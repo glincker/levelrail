@@ -9,6 +9,7 @@ import type {
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldLabel } from '@/components/ui/typography'
+import { Term } from '@/components/ui/term'
 import { MoveToProjectDialog } from './MoveToProjectDialog'
 import { MoveToEnvironmentDialog } from './MoveToEnvironmentDialog'
 import { MoveEnvironmentDialog } from './environments/MoveEnvironmentDialog'
@@ -94,7 +95,9 @@ export function AppOverview({ app }: { app: AppDetail }) {
             </dd>
           </div>
           <div>
-            <FieldLabel as="dt">{t('replicas')}</FieldLabel>
+            <FieldLabel as="dt">
+              <Term term="replica">{t('replicas')}</Term>
+            </FieldLabel>
             <dd className="mt-0.5 text-sm text-foreground">
               {app.replicas}
               {app.replicas > 1 ? (

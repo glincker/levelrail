@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { Term } from '@/components/ui/term'
 import {
   LockGlassIcon,
   LockOpenGlassIcon,
@@ -147,7 +148,8 @@ export function NodesTable({
       },
       {
         id: 'agent',
-        header: t('list.agent'),
+        header: <Term term="agent">{t('list.agent')}</Term>,
+        cardLabel: t('list.agent'),
         priority: 3,
         width: 'w-36',
         cell: (node) => (

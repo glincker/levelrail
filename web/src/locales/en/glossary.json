@@ -1,0 +1,33 @@
+{
+  "learnMore": "Learn more",
+  "terms": {
+    "ingress": {
+      "label": "Ingress",
+      "body": "The front door: the proxy that receives web traffic and sends it to the right app."
+    },
+    "replica": {
+      "label": "Replicas",
+      "body": "Identical copies of your app running side by side to share traffic and survive a restart."
+    },
+    "volume": {
+      "label": "Volume",
+      "body": "Storage that outlives the container, so files and data stay after a redeploy."
+    },
+    "cert": {
+      "label": "Certificate",
+      "body": "The file that proves your domain is yours and lets browsers use HTTPS. It renews automatically."
+    },
+    "aRecord": {
+      "label": "DNS",
+      "body": "DNS records, such as an A record, point your domain name at the IP address of this server."
+    },
+    "reconciler": {
+      "label": "Reconciler",
+      "body": "The background loop that compares what you asked for with what is running and fixes any difference."
+    },
+    "agent": {
+      "label": "Agent",
+      "body": "The small program on each node that runs containers for the control plane and reports back."
+    }
+  }
+}
