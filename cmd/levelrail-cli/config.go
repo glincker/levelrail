@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -234,4 +235,93 @@ func renameProfile(prog, from, to string) error {
 		return writeCurrentContext(prog, to)
 	}
 	return nil
+}
+
+const (
+	settingsFileName = "settings"
+	settingOutput    = "output"
+)
+
+var validDefaultOutputs = map[string]bool{"json": true, "ndjson": true, "yaml": true, "table": true, "wide": true, "text": true, "name": true}
+
+// readSetting reads one key from the plain key=value settings file; a missing file or key is empty.
+func readSetting(prog, key string) string {
+	dir, err := configDir(prog)
+	if err != nil {
+		return ""
+	}
+	data, err := os.ReadFile(filepath.Join(dir, settingsFileName)) //nolint:gosec // fixed file name under the config dir
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if k, v, ok := strings.Cut(strings.TrimSpace(line), "="); ok && strings.TrimSpace(k) == key {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
+// writeSetting rewrites the settings file with key set, or removed when value is empty, keeping other keys.
+func writeSetting(prog, key, value string) error {
+	dir, err := configDir(prog)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("create config dir: %w", err)
+	}
+	path := filepath.Join(dir, settingsFileName)
+	var kept []string
+	if data, rerr := os.ReadFile(path); rerr == nil { //nolint:gosec // fixed file name under the config dir
+		for _, line := range strings.Split(strings.TrimRight(string(data), "\n"), "\n") {
+			if k, _, ok := strings.Cut(strings.TrimSpace(line), "="); ok && strings.TrimSpace(k) == key {
+				continue
+			}
+			if strings.TrimSpace(line) != "" {
+				kept = append(kept, line)
+			}
+		}
+	}
+	if value != "" {
+		kept = append(kept, key+"="+value)
+	}
+	return os.WriteFile(path, []byte(strings.Join(kept, "\n")+"\n"), 0o600) //nolint:gosec // fixed file name under the config dir
+}
+
+func runConfigSet(prog string, args []string, stdout, stderr io.Writer) int {
+	if len(args) != 2 || args[0] != settingOutput {
+		_, _ = fmt.Fprint(stderr, configUsage(prog))
+		return exitUsage
+	}
+	value := args[1]
+	if value == "default" || value == "unset" {
+		value = ""
+	} else if !validDefaultOutputs[value] {
+		_, _ = fmt.Fprintf(stderr, "%s: invalid output %q, want json, ndjson, yaml, table, wide, text, name or default\n", prog, value)
+		return exitValidation
+	}
+	if err := writeSetting(prog, settingOutput, value); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if value == "" {
+		_, _ = fmt.Fprintln(stdout, "Default output cleared.")
+	} else {
+		_, _ = fmt.Fprintf(stdout, "Default output set to %s.\n", value)
+	}
+	return exitOK
+}
+
+func runConfigGet(prog string, args []string, stdout, stderr io.Writer) int {
+	if len(args) != 1 || args[0] != settingOutput {
+		_, _ = fmt.Fprint(stderr, configUsage(prog))
+		return exitUsage
+	}
+	v := readSetting(prog, settingOutput)
+	if v == "" {
+		v = "table"
+	}
+	_, _ = fmt.Fprintln(stdout, v)
+	return exitOK
 }

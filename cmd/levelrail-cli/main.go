@@ -61,7 +61,9 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 	// Always set so a previous run() in this process never leaks the opt-in.
 	apiclient.SetInsecureHTTP(insecureHTTP)
-	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
+	args, scopeFlags = extractScopeFlags(expandTemplateFlag(expandOutputShorthand(args)))
+	// Reset every run so a saved setting never leaks between calls in one process.
+	defaultOutput = readSetting(prog, settingOutput)
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()
 	if debug {
@@ -369,6 +371,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runCp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "config":
 		return runConfig(prog, args[1:], stdout, stderr, lookupEnv)
+	case "prompt":
+		return runPrompt(prog, args[1:], stdout, stderr, lookupEnv)
 	case "mcp":
 		return runMCP(prog, args[1:], stdout, stderr, lookupEnv)
 	case "docs":

@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
+	"text/template"
 )
 
 func jpJSONString(v any) (string, error) {
@@ -70,4 +71,39 @@ func writeCustomColumns(out io.Writer, spec string, v any) error {
 		_, _ = fmt.Fprintln(tw, strings.Join(cells, "\t"))
 	}
 	return tw.Flush()
+}
+
+// One compact JSON object per slice element; a non-list value is a single line.
+func writeNDJSON(out io.Writer, v any) error {
+	rows, ok := v.([]any)
+	if !ok {
+		rows = []any{v}
+	}
+	for _, row := range rows {
+		if err := writeJSONLine(out, row); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Runs the template once per row, one line each, over the generic JSON shape so .name matches the JSON keys.
+func writeTemplate(out io.Writer, text string, v any) error {
+	tpl, err := template.New("output").Option("missingkey=zero").Parse(text)
+	if err != nil {
+		return newValidationError("--template: %s", err)
+	}
+	rows, ok := v.([]any)
+	if !ok {
+		rows = []any{v}
+	}
+	for _, row := range rows {
+		if err := tpl.Execute(out, row); err != nil {
+			return newValidationError("--template: %s", err)
+		}
+		if _, err := fmt.Fprintln(out); err != nil {
+			return err
+		}
+	}
+	return nil
 }

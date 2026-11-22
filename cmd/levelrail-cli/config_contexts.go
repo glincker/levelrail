@@ -82,6 +82,10 @@ func runConfig(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runConfigSetContext(prog, args[1:], stdout, stderr)
 	case "delete-context":
 		return runConfigDeleteContext(prog, args[1:], stdout, stderr)
+	case "set":
+		return runConfigSet(prog, args[1:], stdout, stderr)
+	case "get":
+		return runConfigGet(prog, args[1:], stdout, stderr)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown config subcommand %q\n\n%s", prog, args[0], configUsage(prog))
 		return exitUsage
@@ -218,6 +222,8 @@ func configUsage(prog string) string {
   %[1]s config set-context <name> [--api-url U] [--team T] [--project P] [--rename NEW]
                                            create or update a context
   %[1]s config delete-context <name> [--yes]  remove a context and its saved token
+  %[1]s config set output <format>         save the default --output (json, ndjson, yaml, table, wide, text, name)
+  %[1]s config get output                  print the saved default --output
 
 Flags (all verbs):
   --json            print the result as JSON, nothing else

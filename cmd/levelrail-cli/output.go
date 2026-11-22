@@ -83,7 +83,14 @@ const (
 	outputTable outputFormat = "table"
 	outputJSON  outputFormat = "json"
 	outputText  outputFormat = "text"
+	// outputNDJSON prints one compact JSON object per line so lists stream into jq and xargs.
+	outputNDJSON outputFormat = "ndjson"
+	// outputTemplatePrefix carries a Go text/template after the equals sign, set by --template.
+	outputTemplatePrefix = "template="
 )
+
+// defaultOutput is the saved "output" setting, applied only when neither --output nor --json is given.
+var defaultOutput string
 
 // --json is shorthand for --output json; a contradicting pair is a usage error, not a silent pick.
 func resolveOutputFormat(jsonOut bool, outputFlag string) (outputFormat, error) {
@@ -92,20 +99,28 @@ func resolveOutputFormat(jsonOut bool, outputFlag string) (outputFormat, error) 
 		if jsonOut {
 			return outputJSON, nil
 		}
+		if defaultOutput != "" {
+			return outputFormat(defaultOutput), nil
+		}
 		return outputTable, nil
+	case string(outputNDJSON):
+		if jsonOut {
+			return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
+		}
+		return outputNDJSON, nil
 	case string(outputJSON), string(outputTable), string(outputText), string(outputYAML), string(outputWide), string(outputName):
 		if jsonOut && outputFlag != string(outputJSON) {
 			return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
 		}
 		return outputFormat(outputFlag), nil
 	default:
-		if isSpecFormat(outputFormat(outputFlag)) {
+		if isSpecFormat(outputFormat(outputFlag)) || strings.HasPrefix(outputFlag, outputTemplatePrefix) {
 			if jsonOut {
 				return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
 			}
 			return outputFormat(outputFlag), nil
 		}
-		return "", newValidationError("invalid --output %q, want json, yaml, table, wide, text, name, custom-columns=... or jsonpath=...", outputFlag)
+		return "", newValidationError("invalid --output %q, want json, ndjson, yaml, table, wide, text, name, custom-columns=..., jsonpath=... or template=...", outputFlag)
 	}
 }
 
@@ -154,7 +169,7 @@ func renderResult(stdout io.Writer, format outputFormat, query string, data any,
 			return err
 		}
 		value = projected
-	case format == outputText:
+	case format == outputText, format == outputNDJSON, strings.HasPrefix(string(format), outputTemplatePrefix):
 		generic, err := toGenericJSON(data)
 		if err != nil {
 			return err
@@ -168,6 +183,10 @@ func renderResult(stdout io.Writer, format outputFormat, query string, data any,
 		return nil
 	case format == outputWide:
 		return writeQueriedTable(stdout, value)
+	case format == outputNDJSON:
+		return writeNDJSON(stdout, value)
+	case strings.HasPrefix(string(format), outputTemplatePrefix):
+		return writeTemplate(stdout, strings.TrimPrefix(string(format), outputTemplatePrefix), value)
 	case format == outputYAML:
 		return writeYAMLValue(stdout, value)
 	case format == outputName:
@@ -937,7 +956,7 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 // output), the same shape printAppsTable/printDatabasesTable use.
 func printNodesTable(out io.Writer, nodes []nodeResource) {
 	if len(nodes) == 0 {
-		_, _ = fmt.Fprintln(out, "no nodes")
+		_, _ = fmt.Fprintln(out, emptyHint("nodes", "nodes join-token --help"))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
@@ -1007,4 +1026,26 @@ func pickFields(v any, fields []string) any {
 	default:
 		return v
 	}
+}
+
+// expandTemplateFlag rewrites --template X into --output template=X so every verb gets it for free.
+func expandTemplateFlag(args []string) []string {
+	out := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if a == "--" {
+			return append(out, args[i:]...)
+		}
+		if a == "--template" && i+1 < len(args) {
+			out = append(out, "--output", outputTemplatePrefix+args[i+1])
+			i++
+			continue
+		}
+		if v, ok := strings.CutPrefix(a, "--template="); ok {
+			out = append(out, "--output="+outputTemplatePrefix+v)
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
 }

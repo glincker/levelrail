@@ -37,7 +37,7 @@ func runDomainsList(prog string, args []string, stdout, stderr io.Writer, lookup
 // establish.
 func printDomainsTable(out io.Writer, domains []domainResource) {
 	if len(domains) == 0 {
-		_, _ = fmt.Fprintln(out, "no domains")
+		_, _ = fmt.Fprintln(out, emptyHint("domains", "domains --help"))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
