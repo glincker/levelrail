@@ -25,3 +25,12 @@ func TestOracleCredentialFromStoredRejectsGarbage(t *testing.T) {
 		t.Fatal("garbage must fail")
 	}
 }
+
+func TestOraclePolicyKitReadsVirtualNetwork(t *testing.T) {
+	for _, manage := range []bool{false, true} {
+		kit, err := BuildOraclePolicyKit(OraclePolicyKitInput{Group: "g1", Compartment: "lr-test", Manage: manage})
+		if err != nil || !strings.Contains(kit.PolicyText, "virtual-network-family in compartment lr-test") {
+			t.Fatalf("manage=%v kit %q err %v", manage, kit.PolicyText, err)
+		}
+	}
+}

@@ -78,3 +78,24 @@ func TestCloudAccountsAddOCISessionSendsProfileFiles(t *testing.T) {
 		t.Fatalf("profile_config = %q", pc)
 	}
 }
+
+func TestCloudSpendTablePrintsForecastServicesAndBudgets(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"state":"ok","source":"usage_api","estimated":false,"stale":false,"totals":[],` +
+			`"forecast":{"amount":12.5,"currency":"USD","source":"provider"},` +
+			`"by_service":[{"name":"s1","amount":1,"currency":"USD"},{"name":"s2","amount":2,"currency":"USD"},{"name":"s3","amount":3,"currency":"USD"},` +
+			`{"name":"s4","amount":4,"currency":"USD"},{"name":"s5","amount":5,"currency":"USD"},{"name":"s6","amount":6,"currency":"USD"}],` +
+			`"budgets":[{"name":"cap","amount":50,"actual_spend":5,"forecasted_spend":20,"currency":"USD"}]}`))
+	}))
+	defer srv.Close()
+	out, _ := runCLIExpectOK(t, []string{"cloud", "spend", "acct", "--api-url", srv.URL})
+	for _, want := range []string{"FORECAST  12.50 USD (provider)", "s6", "s2", "cap", "20.00"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+	if strings.Contains(out, "s1") {
+		t.Fatalf("only the top 5 services print: %q", out)
+	}
+}

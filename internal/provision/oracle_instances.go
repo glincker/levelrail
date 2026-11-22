@@ -7,8 +7,31 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+// OracleNetworkNote marks rows whose addresses are blank because the key lacks virtual-network read.
+const OracleNetworkNote = "network_read_missing"
+
+type oracleIPEntry struct {
+	pub, priv string
+	at        time.Time
+}
+
+// oracleIPCache keeps resolved VNIC addresses briefly so repeated list calls stay cheap.
+var oracleIPCache sync.Map
+
+func oracleEnvInt(name string, def int) int {
+	if n, err := strconv.Atoi(os.Getenv(name)); err == nil && n > 0 {
+		return n
+	}
+	return def
+}
+
+func oracleIPCacheTTL() time.Duration {
+	return time.Duration(oracleEnvInt("APP_PROVISION_ORACLE_IP_CACHE_SECONDS", 60)) * time.Second
+}
 
 var _ InstanceManager = (*Oracle)(nil)
 
@@ -119,7 +142,87 @@ func (o *Oracle) ListInstances(ctx context.Context, scope InstanceScope) ([]Inst
 		}
 		out = append(out, o.instanceFromDoc(r, region))
 	}
+	o.fillInstanceIPs(ctx, o.iaas(region), comp, out)
 	return out, nil
+}
+
+func isForbiddenOrMissing(err error) bool {
+	var pe *ProviderError
+	return errors.As(err, &pe) && (pe.Status == 401 || pe.Status == 403 || pe.Status == 404)
+}
+
+// fillInstanceIPs resolves addresses with one attachment listing and a capped, cached
+// VNIC read per instance. A key without network read leaves them empty plus a note.
+func (o *Oracle) fillInstanceIPs(ctx context.Context, c *httpClient, comp string, rows []Instance) {
+	if len(rows) == 0 {
+		return
+	}
+	atts, err := listAll[struct {
+		InstanceID string `json:"instanceId"`
+		VnicID     string `json:"vnicId"`
+		State      string `json:"lifecycleState"`
+	}](ctx, c, "/vnicAttachments?limit="+strconv.Itoa(oracleListLimit)+"&compartmentId="+url.QueryEscape(comp))
+	if err != nil {
+		if isForbiddenOrMissing(err) {
+			for i := range rows {
+				rows[i].IPNote = OracleNetworkNote
+			}
+		}
+		return
+	}
+	vnics := map[string][]string{}
+	for _, a := range atts {
+		if a.VnicID != "" && (a.State == "" || a.State == "ATTACHED") {
+			vnics[a.InstanceID] = append(vnics[a.InstanceID], a.VnicID)
+		}
+	}
+	limit := oracleEnvInt("APP_PROVISION_ORACLE_IP_LOOKUP_MAX", 50)
+	sem := make(chan struct{}, oracleEnvInt("APP_PROVISION_ORACLE_IP_LOOKUP_PARALLEL", 4))
+	var wg sync.WaitGroup
+	for i := range rows {
+		ids := vnics[rows[i].ID]
+		if len(ids) == 0 || i >= limit || rows[i].State == InstanceStateTerminating {
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(r *Instance, ids []string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			for _, id := range ids {
+				e, err := o.vnicAddrs(ctx, c, id)
+				if err != nil && isForbiddenOrMissing(err) {
+					r.IPNote = OracleNetworkNote
+					return
+				}
+				if r.PublicIPv4 == "" {
+					r.PublicIPv4 = e.pub
+				}
+				if r.PrivateIPv4 == "" {
+					r.PrivateIPv4 = e.priv
+				}
+			}
+		}(&rows[i], ids)
+	}
+	wg.Wait()
+}
+
+func (o *Oracle) vnicAddrs(ctx context.Context, c *httpClient, vnicID string) (oracleIPEntry, error) {
+	if v, ok := oracleIPCache.Load(vnicID); ok {
+		if e := v.(oracleIPEntry); time.Since(e.at) < oracleIPCacheTTL() {
+			return e, nil
+		}
+	}
+	var v struct {
+		PublicIP  string `json:"publicIp"`
+		PrivateIP string `json:"privateIp"`
+	}
+	if err := c.do(ctx, "GET", "/vnics/"+url.PathEscape(vnicID), nil, &v); err != nil {
+		return oracleIPEntry{}, err
+	}
+	e := oracleIPEntry{pub: v.PublicIP, priv: v.PrivateIP, at: time.Now()}
+	oracleIPCache.Store(vnicID, e)
+	return e, nil
 }
 
 // locate returns the client and region where the instance answers. A 404 only
@@ -160,14 +263,24 @@ func (o *Oracle) DescribeInstance(ctx context.Context, id string) (InstanceDetai
 	}
 	inst := o.instanceFromDoc(doc, region)
 	inst.PublicIPv4 = o.publicIP(ctx, c, id)
+	inst.PrivateIPv4 = o.privateIP(ctx, c, id)
+	if inst.PublicIPv4 == "" && inst.PrivateIPv4 == "" && o.networkDenied(ctx, c, id) {
+		inst.IPNote = OracleNetworkNote
+	}
 	d := InstanceDetail{
 		Instance: inst, Zone: doc.AvailabilityDomain, ImageID: doc.SourceDetails.ImageID,
-		BootVolumeGB: doc.SourceDetails.BootVolumeSizeInGBs, CompartmentID: doc.CompartmentID, PrivateIPv4: o.privateIP(ctx, c, id),
+		BootVolumeGB: doc.SourceDetails.BootVolumeSizeInGBs, CompartmentID: doc.CompartmentID, PrivateIPv4: inst.PrivateIPv4,
 	}
 	if doc.ShapeConfig.Ocpus > 0 || strings.Contains(doc.Shape, "Flex") {
 		d.ResizeAdvisory = "resizing a flexible shape reboots the instance"
 	}
 	return d, nil
+}
+
+// networkDenied tells a key without virtual-network read from an instance with no address.
+func (o *Oracle) networkDenied(ctx context.Context, c *httpClient, instanceID string) bool {
+	path := "/vnicAttachments?compartmentId=" + url.QueryEscape(o.cred.CompartmentOCID) + "&instanceId=" + url.QueryEscape(instanceID)
+	return isForbiddenOrMissing(c.do(ctx, "GET", path, nil, &[]struct{}{}))
 }
 
 func (o *Oracle) privateIP(ctx context.Context, c *httpClient, instanceID string) string {

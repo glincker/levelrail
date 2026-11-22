@@ -53,8 +53,12 @@ type Instance struct {
 	OCPUs      float64
 	MemoryGB   float64
 	PublicIPv4 string
-	CreatedAt  time.Time
-	Tags       map[string]string
+	// PrivateIPv4 is set on list rows by drivers that resolve it; detail has its own copy.
+	PrivateIPv4 string
+	// IPNote says why the addresses are empty when the caller may not read them.
+	IPNote    string
+	CreatedAt time.Time
+	Tags      map[string]string
 	// Managed is true when the instance carries this product's ownership tags.
 	Managed bool
 	// ReadOnly marks an instance the driver lists but refuses to change.

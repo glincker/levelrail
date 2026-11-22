@@ -138,3 +138,26 @@ func TestRegistry(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestOracleBudgetsFillCurrencyFromUsage(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasPrefix(r.URL.Path, oracleUsagePath):
+			_, _ = w.Write([]byte(`{"items":[{"service":"Compute","computedAmount":4,"currency":"EUR"}]}`))
+		case strings.HasPrefix(r.URL.Path, oracleBudgetPath):
+			_, _ = w.Write([]byte(`[{"id":"b1","displayName":"cap","amount":50},{"id":"b2","displayName":"own","amount":5,"currency":"GBP"}]`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := NewOracleReader(ocisign.Signer{KeyID: "t/u/f", Key: key, AllowInsecure: true}, "ocid1.tenancy.oc1..x", srv.URL, srv.URL, fixedCfg())
+	b, err := r.Budgets(context.Background(), SpendQuery{})
+	if err != nil || len(b) != 2 || b[0].Currency != "EUR" || b[1].Currency != "GBP" {
+		t.Fatalf("budgets %+v err %v", b, err)
+	}
+}

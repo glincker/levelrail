@@ -50,19 +50,22 @@ func (s *cloudInstanceState) drop(account string) {
 }
 
 type cloudInstanceWire struct {
-	ID         string            `json:"id"`
-	Name       string            `json:"name"`
-	Region     string            `json:"region"`
-	State      string            `json:"state"`
-	RawState   string            `json:"raw_state"`
-	Shape      string            `json:"shape"`
-	OCPUs      float64           `json:"ocpus,omitempty"`
-	MemoryGB   float64           `json:"memory_gb,omitempty"`
-	PublicIPv4 string            `json:"public_ipv4,omitempty"`
-	CreatedAt  time.Time         `json:"created_at"`
-	Tags       map[string]string `json:"tags"`
-	Managed    bool              `json:"managed"`
-	ReadOnly   bool              `json:"read_only"`
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Region     string  `json:"region"`
+	State      string  `json:"state"`
+	RawState   string  `json:"raw_state"`
+	Shape      string  `json:"shape"`
+	OCPUs      float64 `json:"ocpus,omitempty"`
+	MemoryGB   float64 `json:"memory_gb,omitempty"`
+	PublicIPv4 string  `json:"public_ipv4,omitempty"`
+	// IPNote is a fixed code, network_read_missing, when addresses are blank for lack of network read.
+	IPNote      string            `json:"ip_note,omitempty"`
+	PrivateIPv4 string            `json:"private_ipv4,omitempty"`
+	CreatedAt   time.Time         `json:"created_at"`
+	Tags        map[string]string `json:"tags"`
+	Managed     bool              `json:"managed"`
+	ReadOnly    bool              `json:"read_only"`
 }
 
 func toCloudInstanceWire(i provision.Instance) cloudInstanceWire {
@@ -71,13 +74,12 @@ func toCloudInstanceWire(i provision.Instance) cloudInstanceWire {
 		tags = map[string]string{}
 	}
 	return cloudInstanceWire{ID: i.ID, Name: i.Name, Region: i.Region, State: string(i.State), RawState: i.RawState, Shape: i.Shape,
-		OCPUs: i.OCPUs, MemoryGB: i.MemoryGB, PublicIPv4: i.PublicIPv4, CreatedAt: i.CreatedAt, Tags: tags,
+		OCPUs: i.OCPUs, MemoryGB: i.MemoryGB, PublicIPv4: i.PublicIPv4, PrivateIPv4: i.PrivateIPv4, IPNote: i.IPNote, CreatedAt: i.CreatedAt, Tags: tags,
 		Managed: i.Managed, ReadOnly: i.ReadOnly || !i.Managed}
 }
 
 type cloudInstanceDetailWire struct {
 	cloudInstanceWire
-	PrivateIPv4    string   `json:"private_ipv4,omitempty"`
 	Zone           string   `json:"zone,omitempty"`
 	ImageID        string   `json:"image_id,omitempty"`
 	BootVolumeGB   float64  `json:"boot_volume_gb,omitempty"`
@@ -303,7 +305,11 @@ func (rt *Router) handleGetCloudInstance(w http.ResponseWriter, r *http.Request)
 	for _, v := range provision.InstanceCapabilities(im).Verbs() {
 		verbs = append(verbs, string(v))
 	}
-	writeJSON(w, http.StatusOK, cloudInstanceDetailWire{cloudInstanceWire: toCloudInstanceWire(d.Instance), PrivateIPv4: d.PrivateIPv4, Zone: d.Zone,
+	row := toCloudInstanceWire(d.Instance)
+	if d.PrivateIPv4 != "" {
+		row.PrivateIPv4 = d.PrivateIPv4
+	}
+	writeJSON(w, http.StatusOK, cloudInstanceDetailWire{cloudInstanceWire: row, Zone: d.Zone,
 		ImageID: d.ImageID, BootVolumeGB: d.BootVolumeGB, Project: d.Project, Environment: d.Environment, ResizeAdvisory: d.ResizeAdvisory, Verbs: verbs})
 }
 

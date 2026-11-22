@@ -26,6 +26,10 @@ type instFakeOCI struct {
 	calls  []ociCall
 	doc    string
 	status map[string]int
+	// att is the vnicAttachments body; attStatus forces its status; vnics maps vnic id to body.
+	att       string
+	attStatus int
+	vnics     map[string]string
 }
 
 func (f *instFakeOCI) find(method string) (ociCall, bool) {
@@ -55,6 +59,13 @@ func newInstOracle(t *testing.T, doc string) (*Oracle, *instFakeOCI) {
 			return
 		}
 		switch {
+		case r.URL.Path == "/vnicAttachments" && f.attStatus != 0:
+			w.WriteHeader(f.attStatus)
+			_, _ = w.Write([]byte(`{"code":"NotAuthorizedOrNotFound"}`))
+		case r.URL.Path == "/vnicAttachments" && f.att != "":
+			_, _ = w.Write([]byte(f.att))
+		case strings.HasPrefix(r.URL.Path, "/vnics/") && f.vnics[strings.TrimPrefix(r.URL.Path, "/vnics/")] != "":
+			_, _ = w.Write([]byte(f.vnics[strings.TrimPrefix(r.URL.Path, "/vnics/")]))
 		case r.URL.Path == "/instances" && r.Method == http.MethodGet:
 			_, _ = w.Write([]byte(`[` + f.doc + `,{"id":"` + tInstance + `x","lifecycleState":"TERMINATED"}]`))
 		case strings.HasPrefix(r.URL.Path, "/instances/") && r.Method == http.MethodGet:

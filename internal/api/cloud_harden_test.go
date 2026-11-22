@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
 	"testing"
@@ -142,5 +143,31 @@ func TestCloudScopedRootTokenStaysInItsTeam(t *testing.T) {
 	}
 	if code, _ := teamDo(t, rt, http.MethodGet, "/api/v1/cloud-accounts/acct-"+teamB, "", bearer(plain)); code != http.StatusNotFound && code != http.StatusForbidden {
 		t.Errorf("other team account = %d, want 403 or 404", code)
+	}
+}
+
+type flakyForecastReader struct {
+	fakeSpendReader
+	fail bool
+}
+
+func (f *flakyForecastReader) Forecast(context.Context, cloudspend.SpendQuery) (cloudspend.SpendForecast, error) {
+	if f.fail {
+		return cloudspend.SpendForecast{}, errors.New("throttled")
+	}
+	return cloudspend.SpendForecast{Amount: 42, Currency: "USD"}, nil
+}
+
+func TestSpendWireKeepsLastGoodForecastWhenRefreshFails(t *testing.T) {
+	rt, _ := cloudInstanceRouter(t, &fakeNodeProvisioner{})
+	rd := &flakyForecastReader{}
+	a := store.CloudAccount{ID: "oracle-keep", Provider: "oracle"}
+	if w := rt.spendWire(context.Background(), a, rd, cloudspend.SpendReport{}, true); w.Forecast == nil {
+		t.Fatal("first read must have a forecast")
+	}
+	rd.fail = true
+	w := rt.spendWire(context.Background(), a, rd, cloudspend.SpendReport{}, true)
+	if w.Forecast == nil || w.Forecast.Amount != 42 {
+		t.Fatalf("forecast after failed refresh = %+v", w.Forecast)
 	}
 }

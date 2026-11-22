@@ -186,7 +186,7 @@ func (rt *Router) spendWire(ctx context.Context, a store.CloudAccount, rd clouds
 			return cloudSpendWire{SpendReport: rep, Forecast: ex.forecast, Budgets: ex.budgets}
 		}
 		if !hit || force || time.Since(ex.at) >= ttl {
-			ex = rt.fetchSpendExtras(ctx, a, rd)
+			ex = rt.fetchSpendExtras(ctx, a, rd, ex)
 			c.mu.Lock()
 			c.rows[a.ID] = ex
 			c.mu.Unlock()
@@ -195,8 +195,13 @@ func (rt *Router) spendWire(ctx context.Context, a store.CloudAccount, rd clouds
 	return cloudSpendWire{SpendReport: rep, Forecast: ex.forecast, Budgets: ex.budgets}
 }
 
-func (rt *Router) fetchSpendExtras(ctx context.Context, a store.CloudAccount, rd cloudspend.Reader) spendExtras {
-	ex := spendExtras{at: time.Now(), budgets: []cloudspend.ProviderBudget{}}
+// fetchSpendExtras keeps the previous forecast and budgets when a provider read fails,
+// so a throttled refresh does not blank a good projection.
+func (rt *Router) fetchSpendExtras(ctx context.Context, a store.CloudAccount, rd cloudspend.Reader, prev spendExtras) spendExtras {
+	ex := spendExtras{at: time.Now(), forecast: prev.forecast, budgets: prev.budgets}
+	if ex.budgets == nil {
+		ex.budgets = []cloudspend.ProviderBudget{}
+	}
 	if f, err := rd.Forecast(ctx, cloudspend.SpendQuery{AccountID: a.ID}); err == nil {
 		ex.forecast = &f
 	}

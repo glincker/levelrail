@@ -20,6 +20,8 @@ const (
 	OracleCapCompute = "compute"
 	OracleCapUsage   = "usage"
 	OracleCapBudgets = "budgets"
+	// OracleCapNetwork is the virtual-network read that resolves instance addresses.
+	OracleCapNetwork = "network"
 )
 
 // OracleStored is the sealed JSON an Oracle cloud account keeps. Only Go callers see the key.
@@ -52,6 +54,7 @@ var oracleHints = map[string]string{
 	OracleCapCompute: "Allow the group to read instance-family in the compartment (manage to start, stop or provision).",
 	OracleCapUsage:   "Allow the group to read usage-report in the tenancy.",
 	OracleCapBudgets: "Allow the group to read usage-budgets in the tenancy.",
+	OracleCapNetwork: "Allow the group to read virtual-network-family in the compartment (instance IP addresses).",
 }
 
 // OracleProber runs one read-only call per capability with the account key.
@@ -138,7 +141,7 @@ func (o OracleProber) ProbeCapabilities(ctx context.Context, c OracleCredential,
 		return nil, err
 	}
 	if len(names) == 0 {
-		names = []string{OracleCapCompute, OracleCapUsage, OracleCapBudgets}
+		names = []string{OracleCapCompute, OracleCapUsage, OracleCapBudgets, OracleCapNetwork}
 	}
 	out := make([]CapabilityResult, 0, len(names))
 	for _, n := range names {
@@ -147,6 +150,8 @@ func (o OracleProber) ProbeCapabilities(ctx context.Context, c OracleCredential,
 		switch n {
 		case OracleCapCompute:
 			status, _, err = o.do(ctx, c, http.MethodGet, o.IaaS(c.Region)+"/instances?limit=1&compartmentId="+url.QueryEscape(c.CompartmentOCID), nil)
+		case OracleCapNetwork:
+			status, _, err = o.do(ctx, c, http.MethodGet, o.IaaS(c.Region)+"/vnicAttachments?limit=1&compartmentId="+url.QueryEscape(c.CompartmentOCID), nil)
 		case OracleCapUsage:
 			day := (o.now().UTC().Truncate(24 * time.Hour)).AddDate(0, 0, -2)
 			body, _ := json.Marshal(map[string]any{
@@ -252,7 +257,9 @@ func BuildOraclePolicyKit(in OraclePolicyKitInput) (OraclePolicyKit, error) {
 			fmt.Sprintf("Allow group %s to use virtual-network-family in %s", in.Group, scope),
 			fmt.Sprintf("Allow group %s to read app-catalog-listing in %s", in.Group, scope))
 	} else {
-		st = append(st, fmt.Sprintf("Allow group %s to read instance-family in %s", in.Group, scope))
+		st = append(st,
+			fmt.Sprintf("Allow group %s to read instance-family in %s", in.Group, scope),
+			fmt.Sprintf("Allow group %s to read virtual-network-family in %s", in.Group, scope))
 	}
 	st = append(st,
 		fmt.Sprintf("Allow group %s to read usage-report in tenancy", in.Group),
@@ -265,7 +272,7 @@ func BuildOraclePolicyKit(in OraclePolicyKitInput) (OraclePolicyKit, error) {
 		Notes: []string{
 			"Create the policy in the tenancy root: the usage and budgets statements apply to the whole tenancy.",
 			"Then upload an API public key to a user in that group and add the account with its private key.",
-			"Run the account capability probe afterwards to confirm compute, usage and budgets.",
+			"Run the account capability probe afterwards to confirm compute, network, usage and budgets.",
 		},
 	}, nil
 }

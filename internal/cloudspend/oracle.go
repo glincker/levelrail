@@ -221,7 +221,8 @@ func (r *OracleReader) Forecast(ctx context.Context, q SpendQuery) (SpendForecas
 	return firstForecast(linearForecast(ProviderOracle, rep, now))
 }
 
-// Budgets lists active budgets in the tenancy. The API has no currency field.
+// Budgets lists active budgets in the tenancy. The Budgets API documents no currency
+// field, so an empty one is filled from the usage currency.
 func (r *OracleReader) Budgets(ctx context.Context, _ SpendQuery) ([]ProviderBudget, error) {
 	out := []ProviderBudget{}
 	page := ""
@@ -238,6 +239,7 @@ func (r *OracleReader) Budgets(ctx context.Context, _ SpendQuery) ([]ProviderBud
 			ID          string  `json:"id"`
 			Name        string  `json:"displayName"`
 			Amount      float64 `json:"amount"`
+			Currency    string  `json:"currency"`
 			Reset       string  `json:"resetPeriod"`
 			Actual      float64 `json:"actualSpend"`
 			Forecasted  float64 `json:"forecastedSpend"`
@@ -249,7 +251,7 @@ func (r *OracleReader) Budgets(ctx context.Context, _ SpendQuery) ([]ProviderBud
 		}
 		for _, b := range rows {
 			out = append(out, ProviderBudget{
-				ID: b.ID, Name: b.Name, Amount: b.Amount, ActualSpend: b.Actual,
+				ID: b.ID, Name: b.Name, Amount: b.Amount, Currency: b.Currency, ActualSpend: b.Actual,
 				ForecastedSpend: b.Forecasted, Period: b.Reset, DataAsOf: parseTime(b.TimeSpendAt),
 			})
 		}
@@ -257,5 +259,33 @@ func (r *OracleReader) Budgets(ctx context.Context, _ SpendQuery) ([]ProviderBud
 			break
 		}
 	}
+	r.fillBudgetCurrency(ctx, out)
 	return out, nil
+}
+
+// fillBudgetCurrency copies the account's usage currency onto budgets that carry none.
+func (r *OracleReader) fillBudgetCurrency(ctx context.Context, bs []ProviderBudget) {
+	need := false
+	for _, b := range bs {
+		need = need || b.Currency == ""
+	}
+	if !need {
+		return
+	}
+	now := r.cfg().now()
+	items, err := r.usage(ctx, r.request(dayStart(now).AddDate(0, 0, -7), dayStart(now).AddDate(0, 0, 1), "service"))
+	if err != nil {
+		return
+	}
+	for _, it := range items {
+		if it.Currency == "" {
+			continue
+		}
+		for i := range bs {
+			if bs[i].Currency == "" {
+				bs[i].Currency = it.Currency
+			}
+		}
+		return
+	}
 }

@@ -395,7 +395,24 @@ func doctorOracleCheckSteps(cred cloudconn.OracleCredential, res []cloudconn.Cap
 	for _, n := range []string{cloudconn.OracleCapCompute, cloudconn.OracleCapUsage, cloudconn.OracleCapBudgets} {
 		steps = append(steps, doctorOracleProbeStep(byName[n], n))
 	}
+	steps = append(steps, doctorOracleNetworkStep(byName[cloudconn.OracleCapNetwork]))
 	return steps
+}
+
+// doctorOracleNetworkStep warns, never fails: without network read the list still works, only IPs are blank.
+func doctorOracleNetworkStep(r cloudconn.CapabilityResult) doctorStep {
+	s := doctorStep{ID: "oracle.network", Title: "Network read"}
+	switch {
+	case r.OK:
+		s.Status, s.Detail = doctorOK, "The key can read VNICs, so instance IPs show."
+	case r.Verified:
+		s.Status, s.Detail = doctorWarn, "The key cannot read VNICs, so instance IPs stay empty."
+		s.Fix = r.Hint + " The policy kit prints the statements (cloud oracle policy-kit)."
+	default:
+		s.Status, s.Detail = doctorWarn, "The network read could not complete."
+		s.Fix = "Verify the account and run the doctor again."
+	}
+	return s
 }
 
 func doctorOracleProbeStep(r cloudconn.CapabilityResult, name string) doctorStep {

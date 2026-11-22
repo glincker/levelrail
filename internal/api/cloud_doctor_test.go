@@ -136,3 +136,13 @@ func TestDoctorPolicyReadStep(t *testing.T) {
 		t.Fatalf("denied = %+v", s)
 	}
 }
+
+func TestDoctorOracleNetworkStepWarnsNeverFails(t *testing.T) {
+	denied := doctorOracleNetworkStep(cloudconn.CapabilityResult{Name: cloudconn.OracleCapNetwork, Verified: true, Hint: "fix"})
+	if denied.Status != doctorWarn || denied.Fix == "" {
+		t.Fatalf("denied = %+v", denied)
+	}
+	if ok := doctorOracleNetworkStep(cloudconn.CapabilityResult{OK: true, Verified: true}); ok.Status != doctorOK {
+		t.Fatalf("ok = %+v", ok)
+	}
+}

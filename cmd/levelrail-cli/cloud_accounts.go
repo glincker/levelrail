@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -336,8 +338,69 @@ func runCloudSpend(prog string, args []string, stdout, stderr io.Writer, lookupE
 		err := c.CloudRequest(context.Background(), method, path, nil, &out)
 		return out, func() {
 			printCloudTable(stdout, []string{"STATE", "SOURCE", "ESTIMATED", "STALE", "TOTALS"}, []cloudRow{out}, "state", "source", "estimated", "stale", "totals")
+			printSpendDetail(stdout, out)
 		}, err
 	})
+}
+
+// spendTopServices caps the by_service rows in the table; --json still has them all.
+const spendTopServices = 5
+
+func spendAmount(m map[string]any, key string) string {
+	f, ok := m[key].(float64)
+	if !ok {
+		return "-"
+	}
+	return strconv.FormatFloat(f, 'f', 2, 64)
+}
+
+func spendText(m map[string]any, key string) string {
+	if s, ok := m[key].(string); ok && s != "" {
+		return s
+	}
+	return "-"
+}
+
+// printSpendDetail prints the forecast, top services and budgets under the summary row.
+func printSpendDetail(out io.Writer, rep cloudRow) {
+	if f, ok := rep["forecast"].(map[string]any); ok {
+		_, _ = fmt.Fprintf(out, "\nFORECAST  %s %s (%s)\n", spendAmount(f, "amount"), spendText(f, "currency"), spendText(f, "source"))
+	}
+	if rows, ok := rep["by_service"].([]any); ok && len(rows) > 0 {
+		lines := make([]map[string]any, 0, len(rows))
+		for _, r := range rows {
+			if m, ok := r.(map[string]any); ok {
+				lines = append(lines, m)
+			}
+		}
+		sort.SliceStable(lines, func(i, j int) bool {
+			a, _ := lines[i]["amount"].(float64)
+			b, _ := lines[j]["amount"].(float64)
+			return a > b
+		})
+		if len(lines) > spendTopServices {
+			lines = lines[:spendTopServices]
+		}
+		_, _ = fmt.Fprintln(out)
+		tw := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "SERVICE\tAMOUNT\tCURRENCY")
+		for _, m := range lines {
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", spendText(m, "name"), spendAmount(m, "amount"), spendText(m, "currency"))
+		}
+		_ = tw.Flush()
+	}
+	if rows, ok := rep["budgets"].([]any); ok && len(rows) > 0 {
+		_, _ = fmt.Fprintln(out)
+		tw := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "BUDGET\tAMOUNT\tACTUAL\tFORECAST\tCURRENCY")
+		for _, r := range rows {
+			if m, ok := r.(map[string]any); ok {
+				_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", spendText(m, "name"), spendAmount(m, "amount"),
+					spendAmount(m, "actual_spend"), spendAmount(m, "forecasted_spend"), spendText(m, "currency"))
+			}
+		}
+		_ = tw.Flush()
+	}
 }
 
 func runCloudAWS(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
