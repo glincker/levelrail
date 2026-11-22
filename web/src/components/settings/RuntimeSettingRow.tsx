@@ -56,7 +56,8 @@ export function RuntimeSettingRow({
   const save = useSetRuntimeSetting()
   const reset = useResetRuntimeSetting()
   const [draft, setDraft] = useState(() => draftOf(setting.value))
-  const [syncedFrom, setSyncedFrom] = useState(setting.value)
+  const syncKey = `${setting.source}:${JSON.stringify(setting.value)}`
+  const [syncedFrom, setSyncedFrom] = useState(syncKey)
   const [confirming, setConfirming] = useState<RuntimeSettingWrite | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const itemId = settingItemId(setting.key)
@@ -69,8 +70,10 @@ export function RuntimeSettingRow({
   })
   const busy = save.isPending || reset.isPending
 
-  if (syncedFrom !== setting.value) {
-    setSyncedFrom(setting.value)
+  // Compare by content and source: a reset to an equal value or a fresh list
+  // array must still drop an unsaved edit.
+  if (syncedFrom !== syncKey) {
+    setSyncedFrom(syncKey)
     setDraft(draftOf(setting.value))
   }
 
@@ -108,8 +111,9 @@ export function RuntimeSettingRow({
     reset.mutate(
       { key: setting.key, confirmWeakening },
       {
-        onSuccess: () => {
+        onSuccess: (next) => {
           setConfirmingReset(false)
+          setDraft(draftOf(next.value))
           toast.add({ type: 'success', title: t('toast.reset', { title }) })
         },
         onError: (err) => {

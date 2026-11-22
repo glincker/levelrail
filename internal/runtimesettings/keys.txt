@@ -597,6 +597,13 @@ security.trust_loopback_forwarded_headers
 security.webhook_replay_protection
 security.webhook_replay_window
 shell.section_timeout
+sizing.cpu_margin_pct
+sizing.lookback
+sizing.lower_at_pct
+sizing.memory_margin_pct
+sizing.min_coverage
+sizing.min_samples
+sizing.raise_at_pct
 spool.max_age_seconds
 spool.quota_bytes
 stacks.approval_ttl

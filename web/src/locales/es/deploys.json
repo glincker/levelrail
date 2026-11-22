@@ -282,7 +282,8 @@
     "removed": "Solo allá",
     "changed": "Cambiada",
     "missing": "sin definir",
-    "secretMasked": "Valor secreto, oculto"
+    "secretMasked": "Valor secreto, oculto",
+    "preview": "Overrides de preview de esta app"
   },
   "appSleep": {
     "title": "Suspender por inactividad",

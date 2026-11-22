@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2364 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2367 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -271,6 +271,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEgressPolicy", Description: "Outbound allowlist per app: AbilityWriteSensitive, it changes the exfiltration surface. GET has its own route since an unset policy is the common case."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppEgressPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-report", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppEgressReport", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/env-diff", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleEnvDiff", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/bound", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBoundEnv", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/check", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckEnv", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/check/fix", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleFixEnv", Description: ""},
@@ -2218,8 +2219,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/domains/{domain}/cutover", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainCutover", Description: "Test before you switch: the move-a-domain checklist, and the DNS-01 certificate request that runs before DNS points here. The probe dials only this server."},
 	{Method: "DELETE", Path: "/api/v1/domains/{domain}/cutover/certificate", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCutoverCertificateRevert", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/{domain}/cutover/certificate", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCutoverCertificate", Description: ""},
-	{Method: "POST", Path: "/api/v1/domains/{domain}/diagnose", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDiagnose", Description: "Same doctor addressed by domain alone, as one JSON report or a stream of checks; the owning app is looked up and visibility enforced."},
+	{Method: "POST", Path: "/api/v1/domains/{domain}/diagnose", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDiagnose", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/diagnose/stream", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDiagnoseStream", Description: ""},
+	{Method: "GET", Path: "/api/v1/domains/{domain}/dns-check", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDNSCheck", Description: "Same doctor addressed by domain alone, as one JSON report or a stream of checks; the owning app is looked up and visibility enforced. DNS preflight addressed by domain alone: resolves through the safe resolver and compares with this server's addresses."},
+	{Method: "POST", Path: "/api/v1/domains/{domain}/dns-check", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDNSCheck", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/verify", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainCutoverVerify", Description: "Read-only verifier for a domain that already moved: DNS, proxy, redirect, certificate, HSTS, response, www/apex."},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/watch", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainWatchSnapshot", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-credentials", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentials", Description: "Registry credentials (registry_credentials.go): same ability tiers as backup targets just above, same reasoning (POST/PUT/DELETE handle live pull credentials)."},

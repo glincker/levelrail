@@ -794,6 +794,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handlePinDeploy |
 | DELETE | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handleUnpinDeploy |
 | GET | /api/v1/apps/{name}/health-explain | AbilityRead | handleGetAppHealthExplain |
+| GET | /api/v1/apps/{name}/env-diff | AbilityRead | handleEnvDiff |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -1417,6 +1418,8 @@ Endpoints for:
 | POST | /api/v1/backup-targets/{id}/drill | AbilityWriteSensitive | handleDrillBackupTarget |
 | POST | /api/v1/backup-targets/sftp-host-key | AbilityWriteSensitive | handleScanSFTPHostKey |
 | GET | /api/v1/backup-targets/field-descriptors | AbilityRead | handleGetBackupTargetFields |
+| GET | /api/v1/domains/{domain}/dns-check | AbilityRead | handleDomainDNSCheck |
+| POST | /api/v1/domains/{domain}/dns-check | AbilityRead | handleDomainDNSCheck |
 
 ## Built-in Container Registry
 

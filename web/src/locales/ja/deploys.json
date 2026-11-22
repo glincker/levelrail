@@ -280,7 +280,8 @@
     "removed": "あちらのみ",
     "changed": "変更あり",
     "missing": "未設定",
-    "secretMasked": "シークレットの値(非表示)"
+    "secretMasked": "シークレットの値(非表示)",
+    "preview": "このアプリのプレビュー上書き"
   },
   "appSleep": {
     "title": "アイドル時にスリープ",

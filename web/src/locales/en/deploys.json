@@ -282,7 +282,8 @@
     "removed": "Only there",
     "changed": "Changed",
     "missing": "not set",
-    "secretMasked": "Secret value, hidden"
+    "secretMasked": "Secret value, hidden",
+    "preview": "Preview overrides of this app"
   },
   "appSleep": {
     "title": "Sleep when idle",

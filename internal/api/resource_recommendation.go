@@ -101,10 +101,7 @@ func (rt *Router) handleAppResourceRecommendation(w http.ResponseWriter, r *http
 		return
 	}
 
-	lookback := rt.resourceRecommendationLookback
-	if lookback <= 0 {
-		lookback = defaultResourceRecommendationLookback
-	}
+	lookback, tuning := rt.sizingSettings(ctx)
 
 	now := time.Now()
 	from := now.Add(-lookback)
@@ -134,6 +131,7 @@ func (rt *Router) handleAppResourceRecommendation(w http.ResponseWriter, r *http
 		CurrentMemoryBytes: currentMemory,
 		CurrentNanoCPUs:    currentNanoCPUs,
 		OOM:                rt.findOOMEvidence(ctx, name, resourceID, from, now),
+		Tuning:             tuning,
 	})
 
 	out := toResourceRecommendationResource(result)

@@ -280,7 +280,8 @@
     "removed": "仅对方有",
     "changed": "已更改",
     "missing": "未设置",
-    "secretMasked": "密钥值,已隐藏"
+    "secretMasked": "密钥值,已隐藏",
+    "preview": "此应用的预览覆盖"
   },
   "appSleep": {
     "title": "空闲休眠",

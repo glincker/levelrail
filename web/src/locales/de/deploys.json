@@ -282,7 +282,8 @@
     "removed": "Nur dort",
     "changed": "Geändert",
     "missing": "nicht gesetzt",
-    "secretMasked": "Secret-Wert, verborgen"
+    "secretMasked": "Secret-Wert, verborgen",
+    "preview": "Preview-Overrides dieser App"
   },
   "appSleep": {
     "title": "Ruhezustand bei Leerlauf",

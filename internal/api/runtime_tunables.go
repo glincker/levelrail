@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cdn"
+	"github.com/GLINCKER/levelrail/internal/rightsizing"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
@@ -92,4 +93,23 @@ func (rt *Router) offeredUpdateChannels(ctx context.Context) []string {
 		return []string{upgrade.ChannelStable}
 	}
 	return out
+}
+
+// sizingSettings reads the live right-sizing thresholds; env and the boot option only seed defaults.
+func (rt *Router) sizingSettings(ctx context.Context) (time.Duration, rightsizing.Tuning) {
+	lookbackDef := rt.resourceRecommendationLookback
+	if lookbackDef <= 0 {
+		lookbackDef = defaultResourceRecommendationLookback
+	}
+	pct := func(key, env string, def int) float64 {
+		return float64(rt.tunableInt(ctx, key, env, def)) / 100
+	}
+	return rt.tunableDuration(ctx, runtimesettings.KeySizingLookback, "APP_RESOURCE_RECOMMENDATION_LOOKBACK", lookbackDef), rightsizing.Tuning{
+		MemoryMargin: pct(runtimesettings.KeySizingMemoryMargin, "APP_SIZING_MEMORY_MARGIN_PCT", 130),
+		CPUMargin:    pct(runtimesettings.KeySizingCPUMargin, "APP_SIZING_CPU_MARGIN_PCT", 130),
+		RaiseAt:      pct(runtimesettings.KeySizingRaiseAtPct, "APP_SIZING_RAISE_AT_PCT", 85),
+		LowerAt:      pct(runtimesettings.KeySizingLowerAtPct, "APP_SIZING_LOWER_AT_PCT", 40),
+		MinCoverage:  rt.tunableDuration(ctx, runtimesettings.KeySizingMinCoverage, "APP_SIZING_MIN_COVERAGE", 6*time.Hour),
+		MinSamples:   rt.tunableInt(ctx, runtimesettings.KeySizingMinSamples, "APP_SIZING_MIN_SAMPLES", 20),
+	}
 }

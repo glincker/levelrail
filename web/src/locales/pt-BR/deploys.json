@@ -284,7 +284,8 @@
     "removed": "Somente lá",
     "changed": "Alterado",
     "missing": "não definido",
-    "secretMasked": "Valor de segredo, oculto"
+    "secretMasked": "Valor de segredo, oculto",
+    "preview": "Overrides de preview deste app"
   },
   "appSleep": {
     "title": "Hibernar quando inativo",

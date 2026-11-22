@@ -545,6 +545,8 @@ var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names 
 	"POST /api/v1/domains/{domain}/changes/{id}/rollback":                                   "requireAbility, handler checks scope: handleRollbackDomainChange",
 	"POST /api/v1/domains/{domain}/cutover/certificate":                                     "requireAbility, handler checks scope: handleCutoverCertificate",
 	"POST /api/v1/domains/{domain}/diagnose":                                                "requireAbility, handler checks scope: handleDomainDiagnose",
+	"GET /api/v1/domains/{domain}/dns-check":                                                "requireAbility, handler checks scope: handleDomainDNSCheck",
+	"POST /api/v1/domains/{domain}/dns-check":                                               "requireAbility, handler checks scope: handleDomainDNSCheck",
 	"POST /api/v1/environments/{id}/clone":                                                  "requireAbility, handler checks scope: handleEnvironmentClone",
 	"POST /api/v1/event-webhook-deliveries/{id}/replay":                                     "requireAbility, handler checks scope: handleReplayEventWebhookDelivery",
 	"POST /api/v1/event-webhooks/{id}/rotate-secret":                                        "requireAbility, handler checks scope: handleRotateEventWebhookSecret",

@@ -24,6 +24,9 @@ func (rt *Router) registerTrafficRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/domains/{domain}/cutover/certificate", rt.requireAbility(AbilityRoot, rt.handleCutoverCertificateRevert))
 	// Same doctor addressed by domain alone, as one JSON report or a
 	// stream of checks; the owning app is looked up and visibility enforced.
+	// DNS preflight addressed by domain alone: resolves through the safe resolver and compares with this server's addresses.
+	mux.HandleFunc("GET /api/v1/domains/{domain}/dns-check", rt.requireAbility(AbilityRead, rt.handleDomainDNSCheck))
+	mux.HandleFunc("POST /api/v1/domains/{domain}/dns-check", rt.requireAbility(AbilityRead, rt.handleDomainDNSCheck))
 	mux.HandleFunc("POST /api/v1/domains/{domain}/diagnose", rt.requireAbility(AbilityRead, rt.handleDomainDiagnose))
 	mux.HandleFunc("GET /api/v1/domains/{domain}/diagnose/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(domainDiagnoseResource, rt.handleDomainDiagnoseStream)))
 	// One domain's activity timeline: audit rows plus certificate failures,

@@ -284,7 +284,8 @@
     "removed": "Uniquement là-bas",
     "changed": "Modifié",
     "missing": "non défini",
-    "secretMasked": "Valeur secrète, masquée"
+    "secretMasked": "Valeur secrète, masquée",
+    "preview": "Surcharges de preview de cette app"
   },
   "appSleep": {
     "title": "Veille en cas d'inactivité",

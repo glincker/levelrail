@@ -166,3 +166,55 @@ describe('RuntimeSettingRow risk badge', () => {
     expect(screen.queryByText('Security setting')).toBeNull()
   })
 })
+
+describe('RuntimeSettingRow reset', () => {
+  it('drops an unsaved edit when the reset value equals the saved one', async () => {
+    const list: RuntimeSetting = {
+      ...buildNetwork,
+      key: 'security.allowed_hosts',
+      kind: 'string_list',
+      default: ['a.example'],
+      value: ['a.example'],
+      source: 'saved',
+      allowed_strings: undefined,
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ ...list, source: 'default' }), {
+            status: 200,
+          }),
+        ),
+      ),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AllI18n>
+          <RuntimeSettingRow setting={list} canEdit />
+        </AllI18n>
+      </QueryClientProvider>,
+    )
+    const box = screen.getByRole('textbox')
+    fireEvent.change(box, { target: { value: 'b.example' } })
+    expect((box as HTMLTextAreaElement).value).toBe('b.example')
+    fireEvent.click(screen.getByRole('button', { name: /reset/i }))
+    await waitFor(() =>
+      expect((box as HTMLTextAreaElement).value).toBe('a.example'),
+    )
+  })
+
+  it('shows the default value next to an overridden setting', () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AllI18n>
+          <RuntimeSettingRow
+            setting={{ ...buildNetwork, value: 'none', source: 'saved' }}
+            canEdit
+          />
+        </AllI18n>
+      </QueryClientProvider>,
+    )
+    expect(screen.getAllByText(/open/).length).toBeGreaterThan(0)
+  })
+})

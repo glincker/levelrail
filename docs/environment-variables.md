@@ -476,6 +476,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_AUTOSCALE_GAUGE_TIMEOUT` | [`autoscale.gauge_timeout`](/runtime-settings#observability) | `3s` |
 | `APP_CLOUD_AWS_NAME_PREFIX` | [`cloud.aws.name_prefix`](/runtime-settings#observability) | `levelrail` |
 | `APP_CLOUD_CLOUDFRONT_MAX_INVALIDATION_PATHS` | [`cloud.cloudfront.max_invalidation_paths`](/runtime-settings#observability) | `50` |
+| `APP_CLOUD_DOCTOR_DEEP_MIN_INTERVAL_SECONDS` | [`cloud.doctor.deep_min_interval_seconds`](/runtime-settings#observability) | `10` |
+| `APP_CLOUD_DOCTOR_DEEP_PARALLEL` | [`cloud.doctor.deep_parallel`](/runtime-settings#observability) | `4` |
+| `APP_CLOUD_DOCTOR_DEEP_TIMEOUT_SECONDS` | [`cloud.doctor.deep_timeout_seconds`](/runtime-settings#observability) | `15` |
 | `APP_CLOUD_GUARD_ACCOUNT_CAPS` | [`cloud.guard.account_caps`](/runtime-settings#observability) | empty |
 | `APP_CLOUD_GUARD_DEFAULT_EXPIRES_HOURS` | [`cloud.guard.default_expires_hours`](/runtime-settings#observability) | `168` |
 | `APP_CLOUD_GUARD_IDLE_ALB_MONTH_CENTS` | [`cloud.guard.idle.alb_month_cents`](/runtime-settings#observability) | `1643` |
@@ -610,6 +613,13 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
 | `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
+| `APP_SIZING_CPU_MARGIN_PCT` | [`sizing.cpu_margin_pct`](/runtime-settings#observability) | `130` |
+| `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | [`sizing.lookback`](/runtime-settings#observability) | `168h` |
+| `APP_SIZING_LOWER_AT_PCT` | [`sizing.lower_at_pct`](/runtime-settings#observability) | `40` |
+| `APP_SIZING_MEMORY_MARGIN_PCT` | [`sizing.memory_margin_pct`](/runtime-settings#observability) | `130` |
+| `APP_SIZING_MIN_COVERAGE` | [`sizing.min_coverage`](/runtime-settings#observability) | `6h` |
+| `APP_SIZING_MIN_SAMPLES` | [`sizing.min_samples`](/runtime-settings#observability) | `20` |
+| `APP_SIZING_RAISE_AT_PCT` | [`sizing.raise_at_pct`](/runtime-settings#observability) | `85` |
 | `APP_STACK_DRIFT_SUMMARY_MAX` | [`stacks.drift_summary_max`](/runtime-settings#observability) | `50` |
 | `APP_STATUS_TEMPLATES_MAX` | [`status_page.templates_max`](/runtime-settings#observability) | `50` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |

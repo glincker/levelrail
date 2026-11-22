@@ -207,6 +207,7 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/mail/dns/plan",
 		"POST /api/v1/docker/lint",
 		"POST /api/v1/domains/{domain}/diagnose",
+		"POST /api/v1/domains/{domain}/dns-check",
 		"POST /api/v1/fixes/{id}/preview",
 		"POST /api/v1/iam/policies/validate",
 		"POST /api/v1/iam/policy-templates/{id}/render",

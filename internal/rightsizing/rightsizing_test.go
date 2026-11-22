@@ -291,3 +291,40 @@ func TestTinyCPUNeverSuggestsZero(t *testing.T) {
 		t.Fatalf("reason not humanised: %q", got.CPU.Reason)
 	}
 }
+
+func TestRecommend_TuningOverridesThresholds(t *testing.T) {
+	now := time.Now()
+	in := Input{
+		ServiceName:        "web",
+		Now:                now,
+		LookbackWindow:     7 * 24 * time.Hour,
+		MemorySamples:      memSamples(now, 200, func(_ int) float64 { return 400 * mib }, 7*24*time.Hour),
+		CurrentMemoryBytes: 512 * mib,
+	}
+	if got := Recommend(in); got.Memory.Action != ActionKeep {
+		t.Fatalf("default Action = %q, want keep at 78%% of limit", got.Memory.Action)
+	}
+	in.Tuning = Tuning{RaiseAt: 0.70}
+	if got := Recommend(in); got.Memory.Action != ActionRaise {
+		t.Errorf("Action = %q, want raise with a 70%% raise threshold", got.Memory.Action)
+	}
+}
+
+func TestRecommend_TuningMinSamplesGatesConfidence(t *testing.T) {
+	now := time.Now()
+	in := Input{
+		ServiceName:        "web",
+		Now:                now,
+		LookbackWindow:     7 * 24 * time.Hour,
+		MemorySamples:      memSamples(now, 30, func(_ int) float64 { return 480 * mib }, 7*24*time.Hour),
+		CurrentMemoryBytes: 512 * mib,
+	}
+	if got := Recommend(in); got.Memory.Confidence == ConfidenceLow {
+		t.Fatalf("30 samples must pass the default minimum")
+	}
+	in.Tuning = Tuning{MinSamples: 100}
+	got := Recommend(in)
+	if got.Memory.Confidence != ConfidenceLow || got.Memory.Action != "" {
+		t.Errorf("confidence %q action %q, want low and no suggestion under a 100 sample minimum", got.Memory.Confidence, got.Memory.Action)
+	}
+}

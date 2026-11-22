@@ -32,10 +32,7 @@ func (rt *Router) handleDatabaseResourceRecommendation(w http.ResponseWriter, r 
 		return
 	}
 
-	lookback := rt.resourceRecommendationLookback
-	if lookback <= 0 {
-		lookback = defaultResourceRecommendationLookback
-	}
+	lookback, tuning := rt.sizingSettings(ctx)
 
 	now := time.Now()
 	from := now.Add(-lookback)
@@ -65,6 +62,7 @@ func (rt *Router) handleDatabaseResourceRecommendation(w http.ResponseWriter, r 
 		CurrentMemoryBytes: currentMemory,
 		CurrentNanoCPUs:    currentNanoCPUs,
 		OOM:                rt.findOOMEvidence(ctx, name, resourceID, from, now),
+		Tuning:             tuning,
 	})
 
 	writeJSON(w, http.StatusOK, toResourceRecommendationResource(result))
