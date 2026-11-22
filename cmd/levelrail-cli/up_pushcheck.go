@@ -106,7 +106,9 @@ func pushGit(ctx context.Context, dir string, args ...string) (string, error) {
 	full := append([]string{"-C", dir, "-c", "core.fsmonitor=false", "-c", "core.sshCommand=ssh", "-c", "core.gitProxy=",
 		"-c", "credential.helper=", "-c", "core.askPass=", "-c", "protocol.ext.allow=never"}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed git subcommands, validated operands, no shell
-	cmd.Env = append(cmd.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_PROXY_COMMAND=", "GIT_ALLOW_PROTOCOL=https:ssh:file")
+	// An inherited GIT_ASKPASS (an editor's helper) outranks core.askPass and ignores
+	// GIT_TERMINAL_PROMPT, so point both at a no-op to never prompt.
+	cmd.Env = append(cmd.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_ASKPASS=true", "SSH_ASKPASS=true", "GIT_PROXY_COMMAND=", "GIT_ALLOW_PROTOCOL=https:ssh:file")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
