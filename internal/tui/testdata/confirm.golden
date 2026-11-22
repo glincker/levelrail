@@ -17,4 +17,4 @@ worker  Stopped           1         reg/worker:3  -     -
 
 
 restart api: type "api" to confirm (enter runs, esc cancels) > ap_
-j/k move  enter open  / filter  : command  l logs  r d b x o actions  ? help  q quit
+j/k move  enter open  / filter  : command  l logs  r d b x o s e actions  ? help  q quit

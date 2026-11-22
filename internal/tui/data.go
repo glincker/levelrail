@@ -5,6 +5,7 @@ package tui
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -164,5 +165,67 @@ type API interface {
 	Stop(ctx context.Context, app string) error
 	Deploy(ctx context.Context, app, image string) error
 	Rollback(ctx context.Context, app, deployID string) error
+	Scale(ctx context.Context, app string, replicas int) error
+	SetEnv(ctx context.Context, app, key, value string) error
 	Logs(ctx context.Context, kind LogKind, name string, onLine func(LogLine) error) error
+}
+
+// jumpTarget is one object the command bar can jump to by fuzzy name.
+type jumpTarget struct {
+	view  viewID
+	kind  string
+	name  string
+	verbs []string
+}
+
+// fuzzyScore ranks name against query: 0 means no match, higher is better.
+// A substring beats a scattered subsequence; shorter names win ties.
+func fuzzyScore(query, name string) int {
+	q, n := strings.ToLower(query), strings.ToLower(name)
+	if q == "" || n == "" {
+		return 0
+	}
+	if n == q {
+		return 1000
+	}
+	if i := strings.Index(n, q); i >= 0 {
+		return 500 - i - len(n)
+	}
+	qi := 0
+	qr := []rune(q)
+	for _, c := range n {
+		if qi < len(qr) && c == qr[qi] {
+			qi++
+		}
+	}
+	if qi < len(qr) {
+		return 0
+	}
+	return 100 - len(n)
+}
+
+// jumpTargets lists every app, node and domain with the CLI verbs for it.
+func (m Model) jumpTargets() []jumpTarget {
+	var out []jumpTarget
+	for _, a := range m.apps {
+		out = append(out, jumpTarget{viewApps, "app", a.Name, []string{"apps restart", "apps scale", "apps stop", "apps start", "apps logs", "apps env"}})
+	}
+	for _, n := range m.nodes {
+		out = append(out, jumpTarget{viewNodes, "node", n.Name, []string{"nodes get", "nodes cordon", "nodes uncordon", "nodes drain", "nodes health"}})
+	}
+	for _, d := range m.domains {
+		out = append(out, jumpTarget{viewDomains, "domain", d.Domain, []string{"apps domains"}})
+	}
+	return out
+}
+
+// bestJump picks the highest scoring target for query.
+func (m Model) bestJump(query string) (jumpTarget, bool) {
+	best, top := jumpTarget{}, 0
+	for _, t := range m.jumpTargets() {
+		if sc := fuzzyScore(query, t.name); sc > top {
+			best, top = t, sc
+		}
+	}
+	return best, top > 0
 }

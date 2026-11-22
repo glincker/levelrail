@@ -153,7 +153,7 @@ func (m Model) mutationHints() string {
 	if m.opts.ReadOnly {
 		return ""
 	}
-	return "r d b x o actions  "
+	return "r d b x o s e actions  "
 }
 
 func (m Model) bodyLines() []string {
@@ -258,13 +258,14 @@ func (m Model) helpLines() []string {
 		"  f (in logs)       follow        c     clear logs      ctrl-c         quit",
 	}
 	if m.opts.ReadOnly {
-		lines = append(lines, "", "Read-only mode: restart, deploy, rollback, stop and start are disabled.")
+		lines = append(lines, "", "Read-only mode: restart, deploy, rollback, stop, start, scale and env are disabled.")
 	} else {
 		lines = append(lines,
-			"  r restart   d deploy   b rollback   x stop   o start   (each asks you to type the app name)",
+			"  r restart   d deploy   b rollback   x stop   o start   s scale   e env   (each asks you to type the app name)",
 			"",
 			m.st.bold.Render("Commands"),
-			"  :deploy [app]  :restart [app]  :rollback [app]  :stop [app]  :start [app]",
+			"  :deploy [app]  :restart [app]  :rollback [app]  :stop [app]  :start [app]  :scale [app] N  :env [app] KEY=VALUE",
+			"  :<name> fuzzy jump to an app, node or domain and list its CLI verbs",
 			"  :logs [name]   :apps :databases :deploys :nodes :domains :alerts :backups   :q",
 		)
 	}

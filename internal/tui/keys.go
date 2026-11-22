@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -151,7 +152,21 @@ func (m Model) keyNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.prepare(actStop, "")
 	case "o":
 		return m.prepare(actStart, "")
+	case "s":
+		return m.openPrefilled("scale ")
+	case "e":
+		return m.openPrefilled("env ")
 	}
+	return m, nil
+}
+
+// openPrefilled starts the command bar with a verb so scale and env need only their value.
+func (m Model) openPrefilled(verb string) (tea.Model, tea.Cmd) {
+	if m.opts.ReadOnly {
+		m.notice, m.noticeErr = readOnlyNotice, true
+		return m, nil
+	}
+	m.mode, m.input = modeCommand, verb
 	return m, nil
 }
 
@@ -348,7 +363,19 @@ func (m Model) prepare(kind actionKind, app string) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	p := pendingAction{kind: kind, app: app}
+	return m.confirm(p, row)
+}
+
+// confirm fills the per-kind fields of p and opens the typed confirmation.
+func (m Model) confirm(p pendingAction, row AppRow) (tea.Model, tea.Cmd) {
+	app, kind := p.app, p.kind
 	switch kind {
+	case actScale:
+		p.summary = fmt.Sprintf("scale %s from %d to %d replicas", app, row.Replicas, p.replicas)
+	case actEnv:
+		// Only the key is shown; the value stays out of the prompt and notices.
+		p.summary = "set env " + clean(p.envKey) + " on " + app
+
 	case actDeploy:
 		if row.Image == "" {
 			m.notice, m.noticeErr = app+" has no image to redeploy", true
@@ -401,6 +428,12 @@ func (m Model) runCommand(line string) (tea.Model, tea.Cmd) {
 		return m.prepare(kind, arg)
 	}
 	switch name {
+	case "scale":
+		return m.prepareScale(f[1:])
+	case "env":
+		return m.prepareEnv(f[1:])
+	}
+	switch name {
 	case "logs", "log":
 		return m.openLogs(arg)
 	case "q", "quit", "exit":
@@ -409,6 +442,81 @@ func (m Model) runCommand(line string) (tea.Model, tea.Cmd) {
 		m.mode = modeHelp
 		return m, nil
 	}
+	if t, ok := m.bestJump(line); ok {
+		return m.jumpTo(t), nil
+	}
 	m.notice, m.noticeErr = fmt.Sprintf("unknown command %q, press ? for help", name), true
 	return m, nil
+}
+
+// jumpTo selects the target row and lists the CLI verbs for it.
+func (m Model) jumpTo(t jumpTarget) Model {
+	m = m.switchView(t.view)
+	for i, r := range m.rows() {
+		if r.Key == t.name {
+			m.cursor = i
+			break
+		}
+	}
+	m.fixScroll()
+	prog := m.opts.Prog
+	if prog == "" {
+		prog = "levelrail"
+	}
+	m.notice, m.noticeErr = fmt.Sprintf("%s %s: %s %s <name>", t.kind, clean(t.name), prog, strings.Join(t.verbs, " | ")), false
+	return m
+}
+
+// prepareScale reads "[app] N" and opens the typed confirmation.
+func (m Model) prepareScale(args []string) (tea.Model, tea.Cmd) {
+	if m.opts.ReadOnly {
+		m.notice, m.noticeErr = readOnlyNotice, true
+		return m, nil
+	}
+	if len(args) == 0 {
+		m.notice, m.noticeErr = "usage: scale [app] <replicas>", true
+		return m, nil
+	}
+	n, err := strconv.Atoi(args[len(args)-1])
+	if err != nil || n < 1 {
+		m.notice, m.noticeErr = "replicas must be a whole number of at least 1", true
+		return m, nil
+	}
+	return m.prepareWith(actScale, args[:len(args)-1], func(p *pendingAction) { p.replicas = n })
+}
+
+// prepareEnv reads "[app] KEY=VALUE" and opens the typed confirmation.
+func (m Model) prepareEnv(args []string) (tea.Model, tea.Cmd) {
+	if m.opts.ReadOnly {
+		m.notice, m.noticeErr = readOnlyNotice, true
+		return m, nil
+	}
+	if len(args) == 0 {
+		m.notice, m.noticeErr = "usage: env [app] KEY=VALUE", true
+		return m, nil
+	}
+	k, v, ok := strings.Cut(args[len(args)-1], "=")
+	if !ok || k == "" {
+		m.notice, m.noticeErr = "usage: env [app] KEY=VALUE", true
+		return m, nil
+	}
+	return m.prepareWith(actEnv, args[:len(args)-1], func(p *pendingAction) { p.envKey, p.envValue = k, v })
+}
+
+func (m Model) prepareWith(kind actionKind, appArgs []string, set func(*pendingAction)) (tea.Model, tea.Cmd) {
+	app := ""
+	if len(appArgs) > 0 {
+		app = appArgs[0]
+	}
+	if app == "" {
+		app = m.contextApp()
+	}
+	row, ok := m.findApp(app)
+	if app == "" || !ok {
+		m.notice, m.noticeErr = "select an app first (or give its name after the command)", true
+		return m, nil
+	}
+	p := pendingAction{kind: kind, app: app}
+	set(&p)
+	return m.confirm(p, row)
 }

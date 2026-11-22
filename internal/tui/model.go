@@ -85,11 +85,14 @@ const (
 	actStop
 	actDeploy
 	actRollback
+	actScale
+	actEnv
 )
 
 var actionVerbs = map[actionKind]string{
 	actRestart: "restart", actStart: "start", actStop: "stop",
 	actDeploy: "deploy", actRollback: "rollback",
+	actScale: "scale", actEnv: "env",
 }
 
 type pendingAction struct {
@@ -97,6 +100,9 @@ type pendingAction struct {
 	app      string
 	image    string
 	deployID string
+	replicas int
+	envKey   string
+	envValue string
 	summary  string
 }
 
@@ -290,6 +296,10 @@ func (m Model) runAction(p pendingAction) tea.Cmd {
 			err = api.Deploy(c, p.app, p.image)
 		case actRollback:
 			err = api.Rollback(c, p.app, p.deployID)
+		case actScale:
+			err = api.Scale(c, p.app, p.replicas)
+		case actEnv:
+			err = api.SetEnv(c, p.app, p.envKey, p.envValue)
 		}
 		return actionMsg{label: fmt.Sprintf("%s %s", actionVerbs[p.kind], p.app), err: err}
 	}

@@ -134,10 +134,11 @@ domains, alerts and backups, with logs tail and confirm-gated actions.
 Secrets and env values are never shown; use the dashboard to reveal them.
 
 Keys: j/k move, enter open, / filter, : command bar (deploy, restart,
-rollback, stop, start, logs), l logs, 1-7 or tab switch view, ? help, q quit.
+rollback, stop, start, scale, env, logs; or a name to jump
+to an app, node or domain), s scale, e env, l logs, 1-7 or tab switch view, ? help, q quit.
 
 Flags:
-  --read-only             disable restart, deploy, rollback, stop and start
+  --read-only             disable restart, deploy, rollback, stop, start, scale and env
   --refresh duration      refresh interval, minimum 2s (default 2s, or %[2]s)
   --token string          API token (default: %[3]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[4]s env var, then %[5]s)
