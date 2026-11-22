@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -68,4 +69,17 @@ func (c cgroupV2) Provision(id string, memoryMB, cpuMillis int) (string, func(),
 		return "", nil, fmt.Errorf("set cpu limit: %w", err)
 	}
 	return filepath.Join(cgroupGroupName, name), cleanup, nil
+}
+
+// PeakMB reads memory.peak (kernel 5.19 and newer); older kernels have no file and report 0.
+func (c cgroupV2) PeakMB(parent string) int {
+	b, err := os.ReadFile(filepath.Join(c.root, parent, "memory.peak")) //nolint:gosec // parent is the path Provision returned
+	if err != nil {
+		return 0
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return int((n + 1<<20 - 1) >> 20)
 }

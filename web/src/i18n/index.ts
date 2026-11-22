@@ -140,6 +140,7 @@ export const NAMESPACES = [
   'maintenance',
   'appBuildCache',
   'buildPerformance',
+  'buildMemory',
   'janitor',
   'cleanup',
   'sso',

@@ -281,6 +281,9 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	}
 
 	res, err := do(bctx, wrapped, cgroupParent, heapMB)
+	if pr, ok := l.cg.(CgroupPeakReader); ok && cgroupParent != "" {
+		run.PeakMemoryMB = pr.PeakMB(cgroupParent)
+	}
 	run.Duration = l.clock.Now().Sub(started)
 	smu.Lock()
 	run.CachedSteps, run.TotalSteps = steps.cached, steps.total()

@@ -121,6 +121,7 @@ import type trafficExport from '../locales/en/trafficExport.json'
 import type maintenance from '../locales/en/maintenance.json'
 import type appBuildCache from '../locales/en/appBuildCache.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
+import type buildMemory from '../locales/en/buildMemory.json'
 import type janitor from '../locales/en/janitor.json'
 import type cleanup from '../locales/en/cleanup.json'
 import type deployPolicies from '../locales/en/deployPolicies.json'
@@ -347,6 +348,7 @@ declare module 'i18next' {
       maintenance: typeof maintenance
       appBuildCache: typeof appBuildCache
       buildPerformance: typeof buildPerformance
+      buildMemory: typeof buildMemory
       janitor: typeof janitor
       cleanup: typeof cleanup
       sso: typeof sso

@@ -35,6 +35,8 @@ type Run struct {
 	RunnerReason string        `json:"runner_reason,omitempty"`
 	Platform     string        `json:"platform,omitempty"`
 	ImageBytes   int64         `json:"image_bytes,omitempty"`
+	// PeakMemoryMB is the build cgroup high water mark, 0 when it could not be read.
+	PeakMemoryMB int `json:"peak_memory_mb,omitempty"`
 }
 
 // Trend summarises the last N builds of one app. Percentiles cover successful
