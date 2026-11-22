@@ -15,12 +15,58 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+/** What a destructive action takes with it, shown as plain counts before confirming. */
+export interface ConfirmImpact {
+  volumes?: number
+  domains?: number
+  /** Days existing backups are kept after the delete; omit when unknown. */
+  backupRetentionDays?: number
+}
+
+/** impactParts turns an impact into the plain risk phrases, skipping zero counts. */
+export function impactParts(
+  impact: ConfirmImpact,
+  t: (key: string, opts: Record<string, unknown>) => string,
+): string[] {
+  const parts: string[] = []
+  if (impact.volumes) {
+    parts.push(
+      t('confirmDialog.impactVolumes', {
+        count: impact.volumes,
+        defaultValue_one: '{{count}} volume',
+        defaultValue_other: '{{count}} volumes',
+      }),
+    )
+  }
+  if (impact.domains) {
+    parts.push(
+      t('confirmDialog.impactDomains', {
+        count: impact.domains,
+        defaultValue_one: '{{count}} domain',
+        defaultValue_other: '{{count}} domains',
+      }),
+    )
+  }
+  if (impact.backupRetentionDays) {
+    parts.push(
+      t('confirmDialog.impactBackups', {
+        count: impact.backupRetentionDays,
+        defaultValue_one: 'backups stay {{count}} day',
+        defaultValue_other: 'backups stay {{count}} days',
+      }),
+    )
+  }
+  return parts
+}
+
 export interface ConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: ReactNode
   description?: ReactNode
   consequences?: string[]
+  /** Counts of what is lost, rendered as one plain "You lose" line. */
+  impact?: ConfirmImpact
   confirmLabel: string
   pendingLabel?: string
   cancelLabel?: string
@@ -46,6 +92,7 @@ export function ConfirmDialog({
   title,
   description,
   consequences,
+  impact,
   confirmLabel,
   pendingLabel,
   cancelLabel,
@@ -63,6 +110,7 @@ export function ConfirmDialog({
   const { t } = useTranslation('common')
   const [typed, setTyped] = useState('')
   const inputId = useId()
+  const impactLine = impact ? impactParts(impact, t as never).join(', ') : ''
   const matches = requireTyped === undefined || typed === requireTyped
 
   function handleOpenChange(next: boolean) {
@@ -93,6 +141,14 @@ export function ConfirmDialog({
               <li key={c}>{c}</li>
             ))}
           </ul>
+        ) : null}
+        {impactLine ? (
+          <p className="text-sm font-medium text-destructive">
+            {t('confirmDialog.impactLead', {
+              items: impactLine,
+              defaultValue: 'You lose: {{items}}.',
+            })}
+          </p>
         ) : null}
         {children}
         {requireTyped !== undefined ? (

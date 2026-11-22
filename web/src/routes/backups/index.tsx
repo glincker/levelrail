@@ -20,6 +20,7 @@ import { FirstRunSetup } from '../../components/backups/FirstRunSetup'
 import { OrphanedDataPanel } from '../../components/backups/OrphanedDataPanel'
 import { ProtectAllDialog } from '../../components/backups/ProtectAllDialog'
 import { RecentActivity } from '../../components/backups/RecentActivity'
+import { SameDiskBanner } from '../../components/backups/SameDiskBanner'
 import { StorageSafetyCard } from '../../components/backups/StorageSafetyCard'
 
 export const Route = createFileRoute('/backups/')({
@@ -107,6 +108,7 @@ function BackupsPage() {
         <FirstRunSetup unprotected={data.summary.total} />
       ) : (
         <>
+          <SameDiskBanner targets={data.targets} />
           {data.resources.length === 0 ? (
             <BackupsEmptyState total={data.resources.length} />
           ) : null}

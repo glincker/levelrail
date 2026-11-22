@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,6 +51,7 @@ export function RestoreWizardDialog({
   const [targetApp, setTargetApp] = useState('')
   const [nodeId, setNodeId] = useState(SAME_NODE)
   const [newName, setNewName] = useState('')
+  const [restoredName, setRestoredName] = useState('')
 
   const succeeded = (history.data ?? []).filter((b) => b.status === 'succeeded')
   const chosen = backupId || succeeded[0]?.id || ''
@@ -70,6 +72,7 @@ export function RestoreWizardDialog({
       setTargetApp('')
       setNodeId(SAME_NODE)
       setNewName('')
+      setRestoredName('')
       restore.reset()
     }
   }
@@ -89,7 +92,8 @@ export function RestoreWizardDialog({
             description: t('restoreWizard.startedDescription'),
             type: 'success',
           })
-          close(false)
+          setRestoredName(res.new_volume_name)
+          setStep(3)
         },
         onError: (err) => {
           toast.add({
@@ -244,18 +248,53 @@ export function RestoreWizardDialog({
           </p>
         ) : null}
 
+        {step === 3 ? (
+          <div className="space-y-3 text-sm">
+            <p className="font-medium text-foreground">
+              {t('restoreWizard.checkTitle')}
+            </p>
+            <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
+              <li>{t('restoreWizard.checkOpen')}</li>
+              <li>{t('restoreWizard.checkData', { name: restoredName })}</li>
+              <li>{t('restoreWizard.checkSwitch', { name: restoredName })}</li>
+            </ol>
+            <Link
+              to="/apps/$name"
+              params={{ name: destination === 'other' ? trimmedApp : app }}
+              className="text-primary underline underline-offset-2"
+              onClick={() => {
+                close(false)
+              }}
+            >
+              {t('restoreWizard.checkLink')}
+            </Link>
+          </div>
+        ) : null}
+
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (step === 0) close(false)
-              else setStep(step - 1)
-            }}
-          >
-            {step === 0 ? t('restoreWizard.cancel') : t('restoreWizard.back')}
-          </Button>
-          {step < 2 ? (
+          {step === 3 ? (
+            <Button
+              type="button"
+              onClick={() => {
+                close(false)
+              }}
+            >
+              {t('restoreWizard.done')}
+            </Button>
+          ) : null}
+          {step === 3 ? null : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (step === 0) close(false)
+                else setStep(step - 1)
+              }}
+            >
+              {step === 0 ? t('restoreWizard.cancel') : t('restoreWizard.back')}
+            </Button>
+          )}
+          {step === 3 ? null : step < 2 ? (
             <Button
               type="button"
               disabled={

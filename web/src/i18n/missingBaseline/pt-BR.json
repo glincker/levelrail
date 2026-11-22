@@ -1,9 +1,26 @@
 {
   "missing": [
+    "backups:restoreWizard.checkData",
+    "backups:restoreWizard.checkLink",
+    "backups:restoreWizard.checkOpen",
+    "backups:restoreWizard.checkSwitch",
+    "backups:restoreWizard.checkTitle",
+    "backups:restoreWizard.done",
+    "backups:restoreWizard.stepCheck",
+    "backups:sameDisk.body",
+    "backups:sameDisk.connect",
+    "backups:sameDisk.title",
     "common:apiError.friendly.badToken.action",
     "common:apiError.friendly.badToken.message",
     "common:apiError.friendly.badToken.title",
     "common:apiError.whatThisMeans",
+    "common:confirmDialog.impactBackups_one",
+    "common:confirmDialog.impactBackups_other",
+    "common:confirmDialog.impactDomains_one",
+    "common:confirmDialog.impactDomains_other",
+    "common:confirmDialog.impactLead",
+    "common:confirmDialog.impactVolumes_one",
+    "common:confirmDialog.impactVolumes_other",
     "pagesSites:dashDrop.prompt"
   ],
   "knownIssues": []

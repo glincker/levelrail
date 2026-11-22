@@ -1,5 +1,15 @@
 {
   "missing": [
+    "backups:restoreWizard.checkData",
+    "backups:restoreWizard.checkLink",
+    "backups:restoreWizard.checkOpen",
+    "backups:restoreWizard.checkSwitch",
+    "backups:restoreWizard.checkTitle",
+    "backups:restoreWizard.done",
+    "backups:restoreWizard.stepCheck",
+    "backups:sameDisk.body",
+    "backups:sameDisk.connect",
+    "backups:sameDisk.title",
     "pagesSites:dashDrop.prompt"
   ],
   "knownIssues": []

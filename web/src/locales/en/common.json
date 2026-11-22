@@ -308,7 +308,14 @@
   },
   "confirmDialog": {
     "cancel": "Cancel",
-    "typePrompt": "Type {{value}} to confirm"
+    "typePrompt": "Type {{value}} to confirm",
+    "impactLead": "You lose: {{items}}.",
+    "impactVolumes_one": "{{count}} volume",
+    "impactVolumes_other": "{{count}} volumes",
+    "impactDomains_one": "{{count}} domain",
+    "impactDomains_other": "{{count}} domains",
+    "impactBackups_one": "backups stay {{count}} day",
+    "impactBackups_other": "backups stay {{count}} days"
   },
   "deleteApp": {
     "trigger": "Delete",

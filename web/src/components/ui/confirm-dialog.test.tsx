@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { ConfirmDialog } from './confirm-dialog'
+import { ConfirmDialog, impactParts } from './confirm-dialog'
 
 function setup(
   props: Partial<React.ComponentProps<typeof ConfirmDialog>> = {},
@@ -50,5 +50,28 @@ describe('ConfirmDialog', () => {
   it('shows an error message', () => {
     setup({ error: 'boom' })
     expect(screen.getByText('boom')).toBeInTheDocument()
+  })
+})
+
+describe('impactParts', () => {
+  const fakeT = (key: string, opts: Record<string, unknown>) =>
+    `${key}:${String(opts.count)}`
+
+  it('lists volumes, domains and retention and skips zero counts', () => {
+    expect(
+      impactParts({ volumes: 3, domains: 1, backupRetentionDays: 7 }, fakeT),
+    ).toEqual([
+      'confirmDialog.impactVolumes:3',
+      'confirmDialog.impactDomains:1',
+      'confirmDialog.impactBackups:7',
+    ])
+    expect(impactParts({ volumes: 0, domains: 2 }, fakeT)).toEqual([
+      'confirmDialog.impactDomains:2',
+    ])
+  })
+
+  it('renders the impact line when the dialog is given an impact', () => {
+    setup({ impact: { domains: 1 } })
+    expect(screen.getByText(/You lose/)).toBeInTheDocument()
   })
 })

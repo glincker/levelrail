@@ -81,7 +81,14 @@
     "cancel": "Cancel",
     "started": "Restoring into {{name}}",
     "startedDescription": "Follow progress in the restore history of this volume.",
-    "failed": "Could not start the restore"
+    "failed": "Could not start the restore",
+    "stepCheck": "Check your app",
+    "checkTitle": "Restore started. Now check your app.",
+    "checkOpen": "Open your app and make sure it still loads.",
+    "checkData": "Once the restore finishes, confirm your data is back in {{name}}.",
+    "checkSwitch": "Point the app at {{name}} (its volume setting), then redeploy so it uses the restored data.",
+    "checkLink": "Open the app",
+    "done": "Done"
   },
   "policy": {
     "title": "Backup policy for {{app}}/{{volume}}",
@@ -294,6 +301,11 @@
     "done_other": "{{count}} resources scheduled",
     "someFailed_one": "{{count}} could not be scheduled.",
     "someFailed_other": "{{count}} could not be scheduled."
+  },
+  "sameDisk": {
+    "title": "If this server dies, backups die too.",
+    "body": "Every backup target is on this server's own disk. Connect storage somewhere else to keep a copy that survives.",
+    "connect": "Connect storage"
   },
   "safety": {
     "title": "Encryption and bucket safety",
