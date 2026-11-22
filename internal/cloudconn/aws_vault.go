@@ -71,7 +71,7 @@ func classifyVault(err error) string {
 		return ClassConfigInvalid
 	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 		return ClassUnreachable
-	case errors.As(err, &re), errors.Is(err, vault.ErrNoAWSCredentials):
+	case errors.As(err, &re), errors.Is(err, vault.ErrNoAWSCredentials), errors.Is(err, vault.ErrNoAWSRole):
 		return ClassCredentialUnresolved
 	}
 	return ClassUnreachable
@@ -109,4 +109,15 @@ func (p *AWSProvider) RevokeVault(ctx context.Context, t Target) error {
 		return errors.New("cloudconn: vault lease revoke failed")
 	}
 	return nil
+}
+
+// ProbeVault checks Vault is reachable and the role exists; the class never carries Vault's own text.
+func (p *AWSProvider) ProbeVault(ctx context.Context, t Target) (string, error) {
+	if t.Connection.AuthMethod != AuthVaultAWS || t.Credential.Len() == 0 {
+		return ClassCredentialUnresolved, errors.New("cloudconn: no vault token for this account")
+	}
+	if err := p.broker().Probe(ctx, vaultSpec(t.Connection), string(t.Credential.Reveal())); err != nil {
+		return classifyVault(err), errors.New("cloudconn: vault probe failed")
+	}
+	return ClassOK, nil
 }

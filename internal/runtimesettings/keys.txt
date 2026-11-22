@@ -193,6 +193,10 @@ cloud.spend.stale_after_hours
 cloud.ssm.command_allowlist
 cloud.ssm.command_timeout_seconds
 cloud.state_max_kb
+cloud.vault.auth_method
+cloud.vault.aws_auth_mount
+cloud.vault.aws_auth_role
+cloud.vault.server_id_header
 compose.depends_on_timeout
 compose.repo_deploy_timeout
 compose.repo_file_max_bytes

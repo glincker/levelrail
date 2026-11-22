@@ -207,14 +207,17 @@ func doctorVaultStep(a store.CloudAccount, cfg map[string]json.RawMessage, allow
 	_ = json.Unmarshal(cfg["vault_address"], &addr)
 	_ = json.Unmarshal(cfg["vault_token_ref"], &token)
 	switch {
-	case addr == "" || token == "":
-		s.Status, s.Detail = doctorFail, "The Vault address or token reference is missing."
-		s.Fix = "Link the account again with the Vault kit and a secret reference for the token."
+	case addr == "":
+		s.Status, s.Detail = doctorFail, "The Vault address is missing."
+		s.Fix = "Link the account again with the Vault kit and the Vault address."
 	case !allowPrivate:
 		s.Status, s.Detail = doctorWarn, "Private Vault addresses are blocked by vault.allow_private_address."
 		s.Fix = "Allow private addresses if your Vault is on a private network."
 	default:
-		s.Status, s.Detail = doctorOK, "Vault address and token reference are set."
+		s.Status, s.Detail = doctorOK, "Vault address is set."
+		if token == "" {
+			s.Detail += " The token comes from the Vault connection or the AWS sign-in settings."
+		}
 	}
 	return s
 }
@@ -287,6 +290,9 @@ func (rt *Router) doctorAWSAccount(ctx context.Context, a store.CloudAccount) []
 		steps = append(steps, rt.doctorCapabilitySteps(ctx, a, value)...)
 	} else {
 		steps = append(steps, doctorStep{ID: "aws.capabilities", Title: "Permission tiers", Status: doctorSkip, Detail: "Skipped until the account is verified."})
+	}
+	if isAWSVaultAccount(a) {
+		steps = append(steps, rt.doctorLiveVault(ctx, a, value)...)
 	}
 	guard := rt.doctorGuardSteps(cfg, true, a)
 	if res.OK {

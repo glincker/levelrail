@@ -261,16 +261,16 @@ func isAWSBrokeredAccount(a store.CloudAccount) bool {
 }
 
 func awsVaultAccountConfig(req createCloudAccountRequest) (map[string]string, string) {
-	if req.Region == "" || req.VaultTokenRef == "" {
-		return nil, "region, vault_address, vault_role and vault_token_ref are required for vault_aws"
+	if req.Region == "" || req.VaultAddress == "" {
+		return nil, "region, vault_address and vault_role are required for vault_aws, and a vault_token_ref unless Levelrail signs in itself"
 	}
 	cc := cloudconn.Config{Region: req.Region, AccountID: req.AccountID, VaultAddress: req.VaultAddress, VaultMount: req.VaultMount,
 		VaultRole: req.VaultRole, VaultNamespace: req.VaultNamespace, VaultTokenRef: req.VaultTokenRef}
 	if err := cloudconn.NewAWSProvider(cloudconn.AWSOptions{}).ValidateConfig(cc, cloudconn.AuthVaultAWS); err != nil {
 		return nil, "the account settings are not valid"
 	}
-	cfg := map[string]string{"region": cc.Region, "vault_address": cc.VaultAddress, "vault_role": cc.VaultRole, "vault_token_ref": cc.VaultTokenRef}
-	for k, v := range map[string]string{"account_id": cc.AccountID, "vault_mount": cc.VaultMount, "vault_namespace": cc.VaultNamespace} {
+	cfg := map[string]string{"region": cc.Region, "vault_address": cc.VaultAddress, "vault_role": cc.VaultRole}
+	for k, v := range map[string]string{"vault_token_ref": cc.VaultTokenRef, "account_id": cc.AccountID, "vault_mount": cc.VaultMount, "vault_namespace": cc.VaultNamespace} {
 		if v != "" {
 			cfg[k] = v
 		}
@@ -291,6 +291,7 @@ func (rt *Router) cloudAccountDraft(req createCloudAccountRequest) (store.CloudA
 	method := req.Method
 	if req.Provider == cloudconn.ProviderAWS && method == cloudconn.AuthVaultAWS {
 		var msg string
+		rt.vaultConnectionDefaults(&req)
 		if cfg, msg = awsVaultAccountConfig(req); msg != "" {
 			return store.CloudAccount{}, "", msg
 		}
@@ -385,7 +386,7 @@ func (rt *Router) handleCreateCloudAccount(w http.ResponseWriter, r *http.Reques
 	if isAWSVaultAccount(acct) {
 		tok, err := rt.vaultAccountToken(r.Context(), acct)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "the vault token reference could not be resolved")
+			writeError(w, http.StatusBadRequest, "the Vault token could not be obtained: check the token reference or the Vault sign-in settings")
 			return
 		}
 		value = tok
@@ -939,7 +940,13 @@ func (rt *Router) resolveNodeProvisionerForAccount(ctx context.Context, provider
 	}
 	var token string
 	var err error
-	if isDigitalOceanOAuthAccount(acct) {
+	if isAWSVaultAccount(acct) {
+		raw, verr := rt.vaultProvisionCredentials(ctx, acct)
+		if verr != nil {
+			return nil, false, http.StatusBadGateway, "Vault could not issue AWS credentials for this account, check that Vault is reachable and the role exists"
+		}
+		token = raw
+	} else if isDigitalOceanOAuthAccount(acct) {
 		token, err = rt.doOAuthAccessToken(ctx, acct)
 	} else {
 		token, err = rt.nodeProviderSecrets.Resolve(ctx, cloudAccountSecretRef(acct), store.NodeProviderTokenEnvKey)

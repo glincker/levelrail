@@ -85,6 +85,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_OAUTH_DIGITALOCEAN_REFRESH_LEAD_SECONDS` | [`cloud.oauth.digitalocean.refresh_lead_seconds`](/runtime-settings#security) | `300` |
 | `APP_CLOUD_OAUTH_DIGITALOCEAN_TIMEOUT_SECONDS` | [`cloud.oauth.digitalocean.timeout_seconds`](/runtime-settings#security) | `15` |
 | `APP_CLOUD_REQUIRE_FULL_ESTIMATE` | [`cloud.require_full_estimate`](/runtime-settings#security) | `true` |
+| `APP_CLOUD_VAULT_AUTH_METHOD` | [`cloud.vault.auth_method`](/runtime-settings#security) | `connection` |
+| `APP_CLOUD_VAULT_AWS_AUTH_MOUNT` | [`cloud.vault.aws_auth_mount`](/runtime-settings#security) | `aws` |
+| `APP_CLOUD_VAULT_AWS_AUTH_ROLE` | [`cloud.vault.aws_auth_role`](/runtime-settings#security) | empty |
+| `APP_CLOUD_VAULT_SERVER_ID_HEADER` | [`cloud.vault.server_id_header`](/runtime-settings#security) | empty |
 | `APP_CONNECTION_BINDING_RULE_VALUE_MAX_LEN` | [`connections.binding_rule_value_max_len`](/runtime-settings#security) | `512` |
 | `APP_CONNECTION_BINDING_RULES_MAX_BYTES` | [`connections.binding_rules_max_bytes`](/runtime-settings#security) | `4096` |
 | `APP_CONNECTION_EXPIRY_WARN` | [`connections.expiry_warn`](/runtime-settings#security) | `336h` |
