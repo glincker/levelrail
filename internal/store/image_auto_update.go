@@ -20,6 +20,8 @@ type ImageAutoUpdate struct {
 	// WindowCron and WindowMinutes bound when a found update may apply; empty cron means any time.
 	WindowCron    string
 	WindowMinutes int
+	// VersionRange (for example "1.x") makes the check deploy the newest release tag inside it; empty watches the current tag only.
+	VersionRange string
 }
 
 // SetImageAutoUpdate enables or disables auto-update for serviceName.
@@ -40,8 +42,8 @@ func (db *DB) GetImageAutoUpdate(ctx context.Context, serviceName string) (Image
 	var enabled int
 	var checked sql.NullString
 	err := db.QueryRowContext(ctx, `
-		SELECT enabled, last_checked_at, last_result, webhook_hash, window_cron, window_minutes FROM image_auto_updates WHERE service_name = ?
-	`, serviceName).Scan(&enabled, &checked, &u.LastResult, &u.WebhookHash, &u.WindowCron, &u.WindowMinutes)
+		SELECT enabled, last_checked_at, last_result, webhook_hash, window_cron, window_minutes, version_range FROM image_auto_updates WHERE service_name = ?
+	`, serviceName).Scan(&enabled, &checked, &u.LastResult, &u.WebhookHash, &u.WindowCron, &u.WindowMinutes, &u.VersionRange)
 	if errors.Is(err, sql.ErrNoRows) {
 		return u, nil
 	}
@@ -57,7 +59,7 @@ func (db *DB) GetImageAutoUpdate(ctx context.Context, serviceName string) (Image
 
 // ListEnabledImageAutoUpdates returns every app that opted in.
 func (db *DB) ListEnabledImageAutoUpdates(ctx context.Context) ([]ImageAutoUpdate, error) {
-	rows, err := db.QueryContext(ctx, `SELECT service_name FROM image_auto_updates WHERE enabled = 1 ORDER BY service_name`)
+	rows, err := db.QueryContext(ctx, `SELECT service_name, version_range FROM image_auto_updates WHERE enabled = 1 ORDER BY service_name`)
 	if err != nil {
 		return nil, fmt.Errorf("store: list image auto-updates: %w", err)
 	}
@@ -65,7 +67,7 @@ func (db *DB) ListEnabledImageAutoUpdates(ctx context.Context) ([]ImageAutoUpdat
 	var out []ImageAutoUpdate
 	for rows.Next() {
 		u := ImageAutoUpdate{Enabled: true}
-		if err := rows.Scan(&u.ServiceName); err != nil {
+		if err := rows.Scan(&u.ServiceName, &u.VersionRange); err != nil {
 			return nil, fmt.Errorf("store: scan image auto-update: %w", err)
 		}
 		out = append(out, u)
@@ -116,6 +118,18 @@ func (db *DB) SetImageAutoUpdateWindow(ctx context.Context, serviceName, cron st
 	`, serviceName, cron, minutes, time.Now().UTC().Format(time.RFC3339))
 	if err != nil {
 		return fmt.Errorf("store: set image auto-update window for %q: %w", serviceName, err)
+	}
+	return nil
+}
+
+// SetImageAutoUpdateRange stores serviceName's semver range; empty clears it.
+func (db *DB) SetImageAutoUpdateRange(ctx context.Context, serviceName, versionRange string) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO image_auto_updates (service_name, enabled, version_range, updated_at) VALUES (?, 0, ?, ?)
+		ON CONFLICT(service_name) DO UPDATE SET version_range = excluded.version_range, updated_at = excluded.updated_at
+	`, serviceName, versionRange, time.Now().UTC().Format(time.RFC3339))
+	if err != nil {
+		return fmt.Errorf("store: set image auto-update range for %q: %w", serviceName, err)
 	}
 	return nil
 }

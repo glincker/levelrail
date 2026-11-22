@@ -319,6 +319,10 @@ deliveries are verified with the signing secret printed with the URL.
 Use --window-cron and --window-minutes with enable to apply updates only inside
 a window (UTC); one found earlier waits for it. --clear-window removes it.
 
+Use --range with enable to follow the newest release tag inside a semver range
+(for example 1.x) instead of only the current tag. Pre-releases are skipped and
+a variant suffix such as -alpine is kept.
+
 Off by default. Enabled apps are checked on the control plane's interval
 (APP_IMAGE_UPDATE_INTERVAL, default 1h). Apps built from source, stopped,
 frozen, or in a protected environment are skipped, never forced.

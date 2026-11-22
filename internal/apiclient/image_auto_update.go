@@ -16,6 +16,7 @@ type ImageAutoUpdateResource struct {
 	HasSigningSecret bool   `json:"has_signing_secret"`
 	WindowCron       string `json:"window_cron,omitempty"`
 	WindowMinutes    int    `json:"window_minutes,omitempty"`
+	VersionRange     string `json:"version_range,omitempty"`
 }
 
 // GetImageAutoUpdate calls GET /api/v1/apps/{name}/auto-update.
@@ -35,6 +36,15 @@ func (c *Client) SetImageAutoUpdate(ctx context.Context, appName string, enabled
 func (c *Client) SetImageAutoUpdateWindow(ctx context.Context, appName string, enabled bool, cron string, minutes int) (ImageAutoUpdateResource, error) {
 	var out ImageAutoUpdateResource
 	body := map[string]any{"enabled": enabled, "window_cron": cron, "window_minutes": minutes}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/auto-update", body, &out)
+	return out, err
+}
+
+// SetImageAutoUpdateRange calls PUT /api/v1/apps/{name}/auto-update with a
+// semver range such as "1.x"; an empty range clears it.
+func (c *Client) SetImageAutoUpdateRange(ctx context.Context, appName string, enabled bool, versionRange string) (ImageAutoUpdateResource, error) {
+	var out ImageAutoUpdateResource
+	body := map[string]any{"enabled": enabled, "version_range": versionRange}
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/auto-update", body, &out)
 	return out, err
 }

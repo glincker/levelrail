@@ -82,6 +82,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/hostpressure"
+	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/nodeinsight"
 	"github.com/GLINCKER/levelrail/internal/repolayout"
@@ -303,13 +304,14 @@ type Router struct {
 	registryAuthTester      RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	teardownOpts            []application.Option
 	deleteTimeout           time.Duration
-	execRuntime             NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	models                  ModelService         // nil is valid: /api/v1/models routes return 501, see WithModels
-	gpuHostDiagnoser        GPUHostDiagnoser     // nil is valid: doctor skips the detailed host GPU checks
-	publishLocks            PublishLockStore     // nil disables publish locks, see WithPublishLocks
-	deploySafety            DeploySafetyStore    // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
-	imageResolver           docker.ImageResolver // nil deploys image tags unresolved, see WithDeploySafety
-	deployGate              DeployGateStore      // nil disables the gate timeline and rollback pins, see WithDeployGate
+	execRuntime             NodeRuntimeResolver   // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	models                  ModelService          // nil is valid: /api/v1/models routes return 501, see WithModels
+	gpuHostDiagnoser        GPUHostDiagnoser      // nil is valid: doctor skips the detailed host GPU checks
+	publishLocks            PublishLockStore      // nil disables publish locks, see WithPublishLocks
+	deploySafety            DeploySafetyStore     // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageTagLister          imageupdate.TagLister // nil reads tags straight from the registry over HTTP
+	imageResolver           docker.ImageResolver  // nil deploys image tags unresolved, see WithDeploySafety
+	deployGate              DeployGateStore       // nil disables the gate timeline and rollback pins, see WithDeployGate
 	deployGateDefaults      deploysafety.Effective
 	reconcileNudger         ReconcileNudger      // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
 	certs                   CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
