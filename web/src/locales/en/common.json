@@ -520,7 +520,9 @@
       "systemStatus": "Doctor",
       "report": "Report an issue",
       "community": "Ask the community",
-      "suggest": "Suggest a feature"
+      "suggest": "Suggest a feature",
+      "copyDetails": "Copy details for support",
+      "detailsHeader": "Levelrail support details"
     },
     "account": {
       "controlPlane": "Control plane",

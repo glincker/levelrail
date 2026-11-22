@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { CircleQuestionMarkGlassIcon } from '@thesvg/ui-react'
 import { loadDocsManifest } from '../../lib/docsManifestLoader'
+import { GlossaryList } from '../../components/help/GlossaryList'
 
 export const Route = createFileRoute('/help/')({
   loader: () => loadDocsManifest(),
@@ -53,6 +54,8 @@ function HelpIndexPage() {
           </div>
         ))}
       </div>
+
+      <GlossaryList />
     </div>
   )
 }

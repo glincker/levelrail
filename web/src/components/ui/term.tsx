@@ -17,6 +17,10 @@ export const TERM_HELP_PATHS = {
   aRecord: '/dns',
   reconciler: '/architecture',
   agent: '/architecture',
+  node: '/add-node-anywhere',
+  environment: '/environments',
+  deployment: '/deploying-apps',
+  rollback: '/rollback',
 } as const
 
 export type TermKey = keyof typeof TERM_HELP_PATHS
@@ -55,6 +59,12 @@ export function Term({ term, children, className }: TermProps) {
           variant="inline"
           className="mt-2"
         />
+        <a
+          href={`/help#term-${term}`}
+          className="mt-1 block text-primary underline underline-offset-4 hover:no-underline"
+        >
+          {t('seeInGlossary')}
+        </a>
       </PopoverContent>
     </Popover>
   )

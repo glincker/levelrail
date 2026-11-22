@@ -35,5 +35,12 @@
   "code": {
     "copy": "Copy",
     "copied": "Copied"
+  },
+  "glossary": {
+    "title": "Glossary",
+    "description": "Plain definitions of the terms used across the dashboard.",
+    "search": "Search terms",
+    "searchLabel": "Search the glossary",
+    "empty": "No terms match your search."
   }
 }
