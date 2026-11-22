@@ -65,5 +65,5 @@ func (rt *Router) handleAppChanges(w http.ResponseWriter, r *http.Request) {
 		}
 		agg.Window = d
 	}
-	writeJSON(w, http.StatusOK, agg.Collect(r.Context(), name, until))
+	writeJSON(w, http.StatusOK, appChangesResponse{Result: agg.Collect(r.Context(), name, until), Revisions: rt.listConfigRevisions(r.Context(), name)})
 }

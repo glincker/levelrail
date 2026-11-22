@@ -71,3 +71,41 @@ export function useResetDefaultAlerts() {
     invalidate: [defaultAlertKeys.all],
   })
 }
+
+export interface DefaultAlertSettings {
+  enabled: boolean
+  crashloop_restarts: number
+  error_rate_percent: number
+  digest_schedule: string
+}
+
+export const DIGEST_ON_SCHEDULE = 'mon@08'
+
+const settingsKey = [...defaultAlertKeys.all, 'settings'] as const
+
+export function useDefaultAlertSettings() {
+  return useQuery({
+    queryKey: settingsKey,
+    queryFn: () =>
+      request<DefaultAlertSettings>(
+        '/api/v1/alert-defaults/settings',
+        'Loading default alert settings',
+      ),
+  })
+}
+
+export function useUpdateDefaultAlertSettings() {
+  return useApiMutation({
+    fn: (patch: Partial<DefaultAlertSettings>) =>
+      request<DefaultAlertSettings>(
+        '/api/v1/alert-defaults/settings',
+        'Updating default alert settings',
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch),
+        },
+      ),
+    invalidate: [defaultAlertKeys.all],
+  })
+}

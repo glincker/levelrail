@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2367 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2371 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -444,6 +444,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/restart-schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppRestartSchedule", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/restart-schedule", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppRestartSchedule", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/resume", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResumeApp", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/revert", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevertApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollback-targets", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListRollbackTargets", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteRollout", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRollout", Description: ""},
@@ -1147,7 +1148,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/alert-defaults", Ability: "AbilityRead", Group: "Other", Handler: "handleListDefaultAlerts", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-defaults/cert-expiry/email", Ability: "AbilityRead", Group: "Other", Handler: "handleGetCertExpiryEmail", Description: ""},
 	{Method: "PUT", Path: "/api/v1/alert-defaults/cert-expiry/email", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetCertExpiryEmail", Description: ""},
+	{Method: "GET", Path: "/api/v1/alert-defaults/digest-preview", Ability: "AbilityRead", Group: "Other", Handler: "handleAlertDigestPreview", Description: ""},
 	{Method: "POST", Path: "/api/v1/alert-defaults/reset", Ability: "AbilityWrite", Group: "Other", Handler: "handleResetDefaultAlerts", Description: ""},
+	{Method: "GET", Path: "/api/v1/alert-defaults/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetAlertDefaultsSettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/alert-defaults/settings", Ability: "AbilityWrite", Group: "Other", Handler: "handlePutAlertDefaultsSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/alert-defaults/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetDefaultAlertEnabled", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-history", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-maintenance-windows", Ability: "AbilityRead", Group: "Other", Handler: "handleListMaintenanceWindows", Description: ""},

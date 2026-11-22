@@ -11,9 +11,10 @@ import (
 
 func alertsDefaultsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s alerts defaults show
+  %[1]s alerts defaults enable|disable            master switch for every default alert
   %[1]s alerts defaults list
-  %[1]s alerts defaults enable <id>
-  %[1]s alerts defaults disable <id>
+  %[1]s alerts defaults enable|disable <id>       one default alert
   %[1]s alerts defaults reset
 
 Default alerts are seeded on first boot: certificate expiry at 14, 7, 3 and
@@ -25,6 +26,8 @@ it disabled; it is never re-created or overwritten on restart.
 func runAlertsDefaults(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) > 0 {
 		switch args[0] {
+		case "show":
+			return runAPICmd(prog, defaultsShowCommand(), args[1:], stdout, stderr, lookupEnv)
 		case "list":
 			return runAPICmd(prog, defaultsListCommand(), args[1:], stdout, stderr, lookupEnv)
 		case "reset":
@@ -71,8 +74,12 @@ func defaultsToggleCommand(enabled bool) apiCmd {
 		label: "alerts defaults " + verb,
 		usage: alertsDefaultsUsage,
 		run: func(ctx context.Context, c *Client, args []string) (any, func(io.Writer), error) {
+			if len(args) == 0 {
+				st, err := c.SetDefaultAlertSettings(ctx, map[string]any{"enabled": enabled})
+				return st, func(w io.Writer) { printDefaultAlertSettings(w, st) }, err
+			}
 			if len(args) != 1 {
-				return nil, nil, newValidationError("give exactly one default alert ID (see \"alerts defaults list\")")
+				return nil, nil, newValidationError("give one default alert ID (see \"alerts defaults list\") or none for the master switch")
 			}
 			a, err := c.SetDefaultAlertEnabled(ctx, args[0], enabled)
 			return a, func(w io.Writer) { _, _ = fmt.Fprintf(w, "%s: enabled=%t\n", a.ID, a.Enabled) }, err
@@ -89,4 +96,20 @@ func defaultsResetCommand() apiCmd {
 			return list, func(w io.Writer) { printDefaultAlerts(w, list) }, err
 		},
 	}
+}
+
+func defaultsShowCommand() apiCmd {
+	return apiCmd{
+		label: "alerts defaults show",
+		usage: alertsDefaultsUsage,
+		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
+			st, err := c.DefaultAlertSettings(ctx)
+			return st, func(w io.Writer) { printDefaultAlertSettings(w, st) }, err
+		},
+	}
+}
+
+func printDefaultAlertSettings(w io.Writer, st apiclient.DefaultAlertSettings) {
+	_, _ = fmt.Fprintf(w, "default alerts: %t\ncrash loop restarts: %d\n5xx rate percent: %d\nweekly digest: %s\n",
+		st.Enabled, st.CrashloopRestarts, st.ErrorRatePercent, st.DigestSchedule)
 }

@@ -459,6 +459,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
 | `APP_ALERTS_ADVISORY_MIN_SEVERITY` | [`alerts.advisory_min_severity`](/runtime-settings#observability) | `high` |
 | `APP_ALERTS_ADVISORY_NOTIFY` | [`alerts.advisory_notify`](/runtime-settings#observability) | `false` |
+| `APP_ALERTS_DEFAULT_5XX_MIN_REQUESTS` | [`alerts.default_5xx_min_requests`](/runtime-settings#observability) | `20` |
+| `APP_ALERTS_DEFAULT_5XX_PERCENT` | [`alerts.default_5xx_percent`](/runtime-settings#observability) | `5` |
+| `APP_ALERTS_DEFAULT_CRASHLOOP_RESTARTS` | [`alerts.default_crashloop_restarts`](/runtime-settings#observability) | `3` |
+| `APP_ALERTS_DEFAULTS_ENABLED` | [`alerts.defaults_enabled`](/runtime-settings#observability) | `true` |
+| `APP_ALERTS_DIGEST_SCHEDULE` | [`alerts.digest_schedule`](/runtime-settings#observability) | `off` |
 | `APP_ALERTS_NOTIFY_ON_SLEEP` | [`alerts.notify_on_sleep`](/runtime-settings#observability) | `false` |
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |

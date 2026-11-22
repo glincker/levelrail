@@ -29,6 +29,48 @@ type RecentChangesResource struct {
 	Changes       []RecentChange `json:"changes"`
 	Total         int            `json:"total"`
 	Truncated     bool           `json:"truncated,omitempty"`
+	// Revisions are the recorded config versions, newest first.
+	Revisions []ConfigRevision `json:"revisions,omitempty"`
+}
+
+// ConfigFieldChange is one line of a config diff. Secret values never appear:
+// a masked env value is "[masked]" and a secret is "secret:NAME".
+type ConfigFieldChange struct {
+	Kind  string `json:"kind"`
+	Field string `json:"field"`
+	From  string `json:"from,omitempty"`
+	To    string `json:"to,omitempty"`
+}
+
+// ConfigRevision mirrors internal/api configRevision.
+type ConfigRevision struct {
+	N        int                 `json:"n"`
+	At       time.Time           `json:"at"`
+	Actor    string              `json:"actor"`
+	Kinds    []string            `json:"kinds"`
+	Changes  []ConfigFieldChange `json:"changes"`
+	RevertOf int                 `json:"revert_of,omitempty"`
+}
+
+// RevertResult mirrors internal/api revertResponse.
+type RevertResult struct {
+	App          string              `json:"app"`
+	RevertedTo   int                 `json:"reverted_to"`
+	Revision     int                 `json:"revision,omitempty"`
+	DryRun       bool                `json:"dry_run,omitempty"`
+	Changes      []ConfigFieldChange `json:"changes"`
+	Skipped      []string            `json:"skipped,omitempty"`
+	PendingApply bool                `json:"pending_apply"`
+}
+
+// RevertApp calls POST /api/v1/apps/{name}/revert. dryRun only previews.
+func (c *Client) RevertApp(ctx context.Context, name string, to int, dryRun bool) (*RevertResult, error) {
+	var out RevertResult
+	body := map[string]any{"to": to, "dry_run": dryRun}
+	if err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/revert", body, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 // GetAppChanges calls GET /api/v1/apps/{name}/changes. Zero until means now;

@@ -795,6 +795,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/deploys/{deployId}/pin | AbilityDeploy | handleUnpinDeploy |
 | GET | /api/v1/apps/{name}/health-explain | AbilityRead | handleGetAppHealthExplain |
 | GET | /api/v1/apps/{name}/env-diff | AbilityRead | handleEnvDiff |
+| POST | /api/v1/apps/{name}/revert | AbilityWrite | handleRevertApp |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -2598,6 +2599,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots | Public | handleLightsailSnapshots |
 | POST | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots | Public | handleLightsailSnapshotCreate |
 | DELETE | /api/v1/cloud-accounts/{id}/aws/lightsail/snapshots/{name} | Public | handleLightsailSnapshotDelete |
+| GET | /api/v1/alert-defaults/settings | AbilityRead | handleGetAlertDefaultsSettings |
+| PUT | /api/v1/alert-defaults/settings | AbilityWrite | handlePutAlertDefaultsSettings |
+| GET | /api/v1/alert-defaults/digest-preview | AbilityRead | handleAlertDigestPreview |
 | POST | /mcp | Public |  |
 
 ## See also

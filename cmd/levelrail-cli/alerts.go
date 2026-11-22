@@ -31,6 +31,8 @@ func runAlerts(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return runAlertsInbox(prog, args[1:], stdout, stderr, lookupEnv)
 		case "defaults":
 			return runAlertsDefaults(prog, args[1:], stdout, stderr, lookupEnv)
+		case "digest":
+			return runAlertsDigest(prog, args[1:], stdout, stderr, lookupEnv)
 		}
 	}
 	return dispatchSub(prog, "alerts", alertsUsage, map[string]apiCmd{}, args, stdout, stderr, lookupEnv)
@@ -45,7 +47,8 @@ func alertsUsage(prog string) string {
   %[1]s alerts explain <deploy-id>                     why a deploy failed, from its timeline (rule-based)
   %[1]s alerts inbox list|count|read|prefs             your alert inbox, read state, routing and daily digest
 
-  %[1]s alerts defaults list|enable|disable|reset        the alerts seeded on first boot
+  %[1]s alerts defaults show|list|enable|disable|reset   the alerts seeded on first boot, and their master switch
+  %[1]s alerts digest preview|schedule                   the weekly summary mail
 
 Alert rules themselves live under "%[1]s apps alerts".
 Run "%[1]s alerts <subcommand> -h" for its flags.

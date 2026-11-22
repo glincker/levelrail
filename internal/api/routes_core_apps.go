@@ -118,6 +118,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// Timeline and pending changes (app_timeline.go, pending_changes.go).
 	mux.HandleFunc("GET /api/v1/apps/{name}/timeline", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppTimeline))
 	mux.HandleFunc("GET /api/v1/apps/{name}/changes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppChanges))
+	mux.HandleFunc("POST /api/v1/apps/{name}/revert", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.idempotent(rt.handleRevertApp)))
 	mux.HandleFunc("GET /api/v1/apps/{name}/slo-preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleSLOPreview))
 	mux.HandleFunc("GET /api/v1/apps/{name}/pending-changes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePendingChanges))
 	mux.HandleFunc("POST /api/v1/apps/{name}/apply-pending", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyPending))

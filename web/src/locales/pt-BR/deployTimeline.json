@@ -94,6 +94,14 @@
   "banner": {
     "description": "Uma linha do tempo de cada deploy por app, com falhas e rollbacks marcados. Faça o deploy de um app e a faixa dele aparece aqui."
   },
+  "revertConfig": {
+    "action": "Reverter configuração até aqui",
+    "title": "Reverter configuração para a revisão {{revision}}",
+    "disclaimer": "Só mudam as configurações do app: env, escala, recursos, domínios e saúde. Dados de banco e volumes não são tocados, e valores secretos não são restaurados. Mudanças de env valem no próximo reinício ou deploy.",
+    "confirm": "Reverter",
+    "pending": "Revertendo",
+    "none": "Nada difere da configuração atual."
+  },
   "appHistory": {
     "title": "Histórico",
     "managedBy": "Gerenciado pela stack {{stack}}",

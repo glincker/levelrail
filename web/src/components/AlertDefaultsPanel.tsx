@@ -9,6 +9,9 @@ import { toast } from '@/components/ui/toast'
 import { AlertKindGuidance } from './AlertKindGuidance'
 import { isAlertKindCopyKind } from './alertKindCopy'
 import {
+  DIGEST_ON_SCHEDULE,
+  useDefaultAlertSettings,
+  useUpdateDefaultAlertSettings,
   useDefaultAlerts,
   useResetDefaultAlerts,
   useSetDefaultAlertEnabled,
@@ -26,6 +29,17 @@ export function AlertDefaultsPanel() {
   const defaults = useDefaultAlerts()
   const set = useSetDefaultAlertEnabled()
   const reset = useResetDefaultAlerts()
+  const settings = useDefaultAlertSettings()
+  const updateSettings = useUpdateDefaultAlertSettings()
+
+  function updateSetting(
+    patch: { enabled: boolean } | { digest_schedule: string },
+    errorKey: 'defaults.masterError' | 'defaults.digestError',
+  ) {
+    updateSettings.mutate(patch, {
+      onError: () => toast.add({ title: t(errorKey), type: 'error' }),
+    })
+  }
 
   function resetAll() {
     reset.mutate(undefined, {
@@ -96,6 +110,45 @@ export function AlertDefaultsPanel() {
           {t('defaults.reset')}
         </Button>
       </div>
+      {settings.data ? (
+        <div className="divide-y rounded-lg border">
+          <div className="flex items-center justify-between gap-3 p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{t('defaults.master')}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('defaults.masterHint')}
+              </p>
+            </div>
+            <Switch
+              aria-label={t('defaults.master')}
+              checked={settings.data.enabled}
+              disabled={updateSettings.isPending}
+              onCheckedChange={(v) =>
+                updateSetting({ enabled: v }, 'defaults.masterError')
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{t('defaults.digest')}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('defaults.digestHint')}
+              </p>
+            </div>
+            <Switch
+              aria-label={t('defaults.digest')}
+              checked={settings.data.digest_schedule !== 'off'}
+              disabled={updateSettings.isPending}
+              onCheckedChange={(v) =>
+                updateSetting(
+                  { digest_schedule: v ? DIGEST_ON_SCHEDULE : 'off' },
+                  'defaults.digestError',
+                )
+              }
+            />
+          </div>
+        </div>
+      ) : null}
       {list.length === 0 ? (
         <EmptyState
           icon={<BellGlassIcon className="size-6" aria-hidden="true" />}

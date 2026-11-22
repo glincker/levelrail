@@ -17,7 +17,13 @@
       "info": "Info",
       "warning": "Warning",
       "critical": "Critical"
-    }
+    },
+    "master": "Default alerts",
+    "masterHint": "Crash loops, full disks, expiring certificates, 5xx errors and failed backups. In-app always, by email when email is set up.",
+    "masterError": "Could not update default alerts.",
+    "digest": "Weekly digest",
+    "digestHint": "A Monday 08:00 UTC summary of apps, deploys, restarts, certificates, backups and disk. Needs email.",
+    "digestError": "Could not update the weekly digest."
   },
   "tab": "Inbox",
   "title": "Alert inbox",

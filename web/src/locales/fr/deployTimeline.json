@@ -94,6 +94,14 @@
   "banner": {
     "description": "Une chronologie de chaque deploy par app, avec les échecs et rollbacks signalés. Deployez une app et sa ligne apparaît ici."
   },
+  "revertConfig": {
+    "action": "Rétablir la config à ce point",
+    "title": "Rétablir la config à la révision {{revision}}",
+    "disclaimer": "Seuls les réglages de l'app changent : env, échelle, ressources, domaines et santé. Les données des bases et les volumes ne sont pas touchés, et les valeurs secrètes ne sont pas restaurées. Les changements d'env s'appliquent au prochain redémarrage ou déploiement.",
+    "confirm": "Rétablir",
+    "pending": "Rétablissement",
+    "none": "Rien ne diffère de la config actuelle."
+  },
   "appHistory": {
     "title": "Historique",
     "managedBy": "Géré par la stack {{stack}}",

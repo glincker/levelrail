@@ -96,6 +96,7 @@ var Tree = map[string]*Node{
 		"auto-rollback-slo-burn":  {Subs: map[string]*Node{"set": nil, "status": nil}},
 		"summary":                 nil,
 		"changes":                 nil,
+		"revert":                  nil,
 		"timeline":                nil,
 		"apply":                   nil,
 		"domains":                 {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}},
@@ -293,7 +294,8 @@ var Tree = map[string]*Node{
 		"maintenance": {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
 		"history":     nil,
 		"inbox":       {Subs: map[string]*Node{"list": nil, "count": nil, "read": nil, "prefs": nil}},
-		"defaults":    {Subs: map[string]*Node{"list": nil, "enable": nil, "disable": nil, "reset": nil}},
+		"defaults":    {Subs: map[string]*Node{"show": nil, "list": nil, "enable": nil, "disable": nil, "reset": nil}},
+		"digest":      {Subs: map[string]*Node{"preview": nil, "schedule": nil}},
 	}},
 	"status-page": {Subs: map[string]*Node{
 		"get": nil, "set": nil, "preview": nil,

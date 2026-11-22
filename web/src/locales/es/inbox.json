@@ -17,7 +17,13 @@
       "info": "Información",
       "warning": "Advertencia",
       "critical": "Crítica"
-    }
+    },
+    "master": "Alertas predeterminadas",
+    "masterHint": "Bucles de fallos, discos llenos, certificados por caducar, errores 5xx y copias fallidas. Siempre en la app, por correo si está configurado.",
+    "masterError": "No se pudieron actualizar las alertas predeterminadas.",
+    "digest": "Resumen semanal",
+    "digestHint": "Lunes 08:00 UTC: apps, despliegues, reinicios, certificados, copias y disco. Requiere correo.",
+    "digestError": "No se pudo actualizar el resumen semanal."
   },
   "tab": "Bandeja",
   "title": "Bandeja de alertas",

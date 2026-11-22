@@ -60,6 +60,9 @@ type Engine struct {
 	deployFailures   DeployFailureSource
 	monitorDowns     MonitorDownSource
 	appHealth        AppHealthSource
+	services         ServiceLister
+	defaultsOn       func(context.Context) bool
+	defaultLimits    func(context.Context) DefaultThresholds
 	advisories       AdvisorySource
 	advisoryEnabled  func(context.Context) bool
 	advisoryFloor    func(context.Context) string
@@ -251,6 +254,18 @@ func (e *Engine) SetCleanup(src CleanupSource) { e.cleanup = src }
 // SetAppHealth wires the source the app_unhealthy rule reads; unset keeps the rule inert.
 func (e *Engine) SetAppHealth(src AppHealthSource) { e.appHealth = src }
 
+// SetDefaultAlerts wires the services behind the platform-wide 5xx rule, the live master switch and the live thresholds.
+func (e *Engine) SetDefaultAlerts(services ServiceLister, on func(context.Context) bool, limits func(context.Context) DefaultThresholds) {
+	e.services, e.defaultsOn, e.defaultLimits = services, on, limits
+}
+
+func (e *Engine) defaultThresholds(ctx context.Context) DefaultThresholds {
+	if e.defaultLimits == nil {
+		return DefaultThresholds{}
+	}
+	return e.defaultLimits(ctx)
+}
+
 // SetMonitorDowns wires the source the monitor_down rule reads; unset keeps the rule inert.
 func (e *Engine) SetMonitorDowns(src MonitorDownSource) { e.monitorDowns = src }
 
@@ -368,6 +383,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 		if ctx.Err() != nil {
 			break
 		}
+		if e.defaultsOn != nil && IsDefaultRule(r) && !e.defaultsOn(ctx) {
+			continue
+		}
 		if r.Kind == KindJobFailing {
 			if err := e.tickJobFailing(ctx, r, now); err != nil {
 				errs = append(errs, err)
@@ -381,13 +399,33 @@ func (e *Engine) Tick(ctx context.Context) error {
 		var certSuperseded bool
 		switch r.Kind {
 		case KindThreshold:
-			next, err = EvaluateThreshold(ctx, e.metrics, r, now)
+			if r.ID == DefaultErrorRateRuleID && r.ResourceID == DefaultRuleResource {
+				if e.services == nil {
+					continue
+				}
+				svcs, lerr := e.services.ListDesiredServices(ctx)
+				if lerr != nil {
+					errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, lerr))
+					continue
+				}
+				names := make([]string, 0, len(svcs))
+				for _, s := range svcs {
+					names = append(names, s.Name)
+				}
+				next, backupMissingNoticeText, err = EvaluateErrorRateAll(ctx, e.metrics, names, r, e.defaultThresholds(ctx), now)
+			} else {
+				next, err = EvaluateThreshold(ctx, e.metrics, r, now)
+			}
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
 		case KindCrashloop:
-			next = EvaluateCrashloop(e.tracker, r, now)
+			if r.ID == DefaultCrashloopRuleID && r.ResourceID == DefaultRuleResource {
+				next, backupMissingNoticeText = EvaluateCrashloopAll(e.tracker, r, e.defaultThresholds(ctx).CrashloopRestarts, now)
+			} else {
+				next = EvaluateCrashloop(e.tracker, r, now)
+			}
 		case KindOOMKilled:
 			next = EvaluateOOMKilled(e.tracker, r, now)
 		case KindCertExpiry:
@@ -742,7 +780,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 				e.budgetTracker.record(r.ID, budgetKeys)
 			}
 			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice)
-			if r.Kind == KindCrashloop && e.autoRollback != nil {
+			if r.Kind == KindCrashloop && e.autoRollback != nil && r.ResourceID != DefaultRuleResource {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
 			if r.Kind == KindSLOBurn && e.sloAutoRollback != nil {
@@ -849,7 +887,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

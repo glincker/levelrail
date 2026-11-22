@@ -16,6 +16,11 @@ abuse.suggest_client_share
 account.preferences_max_bytes
 alerts.advisory_min_severity
 alerts.advisory_notify
+alerts.default_5xx_min_requests
+alerts.default_5xx_percent
+alerts.default_crashloop_restarts
+alerts.defaults_enabled
+alerts.digest_schedule
 alerts.notify_on_sleep
 api.apps_metrics_max
 api.conditional_get
