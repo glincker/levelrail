@@ -9,6 +9,7 @@ import { BuildQueueBanner } from '../../../components/buildQueue/BuildQueueBanne
 import { OverviewPage } from '../../../components/overview/OverviewPage'
 import { AppEdgeCard } from '../../../components/apps/AppEdgeCard'
 import { ManagedByStackPanel } from '../../../components/apps/ManagedByStackPanel'
+import { OomHintCard } from '../../../components/apps/OomHintCard'
 import { NextStepBanner } from '../../../components/apps/NextStepBanner'
 import { PendingChangesNotice } from '../../../components/apps/PendingChangesNotice'
 import { TemplateUpgradeBadge } from '../../../components/apps/TemplateUpgradeBadge'
@@ -63,6 +64,7 @@ function OverviewSection() {
       <ManagedByStackPanel stack={app.managed_by_stack} />
       <PendingChangesNotice appName={name} />
       <TemplateUpgradeBadge appName={name} />
+      <OomHintCard appName={name} />
       <NextStepBanner app={app} latest={attempts[0]} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
       <AppEdgeCard appName={name} />

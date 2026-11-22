@@ -107,6 +107,7 @@ var Tree = map[string]*Node{
 		"scale":                   nil,
 		"stop":                    nil,
 		"keep":                    nil,
+		"recently-deleted":        {Subs: map[string]*Node{"list": nil, "restore": nil}},
 		"start":                   nil,
 		"delete":                  nil,
 		"status":                  nil,

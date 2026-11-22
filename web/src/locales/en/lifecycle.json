@@ -1,0 +1,31 @@
+{
+  "recentlyDeleted": {
+    "title": "Recently deleted",
+    "description": "Deleted apps and databases can be brought back until the undo window ends. Secrets are not kept, set them again after a restore.",
+    "kind": {
+      "app": "App",
+      "database": "Database"
+    },
+    "expires": "Restorable until {{date}}",
+    "restore": "Restore",
+    "restoring": "Restoring",
+    "restored": "{{name}} restored",
+    "restoreFailed": "Could not restore {{name}}: {{message}}",
+    "withBackup": "Last backup kept",
+    "tableLabel": "Recently deleted apps and databases",
+    "columns": {
+      "name": "Name",
+      "deleted": "Deleted",
+      "until": "Restorable until"
+    }
+  },
+  "oom": {
+    "title": "Killed for running out of memory",
+    "body": "The container hit its {{limit}} memory limit on {{date}}. Its busiest hours used {{peak}}.",
+    "bodyNoPeak": "The container hit its {{limit}} memory limit on {{date}}.",
+    "raise": "Raise limit to {{value}}",
+    "raising": "Raising",
+    "raised": "Memory limit raised to {{value}}",
+    "raiseFailed": "Could not raise the limit: {{message}}"
+  }
+}

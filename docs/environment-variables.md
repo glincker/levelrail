@@ -701,6 +701,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_EXPIRED_TOKEN_DAYS` | [`retention.expired_token_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_FORGE_STATUS_DAYS` | [`retention.forge_status_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_PROBE_ATTEMPT_DAYS` | [`retention.probe_attempt_days`](/runtime-settings#data-retention) | `90` |
+| `APP_RETENTION_RECENTLY_DELETED_DAYS` | [`retention.recently_deleted_days`](/runtime-settings#data-retention) | `7` |
 | `APP_RETENTION_RESTORE_HISTORY_DAYS` | [`retention.restore_history_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_REVOKED_TOKEN_DAYS` | [`retention.revoked_token_days`](/runtime-settings#data-retention) | `90` |
 | `APP_RETENTION_STATUS_INCIDENT_DAYS` | [`retention.status_incident_days`](/runtime-settings#data-retention) | `365` |

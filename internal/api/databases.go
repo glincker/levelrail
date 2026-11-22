@@ -521,6 +521,9 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	if !purge {
+		rt.rememberDeleted(context.WithoutCancel(r.Context()), r, store.RecentlyDeletedDatabase, name, existing, rt.lastBackupRef(r.Context(), name))
+	}
 	rt.nudgeReconciler()
 	if terr := rt.runDatabaseTeardown(r.Context(), name, existing.NodeID, purge); terr != nil {
 		writeJSON(w, http.StatusAccepted, map[string]string{

@@ -1,3 +1,4 @@
+import { RecentlyDeletedCard } from '../../components/apps/RecentlyDeletedCard'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { topicPollMs } from '../../lib/pollTier'
 import { useEnvironmentScope } from '../../lib/environmentScope'
@@ -382,6 +383,7 @@ function AppListPage() {
         </div>
       )}
       <StaticSitesCard />
+      <RecentlyDeletedCard />
       {selected.length > 0 ? (
         <Suspense fallback={null}>
           <BulkActionsBar

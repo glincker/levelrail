@@ -30,6 +30,10 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	var undo *store.DesiredService
+	if !purge {
+		undo, _ = rt.apps.GetDesiredService(r.Context(), name)
+	}
 	teardownErr, err := rt.deleteApp(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -41,6 +45,9 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if purge && teardownErr == nil {
 		rt.purgeVolumes(context.WithoutCancel(r.Context()), "app/"+name, volumes)
+	}
+	if undo != nil {
+		rt.rememberDeleted(context.WithoutCancel(r.Context()), r, store.RecentlyDeletedApp, name, undo, "")
 	}
 	rt.changes.Publish(changeApps, name)
 	rt.purgeAppAccess(name)

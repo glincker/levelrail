@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2381 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2383 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1883,6 +1883,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/private-networks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdatePrivateNetwork", Description: ""},
 	{Method: "GET", Path: "/api/v1/project-templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListProjectTemplates", Description: ""},
 	{Method: "POST", Path: "/api/v1/project-templates/{id}/render", Ability: "AbilityRead", Group: "Other", Handler: "handleRenderProjectTemplate", Description: "A POST that only validates parameters and renders text, so AbilityRead."},
+	{Method: "GET", Path: "/api/v1/recently-deleted", Ability: "AbilityRead", Group: "Other", Handler: "handleListRecentlyDeleted", Description: ""},
+	{Method: "POST", Path: "/api/v1/recently-deleted/{kind}/{name}/restore", Ability: "AbilityWrite", Group: "Other", Handler: "handleRestoreRecentlyDeleted", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-vendors", Ability: "AbilityRead", Group: "Other", Handler: "handleListRegistryVendors", Description: ""},
 	{Method: "GET", Path: "/api/v1/resilience", Ability: "AbilityRead", Group: "Other", Handler: "handleChaosReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/resilience/disk", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDiskResilience", Description: ""},

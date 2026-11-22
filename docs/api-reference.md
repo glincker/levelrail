@@ -2612,6 +2612,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/alert-defaults/settings | AbilityRead | handleGetAlertDefaultsSettings |
 | PUT | /api/v1/alert-defaults/settings | AbilityWrite | handlePutAlertDefaultsSettings |
 | GET | /api/v1/alert-defaults/digest-preview | AbilityRead | handleAlertDigestPreview |
+| GET | /api/v1/recently-deleted | AbilityRead | handleListRecentlyDeleted |
+| POST | /api/v1/recently-deleted/{kind}/{name}/restore | AbilityWrite | handleRestoreRecentlyDeleted |
 | POST | /mcp | Public |  |
 
 ## See also

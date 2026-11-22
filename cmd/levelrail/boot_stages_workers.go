@@ -570,6 +570,13 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	// Drops undo entries for deleted apps and databases once their window passes.
+	go func() {
+		if err := apiRouter.RunRecentlyDeletedSweeper(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("recently deleted sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Git OAuth access tokens refresh ahead of expiry; pasted tokens report their expiry.
 	go func() {
 		if err := apiRouter.RunGitCredentialRefresh(ctx); err != nil && !errors.Is(err, context.Canceled) {

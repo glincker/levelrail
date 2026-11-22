@@ -577,6 +577,7 @@ retention.event_webhook_days
 retention.expired_token_days
 retention.forge_status_days
 retention.probe_attempt_days
+retention.recently_deleted_days
 retention.restore_history_days
 retention.revoked_token_days
 retention.status_incident_days
