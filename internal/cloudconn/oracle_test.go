@@ -166,7 +166,7 @@ func TestSealedKeyCanaryNeverLeaks(t *testing.T) {
 	// API structs and every formatter.
 	apiJSON, _ := json.Marshal(conn)
 	secJSON, _ := json.Marshal(c.Secret)
-	credJSON, _ := json.Marshal(c)
+	credJSON, _ := json.Marshal(c) //nolint:gosec // test fixture, fake token, checks it never leaks
 	for name, out := range map[string]string{
 		"conn json": string(apiJSON), "secret json": string(secJSON), "cred json": string(credJSON),
 		"%v": fmt.Sprintf("%v", c), "%+v": fmt.Sprintf("%+v", c), "%#v": fmt.Sprintf("%#v", c),
