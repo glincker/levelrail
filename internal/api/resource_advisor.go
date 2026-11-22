@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/costestimate"
 	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -44,6 +45,10 @@ type advisorFindingResource struct {
 	SnoozedUntil string `json:"snoozed_until,omitempty"`
 	Appliable    bool   `json:"appliable"`
 	CanApply     bool   `json:"can_apply"`
+	// MonthlySavingUSD is the reference-rate price of the memory an idle app
+	// holds, which sleeping it frees. Absent for other finding kinds.
+	MonthlySavingUSD float64 `json:"monthly_saving_usd,omitempty"`
+	SavingProvider   string  `json:"saving_provider,omitempty"`
 }
 
 type advisorFindingsResponse struct {
@@ -104,6 +109,7 @@ func (rt *Router) visibleAdvisorFindings(r *http.Request, all []resourceadvisor.
 		}
 	}
 	now := time.Now()
+	rates := costestimate.RateTableFromEnv()
 	out := []advisorFindingResource{}
 	for _, f := range all {
 		if !access.canRead(f.Resource) {
@@ -116,6 +122,7 @@ func (rt *Router) visibleAdvisorFindings(r *http.Request, all []resourceadvisor.
 		}
 		fr := advisorFindingResource{Finding: f, Appliable: f.Action != nil && f.Action.Appliable()}
 		fr.CanApply = fr.Appliable && access.canWrite(f.Resource, applyAbility(f))
+		fr.MonthlySavingUSD, fr.SavingProvider = idleAppSaving(f, rates)
 		if hidden {
 			fr.State = st.State
 			if st.State == store.AdvisorFindingSnoozed {
@@ -322,4 +329,17 @@ func (rt *Router) advisorFindingsCached() []resourceadvisor.Finding {
 		}()
 	}
 	return findings
+}
+
+// idleAppSaving prices the memory an idle app holds; other findings and apps
+// without a measured footprint have no saving.
+func idleAppSaving(f resourceadvisor.Finding, rates costestimate.RateTable) (float64, string) {
+	if f.Kind != resourceadvisor.KindIdleApp || f.Impact.SavingMemoryBytes <= 0 {
+		return 0, ""
+	}
+	s, ok := costestimate.Saving(f.Impact.SavingMemoryBytes, 0, 0, 0, rates)
+	if !ok {
+		return 0, ""
+	}
+	return s.USD, s.ProviderKey
 }

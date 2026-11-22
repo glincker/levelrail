@@ -108,6 +108,7 @@ export const NAMESPACES = [
   'onboarding',
   'usage',
   'costs',
+  'costIdle',
   'resources',
   'deployTimeline',
   'deployEvents',

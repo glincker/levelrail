@@ -181,6 +181,7 @@ func (s *bootState) startAlerting() {
 		}
 	})
 	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
+	alertingEngine.SetDNSCredentials(apiRouter)
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
 	certPolicy := alerting.CertPolicyFromEnv(os.Getenv)

@@ -988,6 +988,9 @@ type Router struct {
 
 	// dns01ProviderCheck nil means no provider, so enabling dns01 is refused.
 	dns01ProviderCheck func(context.Context) bool
+
+	// dnsCredCache holds the last scheduled DNS credential access check.
+	dnsCredCache dnsCredentialCache
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

@@ -54,6 +54,8 @@ const (
 	KindBackupSizeAnomaly Kind = "backup_size_anomaly"
 	// KindRegistryRefreshFailing is platform-wide: it fires while a cloud registry credential cannot refresh.
 	KindRegistryRefreshFailing Kind = "registry_refresh_failing"
+	// KindDNSCredentialFailing is platform-wide: it fires while a stored DNS provider credential is revoked or lacks zone rights.
+	KindDNSCredentialFailing Kind = "dns_credential_failing" //nolint:gosec // a rule kind name, not a credential
 	// KindRestoreDrillFailed is platform-wide: it fires while a resource's latest restore drill is failed.
 	KindRestoreDrillFailed Kind = "restore_drill_failed"
 

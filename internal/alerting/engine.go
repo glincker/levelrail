@@ -114,6 +114,7 @@ type Engine struct {
 	backupSizePolicy  func(context.Context) BackupSizePolicy
 
 	registryRefresh RegistryRefreshSource
+	dnsCredentials  DNSCredentialSource
 
 	restoreDrills RestoreDrillSource
 
@@ -231,6 +232,9 @@ func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 
 // SetRegistryRefresh enables kind=registry_refresh_failing rules.
 func (e *Engine) SetRegistryRefresh(src RegistryRefreshSource) { e.registryRefresh = src }
+
+// SetDNSCredentials enables kind=dns_credential_failing rules.
+func (e *Engine) SetDNSCredentials(src DNSCredentialSource) { e.dnsCredentials = src }
 
 // SetExportHealth enables kind=export_behind rules.
 func (e *Engine) SetExportHealth(src ExportHealthSource) { e.exportHealth = src }
@@ -706,6 +710,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindDNSCredentialFailing:
+			if e.dnsCredentials == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateDNSCredentialFailing(ctx, e.dnsCredentials, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindRestoreDrillFailed:
 			if e.restoreDrills == nil {
 				continue
@@ -911,7 +924,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindBackupSizeAnomaly || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindBackupSizeAnomaly || r.Kind == KindRegistryRefreshFailing || r.Kind == KindDNSCredentialFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

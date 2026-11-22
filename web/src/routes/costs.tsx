@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CostBreakdown, CostMovers } from '../components/costs/CostBreakdown'
 import { CostBudgetsPanel } from '../components/costs/CostBudgetsPanel'
 import { CostForecastCard } from '../components/costs/CostForecastCard'
+import { CostIdleApps } from '../components/costs/CostIdleApps'
 import { CostTrendChart } from '../components/costs/CostTrendChart'
 import { useCostExplore } from '../queries/costExplorer'
 import { formatDeltaPct, formatMoney } from '../lib/usageFormat'
@@ -184,6 +185,7 @@ function CostsPage() {
       <Suspense fallback={<Skeleton className="h-24 w-full rounded-lg" />}>
         <AppCapsCard />
       </Suspense>
+      <CostIdleApps />
       <CostBudgetsPanel />
     </PageTemplate>
   )

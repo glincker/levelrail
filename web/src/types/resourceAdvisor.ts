@@ -64,6 +64,8 @@ export interface AdvisorFinding {
   snoozed_until?: string
   appliable: boolean
   can_apply: boolean
+  monthly_saving_usd?: number
+  saving_provider?: string
 }
 
 export interface AdvisorFindings {

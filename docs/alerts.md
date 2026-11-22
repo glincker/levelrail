@@ -18,7 +18,7 @@ A rule has a kind, and the kind decides what it watches. The kinds in `internal/
 - Databases: `database_down`, `database_connections_high`, `database_disk_high`, `database_backup_failing`, `database_backup_stale`, `pooler_saturated`.
 - Backups and exports: `backup_failed`, `backup_missing`, `backup_copy_behind`, `control_plane_backup_stale`, `restore_drill_failed`, `log_archive_stale`, `export_behind`.
 - Apps: `app_unhealthy` reports a container failing its liveness probe past the failure threshold and resolves when the probe passes; scope it to one app with a `service:<app>` resource. `advisory_match` reports running images matching a feed advisory and stays quiet until you turn on the `alerts.advisory_notify` setting; `alerts.advisory_min_severity` (default `high`) sets the floor.
-- Platform: `registry_refresh_failing`, `email_delivery_failing`, `cleanup_failing`, `budget_threshold`.
+- Platform: `registry_refresh_failing`, `dns_credential_failing`, `email_delivery_failing`, `cleanup_failing`, `budget_threshold`.
 - Uptime: `monitor_down`, which reports a down [monitor](/monitors). Monitors are experimental and off unless `APP_MONITORS_ENABLED` is true.
 
 The dashboard rule dialog, the CLI and the API do not accept exactly the same list. The API accepts every kind above. The CLI `apps alerts create` accepts the kinds named in its `--kind` help (see [CLI reference](/cli-reference)).

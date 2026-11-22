@@ -47,6 +47,7 @@ export type AlertRuleKind =
   | 'node_cert_expiring'
   | 'log_archive_stale'
   | 'registry_refresh_failing'
+  | 'dns_credential_failing'
   | 'slo_burn'
   | 'version_skew'
   | 'log_pattern'

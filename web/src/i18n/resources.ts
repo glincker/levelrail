@@ -146,6 +146,7 @@ import type appSetup from '../locales/en/appSetup.json'
 import type onboarding from '../locales/en/onboarding.json'
 import type usage from '../locales/en/usage.json'
 import type costs from '../locales/en/costs.json'
+import type costIdle from '../locales/en/costIdle.json'
 import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
 import type staticRoutes from '../locales/en/staticRoutes.json'
@@ -301,6 +302,7 @@ declare module 'i18next' {
       onboarding: typeof onboarding
       usage: typeof usage
       costs: typeof costs
+      costIdle: typeof costIdle
       resources: typeof resources
       deployTimeline: typeof deployTimeline
       deployEvents: typeof deployEvents
