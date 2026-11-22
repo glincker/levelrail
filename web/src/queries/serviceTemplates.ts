@@ -90,6 +90,13 @@ export interface ServiceTemplateDetail extends ServiceTemplateListItem {
   compose: string
   manifest?: TemplateManifest
   requirements: TemplateRequirements
+  // After-install checklist (internal/catalog/next_steps.json); absent when none is recorded.
+  next_steps?: TemplateNextStep[]
+}
+
+export interface TemplateNextStep {
+  key: 'open_admin' | 'create_login' | 'change_default_login' | 'point_domain'
+  path?: string
 }
 
 export type RequirementsLevel = 'standard' | 'review' | 'elevated'

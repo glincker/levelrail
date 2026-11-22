@@ -140,6 +140,7 @@ export const NAMESPACES = [
   'hubs',
   'templates',
   'trialApp',
+  'nextSteps',
   'tags',
   'deployPolicies',
   'deployDetail',

@@ -1,0 +1,22 @@
+{
+ "wordpress": [
+  {"key": "open_admin", "path": "/wp-admin/install.php"},
+  {"key": "create_login"},
+  {"key": "point_domain"}
+ ],
+ "ghost": [
+  {"key": "open_admin", "path": "/ghost/"},
+  {"key": "create_login"},
+  {"key": "point_domain"}
+ ],
+ "plausible": [
+  {"key": "open_admin", "path": "/register"},
+  {"key": "create_login"},
+  {"key": "point_domain"}
+ ],
+ "umami": [
+  {"key": "open_admin", "path": "/login"},
+  {"key": "change_default_login"},
+  {"key": "point_domain"}
+ ]
+}

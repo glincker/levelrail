@@ -25,6 +25,7 @@ import {
   type UiIcon,
 } from '@thesvg/ui-react'
 import { TemplateLogoTile } from './TemplateLogoTile'
+import { RamFitBadge } from './RamFitBadge'
 import { LazyImportTemplateDialog } from './LazyImportTemplateDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -130,6 +131,11 @@ function TemplateCard({
           >
             {ram}
           </Badge>
+        ) : null}
+        {template.recommended_memory_bytes ? (
+          <RamFitBadge
+            recommendedMemoryBytes={template.recommended_memory_bytes}
+          />
         ) : null}
         {template.requires_gpu && (
           <Badge

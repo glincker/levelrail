@@ -85,6 +85,7 @@ import type dns from '../locales/en/dns.json'
 import type domainPolicies from '../locales/en/domainPolicies.json'
 import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
+import type nextSteps from '../locales/en/nextSteps.json'
 import type tags from '../locales/en/tags.json'
 import type previews from '../locales/en/previews.json'
 import type delivery from '../locales/en/delivery.json'
@@ -328,6 +329,7 @@ declare module 'i18next' {
       sso: typeof sso
       cdn: typeof cdn
       trialApp: typeof trialApp
+      nextSteps: typeof nextSteps
       tags: typeof tags
       deployPolicies: typeof deployPolicies
       deployDetail: typeof deployDetail

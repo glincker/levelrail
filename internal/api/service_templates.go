@@ -68,6 +68,7 @@ type serviceTemplateDetail struct {
 	RequiresConfiguration  bool                 `json:"requires_configuration"`
 	Manifest               *catalog.Manifest    `json:"manifest,omitempty"`
 	Requirements           catalog.Requirements `json:"requirements"`
+	NextSteps              []catalog.NextStep   `json:"next_steps,omitempty"`
 	templateFacts
 }
 
@@ -148,6 +149,7 @@ type templateView struct {
 	RequiresConfiguration  bool
 	Manifest               *catalog.Manifest
 	Requirements           catalog.Requirements
+	NextSteps              []catalog.NextStep
 	templateFacts
 }
 
@@ -177,6 +179,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			RequiresConfiguration:  rt.templateNeedsConfig(tpl.ID),
 			Manifest:               publicManifest(tpl.Manifest),
 			Requirements:           catalog.ComputeRequirementsFor(tpl.Compose, tpl.Manifest),
+			NextSteps:              catalog.NextSteps(tpl.ID),
 			templateFacts:          factsFor(tpl.ID),
 		}, true, nil
 	}

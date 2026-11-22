@@ -49,7 +49,7 @@ export function RamFitBadge({
     <Badge variant={fits ? 'success' : 'warning'} className="text-xs">
       {fits
         ? `Fits on ${localNode.name} (${formatBytes(available)} free)`
-        : `May not fit on ${localNode.name}: only ${formatBytes(available)} free`}
+        : `May not fit on ${localNode.name}: needs about ${formatBytes(recommendedMemoryBytes)}, only ${formatBytes(available)} free`}
     </Badge>
   )
 }
