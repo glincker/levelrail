@@ -1,0 +1,17 @@
+{
+  "title": "Storage use by part",
+  "description": "How much of the control plane database each kind of history takes. Prune a part to delete rows older than its retention window.",
+  "empty": "No per part sizes yet. This build cannot read table sizes.",
+  "parts": {
+    "deploys": "Deploy probes and forge statuses",
+    "events": "App events and schedule history",
+    "audit": "Audit log",
+    "metrics": "Metrics and access log"
+  },
+  "prune": "Prune",
+  "pruning": "Pruning",
+  "pruned": "Pruned {{rows}} rows from {{part}}.",
+  "prunedMetrics": "Compacted the metrics database.",
+  "pruneFailed": "Prune failed.",
+  "cli": "CLI: system db-space"
+}

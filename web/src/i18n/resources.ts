@@ -14,6 +14,8 @@ import type projectExport from '../locales/en/projectExport.json'
 import type projectClone from '../locales/en/projectClone.json'
 import type slowRequests from '../locales/en/slowRequests.json'
 import type buildLogs from '../locales/en/buildLogs.json'
+import type storageParts from '../locales/en/storageParts.json'
+import type installCard from '../locales/en/installCard.json'
 import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
@@ -354,6 +356,8 @@ declare module 'i18next' {
       projectClone: typeof projectClone
       slowRequests: typeof slowRequests
       buildLogs: typeof buildLogs
+      storageParts: typeof storageParts
+      installCard: typeof installCard
     }
   }
 }

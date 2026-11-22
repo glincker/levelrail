@@ -1,0 +1,9 @@
+{
+  "title": "Add to home screen",
+  "install": "Install the dashboard as an app for one tap access from your phone.",
+  "installButton": "Add to home screen",
+  "iosSteps": "In Safari, tap the Share button, then choose Add to Home Screen.",
+  "pushTitle": "Turn on notifications",
+  "pushHint": "Get deploy and alert notices on this phone, even when the dashboard is closed.",
+  "dismiss": "Not now"
+}

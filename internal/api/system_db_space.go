@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/cleanup"
+	"github.com/GLINCKER/levelrail/internal/cphealth"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -37,6 +39,33 @@ func (rt *Router) dbSpaceStore() (DBSpaceStore, bool) {
 	return s, ok
 }
 
+const spacePartMetrics = "metrics"
+
+// spacePartPrunes names the cleanup targets that prune each part. A part with no entry here
+// is pruned by a health fix instead.
+var spacePartPrunes = map[string][]string{
+	store.SpacePartDeploys: {cleanup.TargetProbeAttempts, cleanup.TargetForgeStatus},
+	store.SpacePartEvents:  {cleanup.TargetAppHistory},
+	store.SpacePartAudit:   {cleanup.TargetAuditLog},
+}
+
+// withSpaceParts attaches the prune action to each part and adds the metrics database, which
+// lives in its own file and is pruned by compaction.
+func (rt *Router) withSpaceParts(ctx context.Context, rep store.DBSpace) store.DBSpace {
+	parts := make([]store.DBSpacePart, 0, len(rep.Parts)+1)
+	for _, p := range rep.Parts {
+		p.CleanupTargets = spacePartPrunes[p.ID]
+		parts = append(parts, p)
+	}
+	if p := rt.cpHealth.probe.Load(); p != nil && p.Telemetry != nil {
+		if n, err := p.Telemetry.FileBytes(ctx); err == nil {
+			parts = append(parts, store.DBSpacePart{ID: spacePartMetrics, Bytes: n, Fix: cphealth.FixTelemetryPrune})
+		}
+	}
+	rep.Parts = parts
+	return rep
+}
+
 func (rt *Router) handleGetDBSpace(w http.ResponseWriter, r *http.Request) {
 	s, ok := rt.dbSpaceStore()
 	if !ok {
@@ -48,7 +77,7 @@ func (rt *Router) handleGetDBSpace(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: database space report failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rep)
+	writeJSON(w, http.StatusOK, rt.withSpaceParts(r.Context(), rep))
 }
 
 // handleCompactDB runs only on an explicit request and declines when too few pages are free.
