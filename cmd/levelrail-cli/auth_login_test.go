@@ -170,3 +170,39 @@ func TestRun_AuthLogin_PrintTokenShowsValue(t *testing.T) {
 		t.Errorf("stdout = %q, want the token with --print-token", stdout.String())
 	}
 }
+
+// The token arrives on stdin, is verified against the server, then saved without ever touching argv.
+func TestRun_AuthLogin_WithTokenFromStdin(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/v1/auth/whoami", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer ci-token-123" {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error":"invalid token"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"kind":"token","name":"ci","abilities":["root"]}`))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	prog := "levelrail-cli-test-auth-login-stdin"
+
+	var stdout, stderr bytes.Buffer
+	if got := runAuthLogin(prog, []string{"--with-token", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader("ci-token-123\n")); got != exitOK {
+		t.Fatalf("exit = %d (stdout=%q stderr=%q)", got, stdout.String(), stderr.String())
+	}
+	if got := resolveToken("", envMap(), prog, defaultProfile); got != "ci-token-123" {
+		t.Errorf("saved token = %q, want the one from stdin", got)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if got := runAuthLogin(prog, []string{"--token-stdin", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader("wrong\n")); got == exitOK {
+		t.Errorf("a rejected token must fail, got exit %d", got)
+	}
+	if got := runAuthLogin(prog, []string{"--with-token", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader("")); got == exitOK {
+		t.Errorf("an empty stdin must fail")
+	}
+}

@@ -33,6 +33,12 @@ func zshCompletionScript(prog string) string {
         ;;
     esac
   done
+  local -a names
+  names=("${(@f)$(%[3]s __complete "${(@)words[2,CURRENT]}" 2>/dev/null)}")
+  if [ -n "${names[1]}" ]; then
+    compadd -- $names
+    return
+  fi
   children="$(_%[1]s_children "$path")"
   opts=(${=children} %[2]s)
   _describe 'command' opts

@@ -40,6 +40,8 @@ Exit code is 0 if every check is ok or warn, 1 if any check fails.
 Flags:
   --fix                     apply safe automatic fixes: prints the plan first and asks to confirm
   --yes                     with --fix, apply without asking
+  --bundle                  write a redacted support zip (versions, checks, settings, node state) for a bug report
+  --bundle-path string      with --bundle: output file (default: levelrail-doctor-bundle-<time>.zip)
   --local                   run only the local checks, never contact a control plane
   --token string          API token (default: LEVELRAIL_TOKEN or APP_API_TOKEN env var, then the credentials file)
   --api-url string       control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)

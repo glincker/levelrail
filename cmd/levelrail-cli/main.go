@@ -36,6 +36,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	rawLookupEnv = lookupEnv
 	lookupEnv = currentContextLookup(prog, envAliasLookup(lookupEnv))
+	// Hidden verb behind shell Tab completion; handled before any trust or hint machinery so it stays quiet and fast.
+	if len(args) > 0 && args[0] == "__complete" {
+		return runHiddenComplete(prog, args[1:], stdout, lookupEnv)
+	}
 	ciMode = forceCI || ciEnv(rawLookupEnv)
 	if colorDisabled(rawLookupEnv, ciMode) {
 		_ = os.Setenv(envNoColor, "1")

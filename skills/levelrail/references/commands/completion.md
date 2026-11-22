@@ -14,7 +14,10 @@ Usage:
 
 Completes command and subcommand names for the CLI's full command tree
 (apps, databases, channels, and so on), plus the global flags (--json --output --query --token --api-url --debug --insecure-http --no-color -h --help).
-It does not complete flag values or positional arguments like app names.
+After deploy, logs, apps get and similar verbs it also offers real app names
+from the server, and real profile, project and environment names after
+--profile, --project and --env. Server answers are cached for a few seconds
+and a Tab press never prompts or prints an error.
 
 Install:
   bash   source <(levelrail-cli completion bash)

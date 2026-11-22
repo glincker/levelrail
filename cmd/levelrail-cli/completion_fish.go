@@ -34,6 +34,11 @@ func fishCompletionScript(prog string) string {
     echo $path
 end
 
+function __%[1]s_names
+    %[2]s __complete (commandline -opc)[2..-1] (commandline -ct) 2>/dev/null
+end
+
+complete -c %[2]s -f -a '(__%[1]s_names)'
 complete -c %[2]s -f -a '(__%[1]s_children (__%[1]s_path))'
 complete -c %[2]s -f -a %[3]q -d "global flags"
 `, ident, prog, strings.Join(globalFlags, " "))
