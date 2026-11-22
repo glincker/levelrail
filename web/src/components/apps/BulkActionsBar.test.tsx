@@ -105,4 +105,40 @@ describe('BulkActionsBar', () => {
       )
     })
   })
+
+  it('sets memory from one field and shows each app before and after', async () => {
+    postBulk.mockImplementation((req) =>
+      Promise.resolve({
+        action: req.action,
+        dry_run: req.dry_run ?? false,
+        counts: {},
+        results: [
+          {
+            name: 'web',
+            status: 'would_apply',
+            before: '256 MiB',
+            after: '512 MiB',
+          },
+        ],
+      }),
+    )
+    renderBar()
+    fireEvent.change(screen.getByLabelText('More actions'), {
+      target: { value: 'set-memory' },
+    })
+    const field = screen.getByLabelText('Memory (512Mi or 2Gi)')
+    const review = screen.getByRole('button', { name: 'Review' })
+    fireEvent.change(field, { target: { value: '512' } })
+    expect(review).toHaveProperty('disabled', true)
+    fireEvent.change(field, { target: { value: '512Mi' } })
+    fireEvent.click(review)
+    await screen.findByText('256 MiB to 512 MiB')
+    expect(postBulk).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'set-memory',
+        memory_bytes: 536870912,
+        dry_run: true,
+      }),
+    )
+  })
 })

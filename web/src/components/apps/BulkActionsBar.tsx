@@ -26,10 +26,12 @@ import {
   type BulkAppResult,
   type BulkResponse,
   parseScaleValue,
+  parseResourceValue,
+  isResourceAction,
 } from '../../queries/appsBulk'
 import { appKeys } from '../../queries/apps'
 
-type OwnAction = 'scale' | 'rollback'
+type OwnAction = 'scale' | 'rollback' | 'set-memory' | 'set-cpu' | 'set-env'
 
 const PRIMARY: {
   value: Exclude<BulkAction, OwnAction>
@@ -48,6 +50,9 @@ const MORE: { value: BulkAction; needsValue: boolean }[] = [
   { value: 'set-environment', needsValue: true },
   { value: 'move-to-project', needsValue: true },
   { value: 'scale', needsValue: true },
+  { value: 'set-memory', needsValue: true },
+  { value: 'set-cpu', needsValue: true },
+  { value: 'set-env', needsValue: true },
   { value: 'rollback', needsValue: false },
   { value: 'delete', needsValue: false },
 ]
@@ -57,9 +62,22 @@ type ValueAction =
 
 const DISRUPTIVE = new Set<BulkAction>(['stop', 'delete', 'rollback'])
 
-// Labels of the scale and rollback verbs live in their own namespace.
+// Labels of the scale, rollback and resource verbs live in their own namespaces.
 const isOwnAction = (a: BulkAction): a is OwnAction =>
-  a === 'scale' || a === 'rollback'
+  a === 'scale' || a === 'rollback' || isResourceAction(a)
+
+const ownLabelKey = (a: OwnAction) =>
+  isResourceAction(a)
+    ? (`appBulkResources:action.${a}` as const)
+    : (`appBulkScale:action.${a}` as const)
+
+// Request fields a typed value turns into; empty when the action takes none.
+const valueFields = (action: BulkAction, value: string) =>
+  (action === 'scale'
+    ? parseScaleValue(value)
+    : isResourceAction(action)
+      ? parseResourceValue(action, value)
+      : null) ?? {}
 
 const STATUS_STYLE: Record<BulkAppResult['status'], string> = {
   ok: 'text-tone-success',
@@ -71,7 +89,7 @@ const STATUS_STYLE: Record<BulkAppResult['status'], string> = {
 }
 
 function ResultList({ results }: { results: BulkAppResult[] }) {
-  const { t } = useTranslation('appRows')
+  const { t } = useTranslation(['appRows', 'appBulkResources'])
   return (
     <ul
       aria-label={t('bulkBar.resultsLabel')}
@@ -86,7 +104,15 @@ function ResultList({ results }: { results: BulkAppResult[] }) {
           <span className={STATUS_STYLE[r.status]}>
             {t(`bulkBar.status.${r.status}`)}
           </span>
-          {r.message ? (
+          {r.before !== undefined && r.after !== undefined ? (
+            <span className="w-full truncate text-xs text-muted-foreground sm:w-auto sm:max-w-[45%]">
+              {t('appBulkResources:change', {
+                before: r.before,
+                after: r.after,
+              })}
+            </span>
+          ) : null}
+          {r.message && r.before === undefined ? (
             <span className="w-full truncate text-xs text-muted-foreground sm:w-auto sm:max-w-[45%]">
               {r.message}
             </span>
@@ -108,13 +134,10 @@ function BulkDialog({
   names: string[]
   onClose: (applied: boolean) => void
 }) {
-  const { t } = useTranslation(['appRows', 'appBulkScale'])
+  const { t } = useTranslation(['appRows', 'appBulkScale', 'appBulkResources'])
   const queryClient = useQueryClient()
   const inputId = useId()
-  const scaleFields = useMemo(
-    () => (action === 'scale' ? parseScaleValue(value) : null) ?? {},
-    [action, value],
-  )
+  const scaleFields = useMemo(() => valueFields(action, value), [action, value])
   const [plan, setPlan] = useState<BulkResponse | null>(null)
   const [applied, setApplied] = useState<BulkResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -145,7 +168,7 @@ function BulkDialog({
     .filter((r) => r.status === 'would_apply')
     .map((r) => r.name)
   const label = isOwnAction(action)
-    ? t(`appBulkScale:action.${action}`)
+    ? t(ownLabelKey(action))
     : t(`bulkBar.action.${action}`)
   const confirmed = typed.trim() === String(targets.length)
 
@@ -295,16 +318,18 @@ export function BulkActionsBar({
   canAct: boolean
   onClear: () => void
 }) {
-  const { t } = useTranslation(['appRows', 'appBulkScale'])
+  const { t } = useTranslation(['appRows', 'appBulkScale', 'appBulkResources'])
   const [pending, setPending] = useState<BulkAction | null>(null)
   const [more, setMore] = useState<BulkAction | ''>('')
   const [value, setValue] = useState('')
   const count = selected.length
   const moreSpec = MORE.find((m) => m.value === more)
   const valueLabel = moreSpec?.needsValue
-    ? moreSpec.value === 'scale'
-      ? t('appBulkScale:value.scale')
-      : t(`bulkBar.value.${moreSpec.value as ValueAction}`)
+    ? isResourceAction(moreSpec.value)
+      ? t(`appBulkResources:value.${moreSpec.value}`)
+      : moreSpec.value === 'scale'
+        ? t('appBulkScale:value.scale')
+        : t(`bulkBar.value.${moreSpec.value as ValueAction}`)
     : ''
 
   return (
@@ -352,7 +377,7 @@ export function BulkActionsBar({
             {MORE.map((m) => (
               <option key={m.value} value={m.value}>
                 {isOwnAction(m.value)
-                  ? t(`appBulkScale:action.${m.value}`)
+                  ? t(ownLabelKey(m.value))
                   : t(`bulkBar.action.${m.value}`)}
               </option>
             ))}
@@ -363,9 +388,11 @@ export function BulkActionsBar({
               aria-label={valueLabel}
               placeholder={valueLabel}
               title={
-                moreSpec.value === 'scale'
-                  ? t('appBulkScale:hint.scale')
-                  : undefined
+                isResourceAction(moreSpec.value)
+                  ? t(`appBulkResources:hint.${moreSpec.value}`)
+                  : moreSpec.value === 'scale'
+                    ? t('appBulkScale:hint.scale')
+                    : undefined
               }
               className="h-8 w-full sm:w-44"
               onChange={(e) => {
@@ -381,8 +408,8 @@ export function BulkActionsBar({
               disabled={
                 !canAct ||
                 (moreSpec?.needsValue &&
-                  (more === 'scale'
-                    ? parseScaleValue(value) === null
+                  (more === 'scale' || isResourceAction(more)
+                    ? Object.keys(valueFields(more, value)).length === 0
                     : !value.trim()))
               }
               onClick={() => {

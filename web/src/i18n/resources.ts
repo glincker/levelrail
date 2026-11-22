@@ -103,6 +103,7 @@ import type alertEscalation from '../locales/en/alertEscalation.json'
 import type alertRunbook from '../locales/en/alertRunbook.json'
 import type alertRegression from '../locales/en/alertRegression.json'
 import type autoscaleSchedule from '../locales/en/autoscaleSchedule.json'
+import type appBulkResources from '../locales/en/appBulkResources.json'
 import type appBulkScale from '../locales/en/appBulkScale.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type forms from '../locales/en/forms.json'
@@ -276,6 +277,7 @@ declare module 'i18next' {
       alertRunbook: typeof alertRunbook
       alertRegression: typeof alertRegression
       autoscaleSchedule: typeof autoscaleSchedule
+      appBulkResources: typeof appBulkResources
       appBulkScale: typeof appBulkScale
       sleepHistory: typeof sleepHistory
       forms: typeof forms

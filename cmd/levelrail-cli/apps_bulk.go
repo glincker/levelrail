@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -35,12 +36,16 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 	rest := fs.Args()
 	if len(rest) < 1 || len(rest) > 2 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps bulk requires an action and, for add-tag, remove-tag, set-environment and move-to-project, a value\n\n%s", prog, appsBulkUsage(prog))
+		_, _ = fmt.Fprintf(stderr, "%s: apps bulk requires an action and, for add-tag, remove-tag, set-environment, move-to-project, set-memory, set-cpu and set-env, a value\n\n%s", prog, appsBulkUsage(prog))
 		return exitUsage
 	}
 	req := apiclient.BulkAppsRequest{Action: rest[0], Tag: tag, Environment: env, Project: project, DryRun: dryRun, BatchSize: batch, PauseSeconds: pause, HaltOnFail: haltOnFail}
 	if len(rest) == 2 {
 		req.Value = rest[1]
+	}
+	if err := applyBulkResourceValue(&req); err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
+		return exitUsage
 	}
 	if replicas > 0 {
 		req.Replicas = &replicas
@@ -99,7 +104,10 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	code := writeScheduledTaskResult(stdout, stderr, of, resp, func() {
 		for _, r := range resp.Results {
 			line := fmt.Sprintf("%-32s %s", r.Name, r.Status)
-			if r.Message != "" {
+			if r.Before != "" || r.After != "" {
+				line += fmt.Sprintf("  %s -> %s", r.Before, r.After)
+			}
+			if r.Message != "" && r.Before == "" {
 				line += "  " + r.Message
 			}
 			_, _ = fmt.Fprintln(stdout, line)
@@ -118,6 +126,8 @@ func appsBulkUsage(prog string) string {
 
 Actions: redeploy, restart, stop, start, add-tag <tag>, remove-tag <tag>,
 set-environment <env>, move-to-project <project-id>, delete,
+set-memory <512Mi|2Gi>, set-cpu <cores, e.g. 0.5>, set-env <KEY=VALUE> (a raise is checked against quota;
+--dry-run shows each app's before and after),
 scale (--replicas N, or --min N --max M for autoscaled apps), rollback (each app
 goes back to its previous release; apps without one are skipped).
 
@@ -134,4 +144,31 @@ Flags:
   --yes                                         skip the confirmation prompt
   --token, --api-url, --profile, --json, --output, --query   as for other commands
 `, prog)
+}
+
+// applyBulkResourceValue turns the positional value of set-memory, set-cpu and
+// set-env into the typed request fields the server expects.
+func applyBulkResourceValue(req *apiclient.BulkAppsRequest) error {
+	switch req.Action {
+	case "set-memory":
+		n, err := parseMemoryBytes(req.Value)
+		if err != nil {
+			return err
+		}
+		req.MemoryBytes, req.Value = &n, ""
+	case "set-cpu":
+		cores, err := strconv.ParseFloat(req.Value, 64)
+		if err != nil || cores <= 0 {
+			return fmt.Errorf("invalid cpu value %q, want cores above zero such as 0.5", req.Value)
+		}
+		n := int64(cores * 1e9)
+		req.NanoCPUs, req.Value = &n, ""
+	case "set-env":
+		key, val, ok := strings.Cut(req.Value, "=")
+		if !ok || key == "" {
+			return fmt.Errorf("set-env wants KEY=VALUE, got %q", req.Value)
+		}
+		req.EnvKey, req.EnvValue, req.Value = key, &val, ""
+	}
+	return nil
 }

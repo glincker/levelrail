@@ -1,0 +1,18 @@
+{
+  "action": {
+    "set-memory": "Set memory",
+    "set-cpu": "Set CPU",
+    "set-env": "Set env var"
+  },
+  "value": {
+    "set-memory": "Memory (512Mi or 2Gi)",
+    "set-cpu": "CPU cores (0.5)",
+    "set-env": "KEY=VALUE"
+  },
+  "hint": {
+    "set-memory": "Sets the memory limit on every selected app. A raise is checked against quota, and the review shows each app's old and new value.",
+    "set-cpu": "Sets the CPU limit in cores on every selected app. A raise is checked against quota, and the review shows each app's old and new value.",
+    "set-env": "Sets one environment variable on every selected app. Apps where the name comes from a secret, vault or database reference are skipped."
+  },
+  "change": "{{before}} to {{after}}"
+}

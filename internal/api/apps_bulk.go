@@ -52,6 +52,9 @@ var bulkActionAbility = map[string]string{
 	bulkActionDelete:         AbilityWrite,
 	bulkActionScale:          AbilityWrite,
 	bulkActionRollback:       AbilityDeploy,
+	bulkActionSetMemory:      AbilityWrite,
+	bulkActionSetCPU:         AbilityWrite,
+	bulkActionSetEnv:         AbilityWrite,
 }
 
 type bulkAppsRequest struct {
@@ -80,12 +83,20 @@ type bulkAppsRequest struct {
 	// MinReplicas and MaxReplicas are the bounds scale sets on apps with an autoscale policy.
 	MinReplicas *int `json:"min_replicas,omitempty"`
 	MaxReplicas *int `json:"max_replicas,omitempty"`
+	// MemoryBytes, NanoCPUs and EnvKey with EnvValue are what set-memory, set-cpu and set-env apply.
+	MemoryBytes *int64  `json:"memory_bytes,omitempty"`
+	NanoCPUs    *int64  `json:"nano_cpus,omitempty"`
+	EnvKey      string  `json:"env_key,omitempty"`
+	EnvValue    *string `json:"env_value,omitempty"`
 }
 
 type bulkAppResult struct {
 	Name    string `json:"name"`
 	Status  string `json:"status"`
 	Message string `json:"message,omitempty"`
+	// Before and After are the old and new value for set-memory, set-cpu and set-env, also on a dry run.
+	Before string `json:"before,omitempty"`
+	After  string `json:"after,omitempty"`
 }
 
 type bulkAppsResponse struct {
@@ -263,6 +274,8 @@ func validateBulkValue(req bulkAppsRequest) error {
 		}
 	case bulkActionScale:
 		return validateBulkScale(req)
+	case bulkActionSetMemory, bulkActionSetCPU, bulkActionSetEnv:
+		return validateBulkResources(req)
 	}
 	return nil
 }
@@ -325,6 +338,15 @@ func (rt *Router) applyBulkOne(ctx context.Context, r *http.Request, p bulkPrinc
 	if err != nil {
 		rt.logger.Error("api: bulk apps: load app failed", slog.String("error", err.Error()), slog.String("name", name))
 		return bulkAppResult{Name: name, Status: bulkStatusError, Message: "internal error"}
+	}
+	if isBulkResourceAction(req.Action) {
+		status, msg, before, after := rt.bulkResources(ctx, req, *svc, req.DryRun)
+		if status == bulkStatusOK && req.DryRun {
+			status = bulkStatusWouldRun
+		} else if status == bulkStatusOK {
+			rt.recordBulkAudit(ctx, r, p, ability, req.Action, name)
+		}
+		return bulkAppResult{Name: name, Status: status, Message: msg, Before: before, After: after}
 	}
 	if req.DryRun {
 		return bulkAppResult{Name: name, Status: bulkStatusWouldRun, Message: req.Action}

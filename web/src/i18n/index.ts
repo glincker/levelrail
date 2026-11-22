@@ -75,6 +75,7 @@ export const NAMESPACES = [
   'alertRunbook',
   'alertRegression',
   'autoscaleSchedule',
+  'appBulkResources',
   'appBulkScale',
   'sleepHistory',
   'forms',

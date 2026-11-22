@@ -24,6 +24,10 @@ type BulkAppsRequest struct {
 	Replicas     *int     `json:"replicas,omitempty"`
 	MinReplicas  *int     `json:"min_replicas,omitempty"`
 	MaxReplicas  *int     `json:"max_replicas,omitempty"`
+	MemoryBytes  *int64   `json:"memory_bytes,omitempty"`
+	NanoCPUs     *int64   `json:"nano_cpus,omitempty"`
+	EnvKey       string   `json:"env_key,omitempty"`
+	EnvValue     *string  `json:"env_value,omitempty"`
 }
 
 // BulkAppResult is one app's outcome in a bulk response.
@@ -31,6 +35,8 @@ type BulkAppResult struct {
 	Name    string `json:"name"`
 	Status  string `json:"status"`
 	Message string `json:"message,omitempty"`
+	Before  string `json:"before,omitempty"`
+	After   string `json:"after,omitempty"`
 }
 
 // BulkAppsResponse is the 207 body of POST /api/v1/apps/bulk.
