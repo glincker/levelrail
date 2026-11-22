@@ -24,6 +24,7 @@ vi.mock('../queries/majorUpgrades', () => ({
       },
     ],
   }),
+  useMajorUpgradeCheck: () => ({ data: undefined }),
   useStartMajorUpgrade: () => ({ mutate: vi.fn(), isPending: false }),
   useRollbackMajorUpgrade: () => ({
     mutate: rollbackMutate,

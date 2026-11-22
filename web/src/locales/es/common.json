@@ -897,6 +897,11 @@
     "fixFailed": "La corrección no funcionó.",
     "fixing": "Corrigiendo...",
     "friendly": {
+      "badToken": {
+        "action": "Crea un token nuevo con el acceso adecuado e inténtalo de nuevo.",
+        "message": "El token o las credenciales fueron rechazados o han caducado.",
+        "title": "Token rechazado"
+      },
       "generic": {
         "action": "Inténtalo de nuevo y cita el ID de solicitud si sigue fallando.",
         "title": "Algo salió mal"

@@ -503,6 +503,7 @@ describe('CreateAppFromGitFields', () => {
     renderForm()
 
     await screen.findByLabelText('Name')
+    await user.click(screen.getByRole('button', { name: 'More options' }))
     expect(screen.getByLabelText('Path')).toHaveValue('/healthz')
 
     await user.type(screen.getByLabelText('Name'), 'demo-app')
@@ -532,6 +533,7 @@ describe('CreateAppFromGitFields', () => {
     renderForm()
 
     await screen.findByLabelText('Name')
+    await user.click(screen.getByRole('button', { name: 'More options' }))
     await user.click(
       screen.getByRole('switch', { name: 'Enable a health check' }),
     )
