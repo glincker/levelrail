@@ -354,5 +354,15 @@
     "addAnother": "Add another account",
     "verified": "Last verified",
     "useCredential": "Use a single credential instead"
+  },
+  "accountSection": {
+    "switch": "Account",
+    "loading": "Loading account data",
+    "error": "Could not load: {{message}}",
+    "retry": "Retry",
+    "verifyOk": "Credential verified",
+    "verifyFail": "Credential check failed",
+    "noProbe": "No access checks for this account type.",
+    "check": "Check access"
   }
 }

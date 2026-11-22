@@ -354,5 +354,15 @@
     "addAnother": "Ajouter un autre compte",
     "verified": "Dernière vérification",
     "useCredential": "Utiliser un identifiant unique"
+  },
+  "accountSection": {
+    "switch": "Compte",
+    "loading": "Chargement des données du compte",
+    "error": "Chargement impossible : {{message}}",
+    "retry": "Réessayer",
+    "verifyOk": "Identifiants vérifiés",
+    "verifyFail": "Échec de la vérification des identifiants",
+    "noProbe": "Aucune vérification d'accès pour ce type de compte.",
+    "check": "Vérifier l'accès"
   }
 }

@@ -354,5 +354,15 @@
     "addAnother": "添加其他账户",
     "verified": "上次验证",
     "useCredential": "改用单一凭据"
+  },
+  "accountSection": {
+    "switch": "账户",
+    "loading": "正在加载账户数据",
+    "error": "无法加载：{{message}}",
+    "retry": "重试",
+    "verifyOk": "凭据已验证",
+    "verifyFail": "凭据检查失败",
+    "noProbe": "此账户类型没有访问检查。",
+    "check": "检查访问"
   }
 }

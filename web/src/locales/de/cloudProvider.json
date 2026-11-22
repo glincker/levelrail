@@ -354,5 +354,15 @@
     "addAnother": "Weiteres Konto hinzufügen",
     "verified": "Zuletzt geprüft",
     "useCredential": "Stattdessen einzelne Zugangsdaten nutzen"
+  },
+  "accountSection": {
+    "switch": "Konto",
+    "loading": "Kontodaten werden geladen",
+    "error": "Laden fehlgeschlagen: {{message}}",
+    "retry": "Erneut versuchen",
+    "verifyOk": "Zugangsdaten geprüft",
+    "verifyFail": "Prüfung der Zugangsdaten fehlgeschlagen",
+    "noProbe": "Für diesen Kontotyp gibt es keine Zugriffsprüfungen.",
+    "check": "Zugriff prüfen"
   }
 }

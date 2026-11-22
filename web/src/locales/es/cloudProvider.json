@@ -354,5 +354,15 @@
     "addAnother": "Añadir otra cuenta",
     "verified": "Última verificación",
     "useCredential": "Usar una credencial única"
+  },
+  "accountSection": {
+    "switch": "Cuenta",
+    "loading": "Cargando datos de la cuenta",
+    "error": "No se pudo cargar: {{message}}",
+    "retry": "Reintentar",
+    "verifyOk": "Credencial verificada",
+    "verifyFail": "Falló la comprobación de la credencial",
+    "noProbe": "No hay comprobaciones de acceso para este tipo de cuenta.",
+    "check": "Comprobar acceso"
   }
 }

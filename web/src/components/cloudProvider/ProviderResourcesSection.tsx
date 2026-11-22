@@ -1,4 +1,5 @@
-import { isProviderConnected } from '../../lib/providerConnectionState'
+import { providerAccounts } from '../../lib/providerConnectionState'
+import { AccountResourcesSection } from './ProviderAccountSections'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -50,7 +51,7 @@ function totalByCurrency(rows: readonly ProviderResource[]): string[] {
   return [...sums].map(([cur, sum]) => formatMoney(sum, cur))
 }
 
-export function ProviderResourcesSection({
+function LegacyProviderResourcesSection({
   provider,
   resource,
   labels,
@@ -81,8 +82,6 @@ export function ProviderResourcesSection({
       : null
   const totals = totalByCurrency(shown)
 
-  // Data here reads the legacy credential, so an account-only provider has nothing to show.
-  if (!connected && isProviderConnected(resource)) return null
   let body
   if (!connected) {
     body = (
@@ -268,5 +267,14 @@ export function ProviderResourcesSection({
         </p>
       ) : null}
     </section>
+  )
+}
+
+// Account-backed data wins whenever a cloud account exists; the credential reads are the fallback.
+export function ProviderResourcesSection(props: SectionProps) {
+  return providerAccounts(props.resource).length > 0 ? (
+    <AccountResourcesSection {...props} />
+  ) : (
+    <LegacyProviderResourcesSection {...props} />
   )
 }

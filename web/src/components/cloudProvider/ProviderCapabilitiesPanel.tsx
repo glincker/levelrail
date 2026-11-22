@@ -1,4 +1,5 @@
-import { isProviderConnected } from '../../lib/providerConnectionState'
+import { providerAccounts } from '../../lib/providerConnectionState'
+import { AccountCapabilitiesPanel } from './ProviderAccountSections'
 import { useTranslation } from 'react-i18next'
 import {
   CircleCheckGlassIcon,
@@ -132,7 +133,7 @@ function CapabilityDetails({ caps }: Readonly<{ caps: ProviderCapability[] }>) {
   )
 }
 
-export function ProviderCapabilitiesPanel({
+function LegacyProviderCapabilitiesPanel({
   provider,
   resource,
   labels,
@@ -148,8 +149,6 @@ export function ProviderCapabilitiesPanel({
   const hasProbe = !!data && data.capabilities.length > 0
   const missing = data?.capabilities.some((c) => c.state === 'missing') ?? false
 
-  // Data here reads the legacy credential, so an account-only provider has nothing to show.
-  if (!connected && isProviderConnected(resource)) return null
   let body
   if (!connected) {
     body = (
@@ -281,5 +280,14 @@ function Note({ title, text }: Readonly<{ title: string; text: string }>) {
       <p className="text-sm font-medium">{title}</p>
       <p className="text-xs text-muted-foreground">{text}</p>
     </div>
+  )
+}
+
+// Account-backed data wins whenever a cloud account exists; the credential reads are the fallback.
+export function ProviderCapabilitiesPanel(props: SectionProps) {
+  return providerAccounts(props.resource).length > 0 ? (
+    <AccountCapabilitiesPanel {...props} />
+  ) : (
+    <LegacyProviderCapabilitiesPanel {...props} />
   )
 }
