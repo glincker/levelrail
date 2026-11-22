@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/quota"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -51,25 +53,32 @@ func (rt *Router) quotaDB() quotaStore {
 }
 
 // quotaDefaults reads the instance wide limits applied wherever a team or
-// project has none of its own. All unset means unlimited.
-func quotaDefaults() quota.Amounts {
-	num := func(key string) int64 {
-		n, err := strconv.ParseInt(os.Getenv(key), 10, 64)
+// project has none of its own, live from runtime settings (env only seeds
+// them). All zero means unlimited.
+func (rt *Router) quotaDefaults(ctx context.Context) quota.Amounts {
+	get := func(key, env string) string {
+		if rt.runtimeSettings != nil {
+			return rt.runtimeSettings.String(ctx, key)
+		}
+		return os.Getenv(env)
+	}
+	num := func(key, env string) int64 {
+		n, err := strconv.ParseInt(strings.TrimSpace(get(key, env)), 10, 64)
 		if err != nil || n < 0 {
 			return 0
 		}
 		return n
 	}
-	cpu, err := strconv.ParseFloat(os.Getenv(envQuotaDefaultCPU), 64)
-	if err != nil || cpu < 0 {
+	cpu, err := strconv.ParseFloat(strings.TrimSpace(get(runtimesettings.KeyQuotaDefaultMaxCPU, envQuotaDefaultCPU)), 64)
+	if err != nil || cpu < 0 || math.IsNaN(cpu) || math.IsInf(cpu, 0) {
 		cpu = 0
 	}
 	return quota.Amounts{
-		Apps:        num(envQuotaDefaultApps),
-		Databases:   num(envQuotaDefaultDatabases),
-		MemoryBytes: num(envQuotaDefaultMemoryMB) * bytesPerMB,
+		Apps:        num(runtimesettings.KeyQuotaDefaultMaxApps, envQuotaDefaultApps),
+		Databases:   num(runtimesettings.KeyQuotaDefaultMaxDatabases, envQuotaDefaultDatabases),
+		MemoryBytes: num(runtimesettings.KeyQuotaDefaultMaxMemoryMB, envQuotaDefaultMemoryMB) * bytesPerMB,
 		NanoCPUs:    int64(cpu * nanoCPUsPerCore),
-		Previews:    num(envQuotaDefaultPreviews),
+		Previews:    num(runtimesettings.KeyQuotaDefaultMaxPreviews, envQuotaDefaultPreviews),
 	}
 }
 
@@ -80,13 +89,13 @@ func quotaWarnPercent() int {
 	return defaultQuotaWarnPercent
 }
 
-// effectiveQuota returns a scope's limits with env defaults filled in.
-func effectiveQuota(ctx context.Context, db quotaStore, scope, scopeID string) (quota.Amounts, error) {
+// effectiveQuota returns a scope's limits with the instance defaults filled in.
+func (rt *Router) effectiveQuota(ctx context.Context, db quotaStore, scope, scopeID string) (quota.Amounts, error) {
 	explicit, err := db.GetQuota(ctx, scope, scopeID)
 	if err != nil {
 		return quota.Amounts{}, err
 	}
-	return quota.Merge(explicit, quotaDefaults()), nil
+	return quota.Merge(explicit, rt.quotaDefaults(ctx)), nil
 }
 
 // serviceReservation is what one service holds: memory and CPU per replica.
@@ -171,7 +180,7 @@ func (rt *Router) quotaDenialFor(ctx context.Context, db quotaStore, projectID s
 		targets = append(targets, target{quota.ScopeTeam, teamID})
 	}
 	for _, t := range targets {
-		limits, err := effectiveQuota(ctx, db, t.scope, t.id)
+		limits, err := rt.effectiveQuota(ctx, db, t.scope, t.id)
 		if err != nil {
 			return nil, err
 		}
@@ -256,14 +265,16 @@ type quotaUsageResource struct {
 }
 
 type quotaResource struct {
-	Scope       string              `json:"scope"`
-	ScopeID     string              `json:"scope_id"`
-	Name        string              `json:"name"`
-	Limits      quotaLimitsResource `json:"limits"`
-	Effective   quotaLimitsResource `json:"effective_limits"`
-	Usage       quotaUsageResource  `json:"usage"`
-	WarnPercent int                 `json:"warn_percent"`
-	CanManage   bool                `json:"can_manage"`
+	Scope     string              `json:"scope"`
+	ScopeID   string              `json:"scope_id"`
+	Name      string              `json:"name"`
+	Limits    quotaLimitsResource `json:"limits"`
+	Effective quotaLimitsResource `json:"effective_limits"`
+	Usage     quotaUsageResource  `json:"usage"`
+	// Live is omitted when no metrics are available for the scope.
+	Live        *quotaLiveResource `json:"live_usage,omitempty"`
+	WarnPercent int                `json:"warn_percent"`
+	CanManage   bool               `json:"can_manage"`
 }
 
 func limitsResource(a quota.Amounts) quotaLimitsResource {
@@ -345,8 +356,8 @@ func (rt *Router) buildQuotaResource(ctx context.Context, db quotaStore, scope, 
 	}
 	return quotaResource{
 		Scope: scope, ScopeID: scopeID, Name: rt.quotaScopeName(ctx, scope, scopeID),
-		Limits: limitsResource(explicit), Effective: limitsResource(quota.Merge(explicit, quotaDefaults())),
-		Usage: usageResource(usage), WarnPercent: quotaWarnPercent(), CanManage: canManage,
+		Limits: limitsResource(explicit), Effective: limitsResource(quota.Merge(explicit, rt.quotaDefaults(ctx))),
+		Usage: usageResource(usage), Live: rt.quotaLiveUsage(ctx, db, scope, scopeID), WarnPercent: quotaWarnPercent(), CanManage: canManage,
 	}, nil
 }
 

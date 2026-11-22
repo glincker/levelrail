@@ -412,6 +412,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROJECT_IMPORT_MAX_BYTES` | [`projects.import_max_bytes`](/runtime-settings#deploys) | `268435456` |
 | `APP_PROJECT_IMPORT_MAX_CONCURRENT` | [`projects.import_max_concurrent`](/runtime-settings#deploys) | `2` |
 | `APP_PROJECT_IMPORT_MAX_CONCURRENT_GLOBAL` | [`projects.import_max_concurrent_global`](/runtime-settings#deploys) | `8` |
+| `APP_QUOTA_DEFAULT_MAX_APPS` | [`quota.default_max_apps`](/runtime-settings#deploys) | `0` |
+| `APP_QUOTA_DEFAULT_MAX_CPU` | [`quota.default_max_cpu`](/runtime-settings#deploys) | `0` |
+| `APP_QUOTA_DEFAULT_MAX_DATABASES` | [`quota.default_max_databases`](/runtime-settings#deploys) | `0` |
+| `APP_QUOTA_DEFAULT_MAX_MEMORY_MB` | [`quota.default_max_memory_mb`](/runtime-settings#deploys) | `0` |
+| `APP_QUOTA_DEFAULT_MAX_PREVIEWS` | [`quota.default_max_previews`](/runtime-settings#deploys) | `0` |
 | `APP_REGISTRY_DOCKERHUB_LIMIT_WARN_PERCENT` | [`registry.dockerhub.limit_warn_percent`](/runtime-settings#deploys) | `20` |
 | `APP_REGISTRY_DOCKERHUB_LIMITS_CACHE_SECONDS` | [`registry.dockerhub.limits_cache_seconds`](/runtime-settings#deploys) | `300` |
 | `APP_REGISTRY_DOCKERHUB_TAG_PAGE_SIZE` | [`registry.dockerhub.tag_page_size`](/runtime-settings#deploys) | `25` |

@@ -46,6 +46,48 @@ function usedOf(q: QuotaResource, key: QuotaResourceKey): number {
   }[key]
 }
 
+function liveOf(q: QuotaResource, key: QuotaResourceKey): number | undefined {
+  if (q.live_usage === undefined) return undefined
+  if (key === 'memory') return q.live_usage.memory_mb
+  if (key === 'cpu') return Math.round(q.live_usage.cpu * 100) / 100
+  return undefined
+}
+
+function LiveBar({
+  q,
+  k,
+  reserved,
+}: {
+  q: QuotaResource
+  k: QuotaResourceKey
+  reserved: number
+}) {
+  const { t } = useTranslation('teams')
+  const live = liveOf(q, k)
+  if (live === undefined || q.live_usage === undefined) return null
+  const pct =
+    reserved > 0 ? Math.min(100, Math.round((live / reserved) * 100)) : 0
+  const label = t('quota.liveLabel', { resource: t(`quota.resources.${k}`) })
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>
+          {t('quota.live', {
+            live,
+            reserved,
+            sampled: q.live_usage.sampled_apps,
+            total: q.live_usage.total_apps,
+          })}
+        </span>
+        {reserved > 0 && (
+          <span>{t('quota.liveOfReserved', { percent: pct })}</span>
+        )}
+      </div>
+      {reserved > 0 && <Progress value={pct} aria-label={label} />}
+    </div>
+  )
+}
+
 function UsageRow({ q, k }: { q: QuotaResource; k: QuotaResourceKey }) {
   const { t } = useTranslation('teams')
   const used = usedOf(q, k)
@@ -69,6 +111,7 @@ function UsageRow({ q, k }: { q: QuotaResource; k: QuotaResourceKey }) {
         </span>
       </div>
       {limit > 0 && <Progress value={pct} aria-label={label} />}
+      <LiveBar q={q} k={k} reserved={used} />
     </li>
   )
 }

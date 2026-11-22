@@ -558,6 +558,11 @@ provision.resources.cache_ttl_seconds
 provision.resources.refresh_min_interval_seconds
 provision.spend.cache_ttl_seconds
 provision.spend.refresh_min_interval_seconds
+quota.default_max_apps
+quota.default_max_cpu
+quota.default_max_databases
+quota.default_max_memory_mb
+quota.default_max_previews
 reconcile.resync_seconds
 registry.dockerhub.limit_warn_percent
 registry.dockerhub.limits_cache_seconds

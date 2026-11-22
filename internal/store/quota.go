@@ -119,3 +119,28 @@ func (db *DB) QuotaUsage(ctx context.Context, scope, scopeID string) (quota.Amou
 	}
 	return u, nil
 }
+
+// QuotaScopeServices lists the app names a team or project currently holds,
+// previews included, so live usage can be summed over the same set the
+// reservation is counted on.
+func (db *DB) QuotaScopeServices(ctx context.Context, scope, scopeID string) ([]string, error) {
+	join, where := "", "s.project_id = ?"
+	if scope == quota.ScopeTeam {
+		join = "LEFT JOIN projects p ON p.id = s.project_id"
+		where = "COALESCE(p.org_id, '" + DefaultTeamID + "') = ?"
+	}
+	rows, err := db.QueryContext(ctx, `SELECT s.name FROM desired_services s `+join+` WHERE `+where, scopeID)
+	if err != nil {
+		return nil, fmt.Errorf("store: quota scope services %s/%s: %w", scope, scopeID, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			return nil, fmt.Errorf("store: scan quota scope service: %w", err)
+		}
+		out = append(out, n)
+	}
+	return out, rows.Err()
+}

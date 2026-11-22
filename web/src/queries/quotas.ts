@@ -23,6 +23,13 @@ export interface QuotaUsage {
   previews: number
 }
 
+export interface QuotaLiveUsage {
+  memory_mb: number
+  cpu: number
+  sampled_apps: number
+  total_apps: number
+}
+
 export interface QuotaResource {
   scope: QuotaScope
   scope_id: string
@@ -30,6 +37,7 @@ export interface QuotaResource {
   limits: QuotaLimits
   effective_limits: QuotaLimits
   usage: QuotaUsage
+  live_usage?: QuotaLiveUsage
   warn_percent: number
   can_manage: boolean
 }

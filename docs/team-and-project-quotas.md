@@ -73,16 +73,17 @@ Every change is written to the audit log and to the team's event trail as `quota
 
 ## Instance defaults
 
-These environment variables set limits for every team and project that has no value of its own. All default to unlimited.
+These runtime settings set limits for every team and project that has no value of its own. All default to 0, unlimited. Change them in Settings > Runtime (Deploys card), with `levelrail-cli settings runtime set <key> <value>`, or through the settings API; a change applies to the next create or resize with no restart. The environment variables only seed the first value.
 
-| Variable | Meaning |
-| --- | --- |
-| `APP_QUOTA_DEFAULT_MAX_APPS` | apps |
-| `APP_QUOTA_DEFAULT_MAX_DATABASES` | databases |
-| `APP_QUOTA_DEFAULT_MAX_MEMORY_MB` | memory reservation in MB |
-| `APP_QUOTA_DEFAULT_MAX_CPU` | CPU reservation in cores |
-| `APP_QUOTA_DEFAULT_MAX_PREVIEWS` | live previews |
-| `APP_QUOTA_WARN_PERCENT` | usage percentage that raises an attention item, default 80 |
+| Setting | Environment seed | Meaning |
+| --- | --- | --- |
+| `quota.default_max_apps` | `APP_QUOTA_DEFAULT_MAX_APPS` | apps |
+| `quota.default_max_databases` | `APP_QUOTA_DEFAULT_MAX_DATABASES` | databases |
+| `quota.default_max_memory_mb` | `APP_QUOTA_DEFAULT_MAX_MEMORY_MB` | memory reservation in MB |
+| `quota.default_max_cpu` | `APP_QUOTA_DEFAULT_MAX_CPU` | CPU reservation in cores, fractions allowed |
+| `quota.default_max_previews` | `APP_QUOTA_DEFAULT_MAX_PREVIEWS` | live previews |
+
+The warning percentage that raises an attention item is still `APP_QUOTA_WARN_PERCENT`, default 80.
 
 ## Attention center
 
@@ -91,5 +92,5 @@ When a limited dimension reaches the warning percentage, the attention center sh
 ## Limits of this feature
 
 - Deploys are not blocked. An app that already exists keeps deploying even if its scope is over quota.
-- Memory and CPU count configured reservations, not live container usage.
+- Memory and CPU limits count configured reservations. The quota card also shows live CPU and memory of the scope's apps from the latest metrics samples next to the reservation, so teams can see who over reserves. Live figures cover apps only and are omitted when metrics are off.
 - Preview environments use the platform preview caps as well; the lower of the two applies.
