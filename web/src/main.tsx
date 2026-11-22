@@ -21,7 +21,7 @@ import {
   reportSuccess,
 } from './lib/connectionStore'
 import { safeReturnPath } from './lib/connectionState'
-import { RouteErrorFallback } from './components/RouteErrorFallback'
+import { LazyRouteErrorFallback } from './components/LazyRouteErrorFallback'
 import { PageSpinner } from './components/ui/page-spinner'
 import { RootFallback } from './components/ui/shell-skeleton'
 import { prefetchNamespaces, scheduleIdle } from './i18n/prefetch'
@@ -97,7 +97,7 @@ const router = createRouter({
   routeTree,
   context: { queryClient },
   defaultPreload: 'intent',
-  defaultErrorComponent: RouteErrorFallback,
+  defaultErrorComponent: LazyRouteErrorFallback,
   defaultPendingComponent: PageSpinner,
   defaultViewTransition: routeViewTransition(),
   // Stock timings (1000ms before the skeleton, 500ms minimum once shown) make a slow tab feel frozen, then flash.

@@ -112,7 +112,7 @@ describe.skipIf(!routeTree)('/apps/$name for a missing app', () => {
       </AllI18n>,
     )
     expect(await screen.findByText('App not found')).toBeTruthy()
-    expect(screen.getByText(/fail-demo/)).toBeTruthy()
+    expect(await screen.findByText(/Requested: fail-demo/)).toBeTruthy()
     // The scoped sidebar is lazy; once it loads it must not take the shell down.
     await act(async () => {
       await import('../../components/AppScopedSidebar')
