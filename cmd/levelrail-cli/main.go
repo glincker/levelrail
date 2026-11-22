@@ -78,6 +78,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitUsage
 	}
 
+	args = expandUserAlias(prog, args)
 	syncServerBetaFeatures(prog, args, lookupEnv)
 	if rejectDisabledExperimental(prog, args, stderr) {
 		return exitUsage
@@ -140,6 +141,14 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runAliasedRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ls":
+		return runAliasedLs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ps":
+		return runAliasedPs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rm":
+		return runAliasedRm(prog, args[1:], stdout, stderr, lookupEnv)
+	case "alias":
+		return runAlias(prog, args[1:], stdout, stderr)
 	case "databases", "db":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "functions":

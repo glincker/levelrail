@@ -19,6 +19,7 @@ func runStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		}
 	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "status", "print status as JSON to stdout and nothing else", stderr)
+	wo := registerWatch(fs, lookupEnv)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, statusUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -27,26 +28,28 @@ func runStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	return wo.run(stdout, jsonOut, func() int {
 
-	status, err := client.GetSystemStatus(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system status: %w", err))
-	}
+		status, err := client.GetSystemStatus(context.Background())
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system status: %w", err))
+		}
 
-	if err := renderResult(stdout, of.Format, of.Query, status, func() {
-		printSystemStatusHuman(stdout, status)
-		// Best effort: an older server or a restricted token just omits the line.
-		if up, err := client.GetUpdates(context.Background()); err == nil && up.CurrentVersion != "" {
-			_, _ = fmt.Fprintf(stdout, "server version:      %s (cli %s)\n", up.CurrentVersion, displayCLIVersion(localVersionInfo()))
+		if err := renderResult(stdout, of.Format, of.Query, status, func() {
+			printSystemStatusHuman(stdout, status)
+			// Best effort: an older server or a restricted token just omits the line.
+			if up, err := client.GetUpdates(context.Background()); err == nil && up.CurrentVersion != "" {
+				_, _ = fmt.Fprintf(stdout, "server version:      %s (cli %s)\n", up.CurrentVersion, displayCLIVersion(localVersionInfo()))
+			}
+			if pol, err := client.GetUpgradePolicy(context.Background()); err == nil {
+				printUpgradeNotice(stdout, prog, pol)
+			}
+		}); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitCodeForError(err)
 		}
-		if pol, err := client.GetUpgradePolicy(context.Background()); err == nil {
-			printUpgradeNotice(stdout, prog, pol)
-		}
-	}); err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitCodeForError(err)
-	}
-	return exitOK
+		return exitOK
+	})
 }
 
 func statusUsage(prog string) string {
@@ -60,6 +63,8 @@ Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --watch                  redraw the fleet status on an interval until Ctrl+C
+  --interval duration  redraw interval with --watch (env LEVELRAIL_WATCH_INTERVAL, default 5s)
   --json                    print status as JSON to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing

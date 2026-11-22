@@ -1,13 +1,71 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
+	"io"
 	"net/url"
+	"os"
+	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
+
+// envWatchInterval seeds the default --interval of every --watch verb.
+const envWatchInterval = "LEVELRAIL_WATCH_INTERVAL"
+
+// watchOpts are the shared --watch and --interval flags of status and the list verbs.
+type watchOpts struct {
+	watch    bool
+	interval time.Duration
+}
+
+// extraEnv names older per-verb variables that still win over the shared one.
+func registerWatch(fs *flag.FlagSet, lookupEnv func(string) (string, bool), extraEnv ...string) *watchOpts {
+	w := &watchOpts{}
+	every := 5 * time.Second
+	for _, name := range append(extraEnv, envWatchInterval) {
+		if v, ok := lookupEnv(name); ok {
+			if d, err := time.ParseDuration(v); err == nil && d > 0 {
+				every = d
+				break
+			}
+		}
+	}
+	fs.BoolVar(&w.watch, "watch", false, "redraw on an interval until Ctrl+C")
+	fs.DurationVar(&w.interval, "interval", every, "redraw interval with --watch (env "+envWatchInterval+")")
+	return w
+}
+
+// run draws once, or repeatedly with --watch; the screen is cleared only for human output.
+func (w *watchOpts) run(stdout io.Writer, jsonOut bool, draw func() int) int {
+	if !w.watch {
+		return draw()
+	}
+	if w.interval <= 0 {
+		w.interval = 5 * time.Second
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	tick := time.NewTicker(w.interval)
+	defer tick.Stop()
+	for {
+		if !jsonOut {
+			_, _ = io.WriteString(stdout, "\x1b[H\x1b[2J")
+		}
+		if code := draw(); code != exitOK {
+			return code
+		}
+		select {
+		case <-ctx.Done():
+			return exitOK
+		case <-tick.C:
+		}
+	}
+}
 
 // listOpts are the shared --status, --sort and --limit flags of the list verbs.
 type listOpts struct {
