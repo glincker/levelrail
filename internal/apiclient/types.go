@@ -576,6 +576,10 @@ type LogEntryResource struct {
 	FieldsJSON json.RawMessage `json:"fields,omitempty"`
 	// Level is the server-detected level, empty when the line has none.
 	Level string `json:"level,omitempty"`
+	// Count, First and Last describe a collapsed run of identical lines.
+	Count int       `json:"count,omitempty"`
+	First time.Time `json:"first,omitzero"`
+	Last  time.Time `json:"last,omitzero"`
 }
 
 // LogStreamEntry mirrors internal/api's sseLogEvent

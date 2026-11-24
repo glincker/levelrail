@@ -309,6 +309,8 @@
     "createAlert": "创建告警",
     "alertCreated": "告警规则 \"{{name}}\" 已创建。",
     "wrap": "自动换行",
+    "collapse": "折叠",
+    "collapseHint": "将重复行折叠为带计数的一行。关闭后显示每一条原始行。",
     "entryDetail": "日志行",
     "copyLine": "复制行",
     "closeDetail": "关闭详情",

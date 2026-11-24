@@ -313,6 +313,8 @@
     "createAlert": "Criar alerta",
     "alertCreated": "Regra de alerta \"{{name}}\" criada.",
     "wrap": "Quebrar linhas",
+    "collapse": "Agrupar",
+    "collapseHint": "Agrupa linhas repetidas em uma linha com contador. Desative para ver cada linha original.",
     "entryDetail": "Linha de log",
     "copyLine": "Copiar linha",
     "closeDetail": "Fechar detalhes",

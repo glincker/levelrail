@@ -92,6 +92,14 @@ export function LogSearchRows({
                   {entry.container.slice(0, 8)}
                 </span>
               ) : null}
+              {entry.count && entry.count > 1 ? (
+                <span
+                  className="shrink-0 rounded bg-amber-900/40 px-1 text-[0.65rem] text-amber-300"
+                  title={`${new Date(entry.first ?? entry.timestamp).toLocaleTimeString()} - ${new Date(entry.last ?? entry.timestamp).toLocaleTimeString()}`}
+                >
+                  {`x${String(entry.count)}`}
+                </span>
+              ) : null}
               {entry.structured ? (
                 <span className="shrink-0 rounded bg-sky-900/40 px-1 text-[0.65rem] uppercase text-sky-300">
                   json

@@ -594,6 +594,10 @@ func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
 		return
 	}
 	for _, e := range entries {
+		if e.Count > 1 {
+			_, _ = fmt.Fprintf(out, "%s %s %s (x%d until %s)\n", e.Timestamp.Format(time.RFC3339), e.Stream, e.Message, e.Count, e.Last.Format(time.RFC3339))
+			continue
+		}
 		_, _ = fmt.Fprintf(out, "%s %s %s\n", e.Timestamp.Format(time.RFC3339), e.Stream, e.Message)
 	}
 }
