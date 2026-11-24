@@ -333,5 +333,36 @@
     "body": "Tienes una copia de seguridad, pero aún no has probado ninguna restauración. Una copia que nunca restauraste es una suposición.",
     "action": "Probar una restauración",
     "dismiss": "Descartar"
+  },
+  "phoneHome": {
+    "list": "Estado de las apps",
+    "tabs": {
+      "label": "Navegación principal",
+      "apps": "Apps",
+      "alerts": "Alertas",
+      "deploys": "Despliegues",
+      "settings": "Ajustes"
+    },
+    "lastDeploy": "Desplegada {{when}}",
+    "neverDeployed": "Nunca desplegada",
+    "health": {
+      "ready": "Saludable",
+      "notReady": "No lista",
+      "unknown": "Salud desconocida"
+    },
+    "restart": "Reiniciar",
+    "redeploy": "Redesplegar",
+    "rollback": "Revertir",
+    "restartTitle": "¿Reiniciar {{name}}?",
+    "restartBody": "Los contenedores se reinician uno a uno. Puede haber un corte breve.",
+    "redeployTitle": "¿Redesplegar {{name}}?",
+    "redeployBody": "Vuelve a compilar y desplegar la imagen actual.",
+    "rollbackTitle": "¿Revertir {{name}}?",
+    "rollbackBody": "Vuelve a la versión de {{when}}.",
+    "rollbackNone": "No hay una versión anterior a la que volver.",
+    "restarting": "Reiniciando \"{{name}}\".",
+    "rollingBack": "Revirtiendo \"{{name}}\".",
+    "rollbackWaiting": "La reversión de \"{{name}}\" espera aprobación.",
+    "cancel": "Cancelar"
   }
 }

@@ -355,5 +355,36 @@
     "body": "Você tem um backup, mas nenhuma restauração foi testada ainda. Um backup que você nunca restaurou é um palpite.",
     "action": "Testar uma restauração",
     "dismiss": "Dispensar"
+  },
+  "phoneHome": {
+    "list": "Status dos apps",
+    "tabs": {
+      "label": "Navegação principal",
+      "apps": "Apps",
+      "alerts": "Alertas",
+      "deploys": "Deploys",
+      "settings": "Configurações"
+    },
+    "lastDeploy": "Deploy {{when}}",
+    "neverDeployed": "Nunca implantado",
+    "health": {
+      "ready": "Saudável",
+      "notReady": "Não pronto",
+      "unknown": "Saúde desconhecida"
+    },
+    "restart": "Reiniciar",
+    "redeploy": "Reimplantar",
+    "rollback": "Reverter",
+    "restartTitle": "Reiniciar {{name}}?",
+    "restartBody": "Os contêineres reiniciam um a um. Pode haver uma breve interrupção.",
+    "redeployTitle": "Reimplantar {{name}}?",
+    "redeployBody": "Compila e publica a imagem atual novamente.",
+    "rollbackTitle": "Reverter {{name}}?",
+    "rollbackBody": "Volta para a versão de {{when}}.",
+    "rollbackNone": "Não há versão anterior para reverter.",
+    "restarting": "Reiniciando \"{{name}}\".",
+    "rollingBack": "Revertendo \"{{name}}\".",
+    "rollbackWaiting": "A reversão de \"{{name}}\" aguarda aprovação.",
+    "cancel": "Cancelar"
   }
 }

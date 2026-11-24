@@ -311,5 +311,36 @@
     "body": "バックアップはありますが、リストアはまだテストされていません。一度もリストアしていないバックアップは、当てにできません。",
     "action": "リストアをテスト",
     "dismiss": "閉じる"
+  },
+  "phoneHome": {
+    "list": "アプリの状態",
+    "tabs": {
+      "label": "メインナビゲーション",
+      "apps": "アプリ",
+      "alerts": "アラート",
+      "deploys": "デプロイ",
+      "settings": "設定"
+    },
+    "lastDeploy": "デプロイ {{when}}",
+    "neverDeployed": "未デプロイ",
+    "health": {
+      "ready": "正常",
+      "notReady": "未準備",
+      "unknown": "状態不明"
+    },
+    "restart": "再起動",
+    "redeploy": "再デプロイ",
+    "rollback": "ロールバック",
+    "restartTitle": "{{name}} を再起動しますか?",
+    "restartBody": "コンテナを順に再起動します。短い中断が起こる場合があります。",
+    "redeployTitle": "{{name}} を再デプロイしますか?",
+    "redeployBody": "現在のイメージを再ビルドして展開します。",
+    "rollbackTitle": "{{name}} をロールバックしますか?",
+    "rollbackBody": "{{when}} のリリースに戻します。",
+    "rollbackNone": "戻せる以前のリリースがありません。",
+    "restarting": "「{{name}}」を再起動しています。",
+    "rollingBack": "「{{name}}」をロールバックしています。",
+    "rollbackWaiting": "「{{name}}」のロールバックは承認待ちです。",
+    "cancel": "キャンセル"
   }
 }

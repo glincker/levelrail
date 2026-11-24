@@ -333,5 +333,36 @@
     "body": "You have a backup, but no restore has been tested yet. A backup you never restored is a guess.",
     "action": "Test a restore",
     "dismiss": "Dismiss"
+  },
+  "phoneHome": {
+    "list": "Apps status",
+    "tabs": {
+      "label": "Main navigation",
+      "apps": "Apps",
+      "alerts": "Alerts",
+      "deploys": "Deploys",
+      "settings": "Settings"
+    },
+    "lastDeploy": "Deployed {{when}}",
+    "neverDeployed": "Never deployed",
+    "health": {
+      "ready": "Healthy",
+      "notReady": "Not ready",
+      "unknown": "Health unknown"
+    },
+    "restart": "Restart",
+    "redeploy": "Redeploy",
+    "rollback": "Roll back",
+    "restartTitle": "Restart {{name}}?",
+    "restartBody": "Containers restart one by one. Expect a short blip.",
+    "redeployTitle": "Redeploy {{name}}?",
+    "redeployBody": "Builds and rolls out the current image again.",
+    "rollbackTitle": "Roll back {{name}}?",
+    "rollbackBody": "Goes back to the release from {{when}}.",
+    "rollbackNone": "No earlier release to roll back to.",
+    "restarting": "Restarting \"{{name}}\".",
+    "rollingBack": "Rolling back \"{{name}}\".",
+    "rollbackWaiting": "Rolling back \"{{name}}\" is waiting for approval.",
+    "cancel": "Cancel"
   }
 }

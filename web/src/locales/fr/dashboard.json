@@ -355,5 +355,36 @@
     "body": "Vous avez une sauvegarde, mais aucune restauration n'a encore été testée. Une sauvegarde jamais restaurée est un pari.",
     "action": "Tester une restauration",
     "dismiss": "Ignorer"
+  },
+  "phoneHome": {
+    "list": "État des apps",
+    "tabs": {
+      "label": "Navigation principale",
+      "apps": "Apps",
+      "alerts": "Alertes",
+      "deploys": "Déploiements",
+      "settings": "Réglages"
+    },
+    "lastDeploy": "Déployée {{when}}",
+    "neverDeployed": "Jamais déployée",
+    "health": {
+      "ready": "En bonne santé",
+      "notReady": "Pas prête",
+      "unknown": "Santé inconnue"
+    },
+    "restart": "Redémarrer",
+    "redeploy": "Redéployer",
+    "rollback": "Annuler",
+    "restartTitle": "Redémarrer {{name}} ?",
+    "restartBody": "Les conteneurs redémarrent un par un. Une brève coupure est possible.",
+    "redeployTitle": "Redéployer {{name}} ?",
+    "redeployBody": "Reconstruit et redéploie l'image actuelle.",
+    "rollbackTitle": "Revenir en arrière sur {{name}} ?",
+    "rollbackBody": "Revient à la version du {{when}}.",
+    "rollbackNone": "Aucune version antérieure disponible.",
+    "restarting": "Redémarrage de \"{{name}}\".",
+    "rollingBack": "Retour arrière de \"{{name}}\".",
+    "rollbackWaiting": "Le retour arrière de \"{{name}}\" attend une approbation.",
+    "cancel": "Annuler"
   }
 }

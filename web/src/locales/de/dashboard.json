@@ -333,5 +333,36 @@
     "body": "Sie haben ein Backup, aber noch keine Wiederherstellung getestet. Ein Backup, das Sie nie wiederhergestellt haben, ist eine Vermutung.",
     "action": "Wiederherstellung testen",
     "dismiss": "Ausblenden"
+  },
+  "phoneHome": {
+    "list": "App-Status",
+    "tabs": {
+      "label": "Hauptnavigation",
+      "apps": "Apps",
+      "alerts": "Warnungen",
+      "deploys": "Deploys",
+      "settings": "Einstellungen"
+    },
+    "lastDeploy": "Deployt {{when}}",
+    "neverDeployed": "Nie deployt",
+    "health": {
+      "ready": "Gesund",
+      "notReady": "Nicht bereit",
+      "unknown": "Zustand unbekannt"
+    },
+    "restart": "Neustart",
+    "redeploy": "Neu deployen",
+    "rollback": "Zurücksetzen",
+    "restartTitle": "{{name}} neu starten?",
+    "restartBody": "Container starten nacheinander neu. Eine kurze Unterbrechung ist möglich.",
+    "redeployTitle": "{{name}} neu deployen?",
+    "redeployBody": "Baut das aktuelle Image neu und rollt es aus.",
+    "rollbackTitle": "{{name}} zurücksetzen?",
+    "rollbackBody": "Geht zurück zum Release von {{when}}.",
+    "rollbackNone": "Kein früheres Release zum Zurücksetzen.",
+    "restarting": "\"{{name}}\" wird neu gestartet.",
+    "rollingBack": "\"{{name}}\" wird zurückgesetzt.",
+    "rollbackWaiting": "Das Zurücksetzen von \"{{name}}\" wartet auf Freigabe.",
+    "cancel": "Abbrechen"
   }
 }
