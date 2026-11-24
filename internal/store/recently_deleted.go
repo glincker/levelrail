@@ -88,12 +88,66 @@ func (db *DB) DeleteRecentlyDeleted(ctx context.Context, kind, name string) erro
 
 // PurgeRecentlyDeleted removes entries deleted before cutoff and returns how many went.
 func (db *DB) PurgeRecentlyDeleted(ctx context.Context, cutoff time.Time) (int, error) {
-	res, err := db.ExecContext(ctx, `DELETE FROM recently_deleted WHERE deleted_at < ?`, cutoff.UTC().Format(time.RFC3339Nano))
+	at := cutoff.UTC().Format(time.RFC3339Nano)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
+		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	// The final purge is when kept env and config history goes.
+	rows, err := tx.QueryContext(ctx, `SELECT name FROM recently_deleted WHERE kind = ? AND deleted_at < ?`, RecentlyDeletedApp, at)
+	if err != nil {
+		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+	}
+	var names []string
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			_ = rows.Close()
+			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+		}
+		names = append(names, n)
+	}
+	if err := rows.Close(); err != nil {
+		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+	}
+	for _, n := range names {
+		if err := dropAppRevisions(ctx, tx, n); err != nil {
+			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+		}
+	}
+	res, err := tx.ExecContext(ctx, `DELETE FROM recently_deleted WHERE deleted_at < ?`, at)
+	if err != nil {
+		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	return int(n), nil
+}
+
+type keepRevisionsKey struct{}
+
+// WithKeptRevisions makes DeleteDesiredService leave the app's env and config history, for a soft delete.
+func WithKeptRevisions(ctx context.Context) context.Context {
+	return context.WithValue(ctx, keepRevisionsKey{}, true)
+}
+
+func revisionsKept(ctx context.Context) bool {
+	v, _ := ctx.Value(keepRevisionsKey{}).(bool)
+	return v
+}
+
+// dropAppRevisions removes env and config history; env snapshots are sealed per app name.
+func dropAppRevisions(ctx context.Context, tx *sql.Tx, name string) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM app_config_revisions WHERE app_name = ?`, name); err != nil {
+		return fmt.Errorf("config revisions: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM env_revisions WHERE app_name = ?`, name); err != nil {
+		return fmt.Errorf("env revisions: %w", err)
+	}
+	return nil
 }
 
 func scanRecentlyDeleted(scan func(dest ...any) error) (RecentlyDeleted, error) {

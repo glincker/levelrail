@@ -34,7 +34,11 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if !purge {
 		undo, _ = rt.apps.GetDesiredService(r.Context(), name)
 	}
-	teardownErr, err := rt.deleteApp(r.Context(), name)
+	delCtx := r.Context()
+	if undo != nil && rt.recentlyDeleted() != nil && rt.recentlyDeletedWindow(delCtx) > 0 {
+		delCtx = store.WithKeptRevisions(delCtx)
+	}
+	teardownErr, err := rt.deleteApp(delCtx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return

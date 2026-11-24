@@ -83,3 +83,22 @@ func runAppsRecentlyDeletedRestore(prog string, args []string, stdout, stderr io
 	_, _ = fmt.Fprintf(stdout, "restored %s %q; set its secrets again if it had any\n", pos[0], pos[1])
 	return exitOK
 }
+
+// runAppsRestoreDeleted is the short form: apps restore <name>.
+func runAppsRestoreDeleted(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps restore", "print the result as JSON to stdout and nothing else", stderr)
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, _, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	pos, ok := requireArgs(fs, stderr, prog, "apps restore", "<name>", 1)
+	if !ok {
+		return exitUsage
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if err := client.RestoreRecentlyDeleted(context.Background(), "app", pos[0]); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("restore app %q: %w", pos[0], err))
+	}
+	_, _ = fmt.Fprintf(stdout, "restored %q, stopped; set its secrets again, then start it\n", pos[0])
+	return exitOK
+}

@@ -207,6 +207,9 @@ func (rt *Router) composeMembers(ctx context.Context, appID string) ([]store.Des
 
 // stackNameTaken reports whether name is a compose app, whose name has no service row of its own.
 func (rt *Router) stackNameTaken(ctx context.Context, name string) (bool, error) {
+	if rt.deletedNameReserved(ctx, name) {
+		return true, nil
+	}
 	_, err := rt.composeMembers(ctx, name)
 	if err == nil {
 		return true, nil
@@ -223,7 +226,7 @@ var errAppNameTaken = errors.New("an app with this name already exists")
 // appNameFree re-checks a new app name; callers hold lockAppName(name) so the
 // check and the write cannot interleave with another create.
 func (rt *Router) appNameFree(ctx context.Context, name string) error {
-	if spec.IsReservedName(name) {
+	if spec.IsReservedName(name) || rt.deletedNameReserved(ctx, name) {
 		return errAppNameTaken
 	}
 	if _, err := rt.apps.GetDesiredService(ctx, name); err == nil {

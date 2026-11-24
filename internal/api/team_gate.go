@@ -88,6 +88,8 @@ var tenantRoutes = map[string]bool{
 	"GET /api/v1/mail/aliases":                       true,
 	"POST /api/v1/mail/aliases":                      true,
 	"DELETE /api/v1/mail/aliases/{address}":          true,
+	// The handler answers 404 for a deleted app whose team the caller is not in.
+	"POST /api/v1/recently-deleted/{kind}/{name}/restore": true,
 }
 
 // teamOwnedPrefixes are path prefixes whose {id} names a team owned object;

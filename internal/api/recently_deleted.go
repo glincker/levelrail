@@ -107,14 +107,6 @@ func (rt *Router) handleListRecentlyDeleted(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, out)
 }
 
-// recentlyDeletedResourceFromPath scopes a restore to the deleted app or database.
-func recentlyDeletedResourceFromPath(r *http.Request) string {
-	if r.PathValue("kind") == store.RecentlyDeletedDatabase {
-		return databaseResourceFromPath(r)
-	}
-	return appResourceFromPath(r)
-}
-
 // handleRestoreRecentlyDeleted handles POST /api/v1/recently-deleted/{kind}/{name}/restore.
 // It recreates the config; secrets were erased with the original and must be set again.
 func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Request) {
@@ -134,8 +126,14 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if kind == store.RecentlyDeletedApp {
+		if !rt.authorizeAppRestore(w, r, e) {
+			return
+		}
 		err = rt.restoreDeletedApp(r.Context(), e)
 	} else {
+		if !rt.authorizeDatabaseRestore(w, r, e.Name) {
+			return
+		}
 		err = rt.restoreDeletedDatabase(r.Context(), e)
 	}
 	var conflict errRestoreConflict
@@ -184,9 +182,12 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 		}
 	}
 	if node != "" {
-		return rt.apps.UpdateServiceNode(ctx, e.Name, node)
+		if err := rt.apps.UpdateServiceNode(ctx, e.Name, node); err != nil {
+			return err
+		}
 	}
-	return nil
+	// Comes back stopped so nothing runs until the owner starts it.
+	return rt.apps.UpdateServiceSuspended(ctx, e.Name, true)
 }
 
 func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDeleted) error {

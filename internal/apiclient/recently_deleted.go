@@ -22,7 +22,7 @@ func (c *Client) ListRecentlyDeleted(ctx context.Context) ([]RecentlyDeleted, er
 	return getJSON[[]RecentlyDeleted](ctx, c, "/api/v1/recently-deleted")
 }
 
-// RestoreRecentlyDeleted calls POST /api/v1/recently-deleted/{kind}/{name}/restore.
+// RestoreRecentlyDeleted calls POST /api/v1/recently-deleted/{kind}/{name}/restore; apps need confirm set to the name.
 func (c *Client) RestoreRecentlyDeleted(ctx context.Context, kind, name string) error {
-	return c.do(ctx, http.MethodPost, "/api/v1/recently-deleted/"+PathEscape(kind)+"/"+PathEscape(name)+"/restore", nil, nil)
+	return c.do(ctx, http.MethodPost, "/api/v1/recently-deleted/"+PathEscape(kind)+"/"+PathEscape(name)+"/restore", map[string]string{"confirm": name}, nil)
 }
