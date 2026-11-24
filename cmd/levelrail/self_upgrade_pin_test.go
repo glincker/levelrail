@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -66,5 +67,18 @@ func TestSelfUpgradeUnpinSignature(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "removed") {
 		t.Fatalf("unpin output = %q", out.String())
+	}
+}
+
+func TestSelfUpgradeSignerAcceptsOnlyTagRefs(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	s := selfUpgradeSigner(selfupgrade.VerifyAuto, "acme/app", t.TempDir(), "v1.2.3", logger, io.Discard)
+	re := regexp.MustCompile(s.IdentityRegexp)
+	base := "https://github.com/acme/app/.github/workflows/release.yml@"
+	if !re.MatchString(base + "refs/tags/v1.2.3") {
+		t.Fatal("a tag ref must be accepted")
+	}
+	if re.MatchString(base + "refs/heads/main") {
+		t.Fatal("a branch ref must be refused")
 	}
 }

@@ -189,7 +189,7 @@ func selfUpgradeSigner(mode, repo, dataDir, target string, logger *slog.Logger, 
 	}
 	return selfupgrade.Signer{
 		Mode:           mode,
-		IdentityRegexp: "(?i)https://github.com/" + regexp.QuoteMeta(repo) + `/\.github/workflows/release\.yml@.*`,
+		IdentityRegexp: selfupgrade.ReleaseIdentityRegexp(repo),
 		Issuer:         cosignOIDCIssuer,
 		Pinned:         pinned,
 		TUFCacheDir:    selfupgrade.TUFCacheDir(dataDir),

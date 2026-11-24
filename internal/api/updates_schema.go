@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"regexp"
 	"sync"
 	"time"
 
@@ -40,7 +39,7 @@ func NewReleaseSchemaFetcher(dataDir string, trust TrustRootProbe) ReleaseSchema
 		}
 		signer := selfupgrade.Signer{
 			Mode:           selfupgrade.VerifyAuto,
-			IdentityRegexp: "(?i)https://github.com/" + regexp.QuoteMeta(githubRepo) + `/\.github/workflows/release\.yml@.*`,
+			IdentityRegexp: selfupgrade.ReleaseIdentityRegexp(githubRepo),
 			Issuer:         cosignOIDCIssuer,
 			Pinned:         pinned,
 			TUFCacheDir:    selfupgrade.TUFCacheDir(dataDir),

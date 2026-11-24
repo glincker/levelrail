@@ -182547,7 +182547,7 @@
     },
     "/api/v1/updates/self-upgrade/attempts/{id}/cancel": {
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleSelfUpgradeAttemptCancel",
         "parameters": [
           {
@@ -182623,7 +182623,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write"
+              "root"
             ]
           }
         ],
@@ -182631,12 +182631,12 @@
         "tags": [
           "System"
         ],
-        "x-required-ability": "write"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/updates/self-upgrade/attempts/{id}/fix": {
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleSelfUpgradeAttemptFix",
         "parameters": [
           {
@@ -182712,7 +182712,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write"
+              "root"
             ]
           }
         ],
@@ -182720,12 +182720,12 @@
         "tags": [
           "System"
         ],
-        "x-required-ability": "write"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/updates/self-upgrade/attempts/{id}/retry": {
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleSelfUpgradeAttemptRetry",
         "parameters": [
           {
@@ -182801,7 +182801,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write"
+              "root"
             ]
           }
         ],
@@ -182809,12 +182809,12 @@
         "tags": [
           "System"
         ],
-        "x-required-ability": "write"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/updates/self-upgrade/attempts/{id}/rollback": {
       "post": {
-        "description": "Requires the `write` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleSelfUpgradeAttemptRollback",
         "parameters": [
           {
@@ -182890,7 +182890,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write"
+              "root"
             ]
           }
         ],
@@ -182898,7 +182898,7 @@
         "tags": [
           "System"
         ],
-        "x-required-ability": "write"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/updates/self-upgrade/plan": {

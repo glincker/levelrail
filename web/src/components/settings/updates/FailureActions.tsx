@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { useIsRoot } from '@/hooks/useIsRoot'
 import {
   useAttemptAction,
   type AttemptAction,
@@ -9,8 +10,10 @@ import {
 export function FailureActions({ attempt }: { attempt: SelfUpgradeAttempt }) {
   const { t } = useTranslation('updates')
   const act = useAttemptAction()
+  const isRoot = useIsRoot()
   const f = attempt.failure
-  if (!f) return null
+  // The attempt actions are root-only on the server, so other users see no buttons.
+  if (!f || !isRoot) return null
   const buttons: { action: AttemptAction; label: string; primary: boolean }[] =
     []
   if (f.primary === 'cleanup' && f.fix_id) {
