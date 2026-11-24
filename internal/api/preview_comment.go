@@ -124,6 +124,10 @@ func (rt *Router) upsertPreviewComment(ctx context.Context, gs store.GitSource, 
 // upsertPreviewCommentTimed is upsertPreviewComment that also shows how long
 // the deploy took.
 func (rt *Router) upsertPreviewCommentTimed(ctx context.Context, gs store.GitSource, p *store.PreviewEnvironment, state, detail string, took time.Duration) {
+	// An image preview's PR number is unverified, so it may only edit a comment, never create one.
+	if isImagePreview(*p) && p.CommentID == 0 {
+		return
+	}
 	c := rt.previewCommenter(ctx, gs, *p)
 	if c == nil {
 		return

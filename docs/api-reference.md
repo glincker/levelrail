@@ -874,6 +874,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/git-source/ssh-key | AbilityWriteSensitive | handleDeleteGitSSHKey |
 | POST | /api/v1/apps/{name}/git-source/plan | AbilityDeploy | handleGitSourcePlan |
 | POST | /api/v1/apps/{name}/git-source/deploy | AbilityDeploy | handleGitSourceDeploy |
+| POST | /api/v1/apps/{name}/previews | AbilityDeploy | handleCreatePreviewFromImage |
 
 ## Telemetry
 

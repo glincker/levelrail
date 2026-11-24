@@ -105,7 +105,7 @@ func (rt *Router) admitPreview(ctx context.Context, appName string, existing *st
 	if len(plan) == 0 {
 		return "", nil
 	}
-	if settings.OnLimit == store.PreviewOnLimitReject {
+	if settings.OnLimit == store.PreviewOnLimitReject || previewNoEvict(ctx) {
 		return "Preview limit reached: " + plan[0].reason + ".", nil
 	}
 	for _, ev := range plan {
@@ -217,6 +217,10 @@ func (rt *Router) beginPreview(ctx context.Context, appName string, gs store.Git
 	if err != nil {
 		rt.logger.Error("api: pull request webhook: preview limit check failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 		return nil, true, http.StatusInternalServerError, "internal error\n"
+	}
+	if reason != "" && previewNoEvict(ctx) {
+		// An unverified pull request number leaves no row and no git host comment.
+		return nil, true, http.StatusConflict, reason + "\n"
 	}
 	if reason != "" {
 		base.Status, base.StatusReason = store.PreviewStatusLimitReached, reason

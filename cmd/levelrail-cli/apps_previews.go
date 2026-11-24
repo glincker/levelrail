@@ -21,9 +21,11 @@ func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, looku
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsPreviewsUsage(prog))
 		return exitOK
-	case "list":
+	case "list", "ls":
 		return runAppsPreviewsList(prog, args[1:], stdout, stderr, lookupEnv)
-	case "teardown", "delete":
+	case "create":
+		return runAppsPreviewsCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "teardown", "delete", "rm":
 		return runAppsPreviewsTeardown(prog, args[1:], stdout, stderr, lookupEnv)
 	case "open":
 		return runAppsPreviewsOpen(prog, args[1:], stdout, stderr, lookupEnv)
@@ -53,6 +55,7 @@ func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, looku
 func appsPreviewsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps previews list [app-name] [flags]                list previews for an app, or across every app
+  %[1]s apps previews create <app-name> --pr N --image REF [flags]   deploy a CI-built image as a preview (aliases: ls for list, rm for teardown)
   %[1]s apps previews limits [app-name] [flags]              show or change preview caps, fork policy and TTL
   %[1]s apps previews approve <app-name> <pr-number> --yes   deploy a held fork pull request once
   %[1]s apps previews teardown <app-name> <pr-number> [flags]   tear down one PR's preview right now (alias: delete)

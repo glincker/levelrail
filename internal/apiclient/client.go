@@ -3379,6 +3379,15 @@ func (c *Client) ListPreviewEnvironments(ctx context.Context, appName string) ([
 	return out, err
 }
 
+// CreatePreviewFromImage calls POST /api/v1/apps/{name}/previews to deploy a
+// CI-built image as one pull request's preview.
+func (c *Client) CreatePreviewFromImage(ctx context.Context, appName string, prNumber int, image, branch, sha string) (PreviewEnvironmentResource, error) {
+	body := map[string]any{"pr_number": prNumber, "image": image, "branch": branch, "sha": sha}
+	var out PreviewEnvironmentResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/previews", body, &out)
+	return out, err
+}
+
 // TeardownPreviewEnvironment calls POST
 // /api/v1/apps/{name}/previews/{number}/teardown: the manual safety net
 // alongside a pull request's own automatic close-triggered teardown.

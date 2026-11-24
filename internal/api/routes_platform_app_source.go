@@ -113,6 +113,7 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	// tier POST .../restart and POST .../stop already use.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPreviewEnabled))
 	mux.HandleFunc("GET /api/v1/apps/{name}/previews", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPreviewEnvironments))
+	mux.HandleFunc("POST /api/v1/apps/{name}/previews", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCreatePreviewFromImage))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/teardown", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTeardownPreviewEnvironment))
 
 	// Branch deploys: a stable per-branch deployment (branch_deploys.go), separate from per pull request previews.
