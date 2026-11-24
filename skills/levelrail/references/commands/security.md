@@ -47,7 +47,7 @@ signin:approve for sessions; --user (another account) needs root.
   -json
     	print the result as JSON to stdout and nothing else
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -query string

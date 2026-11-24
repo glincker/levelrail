@@ -36,7 +36,7 @@ Usage of levelrail-cli costs budgets list:
   -name string
     	budget name
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -query string

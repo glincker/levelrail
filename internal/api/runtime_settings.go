@@ -102,6 +102,8 @@ type runtimeSettingError struct {
 	Error string `json:"error"`
 	Code  string `json:"code"`
 	Field string `json:"field"`
+	// RequestID is filled by writeJSON so these bodies match every other API error.
+	RequestID string `json:"request_id,omitempty"`
 }
 
 type runtimeSettingChange struct {

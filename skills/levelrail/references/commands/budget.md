@@ -15,7 +15,7 @@ Usage of levelrail-cli usage budgets:
   -monthly float
     	monthly budget amount (set)
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -query string

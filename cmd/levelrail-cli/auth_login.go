@@ -253,7 +253,7 @@ Flags:
   --device                       log in via the device code flow instead of username/password
   --client-name string       optional label for the device request shown in the approval UI, --device only (default: local hostname)
   --json                          print the new token resource as JSON to stdout; with --device, the first stdout line is a JSON object with the approval URL, code and expiry
-  --output string                output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string                output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string                 JMESPath expression to filter the result before printing
   -h, --help                    show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

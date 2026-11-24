@@ -397,7 +397,7 @@ Flags:
   -json
     	print the result as JSON to stdout and nothing else
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -preset string
     	none or cloudflare (set only)
   -profile string
@@ -428,7 +428,7 @@ Flags:
   -json
     	print the result as JSON to stdout and nothing else
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -query string
@@ -457,7 +457,7 @@ Flags:
   -json
     	print the HTTPS status as JSON to stdout and nothing else
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -query string
@@ -533,7 +533,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 

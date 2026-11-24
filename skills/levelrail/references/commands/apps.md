@@ -196,7 +196,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -393,7 +393,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -429,7 +429,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -491,7 +491,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -533,7 +533,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -557,7 +557,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -621,7 +621,7 @@ Flags:
   --api-url string       control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the setting as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 ```
@@ -653,7 +653,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -781,7 +781,7 @@ Flags:
   --api-url string       control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 ```
@@ -1140,7 +1140,7 @@ Flags:
   --api-url string         control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string         named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                   print the API response body unchanged to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 ```
@@ -1262,7 +1262,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -1284,7 +1284,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -1487,7 +1487,7 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 ```
 
@@ -1705,7 +1705,7 @@ Flags:
   -no-wait
     	return once the upgrade is started instead of following it
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -query string
@@ -1792,7 +1792,7 @@ Flags:
   --api-url string       control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 ```

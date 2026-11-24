@@ -70,7 +70,7 @@ Flags:
   -json
     	print the devices as JSON
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -query string
@@ -114,7 +114,7 @@ Flags:
   --api-url string        control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print a JSON result object to stdout, nothing else
-  --output string         output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string         output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string          JMESPath expression to filter the result before printing
   -h, --help              show this help
 ```
@@ -139,7 +139,7 @@ Flags:
   --api-url string        control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print the result as JSON to stdout, nothing else
-  --output string         output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string         output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string          JMESPath expression to filter the result before printing
   -h, --help              show this help
 ```
@@ -166,7 +166,7 @@ Flags:
   --api-url string       control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 ```

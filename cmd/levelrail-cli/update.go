@@ -297,7 +297,7 @@ Flags:
   --force                  replace the binary even when a package manager owns it
   --yes                    do not ask for confirmation (required in CI mode or without a terminal)
   --json                   print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 

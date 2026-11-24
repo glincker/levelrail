@@ -55,6 +55,6 @@ Common flags:
   --api-url string   control plane base URL
   --profile string   named credentials profile
   --json             print the result as JSON and nothing else
-  --output string    json, table, or text
+  --output string    json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression applied to the result
 `

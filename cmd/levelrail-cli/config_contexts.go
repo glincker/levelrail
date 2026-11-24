@@ -199,7 +199,8 @@ func runConfigUseContextNamed(prog, name string, jsonOut bool, of outputFlags, s
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list contexts: %w", err))
 	}
-	if !ok {
+	// current-context reports the implicit default, so switching to it must work too.
+	if !ok && name != defaultProfile {
 		return reportError(stdout, stderr, jsonOut, newValidationError("no context %q, run \"%s config get-contexts\" to list them", name, prog))
 	}
 	if err := writeCurrentContext(prog, name); err != nil {

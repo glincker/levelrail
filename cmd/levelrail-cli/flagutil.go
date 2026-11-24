@@ -144,7 +144,7 @@ func apiFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.Fl
 
 // Split out so hand-built FlagSets can share the output flags without duplicating descriptions.
 func bindOutputQueryFlags(fs *flag.FlagSet) (outputFlag, queryFlag *string) {
-	outputFlag = fs.String("output", "", "output format: json, table, or text (default table; --json is shorthand for --output json)")
+	outputFlag = fs.String("output", "", "output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)")
 	queryFlag = fs.String("query", "", "JMESPath expression to filter the result before printing (e.g. \"[?status=='running'].name\")")
 	return outputFlag, queryFlag
 }

@@ -12,6 +12,7 @@ Usage:
   levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
                         [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   levelrail-cli status-page preview
+  levelrail-cli status-page uptime-report [--month YYYY-MM]
   levelrail-cli status-page components list
   levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
   levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
@@ -44,6 +45,7 @@ Usage:
   levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
                         [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   levelrail-cli status-page preview
+  levelrail-cli status-page uptime-report [--month YYYY-MM]
   levelrail-cli status-page components list
   levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
   levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
@@ -76,6 +78,7 @@ Usage:
   levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
                         [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   levelrail-cli status-page preview
+  levelrail-cli status-page uptime-report [--month YYYY-MM]
   levelrail-cli status-page components list
   levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
   levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
@@ -108,6 +111,7 @@ Usage:
   levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
                         [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   levelrail-cli status-page preview
+  levelrail-cli status-page uptime-report [--month YYYY-MM]
   levelrail-cli status-page components list
   levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
   levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
@@ -140,6 +144,7 @@ Usage:
   levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
                         [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   levelrail-cli status-page preview
+  levelrail-cli status-page uptime-report [--month YYYY-MM]
   levelrail-cli status-page components list
   levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
   levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
@@ -172,6 +177,7 @@ Usage:
   levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
                         [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   levelrail-cli status-page preview
+  levelrail-cli status-page uptime-report [--month YYYY-MM]
   levelrail-cli status-page components list
   levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
   levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
@@ -204,6 +210,7 @@ Usage:
   levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
                         [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   levelrail-cli status-page preview
+  levelrail-cli status-page uptime-report [--month YYYY-MM]
   levelrail-cli status-page components list
   levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
   levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]

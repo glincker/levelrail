@@ -175,7 +175,7 @@ Flags:
   --failed                  only show failed requests (status code 400 or higher)
   --format string          "csv" exports entries as CSV instead of the default table/--json/--output output
   --output-file string     write the csv export to this file instead of stdout (requires --format csv)
-  --output string          output format: json, table, or text (default table)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table)
   --query string           JMESPath expression to filter the result before printing
   -h, --help              show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

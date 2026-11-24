@@ -96,7 +96,7 @@ profile with no usable token lists the exact command a person must run.
 Flags:
   --verify                check each saved token against its server
   --json                  print profiles as a JSON array to stdout, nothing else
-  --output string         output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string         output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string          JMESPath expression to filter the result before printing
   -h, --help              show this help
 `, prog)

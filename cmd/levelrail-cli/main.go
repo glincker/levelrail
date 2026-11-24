@@ -62,6 +62,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	// Always set so a previous run() in this process never leaks the opt-in.
 	apiclient.SetInsecureHTTP(insecureHTTP)
 	args, scopeFlags = extractScopeFlags(expandTemplateFlag(expandOutputShorthand(args)))
+	// --output json must shape errors like --json does.
+	errorsAsJSON = wantsJSONOutput(args)
 	// Reset every run so a saved setting never leaks between calls in one process.
 	defaultOutput = readSetting(prog, settingOutput)
 	installServerTrust(prog, args, stderr, lookupEnv)

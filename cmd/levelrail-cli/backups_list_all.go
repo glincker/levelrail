@@ -95,7 +95,7 @@ Flags:
   --limit int              max attempts to return (default: server default)
   --before string          only show attempts started before this RFC3339 timestamp
   --target string          only show attempts stored on this storage destination id, including history of deleted apps
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

@@ -157,7 +157,7 @@ Flags:
                                   disabled so nothing is sent until you turn them on; an enabled channel
                                   receives broadcast notices (key rotation reminders, maintenance and
                                   update notices) right away, with no routing needed
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 

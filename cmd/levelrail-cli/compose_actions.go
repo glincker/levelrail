@@ -122,13 +122,16 @@ func runComposeRollback(prog string, args []string, stdout, stderr io.Writer, lo
 }
 
 func runComposeDown(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var volumes bool
-	cmd, code, ok := parseComposeCmd(prog, "compose down", "compose down <app> [--volumes]", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
+	var volumes, yes bool
+	cmd, code, ok := parseComposeCmd(prog, "compose down", "compose down <app> [--volumes] [--yes]", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		// Accepted so scripts can pass --yes to every destructive verb; down never prompts.
+		fs.BoolVar(&yes, "yes", false, "accepted for consistency with other destructive verbs; down does not prompt")
 		fs.BoolVar(&volumes, "volumes", false, "also delete the stack's named volumes (data is lost)")
 	})
 	if !ok {
 		return code
 	}
+	_ = yes
 	res, err := cmd.client.ComposeDown(context.Background(), cmd.args[0], volumes)
 	if err != nil {
 		return reportError(stdout, stderr, cmd.json, fmt.Errorf("compose down %q: %w", cmd.args[0], err))

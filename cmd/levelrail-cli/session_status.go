@@ -270,7 +270,7 @@ Flags:
   --api-url string      control plane base URL
   --profile string      named credentials profile
   --json                print the status as JSON to stdout, nothing else
-  --output string       output format: json, table, or text
+  --output string       output format: json, ndjson, yaml, table, wide, text or name
   --query string        JMESPath expression to filter the result before printing
   -h, --help            show this help
 `, prog, envProfile, defaultProfile, apiTokenEnvHelp)
