@@ -203,3 +203,25 @@ func TestRestoreDeletedDatabase_AuthzAndConfirm(t *testing.T) {
 		t.Fatal("unconfirmed restore must not create the database")
 	}
 }
+
+func TestRestoreDeletedDatabase_ClearsUndoRow(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	snap, _ := json.Marshal(store.DesiredDatabase{Name: "pg-b", Engine: "postgres", Version: "16"})
+	if err := db.AddRecentlyDeleted(ctx, store.RecentlyDeleted{Kind: store.RecentlyDeletedDatabase, Name: "pg-b", Snapshot: string(snap)}); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/recently-deleted/database/pg-b/restore", `{"confirm":"pg-b"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("restore = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetDesiredDatabase(ctx, "pg-b"); err != nil {
+		t.Fatalf("database not restored: %v", err)
+	}
+	if _, err := db.GetRecentlyDeleted(ctx, store.RecentlyDeletedDatabase, "pg-b"); !errors.Is(err, store.ErrRecentlyDeletedNotFound) {
+		t.Fatalf("undo row err = %v, want not found", err)
+	}
+}

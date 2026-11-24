@@ -178,9 +178,22 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 			return
 		}
 		unlock := lockAppName("database:" + name)
-		err = rt.restoreDeletedDatabase(r.Context(), e)
+		// Re-read under the lock so a concurrent restore or purge cannot be restored twice.
+		cur, lerr := rt.liveDeleted(r.Context(), kind, name)
+		switch {
+		case errors.Is(lerr, store.ErrRecentlyDeletedNotFound):
+			unlock()
+			writeError(w, http.StatusNotFound, "nothing to restore: the undo window has passed or it was never deleted")
+			return
+		case lerr != nil:
+			unlock()
+			rt.internalError(w, "api: restore recently deleted", lerr, slog.String("name", name))
+			return
+		}
+		err = rt.restoreDeletedDatabase(r.Context(), cur)
 		if err == nil {
-			if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
+			// Only the row restored from is cleared; a newer delete of the same name stays.
+			if derr := rt.clearRestoredDatabaseEntry(r.Context(), st, cur); derr != nil {
 				rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
 			}
 		}
@@ -195,7 +208,11 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		rt.internalError(w, "api: restore recently deleted failed", err, slog.String("name", name))
 		return
 	}
-	rt.changes.Publish(changeApps, name)
+	if kind == store.RecentlyDeletedDatabase {
+		rt.changes.Publish(changeDatabases, name)
+	} else {
+		rt.changes.Publish(changeApps, name)
+	}
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, map[string]string{"status": "restored", "kind": kind, "name": name})
 }
@@ -254,7 +271,22 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 	return rt.apps.UpdateServiceSuspended(ctx, e.Name, true)
 }
 
-func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDeleted) error {
+// clearRestoredDatabaseEntry drops the undo row only while it is still the one restored from.
+func (rt *Router) clearRestoredDatabaseEntry(ctx context.Context, st recentlyDeletedStore, e store.RecentlyDeleted) error {
+	cur, err := st.GetRecentlyDeleted(ctx, e.Kind, e.Name)
+	if errors.Is(err, store.ErrRecentlyDeletedNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if !cur.DeletedAt.Equal(e.DeletedAt) {
+		return nil
+	}
+	return st.DeleteRecentlyDeleted(ctx, e.Kind, e.Name)
+}
+
+func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDeleted) (err error) {
 	var d store.DesiredDatabase
 	if err := json.Unmarshal([]byte(e.Snapshot), &d); err != nil {
 		return err
@@ -266,6 +298,14 @@ func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDe
 		}
 		return err
 	}
+	// A half-restored row would block the retry with a conflict, so undo the insert on failure.
+	defer func() {
+		if err != nil {
+			if derr := rt.databases.DeleteDesiredDatabase(context.WithoutCancel(ctx), e.Name); derr != nil {
+				rt.logger.Warn("api: roll back failed database restore", slog.String("name", e.Name), slog.String("error", derr.Error()))
+			}
+		}
+	}()
 	if d.NodeID != "" {
 		if err := rt.databases.UpdateDatabaseNode(ctx, e.Name, d.NodeID); err != nil {
 			return err
