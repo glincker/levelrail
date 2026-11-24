@@ -15,10 +15,13 @@ run() {
 
 run go run ./scripts/gen-api-reference
 run go run ./scripts/gen-go-sdk
+run go run ./scripts/gen-python-sdk
 run go run ./scripts/gen-runtime-settings-docs
 run go run ./scripts/geniacref
 run go run ./scripts/gen-field-docs
 run scripts/gen-skill-references.sh
+# Pure-python SDK tests only when an interpreter exists; -B keeps the tree clean.
+if command -v python3 >/dev/null 2>&1; then run python3 -B -m unittest discover -s sdk/python/tests; fi
 run node scripts/gen-versions-table.mjs
 # Template generators feed docs/template-catalog.md, gen-template-gallery/catalog-index.json
 # and docs/self-host. CODEGEN_SKIP_TEMPLATES=1 opts out for local iteration.

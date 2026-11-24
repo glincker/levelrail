@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# Placeholder name, not published anywhere.
+name = "levelrail-sdk"
+version = "0.0.0"
+description = "Client for the Levelrail control plane API"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.setuptools]
+packages = ["levelrail"]
