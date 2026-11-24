@@ -169,3 +169,37 @@ func TestRestoreDeletedApp_ProtectedEnvironmentNeedsAdmin(t *testing.T) {
 		t.Fatalf("developer restore into protected env = %d, want 403", rec.Code)
 	}
 }
+
+func TestRestoreDeletedDatabase_AuthzAndConfirm(t *testing.T) {
+	t.Parallel()
+	f := newTeamFixture(t)
+	ctx := context.Background()
+	snap, _ := json.Marshal(store.DesiredDatabase{Name: "pg-a", Engine: "postgres", Version: "16"})
+	if err := f.db.AddRecentlyDeleted(ctx, store.RecentlyDeleted{Kind: store.RecentlyDeletedDatabase, Name: "pg-a", Snapshot: string(snap)}); err != nil {
+		t.Fatal(err)
+	}
+	post := func(body string, mod func(*http.Request)) int {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/recently-deleted/database/pg-a/restore", strings.NewReader(body))
+		mod(req)
+		rec := httptest.NewRecorder()
+		f.rt.Handler().ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for _, role := range []string{store.TeamRoleDeveloper, store.TeamRoleViewer} {
+		if got := post(`{"confirm":"pg-a"}`, func(r *http.Request) { r.AddCookie(f.cookies[role]) }); got != http.StatusForbidden {
+			t.Fatalf("%s team member restore = %d, want 403", role, got)
+		}
+	}
+	if _, err := f.db.GetDesiredDatabase(ctx, "pg-a"); err == nil {
+		t.Fatal("denied restore must not create the database")
+	}
+	if got := post(`{"confirm":"other"}`, func(r *http.Request) { r.AddCookie(loginTestSession(t, f.rt, f.db)) }); got != http.StatusBadRequest {
+		t.Fatalf("wrong confirm = %d, want 400", got)
+	}
+	if got := post(`{}`, func(r *http.Request) { r.AddCookie(loginTestSession(t, f.rt, f.db)) }); got != http.StatusBadRequest {
+		t.Fatalf("missing confirm = %d, want 400", got)
+	}
+	if _, err := f.db.GetDesiredDatabase(ctx, "pg-a"); err == nil {
+		t.Fatal("unconfirmed restore must not create the database")
+	}
+}

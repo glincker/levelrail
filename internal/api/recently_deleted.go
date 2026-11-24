@@ -177,7 +177,14 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		if !rt.authorizeDatabaseRestore(w, r, e.Name) {
 			return
 		}
+		unlock := lockAppName("database:" + name)
 		err = rt.restoreDeletedDatabase(r.Context(), e)
+		if err == nil {
+			if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
+				rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
+			}
+		}
+		unlock()
 	}
 	var conflict errRestoreConflict
 	if errors.As(err, &conflict) {
@@ -187,11 +194,6 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		rt.internalError(w, "api: restore recently deleted failed", err, slog.String("name", name))
 		return
-	}
-	if kind == store.RecentlyDeletedDatabase {
-		if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
-			rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
-		}
 	}
 	rt.changes.Publish(changeApps, name)
 	rt.nudgeReconciler()

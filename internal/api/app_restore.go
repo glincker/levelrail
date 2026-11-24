@@ -220,5 +220,12 @@ func (rt *Router) authorizeDatabaseRestore(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusForbidden, "a policy denies restoring this database")
 		return false
 	}
+	var body struct {
+		Confirm string `json:"confirm"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&body); err != nil || body.Confirm != name {
+		writeError(w, http.StatusBadRequest, "restore needs confirm set to the exact database name")
+		return false
+	}
 	return true
 }
