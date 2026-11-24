@@ -233,5 +233,23 @@
       "githubNoApp": "un repositorio de GitHub sin la GitHub App instalada",
       "fix": "Conecta el repositorio con una GitHub App o una conexión de GitLab y vuelve a activar la puerta."
     }
+  },
+  "why": {
+    "title": "Por qué falló este despliegue",
+    "loading": "Cargando",
+    "failed": "No se pudo cargar el veredicto",
+    "rawLogs": "Ver logs sin procesar",
+    "exit": "Código de salida {{code}}",
+    "healthOk": "Última comprobación de salud superada: {{target}}",
+    "healthFailed": "Última comprobación de salud fallida: {{target}}",
+    "template": "{{count}}x {{sample}}",
+    "verdict": {
+      "oom_killed": "El contenedor se quedó sin memoria",
+      "exit_nonzero": "El contenedor terminó con un error",
+      "health_failing": "La comprobación de salud siguió fallando",
+      "new_log_patterns": "Patrones de log nuevos desde el último despliegue correcto",
+      "no_signal": "No se registró una causa clara",
+      "ok": "No se encontró ningún problema"
+    }
   }
 }

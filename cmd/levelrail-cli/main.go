@@ -247,7 +247,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runDashboards(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pipelines":
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
-	case "deployments":
+	case "deployments", "deploys":
 		return runDeployments(prog, args[1:], stdout, stderr, lookupEnv)
 	case "traffic":
 		return runTraffic(prog, args[1:], stdout, stderr, lookupEnv)

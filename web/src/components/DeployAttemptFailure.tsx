@@ -3,6 +3,7 @@ import type { DeployAttempt } from '../types/deployAttempt'
 import { DeployFailureActions } from './DeployFailureActions'
 import { DeployFailureDetails } from './DeployFailureDetails'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
+import { DeployWhyPanel } from './DeployWhyPanel'
 
 export function DeployAttemptFailure({
   appName,
@@ -28,6 +29,7 @@ export function DeployAttemptFailure({
           </p>
         ) : null}
         <DeployFailureDetails failure={attempt.failure} />
+        <DeployWhyPanel appName={appName} deployId={attempt.id} />
         {attempt.failure ? (
           <DeployFailureActions
             failure={attempt.failure}

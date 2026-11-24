@@ -233,5 +233,23 @@
       "githubNoApp": "未安装 GitHub App 的 GitHub 仓库",
       "fix": "请通过 GitHub App 或 GitLab 连接来连接仓库,然后重新开启门禁。"
     }
+  },
+  "why": {
+    "title": "此部署为何失败",
+    "loading": "加载中",
+    "failed": "无法加载结论",
+    "rawLogs": "查看原始日志",
+    "exit": "退出码 {{code}}",
+    "healthOk": "最近一次健康检查通过：{{target}}",
+    "healthFailed": "最近一次健康检查失败：{{target}}",
+    "template": "{{count}}x {{sample}}",
+    "verdict": {
+      "oom_killed": "容器内存不足",
+      "exit_nonzero": "容器因错误退出",
+      "health_failing": "健康检查持续失败",
+      "new_log_patterns": "自上次成功部署以来出现新的日志模式",
+      "no_signal": "未记录明确原因",
+      "ok": "未发现问题"
+    }
   }
 }

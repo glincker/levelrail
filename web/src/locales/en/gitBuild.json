@@ -233,5 +233,23 @@
       "githubNoApp": "a GitHub repository without the GitHub App installed",
       "fix": "Connect the repository through a GitHub App or a GitLab connection, then turn the gate on again."
     }
+  },
+  "why": {
+    "title": "Why did this deploy fail",
+    "loading": "Loading",
+    "failed": "Could not load the verdict",
+    "rawLogs": "View raw logs",
+    "exit": "Exit code {{code}}",
+    "healthOk": "Last health check passed: {{target}}",
+    "healthFailed": "Last health check failed: {{target}}",
+    "template": "{{count}}x {{sample}}",
+    "verdict": {
+      "oom_killed": "The container ran out of memory",
+      "exit_nonzero": "The container exited with an error",
+      "health_failing": "The health check kept failing",
+      "new_log_patterns": "New log patterns since the last good deploy",
+      "no_signal": "No clear cause was recorded",
+      "ok": "No problem found"
+    }
   }
 }

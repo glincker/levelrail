@@ -233,5 +233,23 @@
       "githubNoApp": "um repositório do GitHub sem o GitHub App instalado",
       "fix": "Conecte o repositório por um GitHub App ou por uma conexão do GitLab e ative o portão novamente."
     }
+  },
+  "why": {
+    "title": "Por que este deploy falhou",
+    "loading": "Carregando",
+    "failed": "Não foi possível carregar o veredito",
+    "rawLogs": "Ver logs brutos",
+    "exit": "Código de saída {{code}}",
+    "healthOk": "Última verificação de saúde passou: {{target}}",
+    "healthFailed": "Última verificação de saúde falhou: {{target}}",
+    "template": "{{count}}x {{sample}}",
+    "verdict": {
+      "oom_killed": "O contêiner ficou sem memória",
+      "exit_nonzero": "O contêiner terminou com erro",
+      "health_failing": "A verificação de saúde continuou falhando",
+      "new_log_patterns": "Novos padrões de log desde o último deploy bom",
+      "no_signal": "Nenhuma causa clara foi registrada",
+      "ok": "Nenhum problema encontrado"
+    }
   }
 }
