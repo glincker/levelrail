@@ -215,8 +215,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Error tracking](/error-tracking): Point any Sentry SDK at your control plane, group errors into issues, and see which deploy produced them.
 - [Loki-compatible log API](/loki-api): Read your app logs from Grafana Explore through a Loki-compatible API served by the control plane, with no log shipper in between.
 - [Log pipelines](/log-pipelines): Apply transformations to every log line before storage, export or live tail. Redact secrets, drop noise, parse structured fields.
-- [Collapse repeated log lines](/log-collapse): Fold runs of identical log lines into one row with a count and time span, in the API, the CLI and the dashboard, without changing what is stored.
 - [Log volume budgets](/log-budgets): Cap how much log data one app can store, see which apps are noisiest, and forecast when a budget will be reached.
+- [Collapse repeated log lines](/log-collapse): Fold runs of identical log lines into one row with a count and time span, in the API, the CLI and the dashboard, without changing what is stored.
 - [Data export](/data-export): Send logs, the audit log and metrics to Loki, syslog, a webhook, a bucket, Prometheus or an OTLP collector, with bounded buffers and no effect on deploys.
 - [Traffic export](/traffic-export): Stream one record per finished edge request to PostHog, an OpenTelemetry collector or your own webhook, without visitor identity by default.
 - [Audit event schema](/audit-event-schema): The fields of an exported audit event and how Splunk, syslog and OpenTelemetry sinks map them.
