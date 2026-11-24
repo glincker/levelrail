@@ -307,7 +307,7 @@ var Tree = map[string]*Node{
 		"digest":      {Subs: map[string]*Node{"preview": nil, "schedule": nil}},
 	}},
 	"status-page": {Subs: map[string]*Node{
-		"get": nil, "set": nil, "preview": nil,
+		"get": nil, "set": nil, "preview": nil, "uptime-report": nil,
 		"components": {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "delete": nil}},
 		"component":  {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "delete": nil}},
 		"group":      {Subs: map[string]*Node{"add": nil, "list": nil, "rename": nil, "move": nil, "delete": nil}},
