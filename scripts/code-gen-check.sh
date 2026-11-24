@@ -14,6 +14,7 @@ run() {
 }
 
 run go run ./scripts/gen-api-reference
+run go run ./scripts/gen-go-sdk
 run go run ./scripts/gen-runtime-settings-docs
 run go run ./scripts/geniacref
 run go run ./scripts/gen-field-docs
