@@ -56,3 +56,16 @@ func TestDefaultThresholdsEnv(t *testing.T) {
 		t.Fatalf("got %d", th.Goroutines)
 	}
 }
+
+func TestEvaluateReconcilerLagging(t *testing.T) {
+	th := DefaultThresholds(func(string) string { return "" })
+	in := Inputs{Now: time.Now(), LagWarn: 2 * time.Minute, ReconcilerLag: map[string]time.Duration{"app": 5 * time.Minute, "domain": time.Second}}
+	got := Evaluate(in, th)
+	if len(got) != 1 || got[0].ID != FindingLagging || got[0].Severity != SeverityCrit || got[0].Value != 300 {
+		t.Fatalf("findings = %+v, want one crit reconciler_lagging at 300s", got)
+	}
+	in.ReconcilerLag = map[string]time.Duration{"app": time.Second}
+	if got := Evaluate(in, th); len(got) != 0 {
+		t.Fatalf("converged reconcilers produced findings: %+v", got)
+	}
+}

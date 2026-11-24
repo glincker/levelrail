@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/doctor"
 )
 
 // Severity ranks a finding.
@@ -44,6 +46,7 @@ const (
 	FindingBreakers   = "reconcile_breakers"
 	FindingStorm      = "reconcile_storm"
 	FindingIntegrity  = "db_integrity"
+	FindingLagging    = doctor.CheckReconcilerLagging
 )
 
 // Inputs are the measurements one evaluation reads.
@@ -64,6 +67,8 @@ type Inputs struct {
 	Streams        int
 	StreamCap      int
 	Now            time.Time
+	ReconcilerLag  map[string]time.Duration
+	LagWarn        time.Duration
 
 	OpenBreakers    int
 	RecentLimited   int
@@ -179,6 +184,10 @@ func Evaluate(in Inputs, t Thresholds) []Finding {
 		if limit := in.ResyncInterval * time.Duration(t.EventLagMult); lag > limit {
 			add(FindingEventLag, lag.Seconds(), limit.Seconds(), "")
 		}
+	}
+	if c := doctor.ReconcilerLag(in.ReconcilerLag, in.LagWarn); c.Status == doctor.StatusWarn {
+		worst := c.Lagging[0].Lag.Seconds()
+		add(FindingLagging, worst, c.Threshold.Seconds(), "")
 	}
 	if in.StreamCap > 0 && in.Streams*100 >= in.StreamCap*t.StreamPercent {
 		add(FindingStreams, float64(in.Streams), float64(in.StreamCap), "")

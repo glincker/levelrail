@@ -1178,6 +1178,10 @@
         "title": "O loop de reconcile está atrasado",
         "hint": "Nenhuma passagem terminou recentemente. Reinicie o control plane se isso persistir."
       },
+      "reconciler_lagging": {
+        "title": "Um reconciliador está atrasado",
+        "hint": "Um reconciliador tem uma mudança aguardando por mais tempo que o aviso de atraso. Verifique os logs do controlador ou aumente o aviso nas configurações de execução se for esperado."
+      },
       "streams": {
         "title": "Streams ao vivo perto do limite",
         "hint": "Novos streams de log e de eventos são recusados no limite. Aumente APP_MAX_LIVE_STREAMS se o host tiver folga."

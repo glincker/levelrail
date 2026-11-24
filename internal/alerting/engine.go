@@ -120,6 +120,7 @@ type Engine struct {
 	dnsCredentials  DNSCredentialSource
 
 	restoreDrills RestoreDrillSource
+	reconcilerLag ReconcilerLagSource
 
 	nodeCertWarning, nodeCertCritical time.Duration
 
@@ -256,6 +257,9 @@ func (e *Engine) SetBackupSizeAnomaly(src BackupSizeSource, policy func(context.
 func (e *Engine) SetDurationRegression(src DurationSource, policy func(context.Context) DurationRegressionPolicy) {
 	e.durations, e.durationsPolicy = src, policy
 }
+
+// SetReconcilerLag enables kind=reconciler_lagging rules.
+func (e *Engine) SetReconcilerLag(src ReconcilerLagSource) { e.reconcilerLag = src }
 
 // SetRestoreDrills enables kind=restore_drill_failed rules.
 func (e *Engine) SetRestoreDrills(src RestoreDrillSource) { e.restoreDrills = src }
@@ -736,6 +740,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindReconcilerLagging:
+			if e.reconcilerLag == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateReconcilerLagging(ctx, e.reconcilerLag, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindRestoreDrillFailed:
 			if e.restoreDrills == nil {
 				continue
@@ -945,7 +958,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindBackupSizeAnomaly || r.Kind == KindDeployDurationRegression || r.Kind == KindRegistryRefreshFailing || r.Kind == KindDNSCredentialFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindBackupSizeAnomaly || r.Kind == KindDeployDurationRegression || r.Kind == KindRegistryRefreshFailing || r.Kind == KindDNSCredentialFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindReconcilerLagging || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

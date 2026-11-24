@@ -1268,6 +1268,10 @@
         "hint": "Revisa la lista de abajo y borra el contador una vez resuelto.",
         "title": "Muchas consultas lentas"
       },
+      "reconciler_lagging": {
+        "title": "Un reconciliador se está retrasando",
+        "hint": "Un reconciliador tiene un cambio en espera más tiempo que el aviso de retraso. Revisa los registros del controlador o sube el aviso en los ajustes de ejecución si es lo esperado."
+      },
       "streams": {
         "hint": "Los nuevos streams de registros y eventos se rechazan al llegar al tope. Sube APP_MAX_LIVE_STREAMS si el host tiene margen.",
         "title": "Streams en vivo cerca del tope"

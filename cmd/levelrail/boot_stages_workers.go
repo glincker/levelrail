@@ -176,6 +176,9 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetJobFailing(db, scheduledtask.FailureAlertWindow, scheduledtask.FailureAlertBatch)
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
+	alertingEngine.SetReconcilerLag(reconcilerLagAlertSource{lag: engine.Lag, warn: func(c context.Context) time.Duration {
+		return time.Duration(apiRouter.RuntimeSettings().Int(c, runtimesettings.KeyReconcileLagWarnSeconds)) * time.Second
+	}})
 	alertingEngine.SetBackupCopy(backupCopyAlertSource{db: db}, backup.CopyLagAlertFromEnv(os.LookupEnv))
 	alertingEngine.SetBackupSizeAnomaly(backupSizeAlertSource{db: db}, func(c context.Context) alerting.BackupSizePolicy {
 		live := apiRouter.RuntimeSettings()

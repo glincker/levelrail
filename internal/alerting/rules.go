@@ -59,6 +59,9 @@ const (
 	// KindRestoreDrillFailed is platform-wide: it fires while a resource's latest restore drill is failed.
 	KindRestoreDrillFailed Kind = "restore_drill_failed"
 
+	// KindReconcilerLagging is platform-wide: it fires while a reconciler has a desired change unobserved past the lag warning.
+	KindReconcilerLagging Kind = "reconciler_lagging"
+
 	// KindVersionSkew is platform-wide: it fires while the running build
 	// is behind the configured update channel's latest release
 	// (update_settings.channel, migrations/0258_update_settings.sql).

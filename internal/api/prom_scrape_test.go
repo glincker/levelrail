@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,5 +39,29 @@ func TestMetricsScrape_RuntimeSettingTurnsEndpointOff(t *testing.T) {
 	}
 	if code := get(); code != http.StatusNotFound {
 		t.Fatalf("disabled: status = %d, want 404", code)
+	}
+}
+
+func TestMetricsScrape_IncludesReconcileLag(t *testing.T) {
+	t.Parallel()
+	rt, db, _ := newExportRouter(t)
+	const plaintext = "scrape-lag-fixture-token" //nolint:gosec // fake fixture
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_lag", Name: "prometheus-lag", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	rt.SetControlPlaneProbe(ControlPlaneProbe{Lag: func() map[string]time.Duration {
+		return map[string]time.Duration{"app": 42 * time.Second}
+	}})
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `reconcile_controller_lag_seconds{reconciler="app"} 42`) {
+		t.Fatalf("lag series missing from scrape:\n%s", rec.Body.String())
 	}
 }
