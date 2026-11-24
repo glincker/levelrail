@@ -18,7 +18,7 @@ import (
 
 // FunctionTriggerStore persists webhook triggers and the async invocation queue.
 type FunctionTriggerStore interface {
-	SetFunctionWebhook(ctx context.Context, fn, path string, rotated bool, now time.Time) error
+	SetFunctionWebhook(ctx context.Context, fn, path, incarnation string, rotated bool, now time.Time) error
 	GetFunctionWebhook(ctx context.Context, fn string) (store.FunctionWebhook, error)
 	DeleteFunctionWebhook(ctx context.Context, fn string) error
 	BindFunctionWebhook(ctx context.Context, fn, incarnation string) error
@@ -167,11 +167,22 @@ func (rt *Router) handlePutFunctionWebhook(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
+	// Same lock as the app delete, so a purge cannot interleave with this write.
+	defer lockAppName(name)()
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "function not found")
+		return
+	}
 	existing, err := rt.functionTriggers.GetFunctionWebhook(r.Context(), name)
 	found := err == nil
 	if err != nil && !errors.Is(err, store.ErrFunctionWebhookNotFound) {
 		rt.internalError(w, "api: put function webhook: load failed", err, slog.String("function", name))
 		return
+	}
+	// A row of another life, or from before the binding, is never adopted: it gets a new secret.
+	if found && existing.Incarnation != svc.Incarnation {
+		found = false
 	}
 	path := req.Path
 	if path == "" {
@@ -201,12 +212,8 @@ func (rt *Router) handlePutFunctionWebhook(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
-	if err = rt.functionTriggers.SetFunctionWebhook(r.Context(), name, path, secret != "" && found, time.Now()); err != nil {
+	if err = rt.functionTriggers.SetFunctionWebhook(r.Context(), name, path, svc.Incarnation, secret != "" && found, time.Now()); err != nil {
 		rt.internalError(w, "api: put function webhook: save failed", err, slog.String("function", name))
-		return
-	}
-	if err = rt.bindFunctionWebhook(r.Context(), name); err != nil {
-		rt.internalError(w, "api: put function webhook: bind failed", err, slog.String("function", name))
 		return
 	}
 	saved, err := rt.functionTriggers.GetFunctionWebhook(r.Context(), name)
@@ -471,14 +478,14 @@ func (rt *Router) handleDeleteFunctionInvocation(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// functionWebhookCurrent reports whether wh belongs to the app now holding the name. A row from before
-// the binding (empty incarnation) is accepted, as is an app that has none.
+// functionWebhookCurrent reports whether wh belongs to the app now holding the name. An unbound row
+// never matches an app that has an incarnation.
 func (rt *Router) functionWebhookCurrent(ctx context.Context, name string, wh store.FunctionWebhook) bool {
 	svc, err := rt.apps.GetDesiredService(ctx, name)
 	if err != nil {
 		return false
 	}
-	return wh.Incarnation == "" || wh.Incarnation == svc.Incarnation
+	return wh.Incarnation == svc.Incarnation
 }
 
 // bindFunctionWebhook ties name's webhook to the running life of its app.
@@ -495,10 +502,12 @@ func (rt *Router) bindFunctionWebhook(ctx context.Context, name string) error {
 
 // purgeFunctionData erases a deleted function's webhook, signing secret and key-value data so a later
 // app of the same name starts clean. Failures are logged only.
-func (rt *Router) purgeFunctionData(ctx context.Context, name string) {
+func (rt *Router) purgeFunctionData(ctx context.Context, name string) error {
+	var first error
 	if rt.functionTriggers != nil {
 		if err := rt.functionTriggers.DeleteFunctionWebhook(ctx, name); err != nil {
 			rt.logger.Warn("api: delete app: remove function webhook failed", slog.String("error", err.Error()), slog.String("name", name))
+			first = err
 		}
 	}
 	var eraser interface {
@@ -521,6 +530,8 @@ func (rt *Router) purgeFunctionData(ctx context.Context, name string) {
 	}); ok {
 		if err := kv.DeleteFunctionKV(ctx, name); err != nil {
 			rt.logger.Warn("api: delete app: remove function kv failed", slog.String("error", err.Error()), slog.String("name", name))
+			first = err
 		}
 	}
+	return first
 }

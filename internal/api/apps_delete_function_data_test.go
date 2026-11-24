@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -117,7 +118,7 @@ func TestSoftDeleteKeepsFunctionDataUntilFinalPurge(t *testing.T) {
 	if err := db.PutFunctionKV(ctx, "softfn", "k", []byte("v"), 0, lim, time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.SetFunctionWebhook(ctx, "softfn", "/", false, time.Now()); err != nil {
+	if err := db.SetFunctionWebhook(ctx, "softfn", "/", "", false, time.Now()); err != nil {
 		t.Fatal(err)
 	}
 	kept := withSoftDelete(store.WithKeptRevisions(ctx), func(c context.Context) error {
@@ -140,5 +141,73 @@ func TestSoftDeleteKeepsFunctionDataUntilFinalPurge(t *testing.T) {
 	}
 	if _, err := db.GetFunctionWebhook(ctx, "softfn"); err == nil {
 		t.Fatal("webhook survived the final purge")
+	}
+}
+
+func TestLegacyUnboundWebhookNeverReachesNewApp(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	secrets := newFakeGitSourceSecrets()
+	rt.gitSourceSecrets = secrets
+	WithFunctionTriggers(db, functions.TriggerConfigFromEnv(func(string) (string, bool) { return "", false }), nil)(rt)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "legacy", Image: "nginx:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	// A row and secret left by an earlier app, written before webhooks were bound to an app life.
+	if err := db.SetFunctionWebhook(ctx, "legacy", "/", "", false, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := secrets.SetValue(ctx, functionWebhookSecretNS+"legacy", functionWebhookSecretKey, "old-secret"); err != nil {
+		t.Fatal(err)
+	}
+	do := func(req *http.Request) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		return rec
+	}
+	call := func(secret string) int {
+		body := []byte(`{}`)
+		ts := time.Now()
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/functions/legacy", bytes.NewReader(body))
+		req.Header.Set(functions.HeaderTimestamp, strconv.FormatInt(ts.Unix(), 10))
+		req.Header.Set(functions.HeaderSignature, functions.Sign(secret, ts.Unix(), body))
+		return do(req).Code
+	}
+	if got := call("old-secret"); got != http.StatusNotFound {
+		t.Fatalf("old secret = %d, want 404", got)
+	}
+	rec := do(authedRequest(t, cookie, http.MethodPut, "/api/v1/functions/legacy/triggers/webhook", ""))
+	var v functionWebhookView
+	if err := json.Unmarshal(rec.Body.Bytes(), &v); err != nil || v.Secret == "" || v.Secret == "old-secret" {
+		t.Fatalf("enable must mint a fresh secret: %d %s", rec.Code, rec.Body)
+	}
+	if got := call("old-secret"); got != http.StatusNotFound && got != http.StatusUnauthorized {
+		t.Fatalf("old secret after enable = %d", got)
+	}
+	if got := call(v.Secret); got != http.StatusAccepted {
+		t.Fatalf("fresh secret = %d, want 202", got)
+	}
+}
+
+type failingPurgeStore struct{ *store.DB }
+
+func (failingPurgeStore) PurgeRecentlyDeleted(context.Context, time.Time) (int, error) {
+	return 0, errors.New("injected purge failure")
+}
+
+func TestFailedUndoPurgeKeepsNameReserved(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+	if err := db.AddRecentlyDeleted(ctx, store.RecentlyDeleted{Kind: store.RecentlyDeletedApp, Name: "held", Snapshot: "{}"}); err != nil {
+		t.Fatal(err)
+	}
+	// Age the row past the window so the lookup tries to purge it.
+	if _, err := db.ExecContext(ctx, `UPDATE recently_deleted SET deleted_at = '2000-01-01T00:00:00Z' WHERE name = 'held'`); err != nil {
+		t.Fatal(err)
+	}
+	rt.apps = failingPurgeStore{db}
+	if !rt.deletedNameReserved(ctx, "held") {
+		t.Fatal("name was freed although the purge failed")
 	}
 }

@@ -158,6 +158,13 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 			return nil, err
 		}
 	}
+	// A hard delete clears function data first, so a failure leaves the app in place rather than handing it to the next one.
+	soft, _ := ctx.Value(softDeleteKey{}).(func(context.Context) error)
+	if soft == nil {
+		if err := rt.purgeFunctionData(ctx, name); err != nil {
+			return nil, fmt.Errorf("remove function data of %q: %w", name, err)
+		}
+	}
 	finalizer := rt.deleteFinalizer()
 	if finalizer != nil {
 		if err := finalizer.Begin(ctx, name, existing.NodeID); err != nil {
@@ -176,8 +183,8 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	kept := rt.reserveSoftDeleted(ctx, name)
 	rt.removeAppCredentials(ctx, name, integrationNS)
 	// Under an undo window the webhook and key-value data stay with the reserved name until the final purge.
-	if !kept {
-		rt.purgeFunctionData(ctx, name)
+	if !kept && soft != nil {
+		_ = rt.purgeFunctionData(ctx, name)
 	}
 	if vdb, ok := rt.vitalsDB(); ok {
 		if err := rt.vitalsRuntime().dropApp(ctx, vdb, name); err != nil {

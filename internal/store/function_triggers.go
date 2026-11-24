@@ -64,16 +64,16 @@ func parseTS(s string) time.Time {
 }
 
 // SetFunctionWebhook upserts a function's webhook trigger; rotated marks a secret rotation.
-func (db *DB) SetFunctionWebhook(ctx context.Context, fn, path string, rotated bool, now time.Time) error {
+func (db *DB) SetFunctionWebhook(ctx context.Context, fn, path, incarnation string, rotated bool, now time.Time) error {
 	rot := sql.NullString{}
 	if rotated {
 		rot = sql.NullString{String: fmtTS(now), Valid: true}
 	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO function_webhooks (function, path, created_at, rotated_at) VALUES (?, ?, ?, ?)
-		ON CONFLICT(function) DO UPDATE SET path = excluded.path,
+		INSERT INTO function_webhooks (function, path, created_at, rotated_at, incarnation) VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(function) DO UPDATE SET path = excluded.path, incarnation = excluded.incarnation,
 			rotated_at = COALESCE(excluded.rotated_at, function_webhooks.rotated_at)
-	`, fn, path, fmtTS(now), rot)
+	`, fn, path, fmtTS(now), rot, incarnation)
 	if err != nil {
 		return fmt.Errorf("store: set function webhook %q: %w", fn, err)
 	}

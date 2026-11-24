@@ -96,8 +96,10 @@ func (rt *Router) liveDeleted(ctx context.Context, kind, name string) (store.Rec
 		return store.RecentlyDeleted{}, err
 	}
 	if window <= 0 || !e.DeletedAt.Add(window).After(time.Now()) {
+		// A failed purge keeps the name reserved: its webhook and data are still there.
 		if _, perr := st.PurgeRecentlyDeleted(ctx, time.Now().Add(-window)); perr != nil {
 			rt.logger.Warn("api: purge expired undo rows failed", slog.String("error", perr.Error()))
+			return store.RecentlyDeleted{}, perr
 		}
 		return store.RecentlyDeleted{}, store.ErrRecentlyDeletedNotFound
 	}
