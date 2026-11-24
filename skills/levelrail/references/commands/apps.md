@@ -788,7 +788,7 @@ Flags:
 
 ## levelrail-cli apps deploys
 
-Subcommands: attempts, build-report, cancel, compare, failed, gate, list, logs, pin, probes, promote, receipt, release-notes, rollback-to, show, stages, status, steps, timeline, unpin, url, wait
+Subcommands: attempts, build-report, cancel, compare, failed, gate, list, logs, pin, probes, promote, receipt, release-notes, rollback-to, show, stages, status, steps, timeline, unpin, url, wait, why
 
 ```
 Usage:

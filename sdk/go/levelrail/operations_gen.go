@@ -913,6 +913,7 @@ var Operations = map[string]Operation{
 	"handleGetDeployStages":                    {Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/stages", HasBody: false, Stream: false},
 	"handleGetDeployTimeline":                  {Method: "GET", Path: "/api/v1/deployments/{id}/timeline", HasBody: false, Stream: false},
 	"handleGetDeployURLCopies":                 {Method: "GET", Path: "/api/v1/settings/deploy-url-copies", HasBody: false, Stream: false},
+	"handleGetDeployWhy":                       {Method: "GET", Path: "/api/v1/deploys/{id}/why", HasBody: false, Stream: false},
 	"handleGetDeploymentSecretScan":            {Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/secret-scan", HasBody: false, Stream: false},
 	"handleGetDiskResilience":                  {Method: "GET", Path: "/api/v1/resilience/disk", HasBody: false, Stream: false},
 	"handleGetDockerGuard":                     {Method: "GET", Path: "/api/v1/system/docker-guard", HasBody: false, Stream: false},
