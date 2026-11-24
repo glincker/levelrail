@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
@@ -319,7 +320,7 @@ func (rt *Router) handlePutDeploySafety(w http.ResponseWriter, r *http.Request) 
 }
 
 // handleListRollbackTargets handles GET /api/v1/apps/{name}/rollback-targets:
-// the pinned releases image cleanup will never remove, newest first.
+// pinned releases plus succeeded deploys, the set a rollback accepts.
 func (rt *Router) handleListRollbackTargets(w http.ResponseWriter, r *http.Request) {
 	if !rt.gateReady(w) {
 		return
@@ -334,11 +335,33 @@ func (rt *Router) handleListRollbackTargets(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	out := make([]rollbackTargetResource, 0, len(pins))
+	seenDeploy := map[string]bool{}
+	seenRef := map[string]bool{}
 	for _, p := range pins {
+		seenDeploy[p.DeployAttemptID] = true
+		seenRef[unpinnedRef(p.Image)] = true
+		seenRef[unpinnedRef(p.PinRef)] = true
 		out = append(out, rollbackTargetResource{
 			DeployID: p.DeployAttemptID, Image: p.Image, ImageID: p.ImageID, PinRef: p.PinRef, PinnedAt: p.CreatedAt,
 			Live: p.Image == svc.Image || p.PinRef == svc.Image,
 		})
+	}
+	// Succeeded deploys without a pin are valid rollback targets too, the same
+	// set the rollback preflight accepts, so the list and the check agree.
+	if rt.deployAttempts != nil {
+		attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), svc.Name)
+		if err != nil {
+			rt.internalError(w, "api: rollback targets: list attempts failed", err, slog.String("name", svc.Name))
+			return
+		}
+		sort.SliceStable(attempts, func(i, j int) bool { return attempts[i].StartedAt.After(attempts[j].StartedAt) })
+		for _, a := range attempts {
+			if a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" || seenDeploy[a.ID] || seenRef[unpinnedRef(a.Image)] {
+				continue
+			}
+			seenRef[unpinnedRef(a.Image)] = true
+			out = append(out, rollbackTargetResource{DeployID: a.ID, Image: a.Image, Live: unpinnedRef(a.Image) == unpinnedRef(svc.Image)})
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string][]rollbackTargetResource{"targets": out})
 }

@@ -147,3 +147,25 @@ func TestRollbackTo_UsesPinAndRestoresConfig(t *testing.T) {
 		t.Errorf("rollback targets = %+v, want the pinned release reported live", targets)
 	}
 }
+
+// The rollback-targets list names every image the rollback preflight accepts,
+// including a succeeded deploy that has no pin.
+func TestRollbackTargets_ListIncludesSucceededDeploysWithoutPin(t *testing.T) {
+	rt, db, cookie := newGateRouter(t)
+	old := store.DesiredService{Name: "web", Image: "web:v1", Port: 80}
+	seedTarget(t, db, store.DeployAttempt{ID: "dep_v1", Image: "web:v1", Snapshot: store.NewDeployAttemptSnapshot(old)})
+	cur, _ := db.GetDesiredService(context.Background(), "web")
+	cur.Image = "web:v2"
+	if err := db.SaveDesiredService(context.Background(), *cur); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/rollback-targets", ""))
+	var targets map[string][]rollbackTargetResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &targets); err != nil {
+		t.Fatal(err)
+	}
+	if len(targets["targets"]) != 1 || targets["targets"][0].Image != "web:v1" || targets["targets"][0].DeployID != "dep_v1" {
+		t.Fatalf("targets = %+v, want the unpinned succeeded deploy web:v1", targets)
+	}
+}
