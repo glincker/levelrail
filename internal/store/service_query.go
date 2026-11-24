@@ -203,6 +203,10 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM app_config_revisions WHERE app_name = ?`, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: config revisions: %w", name, err)
 	}
+	// Env snapshots are sealed per app name, so a recreated app must not inherit them.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM env_revisions WHERE app_name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: env revisions: %w", name, err)
+	}
 	// Whatever route removed the app, tokens scoped to its name must not carry over to a new one.
 	if err := invalidateSiteScopes(ctx, tx, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)

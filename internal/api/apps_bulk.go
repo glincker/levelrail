@@ -340,7 +340,7 @@ func (rt *Router) applyBulkOne(ctx context.Context, r *http.Request, p bulkPrinc
 		return bulkAppResult{Name: name, Status: bulkStatusError, Message: "internal error"}
 	}
 	if isBulkResourceAction(req.Action) {
-		status, msg, before, after := rt.bulkResources(ctx, req, *svc, req.DryRun)
+		status, msg, before, after := rt.bulkResources(ctx, req, *svc, req.DryRun, rt.auditActorName(ctx, p.actorType, p.actorID, p.actorID))
 		if status == bulkStatusOK && req.DryRun {
 			status = bulkStatusWouldRun
 		} else if status == bulkStatusOK {

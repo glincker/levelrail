@@ -47,7 +47,7 @@ func validateBulkResources(req bulkAppsRequest) error {
 // bulkResources plans one app's memory, CPU or env change and applies it unless
 // dry. A raise is checked against quota the same way the single-app edit is, so a
 // dry run reports the refusal an apply would hit.
-func (rt *Router) bulkResources(ctx context.Context, req bulkAppsRequest, svc store.DesiredService, dry bool) (status, msg, before, after string) {
+func (rt *Router) bulkResources(ctx context.Context, req bulkAppsRequest, svc store.DesiredService, dry bool, actor string) (status, msg, before, after string) {
 	next := svc
 	next.Env = maps.Clone(svc.Env)
 	if svc.Resources != nil {
@@ -109,7 +109,14 @@ func (rt *Router) bulkResources(ctx context.Context, req bulkAppsRequest, svc st
 	}
 	rt.nudgeReconciler()
 	if req.Action == bulkActionSetEnv {
-		rt.snapshotEnvRevision(ctx, svc.Name, "bulk", next.Env)
+		rt.snapshotEnvRevision(ctx, svc.Name, actor, next.Env)
+		if rt.envProtect.changes != nil {
+			if changes := diffEnvKeys(svc.Env, next.Env); len(changes) > 0 {
+				if err := rt.envProtect.changes.RecordEnvChanges(ctx, svc.Name, actor, "bulk", changes); err != nil {
+					rt.logger.Warn("api: record env changes failed", slog.String("name", svc.Name))
+				}
+			}
+		}
 		return bulkStatusOK, "", before, after
 	}
 	return bulkStatusOK, before + " to " + after, before, after

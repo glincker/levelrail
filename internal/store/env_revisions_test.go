@@ -34,3 +34,23 @@ func TestEnvRevisions_PruneByCountAndAge(t *testing.T) {
 		t.Fatalf("pruned revision err = %v", err)
 	}
 }
+
+func TestDeleteDesiredService_ClearsEnvRevisions(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.AddEnvRevision(ctx, "web", "me", []string{"A"}, []byte("x"), 5, 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := db.ListEnvRevisions(ctx, "web", 50); err != nil || len(got) != 0 {
+		t.Fatalf("recreated app revisions = %+v, %v", got, err)
+	}
+}
