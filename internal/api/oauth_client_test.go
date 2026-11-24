@@ -102,7 +102,7 @@ func TestNewOIDCOAuthClient_DiscoveryAndVerify(t *testing.T) {
 	})
 
 	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
-	client, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback")
+	client, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback")
 	if err != nil {
 		t.Fatalf("newOIDCOAuthClient: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestOIDCOAuthClient_FetchUserInfo_RejectsInvalidClaims(t *testing.T) {
 			issuer := newFakeOIDCIssuer(t)
 			issuer.nextIDToken = issuer.signIDToken(t, tc.claims)
 			settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
-			client, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback")
+			client, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback")
 			if err != nil {
 				t.Fatalf("newOIDCOAuthClient: %v", err)
 			}
@@ -154,7 +154,7 @@ func TestOIDCOAuthClient_FetchUserInfo_RejectsInvalidClaims(t *testing.T) {
 
 func TestNewOIDCOAuthClient_DiscoveryFailure(t *testing.T) {
 	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: "x", IssuerURL: "http://127.0.0.1:1/nonexistent"}
-	if _, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback"); err == nil {
+	if _, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback"); err == nil {
 		t.Fatal("newOIDCOAuthClient succeeded against an unreachable issuer, want error")
 	}
 }
@@ -244,5 +244,14 @@ func TestMicrosoftOAuthClient_FetchUserInfo_NoEmailAvailable(t *testing.T) {
 	client := &microsoftOAuthClient{}
 	if _, err := client.FetchUserInfo(ctx, &oauth2.Token{AccessToken: "test"}); err == nil {
 		t.Fatal("FetchUserInfo succeeded with no mail or userPrincipalName, want error")
+	}
+}
+
+func TestNewOIDCOAuthClientRefusesInternalIssuerGenerically(t *testing.T) {
+	issuer := newFakeOIDCIssuer(t)
+	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
+	_, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback")
+	if err == nil || err.Error() != errOIDCDiscovery.Error() {
+		t.Fatalf("err = %v, want generic discovery error", err)
 	}
 }

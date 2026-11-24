@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"regexp"
 	"strings"
@@ -15,7 +16,15 @@ import (
 	"github.com/distribution/reference"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
+
+// ErrRegistryRequest is the only failure text callers see, so a registry can
+// not use error messages to read back internal responses.
+var ErrRegistryRequest = errors.New("imageupdate: registry request failed")
+
+// maxRegistryRedirects bounds same-host redirects (blob CDNs are not used for tag lists).
+const maxRegistryRedirects = 3
 
 // TagLister lists every tag of an image repository; ref is any reference of
 // that repository (its tag is ignored).
@@ -46,10 +55,7 @@ func (l HTTPTagLister) ListTags(ctx context.Context, ref string, auth *docker.Re
 	if host == "docker.io" {
 		host = "registry-1.docker.io"
 	}
-	client := l.Client
-	if client == nil {
-		client = &http.Client{Timeout: 30 * time.Second}
-	}
+	client := guardedClient(l.Client)
 	next := "https://" + host + "/v2/" + reference.Path(named) + "/tags/list"
 	var tags []string
 	token := ""
@@ -66,13 +72,13 @@ func (l HTTPTagLister) ListTags(ctx context.Context, ref string, auth *docker.Re
 			continue
 		}
 		if status != http.StatusOK {
-			return nil, fmt.Errorf("imageupdate: list tags of %s: registry answered %d", reference.Path(named), status)
+			return nil, ErrRegistryRequest
 		}
 		var out struct {
 			Tags []string `json:"tags"`
 		}
 		if err := json.Unmarshal(body, &out); err != nil {
-			return nil, fmt.Errorf("imageupdate: decode tag list: %w", err)
+			return nil, ErrRegistryRequest
 		}
 		tags = append(tags, out.Tags...)
 		next = ""
@@ -101,13 +107,13 @@ func (l HTTPTagLister) get(ctx context.Context, c *http.Client, u, token string,
 	}
 	resp, err := c.Do(req)
 	if err != nil {
-		return nil, "", 0, nil, fmt.Errorf("imageupdate: list tags: %w", err)
+		return nil, "", 0, nil, ErrRegistryRequest
 	}
 	defer func() { _ = resp.Body.Close() }()
 	var raw json.RawMessage
 	if resp.StatusCode == http.StatusOK {
 		if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-			return nil, "", 0, nil, fmt.Errorf("imageupdate: read tag list: %w", err)
+			return nil, "", 0, nil, ErrRegistryRequest
 		}
 	}
 	if m := nextLink.FindStringSubmatch(resp.Header.Get("Link")); m != nil {
@@ -126,8 +132,8 @@ func fetchToken(ctx context.Context, c *http.Client, challenge string, auth *doc
 		params[m[1]] = m[2]
 	}
 	realm, err := url.Parse(params["realm"])
-	if err != nil || realm.Scheme != "https" {
-		return "", errors.New("imageupdate: registry sent an unusable token realm")
+	if err != nil || realm.Scheme != "https" || !realmHostAllowed(realm.Hostname()) {
+		return "", ErrRegistryRequest
 	}
 	q := realm.Query()
 	if params["service"] != "" {
@@ -146,21 +152,52 @@ func fetchToken(ctx context.Context, c *http.Client, challenge string, auth *doc
 	}
 	resp, err := c.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("imageupdate: fetch registry token: %w", err)
+		return "", ErrRegistryRequest
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("imageupdate: registry token endpoint answered %d", resp.StatusCode)
+		return "", ErrRegistryRequest
 	}
 	var out struct {
 		Token       string `json:"token"`
 		AccessToken string `json:"access_token"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return "", fmt.Errorf("imageupdate: decode registry token: %w", err)
+		return "", ErrRegistryRequest
 	}
 	if out.Token != "" {
 		return out.Token, nil
 	}
 	return out.AccessToken, nil
+}
+
+// guardedClient wraps c (or a netguard client) so every dial is checked and a
+// redirect may only stay on the original host, at most three times.
+func guardedClient(c *http.Client) *http.Client {
+	if c == nil {
+		c = netguard.NewClientPrivateNetworks()
+	}
+	g := *c
+	if g.Timeout == 0 {
+		g.Timeout = 30 * time.Second
+	}
+	g.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) > maxRegistryRedirects || req.URL.Host != via[0].URL.Host {
+			return ErrRegistryRequest
+		}
+		return nil
+	}
+	return &g
+}
+
+// realmHostAllowed refuses an IP-literal token realm in any internal range; named hosts are checked again at dial time.
+func realmHostAllowed(host string) bool {
+	if host == "" {
+		return false
+	}
+	addr, err := netip.ParseAddr(host)
+	if err != nil {
+		return true
+	}
+	return !netguard.IsBlocked(addr)
 }

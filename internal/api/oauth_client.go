@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 	xgithub "golang.org/x/oauth2/github"
@@ -217,6 +219,8 @@ func (c *microsoftOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.
 	return oauthUserInfo{ProviderUserID: body.ID, Email: email, DisplayName: name}, nil
 }
 
+var errOIDCDiscovery = errors.New("oidc discovery failed")
+
 type oidcOAuthClient struct {
 	cfg      oauth2.Config
 	verifier *oidc.IDTokenVerifier
@@ -226,11 +230,17 @@ type oidcOAuthClient struct {
 // operator-configured issuer, so a misconfigured issuer fails the sign-in
 // attempt immediately rather than at token-exchange time.
 func newOIDCOAuthClient(settings store.OAuthProviderSettings, clientSecret, redirectURL string) (oauthProviderClient, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// LAN issuers stay allowed; loopback, link-local and metadata are refused.
+	return newOIDCOAuthClientWith(netguard.NewClientPrivateNetworks(), settings, clientSecret, redirectURL)
+}
+
+func newOIDCOAuthClientWith(hc *http.Client, settings store.OAuthProviderSettings, clientSecret, redirectURL string) (oauthProviderClient, error) {
+	ctx, cancel := context.WithTimeout(oidc.ClientContext(context.Background(), hc), 10*time.Second)
 	defer cancel()
 	provider, err := oidc.NewProvider(ctx, settings.IssuerURL)
 	if err != nil {
-		return nil, fmt.Errorf("oidc discovery for issuer %q: %w", settings.IssuerURL, err)
+		// The library error can carry the issuer's response body.
+		return nil, errOIDCDiscovery
 	}
 	return &oidcOAuthClient{
 		cfg: oauth2.Config{
