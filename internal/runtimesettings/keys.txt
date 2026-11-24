@@ -60,6 +60,7 @@ apps.size_presets
 apps.summary_cache_max_entries
 apps.summary_cache_seconds
 apps.summary_timeout
+apps.undo_window_days
 apps_run.cpu_limit_millis
 apps_run.max_concurrent_per_app
 apps_run.max_timeout_seconds
@@ -355,6 +356,7 @@ domains.tuning_min_timeout_seconds
 domains.wait_poll
 domains.wait_timeout
 domains.www_mode
+env.revisions_keep
 errors.dedup_hours
 errors.dedup_max
 events.changes_buffer

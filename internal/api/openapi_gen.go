@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2399 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2401 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -281,6 +281,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/export", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportEnvRevealed", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListEnvHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/reveal", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevealEnv", Description: "Reveal and full export need read:sensitive plus a step-up (or the allow policy); the handlers enforce the rest and audit every value read."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/env/revisions", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListEnvRevisions", Description: "Revisions list variable names and diff them; a read token is refused because the names can themselves be sensitive."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/env/revisions/diff", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDiffEnvRevisions", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleScanEnvValues", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/settings", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetEnvSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/env/settings", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutEnvSettings", Description: ""},

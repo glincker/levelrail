@@ -811,6 +811,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/warm | AbilityRead | handleGetAppWarm |
 | PUT | /api/v1/apps/{name}/warm | AbilityRoot | handleSetAppWarm |
 | POST | /api/v1/apps/{name}/rollout/abort | AbilityDeploy | handleAbortRollout |
+| GET | /api/v1/apps/{name}/env/revisions | AbilityReadSensitive | handleListEnvRevisions |
+| GET | /api/v1/apps/{name}/env/revisions/diff | AbilityReadSensitive | handleDiffEnvRevisions |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 

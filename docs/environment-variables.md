@@ -696,6 +696,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_SIZE_HISTORY_RETENTION` | [`volumes.size_history_retention`](/runtime-settings#observability) | `168h` |
 | `APP_VOLUMES_USAGE_ALERT_PERCENT` | [`volumes.usage_alert_percent`](/runtime-settings#observability) | `90` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
+| `APP_APPS_UNDO_WINDOW_DAYS` | [`apps.undo_window_days`](/runtime-settings#data-retention) | `7` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | [`backup.hook_max_output_bytes`](/runtime-settings#data-retention) | `4096` |
 | `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | [`backup.hook_timeout_seconds`](/runtime-settings#data-retention) | `60` |
@@ -713,6 +714,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLEANUP_FAILING_FLOOR` | [`cleanup.failing_floor`](/runtime-settings#data-retention) | `1` |
 | `APP_CLEANUP_FAILING_WINDOW` | [`cleanup.failing_window`](/runtime-settings#data-retention) | `24h` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
+| `APP_ENV_REVISIONS_KEEP` | [`env.revisions_keep`](/runtime-settings#data-retention) | `20` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
 | `APP_NODES_PATCH_RUN_HISTORY` | [`nodes.patch_run_history`](/runtime-settings#data-retention) | `20` |
 | `APP_PAGES_BUILD_CACHE_MAX_BYTES` | [`pages.build_cache_max_bytes`](/runtime-settings#data-retention) | `1073741824` |

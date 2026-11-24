@@ -27,6 +27,9 @@ func (rt *Router) registerEnvProtectionRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/env/check/fix", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleFixEnv))
 	mux.HandleFunc("GET /api/v1/apps/{name}/env-diff", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleEnvDiff))
 	mux.HandleFunc("GET /api/v1/apps/{name}/env/history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListEnvHistory))
+	// Revisions list variable names and diff them; a read token is refused because the names can themselves be sensitive.
+	mux.HandleFunc("GET /api/v1/apps/{name}/env/revisions", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListEnvRevisions))
+	mux.HandleFunc("GET /api/v1/apps/{name}/env/revisions/diff", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleDiffEnvRevisions))
 	mux.HandleFunc("GET /api/v1/databases/{name}/links", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListDatabaseLinks))
 	mux.HandleFunc("POST /api/v1/databases/{name}/links", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleConnectDatabaseApp))
 }

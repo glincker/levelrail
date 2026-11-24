@@ -109,6 +109,7 @@ func (rt *Router) bulkResources(ctx context.Context, req bulkAppsRequest, svc st
 	}
 	rt.nudgeReconciler()
 	if req.Action == bulkActionSetEnv {
+		rt.snapshotEnvRevision(ctx, svc.Name, "bulk", next.Env)
 		return bulkStatusOK, "", before, after
 	}
 	return bulkStatusOK, before + " to " + after, before, after
