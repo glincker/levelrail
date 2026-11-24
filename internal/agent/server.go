@@ -186,6 +186,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 	enrolled = true
+	s.labelPersonalBuilder(ctx, nodeID, tok)
 	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
 	s.recordEnrolled(ctx, store.SecurityKindEnroll, nodeID, tok.ID, req.GetCaPinState(), issued)
 
@@ -541,4 +542,17 @@ func validEnrollNodeName(name string) bool {
 		return false
 	}
 	return enrollNodeNameRe.MatchString(name) && !nodeIDShapeRe.MatchString(name)
+}
+
+// labelPersonalBuilder records who minted a personal builder token so scope routing works at once.
+func (s *Server) labelPersonalBuilder(ctx context.Context, nodeID string, tok *store.NodeJoinToken) {
+	ls, ok := s.store.(interface {
+		SetNodeLabels(ctx context.Context, nodeID string, labels map[string]string) error
+	})
+	if !ok || tok.BuildTrust != store.BuildTrustPersonal || tok.OwnerID == "" {
+		return
+	}
+	if err := ls.SetNodeLabels(ctx, nodeID, map[string]string{"builder.owner": tok.OwnerID}); err != nil {
+		s.logger.Warn("agent: enroll: record builder owner failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+	}
 }

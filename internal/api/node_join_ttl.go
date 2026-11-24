@@ -26,6 +26,17 @@ func joinTTLMinutesCheck(v string) error {
 	return nil
 }
 
+// longJoinTTLMinutesCheck keeps the provision token alive past the provision timeout.
+func longJoinTTLMinutesCheck(v string) error {
+	if err := joinTTLMinutesCheck(v); err != nil {
+		return err
+	}
+	if n, _ := strconv.Atoi(v); time.Duration(n)*time.Minute <= defaultNodeProvisionTimeout {
+		return fmt.Errorf("must be longer than the %d minute provision timeout", int(defaultNodeProvisionTimeout/time.Minute))
+	}
+	return nil
+}
+
 func init() {
 	runtimesettings.Register(runtimesettings.Definition{
 		Key: KeyNodesJoinTokenTTLMinutes, Category: runtimesettings.CategoryDeploys, Kind: runtimesettings.KindInt,
@@ -37,7 +48,7 @@ func init() {
 	runtimesettings.Register(runtimesettings.Definition{
 		Key: KeyNodesJoinTokenLongTTLMinutes, Category: runtimesettings.CategoryDeploys, Kind: runtimesettings.KindInt,
 		Default: strconv.Itoa(int(nodeProvisionJoinTokenTTL / time.Minute)), Env: "APP_NODE_JOIN_TOKEN_LONG_TTL_MINUTES", Apply: runtimesettings.ApplyLive,
-		CheckValue:  joinTTLMinutesCheck,
+		CheckValue:  longJoinTTLMinutesCheck,
 		Title:       "Provisioned node join token lifetime",
 		Description: "Minutes the join token minted for a cloud provision stays redeemable, from 1 to 1440. Keep it longer than the provision timeout. Applies to tokens minted after the change.",
 	})
@@ -59,9 +70,9 @@ func (rt *Router) joinTokenTTLFor(ctx context.Context, long bool) time.Duration 
 	if d < time.Duration(minJoinTTLMinutes)*time.Minute || d > time.Duration(maxJoinTTLMinutes)*time.Minute {
 		return def
 	}
-	// The older startup option still wins while the setting sits at its default.
-	if !long && d == nodeJoinTokenTTL {
-		return rt.effectiveJoinTokenTTL()
+	// The startup option only seeds the value while nothing is saved.
+	if !long && rt.runtimeSettings.Source(ctx, key) == runtimesettings.SourceDefault && rt.joinTokenTTL > 0 {
+		return rt.joinTokenTTL
 	}
 	return d
 }

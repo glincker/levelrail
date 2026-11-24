@@ -30,3 +30,17 @@ func TestJoinTokenTTLFollowsRuntimeSetting(t *testing.T) {
 		t.Fatalf("status = %d %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestJoinTokenTTLExplicitValueBeatsStartupOption(t *testing.T) {
+	rt, db, _ := newMultiNodeRouter(t, WithNodeJoinTokenTTL(3*time.Minute))
+	rt.runtimeSettings = runtimesettings.New(db, func(k string) (string, bool) { return "15", k == "APP_NODE_JOIN_TOKEN_TTL_MINUTES" })
+	if got := rt.joinTokenTTLFor(t.Context(), false); got != 15*time.Minute {
+		t.Fatalf("ttl = %s, want the explicit 15m", got)
+	}
+	if err := longJoinTTLMinutesCheck("10"); err == nil {
+		t.Fatal("a long ttl under the provision timeout was accepted")
+	}
+	if err := longJoinTTLMinutesCheck("60"); err != nil {
+		t.Fatalf("60 minutes refused: %v", err)
+	}
+}

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -34,7 +36,7 @@ func init() {
 		Default: build.ScopeOwner, Env: envBuildPersonalBuilderScope, Apply: runtimesettings.ApplyLive,
 		AllowedStrings: []string{build.ScopeOwner, build.ScopeTeam, build.ScopeAll},
 		Title:          "Personal builder scope",
-		Description:    "Whose apps a personal builder may receive. owner: only apps of teams its owner belongs to (the builder.owner node label holds the user id). team: also apps of the team in its builder.team label. all: any team's non-production apps. A personal builder with no recorded owner receives nothing under owner or team. An environment allow-list that names the builder still decides alone. Read on every build; the environment variable only seeds the default.",
+		Description:    "Whose apps a personal builder may receive. owner: only apps of teams its owner belongs to (the builder.owner node label holds the user id). team: also apps of the team in its builder.team label. all: any team's non-production apps. A personal builder with no recorded owner receives nothing under owner or team; builders enrolled before this setting need the label added or scope all. An environment allow-list that names the builder still decides alone. Read on every build; the environment variable only seeds the default.",
 	})
 	runtimesettings.Register(runtimesettings.Definition{
 		Key: KeyBuildPersonalInProduction, Category: runtimesettings.CategoryDeploys, Kind: runtimesettings.KindBool,
@@ -195,4 +197,47 @@ func (rt *Router) handleSetEnvironmentBuilders(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.environmentBuildersView(r.Context(), env, resolved))
+}
+
+// personalBuilderOwner is the calling user when a personal builder token is minted.
+func (rt *Router) personalBuilderOwner(r *http.Request, tier string) string {
+	if tier != store.BuildTrustPersonal {
+		return ""
+	}
+	ptype, pid, _, err := rt.callerPrincipal(r)
+	if err != nil || ptype != store.PrincipalTypeUser {
+		return ""
+	}
+	return pid
+}
+
+// doctorCheckPersonalBuilders warns about personal builders the owner scope would never use.
+func (rt *Router) doctorCheckPersonalBuilders(ctx context.Context) doctorCheckResource {
+	const code, name = "personal_builder_owner", "Personal builder owners"
+	trusts := rt.nodeBuildTrusts(ctx)
+	ls, ok := rt.nodes.(interface {
+		ListNodeLabels(ctx context.Context) (map[string]map[string]string, error)
+	})
+	if !ok {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "Node labels are not available on this control plane."}
+	}
+	labels, err := ls.ListNodeLabels(ctx)
+	if err != nil {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "Node labels could not be read."}
+	}
+	var missing []string
+	for id, tier := range trusts {
+		if tier == store.BuildTrustPersonal && labels[id][NodeLabelBuilderOwner] == "" {
+			missing = append(missing, id)
+		}
+	}
+	sort.Strings(missing)
+	if len(missing) > 0 {
+		return doctorCheckResource{
+			Code: code, Name: name, Status: doctorStatusWarn,
+			Message: "Personal builders without a builder.owner label receive no builds under the default scope: " + strings.Join(missing, ", "),
+			Fix:     "Add the builder.owner node label (a user id) or set build.personal_builder_scope to all.",
+		}
+	}
+	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "Every personal builder has an owner label."}
 }

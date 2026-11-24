@@ -86,6 +86,8 @@ func buildExplainTable() map[string]Explanation {
 			"Add a 1 to 2 GB swap file, then press Re-check.", "", KindManual),
 		ex("build_memory", "The host has less memory than a typical web build needs.", "Builds may fail with out-of-memory errors.",
 			"Add swap or memory, or build on a bigger node. Open Settings, then Builds, to pick the build node.", "", KindGuided),
+		ex("personal_builder_owner", "A personal builder has no owner label.", "Under the default scope it receives no builds, so they run elsewhere.",
+			"Add the builder.owner node label with a user id, or set build.personal_builder_scope to all in Settings.", "", KindManual),
 		ex("build_queue", "The build queue has been paused or draining for a long time.", "New builds and webhook deploys wait in the queue until someone resumes it.",
 			"Open Deployments and press Resume, or run levelrail-cli builds resume.", "", KindManual),
 		ex("build_cache_budget", "The builder cache is over its size budget.", "The disk fills with old build layers until another build prunes them.",

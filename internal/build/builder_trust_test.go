@@ -2,6 +2,7 @@ package build
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -91,5 +92,23 @@ func TestPersonalBuilderOnlyServesItsOwnersTeams(t *testing.T) {
 	noOwner.OwnerID, noOwner.TeamID = "", ""
 	if got := ChooseBuildNode([]NodeInfo{noOwner}, teamA, Policy{}).Node; got != "" {
 		t.Fatalf("builder without an owner was offered a build: %q", got)
+	}
+}
+
+func TestTierAllowListKeepsPersonalBuilderScope(t *testing.T) {
+	laptop := NodeInfo{ID: "n-laptop", AcceptsBuildWorkloads: true, Online: true, Trust: TrustPersonal, OwnerID: "u-a"}
+	q := Query{EnvKind: "preview", AllowedBuilders: []string{"personal"}, AppTeamID: "team-b", AppTeamMembers: []string{"u-b"}}
+	if d := ChooseBuildNode([]NodeInfo{laptop}, q, Policy{}); d.Node != "" {
+		t.Fatalf("tier allow-list bypassed the owner scope: %+v", d)
+	}
+	q.AppTeamMembers = []string{"u-a"}
+	if d := ChooseBuildNode([]NodeInfo{laptop}, q, Policy{}); d.Node != "n-laptop" {
+		t.Fatalf("owner's own build was refused: %+v", d)
+	}
+	noOwner := laptop
+	noOwner.OwnerID = ""
+	d := ChooseBuildNode([]NodeInfo{noOwner}, Query{EnvKind: "preview", AppTeamID: "t"}, Policy{})
+	if d.Node != "" || !strings.Contains(d.Reason, "has no builder.owner label") {
+		t.Fatalf("missing owner label not explained: %+v", d)
 	}
 }

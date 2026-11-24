@@ -110,9 +110,7 @@ func buildRunnerQuery(db *store.DB) func(ctx context.Context, app string) build.
 		if o, err := db.OwnerOfApp(ctx, app); err == nil && o != nil {
 			q.AppTeamID = o.TeamID
 			if ms, err := db.ListTeamMembers(ctx, o.TeamID); err == nil {
-				for _, m := range ms {
-					q.AppTeamMembers = append(q.AppTeamMembers, m.UserID)
-				}
+				q.AppTeamMembers = developerMemberIDs(ms)
 			}
 		}
 		if env, err := db.EnvironmentOfApp(ctx, app); err == nil && env != nil {
@@ -152,4 +150,15 @@ func parseRunnerLabels(in []string) map[string]string {
 		out[k] = v
 	}
 	return out
+}
+
+// developerMemberIDs lists members who may deploy; viewers never count as a builder's owner.
+func developerMemberIDs(ms []store.TeamMember) []string {
+	var ids []string
+	for _, m := range ms {
+		if store.TeamRoleAtLeast(m.Role, store.TeamRoleDeveloper) {
+			ids = append(ids, m.UserID)
+		}
+	}
+	return ids
 }

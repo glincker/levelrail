@@ -156,8 +156,12 @@ func (n NodeInfo) tier() string {
 func (q Query) trustAllows(n NodeInfo, p Policy) bool {
 	if len(q.AllowedBuilders) > 0 {
 		for _, a := range q.AllowedBuilders {
-			if a == n.ID || a == n.tier() {
+			if a == n.ID {
 				return true
+			}
+			// A tier word admits the tier, but a personal builder still keeps to its scope.
+			if a == n.tier() {
+				return n.tier() != TrustPersonal || q.personalScopeAllows(n, p.PersonalScope)
 			}
 		}
 		return false
@@ -319,6 +323,11 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 		}
 	}
 	if len(live) == 0 {
+		for _, n := range all {
+			if n.tier() == TrustPersonal && n.OwnerID == "" && n.usable(p) {
+				return Decision{Reason: "control plane: personal builder " + n.label() + " has no builder.owner label"}
+			}
+		}
 		return Decision{Reason: "control plane: no build node is online and accepting work"}
 	}
 	if p.Strategy == StrategyFirst || p.Strategy == "" {

@@ -768,7 +768,7 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	rec, err := rt.mintNodeJoinTokenTier(r.Context(), rt.joinTokenTTLFor(r.Context(), false), tier)
+	rec, err := rt.mintNodeJoinTokenTier(r.Context(), rt.joinTokenTTLFor(r.Context(), false), tier, rt.personalBuilderOwner(r, tier))
 	if err != nil {
 		rt.internalError(w, "api: create node join token failed", err)
 		return
@@ -795,7 +795,7 @@ type mintedJoinToken struct {
 // its own longer TTL (nodeProvisionJoinTokenTTL) rather than
 // nodeJoinTokenTTL.
 func (rt *Router) mintNodeJoinToken(ctx context.Context, ttl time.Duration) (mintedJoinToken, error) {
-	return rt.mintNodeJoinTokenTier(ctx, ttl, store.BuildTrustServer)
+	return rt.mintNodeJoinTokenTier(ctx, ttl, store.BuildTrustServer, "")
 }
 
 // joinBuildTrust resolves the tier a new join token carries; personal needs an explicit builder intent.
@@ -819,7 +819,7 @@ func joinBuildTrust(req createNodeJoinTokenRequest) (string, error) {
 	return tier, nil
 }
 
-func (rt *Router) mintNodeJoinTokenTier(ctx context.Context, ttl time.Duration, tier string) (mintedJoinToken, error) {
+func (rt *Router) mintNodeJoinTokenTier(ctx context.Context, ttl time.Duration, tier, ownerID string) (mintedJoinToken, error) {
 	plaintext, err := randomToken()
 	if err != nil {
 		return mintedJoinToken{}, fmt.Errorf("generate token: %w", err)
@@ -836,6 +836,7 @@ func (rt *Router) mintNodeJoinTokenTier(ctx context.Context, ttl time.Duration, 
 		CreatedAt:  now,
 		ExpiresAt:  now.Add(ttl),
 		BuildTrust: tier,
+		OwnerID:    ownerID,
 	}
 	if err := rt.nodes.SaveNodeJoinToken(ctx, rec); err != nil {
 		return mintedJoinToken{}, fmt.Errorf("save: %w", err)
