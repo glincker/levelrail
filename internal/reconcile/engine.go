@@ -109,6 +109,8 @@ type Engine struct {
 	dmu               sync.Mutex
 	dirty             dirtySet
 	idle              map[string]idleState
+
+	lag lagLedger
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -347,6 +349,7 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 	}
 	e.persisted.forget(live)
 	e.forgetIdle(live)
+	e.lag.forget(live)
 }
 
 // safeReconcile turns a controller panic into an error so one broken resource cannot crash the process.
@@ -374,6 +377,7 @@ func (e *Engine) runOne(ctx context.Context, c Controller, keyed bool) Result {
 	start := time.Now()
 	result, panicked, err := e.safeReconcile(ctx, c)
 	e.guard.After(c.Name(), err, panicked)
+	defer func() { e.lag.observed(c.Name(), start, err == nil && !panicked) }()
 	dur := time.Since(start)
 	e.recordController(c.Name(), dur)
 	e.costs.add(c.Name(), dur, err != nil || panicked)

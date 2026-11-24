@@ -651,6 +651,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PERF_SLOW_STATEMENT_MS` | [`perf.slow_statement_ms`](/runtime-settings#observability) | `100` |
 | `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
+| `APP_RECONCILE_LAG_WARN_SECONDS` | [`reconcile.lag_warn_seconds`](/runtime-settings#observability) | `120` |
+| `APP_RECONCILE_RESYNC_INTERVAL_SECONDS` | [`reconcile.resync_interval_seconds`](/runtime-settings#observability) | `60` |
 | `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
 | `APP_SIZING_CPU_MARGIN_PCT` | [`sizing.cpu_margin_pct`](/runtime-settings#observability) | `130` |
 | `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | [`sizing.lookback`](/runtime-settings#observability) | `168h` |
