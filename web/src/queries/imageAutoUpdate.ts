@@ -96,12 +96,13 @@ export function useSetImageAutoUpdate(appName: string) {
 
 export function useCheckImageUpdate(appName: string) {
   const queryClient = useQueryClient()
-  return useMutation<ImageAutoUpdate, ApiError, void>({
-    mutationFn: () =>
+  return useMutation<ImageAutoUpdate, ApiError, { apply: boolean }>({
+    // Without apply the server only reports; apply=true is the explicit deploy.
+    mutationFn: ({ apply }) =>
       request(
         appName,
         { method: 'POST' },
-        '/check',
+        apply ? '/check?apply=true' : '/check',
         'image update check failed',
       ),
     onSuccess: (result) => {

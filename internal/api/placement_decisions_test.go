@@ -130,3 +130,22 @@ func TestPlacementDecisionUnknownApp(t *testing.T) {
 		t.Fatalf("status = %d", rec.Code)
 	}
 }
+
+func TestPlacementDecisionShowsAppPool(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	seedMNNode(t, db, "node_a", map[string]string{"tier": "gpu"})
+	if rec := mnDo(t, rt, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"img:1","port":80}`); rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d: %s", rec.Code, rec.Body.String())
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/node-pools/gpu", `{"selector":{"tier":"gpu"}}`); rec.Code >= 300 {
+		t.Fatalf("pool = %d: %s", rec.Code, rec.Body.String())
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/pool", `{"pool":"gpu"}`); rec.Code >= 300 {
+		t.Fatalf("set pool = %d: %s", rec.Code, rec.Body.String())
+	}
+	rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/placement/decision", "")
+	var got placementDecisionResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got.Pool != "gpu" {
+		t.Fatalf("pool = %q, %v: %s", got.Pool, err, rec.Body.String())
+	}
+}

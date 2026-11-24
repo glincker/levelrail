@@ -114,6 +114,45 @@ describe('ImageAutoUpdateCard', () => {
     ).toBeInTheDocument()
   })
 
+  it('reports first and deploys only after an explicit Apply', async () => {
+    const posts: string[] = []
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        const target =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url
+        if (init?.method === 'POST') {
+          posts.push(target)
+          return Promise.resolve(
+            json({
+              enabled: false,
+              last_result: target.includes('apply=true')
+                ? 'redeployed with a newer image'
+                : 'newer image found, not deployed: repeat the check with apply=true to deploy it',
+            }),
+          )
+        }
+        return Promise.resolve(json({ enabled: false }))
+      },
+    )
+
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(await screen.findByRole('button', { name: 'Check now' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Apply update' }),
+    )
+
+    expect(
+      await screen.findByText(/redeployed with a newer image/),
+    ).toBeInTheDocument()
+    expect(posts[0]).not.toContain('apply=true')
+    expect(posts[1]).toContain('apply=true')
+  })
+
   it('toasts after enabling', async () => {
     fetchMock.mockImplementation(
       (_input: RequestInfo | URL, init?: RequestInit) =>

@@ -12,9 +12,18 @@ import (
 
 func TestRun_NodesList(t *testing.T) {
 	var gotPath string
-	srv := newListEchoServer(t, &gotPath, []nodeResource{
+	nodes := []nodeResource{
 		{ID: "nd_1", Name: "web-1", Address: "10.0.0.1", Status: "ready", Schedulable: true, CreatedAt: time.Date(2026, 8, 15, 0, 0, 0, 0, time.UTC)},
-	})
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/v1/nodes" {
+			gotPath = r.URL.Path
+			_ = json.NewEncoder(w).Encode(nodes)
+			return
+		}
+		http.NotFound(w, r)
+	}))
 	defer srv.Close()
 
 	stdout, _ := runCLIExpectOK(t, []string{"nodes", "list", "--api-url", srv.URL})
@@ -119,5 +128,26 @@ func TestPrintNodesTable_NeverConnectedHint(t *testing.T) {
 				t.Errorf("hint present = %v, want %v:\n%s", got, tt.wantHint, out)
 			}
 		})
+	}
+}
+
+func TestRun_NodesList_MergesLocalNode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/v1/deploy-targets" {
+			_, _ = w.Write([]byte(`[{"kind":"local","label":"local","nodes":[{"id":"","name":"local","status":"online","health":"healthy","is_local":true}]}]`))
+			return
+		}
+		_, _ = w.Write([]byte(`[{"id":"nd_1","name":"web-1","status":"ready","schedulable":true}]`))
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"nodes", "list", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "local (local)") || !strings.Contains(stdout, "web-1") {
+		t.Errorf("stdout = %q, want the local node and web-1", stdout)
+	}
+	jsonOut, _ := runCLIExpectOK(t, []string{"nodes", "list", "--api-url", srv.URL, "--json"})
+	if !strings.Contains(jsonOut, `"is_local": true`) && !strings.Contains(jsonOut, `"is_local":true`) {
+		t.Errorf("json = %q, want is_local", jsonOut)
 	}
 }

@@ -107,3 +107,39 @@ func TestImageUpdateWebhook(t *testing.T) {
 		t.Errorf("valid webhook = %d, want 202", code)
 	}
 }
+
+func TestCheckImageUpdateRoute_ApplyIsExplicit(t *testing.T) {
+	tests := []struct {
+		name      string
+		query     string
+		wantHas   string
+		wantMoved bool
+	}{
+		{"report only without apply", "", imageUpdateAvailable, false},
+		{"apply=true deploys", "?apply=true", imageUpdateRedeployed, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db, cookie := newSafetyRouter(t, stubResolver{digest: newDigest})
+			ctx := context.Background()
+			if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1@" + oldDigest, Port: 80}); err != nil {
+				t.Fatal(err)
+			}
+			rec := serve(rt, authedRequest(t, cookie, "POST", "/api/v1/apps/web/auto-update/check"+tc.query, ""))
+			if rec.Code != 200 || !strings.Contains(rec.Body.String(), tc.wantHas) {
+				t.Fatalf("status = %d body = %s; want %q", rec.Code, rec.Body.String(), tc.wantHas)
+			}
+			after, err := db.GetDesiredService(ctx, "web")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if moved := docker.ImageDigestOf(after.Image) == newDigest; moved != tc.wantMoved {
+				t.Errorf("image = %q, moved = %v, want %v", after.Image, moved, tc.wantMoved)
+			}
+			attempts, _ := db.ListDeployAttempts(ctx, "web")
+			if !tc.wantMoved && len(attempts) != 0 {
+				t.Errorf("a check without apply started a deploy: %+v", attempts)
+			}
+		})
+	}
+}

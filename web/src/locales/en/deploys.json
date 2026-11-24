@@ -141,6 +141,7 @@
     "switchAriaLabel": "Image auto-update enabled",
     "checkNow": "Check now",
     "checking": "Checking...",
+    "apply": "Apply update",
     "lastCheck": "Last check ({{when}}): {{result}}",
     "neverChecked": "Not checked yet.",
     "status": {

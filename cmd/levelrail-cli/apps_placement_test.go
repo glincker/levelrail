@@ -45,3 +45,16 @@ func TestRun_NodesAllocations(t *testing.T) {
 		}
 	}
 }
+
+func TestRun_AppsPlacementShowsPool(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"kind":"app","name":"web","node_id":"node_b","pool":"gpu","recorded":null,"preview":{"node_id":"node_b","why":"x","considered":[]}}`))
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "placement", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "pool: gpu") {
+		t.Errorf("stdout missing pool:\n%s", stdout)
+	}
+}

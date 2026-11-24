@@ -141,6 +141,7 @@
     "switchAriaLabel": "已启用镜像自动更新",
     "checkNow": "立即检查",
     "checking": "正在检查...",
+    "apply": "应用更新",
     "lastCheck": "上次检查({{when}}):{{result}}",
     "neverChecked": "尚未检查。",
     "status": {

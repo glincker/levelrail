@@ -33,12 +33,46 @@ func runNodesList(prog string, args []string, stdout, stderr io.Writer, lookupEn
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list nodes: %w", err))
 		}
 
+		nodes = withLocalNode(context.Background(), client, nodes, opts)
+
 		if err := renderResult(stdout, of.Format, of.Query, nodes, func() { printNodesTable(stdout, nodes) }); err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return exitCodeForError(err)
 		}
 		return exitOK
 	})
+}
+
+// withLocalNode prepends the control plane host, which /nodes does not list,
+// using deploy-targets. It is skipped for filtered or paged lists and when the
+// token cannot read targets, so the plain list still works.
+func withLocalNode(ctx context.Context, client *apiclient.Client, nodes []nodeResource, opts apiclient.ListNodesOptions) []nodeResource {
+	if opts.Query != "" || opts.Offset > 0 {
+		return nodes
+	}
+	groups, err := client.ListDeployTargets(ctx)
+	if err != nil {
+		return nodes
+	}
+	for _, g := range groups {
+		for _, n := range g.Nodes {
+			if !n.IsLocal && g.Kind != "local" {
+				continue
+			}
+			for _, have := range nodes {
+				if n.ID != "" && have.ID == n.ID {
+					return nodes
+				}
+			}
+			id := n.ID
+			if id == "" {
+				id = "local"
+			}
+			local := nodeResource{IsLocal: true, ID: id, Name: n.Name + " (local)", Address: "this server", Status: n.Status, Schedulable: n.Health != "cordoned", Region: n.Region}
+			return append([]nodeResource{local}, nodes...)
+		}
+	}
+	return nodes
 }
 
 func nodesListUsage(prog string) string {
