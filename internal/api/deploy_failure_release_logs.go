@@ -14,8 +14,17 @@ import (
 // releaseLogLines is diagnoseRecentLogs narrowed to the attempt's own
 // release, so a failure excerpt never quotes an earlier container. Lines from before the attempt started never count.
 func (rt *Router) releaseLogLines(ctx context.Context, a store.DeployAttempt) []string {
+	if lines, ok := rt.scopedReleaseLogLines(ctx, a); ok {
+		return lines
+	}
+	return rt.diagnoseRecentLogs(ctx, a.ServiceName)
+}
+
+// scopedReleaseLogLines reports ok=false when the attempt's window cannot be
+// queried, so callers that store the result never fall back to another time window.
+func (rt *Router) scopedReleaseLogLines(ctx context.Context, a store.DeployAttempt) ([]string, bool) {
 	if rt.telemetry == nil || rt.containers == nil {
-		return rt.diagnoseRecentLogs(ctx, a.ServiceName)
+		return nil, false
 	}
 	now := time.Now()
 	from, to := now.Add(-diagnosticLogWindow), now
@@ -27,13 +36,13 @@ func (rt *Router) releaseLogLines(ctx context.Context, a store.DeployAttempt) []
 	}
 	entries, err := rt.telemetry.QueryLogs(ctx, resourceIDForApp(a.ServiceName), from, to, "")
 	if err != nil {
-		return rt.diagnoseRecentLogs(ctx, a.ServiceName)
+		return nil, false
 	}
 	list, err := rt.containers.ListByPrefix(ctx, a.ServiceName+"-")
 	if err != nil {
-		return rt.diagnoseRecentLogs(ctx, a.ServiceName)
+		return nil, false
 	}
-	return attemptLogLines(entries, list, a)
+	return attemptLogLines(entries, list, a), true
 }
 
 const (

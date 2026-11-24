@@ -141,3 +141,26 @@ func TestNormalizeMasksSecrets(t *testing.T) {
 		t.Fatalf("got %+v", got[0])
 	}
 }
+
+func TestScrubPatterns(t *testing.T) {
+	jwt := "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0In0.c2lnbmF0dXJl"
+	cases := []struct{ name, in, want string }{
+		{"jwt", "token " + jwt + " rejected", "token [redacted] rejected"},
+		{"bearer", "Authorization: Bearer abc.def-123", "Authorization: Bearer [redacted]"},
+		{"basic", "Authorization: Basic dXNlcjpwYXNz", "Authorization: Basic [redacted]"},
+		{"url creds", "dial postgres://admin:hunter2@db:5432/app failed", "dial postgres://[redacted]@db:5432/app failed"},
+		{"pem", "key -----BEGIN RSA PRIVATE KEY-----\nMIIabc\n-----END RSA PRIVATE KEY----- done", "key [redacted] done"},
+		{"query", "GET /x?a=1&access_token=zzz&X-Amz-Signature=abc123&password=p%40ss&secret=s HTTP/1.1", "GET /x?a=1&access_token=[redacted]&X-Amz-Signature=[redacted]&password=[redacted]&secret=[redacted] HTTP/1.1"},
+		{"plain", "listening on port 3000 for user admin", "listening on port 3000 for user admin"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := Sample(c.in, nil); got != c.want {
+				t.Fatalf("got %q, want %q", got, c.want)
+			}
+			if got := Scrub(c.in); got != c.want {
+				t.Fatalf("Scrub got %q, want %q", got, c.want)
+			}
+		})
+	}
+}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploywhy"
 	"github.com/GLINCKER/levelrail/internal/lognorm"
@@ -58,7 +60,7 @@ func (rt *Router) whyLastProbe(ctx context.Context, id string) *deploywhy.Health
 			last = p
 		}
 	}
-	return &deploywhy.Health{Target: last.Target, Success: last.Success, StatusCode: last.StatusCode, Error: lognorm.Sample(last.Error, nil)}
+	return &deploywhy.Health{Target: lognorm.Scrub(last.Target), Success: last.Success, StatusCode: last.StatusCode, Error: lognorm.Scrub(last.Error)}
 }
 
 func (rt *Router) lastGoodAttempt(ctx context.Context, a store.DeployAttempt) (store.DeployAttempt, bool) {
@@ -85,20 +87,55 @@ func (rt *Router) deployTemplates(ctx context.Context, a store.DeployAttempt) []
 		rt.logger.Warn("api: deploy why: list templates failed", slog.String("deploy_id", a.ID), slog.String("error", err.Error()))
 		return nil
 	}
-	if len(rows) == 0 && a.FinishedAt != nil {
+	if len(rows) == 0 && rt.whyMineable(a) && !rt.whyEmpty.has(a.ID) {
 		rows = rt.captureDeployTemplates(ctx, a)
+		if len(rows) == 0 {
+			rt.whyEmpty.add(a.ID)
+		}
 	}
+	// Stored rows predate newer masking rules, so scrub again on the way out.
 	out := make([]deploywhy.Template, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, deploywhy.Template{TemplateID: r.TemplateID, Template: r.Template, Count: r.Count, Sample: r.Sample})
+		out = append(out, deploywhy.Template{TemplateID: r.TemplateID, Template: lognorm.Scrub(r.Template), Count: r.Count, Sample: lognorm.Scrub(r.Sample)})
 	}
 	return out
+}
+
+// whyMineable is true once the release log tail window has passed, so the mined
+// clusters are final and safe to store.
+func (rt *Router) whyMineable(a store.DeployAttempt) bool {
+	return a.FinishedAt != nil && time.Now().After(a.FinishedAt.Add(releaseLogTail))
+}
+
+// whyEmptyCache remembers deploys that mined to nothing so repeat reads skip the
+// log and Docker queries. It is bounded and rebuilt after a restart.
+type whyEmptyCache struct {
+	mu  sync.Mutex
+	ids map[string]struct{}
+}
+
+const whyEmptyCacheMax = 4096
+
+func (c *whyEmptyCache) has(id string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	_, ok := c.ids[id]
+	return ok
+}
+
+func (c *whyEmptyCache) add(id string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.ids == nil || len(c.ids) >= whyEmptyCacheMax {
+		c.ids = map[string]struct{}{}
+	}
+	c.ids[id] = struct{}{}
 }
 
 func (rt *Router) captureDeployTemplates(ctx context.Context, a store.DeployAttempt) []store.DeployLogTemplate {
 	lines := rt.attemptExitLines(ctx, a)
 	if len(lines) == 0 {
-		lines = rt.releaseLogLines(ctx, a)
+		lines, _ = rt.scopedReleaseLogLines(ctx, a)
 	}
 	if len(lines) == 0 {
 		return nil

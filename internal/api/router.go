@@ -651,6 +651,7 @@ type Router struct {
 	deployMaxConcurrent          int                                                                                 // 0 means unlimited, set via WithDeployMaxConcurrent
 	deployLogStore               DeployLogQuerier                                                                    // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
 	deployLogTemplates           DeployLogTemplateStore                                                              // nil is valid: the why verdict then has no log clusters
+	whyEmpty                     whyEmptyCache                                                                       // deploys whose why mining found nothing, so repeat reads stay cheap
 	deployExits                  DeployExitStore                                                                     // nil is valid: exits are reported without their captured output
 	trialKeeper                  TrialKeeper                                                                         // nil is valid: POST /apps/{name}/keep returns 501
 	deployRecorder               *deploylog.Recorder                                                                 // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above

@@ -24,13 +24,13 @@ var (
 	numRe  = regexp.MustCompile(`\b\d+(?:\.\d+)?`)
 )
 
-// Sample returns the line with known secrets masked. This is the only form
-// that may be stored; reg nil uses the process-wide registry.
+// Sample returns the line with known secrets and credential shapes masked.
+// This is the only form that may be stored; reg nil uses the process-wide registry.
 func Sample(line string, reg *secretmask.Registry) string {
 	if reg == nil {
-		return secretmask.Mask(line)
+		return Scrub(line)
 	}
-	return reg.Mask(line)
+	return MaskPatterns(reg.Mask(line))
 }
 
 // Template masks secrets first, then replaces variable parts with placeholders.
