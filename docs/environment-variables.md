@@ -287,6 +287,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_FAIR_SHARE` | [`build.fair_share`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `60` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
+| `APP_BUILD_PERSONAL_BUILDER_SCOPE` | [`build.personal_builder_scope`](/runtime-settings#deploys) | `owner` |
 | `APP_BUILD_PERSONAL_IN_PRODUCTION` | [`build.personal_builders_in_production`](/runtime-settings#deploys) | `false` |
 | `APP_BUILD_QUEUE_AUTO_RESUME_AFTER` | [`build.queue_auto_resume_after`](/runtime-settings#deploys) | `0s` |
 | `APP_BUILD_QUEUE_PAUSED_WARN_AFTER` | [`build.queue_paused_warn_after`](/runtime-settings#deploys) | `1h` |
@@ -406,6 +407,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_JOBS_TIMEOUT_MAX_SECONDS` | [`jobs.timeout_max_seconds`](/runtime-settings#deploys) | `86400` |
 | `APP_JOBS_TIMEOUT_MIN_SECONDS` | [`jobs.timeout_min_seconds`](/runtime-settings#deploys) | `1` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
+| `APP_NODE_JOIN_TOKEN_LONG_TTL_MINUTES` | [`nodes.join_token_long_ttl_minutes`](/runtime-settings#deploys) | `60` |
+| `APP_NODE_JOIN_TOKEN_TTL_MINUTES` | [`nodes.join_token_ttl_minutes`](/runtime-settings#deploys) | `15` |
 | `APP_PAGES_PREVIEW_MAX_PER_SITE` | [`pages.preview_max_per_site`](/runtime-settings#deploys) | `20` |
 | `APP_PAGES_SERVING_WAIT` | [`pages.serving_wait`](/runtime-settings#deploys) | `8s` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |

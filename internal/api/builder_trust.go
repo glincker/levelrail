@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -16,10 +17,25 @@ const (
 	KeyBuildPersonalInProduction = "build.personal_builders_in_production"
 	envBuildPersonalInProduction = "APP_BUILD_PERSONAL_IN_PRODUCTION"
 
+	// KeyBuildPersonalBuilderScope limits which apps a personal builder may receive.
+	KeyBuildPersonalBuilderScope = "build.personal_builder_scope"
+	envBuildPersonalBuilderScope = "APP_BUILD_PERSONAL_BUILDER_SCOPE"
+
+	// Node labels that record who a personal builder belongs to.
+	NodeLabelBuilderOwner = "builder.owner"
+	NodeLabelBuilderTeam  = "builder.team"
+
 	maxEnvironmentBuilders = 32
 )
 
 func init() {
+	runtimesettings.Register(runtimesettings.Definition{
+		Key: KeyBuildPersonalBuilderScope, Category: runtimesettings.CategoryDeploys, Kind: runtimesettings.KindString,
+		Default: build.ScopeOwner, Env: envBuildPersonalBuilderScope, Apply: runtimesettings.ApplyLive,
+		AllowedStrings: []string{build.ScopeOwner, build.ScopeTeam, build.ScopeAll},
+		Title:          "Personal builder scope",
+		Description:    "Whose apps a personal builder may receive. owner: only apps of teams its owner belongs to (the builder.owner node label holds the user id). team: also apps of the team in its builder.team label. all: any team's non-production apps. A personal builder with no recorded owner receives nothing under owner or team. An environment allow-list that names the builder still decides alone. Read on every build; the environment variable only seeds the default.",
+	})
 	runtimesettings.Register(runtimesettings.Definition{
 		Key: KeyBuildPersonalInProduction, Category: runtimesettings.CategoryDeploys, Kind: runtimesettings.KindBool,
 		Default: "false", Env: envBuildPersonalInProduction, Apply: runtimesettings.ApplyLive,

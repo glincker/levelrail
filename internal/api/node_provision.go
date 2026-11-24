@@ -438,7 +438,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		bootstrapBody = bs.Body
 	}
 
-	token, err := rt.mintNodeJoinToken(r.Context(), nodeProvisionJoinTokenTTL)
+	token, err := rt.mintNodeJoinToken(r.Context(), rt.joinTokenTTLFor(r.Context(), true))
 	if err != nil {
 		rt.internalError(w, "api: node provision: mint join token failed", err)
 		return

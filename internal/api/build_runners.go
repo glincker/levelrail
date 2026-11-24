@@ -65,6 +65,7 @@ func wireBuildRunnerSettings(svc *runtimesettings.Service) {
 			MinDiskFreeBytes: int64(svc.Int(ctx, KeyBuildRunnerMinDisk)) << 20,
 
 			PersonalInProduction: svc.Bool(ctx, KeyBuildPersonalInProduction),
+			PersonalScope:        svc.String(ctx, KeyBuildPersonalBuilderScope),
 		}
 	})
 }

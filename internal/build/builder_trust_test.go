@@ -15,9 +15,9 @@ func TestChooseBuildNodeBuilderTrust(t *testing.T) {
 		p    Policy
 		want string
 	}{
-		{"preview may use a personal builder", Query{EnvKind: "preview"}, Policy{}, "n-laptop"},
+		{"preview may use a personal builder", Query{EnvKind: "preview"}, Policy{PersonalScope: ScopeAll}, "n-laptop"},
 		{"production skips the personal builder", Query{EnvKind: "production"}, Policy{}, "n-z-server"},
-		{"setting allows personal in production", Query{EnvKind: "production"}, Policy{PersonalInProduction: true}, "n-laptop"},
+		{"setting allows personal in production", Query{EnvKind: "production"}, Policy{PersonalInProduction: true, PersonalScope: ScopeAll}, "n-laptop"},
 		{"explicit node id beats the default", Query{EnvKind: "production", AllowedBuilders: []string{"n-laptop"}}, Policy{}, "n-laptop"},
 		{"explicit tier list excludes personal", Query{EnvKind: "preview", AllowedBuilders: []string{"server"}}, Policy{}, "n-z-server"},
 		{"pinned personal on production falls back", Query{EnvKind: "production", Pinned: "n-laptop"}, Policy{}, ""},
@@ -64,5 +64,32 @@ func TestAppForPrefersContextApp(t *testing.T) {
 	}
 	if got := AppFor(context.Background(), "h/img:t"); got != "img" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestPersonalBuilderOnlyServesItsOwnersTeams(t *testing.T) {
+	laptop := NodeInfo{ID: "n-laptop", AcceptsBuildWorkloads: true, Online: true, Trust: TrustPersonal, OwnerID: "u-a", TeamID: "team-a"}
+	server := NodeInfo{ID: "n-z-server", AcceptsBuildWorkloads: true, Online: true}
+	nodes := []NodeInfo{laptop, server}
+	teamA := Query{EnvKind: "preview", AppTeamID: "team-a", AppTeamMembers: []string{"u-a"}}
+	teamB := Query{EnvKind: "preview", AppTeamID: "team-b", AppTeamMembers: []string{"u-b"}}
+	if got := ChooseBuildNode(nodes, teamA, Policy{}).Node; got != "n-laptop" {
+		t.Fatalf("own team build went to %q", got)
+	}
+	if got := ChooseBuildNode(nodes, teamB, Policy{}).Node; got != "n-z-server" {
+		t.Fatalf("other team build went to %q", got)
+	}
+	if got := ChooseBuildNode(nodes, teamB, Policy{PersonalScope: ScopeAll}).Node; got != "n-laptop" {
+		t.Fatalf("scope all did not widen, got %q", got)
+	}
+	teamLabelOnly := teamA
+	teamLabelOnly.AppTeamMembers = nil
+	if got := ChooseBuildNode(nodes, teamLabelOnly, Policy{PersonalScope: ScopeTeam}).Node; got != "n-laptop" {
+		t.Fatalf("scope team ignored the team label, got %q", got)
+	}
+	noOwner := laptop
+	noOwner.OwnerID, noOwner.TeamID = "", ""
+	if got := ChooseBuildNode([]NodeInfo{noOwner}, teamA, Policy{}).Node; got != "" {
+		t.Fatalf("builder without an owner was offered a build: %q", got)
 	}
 }

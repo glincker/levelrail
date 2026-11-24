@@ -115,6 +115,8 @@ func (r *Router) dispatchRegistry(ctx context.Context, nodeID string, req Remote
 	if err := VerifyPushedDigest(ctx, cfg.Verifier, ref, res.Digest); err != nil {
 		return nil, err
 	}
+	// The assignment check lives in the agent mux; binding the digest to the source is open.
+	r.logger.Debug("build: needs design: digest provenance", slog.String("node_id", nodeID), slog.String("tag", req.Tag))
 	if err := r.recordBuild(ctx, nodeID, ref, req.Tag, res); err != nil {
 		return nil, err
 	}
