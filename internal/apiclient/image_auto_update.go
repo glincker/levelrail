@@ -50,10 +50,14 @@ func (c *Client) SetImageAutoUpdateRange(ctx context.Context, appName string, en
 }
 
 // CheckImageAutoUpdate calls POST /api/v1/apps/{name}/auto-update/check: one
-// registry check now, redeploying if the tag moved.
-func (c *Client) CheckImageAutoUpdate(ctx context.Context, appName string) (ImageAutoUpdateResource, error) {
+// registry check now that only reports a newer image; apply deploys it.
+func (c *Client) CheckImageAutoUpdate(ctx context.Context, appName string, apply bool) (ImageAutoUpdateResource, error) {
 	var out ImageAutoUpdateResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/auto-update/check", nil, &out)
+	path := "/api/v1/apps/" + PathEscape(appName) + "/auto-update/check"
+	if apply {
+		path += "?apply=true"
+	}
+	err := c.do(ctx, http.MethodPost, path, nil, &out)
 	return out, err
 }
 

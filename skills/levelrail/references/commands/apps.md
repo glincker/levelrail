@@ -308,7 +308,7 @@ Usage:
   levelrail-cli apps auto-update enable <app-name> [flags]    redeploy automatically when the image tag moves
   levelrail-cli apps auto-update disable <app-name> [flags]   opt back out
   levelrail-cli apps auto-update status <app-name> [flags]    show the setting and the last check
-  levelrail-cli apps auto-update check <app-name> [flags]     check the registry now, redeploying if it moved
+  levelrail-cli apps auto-update check <app-name> [flags]     check the registry now and report; --apply deploys a newer image
   levelrail-cli apps auto-update webhook <app-name> [flags]   mint a registry push webhook URL (shown once)
 
 Point your registry's push webhook (Docker Hub, GitHub Packages for ghcr.io,

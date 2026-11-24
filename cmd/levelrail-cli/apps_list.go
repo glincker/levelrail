@@ -16,6 +16,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	environmentFlag := fs.String("environment", "", "only apps in this environment (name or id)")
 	startingTokenFlag := fs.String("starting-token", "", "resume from the next_token a previous --max-items call printed, to fetch the next page")
 	lo := registerListOpts(fs)
+	showEnvFlag := fs.Bool("show-env", false, "include plain env values in json, yaml and ndjson output (omitted by default so a list does not leak them)")
 	allProfilesP := registerAllProfiles(fs)
 	wo := registerWatch(fs, lookupEnv)
 	fs.Usage = func() {
@@ -46,7 +47,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 				}
 				apps = applyListOpts(apps, lo)
 				fillPreviewState(apps)
-				return apps, nil
+				return structuredApps(apps, *showEnvFlag), nil
 			})
 			if err != nil {
 				return reportError(stdout, stderr, jsonOut, err)
@@ -75,7 +76,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			}
 			apps = applyListOpts(apps, lo)
 			fillPreviewState(apps)
-			if err := renderResult(stdout, of.Format, of.Query, apps, func() { printAppsTable(stdout, apps) }); err != nil {
+			if err := renderResult(stdout, of.Format, of.Query, structuredApps(apps, *showEnvFlag), func() { printAppsTable(stdout, apps) }); err != nil {
 				_, _ = fmt.Fprintln(stderr, err)
 				return exitCodeForError(err)
 			}
@@ -107,7 +108,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		}
 		_, _ = fmt.Fprintf(stderr, "next_token=%s total_count=%d\n", nextToken, page.TotalCount)
 
-		if err := renderResult(stdout, of.Format, of.Query, page.Items, func() {
+		if err := renderResult(stdout, of.Format, of.Query, structuredApps(page.Items, *showEnvFlag), func() {
 			printAppsTable(stdout, page.Items)
 			if nextToken != "" {
 				_, _ = fmt.Fprintf(stdout, "more: rerun with --starting-token %s\n", nextToken)
@@ -129,4 +130,17 @@ func fillPreviewState(apps []appResource) {
 			apps[i].Preview.State = "none"
 		}
 	}
+}
+
+// structuredApps drops plain env values from a copy so structured output never leaks them unless asked.
+func structuredApps(apps []appResource, showEnv bool) []appResource {
+	if showEnv {
+		return apps
+	}
+	out := make([]appResource, len(apps))
+	for i, a := range apps {
+		a.Env = nil
+		out[i] = a
+	}
+	return out
 }

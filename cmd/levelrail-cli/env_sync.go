@@ -47,7 +47,7 @@ func envUsage(prog string) string {
 
 Pull asks for your password (and authenticator code) once so secret values
 are written too, and creates the file with owner-only permissions. Use
---masked to skip that and write secrets as empty keys. Database and storage
+--masked to skip that and write every value, plain ones too, as empty keys. Database and storage
 links inject their connection env at container start and are not part of the
 pulled file. Push checks new values for credentials and warns by key name
 only; keys already stored as secrets are never overwritten.
@@ -80,7 +80,10 @@ func splitEnvSyncFlags(args []string) (file string, masked bool, rest []string) 
 func runEnvPull(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	file, masked, rest := splitEnvSyncFlags(args)
 	wrapped := append(rest, "--out", file)
-	if !masked {
+	if masked {
+		// --masked promises no values in the file, plain ones included.
+		wrapped = append(wrapped, "--mask-all")
+	} else {
 		wrapped = append(wrapped, "--reveal")
 	}
 	return runAppsEnvExport(prog, wrapped, stdout, stderr, lookupEnv)

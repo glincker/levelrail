@@ -104,6 +104,9 @@ Flags:
 	}
 	if err := renderResult(stdout, of.Format, of.Query, view, func() {
 		_, _ = fmt.Fprintf(stdout, "%s %s runs on %s\n", view.Kind, view.Name, nodeLabel(view.NodeID))
+		if view.Kind == "app" {
+			_, _ = fmt.Fprintf(stdout, "pool: %s\n", noneIfEmpty(view.Pool))
+		}
 		if view.Recorded == nil {
 			_, _ = fmt.Fprintln(stdout, "recorded decision: none (placed before decisions were recorded, or on the local node by default)")
 		} else {

@@ -33,7 +33,7 @@ func appsAutoUpdateUsage(prog string) string {
   %[1]s apps auto-update enable <app-name> [flags]    redeploy automatically when the image tag moves
   %[1]s apps auto-update disable <app-name> [flags]   opt back out
   %[1]s apps auto-update status <app-name> [flags]    show the setting and the last check
-  %[1]s apps auto-update check <app-name> [flags]     check the registry now, redeploying if it moved
+  %[1]s apps auto-update check <app-name> [flags]     check the registry now and report; --apply deploys a newer image
   %[1]s apps auto-update webhook <app-name> [flags]   mint a registry push webhook URL (shown once)
 
 Point your registry's push webhook (Docker Hub, GitHub Packages for ghcr.io,
@@ -58,8 +58,11 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps auto-update "+verb, "print the result as JSON to stdout and nothing else", stderr)
 	var windowCron string
 	var windowMinutes int
-	var clearWindow bool
+	var clearWindow, applyCheck bool
 	var versionRange string
+	if verb == "check" {
+		fs.BoolVar(&applyCheck, "apply", false, "deploy the newer image when one is found; without it the check only reports")
+	}
 	if verb == "enable" {
 		fs.StringVar(&windowCron, "window-cron", "", "cron expression (UTC) when updates may apply, e.g. '0 3 * * *'")
 		fs.IntVar(&windowMinutes, "window-minutes", 0, "how many minutes the window stays open")
@@ -110,7 +113,7 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 	case "disable":
 		result, err = client.SetImageAutoUpdate(ctx, appName, false)
 	case "check":
-		result, err = client.CheckImageAutoUpdate(ctx, appName)
+		result, err = client.CheckImageAutoUpdate(ctx, appName, applyCheck)
 	default:
 		result, err = client.GetImageAutoUpdate(ctx, appName)
 	}

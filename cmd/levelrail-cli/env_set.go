@@ -73,6 +73,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		}
 	}
 	var rebuildKeys []string
+	changed := false
 	plan := planEnvImport(app.Env, entries, secretKeys, false)
 	result := envImportResult{App: name, Plan: plan}
 	warnEnvSecrets(ctx, client, stderr, name, plan)
@@ -90,7 +91,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
 		}
 		rebuildKeys = saved.RebuildKeys
-		result.Applied = true
+		changed = true
 	}
 	// After the env PUT, which would otherwise resend a stale vault_env map.
 	for _, k := range sortedRefKeys(refs) {
@@ -99,10 +100,15 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		}
 	}
 	if len(refs) > 0 {
-		result.Applied = true
+		changed = true
 	}
+	doApply, reason := resolveEnvApply(ctx, client, apply, noApply)
+	// A saved env only reaches the container after a restart, so applied stays false until then.
+	result.Saved = changed
+	result.Applied = changed && doApply
+	result.Pending = changed && !doApply
 	code := writeScheduledTaskResult(stdout, stderr, of, result, func() { printEnvImportHuman(stdout, name, result) })
-	if result.Applied {
+	if changed {
 		hintOut := stdout
 		if of.Format == outputJSON || of.Query != "" {
 			hintOut = io.Discard
@@ -121,7 +127,6 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			}
 			printEnvUndoHint(undoOut, prog, name, plan)
 		}
-		doApply, reason := resolveEnvApply(ctx, client, apply, noApply)
 		if applyCode := afterConfigWriteReason(ctx, client, prog, name, doApply, reason, hintOut, stderr); code == exitOK {
 			code = applyCode
 		}

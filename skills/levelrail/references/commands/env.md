@@ -16,7 +16,7 @@ Usage:
 
 Pull asks for your password (and authenticator code) once so secret values
 are written too, and creates the file with owner-only permissions. Use
---masked to skip that and write secrets as empty keys. Database and storage
+--masked to skip that and write every value, plain ones too, as empty keys. Database and storage
 links inject their connection env at container start and are not part of the
 pulled file. Push checks new values for credentials and warns by key name
 only; keys already stored as secrets are never overwritten.
