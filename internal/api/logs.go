@@ -153,6 +153,10 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 	var runs []collapsedLog
 	if collapse {
 		runs = collapseLogs(entries)
+		// Trim the runs themselves so each kept entry still lines up with its run.
+		if (order != logOrderRelevance || strings.TrimSpace(query) == "") && limit > 0 && len(runs) > limit {
+			runs = runs[len(runs)-limit:]
+		}
 		entries = entries[:0:0]
 		for _, c := range runs {
 			entries = append(entries, c.entry)
@@ -163,7 +167,7 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		if limit > 0 && len(entries) > limit {
 			entries = entries[:limit]
 		}
-	} else if limit > 0 && len(entries) > limit {
+	} else if !collapse && limit > 0 && len(entries) > limit {
 		entries = entries[len(entries)-limit:]
 	}
 

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // Operation describes one OpenAPI operation.
@@ -31,7 +32,17 @@ type Client struct {
 	baseURL string
 	token   string
 	http    *http.Client
+	timeout time.Duration
+	frame   int
+	err     error
 }
+
+// DefaultTimeout bounds one non-streaming call; DefaultMaxFrameBytes bounds
+// one SSE frame.
+const (
+	DefaultTimeout       = 30 * time.Second
+	DefaultMaxFrameBytes = 4 << 20
+)
 
 // Option customizes a Client.
 type Option func(*Client)
@@ -39,13 +50,46 @@ type Option func(*Client)
 // WithHTTPClient replaces the default http.Client, for timeouts or transports.
 func WithHTTPClient(h *http.Client) Option { return func(c *Client) { c.http = h } }
 
+// WithTimeout sets the per-call timeout of the default client (streams exempt).
+func WithTimeout(d time.Duration) Option { return func(c *Client) { c.timeout = d } }
+
+// WithMaxFrameBytes caps the bytes of one SSE frame before ReadSSE errors.
+func WithMaxFrameBytes(n int) Option { return func(c *Client) { c.frame = n } }
+
 // New returns a client for baseURL (for example https://control.example.com).
 func New(baseURL, token string, opts ...Option) *Client {
-	c := &Client{baseURL: strings.TrimRight(baseURL, "/"), token: token, http: &http.Client{}}
+	c := &Client{baseURL: strings.TrimRight(baseURL, "/"), token: token, timeout: DefaultTimeout, frame: DefaultMaxFrameBytes}
+	c.http = &http.Client{}
 	for _, o := range opts {
 		o(c)
 	}
+	hc := *c.http
+	if hc.Timeout == 0 {
+		hc.Timeout = c.timeout
+	}
+	if hc.CheckRedirect == nil {
+		hc.CheckRedirect = c.checkRedirect
+	}
+	c.http = &hc
+	if u, err := url.Parse(c.baseURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		c.err = fmt.Errorf("levelrail: base URL must be an absolute http or https URL")
+	}
 	return c
+}
+
+// checkRedirect refuses a TLS downgrade, and a host change while a token is set.
+func (c *Client) checkRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("levelrail: too many redirects")
+	}
+	prev := via[len(via)-1].URL
+	if prev.Scheme == "https" && req.URL.Scheme != "https" {
+		return errors.New("levelrail: refusing redirect from https to http")
+	}
+	if c.token != "" && req.URL.Host != prev.Host {
+		return errors.New("levelrail: refusing redirect to another host")
+	}
+	return nil
 }
 
 // APIError is a non-2xx response. The message never echoes request bodies.
@@ -90,6 +134,9 @@ func buildPath(tpl string, params []string) (string, error) {
 
 // request builds and sends one call. The caller closes the response body.
 func (c *Client) request(ctx context.Context, opID string, params []string, q url.Values, body any, accept string) (*http.Response, error) {
+	if c.err != nil {
+		return nil, c.err
+	}
 	op, ok := Operations[opID]
 	if !ok {
 		return nil, fmt.Errorf("levelrail: unknown operation %q", opID)
@@ -122,7 +169,14 @@ func (c *Client) request(ctx context.Context, opID string, params []string, q ur
 	if k, ok := ctx.Value(idemKey{}).(string); ok && k != "" {
 		req.Header.Set("Idempotency-Key", k)
 	}
-	resp, err := c.http.Do(req)
+	hc := c.http
+	if op.Stream {
+		// A client timeout would cut a long-lived event stream.
+		cp := *hc
+		cp.Timeout = 0
+		hc = &cp
+	}
+	resp, err := hc.Do(req)
 	if err != nil {
 		return nil, err
 	}

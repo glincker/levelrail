@@ -42,8 +42,9 @@ func (l *lagLedger) markLocked(name string, at time.Time) {
 	}
 }
 
-// observed clears the clock when a run that began at start succeeded; a change
-// that arrived during the run stays pending.
+// observed clears the clock when a run that began at start happened, pass or
+// fail: lag counts missed reconciles, so a crash loop must not look like lag.
+// A change that arrived during the run stays pending.
 func (l *lagLedger) observed(name string, start time.Time, ok bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

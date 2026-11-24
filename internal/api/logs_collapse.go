@@ -38,20 +38,27 @@ type collapseKey struct {
 	stream, container, message string
 }
 
-// collapsedResources rebuilds resources for entries (possibly re-ranked or
-// trimmed after collapsing), attaching each run's count and last time.
+// collapsedResources rebuilds resources for entries (possibly re-ranked after
+// collapsing), attaching each run's count and last time. Runs sharing a key
+// are handed out in order, so a repeated line never overwrites an earlier run.
 func collapsedResources(entries []telemetry.LogEntry, runs []collapsedLog) []logEntryResource {
-	byKey := make(map[collapseKey]collapsedLog, len(runs))
-	for _, c := range runs {
-		byKey[collapseKey{c.entry.Timestamp, c.entry.Stream, c.entry.ContainerID, c.entry.Message}] = c
+	byKey := make(map[collapseKey][]int, len(runs))
+	for i, c := range runs {
+		k := collapseKey{c.entry.Timestamp, c.entry.Stream, c.entry.ContainerID, c.entry.Message}
+		byKey[k] = append(byKey[k], i)
 	}
 	out := make([]logEntryResource, len(entries))
 	for i, e := range entries {
 		r := toLogEntryResource(e)
-		if c, ok := byKey[collapseKey{e.Timestamp, e.Stream, e.ContainerID, e.Message}]; ok && c.count > 1 {
-			r.Count = c.count
-			r.First = e.Timestamp
-			r.Last = c.last
+		k := collapseKey{e.Timestamp, e.Stream, e.ContainerID, e.Message}
+		if q := byKey[k]; len(q) > 0 {
+			c := runs[q[0]]
+			byKey[k] = q[1:]
+			if c.count > 1 {
+				r.Count = c.count
+				r.First = e.Timestamp
+				r.Last = c.last
+			}
 		}
 		out[i] = r
 	}

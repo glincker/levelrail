@@ -22,3 +22,17 @@ func TestCollapseLogsFoldsConsecutiveRepeats(t *testing.T) {
 		t.Fatalf("unexpected resources: %+v", res)
 	}
 }
+
+func TestCollapseSameTimestampRunsKeepExactCounts(t *testing.T) {
+	ts := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	mk := func(msg string) telemetry.LogEntry {
+		return telemetry.LogEntry{Timestamp: ts, Stream: "stdout", Message: msg}
+	}
+	entries := []telemetry.LogEntry{mk("A"), mk("A"), mk("A"), mk("B"), mk("A")}
+	runs := collapseLogs(entries)
+	picked := []telemetry.LogEntry{runs[0].entry, runs[1].entry, runs[2].entry}
+	res := collapsedResources(picked, runs)
+	if res[0].Count != 3 || res[1].Count != 0 || res[2].Count != 0 {
+		t.Fatalf("counts wrong: %+v", res)
+	}
+}

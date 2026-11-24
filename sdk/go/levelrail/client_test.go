@@ -3,6 +3,7 @@ package levelrail
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -101,5 +102,32 @@ func TestChangesStream(t *testing.T) {
 	}
 	if len(evs) != 2 || !evs[0].Heartbeat || evs[0].HeartbeatMS != 20000 || strings.Join(evs[1].Topics, ",") != "apps,nodes" {
 		t.Fatalf("events = %+v", evs)
+	}
+}
+
+func TestRedirectDowngradeAndSchemeRefused(t *testing.T) {
+	plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(200) }))
+	defer plain.Close()
+	tls := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, plain.URL+"/x", http.StatusFound)
+	}))
+	defer tls.Close()
+	c := New(tls.URL, "tok", WithHTTPClient(tls.Client()))
+	if _, _, err := c.ListApps(context.Background(), ListOptions{}); err == nil || !strings.Contains(err.Error(), "https to http") {
+		t.Fatalf("downgrade redirect not refused: %v", err)
+	}
+	if _, _, err := New("file:///etc", "tok").ListApps(context.Background(), ListOptions{}); err == nil {
+		t.Fatal("non http base URL accepted")
+	}
+}
+
+func TestReadSSEOversizedFrameErrors(t *testing.T) {
+	body := strings.Repeat("data: xxxxxxxxxx\n", 50)
+	var got error
+	for _, err := range ReadSSEMax(strings.NewReader(body), 100) {
+		got = err
+	}
+	if !errors.Is(got, ErrFrameTooLarge) {
+		t.Fatalf("want ErrFrameTooLarge, got %v", got)
 	}
 }

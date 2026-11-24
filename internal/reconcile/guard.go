@@ -221,6 +221,14 @@ func (g *Guard) Before(name string) bool {
 	return true
 }
 
+// BreakerOpen reports whether name is currently skipped by an open breaker.
+func (g *Guard) BreakerOpen(name string) bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	c := g.entry(name)
+	return c.state == BreakerOpen && g.now().Before(c.openUntil)
+}
+
 // After records the outcome of a controller run. A panic counts as a failure.
 func (g *Guard) After(name string, err error, panicked bool) {
 	g.mu.Lock()

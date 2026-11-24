@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"iter"
 	"strings"
@@ -55,24 +56,38 @@ type SSEEvent struct {
 	Data  string
 }
 
-// ReadSSE parses a text/event-stream body. Comment lines are skipped.
+// ErrFrameTooLarge means one SSE frame exceeded the byte cap.
+var ErrFrameTooLarge = errors.New("levelrail: SSE frame too large")
+
+// ReadSSE parses a text/event-stream body with the default frame cap.
 func ReadSSE(r io.Reader) iter.Seq2[SSEEvent, error] {
+	return ReadSSEMax(r, DefaultMaxFrameBytes)
+}
+
+// ReadSSEMax parses a text/event-stream body. Comment lines are skipped and a
+// frame over maxFrame bytes (lines without a blank separator) is an error.
+func ReadSSEMax(r io.Reader, maxFrame int) iter.Seq2[SSEEvent, error] {
 	return func(yield func(SSEEvent, error) bool) {
 		sc := bufio.NewScanner(r)
 		sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
 		var ev SSEEvent
 		var data []string
+		size := 0
 		flush := func() bool {
 			if ev.Event == "" && ev.ID == "" && len(data) == 0 {
 				return true
 			}
 			ev.Data = strings.Join(data, "\n")
 			out := ev
-			ev, data = SSEEvent{}, nil
+			ev, data, size = SSEEvent{}, nil, 0
 			return yield(out, nil)
 		}
 		for sc.Scan() {
 			line := sc.Text()
+			if size += len(line) + 1; maxFrame > 0 && size > maxFrame {
+				yield(SSEEvent{}, ErrFrameTooLarge)
+				return
+			}
 			if line == "" {
 				if !flush() {
 					return
@@ -118,7 +133,7 @@ func (c *Client) Changes(ctx context.Context) iter.Seq2[ChangeEvent, error] {
 			return
 		}
 		defer func() { _ = resp.Body.Close() }()
-		for raw, err := range ReadSSE(resp.Body) {
+		for raw, err := range ReadSSEMax(resp.Body, c.frame) {
 			if err != nil {
 				yield(ChangeEvent{}, err)
 				return

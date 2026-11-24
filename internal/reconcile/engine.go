@@ -372,12 +372,16 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 // runOne reconciles c once; keyed says a KeyOnly requeue is the caller's to schedule.
 func (e *Engine) runOne(ctx context.Context, c Controller, keyed bool) Result {
 	if !e.guard.Before(c.Name()) {
+		// A tripped breaker is a failing controller, not a missed reconcile.
+		if e.guard.BreakerOpen(c.Name()) {
+			e.lag.observed(c.Name(), time.Now(), true)
+		}
 		return Result{}
 	}
 	start := time.Now()
 	result, panicked, err := e.safeReconcile(ctx, c)
 	e.guard.After(c.Name(), err, panicked)
-	defer func() { e.lag.observed(c.Name(), start, err == nil && !panicked) }()
+	defer func() { e.lag.observed(c.Name(), start, true) }()
 	dur := time.Since(start)
 	e.recordController(c.Name(), dur)
 	e.costs.add(c.Name(), dur, err != nil || panicked)
