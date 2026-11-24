@@ -35,8 +35,11 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		undo, _ = rt.apps.GetDesiredService(r.Context(), name)
 	}
 	delCtx := r.Context()
-	if undo != nil && rt.recentlyDeleted() != nil && rt.recentlyDeletedWindow(delCtx) > 0 {
-		delCtx = store.WithKeptRevisions(delCtx)
+	if st := rt.recentlyDeleted(); undo != nil && st != nil && rt.recentlyDeletedWindow(delCtx) > 0 {
+		if entry, ok := rt.deletedEntry(r, store.RecentlyDeletedApp, name, undo, ""); ok {
+			// The reservation is written under the name lock, in deleteAppGuarded, before history is relied on.
+			delCtx = withSoftDelete(store.WithKeptRevisions(delCtx), func(c context.Context) error { return st.AddRecentlyDeleted(c, entry) })
+		}
 	}
 	teardownErr, err := rt.deleteApp(delCtx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
@@ -50,9 +53,6 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if purge && teardownErr == nil {
 		rt.purgeVolumes(context.WithoutCancel(r.Context()), "app/"+name, volumes)
 	}
-	if undo != nil {
-		rt.rememberDeleted(context.WithoutCancel(r.Context()), r, store.RecentlyDeletedApp, name, undo, "")
-	}
 	rt.changes.Publish(changeApps, name)
 	rt.purgeAppAccess(name)
 	rt.nudgeReconciler()
@@ -65,6 +65,38 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type softDeleteKey struct{}
+
+// withSoftDelete carries the undo reservation write into deleteAppGuarded.
+func withSoftDelete(ctx context.Context, reserve func(context.Context) error) context.Context {
+	return context.WithValue(ctx, softDeleteKey{}, reserve)
+}
+
+// reserveSoftDeleted writes the name reservation while the name lock is held. If it cannot be
+// written the kept history is purged, so a same-name app never inherits it (fail closed).
+func (rt *Router) reserveSoftDeleted(ctx context.Context, name string) {
+	reserve, _ := ctx.Value(softDeleteKey{}).(func(context.Context) error)
+	if reserve == nil {
+		return
+	}
+	wctx := context.WithoutCancel(ctx)
+	err := reserve(wctx)
+	if err == nil {
+		return
+	}
+	rt.logger.Warn("api: undo window save failed, purging kept history", slog.String("name", name), slog.String("error", err.Error()))
+	p, ok := rt.apps.(interface {
+		PurgeAppRevisions(ctx context.Context, name string) error
+	})
+	if !ok {
+		rt.logger.Error("api: kept history cannot be purged", slog.String("name", name))
+		return
+	}
+	if perr := p.PurgeAppRevisions(wctx, name); perr != nil {
+		rt.logger.Error("api: purge kept history failed", slog.String("name", name), slog.String("error", perr.Error()))
+	}
 }
 
 // appNameLocks serializes a delete's row removal and credential erase with a
@@ -140,6 +172,7 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
+	rt.reserveSoftDeleted(ctx, name)
 	rt.removeAppCredentials(ctx, name, integrationNS)
 	if vdb, ok := rt.vitalsDB(); ok {
 		if err := rt.vitalsRuntime().dropApp(ctx, vdb, name); err != nil {

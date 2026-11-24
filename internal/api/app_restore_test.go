@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -114,5 +115,54 @@ func TestRestoreDeletedApp_AuthzDeny(t *testing.T) {
 	}
 	if got := post(appA, dev); got != http.StatusOK {
 		t.Fatalf("own team restore = %d, want 200", got)
+	}
+}
+
+// failReserveStore fails the undo reservation write while every other call hits the real store.
+type failReserveStore struct{ *store.DB }
+
+func (failReserveStore) AddRecentlyDeleted(context.Context, store.RecentlyDeleted) error {
+	return errors.New("reservation write failed")
+}
+
+func TestSoftDeleteApp_ReservationFailurePurgesRevisions(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.AddEnvRevision(ctx, "web", "me", []string{"A"}, nil, 10, 0); err != nil {
+		t.Fatal(err)
+	}
+	rt.apps = failReserveStore{db}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d", rec.Code)
+	}
+	if revs, _ := db.ListEnvRevisions(ctx, "web", 10); len(revs) != 0 {
+		t.Fatalf("revisions left readable for a same-name app = %d, want 0", len(revs))
+	}
+}
+
+func TestRestoreDeletedApp_ProtectedEnvironmentNeedsAdmin(t *testing.T) {
+	t.Parallel()
+	f := newTeamFixture(t)
+	ctx := context.Background()
+	if err := f.db.SaveEnvironment(ctx, store.Environment{ID: "env_prot_a", ProjectID: projA, Name: "production", Protected: true, CreatedAt: "2026-10-01T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(store.DesiredService{Name: "prod-web", Image: "nginx:1", Port: 80, ProjectID: projA, EnvironmentID: "env_prot_a"})
+	if err := f.db.AddRecentlyDeleted(ctx, store.RecentlyDeleted{Kind: store.RecentlyDeletedApp, Name: "prod-web", Snapshot: string(b)}); err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/recently-deleted/app/prod-web/restore", strings.NewReader(`{"confirm":"prod-web"}`))
+	req.AddCookie(f.cookies[store.TeamRoleDeveloper])
+	rec := httptest.NewRecorder()
+	f.rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("developer restore into protected env = %d, want 403", rec.Code)
 	}
 }

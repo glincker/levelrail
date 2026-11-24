@@ -112,6 +112,14 @@ func (db *DB) PurgeRecentlyDeleted(ctx context.Context, cutoff time.Time) (int, 
 		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 	}
 	for _, n := range names {
+		// A restored app that kept its undo row must not lose its history.
+		var live int
+		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM desired_services WHERE name = ?`, n).Scan(&live); err != nil {
+			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+		}
+		if live > 0 {
+			continue
+		}
 		if err := dropAppRevisions(ctx, tx, n); err != nil {
 			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 		}
@@ -137,6 +145,19 @@ func WithKeptRevisions(ctx context.Context) context.Context {
 func revisionsKept(ctx context.Context) bool {
 	v, _ := ctx.Value(keepRevisionsKey{}).(bool)
 	return v
+}
+
+// PurgeAppRevisions drops the kept history of a deleted app, for a soft delete that could not reserve its name.
+func (db *DB) PurgeAppRevisions(ctx context.Context, name string) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: purge app revisions: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := dropAppRevisions(ctx, tx, name); err != nil {
+		return fmt.Errorf("store: purge app revisions: %w", err)
+	}
+	return tx.Commit()
 }
 
 // dropAppRevisions removes env and config history; env snapshots are sealed per app name.
