@@ -177,16 +177,22 @@ export function ServiceTemplateGrid({
   onSelect,
   onDeployNow,
   deployingId,
+  categories: onlyCategories,
 }: {
   onSelect: (id: string) => void
   onDeployNow: (template: ServiceTemplateListItem) => void
   deployingId?: string
+  /** When set, only templates in these categories are listed. */
+  categories?: readonly string[]
 }) {
   const { t } = useTranslation('templates')
   const [search, setSearch] = useState('')
   const templatesQuery = useServiceTemplates()
 
-  const templates = templatesQuery.data ?? []
+  const allTemplates = templatesQuery.data ?? []
+  const templates = onlyCategories
+    ? allTemplates.filter((tpl) => onlyCategories.includes(tpl.category))
+    : allTemplates
   const normalizedSearch = search.trim().toLowerCase()
   const filtered = templates.filter((template) =>
     matchesSearch(template, normalizedSearch),

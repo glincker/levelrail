@@ -662,7 +662,47 @@
     "uploadLabel": "上传 Compose 文件或 Dockerfile",
     "looksLike": "看起来像：{{source}}",
     "tryLabel": "试试：",
-    "fileTooLarge": "该文件超过 512 KB。"
+    "fileTooLarge": "该文件超过 512 KB。",
+    "goals": {
+      "title": "你想运行什么?",
+      "advanced": "高级选项",
+      "deploy": "部署",
+      "deploying": "部署中...",
+      "healthOff": "关闭",
+      "fields": {
+        "image": "镜像",
+        "imagePlaceholder": "ghcr.io/you/app:latest",
+        "name": "名称",
+        "port": "端口",
+        "health": "健康检查路径"
+      },
+      "items": {
+        "website": {
+          "label": "网站",
+          "hint": "基于镜像的 Web 应用,端口和健康检查已预填。"
+        },
+        "api": {
+          "label": "API",
+          "hint": "基于镜像的服务,已预填 /healthz 检查。"
+        },
+        "database": {
+          "label": "数据库",
+          "hint": "带备份和凭据的托管引擎。"
+        },
+        "static-site": {
+          "label": "静态站点",
+          "hint": "从 git 仓库构建并提供服务。"
+        },
+        "scheduled-job": {
+          "label": "定时任务",
+          "hint": "目录中的备份和 cron 运行器。"
+        },
+        "self-hosted": {
+          "label": "自托管应用",
+          "hint": "模板目录中的精选应用。"
+        }
+      }
+    }
   },
   "noBackups": {
     "title": "备份",

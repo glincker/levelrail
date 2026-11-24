@@ -662,7 +662,47 @@
     "uploadLabel": "composeファイルまたはDockerfileをアップロード",
     "looksLike": "判定結果: {{source}}",
     "tryLabel": "例:",
-    "fileTooLarge": "そのファイルは512 KBを超えています。"
+    "fileTooLarge": "そのファイルは512 KBを超えています。",
+    "goals": {
+      "title": "何を実行しますか?",
+      "advanced": "詳細オプション",
+      "deploy": "デプロイ",
+      "deploying": "デプロイ中...",
+      "healthOff": "オフ",
+      "fields": {
+        "image": "イメージ",
+        "imagePlaceholder": "ghcr.io/you/app:latest",
+        "name": "名前",
+        "port": "ポート",
+        "health": "ヘルスパス"
+      },
+      "items": {
+        "website": {
+          "label": "ウェブサイト",
+          "hint": "イメージからのWebアプリ。ポートとヘルスチェックは入力済み。"
+        },
+        "api": {
+          "label": "API",
+          "hint": "イメージからのサービス。/healthz チェックは入力済み。"
+        },
+        "database": {
+          "label": "データベース",
+          "hint": "バックアップと認証情報付きのマネージドエンジン。"
+        },
+        "static-site": {
+          "label": "静的サイト",
+          "hint": "Git リポジトリからビルドして配信。"
+        },
+        "scheduled-job": {
+          "label": "スケジュールジョブ",
+          "hint": "カタログのバックアップと cron ランナー。"
+        },
+        "self-hosted": {
+          "label": "セルフホストアプリ",
+          "hint": "テンプレートカタログの厳選アプリ。"
+        }
+      }
+    }
   },
   "noBackups": {
     "title": "バックアップ",

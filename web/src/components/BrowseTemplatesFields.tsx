@@ -72,6 +72,7 @@ export function BrowseTemplatesFields({
   onCreated,
   initialTemplateId,
   onViewChange,
+  categories,
 }: {
   /** The owning dialog's own open state, used only to reset this
    *  component's local state on close. See CreateAppFields's identical
@@ -89,6 +90,8 @@ export function BrowseTemplatesFields({
    *  owning wizard can widen its fullscreen layout for the wide catalog
    *  grid without also widening the narrow configure-form/results view. */
   onViewChange?: (view: 'grid' | 'detail') => void
+  /** Narrows the grid to these catalog categories (a picked goal). */
+  categories?: readonly string[]
 }) {
   // Not reset via the `open` effect below: CreateResourceWizard's own
   // step-2 branch unmounts this component entirely when the dialog
@@ -372,6 +375,7 @@ export function BrowseTemplatesFields({
     <>
       <ServiceTemplateGrid
         onSelect={setTemplateId}
+        categories={categories}
         onDeployNow={handleDeployNow}
         deployingId={deployTemplateNow.pendingId}
       />

@@ -27,6 +27,9 @@ import { engineAccent } from '@/lib/engineAccents'
 import { StepHero } from './createResource/StepHero'
 import { BrowseTemplatesFields } from './BrowseTemplatesFields'
 import { CreateAppFields } from './CreateAppFields'
+import { CreateGoalAppFields } from './CreateGoalAppFields'
+import { GoalPicker } from './GoalPicker'
+import { goalById, type GoalDef, type GoalId } from '../lib/createGoals'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
 import { CreateComposeFields } from './CreateComposeFields'
 import { CreateDatabaseFields } from './CreateDatabaseFields'
@@ -43,7 +46,11 @@ import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 // (internal/catalog, ADR 015), distinct from docker-compose's own
 // paste-your-own-YAML path below.
 type FixedWizardOption =
-  'docker-image' | 'dockerfile-git' | 'docker-compose' | 'browse-templates'
+  | 'docker-image'
+  | 'dockerfile-git'
+  | 'docker-compose'
+  | 'browse-templates'
+  | 'goal-app'
 
 interface WizardOptionDef {
   value: string
@@ -166,6 +173,9 @@ export function CreateResourceWizard({
   // grid wants a wider dialog than its own configure-form view.
   const [templateView, setTemplateView] = useState<'grid' | 'detail'>('grid')
   const [search, setSearch] = useState('')
+  // Set when a goal picked its path: the goal's template categories narrow
+  // the catalog, and the goal's defaults prefill the app form.
+  const [goal, setGoal] = useState<GoalDef | null>(null)
   // Set once the import front door has produced a plan preview; shown in
   // place of the picker until the operator goes back or deploys.
   const [importState, setImportState] = useState<{
@@ -185,7 +195,8 @@ export function CreateResourceWizard({
     value === 'docker-image' ||
     value === 'dockerfile-git' ||
     value === 'docker-compose' ||
-    value === 'browse-templates'
+    value === 'browse-templates' ||
+    value === 'goal-app'
 
   const pickerEntries = buildPickerEntries(engines, BRAND_ICON_NAMES)
   const selectedKey =
@@ -212,8 +223,27 @@ export function CreateResourceWizard({
       setFlavor(null)
       setTemplateView('grid')
       setSearch('')
+      setGoal(null)
       setCategory('all')
       setImportState(null)
+    }
+  }
+
+  function handleGoal(id: GoalId) {
+    const picked = goalById(id)
+    if (!picked) return
+    setGoal(picked)
+    setFlavor(null)
+    if (picked.kind === 'database') {
+      setGoal(null)
+      if (scope === undefined) setCategory('databases')
+      setSearch('')
+    } else if (picked.kind === 'git') {
+      setSelected('dockerfile-git')
+    } else if (picked.kind === 'templates') {
+      setSelected('browse-templates')
+    } else {
+      setSelected('goal-app')
     }
   }
 
@@ -228,11 +258,13 @@ export function CreateResourceWizard({
     ? isFixedOption(selected)
       ? selected === 'docker-image'
         ? 'New app from an image'
-        : selected === 'dockerfile-git'
-          ? 'New app from a git repo'
-          : selected === 'docker-compose'
-            ? 'New app from Docker Compose'
-            : 'New app from a template'
+        : selected === 'goal-app'
+          ? t(`wizard.goals.items.${goal?.id ?? 'website'}.label`)
+          : selected === 'dockerfile-git'
+            ? 'New app from a git repo'
+            : selected === 'docker-compose'
+              ? 'New app from Docker Compose'
+              : 'New app from a template'
       : `New ${databaseLabel} database`
     : ''
 
@@ -241,15 +273,17 @@ export function CreateResourceWizard({
   const appYamlAside =
     "Already deploying this app from an app.yaml in a connected repo? That happens automatically, you don't need to add it here."
   const selectedDescription = selected
-    ? selected === 'docker-image'
-      ? `Point this at an image you've already built and pushed to a registry Docker can pull from, like Docker Hub or GHCR. ${appYamlAside}`
-      : selected === 'dockerfile-git'
-        ? `We'll create your app, then build and deploy it straight from your repository. This usually takes a minute or two. ${appYamlAside}`
-        : selected === 'docker-compose'
-          ? `We'll create one app per service defined in your compose.yaml. ${appYamlAside}`
-          : selected === 'browse-templates'
-            ? `Pick a service from the catalog, we'll pre-fill its compose.yaml and create one app per service it defines. ${appYamlAside}`
-            : "We'll set this database up on your server and connect it automatically, no manual configuration needed."
+    ? selected === 'goal-app'
+      ? t(`wizard.goals.items.${goal?.id ?? 'website'}.hint`)
+      : selected === 'docker-image'
+        ? `Point this at an image you've already built and pushed to a registry Docker can pull from, like Docker Hub or GHCR. ${appYamlAside}`
+        : selected === 'dockerfile-git'
+          ? `We'll create your app, then build and deploy it straight from your repository. This usually takes a minute or two. ${appYamlAside}`
+          : selected === 'docker-compose'
+            ? `We'll create one app per service defined in your compose.yaml. ${appYamlAside}`
+            : selected === 'browse-templates'
+              ? `Pick a service from the catalog, we'll pre-fill its compose.yaml and create one app per service it defines. ${appYamlAside}`
+              : "We'll set this database up on your server and connect it automatically, no manual configuration needed."
     : ''
 
   const heroEntry = pickerEntries.find((e) => e.key === selectedKey)
@@ -362,6 +396,7 @@ export function CreateResourceWizard({
                 </Tabs>
               ) : null}
             </div>
+            <GoalPicker scope={scope} onSelect={handleGoal} />
             {scope !== 'databases' ? (
               <ImportFrontDoor
                 onPlan={(plan, request) => {
@@ -491,6 +526,7 @@ export function CreateResourceWizard({
               )}
               onBack={() => {
                 setSelected(null)
+                setGoal(null)
               }}
             />
             {/* key forces a fresh mount (and so a blank form) whenever the
@@ -500,6 +536,18 @@ export function CreateResourceWizard({
                 key={selected}
                 open={open}
                 onCreated={handleCreated}
+              />
+            ) : null}
+            {selected === 'goal-app' && goal ? (
+              <CreateGoalAppFields
+                key={goal.id}
+                goal={goal}
+                open={open}
+                onCreated={handleCreated}
+                onAdvanced={() => {
+                  setGoal(null)
+                  setSelected('docker-image')
+                }}
               />
             ) : null}
             {selected === 'dockerfile-git' ? (
@@ -523,6 +571,7 @@ export function CreateResourceWizard({
                 onCreated={handleCreated}
                 initialTemplateId={initialTemplateId}
                 onViewChange={setTemplateView}
+                categories={goal?.categories}
               />
             ) : null}
             {!isFixedOption(selected) ? (
