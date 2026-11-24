@@ -76,15 +76,15 @@ func withSoftDelete(ctx context.Context, reserve func(context.Context) error) co
 
 // reserveSoftDeleted writes the name reservation while the name lock is held. If it cannot be
 // written the kept history is purged, so a same-name app never inherits it (fail closed).
-func (rt *Router) reserveSoftDeleted(ctx context.Context, name string) {
+func (rt *Router) reserveSoftDeleted(ctx context.Context, name string) (kept bool) {
 	reserve, _ := ctx.Value(softDeleteKey{}).(func(context.Context) error)
 	if reserve == nil {
-		return
+		return false
 	}
 	wctx := context.WithoutCancel(ctx)
 	err := reserve(wctx)
 	if err == nil {
-		return
+		return true
 	}
 	rt.logger.Warn("api: undo window save failed, purging kept history", slog.String("name", name), slog.String("error", err.Error()))
 	p, ok := rt.apps.(interface {
@@ -92,11 +92,12 @@ func (rt *Router) reserveSoftDeleted(ctx context.Context, name string) {
 	})
 	if !ok {
 		rt.logger.Error("api: kept history cannot be purged", slog.String("name", name))
-		return
+		return false
 	}
 	if perr := p.PurgeAppRevisions(wctx, name); perr != nil {
 		rt.logger.Error("api: purge kept history failed", slog.String("name", name), slog.String("error", perr.Error()))
 	}
+	return false
 }
 
 // appNameLocks serializes a delete's row removal and credential erase with a
@@ -172,8 +173,12 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
-	rt.reserveSoftDeleted(ctx, name)
+	kept := rt.reserveSoftDeleted(ctx, name)
 	rt.removeAppCredentials(ctx, name, integrationNS)
+	// Under an undo window the webhook and key-value data stay with the reserved name until the final purge.
+	if !kept {
+		rt.purgeFunctionData(ctx, name)
+	}
 	if vdb, ok := rt.vitalsDB(); ok {
 		if err := rt.vitalsRuntime().dropApp(ctx, vdb, name); err != nil {
 			rt.logger.Warn("api: delete app: drop buffered vitals failed", slog.String("error", err.Error()), slog.String("name", name))

@@ -21,6 +21,7 @@ type FunctionTriggerStore interface {
 	SetFunctionWebhook(ctx context.Context, fn, path string, rotated bool, now time.Time) error
 	GetFunctionWebhook(ctx context.Context, fn string) (store.FunctionWebhook, error)
 	DeleteFunctionWebhook(ctx context.Context, fn string) error
+	BindFunctionWebhook(ctx context.Context, fn, incarnation string) error
 	EnqueueFunctionInvocation(ctx context.Context, inv store.FunctionInvocation, maxQueued int) error
 	GetFunctionInvocation(ctx context.Context, id string) (store.FunctionInvocation, error)
 	ListFunctionInvocations(ctx context.Context, fn, status string, limit int) ([]store.FunctionInvocation, error)
@@ -204,6 +205,10 @@ func (rt *Router) handlePutFunctionWebhook(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: put function webhook: save failed", err, slog.String("function", name))
 		return
 	}
+	if err = rt.bindFunctionWebhook(r.Context(), name); err != nil {
+		rt.internalError(w, "api: put function webhook: bind failed", err, slog.String("function", name))
+		return
+	}
 	saved, err := rt.functionTriggers.GetFunctionWebhook(r.Context(), name)
 	if err != nil {
 		rt.internalError(w, "api: put function webhook: reload failed", err, slog.String("function", name))
@@ -338,6 +343,11 @@ func (rt *Router) handleFunctionWebhook(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: function webhook: load failed", err, slog.String("function", name))
 		return
 	}
+	// A webhook minted for an earlier life of the app answers like an unknown one, so a stale secret learns nothing.
+	if !rt.functionWebhookCurrent(r.Context(), name, wh) {
+		writeError(w, http.StatusNotFound, "no webhook for this function")
+		return
+	}
 	secret, err := rt.gitSourceSecrets.Resolve(r.Context(), functionWebhookSecretNS+name, functionWebhookSecretKey)
 	if err != nil {
 		rt.internalError(w, "api: function webhook: resolve secret failed", err, slog.String("function", name))
@@ -459,4 +469,58 @@ func (rt *Router) handleDeleteFunctionInvocation(w http.ResponseWriter, r *http.
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// functionWebhookCurrent reports whether wh belongs to the app now holding the name. A row from before
+// the binding (empty incarnation) is accepted, as is an app that has none.
+func (rt *Router) functionWebhookCurrent(ctx context.Context, name string, wh store.FunctionWebhook) bool {
+	svc, err := rt.apps.GetDesiredService(ctx, name)
+	if err != nil {
+		return false
+	}
+	return wh.Incarnation == "" || wh.Incarnation == svc.Incarnation
+}
+
+// bindFunctionWebhook ties name's webhook to the running life of its app.
+func (rt *Router) bindFunctionWebhook(ctx context.Context, name string) error {
+	svc, err := rt.apps.GetDesiredService(ctx, name)
+	if err != nil {
+		return err
+	}
+	if svc.Incarnation == "" {
+		return nil
+	}
+	return rt.functionTriggers.BindFunctionWebhook(ctx, name, svc.Incarnation)
+}
+
+// purgeFunctionData erases a deleted function's webhook, signing secret and key-value data so a later
+// app of the same name starts clean. Failures are logged only.
+func (rt *Router) purgeFunctionData(ctx context.Context, name string) {
+	if rt.functionTriggers != nil {
+		if err := rt.functionTriggers.DeleteFunctionWebhook(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove function webhook failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	var eraser interface {
+		DeleteAll(ctx context.Context, serviceName string) error
+	}
+	if e, ok := rt.gitSourceSecrets.(interface {
+		DeleteAll(ctx context.Context, serviceName string) error
+	}); ok {
+		eraser = e
+	} else if rt.secrets != nil {
+		eraser = rt.secrets
+	}
+	if eraser != nil {
+		if err := eraser.DeleteAll(ctx, functionWebhookSecretNS+name); err != nil {
+			rt.logger.Warn("api: delete app: remove function webhook secret failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if kv, ok := rt.appSleep.(interface {
+		DeleteFunctionKV(ctx context.Context, namespace string) error
+	}); ok {
+		if err := kv.DeleteFunctionKV(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove function kv failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 }

@@ -229,6 +229,14 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 			return err
 		}
 	}
+	// The restored app is a new life of the name; the kept webhook follows it.
+	if rt.functionTriggers != nil {
+		if _, err := rt.functionTriggers.GetFunctionWebhook(ctx, e.Name); err == nil {
+			if err := rt.bindFunctionWebhook(ctx, e.Name); err != nil {
+				return err
+			}
+		}
+	}
 	if svc.EnvironmentID != "" {
 		if es, ok := rt.apps.(interface {
 			SetServiceEnvironment(ctx context.Context, serviceName, envID string) error

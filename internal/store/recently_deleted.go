@@ -123,6 +123,10 @@ func (db *DB) PurgeRecentlyDeleted(ctx context.Context, cutoff time.Time) (int, 
 		if err := dropAppRevisions(ctx, tx, n); err != nil {
 			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 		}
+		// Function webhook and key-value data are kept for the undo window, so they go with the history.
+		if err := dropFunctionData(ctx, tx, n); err != nil {
+			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+		}
 	}
 	res, err := tx.ExecContext(ctx, `DELETE FROM recently_deleted WHERE deleted_at < ?`, at)
 	if err != nil {
@@ -167,6 +171,20 @@ func dropAppRevisions(ctx context.Context, tx *sql.Tx, name string) error {
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM env_revisions WHERE app_name = ?`, name); err != nil {
 		return fmt.Errorf("env revisions: %w", err)
+	}
+	return nil
+}
+
+// dropFunctionData removes a function's webhook row and key-value data and token.
+func dropFunctionData(ctx context.Context, tx *sql.Tx, name string) error {
+	for _, q := range []string{
+		`DELETE FROM function_webhooks WHERE function = ?`,
+		`DELETE FROM function_kv WHERE namespace = ?`,
+		`DELETE FROM function_kv_tokens WHERE namespace = ?`,
+	} {
+		if _, err := tx.ExecContext(ctx, q, name); err != nil {
+			return fmt.Errorf("function data: %w", err)
+		}
 	}
 	return nil
 }
