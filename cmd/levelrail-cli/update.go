@@ -27,12 +27,16 @@ const (
 	envNoUpdateCheck    = "LEVELRAIL_NO_UPDATE_CHECK"
 	envUpdateCheckDays  = "LEVELRAIL_UPDATE_CHECK_DAYS"
 	envUpdateHintWaitMS = "LEVELRAIL_UPDATE_HINT_WAIT_MS"
+	// envUpdateNotices seeds cli.update_notices; set to off to silence update notices.
+	envUpdateNotices     = "LEVELRAIL_CLI_UPDATE_NOTICES"
+	envUpdateNoticeHours = "LEVELRAIL_CLI_UPDATE_NOTICE_HOURS"
 
-	defaultReleaseAPIURL    = "https://api.github.com"
-	defaultUpdateCheckDays  = 7
-	defaultUpdateHintWaitMS = 750
-	updateHTTPTimeout       = 10 * time.Minute
-	tufCacheDirName         = "sigstore-tuf"
+	defaultReleaseAPIURL     = "https://api.github.com"
+	defaultUpdateCheckDays   = 7
+	defaultUpdateHintWaitMS  = 750
+	defaultUpdateNoticeHours = 24
+	updateHTTPTimeout        = 10 * time.Minute
+	tufCacheDirName          = "sigstore-tuf"
 )
 
 // Seams for tests: the running executable's path and the signature check.
