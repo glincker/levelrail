@@ -45,12 +45,16 @@ type envRevisionDiffResource struct {
 	Added   []string `json:"added"`
 	Removed []string `json:"removed"`
 	Changed []string `json:"changed"`
+	// Unreadable means a snapshot could not be opened, so an empty Changed proves nothing.
+	Unreadable bool `json:"unreadable,omitempty"`
+	// ChangedHidden means value comparison needs a step-up first, so Changed was left out.
+	ChangedHidden bool `json:"changed_hidden,omitempty"`
 }
 
 // snapshotEnvRevision saves the app's new env as a revision. A failure is logged without any value, never fatal.
-func (rt *Router) snapshotEnvRevision(ctx context.Context, app, actor string, env map[string]string) {
+func (rt *Router) snapshotEnvRevision(ctx context.Context, app, actor string, env map[string]string) int {
 	if rt.envProtect.revisions == nil {
-		return
+		return 0
 	}
 	names := make([]string, 0, len(env))
 	for k := range env {
@@ -67,9 +71,12 @@ func (rt *Router) snapshotEnvRevision(ctx context.Context, app, actor string, en
 	}
 	keep := rt.runtimeSettings.Int(ctx, runtimesettings.KeyEnvRevisionsKeep)
 	maxAge := time.Duration(rt.runtimeSettings.Int(ctx, runtimesettings.KeyAppsUndoWindowDay)) * 24 * time.Hour
-	if _, err := rt.envProtect.revisions.AddEnvRevision(ctx, app, actor, names, blob, keep, maxAge); err != nil {
+	rev, err := rt.envProtect.revisions.AddEnvRevision(ctx, app, actor, names, blob, keep, maxAge)
+	if err != nil {
 		rt.logger.Warn("api: save env revision failed", slog.String("name", app))
+		return 0
 	}
+	return rev
 }
 
 // handleListEnvRevisions handles GET /api/v1/apps/{name}/env/revisions (limit). Names only.
@@ -126,10 +133,24 @@ func (rt *Router) handleDiffEnvRevisions(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: read env revision failed", errors.Join(errA, errB), slog.String("name", name))
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.diffEnvRevisions(name, a, b))
+	writeJSON(w, http.StatusOK, rt.diffEnvRevisions(name, a, b, rt.envRevisionCompareAllowed(r, name)))
 }
 
-func (rt *Router) diffEnvRevisions(app string, a, b store.EnvRevision) envRevisionDiffResource {
+// envRevisionCompareAllowed gates the changed list: comparing values lets a caller test guesses, so it needs the reveal step-up.
+func (rt *Router) envRevisionCompareAllowed(r *http.Request, app string) bool {
+	userID, ok := rt.currentSessionUserID(r)
+	if !ok {
+		return false
+	}
+	c, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return false
+	}
+	_, granted := rt.envProtect.grants.check(c.Value, userID, stepUpActionReveal, app, time.Now())
+	return granted
+}
+
+func (rt *Router) diffEnvRevisions(app string, a, b store.EnvRevision, compare bool) envRevisionDiffResource {
 	out := envRevisionDiffResource{From: a.Rev, To: b.Rev, Added: []string{}, Removed: []string{}, Changed: []string{}}
 	inA, inB := map[string]bool{}, map[string]bool{}
 	for _, n := range a.Names {
@@ -147,14 +168,22 @@ func (rt *Router) diffEnvRevisions(app string, a, b store.EnvRevision) envRevisi
 		}
 	}
 	// Values are compared in memory only to flag a name as changed, never returned.
-	if sealer, ok := rt.secrets.(envSnapshotSealer); ok && len(a.Snapshot) > 0 && len(b.Snapshot) > 0 {
+	sealer, ok := rt.secrets.(envSnapshotSealer)
+	switch {
+	case !compare:
+		out.ChangedHidden = true
+	case !ok || len(a.Snapshot) == 0 || len(b.Snapshot) == 0:
+		out.Unreadable = true
+	default:
 		envA, errA := sealer.OpenEnvRevision(app, a.Snapshot)
 		envB, errB := sealer.OpenEnvRevision(app, b.Snapshot)
-		if errA == nil && errB == nil {
-			for k, vb := range envB {
-				if va, had := envA[k]; had && va != vb {
-					out.Changed = append(out.Changed, k)
-				}
+		if errA != nil || errB != nil {
+			out.Unreadable = true
+			break
+		}
+		for k, vb := range envB {
+			if va, had := envA[k]; had && va != vb {
+				out.Changed = append(out.Changed, k)
 			}
 		}
 	}

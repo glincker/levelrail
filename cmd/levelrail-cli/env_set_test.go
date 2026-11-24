@@ -162,3 +162,32 @@ func TestEnvUnsetMultipleKeys(t *testing.T) {
 		t.Errorf("env = %v, want only C", env)
 	}
 }
+
+func TestEnvSetPrintsNamesOnlyDiffBeforeApply(t *testing.T) {
+	bodies := map[string][]byte{}
+	srv := routeServer(t, envSetRoutes(nil), bodies)
+	_, errOut := runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "NEW_KEY=top-secret-value"))
+	if !strings.Contains(errOut, "+ NEW_KEY (added)") || strings.Contains(errOut, "top-secret-value") {
+		t.Errorf("diff = %q, want names only", errOut)
+	}
+	_, quietErr := runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "--quiet", "OTHER=v"))
+	if strings.Contains(quietErr, "OTHER (added)") {
+		t.Errorf("--quiet still printed the diff: %q", quietErr)
+	}
+}
+
+func TestEnvRestoreNeedsConfirmAndPrintsNamesOnly(t *testing.T) {
+	bodies := map[string][]byte{}
+	srv := routeServer(t, map[string]any{
+		"POST /api/v1/apps/web/env/revisions/2/restore": map[string]any{"app": "web", "restored": 2, "revision": 5, "added": []string{"A"}, "removed": []string{"B"}, "changed": []string{"C"}},
+	}, bodies)
+	out, _ := runCLIExpectOK(t, cliArgs(srv, "env", "restore", "web", "2", "--confirm", "web"))
+	for _, want := range []string{"+ A (added)", "- B (removed)", "~ C (changed)", "new revision 5"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output %q missing %q", out, want)
+		}
+	}
+	if !strings.Contains(string(bodies["POST /api/v1/apps/web/env/revisions/2/restore"]), `"confirm":"web"`) {
+		t.Errorf("confirm not sent: %s", bodies["POST /api/v1/apps/web/env/revisions/2/restore"])
+	}
+}

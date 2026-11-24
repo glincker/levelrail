@@ -10,6 +10,7 @@ Subcommands: pull, push, set, unset
 Usage:
   levelrail-cli env set <app> KEY=VALUE... [--apply] [flags]                    set plain env vars on an app
   levelrail-cli env unset <app> KEY... [--apply] [flags]                        remove plain env vars from an app
+  levelrail-cli env restore <app> <revision> --confirm <app> [flags]            restore an earlier env revision as a new one
   levelrail-cli env pull <app> [--file .env] [--masked] [flags]                 write an app's env vars to a local .env file
   levelrail-cli env push <app> [--file .env] [--dry-run] [--keep-existing] [flags]   merge a local .env file into an app's env vars
 

@@ -813,6 +813,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/rollout/abort | AbilityDeploy | handleAbortRollout |
 | GET | /api/v1/apps/{name}/env/revisions | AbilityReadSensitive | handleListEnvRevisions |
 | GET | /api/v1/apps/{name}/env/revisions/diff | AbilityReadSensitive | handleDiffEnvRevisions |
+| POST | /api/v1/apps/{name}/env/revisions/{rev}/restore | AbilityWrite | handleRestoreEnvRevision |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
