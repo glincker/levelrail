@@ -211,3 +211,25 @@ func TestFailedUndoPurgeKeepsNameReserved(t *testing.T) {
 		t.Fatal("name was freed although the purge failed")
 	}
 }
+
+func TestFailedReservationAbortsDeleteAndKeepsData(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "resfn", Image: "nginx:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	lim := store.KVLimits{MaxKeyBytes: 64, MaxKeys: 10, MaxValueBytes: 1024, MaxTotalBytes: 4096}
+	if err := db.PutFunctionKV(ctx, "resfn", "k", []byte("v"), 0, lim, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	failing := withSoftDelete(store.WithKeptRevisions(ctx), func(context.Context) error { return errors.New("injected") })
+	if _, err := rt.deleteApp(failing, "resfn"); err == nil {
+		t.Fatal("delete went ahead without its reservation")
+	}
+	if _, err := db.GetDesiredService(ctx, "resfn"); err != nil {
+		t.Fatalf("app lost: %v", err)
+	}
+	if _, err := db.GetFunctionKV(ctx, "resfn", "k", time.Now()); err != nil {
+		t.Fatalf("data lost: %v", err)
+	}
+}

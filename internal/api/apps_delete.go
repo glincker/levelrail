@@ -74,32 +74,6 @@ func withSoftDelete(ctx context.Context, reserve func(context.Context) error) co
 	return context.WithValue(ctx, softDeleteKey{}, reserve)
 }
 
-// reserveSoftDeleted writes the name reservation while the name lock is held. If it cannot be
-// written the kept history is purged, so a same-name app never inherits it (fail closed).
-func (rt *Router) reserveSoftDeleted(ctx context.Context, name string) (kept bool) {
-	reserve, _ := ctx.Value(softDeleteKey{}).(func(context.Context) error)
-	if reserve == nil {
-		return false
-	}
-	wctx := context.WithoutCancel(ctx)
-	err := reserve(wctx)
-	if err == nil {
-		return true
-	}
-	rt.logger.Warn("api: undo window save failed, purging kept history", slog.String("name", name), slog.String("error", err.Error()))
-	p, ok := rt.apps.(interface {
-		PurgeAppRevisions(ctx context.Context, name string) error
-	})
-	if !ok {
-		rt.logger.Error("api: kept history cannot be purged", slog.String("name", name))
-		return false
-	}
-	if perr := p.PurgeAppRevisions(wctx, name); perr != nil {
-		rt.logger.Error("api: purge kept history failed", slog.String("name", name), slog.String("error", perr.Error()))
-	}
-	return false
-}
-
 // appNameLocks serializes a delete's row removal and credential erase with a
 // create's secret writes for the same name. Entries are dropped when unused.
 var appNameLocks = struct {
@@ -165,6 +139,13 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 			return nil, fmt.Errorf("remove function data of %q: %w", name, err)
 		}
 	}
+	// Reserve the name before the row goes: if that fails nothing has changed. A reservation left for an
+	// app that stays alive is harmless, the purge skips live names.
+	if soft != nil {
+		if err := soft(context.WithoutCancel(ctx)); err != nil {
+			return nil, fmt.Errorf("reserve %q for undo: %w", name, err)
+		}
+	}
 	finalizer := rt.deleteFinalizer()
 	if finalizer != nil {
 		if err := finalizer.Begin(ctx, name, existing.NodeID); err != nil {
@@ -178,14 +159,12 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	// Erase right after the row is gone, under the name lock (held since the
 	// load): a same-name create cannot write secrets this cleanup then removes.
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
+		if soft == nil {
+			return nil, fmt.Errorf("delete app %q: function data was already removed, repeat the delete to finish: %w", name, err)
+		}
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
-	kept := rt.reserveSoftDeleted(ctx, name)
 	rt.removeAppCredentials(ctx, name, integrationNS)
-	// Under an undo window the webhook and key-value data stay with the reserved name until the final purge.
-	if !kept && soft != nil {
-		_ = rt.purgeFunctionData(ctx, name)
-	}
 	if vdb, ok := rt.vitalsDB(); ok {
 		if err := rt.vitalsRuntime().dropApp(ctx, vdb, name); err != nil {
 			rt.logger.Warn("api: delete app: drop buffered vitals failed", slog.String("error", err.Error()), slog.String("name", name))

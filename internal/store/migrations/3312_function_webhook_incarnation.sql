@@ -8,3 +8,7 @@ DELETE FROM function_kv WHERE namespace NOT IN (SELECT name FROM desired_service
     AND namespace NOT IN (SELECT name FROM recently_deleted WHERE kind = 'app');
 DELETE FROM function_kv_tokens WHERE namespace NOT IN (SELECT name FROM desired_services)
     AND namespace NOT IN (SELECT name FROM recently_deleted WHERE kind = 'app');
+-- KV data of a name with no token row and no app, live or in the undo window, belongs to no one.
+DELETE FROM function_kv WHERE namespace NOT IN (SELECT namespace FROM function_kv_tokens)
+    AND namespace NOT IN (SELECT name FROM desired_services)
+    AND namespace NOT IN (SELECT name FROM recently_deleted WHERE kind = 'app');

@@ -143,7 +143,7 @@ func (rt *Router) handleListRecentlyDeleted(w http.ResponseWriter, r *http.Reque
 }
 
 // handleRestoreRecentlyDeleted handles POST /api/v1/recently-deleted/{kind}/{name}/restore.
-// It recreates the config; secrets were erased with the original and must be set again.
+// It recreates the config; secrets and the function KV token were erased with the original and must be set again (mint a new KV token; its data is kept).
 func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Request) {
 	kind, name := r.PathValue("kind"), r.PathValue("name")
 	st := rt.recentlyDeleted()

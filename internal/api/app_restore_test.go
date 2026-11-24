@@ -125,7 +125,7 @@ func (failReserveStore) AddRecentlyDeleted(context.Context, store.RecentlyDelete
 	return errors.New("reservation write failed")
 }
 
-func TestSoftDeleteApp_ReservationFailurePurgesRevisions(t *testing.T) {
+func TestSoftDeleteApp_ReservationFailureAbortsDelete(t *testing.T) {
 	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -139,11 +139,14 @@ func TestSoftDeleteApp_ReservationFailurePurgesRevisions(t *testing.T) {
 	rt.apps = failReserveStore{db}
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("delete = %d", rec.Code)
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("delete = %d, want 500", rec.Code)
 	}
-	if revs, _ := db.ListEnvRevisions(ctx, "web", 10); len(revs) != 0 {
-		t.Fatalf("revisions left readable for a same-name app = %d, want 0", len(revs))
+	if _, err := db.GetDesiredService(ctx, "web"); err != nil {
+		t.Fatalf("app removed without a reservation: %v", err)
+	}
+	if revs, _ := db.ListEnvRevisions(ctx, "web", 10); len(revs) != 1 {
+		t.Fatalf("revisions = %d, want 1 kept with the app", len(revs))
 	}
 }
 
