@@ -163,7 +163,8 @@
         "succeeded": "已排空",
         "partial": "部分排空",
         "failed": "失败"
-      }
+      },
+      "back": "返回节点排空"
     }
   },
   "drains": {

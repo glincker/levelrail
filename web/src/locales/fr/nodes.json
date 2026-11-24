@@ -163,7 +163,8 @@
         "succeeded": "Drainé",
         "partial": "Partiellement drainé",
         "failed": "Échec"
-      }
+      },
+      "back": "Retour au drainage du nœud"
     }
   },
   "drains": {

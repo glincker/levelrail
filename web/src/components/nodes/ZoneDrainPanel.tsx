@@ -43,9 +43,11 @@ function wait(ms: number): Promise<void> {
 export function ZoneDrainPanel({
   initialZone,
   onClose,
+  onBack,
 }: {
   initialZone: string
   onClose: () => void
+  onBack?: () => void
 }) {
   const { t } = useTranslation('nodes')
   const zones = useZones()
@@ -270,7 +272,17 @@ export function ZoneDrainPanel({
         </ul>
       ) : null}
       {stopped ? <p className="text-xs text-destructive">{stopped}</p> : null}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {onBack ? (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={running}
+            onClick={onBack}
+          >
+            {t('drain.zone.back')}
+          </Button>
+        ) : null}
         <Button type="button" variant="outline" onClick={onClose}>
           {t('drain.close')}
         </Button>

@@ -163,7 +163,8 @@
         "succeeded": "Drained",
         "partial": "Partly drained",
         "failed": "Failed"
-      }
+      },
+      "back": "Back to node drain"
     }
   },
   "drains": {

@@ -47,7 +47,7 @@ function Reservations({ nodes }: { nodes: NodeReservation[] }) {
   const bytes = (n?: number) => (n ? formatBytes(n) : t('zones.whatIf.unknown'))
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full text-xs">
+      <table className="w-full text-xs tabular-nums">
         <caption className="sr-only">{t('zones.whatIf.memoryCaption')}</caption>
         <thead className="text-left text-muted-foreground">
           <tr>
