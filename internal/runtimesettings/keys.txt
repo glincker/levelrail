@@ -474,6 +474,7 @@ log_rules.max_rows
 log_rules.max_window
 log_rules.samples
 logs.export_max_lines
+logs.max_live_subscribers
 mesh.apply_retries
 mesh.apply_retry_delay
 mesh.apply_timeout
@@ -724,6 +725,9 @@ telemetry.access_search_max_window
 telemetry.log_budget_mb
 telemetry.logs_retention
 telemetry.metrics_retention
+telemetry.retention_batch_pause
+telemetry.retention_batch_rows
+telemetry.retention_sweep_budget
 telemetry.visitor_history_retention
 telemetry.visitor_salt_rotation
 templates.capability_net_admin_enabled
