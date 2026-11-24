@@ -921,6 +921,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handleGetDeployStages": Operation("GET", "/api/v1/apps/{name}/deploys/{deployId}/stages", False, False),
     "handleGetDeployTimeline": Operation("GET", "/api/v1/deployments/{id}/timeline", False, False),
     "handleGetDeployURLCopies": Operation("GET", "/api/v1/settings/deploy-url-copies", False, False),
+    "handleGetDeployWhy": Operation("GET", "/api/v1/deploys/{id}/why", False, False),
     "handleGetDeploymentSecretScan": Operation("GET", "/api/v1/apps/{name}/deployments/{id}/secret-scan", False, False),
     "handleGetDiskResilience": Operation("GET", "/api/v1/resilience/disk", False, False),
     "handleGetDockerGuard": Operation("GET", "/api/v1/system/docker-guard", False, False),
