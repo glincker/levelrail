@@ -78,6 +78,14 @@ func (s *bootState) wireStorageSettings() {
 	go s.db.RunOptimize(s.ctx, func() time.Duration {
 		return rs().Duration(context.Background(), runtimesettings.KeyDBOptimizeInterval)
 	})
+	telemetry.SetRetentionTuningSource(func() telemetry.RetentionTuning {
+		c := context.Background()
+		return telemetry.RetentionTuning{
+			BatchRows:   rs().Int(c, runtimesettings.KeyRetentionBatchRows),
+			SweepBudget: rs().Duration(c, runtimesettings.KeyRetentionSweepBudget),
+			Pause:       rs().Duration(c, runtimesettings.KeyRetentionBatchPause),
+		}
+	})
 	telemetry.SetLogBudgetSource(func() int64 {
 		return int64(rs().Int(context.Background(), runtimesettings.KeyLogBudgetMB)) * mibBytes
 	})

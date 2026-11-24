@@ -626,6 +626,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_LOG_RULE_MAX_WINDOW` | [`log_rules.max_window`](/runtime-settings#observability) | `1h` |
 | `APP_LOG_RULE_SAMPLES` | [`log_rules.samples`](/runtime-settings#observability) | `5` |
 | `APP_LOG_EXPORT_MAX_LINES` | [`logs.export_max_lines`](/runtime-settings#observability) | `5000` |
+| `APP_LOG_MAX_LIVE_SUBSCRIBERS` | [`logs.max_live_subscribers`](/runtime-settings#observability) | `64` |
 | `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
 | `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
 | `APP_MONITORS_ENABLED` | [`monitors.enabled`](/runtime-settings#observability) | `false` |
@@ -683,9 +684,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ACCESS_SEARCH_MAX_SCAN` | [`telemetry.access_search_max_scan`](/runtime-settings#observability) | `200000` |
 | `APP_ACCESS_SEARCH_MAX_TERM` | [`telemetry.access_search_max_term`](/runtime-settings#observability) | `256` |
 | `APP_ACCESS_SEARCH_MAX_WINDOW` | [`telemetry.access_search_max_window`](/runtime-settings#observability) | `24h` |
-| `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
+| `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `1024` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
+| `APP_RETENTION_BATCH_PAUSE` | [`telemetry.retention_batch_pause`](/runtime-settings#observability) | `50ms` |
+| `APP_RETENTION_BATCH_ROWS` | [`telemetry.retention_batch_rows`](/runtime-settings#observability) | `5000` |
+| `APP_RETENTION_SWEEP_BUDGET` | [`telemetry.retention_sweep_budget`](/runtime-settings#observability) | `10s` |
 | `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
 | `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
 | `APP_UI_OUTBOUND_UTM` | [`ui.outbound_utm`](/runtime-settings#observability) | `true` |

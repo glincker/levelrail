@@ -170,3 +170,49 @@ func TestLogBudgetSourceAppliesLive(t *testing.T) {
 		t.Fatal("0 must mean unlimited")
 	}
 }
+
+func TestDefaultLogBudgetBytesDefaultsTo1GiB(t *testing.T) {
+	logBudgetSource.Store(nil)
+	t.Setenv("APP_LOG_BUDGET_MB", "")
+	if got := DefaultLogBudgetBytes(); got != 1024<<20 {
+		t.Fatalf("unset budget = %d, want 1 GiB", got)
+	}
+	t.Setenv("APP_LOG_BUDGET_MB", "0")
+	if got := DefaultLogBudgetBytes(); got != 0 {
+		t.Fatalf("explicit 0 = %d, want unlimited", got)
+	}
+	t.Setenv("APP_LOG_BUDGET_MB", "64")
+	if got := DefaultLogBudgetBytes(); got != 64<<20 {
+		t.Fatalf("explicit 64 = %d, want 64 MiB", got)
+	}
+}
+
+func TestRetainLogsBatchesAndHonoursBudget(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	old := time.Now().Add(-48 * time.Hour)
+	seedBudgetLogs(t, db, "service:a", 50, 40, old)
+	seedBudgetLogs(t, db, "service:a", 5, 40, time.Now())
+	cutoff := time.Now().Add(-24 * time.Hour)
+
+	SetRetentionTuningSource(func() RetentionTuning {
+		return RetentionTuning{BatchRows: 10, SweepBudget: time.Nanosecond, Pause: 0}
+	})
+	t.Cleanup(func() { retentionTuningSource.Store(nil) })
+	n, err := db.RetainLogs(ctx, cutoff)
+	if err != nil || n != 10 {
+		t.Fatalf("budget-limited sweep deleted %d (err %v), want one batch of 10", n, err)
+	}
+
+	SetRetentionTuningSource(func() RetentionTuning {
+		return RetentionTuning{BatchRows: 10, SweepBudget: time.Minute, Pause: 0}
+	})
+	n, err = db.RetainLogs(ctx, cutoff)
+	if err != nil || n != 40 {
+		t.Fatalf("resumed sweep deleted %d (err %v), want the remaining 40", n, err)
+	}
+	var left int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM log_entries`).Scan(&left); err != nil || left != 5 {
+		t.Fatalf("rows left = %d (err %v), want the 5 recent ones", left, err)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -108,6 +109,19 @@ const liveLogStatusInterval = 5 * time.Second
 // microsecond-scale race in practice, not a realistic operational
 // concern, and is called out here rather than either quietly ignored or
 // overclaimed as fully solved.
+// liveLogRetryAfter is the seconds a refused client is told to wait.
+const liveLogRetryAfter = "5"
+
+// acquireLiveLogSlot takes one stream slot unless the live cap is reached; the caller releases it on disconnect.
+func (rt *Router) acquireLiveLogSlot(ctx context.Context) bool {
+	limit := int64(rt.runtimeSettings.Limit(ctx, runtimesettings.KeyLogMaxLiveSubscribers))
+	if rt.liveLogSlots.Add(1) > limit {
+		rt.liveLogSlots.Add(-1)
+		return false
+	}
+	return true
+}
+
 func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, lookup resourceLookup, currentLookup currentContainerLookup, opName, noun string) {
 	rt.streamResourceLogsWithStatus(w, r, lookup, currentLookup, nil, opName, noun)
 }
@@ -131,6 +145,13 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 		rt.internalError(w, "api: "+opName+": load "+noun+" failed", err, slog.String("name", name))
 		return
 	}
+
+	if !rt.acquireLiveLogSlot(r.Context()) {
+		w.Header().Set("Retry-After", liveLogRetryAfter)
+		writeError(w, http.StatusTooManyRequests, "too many live log streams open; retry later")
+		return
+	}
+	defer rt.liveLogSlots.Add(-1)
 
 	// Subscribe before querying backfill: see this function's own doc
 	// comment for why that ordering, not the reverse, is what closes the

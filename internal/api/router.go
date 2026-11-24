@@ -655,6 +655,7 @@ type Router struct {
 	deployExits                  DeployExitStore                                                                     // nil is valid: exits are reported without their captured output
 	trialKeeper                  TrialKeeper                                                                         // nil is valid: POST /apps/{name}/keep returns 501
 	deployRecorder               *deploylog.Recorder                                                                 // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
+	liveLogSlots                 atomic.Int64                                                                        // open live log streams, capped by logs.max_live_subscribers
 	logBroadcaster               *telemetry.LogBroadcaster                                                           // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
 	deployNotifyTargets          DeployNotifyTargets                                                                 // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
 	releaseCommits               func(ctx context.Context, app, fromSHA, toSHA string) ([]repolayout.Commit, string) // nil uses commitsForRange; tests inject commits

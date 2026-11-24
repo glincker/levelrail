@@ -185,6 +185,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Image:   imageRef(),
 		Env:     map[string]string{tunnelEnvKey: token},
 		Command: []string{"tunnel", "--no-autoupdate", "run"},
+		// Platform container: it must come back after a daemon or host restart.
+		RestartPolicy: "unless-stopped",
 	}
 
 	justDeployed := false

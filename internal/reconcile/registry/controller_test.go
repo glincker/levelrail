@@ -286,6 +286,9 @@ func TestReconcile_EnabledWithCredentials_CreatesVolumeAndContainer(t *testing.T
 		t.Errorf("expected volume %q to be ensured", "acme-registry-data")
 	}
 	spec := rt.lastCreateSpec
+	if spec.RestartPolicy != "unless-stopped" {
+		t.Errorf("RestartPolicy = %q, want unless-stopped", spec.RestartPolicy)
+	}
 	if spec.Name != "acme-registry" {
 		t.Errorf("spec.Name = %q, want %q", spec.Name, "acme-registry")
 	}

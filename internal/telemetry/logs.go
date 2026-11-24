@@ -214,15 +214,13 @@ func (db *DB) QueryLogs(ctx context.Context, resourceID string, from, to time.Ti
 // pattern, same "caller decides the cutoff, no hardcoded threshold"
 // house rule); the FTS index stays in sync
 // automatically via log_entries_ad (migrations/0002_log_entries.sql),
-// not because of anything this method does itself.
+// not because of anything this method does itself. Work is batched and
+// time-boxed; an unfinished backlog is resumed by the next sweep.
 func (db *DB) RetainLogs(ctx context.Context, cutoff time.Time) (deleted int64, err error) {
-	res, err := db.ExecContext(ctx, `DELETE FROM log_entries WHERE ts < ?`, cutoff.UnixNano())
+	deadline := time.Now().Add(currentRetentionTuning().SweepBudget)
+	n, err := db.sweepBatched(ctx, logRetention, cutoff.UnixNano(), deadline)
 	if err != nil {
-		return 0, fmt.Errorf("telemetry: log retention sweep: %w", err)
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("telemetry: log retention sweep rows affected: %w", err)
+		return n, fmt.Errorf("telemetry: log retention sweep: %w", err)
 	}
 	return n, nil
 }

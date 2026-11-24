@@ -18,7 +18,10 @@ const (
 	// app's work per sweep so a huge backlog drains over several sweeps.
 	trimBatchRows  = 1000
 	trimMaxBatches = 20
-	usageWindow    = 24 * time.Hour
+
+	// defaultLogBudgetMB caps stored logs per app when nothing is configured; 0 stays an explicit opt-out.
+	defaultLogBudgetMB = 1024
+	usageWindow        = 24 * time.Hour
 
 	// logRowBytes is what one log row is charged: message plus structured fields.
 	logRowBytes = `length(message) + COALESCE(length(fields_json), 0)`
@@ -29,13 +32,16 @@ var logBudgetSource atomic.Pointer[func() int64]
 // SetLogBudgetSource makes DefaultLogBudgetBytes follow fn, so a saved setting applies on the next sweep or request.
 func SetLogBudgetSource(fn func() int64) { logBudgetSource.Store(&fn) }
 
-// DefaultLogBudgetBytes returns the per-app log budget; 0 means unlimited. Without a source it reads APP_LOG_BUDGET_MB.
+// DefaultLogBudgetBytes returns the per-app log budget; 0 means unlimited. Without a source it reads APP_LOG_BUDGET_MB, defaulting to 1024 MiB when unset.
 func DefaultLogBudgetBytes() int64 {
 	if fn := logBudgetSource.Load(); fn != nil {
 		return max((*fn)(), 0)
 	}
 	mb, err := strconv.ParseInt(strings.TrimSpace(os.Getenv("APP_LOG_BUDGET_MB")), 10, 64)
-	if err != nil || mb <= 0 {
+	if err != nil {
+		return defaultLogBudgetMB << 20
+	}
+	if mb <= 0 {
 		return 0
 	}
 	return mb << 20

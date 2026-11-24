@@ -4,6 +4,7 @@ package runtimesettings
 const (
 	KeyAppsMetricsMax                = "api.apps_metrics_max"
 	KeyLogExportMaxLines             = "logs.export_max_lines"
+	KeyLogMaxLiveSubscribers         = "logs.max_live_subscribers"
 	KeyStackHistoryLimit             = "stacks.history_limit"
 	KeyMaxTagsPerApp                 = "tags.max_per_app"
 	KeyMaxTagsPerResource            = "tags.max_per_resource"
@@ -20,6 +21,11 @@ func init() {
 		Title:       "Apps metrics batch size",
 		Description: "Most apps one batch metrics request returns; the rest are left out. From 1 to 5000. The next request uses a changed value.",
 	}, 1, 5000)
+	registerLimit(Definition{
+		Key: KeyLogMaxLiveSubscribers, Category: CategoryObservability, Default: "64", Env: "APP_LOG_MAX_LIVE_SUBSCRIBERS", Apply: ApplyLive,
+		Title:       "Live log stream cap",
+		Description: "Most live log streams open at once across all apps; one more gets a 429 with Retry-After. From 1 to 10000. A changed value applies to the next stream.",
+	}, 1, 10000)
 	registerLimit(Definition{
 		Key: KeyLogExportMaxLines, Category: CategoryObservability, Default: "5000", Env: "APP_LOG_EXPORT_MAX_LINES", Apply: ApplyLive,
 		Title:       "Log download line cap",

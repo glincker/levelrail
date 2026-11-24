@@ -142,23 +142,21 @@ func (db *DB) Prune(ctx context.Context, now time.Time) (PruneResult, error) {
 	cfg := db.tierConfig()
 	var res PruneResult
 	var err error
-	if res.Raw, err = db.deleteBefore(ctx, `DELETE FROM metric_samples WHERE ts < ?`, now.Add(-cfg.RawRetention).Unix()); err != nil {
+	deadline := time.Now().Add(currentRetentionTuning().SweepBudget)
+	trafficCutoff := now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()
+	if res.Raw, err = db.sweepBatched(ctx, rawSampleRetention, now.Add(-cfg.RawRetention).Unix(), deadline); err != nil {
 		return res, err
 	}
-	if res.Minute, err = db.deleteBefore(ctx, `DELETE FROM metric_rollups WHERE tier = 60 AND ts < ?`, now.Add(-cfg.MinuteRetention).Unix()); err != nil {
+	if res.Minute, err = db.sweepBatched(ctx, minuteRollupRetention, now.Add(-cfg.MinuteRetention).Unix(), deadline); err != nil {
 		return res, err
 	}
-	if res.Hour, err = db.deleteBefore(ctx, `DELETE FROM metric_rollups WHERE tier = 3600 AND ts < ?`, now.Add(-cfg.HourRetention).Unix()); err != nil {
+	if res.Hour, err = db.sweepBatched(ctx, hourRollupRetention, now.Add(-cfg.HourRetention).Unix(), deadline); err != nil {
 		return res, err
 	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_breakdown WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
-		return res, err
-	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_upstreams WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
-		return res, err
-	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_audience WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
-		return res, err
+	for _, target := range []retentionTarget{breakdownRetention, upstreamRetention, audienceRetention} {
+		if _, err = db.sweepBatched(ctx, target, trafficCutoff, deadline); err != nil {
+			return res, err
+		}
 	}
 	if _, err = db.deleteBefore(ctx, `DELETE FROM request_samples WHERE ts < ?`, now.Add(-SampleRetentionFromEnv()).Unix()); err != nil {
 		return res, err

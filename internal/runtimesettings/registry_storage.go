@@ -15,6 +15,10 @@ const (
 	KeyLogsRetention      = "telemetry.logs_retention"
 	KeyLogBudgetMB        = "telemetry.log_budget_mb"
 	KeyMonitorRawRetained = "monitors.raw_retention"
+
+	KeyRetentionBatchRows   = "telemetry.retention_batch_rows"
+	KeyRetentionSweepBudget = "telemetry.retention_sweep_budget"
+	KeyRetentionBatchPause  = "telemetry.retention_batch_pause"
 )
 
 // Retention bounds: an hour floor so a typo cannot wipe data, a year ceiling.
@@ -74,15 +78,33 @@ func init() {
 		Description: "How long stored app logs, traces and error events are kept before the hourly sweep deletes them, from 1h to 8760h; the next sweep uses a changed value.",
 	})
 	Register(Definition{
-		Key: KeyLogBudgetMB, Category: CategoryObservability, Kind: KindInt, Default: "0",
+		Key: KeyLogBudgetMB, Category: CategoryObservability, Kind: KindInt, Default: "1024",
 		Env: "APP_LOG_BUDGET_MB", Apply: ApplyLive, CheckValue: logBudgetCheck,
 		Title:       "Default log budget per app",
-		Description: "Stored log size in MiB each app may use before the sweep trims its oldest lines; 0 means unlimited, otherwise 16 to 10485760. A per-app budget overrides it.",
+		Description: "Stored log size in MiB each app may use before the sweep trims its oldest lines; the default is 1024, 0 means unlimited, otherwise 16 to 10485760. A per-app budget overrides it.",
 	})
 	Register(Definition{
 		Key: KeyMonitorRawRetained, Category: CategoryObservability, Kind: KindDuration, Default: "48h",
 		Env: "APP_MONITOR_RAW_RETENTION", Apply: ApplyLive, CheckValue: durationRangeCheck(minTelemetryRetention, maxTelemetryRetention),
 		Title:       "Monitor raw result retention",
 		Description: "How long each uptime monitor check result is kept before the prune job deletes it, from 1h to 8760h; hourly rollups are kept on their own window.",
+	})
+	Register(Definition{
+		Key: KeyRetentionBatchRows, Category: CategoryObservability, Kind: KindInt, Default: "5000",
+		Env: "APP_RETENTION_BATCH_ROWS", Apply: ApplyLive, CheckValue: intRangeCheck(100, 1000000),
+		Title:       "Retention delete batch size",
+		Description: "Most rows one retention delete removes at a time, from 100 to 1000000; smaller batches keep log and metric views responsive during the hourly sweep. The next batch uses a changed value.",
+	})
+	Register(Definition{
+		Key: KeyRetentionSweepBudget, Category: CategoryObservability, Kind: KindDuration, Default: "10s",
+		Env: "APP_RETENTION_SWEEP_BUDGET", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Second, 10*time.Minute),
+		Title:       "Retention sweep time budget",
+		Description: "How long one retention sweep may keep deleting, from 1s to 10m; a larger backlog is finished by the next sweep.",
+	})
+	Register(Definition{
+		Key: KeyRetentionBatchPause, Category: CategoryObservability, Kind: KindDuration, Default: "50ms",
+		Env: "APP_RETENTION_BATCH_PAUSE", Apply: ApplyLive, CheckValue: durationRangeCheck(0, 10*time.Second),
+		Title:       "Pause between retention batches",
+		Description: "How long a retention sweep waits between delete batches so readers get the database, from 0s to 10s.",
 	})
 }
