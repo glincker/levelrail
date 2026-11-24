@@ -182,7 +182,7 @@ func guardedClient(c *http.Client) *http.Client {
 		g.Timeout = 30 * time.Second
 	}
 	g.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if len(via) > maxRegistryRedirects || req.URL.Host != via[0].URL.Host {
+		if len(via) > maxRegistryRedirects || req.URL.Host != via[0].URL.Host || req.URL.Scheme != via[0].URL.Scheme {
 			return ErrRegistryRequest
 		}
 		return nil

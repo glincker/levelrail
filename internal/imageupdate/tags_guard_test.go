@@ -30,3 +30,18 @@ func TestHTTPTagListerRefusesRedirectAndPrivateRealm(t *testing.T) {
 		t.Fatalf("realm error = %v, want generic", err)
 	}
 }
+
+func TestHTTPTagListerRefusesSchemeDowngrade(t *testing.T) {
+	plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"tags":["1"]}`))
+	}))
+	defer plain.Close()
+	tlsSrv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, plain.URL+"/v2/team/app/tags/list", http.StatusFound)
+	}))
+	defer tlsSrv.Close()
+	host := strings.TrimPrefix(tlsSrv.URL, "https://")
+	if _, err := (HTTPTagLister{Client: tlsSrv.Client()}).ListTags(context.Background(), host+"/team/app:1", nil); err == nil {
+		t.Fatal("https to http redirect followed, want refusal")
+	}
+}

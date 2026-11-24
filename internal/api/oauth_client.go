@@ -222,6 +222,7 @@ func (c *microsoftOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.
 var errOIDCDiscovery = errors.New("oidc discovery failed")
 
 type oidcOAuthClient struct {
+	hc       *http.Client
 	cfg      oauth2.Config
 	verifier *oidc.IDTokenVerifier
 }
@@ -243,6 +244,7 @@ func newOIDCOAuthClientWith(hc *http.Client, settings store.OAuthProviderSetting
 		return nil, errOIDCDiscovery
 	}
 	return &oidcOAuthClient{
+		hc: hc,
 		cfg: oauth2.Config{
 			ClientID:     settings.ClientID,
 			ClientSecret: clientSecret,
@@ -259,7 +261,8 @@ func (c *oidcOAuthClient) AuthCodeURL(state string, opts ...oauth2.AuthCodeOptio
 }
 
 func (c *oidcOAuthClient) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
-	return c.cfg.Exchange(ctx, code, opts...)
+	// The token POST carries the client secret to a discovered endpoint, so it uses the guarded client.
+	return c.cfg.Exchange(oidc.ClientContext(ctx, c.hc), code, opts...)
 }
 
 // FetchUserInfo verifies the token response's id_token (signature, issuer,
@@ -271,7 +274,7 @@ func (c *oidcOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.Token
 	if !ok || rawIDToken == "" {
 		return oauthUserInfo{}, fmt.Errorf("oidc token response missing id_token")
 	}
-	idToken, err := c.verifier.Verify(ctx, rawIDToken)
+	idToken, err := c.verifier.Verify(oidc.ClientContext(ctx, c.hc), rawIDToken)
 	if err != nil {
 		return oauthUserInfo{}, fmt.Errorf("verify oidc id_token: %w", err)
 	}

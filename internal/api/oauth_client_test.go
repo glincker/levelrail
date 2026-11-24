@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"golang.org/x/oauth2"
@@ -253,5 +254,18 @@ func TestNewOIDCOAuthClientRefusesInternalIssuerGenerically(t *testing.T) {
 	_, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback")
 	if err == nil || err.Error() != errOIDCDiscovery.Error() {
 		t.Fatalf("err = %v, want generic discovery error", err)
+	}
+}
+
+func TestOIDCExchangeUsesGuardedClient(t *testing.T) {
+	issuer := newFakeOIDCIssuer(t)
+	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
+	client, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback")
+	if err != nil {
+		t.Fatalf("discovery: %v", err)
+	}
+	client.(*oidcOAuthClient).hc = netguard.NewClientPrivateNetworks()
+	if _, err := client.Exchange(context.Background(), "code"); err == nil {
+		t.Fatal("token exchange to loopback succeeded, want refusal")
 	}
 }

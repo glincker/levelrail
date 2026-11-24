@@ -223,6 +223,10 @@ func defaultHTTPProbe(ctx context.Context, rawURL, dialAddr string) (int, error)
 // public name when a proxy upstream owns TLS.
 func (rt *Router) probeDialAddr(domain string, upstreamTLS bool, publicPort int) string {
 	if upstreamTLS {
+		// An IP-literal tenant domain must never reach the loopback exemption.
+		if _, err := netip.ParseAddr(strings.Trim(domain, "[]")); err == nil {
+			return "[::]:0"
+		}
 		port := publicPort
 		if port == 0 {
 			port = 443
