@@ -745,10 +745,7 @@
       "history": "Update history",
       "restore": "Restore points"
     },
-    "next": "Next window starts {{time}}.",
     "off": "Updates are never installed on their own. You choose when to update.",
-    "onAny": "マイナーバージョンを含む新しいリリースは、{{days}}、{{start}}から{{end}}の間に自動でインストールされます。",
-    "onPatch": "Patch releases install automatically between {{start}} and {{end}}, {{days}}.",
     "paused": "Automatic updates are paused until {{date}}.",
     "released": "Released {{date}}",
     "rows": {
@@ -760,7 +757,7 @@
     "savedOff": "Automatic updates turned off.",
     "savedOn": "Automatic updates turned on.",
     "scheduleSaved": "Schedule saved.",
-    "scheduleSummary": "{{start}} to {{end}}, {{days}}",
+    "scheduleSummary": "{{start}} から {{end}} {{zone}}、{{days}}",
     "scheduleToggle": "Schedule",
     "start": "Start",
     "title": "自動更新",
@@ -770,10 +767,21 @@
     "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
     "checkOn": "新しいリリースのバックグラウンド確認はオンです。確認のみで、インストールは上のスイッチで制御します。",
     "checkOff": "新しいリリースのバックグラウンド確認はオフです。自動更新をオンにすると、これもオンになります。",
-    "installSteps": "更新は {{start}} から {{end}} ({{zone}}) の間にインストールされます。先にバックアップ、ヘルスチェック、自動ロールバックを行います。",
-    "nextWindows": "次のウィンドウ: {{list}}",
     "onBlocked": "自動更新はオンですが、このサーバーでは実行できません。下のステータスを確認してください。",
-    "checkOffActive": "新しいリリースのバックグラウンド確認がオフのため、オンにするまで更新は見つかりません。"
+    "checkOffActive": "新しいリリースのバックグラウンド確認がオフのため、オンにするまで更新は見つかりません。",
+    "headline": {
+      "held": "{{tag}} は保留中です: {{reason}}",
+      "review": "変更を確認",
+      "installNow": "今すぐインストール",
+      "idle": "最新です。更新は夜間ウィンドウでインストールされます。次回は {{day}} {{time}} に開きます。",
+      "now": "{{tag}} をインストール中です(完了までウィンドウは開いたままです)。",
+      "tonight": "{{tag}} は今夜 {{time}} にインストールされます({{eta}})",
+      "later": "{{tag}} は {{day}} {{time}} にインストールされます({{eta}})",
+      "inMinutes": "{{count}} 分後",
+      "inHours": "{{count}} 時間後"
+    },
+    "age": "公開後の待機",
+    "ageDays_other": "{{count}} 日"
   },
   "autoStatus": {
     "state": {

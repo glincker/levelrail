@@ -752,10 +752,7 @@
       "history": "Update history",
       "restore": "Restore points"
     },
-    "next": "Next window starts {{time}}.",
     "off": "Updates are never installed on their own. You choose when to update.",
-    "onAny": "New releases, including minor ones, install automatically between {{start}} and {{end}}, {{days}}.",
-    "onPatch": "Patch releases install automatically between {{start}} and {{end}}, {{days}}.",
     "paused": "Automatic updates are paused until {{date}}.",
     "released": "Released {{date}}",
     "rows": {
@@ -767,7 +764,7 @@
     "savedOff": "Automatic updates turned off.",
     "savedOn": "Automatic updates turned on.",
     "scheduleSaved": "Schedule saved.",
-    "scheduleSummary": "{{start}} to {{end}}, {{days}}",
+    "scheduleSummary": "{{start}} bis {{end}} {{zone}}, {{days}}",
     "scheduleToggle": "Schedule",
     "start": "Start",
     "title": "Automatic updates",
@@ -777,10 +774,22 @@
     "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
     "checkOn": "Die Hintergrundprüfung auf neue Releases ist an. Sie sucht nur; die Installation steuert der Schalter oben.",
     "checkOff": "Die Hintergrundprüfung auf neue Releases ist aus. Automatische Updates einzuschalten aktiviert sie ebenfalls.",
-    "installSteps": "Updates werden zwischen {{start}} und {{end}} {{zone}} installiert; zuerst Backup, Health-Check, automatisches Rollback.",
-    "nextWindows": "Nächste Fenster: {{list}}",
     "onBlocked": "Automatische Updates sind eingeschaltet, können auf diesem Server aber nicht laufen. Details im Status unten.",
-    "checkOffActive": "Hintergrundprüfungen auf neue Versionen sind aus, daher wird kein Update gefunden, bis sie eingeschaltet werden."
+    "checkOffActive": "Hintergrundprüfungen auf neue Versionen sind aus, daher wird kein Update gefunden, bis sie eingeschaltet werden.",
+    "headline": {
+      "held": "{{tag}} ist angehalten: {{reason}}",
+      "review": "Änderungen prüfen",
+      "installNow": "Jetzt installieren",
+      "idle": "Aktuell. Updates werden im nächtlichen Zeitfenster installiert, das nächste öffnet {{day}} {{time}}.",
+      "now": "{{tag}} wird gerade installiert (Zeitfenster offen, bis es fertig ist).",
+      "tonight": "{{tag}} wird heute Nacht um {{time}} installiert ({{eta}})",
+      "later": "{{tag}} wird {{day}} um {{time}} installiert ({{eta}})",
+      "inMinutes": "in {{count}} Min.",
+      "inHours": "in {{count}} Std."
+    },
+    "age": "Wartezeit nach Release",
+    "ageDays_one": "{{count}} Tag",
+    "ageDays_other": "{{count}} Tage"
   },
   "autoStatus": {
     "state": {

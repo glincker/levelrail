@@ -745,10 +745,7 @@
       "history": "Update history",
       "restore": "Restore points"
     },
-    "next": "Next window starts {{time}}.",
     "off": "Updates are never installed on their own. You choose when to update.",
-    "onAny": "New releases, including minor ones, install automatically between {{start}} and {{end}}, {{days}}.",
-    "onPatch": "Patch releases install automatically between {{start}} and {{end}}, {{days}}.",
     "paused": "Automatic updates are paused until {{date}}.",
     "released": "Released {{date}}",
     "rows": {
@@ -760,7 +757,7 @@
     "savedOff": "Automatic updates turned off.",
     "savedOn": "Automatic updates turned on.",
     "scheduleSaved": "Schedule saved.",
-    "scheduleSummary": "{{start}} to {{end}}, {{days}}",
+    "scheduleSummary": "{{start}} 至 {{end}} {{zone}},{{days}}",
     "scheduleToggle": "Schedule",
     "start": "Start",
     "title": "Automatic updates",
@@ -770,10 +767,21 @@
     "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
     "checkOn": "后台检查新版本已开启。它只负责查找,安装由上方开关控制。",
     "checkOff": "后台检查新版本已关闭。开启自动更新也会开启它。",
-    "installSteps": "更新将在 {{start}} 至 {{end}} ({{zone}}) 之间安装;先备份,再做健康检查,失败则自动回滚。",
-    "nextWindows": "接下来的窗口:{{list}}",
     "onBlocked": "自动更新已开启,但无法在此服务器上运行。请查看下方状态。",
-    "checkOffActive": "新版本的后台检查已关闭,开启之前不会发现任何更新。"
+    "checkOffActive": "新版本的后台检查已关闭,开启之前不会发现任何更新。",
+    "headline": {
+      "held": "{{tag}} 已暂缓:{{reason}}",
+      "review": "查看变更",
+      "installNow": "立即安装",
+      "idle": "已是最新。更新将在夜间窗口安装,下一次窗口在 {{day}} {{time}} 开启。",
+      "now": "{{tag}} 正在安装(窗口保持开启直到完成)。",
+      "tonight": "{{tag}} 将于今晚 {{time}} 安装({{eta}})",
+      "later": "{{tag}} 将于 {{day}} {{time}} 安装({{eta}})",
+      "inMinutes": "{{count}} 分钟后",
+      "inHours": "{{count}} 小时后"
+    },
+    "age": "发布后等待",
+    "ageDays_other": "{{count}} 天"
   },
   "autoStatus": {
     "state": {
