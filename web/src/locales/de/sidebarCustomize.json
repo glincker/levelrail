@@ -9,6 +9,8 @@
   "moved": "{{label}} auf Position {{position}} von {{total}} verschoben",
   "currentPage": "Aktuelle Seite",
   "currentGroup": "Enthält aktuelle Seite",
+  "compact": "Kompakte Seitenleiste",
+  "compactDone": "Seitenleiste auf kompakt gestellt",
   "reset": "Auf Standard zurücksetzen",
   "resetDone": "Seitenleiste auf Standard zurückgesetzt",
   "done": "Fertig",

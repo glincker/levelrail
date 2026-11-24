@@ -6,12 +6,14 @@ import {
   canHideGroup,
   canHideItem,
   EMPTY_NAV_PREFS,
+  isCompactPreset,
   moveId,
   moveIdTo,
   parseNavPrefs,
   parseRecent,
   pushRecent,
   recentFromPath,
+  withCompactPreset,
   withGroupOrder,
   withItemHidden,
   withItemOrder,
@@ -80,6 +82,18 @@ describe('reorder and reset helpers', () => {
     expect(parseNavPrefs('{nope')).toEqual(EMPTY_NAV_PREFS)
     expect(parseNavPrefs(null)).toEqual(EMPTY_NAV_PREFS)
     expect(parseNavPrefs('{"hiddenItems":["a",1]}').hiddenItems).toEqual(['a'])
+  })
+})
+
+describe('compact preset', () => {
+  it('hides every group but keeps the one with the current page', () => {
+    const p = withCompactPreset(EMPTY_NAV_PREFS, ['a', 'b'])
+    expect(isCompactPreset(p, ['a', 'b'])).toBe(true)
+    expect(isCompactPreset(EMPTY_NAV_PREFS, ['a', 'b'])).toBe(false)
+    expect(ids(applyNavPrefs(groups, p, 'b1'))).toEqual([
+      ['home'],
+      ['b1', 'b2'],
+    ])
   })
 })
 

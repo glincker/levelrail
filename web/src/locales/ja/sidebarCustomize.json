@@ -9,6 +9,8 @@
   "moved": "{{label}}を{{total}}件中{{position}}番目に移動しました",
   "currentPage": "現在のページ",
   "currentGroup": "現在のページを含む",
+  "compact": "コンパクトなサイドバー",
+  "compactDone": "サイドバーをコンパクトにしました",
   "reset": "初期設定に戻す",
   "resetDone": "サイドバーを初期設定に戻しました",
   "done": "完了",

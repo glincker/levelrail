@@ -22,9 +22,11 @@ import {
   canHideGroup,
   canHideItem,
   groupHasItem,
+  isCompactPreset,
   moveId,
   moveIdTo,
   orderIds,
+  withCompactPreset,
   withGroupHidden,
   withGroupOrder,
   withItemHidden,
@@ -183,6 +185,7 @@ export function SidebarCustomizeDialog({
     groups.filter((g) => !g.ungrouped).map((g) => g.id),
     prefs.groupOrder,
   )
+  const compact = isCompactPreset(prefs, groupIds)
   const listIds = [
     ...groups.filter((g) => g.ungrouped).map((g) => g.id),
     ...groupIds,
@@ -311,6 +314,17 @@ export function SidebarCustomizeDialog({
           {announce}
         </p>
         <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={compact}
+            onClick={() => {
+              update((p) => withCompactPreset(p, groupIds))
+              setAnnounce(t('compactDone'))
+            }}
+          >
+            {t('compact')}
+          </Button>
           <Button
             type="button"
             variant="outline"

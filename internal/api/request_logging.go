@@ -216,6 +216,14 @@ func (rt *Router) liveSlowThreshold() time.Duration {
 	return rt.requestLogThresholds.slowOrDefault()
 }
 
+// liveRouteStatBound is the cap on distinct routes kept for the hot routes list.
+func (rt *Router) liveRouteStatBound() int {
+	if rt.runtimeSettings != nil {
+		return rt.runtimeSettings.Int(context.Background(), runtimesettings.KeyAPIRouteStatBound)
+	}
+	return routeStatBound
+}
+
 type matchedPatternKey struct{}
 
 // matchedPattern carries the route pattern out of the inner mux: this middleware sits outside

@@ -177,6 +177,24 @@ export function withGroupHidden(
   return { ...prefs, hiddenGroups: hidden ? [...rest, id] : rest }
 }
 
+// Compact keeps only the always-on ungrouped items; the group holding the current page still shows.
+export function withCompactPreset(
+  prefs: NavPrefs,
+  groupIds: readonly string[],
+): NavPrefs {
+  return { ...prefs, hiddenGroups: [...groupIds] }
+}
+
+export function isCompactPreset(
+  prefs: NavPrefs,
+  groupIds: readonly string[],
+): boolean {
+  return (
+    groupIds.length > 0 &&
+    groupIds.every((id) => prefs.hiddenGroups.includes(id))
+  )
+}
+
 export function withItemOrder(
   prefs: NavPrefs,
   groupId: string,

@@ -35,6 +35,7 @@ api.max_header_bytes
 api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm
 api.rate_limit_write_rpm
+api.route_stat_bound
 api.slow_request_threshold
 app.image_keep
 app.image_keep_overrides
