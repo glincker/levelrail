@@ -40,7 +40,7 @@ export function UpgradesPanel({ databaseName }: { databaseName: string }) {
         </Alert>
       ) : (
         <>
-          <CurrentVersionCard data={data} />
+          <CurrentVersionCard data={data} databaseName={databaseName} />
           <TargetsCard databaseName={databaseName} data={data} />
           <PolicyCard databaseName={databaseName} data={data} />
           <HistoryCard active={data.active} history={data.history} />

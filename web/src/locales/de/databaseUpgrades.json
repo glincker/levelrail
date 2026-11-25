@@ -13,7 +13,9 @@
     "advisories": "Bekannte Sicherheitshinweise zu dieser Version",
     "catalogUpdated": "Katalog aktualisiert {{date}}",
     "blockersTitle": "Upgrades sind blockiert",
-    "manualReason": "Manuelles Upgrade erforderlich"
+    "manualReason": "Manuelles Upgrade erforderlich",
+    "backupCtaTitle": "Richten Sie ein Backup-Ziel ein, um sichere Upgrades zu ermöglichen",
+    "backupCtaButton": "Backup-Speicher einrichten"
   },
   "support": {
     "supported": "Unterstützt",

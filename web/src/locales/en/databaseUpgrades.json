@@ -13,7 +13,9 @@
     "advisories": "Known security advisories affecting this version",
     "catalogUpdated": "Catalog updated {{date}}",
     "blockersTitle": "Upgrades are blocked",
-    "manualReason": "Manual upgrade required"
+    "manualReason": "Manual upgrade required",
+    "backupCtaTitle": "Set up a backup destination to enable safe upgrades",
+    "backupCtaButton": "Set up backup storage"
   },
   "support": {
     "supported": "Supported",
