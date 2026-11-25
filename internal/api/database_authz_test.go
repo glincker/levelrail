@@ -32,6 +32,7 @@ var explorerHandlers = []string{
 	"handleGetMongoCollections", "handleMongoFind", "handleListDatabaseQueryHistory",
 	"handleClearDatabaseQueryHistory", "handleListDatabaseSavedQueries", "handleSaveDatabaseQuery",
 	"handleDeleteDatabaseSavedQuery", "handleGetDatabaseEngineStats",
+	"handleGetRedisInfo", "handleGetRedisSlowlog", "handleGetRedisClients",
 }
 
 // TestDatabaseExplorerRoutesUseResolve fails when an explorer route loses the
