@@ -299,7 +299,7 @@ func TestPrune_SizeCapDropsRolledUpRawFirst(t *testing.T) {
 	if _, err := db.Rollup(ctx, clk.now()); err != nil {
 		t.Fatal(err)
 	}
-	size, err := db.liveBytes(ctx)
+	size, err := db.metricBytes(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -342,5 +342,46 @@ func TestTierConfigFromEnv(t *testing.T) {
 	}
 	if cfg.RawMaxRange != def.RawMaxRange || cfg.MinuteMaxRange != def.MinuteMaxRange {
 		t.Errorf("invalid values must fall back to defaults: %+v", cfg)
+	}
+}
+
+func TestPrune_CapCountsMetricTablesOnlyAndPrunesToHeadroom(t *testing.T) {
+	ctx := context.Background()
+	start := time.Unix(1_699_999_200, 0).UTC()
+	cfg := testTierConfig()
+	db, clk := newClockDB(t, cfg, start.Add(6*time.Hour))
+	seed(t, db, start, 6*time.Hour)
+	if _, err := db.Rollup(ctx, clk.now()); err != nil {
+		t.Fatal(err)
+	}
+	size, err := db.metricBytes(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2000; i++ {
+		if _, err := db.ExecContext(ctx, `INSERT INTO log_entries (resource_id, stream, ts, message) VALUES ('service:web', 'stdout', ?, 'padding padding padding padding')`, int64(i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	capped := cfg
+	capped.MaxBytes = size + 1
+	db.Configure(capped)
+	res, err := db.Prune(ctx, clk.now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Raw != 0 || res.OverCap {
+		t.Fatalf("log rows counted against the metric cap: %+v", res)
+	}
+
+	capped.MaxBytes = size * 8 / 10
+	db.Configure(capped)
+	res, err = db.Prune(ctx, clk.now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, _ := db.metricBytes(ctx)
+	if !res.RawDroppedEarly || after > capped.MaxBytes/100*defaultCapTargetPercent {
+		t.Errorf("want pruned to headroom %d, got %d (%+v)", capped.MaxBytes/100*defaultCapTargetPercent, after, res)
 	}
 }

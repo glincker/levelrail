@@ -130,14 +130,16 @@ type PruneResult struct {
 	Raw, Minute, Hour int64
 	// OverCap is true when the size cap is still exceeded after pruning.
 	OverCap bool
+	// RawDroppedEarly is true when the size cap, not retention, removed raw rows.
+	RawDroppedEarly bool
 }
 
 const sizePruneMaxPasses = 20
 
 // Prune deletes samples and rollups past their retention and then, while the
-// database exceeds MaxBytes, the oldest tenth of the finest tier that still
-// has data already covered by the next tier. Raw rows are never dropped for
-// size before they are rolled up.
+// metric tables exceed MaxBytes, the oldest tenth of the finest tier that
+// still has data already covered by the next tier, down to the headroom
+// target. Raw rows are never dropped for size before they are rolled up.
 func (db *DB) Prune(ctx context.Context, now time.Time) (PruneResult, error) {
 	res, err := db.prune(ctx, now)
 	// A passive checkpoint cannot pass an active reader, so it never blocks them.
@@ -172,28 +174,28 @@ func (db *DB) prune(ctx context.Context, now time.Time) (PruneResult, error) {
 		return res, nil
 	}
 
-	for pass := 0; pass < sizePruneMaxPasses; pass++ {
-		size, err := db.liveBytes(ctx)
-		if err != nil {
-			return res, err
-		}
-		if size <= cfg.MaxBytes {
-			return res, nil
-		}
-		n, err := db.pruneOldestTenth(ctx)
-		if err != nil {
-			return res, err
-		}
-		res.Raw += n[0]
-		res.Minute += n[1]
-		res.Hour += n[2]
-		if n[0]+n[1]+n[2] == 0 {
-			break
-		}
-	}
-	size, err := db.liveBytes(ctx)
+	size, err := db.metricBytes(ctx)
 	if err != nil {
 		return res, err
+	}
+	if size > cfg.MaxBytes {
+		target := cfg.MaxBytes / 100 * int64(currentCapTargetPercent())
+		for pass := 0; pass < sizePruneMaxPasses && size > target; pass++ {
+			n, err := db.pruneOldestTenth(ctx)
+			if err != nil {
+				return res, err
+			}
+			res.Raw += n[0]
+			res.Minute += n[1]
+			res.Hour += n[2]
+			res.RawDroppedEarly = res.RawDroppedEarly || n[0] > 0
+			if n[0]+n[1]+n[2] == 0 {
+				break
+			}
+			if size, err = db.metricBytes(ctx); err != nil {
+				return res, err
+			}
+		}
 	}
 	res.OverCap = size > cfg.MaxBytes
 	return res, nil
@@ -255,20 +257,6 @@ func (db *DB) pruneOldestTenth(ctx context.Context) ([3]int64, error) {
 	return out, nil
 }
 
-func (db *DB) liveBytes(ctx context.Context) (int64, error) {
-	var pages, free, size int64
-	if err := db.QueryRowContext(ctx, `PRAGMA page_count`).Scan(&pages); err != nil {
-		return 0, fmt.Errorf("telemetry: page_count: %w", err)
-	}
-	if err := db.QueryRowContext(ctx, `PRAGMA freelist_count`).Scan(&free); err != nil {
-		return 0, fmt.Errorf("telemetry: freelist_count: %w", err)
-	}
-	if err := db.QueryRowContext(ctx, `PRAGMA page_size`).Scan(&size); err != nil {
-		return 0, fmt.Errorf("telemetry: page_size: %w", err)
-	}
-	return (pages - free) * size, nil
-}
-
 // Maintainer runs rollups and pruning on timers.
 type Maintainer struct {
 	db          *DB
@@ -319,7 +307,10 @@ func (m *Maintainer) PruneOnce(ctx context.Context) error {
 			slog.Int64("raw", res.Raw), slog.Int64("minute", res.Minute), slog.Int64("hour", res.Hour))
 	}
 	if res.OverCap {
-		m.logger.WarnContext(ctx, "metrics database still over size cap after pruning")
+		m.logger.WarnContext(ctx, "metrics tables still over size cap after pruning")
+	}
+	if res.RawDroppedEarly {
+		m.logger.WarnContext(ctx, "metrics size cap dropped raw data before retention, raise the cap or shorten retention")
 	}
 	return nil
 }
