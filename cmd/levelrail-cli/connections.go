@@ -144,7 +144,7 @@ func runConnectionsCatalog(prog string, args []string, stdout, stderr io.Writer,
 
 func printConnectionsTable(out io.Writer, list []apiclient.Connection) {
 	if len(list) == 0 {
-		_, _ = fmt.Fprintln(out, "No connections")
+		_, _ = fmt.Fprintln(out, emptyNextStep("connections", "connections catalog"))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
@@ -459,7 +459,7 @@ func printBindingsTable(out io.Writer, res apiclient.AppConnectionBindings, effe
 		}
 	}
 	if len(rows) == 0 {
-		_, _ = fmt.Fprintln(out, "No bindings")
+		_, _ = fmt.Fprintln(out, emptyNextStep("bindings", "connections bind --help"))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)

@@ -73,7 +73,7 @@ func TestRun_ConnectionsListEmpty(t *testing.T) {
 			srv := connectionsServer(t, &got, body)
 			defer srv.Close()
 			out, _ := runCLIExpectOK(t, []string{"connections", "list", "--api-url", srv.URL})
-			if strings.TrimSpace(out) != "No connections" {
+			if !strings.HasPrefix(strings.TrimSpace(out), "no connections yet: run ") {
 				t.Errorf("stdout = %q", out)
 			}
 			js, _ := runCLIExpectOK(t, []string{"connections", "list", "--json", "--api-url", srv.URL})
@@ -239,7 +239,7 @@ func TestRun_ConnectionsBindingsOrgEmpty(t *testing.T) {
 	srv := bindingsServer(t, &got, &sent, http.StatusOK, map[string]any{"bindings": nil})
 	defer srv.Close()
 	out, _ := runCLIExpectOK(t, []string{"connections", "bindings", "--org", "acme", "--api-url", srv.URL})
-	if got[0] != "GET /api/v1/organizations/acme/bindings" || strings.TrimSpace(out) != "No bindings" {
+	if got[0] != "GET /api/v1/organizations/acme/bindings" || !strings.HasPrefix(strings.TrimSpace(out), "no bindings yet: run ") {
 		t.Errorf("requests=%v stdout=%q", got, out)
 	}
 	js, _ := runCLIExpectOK(t, []string{"connections", "bindings", "--org", "acme", "--json", "--api-url", srv.URL})

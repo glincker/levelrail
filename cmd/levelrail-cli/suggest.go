@@ -184,6 +184,11 @@ func emptyHint(noun, createCmd string) string {
 	return msg
 }
 
+// emptyNextStep is emptyHint for lists that are not project scoped.
+func emptyNextStep(noun, cmd string) string {
+	return fmt.Sprintf("no %s yet: run %s %s", noun, cliProg, cmd)
+}
+
 // undoHint is the one-line text-mode tail naming the exact command that
 // reverses a state change; args are shell-quoted when they need it.
 func undoHint(prog string, args ...string) string {

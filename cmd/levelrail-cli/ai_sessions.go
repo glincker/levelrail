@@ -69,7 +69,7 @@ func runAISessionsList(prog string, args []string, stdout, stderr io.Writer, loo
 
 func printAISessionsListHuman(out io.Writer, sessions []apiclient.AIChatSessionSummaryResource) {
 	if len(sessions) == 0 {
-		_, _ = fmt.Fprintln(out, "no chat sessions yet")
+		_, _ = fmt.Fprintln(out, emptyNextStep("chat sessions", "ai chat --help"))
 		return
 	}
 	_, _ = fmt.Fprintf(out, "%-24s %-24s %s\n", "ID", "CREATED", "UPDATED")
