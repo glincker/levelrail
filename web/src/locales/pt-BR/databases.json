@@ -12,6 +12,42 @@
     "tunnelBody": "A CLI abre uma porta local que repassa para este banco de dados pelo control plane. Nada é exposto à internet.",
     "tunnelAfter": "O comando imprime uma string de conexão para a porta local. Adicione --launch para iniciar psql, mysql ou redis-cli automaticamente (defina LEVELRAIL_DB_PASSWORD primeiro)."
   },
+  "connect": {
+    "title": "Conectar a {{name}}",
+    "description": "Copie os dados, um trecho por framework ou um arquivo de configuração. As senhas ficam ocultas até você revelá-las.",
+    "targetLabel": "Destino da conexão",
+    "target": {
+      "machine": "Da minha máquina",
+      "apps": "De apps neste servidor"
+    },
+    "published": "Publicado em {{address}}",
+    "publish": "Usar da minha máquina",
+    "publishing": "Publicando...",
+    "publishHint": "Publica uma porta ligada apenas a 127.0.0.1, acessível só por este computador.",
+    "host": "Host",
+    "port": "Porta",
+    "database": "Banco de dados",
+    "user": "Usuário",
+    "password": "Senha",
+    "reveal": "Revelar senha",
+    "hidePassword": "Ocultar senha",
+    "autoHide": "Oculta novamente após 30 segundos.",
+    "placeholderNote": "Os trechos usam <password> até você revelá-la.",
+    "revealFailed": "Não foi possível revelar a senha",
+    "url": "URL de conexão",
+    "download": "Baixar",
+    "unavailable": "Os dados de conexão ainda não estão disponíveis.",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env"
+    }
+  },
   "upgrades": {
     "nav": "Atualizações"
   },

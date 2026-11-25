@@ -12,6 +12,42 @@
     "tunnelBody": "La CLI abre un puerto local que retransmite a esta base de datos a través del plano de control. No se expone nada a internet.",
     "tunnelAfter": "El comando imprime una cadena de conexión para el puerto local. Agrega --launch para iniciar psql, mysql o redis-cli automáticamente (define primero LEVELRAIL_DB_PASSWORD)."
   },
+  "connect": {
+    "title": "Conectar a {{name}}",
+    "description": "Copia los datos, un fragmento por framework o un archivo de configuración. Las contraseñas siguen ocultas hasta que las reveles.",
+    "targetLabel": "Destino de conexión",
+    "target": {
+      "machine": "Desde mi equipo",
+      "apps": "Desde apps de este servidor"
+    },
+    "published": "Publicado en {{address}}",
+    "publish": "Usar desde mi equipo",
+    "publishing": "Publicando...",
+    "publishHint": "Publica un puerto enlazado solo a 127.0.0.1, así que solo este equipo puede acceder.",
+    "host": "Host",
+    "port": "Puerto",
+    "database": "Base de datos",
+    "user": "Usuario",
+    "password": "Contraseña",
+    "reveal": "Revelar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "autoHide": "Se oculta de nuevo tras 30 segundos.",
+    "placeholderNote": "Los fragmentos usan <password> hasta que la reveles.",
+    "revealFailed": "No se pudo revelar la contraseña",
+    "url": "URL de conexión",
+    "download": "Descargar",
+    "unavailable": "Los datos de conexión aún no están disponibles.",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env"
+    }
+  },
   "upgrades": {
     "nav": "Actualizaciones"
   },

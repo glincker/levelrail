@@ -12,6 +12,42 @@
     "tunnelBody": "CLI 会打开一个本地端口，通过控制平面转发到此数据库。不会向互联网暴露任何内容。",
     "tunnelAfter": "该命令会打印本地端口的连接字符串。添加 --launch 可自动启动 psql、mysql 或 redis-cli（请先设置 LEVELRAIL_DB_PASSWORD）。"
   },
+  "connect": {
+    "title": "连接到 {{name}}",
+    "description": "复制连接信息、框架代码片段或配置文件。密码在你显示之前保持隐藏。",
+    "targetLabel": "连接来源",
+    "target": {
+      "machine": "从我的电脑",
+      "apps": "从此服务器上的应用"
+    },
+    "published": "已发布在 {{address}}",
+    "publish": "在我的电脑上使用",
+    "publishing": "正在发布...",
+    "publishHint": "发布一个仅绑定到 127.0.0.1 的端口，只有这台电脑可以访问。",
+    "host": "主机",
+    "port": "端口",
+    "database": "数据库",
+    "user": "用户",
+    "password": "密码",
+    "reveal": "显示密码",
+    "hidePassword": "隐藏密码",
+    "autoHide": "30 秒后再次隐藏。",
+    "placeholderNote": "显示密码之前，代码片段使用 <password>。",
+    "revealFailed": "无法显示密码",
+    "url": "连接 URL",
+    "download": "下载",
+    "unavailable": "连接信息暂不可用。",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env"
+    }
+  },
   "upgrades": {
     "nav": "升级"
   },

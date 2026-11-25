@@ -12,6 +12,42 @@
     "tunnelBody": "CLIがローカルポートを開き、コントロールプレーン経由でこのデータベースに中継します。インターネットには何も公開されません。",
     "tunnelAfter": "このコマンドは、ローカルポート用の接続文字列を出力します。--launchを付けると、psql、mysql、redis-cliが自動的に起動します(先にLEVELRAIL_DB_PASSWORDを設定してください)。"
   },
+  "connect": {
+    "title": "{{name}} に接続",
+    "description": "詳細、フレームワーク別のスニペット、設定ファイルをコピーできます。パスワードは表示するまで隠れたままです。",
+    "targetLabel": "接続先",
+    "target": {
+      "machine": "自分のマシンから",
+      "apps": "このサーバー上のアプリから"
+    },
+    "published": "{{address}} で公開中",
+    "publish": "自分のマシンから使う",
+    "publishing": "公開中...",
+    "publishHint": "127.0.0.1 のみにバインドしたポートを公開します。このコンピューターからだけ接続できます。",
+    "host": "ホスト",
+    "port": "ポート",
+    "database": "データベース",
+    "user": "ユーザー",
+    "password": "パスワード",
+    "reveal": "パスワードを表示",
+    "hidePassword": "パスワードを隠す",
+    "autoHide": "30 秒後に再び隠れます。",
+    "placeholderNote": "表示するまでスニペットでは <password> を使います。",
+    "revealFailed": "パスワードを表示できませんでした",
+    "url": "接続 URL",
+    "download": "ダウンロード",
+    "unavailable": "接続情報はまだ利用できません。",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env"
+    }
+  },
   "upgrades": {
     "nav": "アップグレード"
   },

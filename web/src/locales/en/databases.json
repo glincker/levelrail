@@ -12,6 +12,42 @@
     "tunnelBody": "The CLI opens a local port that relays to this database through the control plane. Nothing is exposed to the internet.",
     "tunnelAfter": "The command prints a connection string for the local port. Add --launch to start psql, mysql or redis-cli automatically (set LEVELRAIL_DB_PASSWORD first)."
   },
+  "connect": {
+    "title": "Connect to {{name}}",
+    "description": "Copy the details, a framework snippet or a config file. Passwords stay hidden until you reveal them.",
+    "targetLabel": "Connection target",
+    "target": {
+      "machine": "From my machine",
+      "apps": "From apps on this server"
+    },
+    "published": "Published on {{address}}",
+    "publish": "Use from my machine",
+    "publishing": "Publishing...",
+    "publishHint": "Publishes a port bound to 127.0.0.1 only, so just this computer can reach it.",
+    "host": "Host",
+    "port": "Port",
+    "database": "Database",
+    "user": "User",
+    "password": "Password",
+    "reveal": "Reveal password",
+    "hidePassword": "Hide password",
+    "autoHide": "Hides again after 30 seconds.",
+    "placeholderNote": "Snippets use <password> until you reveal it.",
+    "revealFailed": "Could not reveal the password",
+    "url": "Connection URL",
+    "download": "Download",
+    "unavailable": "Connection details are not available yet.",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env"
+    }
+  },
   "upgrades": {
     "nav": "Upgrades"
   },

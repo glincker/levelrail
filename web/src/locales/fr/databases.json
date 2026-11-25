@@ -12,6 +12,42 @@
     "tunnelBody": "La CLI ouvre un port local qui relaie vers cette base de données via le plan de contrôle. Rien n'est exposé à internet.",
     "tunnelAfter": "La commande affiche une chaîne de connexion pour le port local. Ajoutez --launch pour démarrer psql, mysql ou redis-cli automatiquement (définissez d'abord LEVELRAIL_DB_PASSWORD)."
   },
+  "connect": {
+    "title": "Se connecter à {{name}}",
+    "description": "Copiez les détails, un extrait par framework ou un fichier de configuration. Les mots de passe restent masqués tant que vous ne les révélez pas.",
+    "targetLabel": "Cible de connexion",
+    "target": {
+      "machine": "Depuis ma machine",
+      "apps": "Depuis les apps de ce serveur"
+    },
+    "published": "Publié sur {{address}}",
+    "publish": "Utiliser depuis ma machine",
+    "publishing": "Publication...",
+    "publishHint": "Publie un port lié uniquement à 127.0.0.1, accessible depuis cet ordinateur seulement.",
+    "host": "Hôte",
+    "port": "Port",
+    "database": "Base de données",
+    "user": "Utilisateur",
+    "password": "Mot de passe",
+    "reveal": "Révéler le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "autoHide": "Se masque de nouveau après 30 secondes.",
+    "placeholderNote": "Les extraits utilisent <password> tant que vous ne le révélez pas.",
+    "revealFailed": "Impossible de révéler le mot de passe",
+    "url": "URL de connexion",
+    "download": "Télécharger",
+    "unavailable": "Les détails de connexion ne sont pas encore disponibles.",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env"
+    }
+  },
   "upgrades": {
     "nav": "Mises à niveau"
   },

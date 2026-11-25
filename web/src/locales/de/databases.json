@@ -12,6 +12,42 @@
     "tunnelBody": "Die CLI öffnet einen lokalen Port, der über die Control Plane an diese Datenbank weiterleitet. Nichts wird zum Internet hin offengelegt.",
     "tunnelAfter": "Der Befehl gibt eine Verbindungszeichenfolge für den lokalen Port aus. Fügen Sie --launch hinzu, um psql, mysql oder redis-cli automatisch zu starten (setzen Sie zuvor LEVELRAIL_DB_PASSWORD)."
   },
+  "connect": {
+    "title": "Mit {{name}} verbinden",
+    "description": "Details, ein Framework-Snippet oder eine Konfigurationsdatei kopieren. Passwörter bleiben verborgen, bis Sie sie anzeigen.",
+    "targetLabel": "Verbindungsziel",
+    "target": {
+      "machine": "Von meinem Rechner",
+      "apps": "Von Apps auf diesem Server"
+    },
+    "published": "Veröffentlicht auf {{address}}",
+    "publish": "Von meinem Rechner nutzen",
+    "publishing": "Wird veröffentlicht...",
+    "publishHint": "Veröffentlicht einen nur an 127.0.0.1 gebundenen Port, den nur dieser Rechner erreicht.",
+    "host": "Host",
+    "port": "Port",
+    "database": "Datenbank",
+    "user": "Benutzer",
+    "password": "Passwort",
+    "reveal": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen",
+    "autoHide": "Wird nach 30 Sekunden wieder verborgen.",
+    "placeholderNote": "Snippets enthalten <password>, bis Sie es anzeigen.",
+    "revealFailed": "Passwort konnte nicht angezeigt werden",
+    "url": "Verbindungs-URL",
+    "download": "Herunterladen",
+    "unavailable": "Verbindungsdetails sind noch nicht verfügbar.",
+    "tab": {
+      "springProperties": "Spring Properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env"
+    }
+  },
   "upgrades": {
     "nav": "Upgrades"
   },
