@@ -105,3 +105,25 @@ func init() {
 	dur(KeyBranchesMinTTL, "5m", "APP_BRANCHES_MIN_TTL", "Shortest branch lifetime", "Shortest auto delete time a branch may be given, so a tiny value cannot purge it at once.", 30*24*time.Hour)
 	dur(KeyBranchesCloneTimeout, "2h", "APP_BRANCHES_CLONE_TIMEOUT", "Branch clone timeout", "Longest a branch may stay in a copying step before it is marked failed.", 48*time.Hour)
 }
+
+// Database statement audit settings (ADR 082). Seeded from env, changed live.
+const (
+	KeyDatabasesAuditRetentionDays = "databases.audit_retention_days"
+	KeyDatabasesAuditStoreText     = "databases.audit_store_text"
+	KeyDatabasesAuditQueueSize     = "databases.audit_queue_size"
+)
+
+func init() {
+	Register(Definition{
+		Key: KeyDatabasesAuditRetentionDays, Category: CategoryDeploys, Kind: KindInt, Default: "90", Env: "APP_DB_AUDIT_RETENTION_DAYS", Apply: ApplyLive,
+		CheckValue: intRangeCheck(1, 3650), EnvConvert: branchEnvConvert(intRangeCheck(1, 3650)), Title: "Database audit retention (days)", Description: "How long database explorer audit rows are kept before the sweeper deletes them.",
+	})
+	Register(Definition{
+		Key: KeyDatabasesAuditStoreText, Category: CategoryDeploys, Kind: KindBool, Default: "false", Env: "APP_DB_AUDIT_STORE_TEXT", Apply: ApplyLive,
+		Title: "Store statement text in the database audit", Description: "Off keeps only a fingerprint. On also stores the statement text, which can contain data values.",
+	})
+	Register(Definition{
+		Key: KeyDatabasesAuditQueueSize, Category: CategoryDeploys, Kind: KindInt, Default: "4096", Env: "APP_DB_AUDIT_QUEUE_SIZE", Apply: ApplyLive,
+		CheckValue: intRangeCheck(16, 1000000), EnvConvert: branchEnvConvert(intRangeCheck(16, 1000000)), Title: "Database audit queue size", Description: "Events buffered before the writer drops reads and counts the drop.",
+	})
+}

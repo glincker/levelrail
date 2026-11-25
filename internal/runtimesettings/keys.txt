@@ -290,6 +290,9 @@ database_viewer.max_sql_bytes
 database_viewer.query_timeout
 database_viewer.queue_wait_ms
 database_viewer.schema_max_rows
+databases.audit_queue_size
+databases.audit_retention_days
+databases.audit_store_text
 databases.auto_latest
 databases.bulk_concurrency
 databases.bulk_max_items
