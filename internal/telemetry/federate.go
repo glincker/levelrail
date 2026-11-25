@@ -194,6 +194,8 @@ type AggregatedPoint struct {
 	// Max is the largest sample in the bucket, so a spike survives
 	// downsampling even though Value is an average.
 	Max float64
+	// Min is the smallest sample in the bucket.
+	Min float64
 }
 
 // Aggregate buckets samples (assumed already timestamp-ascending, which
@@ -207,30 +209,42 @@ func Aggregate(samples []Sample, from time.Time, step time.Duration) []Aggregate
 	if step <= 0 {
 		out := make([]AggregatedPoint, len(samples))
 		for i, s := range samples {
-			out[i] = AggregatedPoint{Timestamp: s.Timestamp, Value: s.Value, Count: 1, Max: s.Value}
+			p := AggregatedPoint{Timestamp: s.Timestamp, Value: s.Value, Count: 1, Max: s.Value, Min: s.Value}
+			if s.Count > 0 {
+				p.Count, p.Max, p.Min = int(s.Count), s.Max, s.Min
+			}
+			out[i] = p
 		}
 		return out
 	}
 
 	type bucket struct {
 		sum   float64
+		min   float64
 		max   float64
-		count int
+		count int64
 	}
 	buckets := make(map[int64]*bucket)
 	var order []int64
 
 	for _, s := range samples {
 		idx := int64(s.Timestamp.Sub(from) / step)
+		// A rollup row stands for Count raw points, so weight it by Count
+		// (total sum over total count), never an average of averages.
+		sum, lo, hi, n := s.Value, s.Value, s.Value, int64(1)
+		if s.Count > 0 {
+			sum, lo, hi, n = s.Sum, s.Min, s.Max, s.Count
+		}
 		b, ok := buckets[idx]
 		if !ok {
-			b = &bucket{max: s.Value}
+			b = &bucket{min: lo, max: hi}
 			buckets[idx] = b
 			order = append(order, idx)
 		}
-		b.sum += s.Value
-		b.max = math.Max(b.max, s.Value)
-		b.count++
+		b.sum += sum
+		b.min = math.Min(b.min, lo)
+		b.max = math.Max(b.max, hi)
+		b.count += n
 	}
 
 	sort.Slice(order, func(i, j int) bool { return order[i] < order[j] })
@@ -241,8 +255,9 @@ func Aggregate(samples []Sample, from time.Time, step time.Duration) []Aggregate
 		out[i] = AggregatedPoint{
 			Timestamp: from.Add(time.Duration(idx) * step),
 			Value:     b.sum / float64(b.count),
-			Count:     b.count,
+			Count:     int(b.count),
 			Max:       b.max,
+			Min:       b.min,
 		}
 	}
 	return out
