@@ -156,6 +156,9 @@ func logTargets(db *store.DB, runtime docker.Runtime, registry *agent.Registry, 
 				continue
 			}
 			for _, c := range containers {
+				if !application.OwnsContainer(svc.Name, c.Name) {
+					continue
+				}
 				targets = append(targets, telemetry.LogTarget{
 					ResourceID:  "service:" + svc.Name,
 					ContainerID: c.ID,

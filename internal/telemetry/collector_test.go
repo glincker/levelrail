@@ -271,23 +271,66 @@ func TestCollectOnce_CombinesReplicasIntoOneSample(t *testing.T) {
 	db := newTestDB(t)
 	const gb, mb = 1 << 30, 1 << 20
 	source := &fakeStatsSource{stats: map[string]docker.ContainerStats{
-		"a": {NetworkRxBytes: 5 * gb, MemoryUsageBytes: 100},
-		"b": {NetworkRxBytes: 50 * mb, MemoryUsageBytes: 200},
+		"a": {NetworkRxBytes: 5 * gb, MemoryUsageBytes: 100, MemoryLimitBytes: 1000},
+		"b": {NetworkRxBytes: 50 * mb, MemoryUsageBytes: 200, MemoryLimitBytes: 1000},
 	}}
 	c := NewCollector(source, db, time.Second, nil)
 	targets := []Target{{ResourceID: "service:web", ContainerID: "a"}, {ResourceID: "service:web", ContainerID: "b"}}
 	if err := c.CollectOnce(context.Background(), targets); err != nil {
 		t.Fatalf("CollectOnce() error = %v", err)
 	}
-	got, err := db.Query(context.Background(), "service:web", "network_rx_bytes", time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
-	if err != nil {
-		t.Fatalf("Query() error = %v", err)
+	want := map[string]float64{"network_rx_bytes": 5*gb + 50*mb, "memory_usage_bytes": 150, "memory_limit_bytes": 1000}
+	for metric, v := range want {
+		got, err := db.Query(context.Background(), "service:web", metric, time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
+		if err != nil {
+			t.Fatalf("Query() error = %v", err)
+		}
+		if len(got) != 1 || got[0].Value != v {
+			t.Errorf("%s = %+v, want one sample of %v", metric, got, v)
+		}
 	}
-	if len(got) != 1 || got[0].Value != float64(5*gb+50*mb) {
-		t.Errorf("network_rx_bytes = %+v, want one sample of %d", got, 5*gb+50*mb)
+}
+
+func TestCollectOnce_ReplicaCPUIsAveragedNotSummed(t *testing.T) {
+	db := newTestDB(t)
+	raw := func(total uint64) docker.CPUStatsRaw {
+		return docker.CPUStatsRaw{TotalUsageNanos: total, SystemUsageNanos: total * 10, OnlineCPUs: 1}
 	}
-	mem, _ := db.Query(context.Background(), "service:web", "memory_usage_bytes", time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
-	if len(mem) != 1 || mem[0].Value != 300 {
-		t.Errorf("memory_usage_bytes = %+v, want 300", mem)
+	source := &fakeStatsSource{stats: map[string]docker.ContainerStats{"a": {CPURaw: raw(0)}, "b": {CPURaw: raw(0)}}}
+	c := NewCollector(source, db, time.Second, nil)
+	targets := []Target{{ResourceID: "service:web", ContainerID: "a"}, {ResourceID: "service:web", ContainerID: "b"}}
+	ctx := context.Background()
+	if err := c.CollectOnce(ctx, targets); err != nil {
+		t.Fatal(err)
+	}
+	source.stats = map[string]docker.ContainerStats{"a": {CPURaw: raw(400)}, "b": {CPURaw: raw(400)}}
+	if err := c.CollectOnce(ctx, targets); err != nil {
+		t.Fatal(err)
+	}
+	single := docker.CPUPercent(raw(400), raw(0))
+	got, _ := db.Query(ctx, "service:web", "cpu_percent", time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
+	if len(got) == 0 || got[len(got)-1].Value != single {
+		t.Errorf("cpu_percent = %+v, want per-container %v", got, single)
+	}
+}
+
+func TestCollectOnce_FailedReplicaSkipsCountersOnly(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeStatsSource{
+		stats:  map[string]docker.ContainerStats{"a": {NetworkRxBytes: 10, MemoryUsageBytes: 100}},
+		errFor: map[string]error{"b": errors.New("gone")},
+	}
+	c := NewCollector(source, db, time.Second, nil)
+	targets := []Target{{ResourceID: "service:web", ContainerID: "a"}, {ResourceID: "service:web", ContainerID: "b"}}
+	_ = c.CollectOnce(context.Background(), targets)
+	win := func(m string) int {
+		got, _ := db.Query(context.Background(), "service:web", m, time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
+		return len(got)
+	}
+	if win("network_rx_bytes") != 0 {
+		t.Errorf("counter written despite a failed replica")
+	}
+	if win("memory_usage_bytes") != 1 {
+		t.Errorf("gauge missing for the replica that answered")
 	}
 }
