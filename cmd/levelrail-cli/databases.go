@@ -111,6 +111,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesExplorer(prog, rest, stdout, stderr, lookupEnv)
 	case "mongo":
 		return runDatabasesMongo(prog, rest, stdout, stderr, lookupEnv)
+	case "redis":
+		return runDatabasesRedis(prog, rest, stdout, stderr, lookupEnv)
 	case "query-history":
 		return runDatabasesQueryHistory(prog, rest, stdout, stderr, lookupEnv)
 	case "saved-queries":
@@ -194,6 +196,7 @@ func databasesUsage(prog string) string {
   %[1]s databases engine-stats <name> [flags]  live counts for a search engine or Memcached database
   %[1]s databases explorer capabilities <name> [flags]  which explorer features the engine supports and the viewer limits
   %[1]s databases mongo collections|find <name> ...  read-only MongoDB collections and documents
+  %[1]s databases redis info|slowlog|clients <name> [flags]  INFO sections, slow commands and connected clients of a Redis-family database
   %[1]s databases query-history list|clear <name> ...  your recent statements (clear needs --yes)
   %[1]s databases saved-queries list|add|delete <name> ...  your saved statements (delete needs --yes)
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits

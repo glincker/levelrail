@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2409 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2412 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -891,6 +891,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleClearDatabaseQueryHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseQueryHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/query/write", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseQueryWrite", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/redis/clients", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetRedisClients", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/redis/info", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetRedisInfo", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/redis/slowlog", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetRedisSlowlog", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseResourceRecommendation", Description: "Resource right-sizing, the database counterpart to GET /apps/{name}/resource-recommendation above (database_resource_recommendation.go)."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/restore-preview", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseRestorePreview", Description: "Restore preview: read-only size, age, target and overwrite scope of one restore."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/restore-test", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseRestoreTest", Description: ""},

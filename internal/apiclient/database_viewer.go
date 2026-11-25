@@ -185,3 +185,57 @@ type DatabaseExplorerCapabilities struct {
 func (c *Client) GetDatabaseExplorerCapabilities(ctx context.Context, name string) (DatabaseExplorerCapabilities, error) {
 	return getJSON[DatabaseExplorerCapabilities](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/explorer/capabilities")
 }
+
+// RedisInfo is the allow listed INFO panel.
+type RedisInfo struct {
+	Sections []struct {
+		Name   string `json:"name"`
+		Fields []struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"fields"`
+	} `json:"sections"`
+}
+
+// RedisSlowlog is the capped slowlog; arguments are reduced to sizes.
+type RedisSlowlog struct {
+	Entries []struct {
+		ID         int64  `json:"id"`
+		Time       int64  `json:"time"`
+		DurationUS int64  `json:"durationUs"`
+		Command    string `json:"command"`
+		ArgCount   int    `json:"argCount"`
+		Client     string `json:"client"`
+	} `json:"entries"`
+	Truncated bool `json:"truncated"`
+}
+
+// RedisClients is the capped client list.
+type RedisClients struct {
+	Clients []struct {
+		ID    string `json:"id"`
+		Addr  string `json:"addr"`
+		Age   int64  `json:"age"`
+		Idle  int64  `json:"idle"`
+		Flags string `json:"flags"`
+		DB    string `json:"db"`
+		Cmd   string `json:"cmd"`
+		User  string `json:"user"`
+	} `json:"clients"`
+	Truncated bool `json:"truncated"`
+}
+
+// GetRedisInfo calls GET /api/v1/databases/{name}/redis/info.
+func (c *Client) GetRedisInfo(ctx context.Context, name string) (RedisInfo, error) {
+	return getJSON[RedisInfo](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/redis/info")
+}
+
+// GetRedisSlowlog calls GET /api/v1/databases/{name}/redis/slowlog.
+func (c *Client) GetRedisSlowlog(ctx context.Context, name string) (RedisSlowlog, error) {
+	return getJSON[RedisSlowlog](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/redis/slowlog")
+}
+
+// GetRedisClients calls GET /api/v1/databases/{name}/redis/clients.
+func (c *Client) GetRedisClients(ctx context.Context, name string) (RedisClients, error) {
+	return getJSON[RedisClients](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/redis/clients")
+}

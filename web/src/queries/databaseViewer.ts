@@ -22,7 +22,9 @@ import type {
   DbSchemaResponse,
   DbStructure,
   ExplorerCapabilities,
+  RedisInfo,
   RedisScan,
+  RedisSlowlog,
   RedisValue,
 } from '../types/databaseViewer'
 
@@ -254,6 +256,30 @@ export function useRedisKey(name: string, key: string | null) {
         'key',
       ),
     enabled: key !== null,
+    staleTime: 0,
+  })
+}
+
+export function useRedisInfo(name: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...databaseViewerKeys.keys(name, ''), 'info'],
+    queryFn: () =>
+      request<RedisInfo>(`${base(name)}/redis/info`, undefined, 'info'),
+    enabled,
+    staleTime: 0,
+  })
+}
+
+export function useRedisSlowlog(name: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...databaseViewerKeys.keys(name, ''), 'slowlog'],
+    queryFn: () =>
+      request<RedisSlowlog>(
+        `${base(name)}/redis/slowlog`,
+        undefined,
+        'slowlog',
+      ),
+    enabled,
     staleTime: 0,
   })
 }

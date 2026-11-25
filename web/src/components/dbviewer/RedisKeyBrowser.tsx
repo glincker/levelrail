@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import { CodeBlock } from '@/components/ui/code-block'
+import { RedisInfoPanel } from './RedisInfoPanel'
+import { RedisValuePanel } from './RedisValuePanel'
 import { cn } from '@/lib/utils'
 import { useRedisKey, useRedisKeys } from '../../queries/databaseViewer'
 import type { RedisKey } from '../../types/databaseViewer'
@@ -17,6 +18,8 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
   const [patternInput, setPatternInput] = useState('*')
   const [pattern, setPattern] = useState('*')
   const [selected, setSelected] = useState<string | null>(null)
+  const [tab, setTab] = useState<'keys' | 'info'>('keys')
+  const [typeFilter, setTypeFilter] = useState('')
 
   const scan = useRedisKeys(databaseName, pattern)
   const value = useRedisKey(databaseName, selected)
@@ -34,6 +37,15 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
     }
     return out
   }, [scan.data])
+  const types = useMemo(
+    () => Array.from(new Set(collected.map((k) => k.type))).sort(),
+    [collected],
+  )
+  const visible = useMemo(
+    () =>
+      typeFilter ? collected.filter((k) => k.type === typeFilter) : collected,
+    [collected, typeFilter],
+  )
   const done = !scan.hasNextPage
 
   function submit() {
@@ -41,8 +53,41 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
     setPattern(patternInput.trim() || '*')
   }
 
+  const tabs = (
+    <div
+      className="flex gap-1"
+      role="group"
+      aria-label={t('viewer.keys.title')}
+    >
+      {(['keys', 'info'] as const).map((id) => (
+        <Button
+          key={id}
+          type="button"
+          size="sm"
+          variant={tab === id ? 'default' : 'outline'}
+          aria-pressed={tab === id}
+          onClick={() => {
+            setTab(id)
+          }}
+        >
+          {t(`viewer.keys.tab_${id}`)}
+        </Button>
+      ))}
+    </div>
+  )
+
+  if (tab === 'info') {
+    return (
+      <div className="space-y-3">
+        {tabs}
+        <RedisInfoPanel databaseName={databaseName} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
+      {tabs}
       <p className="text-xs text-muted-foreground">
         {t('viewer.keys.readOnlyNote')}
       </p>
@@ -62,6 +107,23 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
               setPatternInput(e.target.value)
             }}
           />
+        </label>
+        <label className="space-y-1 text-xs text-muted-foreground">
+          <span>{t('viewer.keys.typeFilter')}</span>
+          <select
+            className="block h-9 rounded-md border border-border bg-background px-2 text-sm"
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value)
+            }}
+          >
+            <option value="">{t('viewer.keys.allTypes')}</option>
+            {types.map((ty) => (
+              <option key={ty} value={ty}>
+                {ty}
+              </option>
+            ))}
+          </select>
         </label>
         <Button type="submit" size="sm">
           <SearchGlassIcon className="size-5" aria-hidden="true" />
@@ -83,7 +145,7 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
             </p>
           ) : (
             <ul className="max-h-[28rem] divide-y divide-border/60 overflow-auto rounded-lg border border-border">
-              {collected.map((k) => (
+              {visible.map((k) => (
                 <li key={k.key}>
                   <button
                     type="button"
@@ -141,23 +203,7 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
               <p className="break-all font-mono text-sm font-medium">
                 {selected}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {t('viewer.keys.type')}: {value.data.type} |{' '}
-                {t('viewer.keys.ttl')}:{' '}
-                {value.data.ttl < 0
-                  ? t('viewer.keys.noTtl')
-                  : t('viewer.keys.ttlSeconds', { count: value.data.ttl })}
-              </p>
-              <CodeBlock
-                code={value.data.lines.join('\n')}
-                wrap
-                maxHeight="lg"
-              />
-              {value.data.truncated ? (
-                <p className="text-xs text-muted-foreground">
-                  {t('viewer.keys.truncated')}
-                </p>
-              ) : null}
+              <RedisValuePanel value={value.data} />
             </div>
           ) : null}
         </div>

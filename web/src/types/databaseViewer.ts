@@ -144,10 +144,54 @@ export interface RedisScan {
   keys: RedisKey[]
 }
 
+export interface RedisPair {
+  field: string
+  value: string
+}
+
+export interface RedisEntry {
+  id?: string
+  field?: string
+  value?: string
+  score?: string
+  pairs?: RedisPair[]
+}
+
 export interface RedisValue {
   type: string
   ttl: number
   lines: string[]
+  truncated: boolean
+  encoding: string
+  size: number
+  memoryBytes: number
+  subtype?: string
+  bitLength?: number
+  bitCount?: number
+  unsupported?: boolean
+  entries: RedisEntry[]
+}
+
+export interface RedisInfoSection {
+  name: string
+  fields: { key: string; value: string }[]
+}
+
+export interface RedisInfo {
+  sections: RedisInfoSection[]
+}
+
+export interface RedisSlowEntry {
+  id: number
+  time: number
+  durationUs: number
+  command: string
+  argCount: number
+  client?: string
+}
+
+export interface RedisSlowlog {
+  entries: RedisSlowEntry[]
   truncated: boolean
 }
 

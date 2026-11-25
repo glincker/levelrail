@@ -1041,6 +1041,9 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/mongo/collections | AbilityReadSensitive | handleGetMongoCollections |
 | POST | /api/v1/databases/{name}/mongo/find | AbilityReadSensitive | handleMongoFind |
 | GET | /api/v1/databases/{name}/integrations | AbilityRead | handleListDatabaseIntegrations |
+| GET | /api/v1/databases/{name}/redis/info | AbilityReadSensitive | handleGetRedisInfo |
+| GET | /api/v1/databases/{name}/redis/slowlog | AbilityReadSensitive | handleGetRedisSlowlog |
+| GET | /api/v1/databases/{name}/redis/clients | AbilityReadSensitive | handleGetRedisClients |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

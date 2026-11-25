@@ -1,11 +1,16 @@
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useDatabase } from '../../queries/databases'
 import { BetaBadge } from '../BetaBadge'
-import { RedisKeyBrowser } from './RedisKeyBrowser'
 import { SchemaExplorer } from './SchemaExplorer'
 import { EngineStatsPanel } from './EngineStatsPanel'
 import { KV_ENGINES, SQL_ENGINES, STATS_ENGINES } from './engines'
 import { UnsupportedEngine } from './UnsupportedEngine'
+
+const RedisKeyBrowser = lazy(() =>
+  import('./RedisKeyBrowser').then((m) => ({ default: m.RedisKeyBrowser })),
+)
 
 // Explorer tab: schema browser and table data for SQL engines, key
 // browser for Redis-compatible engines.
@@ -29,7 +34,9 @@ export function DatabaseExplorerPanel({
       {SQL_ENGINES.has(engine) ? (
         <SchemaExplorer databaseName={databaseName} />
       ) : KV_ENGINES.has(engine) ? (
-        <RedisKeyBrowser databaseName={databaseName} />
+        <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+          <RedisKeyBrowser databaseName={databaseName} />
+        </Suspense>
       ) : STATS_ENGINES.has(engine) ? (
         <EngineStatsPanel databaseName={databaseName} engine={engine} />
       ) : (
