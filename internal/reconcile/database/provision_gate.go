@@ -18,16 +18,17 @@ import (
 
 // Environment variables for the waiting steps of creating a database.
 const (
-	EnvDockerWaitInterval  = "APP_DB_DOCKER_WAIT_INTERVAL"
-	EnvReadyProbeInterval  = "APP_DB_READY_PROBE_INTERVAL"
-	EnvReadyTimeout        = "APP_DB_READY_TIMEOUT"
-	defaultDockerWait      = 3 * time.Second
-	defaultReadyProbe      = 2 * time.Second
-	defaultReadyTimeout    = 2 * time.Minute
-	reasonWaitingForDocker = "WaitingForDocker"
-	reasonNotAccepting     = "NotAcceptingConnections"
-	reasonVolumeFailed     = "VolumeFailed"
-	probeDialTimeout       = time.Second
+	EnvDockerWaitInterval    = "APP_DB_DOCKER_WAIT_INTERVAL"
+	EnvReadyProbeInterval    = "APP_DB_READY_PROBE_INTERVAL"
+	EnvReadyTimeout          = "APP_DB_READY_TIMEOUT"
+	defaultDockerWait        = 3 * time.Second
+	defaultReadyProbe        = 2 * time.Second
+	defaultReadyTimeout      = 2 * time.Minute
+	reasonWaitingForDocker   = "WaitingForDocker"
+	reasonNotAccepting       = "NotAcceptingConnections"
+	reasonVolumeIncompatible = "VolumeIncompatible"
+	reasonVolumeFailed       = "VolumeFailed"
+	probeDialTimeout         = time.Second
 )
 
 func durationFromEnv(key string, def time.Duration) time.Duration {
@@ -83,6 +84,15 @@ func (c *Controller) settleVolume(ctx context.Context, desired *store.DesiredDat
 	if found == nil {
 		return reconcile.Result{}, false
 	}
+	volMajor := ""
+	if desired.ExistingVolume != "discard" {
+		if rd, ok := c.runtime.(VolumeFileReader); ok {
+			volMajor = DetectVolumeMajor(ctx, rd, desired.Engine, volName)
+		}
+		if !VolumeCompatible(desired.Engine, volMajor, desired.Version) {
+			return notReady(reasonVolumeIncompatible, errors.New(IncompatibleVolumeMessage(volName, volMajor, desired.Version))), true
+		}
+	}
 	switch desired.ExistingVolume {
 	case "reuse":
 		return reconcile.Result{}, false
@@ -95,7 +105,7 @@ func (c *Controller) settleVolume(ctx context.Context, desired *store.DesiredDat
 		}
 		return reconcile.Result{}, false
 	}
-	return notReady(dbprovision.ReasonLeftoverVolume, &dbprovision.LeftoverVolumeError{Name: volName, SizeBytes: found.SizeBytes}), true
+	return notReady(dbprovision.ReasonLeftoverVolume, &dbprovision.LeftoverVolumeError{Name: volName, SizeBytes: found.SizeBytes, Version: volMajor}), true
 }
 
 func (c *Controller) markVolumeResolved(ctx context.Context, desired *store.DesiredDatabase, fresh bool) {

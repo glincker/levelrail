@@ -924,6 +924,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		justDeployed = true
 
 	case !state.Running:
+		if res, stop := c.crashGate(ctx, target); stop {
+			return res, nil
+		}
 		if err := c.runtime.Start(ctx, state.ID); err != nil {
 			return notReady("StartFailed", err), fmt.Errorf("database/%s: restart %q: %w", c.dbName, target, err)
 		}

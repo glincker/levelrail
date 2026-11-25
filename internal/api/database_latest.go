@@ -106,6 +106,7 @@ func (rt *Router) applyLatestDatabaseVersion(w http.ResponseWriter, r *http.Requ
 	}
 	req.Version = res.Version
 	req.VersionResolution = &res
+	rt.matchLeftoverMajor(r.Context(), req)
 	return true
 }
 

@@ -337,6 +337,10 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		return false
 	}
 
+	if rt.refuseIncompatibleLeftover(w, r, req) {
+		return false
+	}
+
 	pending, err := rt.databaseTeardownPending(r.Context(), req.Name, req.NodeID)
 	if err != nil {
 		rt.internalError(w, "api: create database: check pending teardown failed", err, slog.String("name", req.Name))

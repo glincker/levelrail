@@ -116,10 +116,17 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
     })
   }
 
-  if (isLoading) return <ExplorerLoading />
+  if (isLoading)
+    return (
+      <ExplorerLoading
+        databaseName={databaseName}
+        onRetry={() => void refetch()}
+      />
+    )
   if (error) {
     return (
       <ExplorerReadError
+        databaseName={databaseName}
         info={classifyExplorerError(error)}
         retrying={isFetching}
         onRetry={() => {

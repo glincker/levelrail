@@ -139,6 +139,7 @@ export const NAMESPACES = [
   'appExpiry',
   'tokenExpiry',
   'appRestartSchedule',
+  'dbExplorerErrors',
   'dbMonitoring',
   'appFiles',
   'appContainers',

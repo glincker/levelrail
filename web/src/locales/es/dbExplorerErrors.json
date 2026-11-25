@@ -1,0 +1,9 @@
+{
+  "stuck": {
+    "title": "Aún esperando a la base de datos",
+    "body": "Puede que la base de datos no esté en marcha o se reinicie sin parar. Revisa sus registros para ver el último error y vuelve a intentarlo."
+  },
+  "retry": "Reintentar",
+  "logs": "Abrir registros",
+  "overview": "Abrir resumen"
+}

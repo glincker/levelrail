@@ -70,13 +70,19 @@ const ReasonLeftoverVolume = "LeftoverVolume"
 type LeftoverVolumeError struct {
 	Name      string
 	SizeBytes int64
+	// Version is the on-disk major version when the engine records one.
+	Version string
 }
 
 func (e *LeftoverVolumeError) Error() string {
-	return fmt.Sprintf("leftover volume %s (%d bytes) from a deleted database of the same name", e.Name, e.SizeBytes)
+	s := fmt.Sprintf("leftover volume %s (%d bytes) from a deleted database of the same name", e.Name, e.SizeBytes)
+	if e.Version != "" {
+		s += " [on-disk version " + e.Version + "]"
+	}
+	return s
 }
 
-var leftoverRe = regexp.MustCompile(`leftover volume (\S+) \((-?\d+) bytes\)`)
+var leftoverRe = regexp.MustCompile(`leftover volume (\S+) \((-?\d+) bytes\)(?: .*?\[on-disk version (\S+?)\])?`)
 
 // ParseLeftover extracts the volume name and size from a LeftoverVolumeError text.
 func ParseLeftover(text string) (VolumeInfo, bool) {
@@ -85,13 +91,15 @@ func ParseLeftover(text string) (VolumeInfo, bool) {
 		return VolumeInfo{}, false
 	}
 	size, _ := strconv.ParseInt(m[2], 10, 64)
-	return VolumeInfo{Name: m[1], SizeBytes: size}, true
+	return VolumeInfo{Name: m[1], SizeBytes: size, Version: m[3]}, true
 }
 
 // VolumeInfo names the leftover volume a failure is about.
 type VolumeInfo struct {
 	Name      string `json:"name"`
 	SizeBytes int64  `json:"size_bytes,omitempty"`
+	// Version is the on-disk major version of the leftover volume, when known.
+	Version string `json:"version,omitempty"`
 }
 
 // Environment variables.

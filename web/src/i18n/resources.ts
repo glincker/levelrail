@@ -188,6 +188,7 @@ import type secretScan from '../locales/en/secretScan.json'
 import type appExpiry from '../locales/en/appExpiry.json'
 import type tokenExpiry from '../locales/en/tokenExpiry.json'
 import type appRestartSchedule from '../locales/en/appRestartSchedule.json'
+import type dbExplorerErrors from '../locales/en/dbExplorerErrors.json'
 import type dbMonitoring from '../locales/en/dbMonitoring.json'
 import type appFiles from '../locales/en/appFiles.json'
 import type appContainers from '../locales/en/appContainers.json'
@@ -356,6 +357,7 @@ declare module 'i18next' {
       appExpiry: typeof appExpiry
       tokenExpiry: typeof tokenExpiry
       appRestartSchedule: typeof appRestartSchedule
+      dbExplorerErrors: typeof dbExplorerErrors
       dbMonitoring: typeof dbMonitoring
       appFiles: typeof appFiles
       appContainers: typeof appContainers
