@@ -894,6 +894,7 @@ var Operations = map[string]Operation{
 	"handleGetDatabaseCatalogStatus":           {Method: "GET", Path: "/api/v1/database-catalog", HasBody: false, Stream: false},
 	"handleGetDatabaseDataCopy":                {Method: "GET", Path: "/api/v1/imports/platform/databases/{name}", HasBody: false, Stream: false},
 	"handleGetDatabaseEngineStats":             {Method: "GET", Path: "/api/v1/databases/{name}/engine-stats", HasBody: false, Stream: false},
+	"handleGetDatabaseExplorerCapabilities":    {Method: "GET", Path: "/api/v1/databases/{name}/explorer/capabilities", HasBody: false, Stream: false},
 	"handleGetDatabaseKey":                     {Method: "GET", Path: "/api/v1/databases/{name}/key", HasBody: false, Stream: false},
 	"handleGetDatabaseNetwork":                 {Method: "GET", Path: "/api/v1/databases/{name}/network", HasBody: false, Stream: false},
 	"handleGetDatabaseParams":                  {Method: "GET", Path: "/api/v1/databases/{name}/params", HasBody: false, Stream: false},

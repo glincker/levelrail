@@ -80376,6 +80376,84 @@
         "x-required-ability": "read:sensitive"
       }
     },
+    "/api/v1/databases/{name}/explorer/capabilities": {
+      "get": {
+        "description": "Static per engine capability model plus viewer limits; drives the explorer UI.\n\nRequires the `read:sensitive` ability.",
+        "operationId": "handleGetDatabaseExplorerCapabilities",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read:sensitive"
+            ]
+          }
+        ],
+        "summary": "Static per engine capability model plus viewer limits; drives the explorer UI.",
+        "tags": [
+          "Databases CRUD / Engines / Resources"
+        ],
+        "x-required-ability": "read:sensitive"
+      }
+    },
     "/api/v1/databases/{name}/import": {
       "get": {
         "description": "Restore as a new database (database_clone_restore.go): the non-destructive counterpart just above, AbilityWriteSensitive rather than AbilityRoot, see handleCloneRestore's own doc comment for why this endpoint doesn't need the top tier the in-place restore route does. History listing is ordinary AbilityRead, the same boundary the in-place restore history route above draws. Import (database_import.go): a dump streamed into the database; AbilityRoot like restore since it can replace live data.\n\nRequires the `root` ability.",

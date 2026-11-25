@@ -51,6 +51,8 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/query", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseQuery))
 	mux.HandleFunc("POST /api/v1/databases/{name}/query/write", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseQueryWrite))
 	mux.HandleFunc("POST /api/v1/databases/{name}/explain", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseExplain))
+	// Static per engine capability model plus viewer limits; drives the explorer UI.
+	mux.HandleFunc("GET /api/v1/databases/{name}/explorer/capabilities", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseExplorerCapabilities))
 	mux.HandleFunc("GET /api/v1/databases/{name}/keys", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleScanDatabaseKeys))
 	mux.HandleFunc("GET /api/v1/databases/{name}/key", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseKey))
 	mux.HandleFunc("GET /api/v1/databases/{name}/query-history", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseQueryHistory))

@@ -21,6 +21,7 @@ import type {
   DbSavedQuery,
   DbSchemaResponse,
   DbStructure,
+  ExplorerCapabilities,
   RedisScan,
   RedisValue,
 } from '../types/databaseViewer'
@@ -28,6 +29,8 @@ import type {
 const base = (name: string) => `/api/v1/databases/${encodeURIComponent(name)}`
 
 export const databaseViewerKeys = {
+  capabilities: (name: string) =>
+    [...databaseKeys.detail(name), 'viewer', 'capabilities'] as const,
   all: (name: string) => [...databaseKeys.detail(name), 'viewer'] as const,
   schema: (name: string) =>
     [...databaseViewerKeys.all(name), 'schema'] as const,
@@ -252,5 +255,18 @@ export function useRedisKey(name: string, key: string | null) {
       ),
     enabled: key !== null,
     staleTime: 0,
+  })
+}
+
+export function useExplorerCapabilities(name: string) {
+  return useQuery({
+    queryKey: databaseViewerKeys.capabilities(name),
+    queryFn: () =>
+      request<ExplorerCapabilities>(
+        `${base(name)}/explorer/capabilities`,
+        undefined,
+        'capabilities',
+      ),
+    staleTime: 5 * 60_000,
   })
 }

@@ -159,3 +159,29 @@ func (c *Client) SaveDatabaseQuery(ctx context.Context, name, title, sql string)
 func (c *Client) DeleteDatabaseSavedQuery(ctx context.Context, name, id string) error {
 	return c.del(ctx, "/api/v1/databases/"+PathEscape(name)+"/saved-queries/"+PathEscape(id))
 }
+
+// ExplorerCapability is one feature switch of GET .../explorer/capabilities.
+type ExplorerCapability struct {
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// DatabaseExplorerCapabilities is GET /api/v1/databases/{name}/explorer/capabilities.
+type DatabaseExplorerCapabilities struct {
+	Engine       string                        `json:"engine"`
+	Kind         string                        `json:"kind"`
+	Planned      bool                          `json:"planned"`
+	External     bool                          `json:"external"`
+	Capabilities map[string]ExplorerCapability `json:"capabilities"`
+	Limits       struct {
+		MaxRows      int `json:"max_rows"`
+		MaxBytes     int `json:"max_bytes"`
+		MaxCellBytes int `json:"max_cell_bytes"`
+		TimeoutMs    int `json:"timeout_ms"`
+	} `json:"limits"`
+}
+
+// GetDatabaseExplorerCapabilities calls GET /api/v1/databases/{name}/explorer/capabilities.
+func (c *Client) GetDatabaseExplorerCapabilities(ctx context.Context, name string) (DatabaseExplorerCapabilities, error) {
+	return getJSON[DatabaseExplorerCapabilities](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/explorer/capabilities")
+}

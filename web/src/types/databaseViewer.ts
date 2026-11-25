@@ -150,3 +150,42 @@ export interface RedisValue {
   lines: string[]
   truncated: boolean
 }
+
+export type ExplorerCapabilityStatus = 'available' | 'planned' | 'unsupported'
+
+export type ExplorerKind = 'sql' | 'document' | 'keyvalue' | 'search' | 'stats'
+
+export interface ExplorerCapability {
+  status: ExplorerCapabilityStatus
+  reason?: string
+}
+
+export type ExplorerCapabilityName =
+  | 'browse'
+  | 'query'
+  | 'write_query'
+  | 'edit'
+  | 'import'
+  | 'export'
+  | 'explain'
+  | 'schema_objects'
+  | 'key_browse'
+  | 'documents'
+  | 'aggregation'
+  | 'stats'
+  | 'indexes'
+  | 'users'
+
+export interface ExplorerCapabilities {
+  engine: string
+  kind: ExplorerKind
+  planned: boolean
+  external: boolean
+  capabilities: Record<ExplorerCapabilityName, ExplorerCapability>
+  limits: {
+    max_rows: number
+    max_bytes: number
+    max_cell_bytes: number
+    timeout_ms: number
+  }
+}

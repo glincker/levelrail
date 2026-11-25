@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2404 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2405 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -833,6 +833,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/engine-stats", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseEngineStats", Description: "Live counts for engines with no data browser; index names can name tenants."},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/environment", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseEnvironment", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/explain", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseExplain", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/explorer/capabilities", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseExplorerCapabilities", Description: "Static per engine capability model plus viewer limits; drives the explorer UI."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/import", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseImportCheck", Description: "Restore as a new database (database_clone_restore.go): the non-destructive counterpart just above, AbilityWriteSensitive rather than AbilityRoot, see handleCloneRestore's own doc comment for why this endpoint doesn't need the top tier the in-place restore route does. History listing is ordinary AbilityRead, the same boundary the in-place restore history route above draws. Import (database_import.go): a dump streamed into the database; AbilityRoot like restore since it can replace live data."},
 	{Method: "POST", Path: "/api/v1/databases/{name}/import", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/key", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseKey", Description: ""},

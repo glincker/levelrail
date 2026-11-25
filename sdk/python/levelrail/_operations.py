@@ -902,6 +902,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handleGetDatabaseCatalogStatus": Operation("GET", "/api/v1/database-catalog", False, False),
     "handleGetDatabaseDataCopy": Operation("GET", "/api/v1/imports/platform/databases/{name}", False, False),
     "handleGetDatabaseEngineStats": Operation("GET", "/api/v1/databases/{name}/engine-stats", False, False),
+    "handleGetDatabaseExplorerCapabilities": Operation("GET", "/api/v1/databases/{name}/explorer/capabilities", False, False),
     "handleGetDatabaseKey": Operation("GET", "/api/v1/databases/{name}/key", False, False),
     "handleGetDatabaseNetwork": Operation("GET", "/api/v1/databases/{name}/network", False, False),
     "handleGetDatabaseParams": Operation("GET", "/api/v1/databases/{name}/params", False, False),
