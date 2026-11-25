@@ -17,13 +17,15 @@ import (
 type databaseResource struct{ resourceBase }
 
 type databaseModel struct {
-	Name      types.String `tfsdk:"name"`
-	Engine    types.String `tfsdk:"engine"`
-	Version   types.String `tfsdk:"version"`
-	ProjectID types.String `tfsdk:"project_id"`
-	Pooler    types.Bool   `tfsdk:"pooler_enabled"`
-	PoolSize  types.Int64  `tfsdk:"pooler_pool_size"`
-	MaxConn   types.Int64  `tfsdk:"pooler_max_client_conn"`
+	Name    types.String `tfsdk:"name"`
+	Engine  types.String `tfsdk:"engine"`
+	Version types.String `tfsdk:"version"`
+	// ResolvedVersion is the concrete version the server runs when version is "latest".
+	ResolvedVersion types.String `tfsdk:"resolved_version"`
+	ProjectID       types.String `tfsdk:"project_id"`
+	Pooler          types.Bool   `tfsdk:"pooler_enabled"`
+	PoolSize        types.Int64  `tfsdk:"pooler_pool_size"`
+	MaxConn         types.Int64  `tfsdk:"pooler_max_client_conn"`
 }
 
 // NewDatabaseResource returns the managed database resource.
@@ -50,8 +52,13 @@ func (r *databaseResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"version": schema.StringAttribute{
 				Optional:      true,
 				Computed:      true,
-				Description:   "Engine version. Defaults to the engine's current default.",
+				Description:   "Engine version. Omit or set \"latest\" to let the control plane pick the newest stable supported version; the concrete version is in resolved_version.",
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace(), stringplanmodifier.UseStateForUnknown()},
+			},
+			"resolved_version": schema.StringAttribute{
+				Computed:      true,
+				Description:   "The concrete engine version the database runs.",
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"project_id": schema.StringAttribute{
 				Optional:      true,
@@ -137,7 +144,11 @@ func (r *databaseResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 func apply(m *databaseModel, w wireDatabase) {
 	m.Engine = types.StringValue(w.Engine)
-	m.Version = types.StringValue(w.Version)
+	m.ResolvedVersion = types.StringValue(w.Version)
+	// A configured "latest" stays in state so the server's concrete tag does not show as drift.
+	if m.Version.IsNull() || m.Version.IsUnknown() || m.Version.ValueString() != "latest" {
+		m.Version = types.StringValue(w.Version)
+	}
 	m.ProjectID = types.StringValue(w.ProjectID)
 	m.Pooler = types.BoolValue(w.Pooler)
 	m.PoolSize = types.Int64Value(w.PoolSize)

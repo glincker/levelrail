@@ -72,7 +72,7 @@ func (rt *Router) resolveLatestDatabaseVersion(ctx context.Context, engine strin
 	if res.Version == "" {
 		return versionResolution{}, false
 	}
-	if res.SkippedNewer != "" {
+	if res.SkippedNewer != "" && res.Source == "registry" {
 		rt.logger.Warn("api: registry has a newer major than the upgrade catalog, not picking it",
 			slog.String("engine", engine), slog.String("tag", res.SkippedNewer))
 	}

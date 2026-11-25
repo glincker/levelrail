@@ -167,6 +167,17 @@ func validDatabaseName(name string) bool {
 }
 
 func validateDatabaseResource(d databaseResource) error {
+	if err := validateDatabaseIdentity(d); err != nil {
+		return err
+	}
+	if d.Version == "" {
+		return errors.New("version is required")
+	}
+	return database.ValidateEngineVersion(d.Engine, d.Version)
+}
+
+// validateDatabaseIdentity is the cheap name and engine check that runs before any registry lookup.
+func validateDatabaseIdentity(d databaseResource) error {
 	if d.Name == "" {
 		return errors.New("name is required")
 	}
@@ -181,10 +192,7 @@ func validateDatabaseResource(d databaseResource) error {
 	if !supported || (d.Engine == store.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB)) {
 		return errors.New("unsupported engine")
 	}
-	if d.Version == "" {
-		return errors.New("version is required")
-	}
-	return database.ValidateEngineVersion(d.Engine, d.Version)
+	return nil
 }
 
 // handleListDatabases batches status and TLS lookups, avoiding a query per database.
@@ -432,6 +440,12 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The registry lookup runs before the name lock so a slow registry never blocks other creates.
+	if (req.Version == "" || req.Version == latestVersionKeyword) && validateDatabaseIdentity(req) == nil {
+		if !rt.applyLatestDatabaseVersion(w, r, &req) {
+			return
+		}
+	}
 	defer lockAppName("database:" + req.Name)()
 	// Databases carry no domains, so placement never prefers the local
 	// node for ingress reasons here.
@@ -440,9 +454,6 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !rt.applyLatestDatabaseVersion(w, r, &req) {
-		return
-	}
 	if !rt.createDesiredDatabase(w, r, req) {
 		return
 	}

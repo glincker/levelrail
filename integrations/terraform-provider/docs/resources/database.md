@@ -41,11 +41,11 @@ resource "levelrail_database" "main" {
 - `pooler_max_client_conn` (Number) Client connections the pooler accepts. Used when the pooler is enabled. Computed when unset.
 - `pooler_pool_size` (Number) Server connections per pool. Used when the pooler is enabled. Computed when unset.
 - `project_id` (String) Project the database belongs to. Computed when unset.
-- `version` (String) Engine version. Defaults to the engine's current default. Computed when unset.
+- `version` (String) Engine version. Omit or set "latest" to let the control plane pick the newest stable supported version; the concrete version is in resolved_version. Computed when unset.
 
 ## Attributes Reference
 
-No read-only attributes.
+- `resolved_version` (String) The concrete engine version the database runs.
 
 ## Import
 

@@ -258,13 +258,18 @@ export function CreateDatabaseFields({
     const fallback = engines.find(
       (e) => e.id === watchedEngine,
     )?.default_version
-    if (fallback) {
-      setValue('version', flavor ? withFlavor(fallback, flavor) : 'latest')
+    if (!fallback) return
+    if (flavor) {
+      setValue('version', withFlavor(fallback, flavor))
+      return
     }
+    // Wait for the latest lookup: pre-fill "latest" only when the control plane has it on.
+    if (latest.isPending) return
+    setValue('version', latest.data?.enabled ? 'latest' : fallback)
     // Only reacting to the engine changing or the engine registry
     // arriving, not to formState/getValues/setValue identity churn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedEngine, engines])
+  }, [watchedEngine, engines, latest.isPending, latest.data?.enabled])
 
   // Same pre-fill treatment for name: the engine's own id ("postgres",
   // "redis") is a real, renamable suggestion, not a fixed value.

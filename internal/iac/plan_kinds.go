@@ -194,7 +194,7 @@ func (p *planner) planDatabase(r *Resource) {
 		p.failCode(r, CodeImmutableField, "engine cannot change (live %s, declared %s); databases hold data, recreate it deliberately", live.Engine, e)
 		return
 	}
-	if v := stringField(r.Fields, "version"); v != "" && v != live.Version {
+	if v := stringField(r.Fields, "version"); v != "" && v != "latest" && v != live.Version {
 		p.failCode(r, CodeImmutableField, "version cannot change through apply (live %s, declared %s)", live.Version, v)
 		return
 	}

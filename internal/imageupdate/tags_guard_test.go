@@ -45,3 +45,28 @@ func TestHTTPTagListerRefusesSchemeDowngrade(t *testing.T) {
 		t.Fatal("https to http redirect followed, want refusal")
 	}
 }
+
+func TestHTTPTagListerPageCapIsAnErrorNotAPartialList(t *testing.T) {
+	var srv *httptest.Server
+	srv = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Link", `<`+srv.URL+`/v2/team/app/tags/list?n=1>; rel="next"`)
+		_, _ = w.Write([]byte(`{"tags":["1"]}`))
+	}))
+	defer srv.Close()
+	host := strings.TrimPrefix(srv.URL, "https://")
+	tags, err := HTTPTagLister{Client: srv.Client()}.ListTags(context.Background(), host+"/team/app:1", nil)
+	if err == nil || tags != nil {
+		t.Fatalf("tags=%v err=%v, want an error once the page cap is hit", tags, err)
+	}
+}
+
+func TestHTTPTagListerBoundsResponseBody(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"tags":["` + strings.Repeat("a", maxTagBody+10) + `"]}`))
+	}))
+	defer srv.Close()
+	host := strings.TrimPrefix(srv.URL, "https://")
+	if _, err := (HTTPTagLister{Client: srv.Client()}).ListTags(context.Background(), host+"/team/app:1", nil); err == nil {
+		t.Fatal("oversized body must fail")
+	}
+}

@@ -94,6 +94,7 @@ func TestParamRoutesAreScopedOrAllowlisted(t *testing.T) {
 // paramRouteScopeAllowlist maps routes that check ownership inside the handler
 // (or are public by design) to a short reason. Shrink it, never grow it silently.
 var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names and reasons, no credentials
+	"GET /api/v1/database-engines/{id}/latest":                                              "{id} is a global engine registry id, not a tenant resource",
 	"GET /api/v1/deploys/{id}/why":                                                          "deploy id resolves to its app and callerAppVisibility answers 404 for unreadable apps",
 	"POST /api/v1/recently-deleted/{kind}/{name}/restore":                                   "a deleted app has no environment to resolve; the handler checks the original team, write ability, deny policies and confirm",
 	"DELETE /api/v1/cloud-accounts/{id}":                                                    "requireCloudAccess or requireAbility checks the account grant",

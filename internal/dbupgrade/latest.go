@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 // Where a resolved version came from.
@@ -26,8 +28,13 @@ type LatestResolution struct {
 }
 
 type latestEntry struct {
-	res LatestResolution
+	res      LatestResolution
+	failedAt time.Time
 }
+
+// latestFailureBackoff is how long a failed lookup is remembered, so an outage costs one
+// timeout a minute rather than one per create.
+const latestFailureBackoff = time.Minute
 
 // LatestResolver picks the newest stable tag per engine and caches it. The zero value is ready to use.
 type LatestResolver struct {
@@ -39,6 +46,7 @@ type LatestResolver struct {
 	once  sync.Once
 	mu    sync.Mutex
 	cache map[string]latestEntry
+	group singleflight.Group
 }
 
 // A plain release tag has digits only: variants (-alpine, -windowsservercore) and
@@ -98,16 +106,27 @@ func (p tagParts) hasPrefix(prefix []int) bool {
 // or the majors of the curated versions for engines that list no lines.
 func supportedPrefixes(ec EngineCatalog, now time.Time) [][]int {
 	var out [][]int
+	var newest tagParts
+	haveNewest := false
 	for _, l := range ec.Lines {
+		p, ok := parsePlainTag(l.Line)
+		if !ok {
+			continue
+		}
+		if !haveNewest || p.cmp(newest) > 0 {
+			newest, haveNewest = p, true
+		}
 		if eol, err := time.Parse("2006-01-02", l.EOL); err == nil && !eol.After(now) {
 			continue
 		}
-		if p, ok := parsePlainTag(l.Line); ok {
-			out = append(out, p.nums[:p.n])
-		}
+		out = append(out, p.nums[:p.n])
 	}
-	if len(out) > 0 || len(ec.Lines) > 0 {
+	if len(out) > 0 {
 		return out
+	}
+	// Every listed line is past EOL: the newest listed line still beats the old engine default.
+	if haveNewest {
+		return [][]int{newest.nums[:newest.n]}
 	}
 	seen := map[int]bool{}
 	for _, v := range ec.Versions {
@@ -161,46 +180,75 @@ func (r *LatestResolver) catalog() *Catalog {
 	return r.Catalog
 }
 
-// Resolve returns a concrete version for engine from repo's registry tags. Any failure (no lister,
-// registry error, nothing on a supported line) yields fallback, so a create never fails on the network.
+// Resolve returns a concrete version for engine from repo's registry tags. A registry error serves
+// the last good result if there is one, else fallback, so a create never fails on the network.
 func (r *LatestResolver) Resolve(ctx context.Context, lister TagLister, engine, repo, fallback string, ttl time.Duration) LatestResolution {
 	now := r.now()
 	r.mu.Lock()
-	if e, ok := r.cache[engine]; ok && ttl > 0 && now.Sub(e.res.ResolvedAt) < ttl {
+	e := r.cache[engine]
+	r.mu.Unlock()
+	hasGood := e.res.Version != ""
+	if hasGood && ttl > 0 && now.Sub(e.res.ResolvedAt) < ttl {
 		res := e.res
-		r.mu.Unlock()
 		res.Source = LatestSourceCache
 		return res
 	}
-	r.mu.Unlock()
-
-	fb := LatestResolution{Engine: engine, Version: fallback, Source: LatestSourceFallback, ResolvedAt: now}
+	stale := func() LatestResolution {
+		if hasGood {
+			res := e.res
+			res.Source = LatestSourceCache
+			return res
+		}
+		return LatestResolution{Engine: engine, Version: fallback, Source: LatestSourceFallback, ResolvedAt: now}
+	}
+	if !e.failedAt.IsZero() && now.Sub(e.failedAt) < latestFailureBackoff {
+		return stale()
+	}
 	cat := r.catalog()
 	if lister == nil || cat == nil || repo == "" {
-		return fb
+		return stale()
 	}
 	ec, ok := cat.Engine(engine)
 	if !ok {
-		return fb
+		return stale()
 	}
 	prefixes := supportedPrefixes(ec, now)
 	if len(prefixes) == 0 {
-		return fb
+		return stale()
 	}
-	tags, err := lister.ListTags(ctx, repo)
-	if err != nil {
-		return fb
+	v, _, _ := r.group.Do(engine, func() (any, error) {
+		tags, err := lister.ListTags(ctx, repo)
+		var best, skipped string
+		if err == nil {
+			best, skipped = PickLatest(tags, prefixes)
+		}
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		if r.cache == nil {
+			r.cache = map[string]latestEntry{}
+		}
+		cur := r.cache[engine]
+		if err != nil || best == "" {
+			cur.failedAt = now
+			r.cache[engine] = cur
+			return LatestResolution{}, nil
+		}
+		res := LatestResolution{Engine: engine, Version: best, Source: LatestSourceRegistry, ResolvedAt: now, SkippedNewer: skipped}
+		r.cache[engine] = latestEntry{res: res}
+		return res, nil
+	})
+	if res, _ := v.(LatestResolution); res.Version != "" {
+		return res
 	}
-	best, skipped := PickLatest(tags, prefixes)
-	if best == "" {
-		return fb
-	}
-	res := LatestResolution{Engine: engine, Version: best, Source: LatestSourceRegistry, ResolvedAt: now, SkippedNewer: skipped}
+	e2 := LatestResolution{}
 	r.mu.Lock()
-	if r.cache == nil {
-		r.cache = map[string]latestEntry{}
+	if c, ok := r.cache[engine]; ok {
+		e2 = c.res
 	}
-	r.cache[engine] = latestEntry{res: res}
 	r.mu.Unlock()
-	return res
+	if e2.Version != "" {
+		e2.Source = LatestSourceCache
+		return e2
+	}
+	return LatestResolution{Engine: engine, Version: fallback, Source: LatestSourceFallback, ResolvedAt: now}
 }

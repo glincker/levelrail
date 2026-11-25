@@ -106,3 +106,15 @@ func TestLatestDatabaseVersion_SettingOffRequiresVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestLatestDatabaseVersion_InvalidNameSkipsRegistryLookup(t *testing.T) {
+	rt, db := newTestRouter(t)
+	lister := &fakeLatestLister{tags: []string{"18.1"}}
+	rt.imageTagLister = lister
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", `{"name":"Bad Name","engine":"postgres"}`))
+	if rec.Code != http.StatusBadRequest || lister.calls != 0 {
+		t.Fatalf("status = %d, registry calls = %d", rec.Code, lister.calls)
+	}
+}
