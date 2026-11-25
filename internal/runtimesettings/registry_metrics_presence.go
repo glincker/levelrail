@@ -9,6 +9,7 @@ const (
 	KeyStoreTouchFlush       = "store.touch_flush_interval"
 	KeyMetricsSampleInterval = "metrics.sample_interval"
 	KeySlowRequestThreshold  = "api.slow_request_threshold"
+	KeyMetricsCapTarget      = "metrics.cap_target_percent"
 )
 
 func init() {
@@ -17,6 +18,12 @@ func init() {
 		CheckValue:  durationRangeCheck(5*time.Second, 5*time.Minute),
 		Title:       "Container stats interval",
 		Description: "How often every running container's stats are sampled, from 5 seconds to 5 minutes. A small host can pick 30s or 1m to cut idle CPU, at the cost of coarser charts. The collector uses a saved change on its next tick.",
+	})
+	Register(Definition{
+		Key: KeyMetricsCapTarget, Category: CategoryObservability, Kind: KindInt, Default: "85", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(50, 99),
+		Title:       "Metrics size cap headroom",
+		Description: "Percent of the metrics size cap that pruning aims for once the cap is hit, from 50 to 99. A lower value frees more room per prune. A saved change applies to the next prune.",
 	})
 	Register(Definition{
 		Key: KeySlowRequestThreshold, Category: CategoryObservability, Kind: KindDuration, Default: "500ms", Env: "APP_SLOW_REQUEST_THRESHOLD", Apply: ApplyLive,

@@ -483,6 +483,7 @@ mesh.hub_resolve_ttl
 mesh.hub_stale_max
 mesh.ready_retry_seconds
 mesh.wake_debounce
+metrics.cap_target_percent
 metrics.idle_interval
 metrics.presence_window
 metrics.sample_interval

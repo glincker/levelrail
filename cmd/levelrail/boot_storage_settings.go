@@ -86,6 +86,13 @@ func (s *bootState) wireStorageSettings() {
 			Pause:       rs().Duration(c, runtimesettings.KeyRetentionBatchPause),
 		}
 	})
+	telemetry.SetCumulativeLookbackSource(func() time.Duration {
+		c := context.Background()
+		return telemetry.CumulativeLookback(rs().Duration(c, runtimesettings.KeyMetricsIdleInterval), rs().Duration(c, runtimesettings.KeyMetricsSampleInterval))
+	})
+	telemetry.SetCapTargetPercentSource(func() int {
+		return rs().Int(context.Background(), runtimesettings.KeyMetricsCapTarget)
+	})
 	telemetry.SetLogBudgetSource(func() int64 {
 		return int64(rs().Int(context.Background(), runtimesettings.KeyLogBudgetMB)) * mibBytes
 	})
