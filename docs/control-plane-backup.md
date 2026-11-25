@@ -34,13 +34,13 @@ Snapshots here stay on the same disk as the database; see [disaster recovery](/d
 | API token hashes (browser sessions are in memory and never stored) | App volumes and managed database contents |
 | Secrets, still encrypted | The telemetry (metrics and logs) database |
 | Deploy history and audit log | TLS private keys held outside the database |
-| | **Alert rules, notification channels, silences, maintenance windows and alert history**, which live in a separate `alerting.db` |
+| Alert rules, notification channels, silences and maintenance windows (the off-box backup and replica carry `alerting.db` in the same encrypted bundle) | |
 
-<Warning>
-**Alerting configuration is not in a backup yet**
+<Note>
+**Alerting configuration travels with the off-box backup**
 
-`alerting.db` sits next to `levelrail.db` in the data directory and holds every alert rule, notification channel (with its webhook URL or key), silence and maintenance window. Neither the local snapshots nor the off-box encrypted backup include it, so a restore on a new machine comes back with apps and users but no alerts. Until that is fixed, copy it yourself on a schedule, for example `sqlite3 <data dir>/alerting.db ".backup '/safe/place/alerting.db'"` (safe while the control plane runs), and put it back, with the control plane stopped, after a restore. Channel credentials are not in that file: they are envelope encrypted inside `levelrail.db`, which the backups do include, so restore both files together with the same master key. A channel created after the `levelrail.db` snapshot you restore comes back with no credential and fails to send; edit it and enter the URL or key again.
-</Warning>
+`alerting.db` sits next to `levelrail.db` and holds every alert rule, notification channel, silence and maintenance window. Each off-box backup and continuous replica snapshots it with `VACUUM INTO` and ships it in the same encrypted bundle, and a restore puts both files back together (the old copy is kept as `alerting.db.pre-restore`). A missing `alerting.db` is fine: nothing was configured, and the backup is a bare database as before. The local snapshots under `control-plane-backups` still hold `levelrail.db` only. Channel credentials are envelope encrypted inside `levelrail.db`, so restore with the same master key. A channel created after the snapshot you restore comes back with no credential; edit it and enter the URL or key again. A bundle needs this release or newer to restore.
+</Note>
 
 <Warning>
 **The master key is never in a backup**

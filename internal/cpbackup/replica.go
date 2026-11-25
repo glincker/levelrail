@@ -93,7 +93,8 @@ func (r *Replicator) Status() ReplicaStatus {
 // changeToken is size and mtime of the database and its WAL: cheap, and any commit moves it.
 func (r *Replicator) changeToken() (string, error) {
 	var b strings.Builder
-	for _, p := range []string{r.DBPath, r.DBPath + "-wal"} {
+	alerting := filepath.Join(filepath.Dir(r.DBPath), AlertingFile)
+	for _, p := range []string{r.DBPath, r.DBPath + "-wal", alerting, alerting + "-wal"} {
 		fi, err := os.Stat(p)
 		if errors.Is(err, os.ErrNotExist) {
 			b.WriteString("-;")
@@ -202,11 +203,11 @@ func (r *Replicator) ship(ctx context.Context) (size int64, uploaded bool, err e
 	}
 	defer func() { _ = os.RemoveAll(tmp) }()
 
-	snap := filepath.Join(tmp, "snapshot.db")
-	if _, _, err := s.DB.SnapshotTo(ctx, snap); err != nil {
-		return 0, false, fmt.Errorf("snapshot: %w", err)
+	pl, err := s.buildPayload(ctx, tmp)
+	if err != nil {
+		return 0, false, err
 	}
-	_, plain, err := store.FileSHA256(snap)
+	_, plain, err := store.FileSHA256(pl.path)
 	if err != nil {
 		return 0, false, err
 	}
@@ -216,16 +217,8 @@ func (r *Replicator) ship(ctx context.Context) (size int64, uploaded bool, err e
 	if same {
 		return 0, false, nil
 	}
-	version, err := store.InspectSnapshot(ctx, snap)
-	if err != nil {
-		return 0, false, fmt.Errorf("inspect snapshot: %w", err)
-	}
-	migrations, err := inspectMigrationCount(ctx, snap)
-	if err != nil {
-		return 0, false, err
-	}
 	cipher := filepath.Join(tmp, "snapshot.db.age")
-	sl, err := seal(snap, cipher, recipients)
+	sl, err := seal(pl.path, cipher, recipients)
 	if err != nil {
 		return 0, false, err
 	}
@@ -235,10 +228,10 @@ func (r *Replicator) ship(ctx context.Context) (size int64, uploaded bool, err e
 	key := ReplicaKey(installID, slot)
 	m := Manifest{
 		ManifestVersion: manifestFormat, InstallID: installID, Key: key, CreatedAt: s.now().UTC().Truncate(time.Second),
-		BinaryVersion: s.BinaryVersion, SchemaVersion: version, MigrationsApplied: migrations,
+		BinaryVersion: s.BinaryVersion, SchemaVersion: pl.schemaVersion, MigrationsApplied: pl.migrations,
 		SHA256: sl.SHA256, SizeBytes: sl.Size, PlainSHA256: sl.PlainSHA256, PlainSizeBytes: sl.PlainSize,
 		Compression: "gzip", Encryption: "age", RecipientCount: len(recipients),
-		ContainsWrappedSecrets: true, IncludesMasterKey: false,
+		ContainsWrappedSecrets: true, IncludesMasterKey: false, Bundle: pl.bundleKind, IncludesAlerting: pl.hasAlerting,
 	}
 	// The slot's old manifest goes first so a half-written ciphertext is never described by a stale one.
 	_ = bucket.Delete(ctx, ManifestKey(key))

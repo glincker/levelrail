@@ -159,9 +159,15 @@ func Restore(ctx context.Context, src Source, opts RestoreOptions) (RestoreRepor
 	}
 	defer func() { _ = os.RemoveAll(work) }()
 
-	restored, err := fetchAndVerify(ctx, src, m, work, opts.Identities, &rep)
+	restored, restoredAlerting, err := fetchAndVerify(ctx, src, m, work, opts.Identities, &rep)
 	if err != nil {
 		return rep, err
+	}
+	if restoredAlerting != "" {
+		if err := checkIntegrity(ctx, restoredAlerting); err != nil {
+			return rep, fmt.Errorf("restored alerting database failed integrity check: %w", err)
+		}
+		rep.Checks = append(rep.Checks, Check{Name: "alerting", OK: true, Detail: "alerting.db integrity_check ok"})
 	}
 	version, err := store.InspectSnapshot(ctx, restored)
 	if err != nil {
@@ -192,37 +198,55 @@ func Restore(ctx context.Context, src Source, opts RestoreOptions) (RestoreRepor
 			return rep, err
 		}
 	}
+	// Alerting goes first so the control plane database rename is the last step of the restore.
+	if restoredAlerting != "" {
+		alertOpts := opts
+		alertOpts.LivePath, alertOpts.hook = filepath.Join(dir, AlertingFile), nil
+		if _, err := swapIn(restoredAlerting, alertOpts); err != nil {
+			return rep, fmt.Errorf("restore %s: %w", AlertingFile, err)
+		}
+	}
 	pre, err := swapIn(restored, opts)
 	rep.PreRestore = pre
 	return rep, err
 }
 
-func fetchAndVerify(ctx context.Context, src Source, m Manifest, work string, ids []age.Identity, rep *RestoreReport) (string, error) {
+func fetchAndVerify(ctx context.Context, src Source, m Manifest, work string, ids []age.Identity, rep *RestoreReport) (restored, alerting string, err error) {
 	cipherPath := filepath.Join(work, "backup.db.age")
 	if err := src.Fetch(ctx, cipherPath, m.SizeBytes); err != nil {
-		return "", err
+		return "", "", err
 	}
 	size, sum, err := store.FileSHA256(cipherPath)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if size != m.SizeBytes || sum != m.SHA256 {
-		return "", fmt.Errorf("%w: expected %s (%d bytes), got %s (%d bytes)", ErrChecksumMismatch, m.SHA256, m.SizeBytes, sum, size)
+		return "", "", fmt.Errorf("%w: expected %s (%d bytes), got %s (%d bytes)", ErrChecksumMismatch, m.SHA256, m.SizeBytes, sum, size)
 	}
 	rep.Checks = append(rep.Checks, Check{Name: "checksum", OK: true, Detail: "sha256 matches the manifest"})
 	if len(ids) == 0 {
-		return "", errors.New("an identity file is required to decrypt the backup")
+		return "", "", errors.New("an identity file is required to decrypt the backup")
 	}
-	restored := filepath.Join(work, "restored.db")
+	restored = filepath.Join(work, "restored.db")
 	got, err := open(cipherPath, restored, ids, m.PlainSizeBytes)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if got.PlainSHA256 != m.PlainSHA256 || got.PlainSize != m.PlainSizeBytes {
-		return "", fmt.Errorf("%w: decrypted database differs from the manifest", ErrChecksumMismatch)
+		return "", "", fmt.Errorf("%w: decrypted database differs from the manifest", ErrChecksumMismatch)
 	}
 	rep.Checks = append(rep.Checks, Check{Name: "decrypt", OK: true, Detail: "decrypted and plaintext checksum matches"})
-	return restored, nil
+	switch m.Bundle {
+	case "":
+		return restored, "", nil
+	case bundleTar:
+		mainPath, alertPath, err := unpackBundle(restored, work, m.PlainSizeBytes)
+		if err != nil {
+			return "", "", err
+		}
+		return mainPath, alertPath, nil
+	}
+	return "", "", fmt.Errorf("%w: unknown bundle kind %q", ErrBadManifest, m.Bundle)
 }
 
 func checkInstall(ctx context.Context, m Manifest, restored string, opts RestoreOptions) error {

@@ -10,8 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // runTimeout bounds one background backup or drill.
@@ -147,29 +145,21 @@ func (s *Service) runBackup(ctx context.Context, slot, started time.Time) (Manif
 	}
 	defer func() { _ = os.RemoveAll(tmp) }()
 
-	snapPath := filepath.Join(tmp, "snapshot.db")
-	if _, _, err := s.DB.SnapshotTo(ctx, snapPath); err != nil {
-		return Manifest{}, fmt.Errorf("snapshot: %w", err)
-	}
-	version, err := store.InspectSnapshot(ctx, snapPath)
-	if err != nil {
-		return Manifest{}, fmt.Errorf("inspect snapshot: %w", err)
-	}
-	migrations, err := inspectMigrationCount(ctx, snapPath)
+	pl, err := s.buildPayload(ctx, tmp)
 	if err != nil {
 		return Manifest{}, err
 	}
 	cipherPath := filepath.Join(tmp, "snapshot.db.age")
-	sl, err := seal(snapPath, cipherPath, recipients)
+	sl, err := seal(pl.path, cipherPath, recipients)
 	if err != nil {
 		return Manifest{}, err
 	}
 	m := Manifest{
 		ManifestVersion: manifestFormat, InstallID: installID, Key: dataKey, CreatedAt: started,
-		BinaryVersion: s.BinaryVersion, SchemaVersion: version, MigrationsApplied: migrations,
+		BinaryVersion: s.BinaryVersion, SchemaVersion: pl.schemaVersion, MigrationsApplied: pl.migrations,
 		SHA256: sl.SHA256, SizeBytes: sl.Size, PlainSHA256: sl.PlainSHA256, PlainSizeBytes: sl.PlainSize,
 		Compression: "gzip", Encryption: "age", RecipientCount: len(recipients),
-		ContainsWrappedSecrets: true, IncludesMasterKey: false,
+		ContainsWrappedSecrets: true, IncludesMasterKey: false, Bundle: pl.bundleKind, IncludesAlerting: pl.hasAlerting,
 	}
 	if err := upload(ctx, bucket, dataKey, cipherPath, m); err != nil {
 		return Manifest{}, err

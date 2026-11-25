@@ -28,14 +28,14 @@ New containers get restart policy `unless-stopped` (setting `containers.restart_
 
 ## What a backup holds
 
-The encrypted off-box backup holds `levelrail.db`. It does not hold `alerting.db`, volume data or the age identity. Details and the file you must copy yourself are in [Control plane backup](/control-plane-backup). The master key and agent CA come from the escrow bundle ([Disaster recovery](/disaster-recovery)).
+The encrypted off-box backup holds `levelrail.db` and `alerting.db` (alert rules and channels). It does not hold volume data or the age identity. Details are in [Control plane backup](/control-plane-backup). The master key and agent CA come from the escrow bundle ([Disaster recovery](/disaster-recovery)).
 
 ## Recover onto a new host
 
 1. Provision a new machine and install the same or a newer release.
 2. Recover the master key from the escrow bundle or `APP_MASTER_KEY`.
 3. Run a restore dry run, then the real restore from the newest off-box backup. Both are offline commands.
-4. Copy back `alerting.db` if you saved it.
+4. Check Alerts: rules and channels come back with the restore.
 5. Start the control plane, update DNS to the new address and let agents reconnect.
 
 Step by step with commands: [the runbook](/disaster-recovery#runbook-the-control-plane-machine-is-gone). Restoring on a new machine: [Control plane backup](/control-plane-backup#restoring-on-a-new-machine).

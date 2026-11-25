@@ -42,6 +42,9 @@ type Manifest struct {
 	// wrapped data keys. IncludesMasterKey is always false.
 	ContainsWrappedSecrets bool `json:"contains_wrapped_secrets"`
 	IncludesMasterKey      bool `json:"includes_master_key"`
+	// Bundle is "tar" when the payload holds levelrail.db and alerting.db; empty means a bare database.
+	Bundle           string `json:"bundle,omitempty"`
+	IncludesAlerting bool   `json:"includes_alerting,omitempty"`
 }
 
 var keyPattern = regexp.MustCompile(`^` + Prefix + `/([^/]+)/(\d{4})/(\d{2})/(\d{2})/(\d{8}T\d{6}Z)\.db\.age$`)
