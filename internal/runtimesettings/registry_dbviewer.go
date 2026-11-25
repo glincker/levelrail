@@ -14,6 +14,11 @@ const (
 	KeyDBViewerSchemaRows = "database_viewer.schema_max_rows"
 	KeyDBViewerMaxSQL     = "database_viewer.max_sql_bytes"
 	KeyDBViewerMaxConc    = "database_viewer.max_concurrent"
+	// KeyDBViewerCacheSeconds is how long overviews and schema outlines are reused, 0 disables.
+	KeyDBViewerCacheSeconds = "databases.viewer_cache_seconds"
+	KeyDBViewerQueueWaitMs  = "database_viewer.queue_wait_ms"
+	// KeyDeploySummaryCacheSeconds is how long the deployments summary scan is reused, 0 disables.
+	KeyDeploySummaryCacheSeconds = "deployments.summary_cache_seconds"
 
 	KeyLogRuleEvalInterval = "log_rules.eval_interval"
 	KeyLogRuleMaxWindow    = "log_rules.max_window"
@@ -66,6 +71,9 @@ func init() {
 	registerLimitInt(KeyDBViewerSchemaRows, "APP_DB_SCHEMA_MAX_ROWS", "5000", "Database console: schema table limit", "Tables listed by the schema browser.", 1, dbViewerMaxCount)
 	registerLimitInt(KeyDBViewerMaxSQL, "APP_DB_QUERY_MAX_SQL_BYTES", "65536", "Database console: max SQL bytes", "Largest SQL text the console and saved queries accept.", 256, 1<<24)
 	registerLimitInt(KeyDBViewerMaxConc, "APP_DB_VIEWER_MAX_CONCURRENT", "4", "Database browser: concurrent reads", "Document browser reads in flight at once, per database and per user.", 1, 64)
+	registerLimitInt(KeyDBViewerCacheSeconds, "APP_DB_VIEWER_CACHE_SECONDS", "5", "Database browser: overview cache seconds", "How long the collection overview and schema outline are reused before the database is asked again, 0 turns the cache off.", 0, 3600)
+	registerLimitInt(KeyDeploySummaryCacheSeconds, "APP_DEPLOY_SUMMARY_CACHE_SECONDS", "3", "Deployments: summary cache seconds", "How long the deployments summary reuses its 30 day scan before reading again, 0 turns the cache off.", 0, 3600)
+	registerLimitInt(KeyDBViewerQueueWaitMs, "APP_DB_VIEWER_QUEUE_WAIT_MS", "2000", "Database browser: queue wait (ms)", "How long a document read waits for a free slot before it is refused as too busy, 0 refuses at once.", 0, 30000)
 
 	Register(Definition{
 		Key: KeyLogRuleEvalInterval, Category: cat, Kind: KindDuration, Default: "1m", Env: "APP_LOG_RULE_EVAL_INTERVAL", Apply: ApplyLive,

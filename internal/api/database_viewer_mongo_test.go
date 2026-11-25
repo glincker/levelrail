@@ -1,10 +1,12 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbviewer"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -37,21 +39,26 @@ func TestAuthzMongoViewerDenyRows(t *testing.T) {
 	}
 }
 
+func newTestGate() *mongoGate {
+	return &mongoGate{busy: map[string]int{}, changed: make(chan struct{})}
+}
+
 func TestMongoGateLimitsPerDatabaseAndPrincipal(t *testing.T) {
 	t.Parallel()
-	g := &mongoGate{busy: map[string]int{}}
-	r1, ok := g.acquire("db:a", "p:1", 1)
+	g := newTestGate()
+	ctx := context.Background()
+	r1, ok := g.acquire(ctx, "db:a", "p:1", 1, 0)
 	if !ok {
 		t.Fatal("first acquire must succeed")
 	}
-	if _, ok := g.acquire("db:a", "p:2", 1); ok {
+	if _, ok := g.acquire(ctx, "db:a", "p:2", 1, 0); ok {
 		t.Error("same database must be full")
 	}
-	if _, ok := g.acquire("db:b", "p:1", 1); ok {
+	if _, ok := g.acquire(ctx, "db:b", "p:1", 1, 0); ok {
 		t.Error("same principal must be full")
 	}
 	r1()
-	if r2, ok := g.acquire("db:a", "p:1", 1); !ok {
+	if r2, ok := g.acquire(ctx, "db:a", "p:1", 1, 0); !ok {
 		t.Error("slot must free after release")
 	} else {
 		r2()
@@ -69,5 +76,47 @@ func TestMongoHistoryErrorHidesFilterValues(t *testing.T) {
 	}
 	if got := mongoHistoryError(errors.New("boom")); got != "internal error" {
 		t.Fatalf("history error = %q", got)
+	}
+}
+
+func TestMongoGateWaitsBrieflyForARelease(t *testing.T) {
+	t.Parallel()
+	g := newTestGate()
+	ctx := context.Background()
+	r1, _ := g.acquire(ctx, "db:a", "p:1", 1, 0)
+	go func() {
+		time.Sleep(30 * time.Millisecond)
+		r1()
+	}()
+	r2, ok := g.acquire(ctx, "db:a", "p:2", 1, 2*time.Second)
+	if !ok {
+		t.Fatal("waiter must get the slot after the release")
+	}
+	r2()
+	r3, _ := g.acquire(ctx, "db:a", "p:1", 1, 0)
+	if _, ok := g.acquire(ctx, "db:a", "p:2", 1, 20*time.Millisecond); ok {
+		t.Error("wait must give up after the bound")
+	}
+	r3()
+}
+
+func TestMongoGateCancelledWaiterHoldsNothing(t *testing.T) {
+	t.Parallel()
+	g := newTestGate()
+	r1, _ := g.acquire(context.Background(), "db:a", "p:1", 1, 0)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan bool)
+	go func() {
+		_, ok := g.acquire(ctx, "db:a", "p:2", 1, time.Minute)
+		done <- ok
+	}()
+	time.Sleep(20 * time.Millisecond)
+	cancel()
+	if <-done {
+		t.Fatal("cancelled waiter must not get a slot")
+	}
+	r1()
+	if len(g.busy) != 0 {
+		t.Errorf("busy map leaked: %v", g.busy)
 	}
 }

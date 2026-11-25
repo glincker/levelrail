@@ -2,6 +2,7 @@ package dbviewer
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -137,23 +138,24 @@ func (t Target) RunMongo(ctx context.Context, q MongoQuery) (MongoResult, error)
 	res := MongoResult{Documents: []json.RawMessage{}}
 	sawDone := false
 	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
+		// Work on the scanner's bytes and copy only the lines kept as documents.
+		line := bytes.TrimSpace(sc.Bytes())
 		switch {
-		case line == "":
-		case line == mongoMoreMark:
+		case len(line) == 0:
+		case string(line) == mongoMoreMark:
 			res.Truncated = true
-		case line == mongoDoneMark:
+		case string(line) == mongoDoneMark:
 			sawDone = true
-		case strings.HasPrefix(line, mongoLastPrefix):
-			res.NextAfter = json.RawMessage(strings.TrimPrefix(line, mongoLastPrefix))
-		case strings.HasPrefix(line, mongoErrPrefix):
-			return MongoResult{}, &QueryError{Message: strings.TrimPrefix(line, mongoErrPrefix)}
-		case !json.Valid([]byte(line)):
+		case bytes.HasPrefix(line, []byte(mongoLastPrefix)):
+			res.NextAfter = json.RawMessage(bytes.Clone(line[len(mongoLastPrefix):]))
+		case bytes.HasPrefix(line, []byte(mongoErrPrefix)):
+			return MongoResult{}, &QueryError{Message: string(line[len(mongoErrPrefix):])}
+		case !json.Valid(line):
 			// mongosh banners or warnings, not data.
 		case len(res.Documents) >= maxRows:
 			res.Truncated = true
 		default:
-			res.Documents = append(res.Documents, json.RawMessage(line))
+			res.Documents = append(res.Documents, json.RawMessage(bytes.Clone(line)))
 		}
 		if res.Truncated && len(res.Documents) >= maxRows {
 			break

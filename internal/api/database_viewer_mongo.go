@@ -1,14 +1,17 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbviewer"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -17,20 +20,23 @@ import (
 const mongoBodyMargin = 4096
 
 // mongoGate bounds in-flight Mongo reads per database and per principal so
-// a few slow scans cannot starve the exec path.
+// a few slow scans cannot starve the exec path. Callers over the cap wait a
+// bounded time for a release instead of failing at once.
 type mongoGate struct {
-	mu   sync.Mutex
-	busy map[string]int
+	mu      sync.Mutex
+	busy    map[string]int
+	changed chan struct{}
 }
 
-var mongoReads = &mongoGate{busy: map[string]int{}}
+var mongoReads = &mongoGate{busy: map[string]int{}, changed: make(chan struct{})}
 
-// acquire takes a slot on both keys or neither; release undoes it.
-func (g *mongoGate) acquire(db, principal string, limit int) (release func(), ok bool) {
+// tryAcquire takes a slot on both keys or neither. The returned channel
+// closes on the next release, so a waiter wakes without polling.
+func (g *mongoGate) tryAcquire(db, principal string, limit int) (func(), <-chan struct{}, bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.busy[db] >= limit || g.busy[principal] >= limit {
-		return nil, false
+		return nil, g.changed, false
 	}
 	g.busy[db]++
 	g.busy[principal]++
@@ -42,7 +48,32 @@ func (g *mongoGate) acquire(db, principal string, limit int) (release func(), ok
 				delete(g.busy, k)
 			}
 		}
-	}, true
+		close(g.changed)
+		g.changed = make(chan struct{})
+	}, nil, true
+}
+
+// acquire waits up to wait for a slot; a cancelled context stops the wait
+// without holding anything.
+func (g *mongoGate) acquire(ctx context.Context, db, principal string, limit int, wait time.Duration) (release func(), ok bool) {
+	deadline := time.NewTimer(wait)
+	defer deadline.Stop()
+	for {
+		rel, changed, got := g.tryAcquire(db, principal, limit)
+		if got {
+			return rel, true
+		}
+		if wait <= 0 {
+			return nil, false
+		}
+		select {
+		case <-changed:
+		case <-deadline.C:
+			return nil, false
+		case <-ctx.Done():
+			return nil, false
+		}
+	}
 }
 
 // mongoViewerTarget resolves a managed MongoDB container to exec mongosh in.
@@ -91,8 +122,12 @@ func (rt *Router) runMongo(w http.ResponseWriter, r *http.Request, target dbview
 		principal = "p:" + pt + ":" + pid
 	}
 	limit := max(1, rt.runtimeSettings.DatabaseViewerLimits(r.Context()).MaxConcurrent)
-	release, ok := mongoReads.acquire("db:"+desired.Name, principal, limit)
+	wait := time.Duration(max(0, rt.runtimeSettings.Int(r.Context(), runtimesettings.KeyDBViewerQueueWaitMs))) * time.Millisecond
+	release, ok := mongoReads.acquire(r.Context(), "db:"+desired.Name, principal, limit, wait)
 	if !ok {
+		if r.Context().Err() != nil {
+			return dbviewer.MongoResult{}, q, false
+		}
 		w.Header().Set("Retry-After", "1")
 		writeError(w, http.StatusTooManyRequests, "too many document reads in flight, retry shortly")
 		return dbviewer.MongoResult{}, q, false
@@ -139,6 +174,14 @@ type mongoCollectionsResponse struct {
 	Collections []json.RawMessage `json:"collections"`
 	Truncated   bool              `json:"truncated"`
 	Fingerprint string            `json:"fingerprint"`
+	// Cached is true when the overview was reused from a recent read.
+	Cached bool `json:"cached,omitempty"`
+}
+
+// mongoOverview is one cached overview read.
+type mongoOverview struct {
+	res dbviewer.MongoResult
+	q   dbviewer.MongoQuery
 }
 
 // handleGetMongoCollections handles GET /api/v1/databases/{name}/mongo/collections.
@@ -147,15 +190,25 @@ func (rt *Router) handleGetMongoCollections(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
-	res, q, ok := rt.runMongo(w, r, target, desired, dbviewer.MongoRequest{
-		Op: dbviewer.MongoCollections, Database: r.URL.Query().Get("database"),
-	})
-	if !ok {
+	database := r.URL.Query().Get("database")
+	v, _, hit, err := viewerOverviews.do(rt.viewerCacheTTL(r.Context()), desired.Name,
+		desired.Name+"|"+target.ContainerID+"|mongo|"+database, func() (any, error) {
+			res, q, ok := rt.runMongo(w, r, target, desired, dbviewer.MongoRequest{
+				Op: dbviewer.MongoCollections, Database: database,
+			})
+			if !ok {
+				return nil, errViewerLoadFailed
+			}
+			return mongoOverview{res: res, q: q}, nil
+		})
+	if err != nil {
 		return
 	}
+	ov, _ := v.(mongoOverview)
+	res, q := ov.res, ov.q
 	resp := mongoCollectionsResponse{
 		Databases: []json.RawMessage{}, Collections: []json.RawMessage{},
-		Truncated: res.Truncated, Fingerprint: q.Fingerprint,
+		Truncated: res.Truncated, Fingerprint: q.Fingerprint, Cached: hit,
 	}
 	for _, d := range res.Documents {
 		var kind struct {

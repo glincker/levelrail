@@ -288,6 +288,7 @@ database_viewer.max_concurrent
 database_viewer.max_rows
 database_viewer.max_sql_bytes
 database_viewer.query_timeout
+database_viewer.queue_wait_ms
 database_viewer.schema_max_rows
 databases.auto_latest
 databases.bulk_concurrency
@@ -303,6 +304,7 @@ databases.pooler_image
 databases.stats_interval_seconds
 databases.stats_max_databases
 databases.stats_timeout_seconds
+databases.viewer_cache_seconds
 db.compact_min_free_percent
 db.space_report_rows
 deploy.approval_claim_timeout_seconds
@@ -328,6 +330,7 @@ deploy.receipt_approval_window
 deploy.stable_window
 deploy.upload_max_bytes
 deploy.watch_window
+deployments.summary_cache_seconds
 deploys.coalesce_window
 deploys.registry_push_debounce
 deploys.registry_push_max_body_bytes

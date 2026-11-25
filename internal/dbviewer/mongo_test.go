@@ -176,3 +176,16 @@ func TestMongoOverviewScriptIsBounded(t *testing.T) {
 		}
 	}
 }
+
+func TestRunMongoParsesLinesFromBytes(t *testing.T) {
+	t.Parallel()
+	out := "banner\n  {\"a\":1}  \nLRLAST:{\"$oid\":\"x\"}\n{\"a\":2}\nLRMORE\nLRDONE\n"
+	tgt := Target{Exec: mongoStubExec{out: out}, Limits: Limits{Timeout: time.Second, MaxRows: 10, MaxBytes: 1 << 20, MaxCellBytes: 1024, SchemaRows: 10}}
+	res, err := tgt.RunMongo(context.Background(), MongoQuery{Op: MongoFind, script: "x"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Documents) != 2 || string(res.Documents[0]) != `{"a":1}` || !res.Truncated || string(res.NextAfter) != `{"$oid":"x"}` {
+		t.Fatalf("res = %+v", res)
+	}
+}

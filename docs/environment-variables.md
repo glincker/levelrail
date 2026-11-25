@@ -587,14 +587,17 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_QUERY_MAX_ROWS` | [`database_viewer.max_rows`](/runtime-settings#observability) | `1000` |
 | `APP_DB_QUERY_MAX_SQL_BYTES` | [`database_viewer.max_sql_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_TIMEOUT` | [`database_viewer.query_timeout`](/runtime-settings#observability) | `15s` |
+| `APP_DB_VIEWER_QUEUE_WAIT_MS` | [`database_viewer.queue_wait_ms`](/runtime-settings#observability) | `2000` |
 | `APP_DB_SCHEMA_MAX_ROWS` | [`database_viewer.schema_max_rows`](/runtime-settings#observability) | `5000` |
 | `APP_MAJOR_UPGRADE_RESTORE_POINT_MAX_AGE_HOURS` | [`databases.major_upgrade_restore_point_max_age_hours`](/runtime-settings#observability) | `24` |
 | `APP_DB_STATS_INTERVAL_SECONDS` | [`databases.stats_interval_seconds`](/runtime-settings#observability) | `30` |
 | `APP_DB_STATS_MAX_DATABASES` | [`databases.stats_max_databases`](/runtime-settings#observability) | `20` |
 | `APP_DB_STATS_TIMEOUT_SECONDS` | [`databases.stats_timeout_seconds`](/runtime-settings#observability) | `10` |
+| `APP_DB_VIEWER_CACHE_SECONDS` | [`databases.viewer_cache_seconds`](/runtime-settings#observability) | `5` |
 | `APP_DB_COMPACT_MIN_FREE_PERCENT` | [`db.compact_min_free_percent`](/runtime-settings#observability) | `10` |
 | `APP_DB_SPACE_REPORT_ROWS` | [`db.space_report_rows`](/runtime-settings#observability) | `20` |
 | `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |
+| `APP_DEPLOY_SUMMARY_CACHE_SECONDS` | [`deployments.summary_cache_seconds`](/runtime-settings#observability) | `3` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
 | `APP_DISK_FORECAST_MIN_DAYS` | [`disk.forecast_min_days`](/runtime-settings#observability) | `7` |
 | `APP_DISK_FORECAST_WINDOW_DAYS` | [`disk.forecast_window_days`](/runtime-settings#observability) | `30` |

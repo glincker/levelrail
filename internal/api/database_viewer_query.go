@@ -116,6 +116,10 @@ func (rt *Router) runDatabaseStatement(w http.ResponseWriter, r *http.Request, m
 		res, err = target.Run(r.Context(), st, write)
 	}
 	elapsed := time.Since(start).Milliseconds()
+	if write {
+		// A write may change tables and counts, so cached overviews are stale at once.
+		viewerOverviews.invalidate(desired.Name)
+	}
 
 	attrs := []any{
 		slog.String("database", desired.Name), slog.String("mode", mode),
