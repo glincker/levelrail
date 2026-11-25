@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
+	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/dbviewer"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -13,6 +15,35 @@ import (
 // mongoBodyMargin leaves room for the JSON envelope around the four
 // validated fields, each capped at the statement limit.
 const mongoBodyMargin = 4096
+
+// mongoGate bounds in-flight Mongo reads per database and per principal so
+// a few slow scans cannot starve the exec path.
+type mongoGate struct {
+	mu   sync.Mutex
+	busy map[string]int
+}
+
+var mongoReads = &mongoGate{busy: map[string]int{}}
+
+// acquire takes a slot on both keys or neither; release undoes it.
+func (g *mongoGate) acquire(db, principal string, limit int) (release func(), ok bool) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.busy[db] >= limit || g.busy[principal] >= limit {
+		return nil, false
+	}
+	g.busy[db]++
+	g.busy[principal]++
+	return func() {
+		g.mu.Lock()
+		defer g.mu.Unlock()
+		for _, k := range []string{db, principal} {
+			if g.busy[k]--; g.busy[k] <= 0 {
+				delete(g.busy, k)
+			}
+		}
+	}, true
+}
 
 // mongoViewerTarget resolves a managed MongoDB container to exec mongosh in.
 // Credentials stay in the container, as for the SQL viewer.
@@ -55,17 +86,41 @@ func (rt *Router) runMongo(w http.ResponseWriter, r *http.Request, target dbview
 		writeError(w, http.StatusBadRequest, err.Error())
 		return dbviewer.MongoResult{}, q, false
 	}
+	principal := "anonymous"
+	if pt, pid, _, perr := rt.callerPrincipal(r); perr == nil {
+		principal = "p:" + pt + ":" + pid
+	}
+	limit := max(1, rt.runtimeSettings.DatabaseViewerLimits(r.Context()).MaxConcurrent)
+	release, ok := mongoReads.acquire("db:"+desired.Name, principal, limit)
+	if !ok {
+		w.Header().Set("Retry-After", "1")
+		writeError(w, http.StatusTooManyRequests, "too many document reads in flight, retry shortly")
+		return dbviewer.MongoResult{}, q, false
+	}
+	defer release()
+
 	res, err := target.RunMongo(r.Context(), q)
+	// History names the target and shape only; filter values may hold personal data.
+	label := "mongo " + string(q.Op)
+	if req.Database != "" {
+		label += " " + req.Database
+	}
+	if req.Collection != "" {
+		label += "." + req.Collection
+	}
 	attrs := []any{
 		slog.String("database", desired.Name), slog.String("op", string(q.Op)),
+		slog.String("target", strings.TrimPrefix(label, "mongo ")),
 		slog.String("fingerprint", q.Fingerprint),
 	}
 	if err != nil {
 		rt.logger.Info("api: mongo viewer read failed", attrs...)
+		rt.recordQuery(r, desired.Name, "mongo", label, q.Fingerprint, false, queryErrorText(err), 0, 0)
 		rt.writeViewerError(w, "api: mongo viewer read failed", desired.Name, err)
 		return dbviewer.MongoResult{}, q, false
 	}
 	rt.logger.Info("api: mongo viewer read", append(attrs, slog.Int("docs", len(res.Documents)), slog.Int64("duration_ms", res.DurationMs))...)
+	rt.recordQuery(r, desired.Name, "mongo", label, q.Fingerprint, true, "", res.DurationMs, len(res.Documents))
 	return res, q, true
 }
 
@@ -147,13 +202,8 @@ func (rt *Router) handleMongoFind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := mongoFindResponse{Documents: res.Documents, Truncated: res.Truncated, Fingerprint: q.Fingerprint, DurationMs: res.DurationMs}
-	if n := len(res.Documents); res.Truncated && n > 0 {
-		var last struct {
-			ID json.RawMessage `json:"_id"`
-		}
-		if json.Unmarshal(res.Documents[n-1], &last) == nil {
-			resp.NextAfter = last.ID
-		}
+	if res.Truncated {
+		resp.NextAfter = res.NextAfter
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

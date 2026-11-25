@@ -267,6 +267,7 @@ cutover.verify_slow_ttfb
 cutover.verify_timeout
 database_viewer.max_bytes
 database_viewer.max_cell_bytes
+database_viewer.max_concurrent
 database_viewer.max_rows
 database_viewer.max_sql_bytes
 database_viewer.query_timeout

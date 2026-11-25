@@ -1,8 +1,10 @@
 package dbviewer
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -27,11 +29,6 @@ func TestMongoGuardRejects(t *testing.T) {
 		{"nested where", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"a":{"$or":[{"$where":"1"}]}}`)}},
 		{"function in expr", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"$expr":{"$function":{"body":"x","args":[],"lang":"js"}}}`)}},
 		{"code type", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"a":{"$code":"1"}}`)}},
-		{"out", MongoRequest{Op: MongoAggregate, Database: "d", Collection: "c", Pipeline: json.RawMessage(`[{"$out":"x"}]`)}},
-		{"merge", MongoRequest{Op: MongoAggregate, Database: "d", Collection: "c", Pipeline: json.RawMessage(`[{"$match":{}},{"$merge":{"into":"x"}}]`)}},
-		{"accumulator", MongoRequest{Op: MongoAggregate, Database: "d", Collection: "c", Pipeline: json.RawMessage(`[{"$group":{"_id":1,"v":{"$accumulator":{}}}}]`)}},
-		{"out in lookup", MongoRequest{Op: MongoAggregate, Database: "d", Collection: "c", Pipeline: json.RawMessage(`[{"$lookup":{"from":"x","pipeline":[{"$out":"y"}],"as":"z"}}]`)}},
-		{"two operator stage", MongoRequest{Op: MongoAggregate, Database: "d", Collection: "c", Pipeline: json.RawMessage(`[{"$match":{},"$limit":1}]`)}},
 		{"js string filter", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`"function(){}"`)}},
 		{"array filter", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`[1]`)}},
 		{"not json", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{a:1}`)}},
@@ -41,6 +38,21 @@ func TestMongoGuardRejects(t *testing.T) {
 		{"negative limit", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Limit: -1}},
 		{"bad sort", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Sort: json.RawMessage(`{"a":"x"}`)}},
 		{"after with other sort", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Sort: json.RawMessage(`{"a":1}`), After: json.RawMessage(`"x"`)}},
+		{"admin system users", MongoRequest{Op: MongoFind, Database: "admin", Collection: "system.users"}},
+		{"admin db find", MongoRequest{Op: MongoFind, Database: "admin", Collection: "c"}},
+		{"config db", MongoRequest{Op: MongoCountDocuments, Database: "config", Collection: "c"}},
+		{"local db", MongoRequest{Op: MongoGetIndexes, Database: "LOCAL", Collection: "c"}},
+		{"system collection", MongoRequest{Op: MongoStats, Database: "app", Collection: "System.Profile"}},
+		{"reserved db in overview", MongoRequest{Op: MongoCollections, Database: "admin"}},
+		{"internal js emit", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"$_internalJsEmit":{"eval":"function(){while(1){}}","this":{},"fn":"x"}}`)}},
+		{"nested internal", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"a":{"$and":[{"$_internalSchemaMinLength":1}]}}`)}},
+		{"unknown operator", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"a":{"$jsonSchema":{}}}`)}},
+		{"expr", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"$expr":{"$eq":[1,1]}}`)}},
+		{"projection operator", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Projection: json.RawMessage(`{"a":{"$function":{}}}`)}},
+		{"sort operator", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Sort: json.RawMessage(`{"$natural":1}`)}},
+		{"long regex", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"a":{"$regex":"` + strings.Repeat("a", 300) + `"}}`)}},
+		{"aggregate op", MongoRequest{Op: "aggregate", Database: "d", Collection: "c"}},
+		{"after with operator", MongoRequest{Op: MongoFind, Database: "d", Collection: "c", After: json.RawMessage(`{"$_x":1}`)}},
 		{"stats without collection", MongoRequest{Op: MongoStats, Database: "d"}},
 	}
 	for _, tc := range cases {
@@ -90,5 +102,55 @@ func TestMongoFingerprintIgnoresValues(t *testing.T) {
 	b, _ := CheckMongo(MongoRequest{Op: MongoFind, Database: "d", Collection: "c", Filter: json.RawMessage(`{"a":2}`)}, mongoTestLimits())
 	if a.Fingerprint == "" || a.Fingerprint != b.Fingerprint {
 		t.Fatalf("fingerprints differ: %q %q", a.Fingerprint, b.Fingerprint)
+	}
+}
+
+func TestMongoGuardAccepts(t *testing.T) {
+	ok := []MongoRequest{
+		{Op: MongoListDatabases},
+		{Op: MongoCollections},
+		{Op: MongoFind, Database: "app", Collection: "users", Filter: json.RawMessage(`{"$or":[{"a":{"$in":[1,2]}},{"n":{"$regex":"^a","$options":"i"}}],"d":{"$gte":{"$date":"2020-01-01T00:00:00Z"}}}`), Projection: json.RawMessage(`{"a":{"$slice":2}}`)},
+		{Op: MongoFind, Database: "app", Collection: "users", After: json.RawMessage(`{"$numberLong":"9007199254740993"}`), Sort: json.RawMessage(`{"_id":-1}`)},
+	}
+	for _, r := range ok {
+		if _, err := CheckMongo(r, mongoTestLimits()); err != nil {
+			t.Errorf("%s: %v", r.Op, err)
+		}
+	}
+}
+
+func TestMongoScriptHasDoneMarkerAndCanonicalCursor(t *testing.T) {
+	q, err := CheckMongo(MongoRequest{Op: MongoFind, Database: "app", Collection: "c"}, mongoTestLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range []string{`print("LRDONE")`, `relaxed:false`, `"LRLAST:"`} {
+		if !strings.Contains(q.script, w) {
+			t.Errorf("script missing %s", w)
+		}
+	}
+}
+
+type mongoStubExec struct{ out string }
+
+func (s mongoStubExec) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
+	return io.NopCloser(strings.NewReader(s.out)), nil
+}
+
+func TestRunMongoEndMarkerAndCursor(t *testing.T) {
+	lim := mongoTestLimits()
+	q, _ := CheckMongo(MongoRequest{Op: MongoFind, Database: "app", Collection: "c", Limit: 1}, lim)
+	tg := Target{Exec: mongoStubExec{out: "{\"_id\":1}\n"}, Limits: lim}
+	if _, err := tg.RunMongo(context.Background(), q); err == nil {
+		t.Fatal("missing LRDONE must be an error")
+	}
+	tg.Exec = mongoStubExec{out: "{\"_id\":1}\nLRMORE\nLRLAST:{\"$numberLong\":\"9007199254740993\"}\nLRDONE\n"}
+	res, err := tg.RunMongo(context.Background(), q)
+	if err != nil || !res.Truncated || string(res.NextAfter) != `{"$numberLong":"9007199254740993"}` {
+		t.Fatalf("res = %+v err = %v", res, err)
+	}
+	tg.Exec = mongoStubExec{out: strings.Repeat("x", 200000) + "\n"}
+	if res, err := tg.RunMongo(context.Background(), q); err != nil || !res.Truncated {
+		t.Fatalf("oversized line must truncate, got %+v %v", res, err)
 	}
 }

@@ -33,3 +33,27 @@ func TestAuthzMongoViewerDenyRows(t *testing.T) {
 		})
 	}
 }
+
+func TestMongoGateLimitsPerDatabaseAndPrincipal(t *testing.T) {
+	t.Parallel()
+	g := &mongoGate{busy: map[string]int{}}
+	r1, ok := g.acquire("db:a", "p:1", 1)
+	if !ok {
+		t.Fatal("first acquire must succeed")
+	}
+	if _, ok := g.acquire("db:a", "p:2", 1); ok {
+		t.Error("same database must be full")
+	}
+	if _, ok := g.acquire("db:b", "p:1", 1); ok {
+		t.Error("same principal must be full")
+	}
+	r1()
+	if r2, ok := g.acquire("db:a", "p:1", 1); !ok {
+		t.Error("slot must free after release")
+	} else {
+		r2()
+	}
+	if len(g.busy) != 0 {
+		t.Errorf("busy map leaked: %v", g.busy)
+	}
+}

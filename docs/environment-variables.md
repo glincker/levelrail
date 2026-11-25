@@ -563,6 +563,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUD_SSM_COMMAND_TIMEOUT_SECONDS` | [`cloud.ssm.command_timeout_seconds`](/runtime-settings#observability) | `60` |
 | `APP_DB_QUERY_MAX_BYTES` | [`database_viewer.max_bytes`](/runtime-settings#observability) | `4194304` |
 | `APP_DB_QUERY_MAX_CELL_BYTES` | [`database_viewer.max_cell_bytes`](/runtime-settings#observability) | `65536` |
+| `APP_DB_VIEWER_MAX_CONCURRENT` | [`database_viewer.max_concurrent`](/runtime-settings#observability) | `4` |
 | `APP_DB_QUERY_MAX_ROWS` | [`database_viewer.max_rows`](/runtime-settings#observability) | `1000` |
 | `APP_DB_QUERY_MAX_SQL_BYTES` | [`database_viewer.max_sql_bytes`](/runtime-settings#observability) | `65536` |
 | `APP_DB_QUERY_TIMEOUT` | [`database_viewer.query_timeout`](/runtime-settings#observability) | `15s` |

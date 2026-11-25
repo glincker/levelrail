@@ -13,6 +13,7 @@ const (
 	KeyDBViewerMaxCell    = "database_viewer.max_cell_bytes"
 	KeyDBViewerSchemaRows = "database_viewer.schema_max_rows"
 	KeyDBViewerMaxSQL     = "database_viewer.max_sql_bytes"
+	KeyDBViewerMaxConc    = "database_viewer.max_concurrent"
 
 	KeyLogRuleEvalInterval = "log_rules.eval_interval"
 	KeyLogRuleMaxWindow    = "log_rules.max_window"
@@ -33,6 +34,8 @@ type DBViewerLimits struct {
 	MaxCellBytes int
 	SchemaRows   int
 	SQLBytes     int
+	// MaxConcurrent bounds in-flight document browser reads per database and per principal.
+	MaxConcurrent int
 }
 
 // LogRuleLimits bounds one log rule evaluation.
@@ -62,6 +65,7 @@ func init() {
 	registerLimitInt(KeyDBViewerMaxCell, "APP_DB_QUERY_MAX_CELL_BYTES", "65536", "Database console: max cell bytes", "Largest single cell shown before it is cut off.", 64, 1<<24)
 	registerLimitInt(KeyDBViewerSchemaRows, "APP_DB_SCHEMA_MAX_ROWS", "5000", "Database console: schema table limit", "Tables listed by the schema browser.", 1, dbViewerMaxCount)
 	registerLimitInt(KeyDBViewerMaxSQL, "APP_DB_QUERY_MAX_SQL_BYTES", "65536", "Database console: max SQL bytes", "Largest SQL text the console and saved queries accept.", 256, 1<<24)
+	registerLimitInt(KeyDBViewerMaxConc, "APP_DB_VIEWER_MAX_CONCURRENT", "4", "Database browser: concurrent reads", "Document browser reads in flight at once, per database and per user.", 1, 64)
 
 	Register(Definition{
 		Key: KeyLogRuleEvalInterval, Category: cat, Kind: KindDuration, Default: "1m", Env: "APP_LOG_RULE_EVAL_INTERVAL", Apply: ApplyLive,
@@ -86,6 +90,8 @@ func (s *Service) DatabaseViewerLimits(ctx context.Context) DBViewerLimits {
 		MaxCellBytes: s.Int(ctx, KeyDBViewerMaxCell),
 		SchemaRows:   s.Int(ctx, KeyDBViewerSchemaRows),
 		SQLBytes:     s.Int(ctx, KeyDBViewerMaxSQL),
+
+		MaxConcurrent: s.Int(ctx, KeyDBViewerMaxConc),
 	}
 }
 

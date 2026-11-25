@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -13,15 +14,19 @@ import (
 // Output protocol: one JSON document per line; mongoMoreMark means more rows
 // existed than the limit, mongoErrPrefix carries the server's error text.
 const (
-	mongoMoreMark  = "LRMORE"
-	mongoErrPrefix = "LRERR:"
+	mongoMoreMark   = "LRMORE"
+	mongoDoneMark   = "LRDONE"
+	mongoErrPrefix  = "LRERR:"
+	mongoLastPrefix = "LRLAST:"
 )
 
 // MongoResult holds the lines one Mongo operation produced.
 type MongoResult struct {
-	Documents  []json.RawMessage `json:"documents"`
-	Truncated  bool              `json:"truncated"`
-	DurationMs int64             `json:"duration_ms"`
+	Documents []json.RawMessage `json:"documents"`
+	Truncated bool              `json:"truncated"`
+	// NextAfter is the canonical extended JSON _id of the last document when more exist.
+	NextAfter  json.RawMessage `json:"next_after,omitempty"`
+	DurationMs int64           `json:"duration_ms"`
 }
 
 // mongoCmd runs mongosh in the container. Credentials come from the
@@ -46,8 +51,9 @@ func mongoScript(req MongoRequest, p mongoParts) string {
 	b.WriteString(`if(process.env.MONGO_INITDB_ROOT_USERNAME){db.getSiblingDB("admin").auth(process.env.MONGO_INITDB_ROOT_USERNAME,process.env.MONGO_INITDB_ROOT_PASSWORD);}`)
 	fmt.Fprintf(&b, `var MS=%d,CELL=%d,L=%d,SR=%d;`, p.lim.Timeout.Milliseconds(), p.lim.MaxCellBytes, p.limit, p.lim.SchemaRows)
 	b.WriteString(`var E=function(o){return EJSON.stringify(o,null,0,{relaxed:true});};`)
-	b.WriteString(`var P=function(o){var s=E(o);if(s.length>CELL){print(E({_id:o._id,"__truncated":true,bytes:s.length}));}else{print(s);}};`)
-	b.WriteString(`var DRAIN=function(cur){var n=0;while(cur.hasNext()){var d=cur.next();n++;if(n>L){print("` + mongoMoreMark + `");break;}P(d);}};`)
+	b.WriteString(`var P=function(o){var s=E(o);if(s.length>CELL){var i=E(o._id);print(i!==undefined&&i.length*4<CELL?E({_id:o._id,"__truncated":true,bytes:s.length}):E({"__truncated":true,bytes:s.length}));}else{print(s);}};`)
+	b.WriteString(`var EC=function(o){return EJSON.stringify(o,null,0,{relaxed:false});};`)
+	b.WriteString(`var DRAIN=function(cur){var n=0,last;while(cur.hasNext()){var d=cur.next();n++;if(n>L){print("` + mongoMoreMark + `");var c=last===undefined?undefined:EC(last);if(c!==undefined&&c.length*4<CELL){print("` + mongoLastPrefix + `"+c);}break;}last=d._id;P(d);}};`)
 	if req.Database != "" {
 		fmt.Fprintf(&b, `var D=db.getSiblingDB(%s);`, jsLit(req.Database))
 	}
@@ -84,23 +90,21 @@ func mongoScript(req MongoRequest, p mongoParts) string {
 		b.WriteString(`C.getIndexes().forEach(function(x){P(x);});`)
 	case MongoStats:
 		b.WriteString(`var S=D.runCommand({collStats:` + jsLit(req.Collection) + `});print(JSON.stringify({count:Number(S.count),size:Number(S.size),storageSize:Number(S.storageSize),avgObjSize:Number(S.avgObjSize||0),nindexes:Number(S.nindexes),totalIndexSize:Number(S.totalIndexSize)}));`)
-	case MongoAggregate:
-		fmt.Fprintf(&b, `DRAIN(C.aggregate(%s.concat([{$limit:L+1}]),{maxTimeMS:MS,allowDiskUse:false}));`, jsParse(p.pipeline))
 	}
-	b.WriteString(`}catch(e){print("` + mongoErrPrefix + `"+String(e.message||e));}})()` + "\n")
+	b.WriteString(`print("` + mongoDoneMark + `");}catch(e){print("` + mongoErrPrefix + `"+String(e.message||e));}})()` + "\n")
 	return b.String()
 }
 
 // mongoOverviewScript lists databases, collections, counts, sizes and indexes
 // with listing, count, stats and index reads only.
 func mongoOverviewScript(database string) string {
-	dbs := `DBS.map(function(x){return x.name;})`
+	dbs := `DBS.map(function(x){return x.name;}).filter(function(n){return n!=="admin"&&n!=="config"&&n!=="local";})`
 	if database != "" {
 		dbs = `[` + jsLit(database) + `]`
 	}
 	return `var left=SR,DBS=db.getMongo().getDBs().databases;` + dbs + `.forEach(function(dn){var d=db.getSiblingDB(dn);` +
 		`print(JSON.stringify({kind:"db",name:dn,sizeOnDisk:Number((DBS.filter(function(x){return x.name===dn;})[0]||{}).sizeOnDisk||0)}));` +
-		`d.getCollectionInfos({},true).forEach(function(ci){if(left<=0){return;}left--;` +
+		`d.getCollectionInfos({},true).forEach(function(ci){if(left<=0||ci.name.toLowerCase().indexOf("system.")===0){return;}left--;` +
 		`var o={kind:"collection",db:dn,name:ci.name,type:ci.type,count:0,size:0,storageSize:0,indexes:[]};` +
 		`try{if(ci.type==="collection"){var c=d.getCollection(ci.name);o.count=Number(c.estimatedDocumentCount({maxTimeMS:MS}));` +
 		`var s=d.runCommand({collStats:ci.name});o.size=Number(s.size||0);o.storageSize=Number(s.storageSize||0);` +
@@ -129,12 +133,17 @@ func (t Target) RunMongo(ctx context.Context, q MongoQuery) (MongoResult, error)
 	// A cell is capped in the script at MaxCellBytes characters; allow for multibyte text.
 	sc.Buffer(make([]byte, 0, 64<<10), 4*t.Limits.MaxCellBytes+4096)
 	res := MongoResult{Documents: []json.RawMessage{}}
+	sawDone := false
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
 		switch {
 		case line == "":
 		case line == mongoMoreMark:
 			res.Truncated = true
+		case line == mongoDoneMark:
+			sawDone = true
+		case strings.HasPrefix(line, mongoLastPrefix):
+			res.NextAfter = json.RawMessage(strings.TrimPrefix(line, mongoLastPrefix))
 		case strings.HasPrefix(line, mongoErrPrefix):
 			return MongoResult{}, &QueryError{Message: strings.TrimPrefix(line, mongoErrPrefix)}
 		case !json.Valid([]byte(line)):
@@ -151,8 +160,15 @@ func (t Target) RunMongo(ctx context.Context, q MongoQuery) (MongoResult, error)
 	if capped.tripd {
 		res.Truncated = true
 	}
-	if err := sc.Err(); err != nil && !capped.tripd {
-		return MongoResult{}, wrapExecError(ctx, err)
+	if err := sc.Err(); err != nil {
+		if errors.Is(err, bufio.ErrTooLong) {
+			res.Truncated = true
+		} else if !capped.tripd {
+			return MongoResult{}, wrapExecError(ctx, err)
+		}
+	}
+	if !res.Truncated && !sawDone {
+		return MongoResult{}, errors.New("dbviewer: mongosh ended before the result was complete")
 	}
 	if !res.Truncated {
 		if _, err := io.Copy(io.Discard, rc); err != nil {

@@ -21,18 +21,17 @@ type MongoOp string
 
 // Allowed operations. Anything else is rejected before a script is built.
 const (
-	MongoListDatabases    MongoOp = "listDatabases"
-	MongoListCollections  MongoOp = "listCollections"
-	MongoCollections      MongoOp = "collections"
-	MongoFind             MongoOp = "find"
-	MongoCountDocuments   MongoOp = "countDocuments"
-	MongoEstimatedCount   MongoOp = "estimatedDocumentCount"
-	MongoGetIndexes       MongoOp = "getIndexes"
-	MongoStats            MongoOp = "stats"
-	MongoAggregate        MongoOp = "aggregate"
-	mongoMaxDepth                 = 16
-	mongoMaxPipelineStage         = 32
-	mongoMaxSortKeys              = 4
+	MongoListDatabases   MongoOp = "listDatabases"
+	MongoListCollections MongoOp = "listCollections"
+	MongoCollections     MongoOp = "collections"
+	MongoFind            MongoOp = "find"
+	MongoCountDocuments  MongoOp = "countDocuments"
+	MongoEstimatedCount  MongoOp = "estimatedDocumentCount"
+	MongoGetIndexes      MongoOp = "getIndexes"
+	MongoStats           MongoOp = "stats"
+	mongoMaxDepth                = 16
+	mongoMaxRegexLen             = 256
+	mongoMaxSortKeys             = 4
 )
 
 // ErrMongoDenied reports a request the Mongo guard refuses.
@@ -40,11 +39,19 @@ var ErrMongoDenied = errors.New("mongodb request is not allowed")
 
 var mongoNameRE = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,62}$`)
 
-// Operators that run server-side JavaScript or write data. Matched against
-// every object key at any depth, including inside extended JSON.
-var mongoDenyKeys = map[string]bool{
-	"$where": true, "$function": true, "$accumulator": true,
-	"$out": true, "$merge": true, "$code": true, "$codeWScope": true,
+// Query, projection and extended JSON operators a request may use. Anything
+// else, including every $_ internal and all JavaScript forms, is rejected.
+// $where, $function, $accumulator, $out, $merge, $code and $expr stay out.
+var mongoAllowKeys = map[string]bool{
+	"$eq": true, "$ne": true, "$gt": true, "$gte": true, "$lt": true, "$lte": true,
+	"$in": true, "$nin": true, "$and": true, "$or": true, "$nor": true, "$not": true,
+	"$exists": true, "$type": true, "$mod": true, "$all": true, "$elemMatch": true,
+	"$size": true, "$regex": true, "$options": true, "$slice": true,
+	"$bitsAllSet": true, "$bitsAnySet": true, "$bitsAllClear": true, "$bitsAnyClear": true,
+	"$oid": true, "$date": true, "$numberLong": true, "$numberInt": true,
+	"$numberDouble": true, "$numberDecimal": true, "$binary": true, "$uuid": true,
+	"$timestamp": true, "$t": true, "$i": true, "$regularExpression": true,
+	"$minKey": true, "$maxKey": true, "$undefined": true,
 }
 
 // MongoRequest is the typed input; no field is ever executed as script text.
@@ -55,7 +62,6 @@ type MongoRequest struct {
 	Filter     json.RawMessage
 	Sort       json.RawMessage
 	Projection json.RawMessage
-	Pipeline   json.RawMessage
 	// After is the _id of the last document of the previous page.
 	After json.RawMessage
 	Limit int
@@ -84,7 +90,7 @@ func CheckMongo(req MongoRequest, lim Limits) (MongoQuery, error) {
 		if req.Op == MongoStats && !mongoNameRE.MatchString(req.Collection) {
 			return deny("invalid collection name")
 		}
-	case MongoFind, MongoCountDocuments, MongoEstimatedCount, MongoGetIndexes, MongoAggregate:
+	case MongoFind, MongoCountDocuments, MongoEstimatedCount, MongoGetIndexes:
 		if !mongoNameRE.MatchString(req.Database) || !mongoNameRE.MatchString(req.Collection) {
 			return deny("invalid database or collection name")
 		}
@@ -93,6 +99,14 @@ func CheckMongo(req MongoRequest, lim Limits) (MongoQuery, error) {
 	}
 	if req.Database != "" && !mongoNameRE.MatchString(req.Database) {
 		return deny("invalid database name")
+	}
+	if req.Op != MongoListDatabases {
+		if mongoReservedDB(req.Database) {
+			return deny("system databases are not readable")
+		}
+		if mongoSystemCollection(req.Collection) {
+			return deny("system collections are not readable")
+		}
 	}
 	limit := req.Limit
 	if limit < 0 {
@@ -118,10 +132,6 @@ func CheckMongo(req MongoRequest, lim Limits) (MongoQuery, error) {
 	if err := mongoCheckSort(sortSpec); err != nil {
 		return deny("sort: %v", err)
 	}
-	pipeline, err := mongoPipeline(req.Pipeline, lim.SQLBytes)
-	if err != nil {
-		return deny("pipeline: %v", err)
-	}
 	after, err := mongoValue(req.After, lim.SQLBytes)
 	if err != nil {
 		return deny("after: %v", err)
@@ -132,18 +142,18 @@ func CheckMongo(req MongoRequest, lim Limits) (MongoQuery, error) {
 
 	q := MongoQuery{Op: req.Op, Limit: limit}
 	q.script = mongoScript(req, mongoParts{
-		filter: filter, proj: proj, sort: sortSpec, pipeline: pipeline, after: after,
+		filter: filter, proj: proj, sort: sortSpec, after: after,
 		limit: limit, lim: lim,
 	})
-	q.Fingerprint = mongoFingerprint(req, filter, pipeline)
+	q.Fingerprint = mongoFingerprint(req, filter)
 	return q, nil
 }
 
 // mongoParts holds validated, canonical JSON text for the script builder.
 type mongoParts struct {
-	filter, proj, sort, pipeline, after string
-	limit                               int
-	lim                                 Limits
+	filter, proj, sort, after string
+	limit                     int
+	lim                       Limits
 }
 
 func mongoDecode(raw json.RawMessage, maxBytes int) (any, error) {
@@ -172,8 +182,13 @@ func mongoWalk(v any, depth int) error {
 	switch x := v.(type) {
 	case map[string]any:
 		for k, child := range x {
-			if mongoDenyKeys[k] {
+			if strings.HasPrefix(k, "$") && !mongoAllowKeys[k] {
 				return fmt.Errorf("operator %s is not allowed", k)
+			}
+			if k == "$regex" || k == "$pattern" || k == "pattern" {
+				if p, ok := child.(string); ok && len(p) > mongoMaxRegexLen {
+					return errors.New("regular expression is too long")
+				}
 			}
 			if err := mongoWalk(child, depth+1); err != nil {
 				return err
@@ -187,6 +202,18 @@ func mongoWalk(v any, depth int) error {
 		}
 	}
 	return nil
+}
+
+func mongoReservedDB(name string) bool {
+	switch strings.ToLower(name) {
+	case "admin", "config", "local":
+		return true
+	}
+	return false
+}
+
+func mongoSystemCollection(name string) bool {
+	return strings.HasPrefix(strings.ToLower(name), "system.")
 }
 
 // mongoObject returns canonical JSON for an optional JSON object, "{}" if empty.
@@ -217,33 +244,6 @@ func mongoValue(raw json.RawMessage, maxBytes int) (string, error) {
 	return string(out), nil
 }
 
-func mongoPipeline(raw json.RawMessage, maxBytes int) (string, error) {
-	if len(bytes.TrimSpace(raw)) == 0 {
-		return "[]", nil
-	}
-	v, err := mongoDecode(raw, maxBytes)
-	if err != nil {
-		return "", err
-	}
-	stages, ok := v.([]any)
-	if !ok || len(stages) > mongoMaxPipelineStage {
-		return "", fmt.Errorf("must be an array of at most %d stages", mongoMaxPipelineStage)
-	}
-	for _, s := range stages {
-		m, ok := s.(map[string]any)
-		if !ok || len(m) != 1 {
-			return "", errors.New("each stage must be an object with one operator")
-		}
-		for k := range m {
-			if !strings.HasPrefix(k, "$") {
-				return "", errors.New("each stage must start with a $ operator")
-			}
-		}
-	}
-	out, _ := json.Marshal(v)
-	return string(out), nil
-}
-
 func mongoCheckSort(canonical string) error {
 	var m map[string]json.Number
 	dec := json.NewDecoder(strings.NewReader(canonical))
@@ -254,7 +254,10 @@ func mongoCheckSort(canonical string) error {
 	if len(m) > mongoMaxSortKeys {
 		return fmt.Errorf("at most %d keys", mongoMaxSortKeys)
 	}
-	for _, d := range m {
+	for k, d := range m {
+		if strings.HasPrefix(k, "$") {
+			return errors.New("operators are not allowed")
+		}
 		if d.String() != "1" && d.String() != "-1" {
 			return errors.New("values must be 1 or -1")
 		}
@@ -268,10 +271,10 @@ func mongoSortIsID(canonical string) bool {
 
 // mongoFingerprint hashes the operation and the shape of the request with
 // every literal value replaced, so equal queries share one audit id.
-func mongoFingerprint(req MongoRequest, filter, pipeline string) string {
+func mongoFingerprint(req MongoRequest, filter string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s|%s|%s|", req.Op, req.Database, req.Collection)
-	for _, s := range []string{filter, pipeline} {
+	for _, s := range []string{filter} {
 		var v any
 		_ = json.Unmarshal([]byte(s), &v)
 		b.WriteString(mongoShape(v))
