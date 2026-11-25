@@ -168,6 +168,17 @@ func (db *DB) queryTier(ctx context.Context, tier int, resourceID, metric string
 	return append(out, tail...), nil
 }
 
+// isCumulativeMetric reports running-total counters, whose rollup bucket is
+// read from the max column so it holds before and after sum turns into an
+// increase. The kinds table (IsSumMetric in metrickind.go) replaces this.
+func isCumulativeMetric(metric string) bool {
+	switch metric {
+	case "network_rx_bytes", "network_tx_bytes", "disk_read_bytes", "disk_write_bytes":
+		return true
+	}
+	return false
+}
+
 func (db *DB) queryRollup(ctx context.Context, tier int, resourceID, metric string, from, to time.Time) ([]Sample, error) {
 	width := int64(tier)
 	first := from.Unix() / width * width
@@ -182,6 +193,7 @@ func (db *DB) queryRollup(ctx context.Context, tier int, resourceID, metric stri
 	defer func() { _ = rows.Close() }()
 
 	sumKind := IsSumMetric(metric)
+	cumulative := isCumulativeMetric(metric)
 	var out []Sample
 	for rows.Next() {
 		var ts, count int64
@@ -190,7 +202,9 @@ func (db *DB) queryRollup(ctx context.Context, tier int, resourceID, metric stri
 			return nil, fmt.Errorf("telemetry: scan rollup row: %w", err)
 		}
 		v := sum
-		if !sumKind && count > 0 {
+		if cumulative {
+			v = hi
+		} else if !sumKind && count > 0 {
 			v = sum / float64(count)
 		}
 		out = append(out, Sample{ResourceID: resourceID, Metric: metric, Timestamp: time.Unix(ts, 0).UTC(), Value: v,

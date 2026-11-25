@@ -218,6 +218,8 @@ func Aggregate(samples []Sample, from time.Time, step time.Duration) []Aggregate
 		return out
 	}
 
+	// A running total merges as the max of maxes, never sum over count.
+	cumulative := len(samples) > 0 && isCumulativeMetric(samples[0].Metric)
 	type bucket struct {
 		sum   float64
 		min   float64
@@ -252,9 +254,13 @@ func Aggregate(samples []Sample, from time.Time, step time.Duration) []Aggregate
 	out := make([]AggregatedPoint, len(order))
 	for i, idx := range order {
 		b := buckets[idx]
+		v := b.sum / float64(b.count)
+		if cumulative {
+			v = b.max
+		}
 		out[i] = AggregatedPoint{
 			Timestamp: from.Add(time.Duration(idx) * step),
-			Value:     b.sum / float64(b.count),
+			Value:     v,
 			Count:     int(b.count),
 			Max:       b.max,
 			Min:       b.min,
