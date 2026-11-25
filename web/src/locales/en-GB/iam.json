@@ -1,0 +1,10 @@
+{
+  "page": {
+    "tabs": {
+      "analyzer": "Analyser"
+    }
+  },
+  "analyzer": {
+    "title": "Policy analyser"
+  }
+}

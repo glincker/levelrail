@@ -7,6 +7,7 @@ type Loader = () => Promise<{
 // A new language adds one module in ./loaders and one line here (a test fails if either is missing).
 const loaders: Record<string, Loader> = {
   en: () => import('./loaders/en'),
+  'en-GB': () => import('./loaders/en-GB'),
   es: () => import('./loaders/es'),
   de: () => import('./loaders/de'),
   fr: () => import('./loaders/fr'),

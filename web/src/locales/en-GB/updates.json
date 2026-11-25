@@ -1,0 +1,9 @@
+{
+  "selfUpgrade": {
+    "failure": {
+      "cause": {
+        "unknown": "The step failed for a reason this page doesn't recognise."
+      }
+    }
+  }
+}

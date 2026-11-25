@@ -1,0 +1,6 @@
+{
+  "sso": {
+    "startUrl": "Identity Centre start URL",
+    "region": "Identity Centre region"
+  }
+}

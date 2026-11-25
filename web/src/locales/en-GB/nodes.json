@@ -1,0 +1,23 @@
+{
+  "join": {
+    "fallbackLabel": "Enrolment command"
+  },
+  "drain": {
+    "zone": {
+      "empty": "No nodes are labelled with zone {{zone}}."
+    }
+  },
+  "trust": {
+    "caCompare": "Compare with APP_CA_FINGERPRINT in the agent's environment, or the fingerprint its enrolment command printed.",
+    "pin": {
+      "pinned": "Pinned at enrolment. The agent checked this fingerprint before it sent its join token."
+    },
+    "notSinceEnrollment": "Not since enrolment",
+    "events": {
+      "ca_pin": "CA pin at enrolment: {{reason}}"
+    },
+    "reasons": {
+      "enroll": "enrolment"
+    }
+  }
+}

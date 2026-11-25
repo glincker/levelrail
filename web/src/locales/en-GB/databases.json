@@ -1,0 +1,26 @@
+{
+  "viewer": {
+    "states": {
+      "contradiction_one": "The catalogue reports {{count}} table but the listing returned none. Retry. If it keeps happening, check the helper logs.",
+      "contradiction_other": "The catalogue reports {{count}} tables but the listing returned none. Retry. If it keeps happening, check the helper logs.",
+      "evidence": {
+        "unavailable": "The catalogue counts could not be read, so this emptiness is not verified."
+      }
+    }
+  },
+  "createFlavor": {
+    "hint": "Runs {{image}} so its extensions are available with CREATE EXTENSION. The version is stored as {{version}}. Changing flavour later is a guarded dump and restore, not an in-place switch."
+  },
+  "wizard": {
+    "goals": {
+      "items": {
+        "scheduled-job": {
+          "hint": "Backup and cron-style runners from the catalogue."
+        },
+        "self-hosted": {
+          "hint": "Curated apps from the template catalogue."
+        }
+      }
+    }
+  }
+}

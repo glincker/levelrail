@@ -1,0 +1,10 @@
+{
+  "connection": {
+    "needs_reauthorize": {
+      "body": "The authorisation was revoked, expired or is no longer accepted, so repositories cannot be listed or cloned until you reconnect."
+    },
+    "revoked": {
+      "body": "The installation or authorisation no longer exists on the provider. Reconnect to use it again."
+    }
+  }
+}

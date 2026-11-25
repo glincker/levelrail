@@ -1,0 +1,11 @@
+{
+  "variables": {
+    "org": {
+      "title": "Organisations",
+      "empty": {
+        "title": "No organisations",
+        "description": "Create an organisation to share variables across its projects."
+      }
+    }
+  }
+}

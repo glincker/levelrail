@@ -1,0 +1,8 @@
+{
+  "verdict": {
+    "canceled": "Cancelled"
+  },
+  "codes": {
+    "outcome_canceled": "Deploy cancelled"
+  }
+}

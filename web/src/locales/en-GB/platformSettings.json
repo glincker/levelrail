@@ -1,0 +1,7 @@
+{
+  "index": {
+    "certificates": {
+      "description": "Expiry and issuer of every certificate, with a link to the certificate centre."
+    }
+  }
+}

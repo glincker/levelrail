@@ -1,0 +1,14 @@
+{
+  "deploys": {
+    "status": {
+      "canceled": "Cancelled"
+    }
+  },
+  "customize": {
+    "edit": "Customise"
+  },
+  "tabs": {
+    "metricsNote": "Fleet-wide totals. Customise it to make your own copy.",
+    "customize": "Customise"
+  }
+}

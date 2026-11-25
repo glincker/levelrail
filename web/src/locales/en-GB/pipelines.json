@@ -1,0 +1,8 @@
+{
+  "artifacts": {
+    "title": "Artefacts",
+    "empty": "This run stored no artefacts. Add artifacts: [path] to a job to keep its output for later jobs and for download.",
+    "emptyTitle": "No artefacts",
+    "loadFailed": "Artefacts could not be loaded"
+  }
+}

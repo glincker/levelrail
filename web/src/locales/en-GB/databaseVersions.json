@@ -1,0 +1,10 @@
+{
+  "origin": {
+    "published": "Published catalogue, updated {{when}}",
+    "embedded": "Built-in catalogue, updated {{when}}"
+  },
+  "freshness": {
+    "aging": "Catalogue is getting old, check now",
+    "stale": "This catalogue is out of date. Check for new versions."
+  }
+}

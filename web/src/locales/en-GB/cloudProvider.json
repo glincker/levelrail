@@ -1,0 +1,7 @@
+{
+  "providers": {
+    "custom": {
+      "name": "Custom data centre"
+    }
+  }
+}

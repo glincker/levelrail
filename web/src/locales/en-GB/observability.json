@@ -1,0 +1,8 @@
+{
+  "deployStatus": {
+    "canceled": "Cancelled"
+  },
+  "dashboard": {
+    "summary": "As of {{time}}. {{deploys}} deploys in this range. Dashed lines mark deploys (green succeeded, red failed, grey running) and amber lines mark container restarts."
+  }
+}

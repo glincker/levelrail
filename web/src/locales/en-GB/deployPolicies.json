@@ -1,0 +1,6 @@
+{
+  "description": "Guardrails checked before every deploy, at organisation, project and environment scope. The most specific scope wins per rule.",
+  "scope": {
+    "org": "Organisation"
+  }
+}

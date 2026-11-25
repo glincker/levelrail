@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { normalizeDetectedLanguage } from '../../i18n/detect'
+import { htmlLang } from '../../i18n/direction'
 import { languageFlag } from '../../lib/languageFlags'
 import { isSupportedLanguage, supportedLanguages } from '../../lib/languages'
 
@@ -115,7 +116,7 @@ export function LanguageMenu({
           return (
             <DropdownMenuItem
               key={o.code}
-              lang={o.code}
+              lang={htmlLang(o.code)}
               aria-current={current ? 'true' : undefined}
               className={cn(
                 'min-h-11 gap-2.5',

@@ -323,6 +323,7 @@ func TestPreferences(t *testing.T) {
 		want int
 	}{
 		{"valid", `{"timezone":"Europe/Berlin","language":"pt-BR","theme":"dark","landing_page":"/apps","gravatar":true}`, http.StatusOK},
+		{"british english", `{"language":"en-GB"}`, http.StatusOK},
 		{"empty means default", `{}`, http.StatusOK},
 		{"bad timezone", `{"timezone":"Mars/Base"}`, http.StatusBadRequest},
 		{"bad language", `{"language":"english please"}`, http.StatusBadRequest},

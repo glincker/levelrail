@@ -1,0 +1,8 @@
+{
+  "status": {
+    "canceled": "Cancelled"
+  },
+  "actions": {
+    "cancelDone": "Build cancelled"
+  }
+}
