@@ -379,6 +379,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runMCP(prog, args[1:], stdout, stderr, lookupEnv)
 	case "docs":
 		return runDocs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "schema":
+		return runSchema(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-link":

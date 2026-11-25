@@ -11,6 +11,7 @@ type Node struct {
 var Tree = map[string]*Node{
 	"deploy":         nil,
 	"docs":           nil,
+	"schema":         nil,
 	"link":           nil,
 	"commands":       {Subs: map[string]*Node{"search": nil}},
 	"mcp":            {Subs: map[string]*Node{"add": nil}},

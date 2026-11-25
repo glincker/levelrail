@@ -1758,6 +1758,17 @@ levelrail-cli init --commented --out -
 
 See [Agents](/agents).
 
+## Command schema
+
+```
+levelrail-cli schema [command [subcommand...]]
+```
+Prints JSON for one command, or for every command with no argument: its positional arguments, flags with type and default, subcommands, whether `--json` is supported, one example, and the global flags. It is built offline from the same help text as `levelrail-cli docs`, so scripts and agents can discover flags without parsing help.
+
+```
+levelrail-cli schema apps list
+```
+
 ## API docs
 
 ```
