@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
@@ -79,14 +80,19 @@ func (db *DB) rollupTier(ctx context.Context, tier int, now time.Time, cfg TierC
 	var query string
 	var args []any
 	if tier == tierMinute {
+		in, inArgs := cumulativeIn()
 		query = `
 			INSERT INTO metric_rollups (tier, resource_id, metric, ts, sum, min, max, count)
 			SELECT ?, resource_id, metric, (ts / ?) * ?, SUM(value), MIN(value), MAX(value), COUNT(*)
-			FROM metric_samples WHERE ts >= ? AND ts < ?
+			FROM metric_samples WHERE ts >= ? AND ts < ? AND metric NOT IN ` + in + `
 			GROUP BY resource_id, metric, ts / ?
 			ON CONFLICT (tier, resource_id, metric, ts) DO UPDATE SET
 				sum = excluded.sum, min = excluded.min, max = excluded.max, count = excluded.count`
-		args = []any{tier, width, width, start, end, width}
+		args = append([]any{tier, width, width, start, end}, inArgs...)
+		args = append(args, width)
+		if err := db.rollupCumulative(ctx, tx, tier, start, end); err != nil {
+			return 0, false, err
+		}
 	} else {
 		query = `
 			INSERT INTO metric_rollups (tier, resource_id, metric, ts, sum, min, max, count)
@@ -109,6 +115,38 @@ func (db *DB) rollupTier(ctx context.Context, tier int, now time.Time, cfg TierC
 		return 0, false, fmt.Errorf("telemetry: rollup %d: commit: %w", tier, err)
 	}
 	return int((end - start) / width), more, nil
+}
+
+// cumulativeLookback widens the scan so the delta across a bucket edge is not lost.
+const cumulativeLookback = 2 * 60
+
+// rollupCumulative stores the reset aware increase per bucket: a negative step is a reset, so the new total counts whole.
+func (db *DB) rollupCumulative(ctx context.Context, tx *sql.Tx, tier int, start, end int64) error {
+	width := int64(tier)
+	in, inArgs := cumulativeIn()
+	args := append([]any{start - cumulativeLookback, end}, inArgs...)
+	args = append([]any{tier, width, width}, args...)
+	args = append(args, start, width)
+	query := `
+		INSERT INTO metric_rollups (tier, resource_id, metric, ts, sum, min, max, count)
+		SELECT ?, resource_id, metric, (ts / ?) * ?, SUM(inc), MIN(value), MAX(value), COUNT(*)
+		FROM (
+			SELECT resource_id, metric, ts, value,
+				CASE WHEN prev IS NULL THEN 0 WHEN value >= prev THEN value - prev ELSE value END AS inc
+			FROM (
+				SELECT resource_id, metric, ts, value,
+					LAG(value) OVER (PARTITION BY resource_id, metric ORDER BY ts) AS prev
+				FROM metric_samples WHERE ts >= ? AND ts < ? AND metric IN {in}
+			)
+		) WHERE ts >= ?
+		GROUP BY resource_id, metric, ts / ?
+		ON CONFLICT (tier, resource_id, metric, ts) DO UPDATE SET
+			sum = excluded.sum, min = excluded.min, max = excluded.max, count = excluded.count`
+	_, err := tx.ExecContext(ctx, strings.Replace(query, "{in}", in, 1), args...)
+	if err != nil {
+		return fmt.Errorf("telemetry: rollup %d: cumulative increase: %w", tier, err)
+	}
+	return nil
 }
 
 func (db *DB) oldestSourceTS(ctx context.Context, table string, srcTier int) (int64, error) {

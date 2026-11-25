@@ -169,15 +169,8 @@ func (db *DB) queryTier(ctx context.Context, tier int, resourceID, metric string
 }
 
 // isCumulativeMetric reports running-total counters, whose rollup bucket is
-// read from the max column so it holds before and after sum turns into an
-// increase. The kinds table (IsSumMetric in metrickind.go) replaces this.
-func isCumulativeMetric(metric string) bool {
-	switch metric {
-	case "network_rx_bytes", "network_tx_bytes", "disk_read_bytes", "disk_write_bytes":
-		return true
-	}
-	return false
-}
+// read from the max column while sum holds the reset-aware increase.
+func isCumulativeMetric(metric string) bool { return KindOf(metric) == KindCumulative }
 
 func (db *DB) queryRollup(ctx context.Context, tier int, resourceID, metric string, from, to time.Time) ([]Sample, error) {
 	width := int64(tier)

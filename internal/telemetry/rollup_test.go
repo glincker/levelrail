@@ -385,3 +385,31 @@ func TestPrune_CapCountsMetricTablesOnlyAndPrunesToHeadroom(t *testing.T) {
 		t.Errorf("want pruned to headroom %d, got %d (%+v)", capped.MaxBytes/100*defaultCapTargetPercent, after, res)
 	}
 }
+
+func TestRollup_CumulativeIncreaseHandlesReset(t *testing.T) {
+	ctx := context.Background()
+	start := time.Unix(1_699_999_200, 0).UTC()
+	db, clk := newClockDB(t, testTierConfig(), start.Add(5*time.Minute))
+	totals := []float64{90, 100, 150, 10, 40}
+	var rows []Sample
+	for i, v := range totals {
+		// The first total closes the previous bucket, the rest fall in the next one.
+		ts := start.Add(45*time.Second + time.Duration(i)*15*time.Second)
+		rows = append(rows, Sample{ResourceID: "service:web", Metric: "network_rx_bytes", Timestamp: ts, Value: v})
+	}
+	if err := db.WriteSamples(ctx, rows); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Rollup(ctx, clk.now()); err != nil {
+		t.Fatal(err)
+	}
+	var sum, top float64
+	err := db.QueryRowContext(ctx, `SELECT sum, max FROM metric_rollups WHERE tier = 60 AND metric = 'network_rx_bytes' AND ts = ?`, start.Add(time.Minute).Unix()).Scan(&sum, &top)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 10 across the bucket edge, 50, then a reset to 10 counts whole, then 30.
+	if sum != 100 || top != 150 {
+		t.Errorf("increase = %v max = %v, want 100 and 150", sum, top)
+	}
+}
