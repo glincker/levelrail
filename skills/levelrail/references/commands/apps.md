@@ -1354,6 +1354,7 @@ Subcommands: approve, delete, disable, enable, extend, limits, list, pr-status, 
 ```
 Usage:
   levelrail-cli apps previews list [app-name] [flags]                list previews for an app, or across every app
+  levelrail-cli apps previews create <app-name> --pr N --image REF [flags]   deploy a CI-built image as a preview (aliases: ls for list, rm for teardown)
   levelrail-cli apps previews limits [app-name] [flags]              show or change preview caps, fork policy and TTL
   levelrail-cli apps previews approve <app-name> <pr-number> --yes   deploy a held fork pull request once
   levelrail-cli apps previews teardown <app-name> <pr-number> [flags]   tear down one PR's preview right now (alias: delete)

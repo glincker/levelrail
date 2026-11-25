@@ -424,6 +424,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handleCreatePackageRegistry": Operation("POST", "/api/v1/package-registries", True, False),
     "handleCreatePipeline": Operation("POST", "/api/v1/apps/{name}/pipelines", True, False),
     "handleCreatePolicy": Operation("POST", "/api/v1/iam/policies", True, False),
+    "handleCreatePreviewFromImage": Operation("POST", "/api/v1/apps/{name}/previews", True, False),
     "handleCreatePrivateNetwork": Operation("POST", "/api/v1/private-networks", True, False),
     "handleCreatePrivateNetworkRule": Operation("POST", "/api/v1/private-networks/rules", True, False),
     "handleCreateProject": Operation("POST", "/api/v1/projects", True, False),

@@ -416,6 +416,7 @@ var Operations = map[string]Operation{
 	"handleCreatePackageRegistry":              {Method: "POST", Path: "/api/v1/package-registries", HasBody: true, Stream: false},
 	"handleCreatePipeline":                     {Method: "POST", Path: "/api/v1/apps/{name}/pipelines", HasBody: true, Stream: false},
 	"handleCreatePolicy":                       {Method: "POST", Path: "/api/v1/iam/policies", HasBody: true, Stream: false},
+	"handleCreatePreviewFromImage":             {Method: "POST", Path: "/api/v1/apps/{name}/previews", HasBody: true, Stream: false},
 	"handleCreatePrivateNetwork":               {Method: "POST", Path: "/api/v1/private-networks", HasBody: true, Stream: false},
 	"handleCreatePrivateNetworkRule":           {Method: "POST", Path: "/api/v1/private-networks/rules", HasBody: true, Stream: false},
 	"handleCreateProject":                      {Method: "POST", Path: "/api/v1/projects", HasBody: true, Stream: false},
