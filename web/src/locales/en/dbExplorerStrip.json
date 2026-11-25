@@ -1,0 +1,22 @@
+{
+  "label": "Connection",
+  "mode": {
+    "readOnly": "Read only",
+    "writesOn": "Write unlocked",
+    "writesUntil": "Write unlocked until {{time}}"
+  },
+  "login": "Login",
+  "superuser": "superuser (platform)",
+  "path": "Path",
+  "direct": "Direct",
+  "viaNode": "via node {{node}}",
+  "external": "External {{target}}",
+  "credentials": "Credentials",
+  "managed": "Levelrail managed",
+  "stored": "Stored credential",
+  "networking": "Networking",
+  "access": "Access",
+  "notRunning": "The database is not running. Start it to use the explorer.",
+  "unreachable": "Could not read this database’s status.",
+  "retry": "Retry"
+}

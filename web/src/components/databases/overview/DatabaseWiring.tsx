@@ -240,11 +240,7 @@ export function DatabaseWiring({
                 <Edge tone={publicOn ? 'warn' : 'ok'} side="left" />
                 <WireCard
                   control={
-                    <Link
-                      to="/databases/$name/settings"
-                      params={{ name }}
-                      search={{ section: 'networking' }}
-                    />
+                    <Link to="/databases/$name/networking" params={{ name }} />
                   }
                   icon={<GlobeGlassIcon aria-hidden="true" />}
                   label={t('accessLabel')}
@@ -256,9 +252,8 @@ export function DatabaseWiring({
                   cta={
                     publicOn ? undefined : (
                       <Link
-                        to="/databases/$name/settings"
+                        to="/databases/$name/networking"
                         params={{ name }}
-                        search={{ section: 'networking' }}
                         className={CTA_CLASS}
                       >
                         {t('accessCta')}

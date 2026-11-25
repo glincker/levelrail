@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import en from '../locales/en/databases.json'
+import nav from '../locales/en/dbNav.json'
 import { DatabaseScopedSidebar } from './DatabaseScopedSidebar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 
@@ -49,7 +50,7 @@ describe('DatabaseScopedSidebar active nav state', () => {
   beforeEach(async () => {
     await i18n.use(initReactI18next).init({
       lng: 'en',
-      resources: { en: { databases: en } },
+      resources: { en: { databases: en, dbNav: nav } },
       defaultNS: 'databases',
     })
     // SidebarProvider's mobile-breakpoint detection (hooks/use-mobile.ts)

@@ -1,12 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-// Old tab URL: the content now lives in the Settings shell.
+// Old tab URL: Networking now has its own page.
 export const Route = createFileRoute('/databases/$name/network')({
   beforeLoad: ({ params }) => {
     redirect({
-      to: '/databases/$name/settings',
+      to: '/databases/$name/networking',
       params,
-      search: { section: 'networking' },
       throw: true,
     })
   },

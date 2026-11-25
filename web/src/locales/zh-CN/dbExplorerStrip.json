@@ -1,0 +1,22 @@
+{
+  "label": "连接",
+  "mode": {
+    "readOnly": "只读",
+    "writesOn": "写入已解锁",
+    "writesUntil": "写入已解锁至 {{time}}"
+  },
+  "login": "登录",
+  "superuser": "超级用户（平台）",
+  "path": "路径",
+  "direct": "直连",
+  "viaNode": "经由节点 {{node}}",
+  "external": "外部 {{target}}",
+  "credentials": "凭据",
+  "managed": "由 Levelrail 管理",
+  "stored": "已保存的凭据",
+  "networking": "网络",
+  "access": "访问",
+  "notRunning": "数据库未运行。请先启动它再使用浏览器。",
+  "unreachable": "无法读取此数据库的状态。",
+  "retry": "重试"
+}

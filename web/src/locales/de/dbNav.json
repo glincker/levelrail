@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "access": "Zugriff",
+    "networking": "Netzwerk",
+    "credentials": "Zugangsdaten"
+  },
+  "networking": {
+    "exposureTitle": "Erreichbarkeit",
+    "exposureDescription": "Wer diese Datenbank von außerhalb der Plattform erreichen kann.",
+    "current": "Aktuell",
+    "unavailable": "Nicht verfügbar",
+    "private": "Privat",
+    "privateHint": "Nur Apps im Plattformnetzwerk.",
+    "loopback": "Dieser Rechner",
+    "loopbackHint": "Host-Port nur auf 127.0.0.1.",
+    "public": "Öffentlich",
+    "publicHint": "Host-Port auf allen Schnittstellen. Erfordert erlaubte Quellen und TLS.",
+    "publicDisabled": "Öffentlicher Zugriff wird nicht angeboten: Dieser Host kann Quellregeln nicht durchsetzen. {{reason}}",
+    "changeNote": "Die Erreichbarkeit lässt sich auf dieser Seite noch nicht ändern. Nutzen Sie die Karten für Geltungsbereich und erlaubte Quellen unten."
+  },
+  "credentials": {
+    "title": "Zugangsdaten",
+    "description": "Die Plattform-Anmeldung dieser Datenbank: anzeigen oder rotieren.",
+    "sourceTitle": "Quelle der Zugangsdaten",
+    "managed": "Von Levelrail verwaltet",
+    "managedHint": "Levelrail erzeugt und speichert das Passwort."
+  },
+  "access": {
+    "title": "Zugriff",
+    "description": "Wer sich mit dieser Datenbank verbinden darf und was erlaubt ist.",
+    "credentialsChip": "Quelle der Zugangsdaten: von Levelrail verwaltet",
+    "keyvalueTitle": "Diese Engine hat in Levelrail noch keine Benutzeranmeldungen",
+    "keyvalueBody": "Der Standardbenutzer hat kein Passwort, daher sind Netzwerkregeln die Grenze. Öffnen Sie Netzwerk, um den Zugriff zu steuern.",
+    "memcachedTitle": "Memcached hat keine Authentifizierung",
+    "memcachedBody": "Halten Sie es privat oder auf Loopback. Öffnen Sie Netzwerk, um den Zugriff zu steuern.",
+    "otherTitle": "Datenbankbenutzer dieser Engine werden hier noch nicht verwaltet",
+    "otherBody": "Der Explorer nutzt die Plattform-Anmeldung, Schreibzugriff erfordert eine Freigabe. Öffnen Sie Netzwerk, um den Zugriff zu steuern.",
+    "openNetworking": "Netzwerk öffnen"
+  }
+}

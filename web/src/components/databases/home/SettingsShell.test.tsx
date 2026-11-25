@@ -49,7 +49,7 @@ function texts(root: HTMLElement) {
 describe('database home pages', () => {
   it('render no raw i18n keys', async () => {
     const inst = await setup()
-    const sections = ['general', 'networking', 'danger'] as const
+    const sections = ['general', 'danger'] as const
     for (const section of sections) {
       const { container, unmount } = render(
         <I18nextProvider i18n={inst}>

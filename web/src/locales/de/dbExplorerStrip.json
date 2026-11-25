@@ -1,0 +1,22 @@
+{
+  "label": "Verbindung",
+  "mode": {
+    "readOnly": "Nur Lesen",
+    "writesOn": "Schreiben freigegeben",
+    "writesUntil": "Schreiben freigegeben bis {{time}}"
+  },
+  "login": "Anmeldung",
+  "superuser": "Superuser (Plattform)",
+  "path": "Pfad",
+  "direct": "Direkt",
+  "viaNode": "über Knoten {{node}}",
+  "external": "Extern {{target}}",
+  "credentials": "Zugangsdaten",
+  "managed": "Von Levelrail verwaltet",
+  "stored": "Gespeicherte Zugangsdaten",
+  "networking": "Netzwerk",
+  "access": "Zugriff",
+  "notRunning": "Die Datenbank läuft nicht. Starten Sie sie, um den Explorer zu nutzen.",
+  "unreachable": "Der Status dieser Datenbank konnte nicht gelesen werden.",
+  "retry": "Erneut versuchen"
+}

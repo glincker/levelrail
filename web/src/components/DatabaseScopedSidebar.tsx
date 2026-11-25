@@ -5,6 +5,8 @@ import {
   ArrowLeftGlassIcon,
   GitBranchGlassIcon,
   GaugeGlassIcon,
+  KeyGlassIcon,
+  NetworkGlassIcon,
   LayoutGridGlassIcon,
   PuzzleGlassIcon,
   SettingsGlassIcon,
@@ -38,6 +40,7 @@ const SETTINGS_PATHS = ['/settings']
 
 export function DatabaseScopedSidebar({ name }: { name: string }) {
   const { t } = useTranslation('databases')
+  const { t: tn } = useTranslation('dbNav')
   const { data: database } = useDatabase(name)
   const { data: conditions } = useDatabaseStatus(name)
   const caps = useExplorerCapabilities(name).data
@@ -102,68 +105,6 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={
-                  <Link to="/databases/$name/branches" params={{ name }} />
-                }
-                isActive={is('/branches')}
-                tooltip={t('home.nav.branches')}
-              >
-                <GitBranchGlassIcon size="1.4em" />
-                <span>{t('home.nav.branches')}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            {!database.external ? (
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={
-                    <Link to="/databases/$name/metrics" params={{ name }} />
-                  }
-                  isActive={inGroup(MONITORING_PATHS)}
-                  tooltip={t('home.nav.monitoring')}
-                >
-                  <GaugeGlassIcon size="1.4em" />
-                  <span>{t('home.nav.monitoring')}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ) : null}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={
-                  <Link to="/databases/$name/integrations" params={{ name }} />
-                }
-                isActive={is('/integrations')}
-                tooltip={t('home.nav.integrations')}
-              >
-                <PuzzleGlassIcon size="1.4em" />
-                <span>{t('home.nav.integrations')}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={
-                  <Link
-                    to="/databases/$name/settings"
-                    params={{ name }}
-                    search={{ section: 'general' }}
-                  />
-                }
-                isActive={inGroup(SETTINGS_PATHS)}
-                tooltip={t('home.nav.settings')}
-              >
-                <SettingsGlassIcon size="1.4em" />
-                <span>{t('home.nav.settings')}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-
-      <SidebarGroup>
-        <SidebarGroupLabel>{t('home.nav.data')}</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={
                   <Link to="/databases/$name/explorer" params={{ name }} />
                 }
                 isActive={is('/explorer')}
@@ -208,12 +149,90 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
             ) : null}
             <SidebarMenuItem>
               <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/branches" params={{ name }} />
+                }
+                isActive={is('/branches')}
+                tooltip={t('home.nav.branches')}
+              >
+                <GitBranchGlassIcon size="1.4em" />
+                <span>{t('home.nav.branches')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/networking" params={{ name }} />
+                }
+                isActive={is('/networking')}
+                tooltip={tn('nav.networking')}
+              >
+                <NetworkGlassIcon size="1.4em" />
+                <span>{tn('nav.networking')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
                 render={<Link to="/databases/$name/access" params={{ name }} />}
                 isActive={is('/access')}
-                tooltip={t('home.nav.users')}
+                tooltip={tn('nav.access')}
               >
                 <UsersGlassIcon size="1.4em" />
-                <span>{t('home.nav.users')}</span>
+                <span>{tn('nav.access')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/credentials" params={{ name }} />
+                }
+                isActive={is('/credentials')}
+                tooltip={tn('nav.credentials')}
+              >
+                <KeyGlassIcon size="1.4em" />
+                <span>{tn('nav.credentials')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {!database.external ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={
+                    <Link to="/databases/$name/metrics" params={{ name }} />
+                  }
+                  isActive={inGroup(MONITORING_PATHS)}
+                  tooltip={t('home.nav.monitoring')}
+                >
+                  <GaugeGlassIcon size="1.4em" />
+                  <span>{t('home.nav.monitoring')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : null}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/integrations" params={{ name }} />
+                }
+                isActive={is('/integrations')}
+                tooltip={t('home.nav.integrations')}
+              >
+                <PuzzleGlassIcon size="1.4em" />
+                <span>{t('home.nav.integrations')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link
+                    to="/databases/$name/settings"
+                    params={{ name }}
+                    search={{ section: 'general' }}
+                  />
+                }
+                isActive={inGroup(SETTINGS_PATHS)}
+                tooltip={t('home.nav.settings')}
+              >
+                <SettingsGlassIcon size="1.4em" />
+                <span>{t('home.nav.settings')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

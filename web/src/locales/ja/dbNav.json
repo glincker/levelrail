@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "access": "アクセス",
+    "networking": "ネットワーク",
+    "credentials": "認証情報"
+  },
+  "networking": {
+    "exposureTitle": "公開範囲",
+    "exposureDescription": "プラットフォームの外からこのデータベースに到達できる相手。",
+    "current": "現在",
+    "unavailable": "利用不可",
+    "private": "プライベート",
+    "privateHint": "プラットフォームのネットワーク内のアプリのみ。",
+    "loopback": "このマシン",
+    "loopbackHint": "ホストポートは127.0.0.1のみ。",
+    "public": "公開",
+    "publicHint": "ホストポートを全インターフェースで公開。許可する接続元とTLSが必要です。",
+    "publicDisabled": "このホストは接続元ルールを適用できないため、公開アクセスは提供されません。{{reason}}",
+    "changeNote": "このページからは公開範囲をまだ変更できません。下のスコープと許可する接続元のカードを使ってください。"
+  },
+  "credentials": {
+    "title": "認証情報",
+    "description": "このデータベースのプラットフォームログイン。表示またはローテーションできます。",
+    "sourceTitle": "認証情報の取得元",
+    "managed": "Levelrail管理",
+    "managedHint": "Levelrailがパスワードを生成して保管します。"
+  },
+  "access": {
+    "title": "アクセス",
+    "description": "このデータベースに接続できる相手と、できること。",
+    "credentialsChip": "認証情報の取得元: Levelrail管理",
+    "keyvalueTitle": "このエンジンはLevelrailでまだユーザー別ログインに対応していません",
+    "keyvalueBody": "デフォルトユーザーにはパスワードがないため、ネットワークルールが境界になります。ネットワークを開いて到達できる相手を制御してください。",
+    "memcachedTitle": "Memcachedには認証がありません",
+    "memcachedBody": "プライベートまたはループバックに保ってください。ネットワークを開いて到達できる相手を制御してください。",
+    "otherTitle": "このエンジンのデータベースユーザーはまだここで管理できません",
+    "otherBody": "エクスプローラーはプラットフォームログインで接続し、書き込みにはロック解除が必要です。ネットワークを開いて到達できる相手を制御してください。",
+    "openNetworking": "ネットワークを開く"
+  }
+}

@@ -81,6 +81,8 @@ import type dns01 from '../locales/en/dns01.json'
 import type ingressProtection from '../locales/en/ingressProtection.json'
 import type platformSettings from '../locales/en/platformSettings.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
+import type dbNav from '../locales/en/dbNav.json'
+import type dbExplorerStrip from '../locales/en/dbExplorerStrip.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type databaseVersions from '../locales/en/databaseVersions.json'
 import type iam from '../locales/en/iam.json'
@@ -263,6 +265,8 @@ declare module 'i18next' {
       dns01: typeof dns01
       ingressProtection: typeof ingressProtection
       databaseAccess: typeof databaseAccess
+      dbNav: typeof dbNav
+      dbExplorerStrip: typeof dbExplorerStrip
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions
       iam: typeof iam

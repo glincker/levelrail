@@ -1,0 +1,22 @@
+{
+  "label": "Conexión",
+  "mode": {
+    "readOnly": "Solo lectura",
+    "writesOn": "Escritura desbloqueada",
+    "writesUntil": "Escritura desbloqueada hasta las {{time}}"
+  },
+  "login": "Acceso",
+  "superuser": "superusuario (plataforma)",
+  "path": "Ruta",
+  "direct": "Directa",
+  "viaNode": "vía nodo {{node}}",
+  "external": "Externa {{target}}",
+  "credentials": "Credenciales",
+  "managed": "Gestionadas por Levelrail",
+  "stored": "Credencial guardada",
+  "networking": "Red",
+  "access": "Acceso",
+  "notRunning": "La base de datos no está en ejecución. Inícialo para usar el explorador.",
+  "unreachable": "No se pudo leer el estado de esta base de datos.",
+  "retry": "Reintentar"
+}

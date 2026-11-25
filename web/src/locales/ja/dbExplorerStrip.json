@@ -1,0 +1,22 @@
+{
+  "label": "接続",
+  "mode": {
+    "readOnly": "読み取り専用",
+    "writesOn": "書き込みロック解除中",
+    "writesUntil": "{{time}}まで書き込みロック解除中"
+  },
+  "login": "ログイン",
+  "superuser": "スーパーユーザー(プラットフォーム)",
+  "path": "経路",
+  "direct": "直接",
+  "viaNode": "ノード{{node}}経由",
+  "external": "外部 {{target}}",
+  "credentials": "認証情報",
+  "managed": "Levelrail管理",
+  "stored": "保存済みの認証情報",
+  "networking": "ネットワーク",
+  "access": "アクセス",
+  "notRunning": "データベースが実行されていません。エクスプローラーを使うには起動してください。",
+  "unreachable": "このデータベースの状態を読み取れませんでした。",
+  "retry": "再試行"
+}

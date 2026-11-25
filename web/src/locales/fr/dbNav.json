@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "access": "Accès",
+    "networking": "Réseau",
+    "credentials": "Identifiants"
+  },
+  "networking": {
+    "exposureTitle": "Exposition",
+    "exposureDescription": "Qui peut joindre cette base de données depuis l’extérieur de la plateforme.",
+    "current": "Actuel",
+    "unavailable": "Indisponible",
+    "private": "Privée",
+    "privateHint": "Uniquement les apps du réseau de la plateforme.",
+    "loopback": "Cette machine",
+    "loopbackHint": "Port hôte sur 127.0.0.1 uniquement.",
+    "public": "Publique",
+    "publicHint": "Port hôte sur toutes les interfaces. Exige des sources autorisées et TLS.",
+    "publicDisabled": "L’accès public n’est pas proposé : cet hôte ne peut pas appliquer de règles de source. {{reason}}",
+    "changeNote": "L’exposition ne peut pas encore être modifiée depuis cette page. Utilisez les cartes de portée et de sources autorisées ci-dessous."
+  },
+  "credentials": {
+    "title": "Identifiants",
+    "description": "Le compte de la plateforme pour cette base de données : l’afficher ou le renouveler.",
+    "sourceTitle": "Source des identifiants",
+    "managed": "Gérés par Levelrail",
+    "managedHint": "Levelrail génère et stocke le mot de passe."
+  },
+  "access": {
+    "title": "Accès",
+    "description": "Qui peut se connecter à cette base de données et ce qu’il peut faire.",
+    "credentialsChip": "Source des identifiants : gérés par Levelrail",
+    "keyvalueTitle": "Ce moteur n’a pas encore de connexions par utilisateur dans Levelrail",
+    "keyvalueBody": "L’utilisateur par défaut n’a pas de mot de passe, les règles réseau sont donc la frontière. Ouvrez Réseau pour contrôler qui peut y accéder.",
+    "memcachedTitle": "Memcached n’a pas d’authentification",
+    "memcachedBody": "Gardez-le privé ou en loopback. Ouvrez Réseau pour contrôler qui peut y accéder.",
+    "otherTitle": "Les utilisateurs de ce moteur ne sont pas encore gérés ici",
+    "otherBody": "L’explorateur se connecte avec le compte de la plateforme et les écritures demandent un déverrouillage. Ouvrez Réseau pour contrôler qui peut y accéder.",
+    "openNetworking": "Ouvrir Réseau"
+  }
+}

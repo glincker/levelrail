@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "access": "访问",
+    "networking": "网络",
+    "credentials": "凭据"
+  },
+  "networking": {
+    "exposureTitle": "暴露范围",
+    "exposureDescription": "谁可以从平台外部访问此数据库。",
+    "current": "当前",
+    "unavailable": "不可用",
+    "private": "私有",
+    "privateHint": "仅平台网络内的应用。",
+    "loopback": "本机",
+    "loopbackHint": "主机端口仅绑定 127.0.0.1。",
+    "public": "公开",
+    "publicHint": "主机端口绑定所有接口。需要允许的来源和 TLS。",
+    "publicDisabled": "不提供公开访问：此主机无法强制执行来源规则。{{reason}}",
+    "changeNote": "暂时无法在此页面更改暴露范围。请使用下方的范围和允许来源卡片。"
+  },
+  "credentials": {
+    "title": "凭据",
+    "description": "此数据库的平台登录：可查看或轮换。",
+    "sourceTitle": "凭据来源",
+    "managed": "由 Levelrail 管理",
+    "managedHint": "Levelrail 生成并保存密码。"
+  },
+  "access": {
+    "title": "访问",
+    "description": "谁可以连接此数据库以及可以做什么。",
+    "credentialsChip": "凭据来源：由 Levelrail 管理",
+    "keyvalueTitle": "此引擎在 Levelrail 中尚无按用户登录",
+    "keyvalueBody": "默认用户没有密码，因此网络规则就是边界。打开网络以控制谁可以访问。",
+    "memcachedTitle": "Memcached 没有身份验证",
+    "memcachedBody": "请保持私有或仅回环。打开网络以控制谁可以访问。",
+    "otherTitle": "此引擎的数据库用户暂不在此管理",
+    "otherBody": "浏览器使用平台登录连接，写入需要先解锁。打开网络以控制谁可以访问。",
+    "openNetworking": "打开网络"
+  }
+}

@@ -11,16 +11,6 @@ import { MoveToProjectDialog } from '../../MoveToProjectDialog'
 import { ResourceLabelsCard } from '../../ResourceLabelsCard'
 import { DeleteDatabaseDialog } from '../../DeleteDatabaseDialog'
 
-const NetworkPanel = lazy(() =>
-  import('../../databaseNetwork/NetworkPanel').then((m) => ({
-    default: m.NetworkPanel,
-  })),
-)
-const AccessPanel = lazy(() =>
-  import('../../databaseAccess/AccessPanel').then((m) => ({
-    default: m.AccessPanel,
-  })),
-)
 const UpgradesPanel = lazy(() =>
   import('../../databaseUpgrades/UpgradesPanel').then((m) => ({
     default: m.UpgradesPanel,
@@ -94,8 +84,7 @@ function DangerSection({ name }: { name: string }) {
   )
 }
 
-// Regroups the former Network, Access and Upgrades tabs without changing
-// their behavior; the section lives in the URL so old links redirect here.
+// General, backups and danger zone; Networking and Credentials have own pages.
 export function SettingsShell({
   name,
   section,
@@ -133,12 +122,6 @@ export function SettingsShell({
       <div className="min-w-0">
         <Suspense fallback={null}>
           {section === 'general' ? <GeneralSection name={name} /> : null}
-          {section === 'networking' ? (
-            <NetworkPanel databaseName={name} />
-          ) : null}
-          {section === 'credentials' ? (
-            <AccessPanel databaseName={name} />
-          ) : null}
           {section === 'backups' ? <UpgradesPanel databaseName={name} /> : null}
           {section === 'danger' ? <DangerSection name={name} /> : null}
         </Suspense>

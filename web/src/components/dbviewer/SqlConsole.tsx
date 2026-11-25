@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  LockGlassIcon,
   PlayGlassIcon,
   SaveGlassIcon,
   TriangleAlertGlassIcon,
 } from '@thesvg/ui-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -22,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
+import { useWriteUnlock } from '../../hooks/useWriteUnlock'
 import { useRunDatabaseQuery, useSaveQuery } from '../../queries/databaseViewer'
 import type { DbQueryResponse } from '../../types/databaseViewer'
 import { HistoryPanel, SavedPanel } from './ConsoleSidePanels'
@@ -39,7 +38,8 @@ export function SqlConsole({
 }) {
   const { t } = useTranslation('databases')
   const [sql, setSql] = useState(initialSql)
-  const [writes, setWrites] = useState(false)
+  const unlock = useWriteUnlock(databaseName)
+  const writes = unlock.unlocked
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [saveOpen, setSaveOpen] = useState(false)
@@ -76,28 +76,12 @@ export function SqlConsole({
       setConfirmOpen(true)
       return
     }
-    setWrites(false)
+    unlock.lock()
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          {writes ? (
-            <Badge variant="destructive">
-              <TriangleAlertGlassIcon
-                className="size-6 text-tone-warning"
-                aria-hidden="true"
-              />
-              {t('viewer.console.writesOn')}
-            </Badge>
-          ) : (
-            <Badge variant="muted">
-              <LockGlassIcon className="size-4.5" aria-hidden="true" />
-              {t('viewer.console.readOnly')}
-            </Badge>
-          )}
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <label className="flex items-center gap-2 text-sm">
           <Switch checked={writes} onCheckedChange={onToggleWrites} />
           <span>{t('viewer.console.writeToggle')}</span>
@@ -250,7 +234,7 @@ export function SqlConsole({
               variant="destructive"
               disabled={confirmText !== databaseName}
               onClick={() => {
-                setWrites(true)
+                unlock.unlock()
                 setConfirmOpen(false)
               }}
             >

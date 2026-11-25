@@ -11,8 +11,11 @@ import type { DatabaseResource } from '../../../types/databaseDetail'
 interface Row {
   key: 'engine' | 'backups' | 'network' | 'access' | 'upgrades'
   status: string
-  to: '/databases/$name/settings' | '/databases/$name/access'
-  section?: 'general' | 'networking' | 'backups'
+  to:
+    | '/databases/$name/settings'
+    | '/databases/$name/access'
+    | '/databases/$name/networking'
+  section?: 'general' | 'backups'
 }
 
 // Rows only restate fields the database resource already carries.
@@ -42,8 +45,7 @@ function useRows(db: DatabaseResource): Row[] {
     {
       key: 'network',
       status: network,
-      to: '/databases/$name/settings',
-      section: 'networking',
+      to: '/databases/$name/networking',
     },
     {
       key: 'access',

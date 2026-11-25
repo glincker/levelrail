@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "access": "Acceso",
+    "networking": "Red",
+    "credentials": "Credenciales"
+  },
+  "networking": {
+    "exposureTitle": "Exposición",
+    "exposureDescription": "Quién puede llegar a esta base de datos desde fuera de la plataforma.",
+    "current": "Actual",
+    "unavailable": "No disponible",
+    "private": "Privada",
+    "privateHint": "Solo apps en la red de la plataforma.",
+    "loopback": "Esta máquina",
+    "loopbackHint": "Puerto del host solo en 127.0.0.1.",
+    "public": "Pública",
+    "publicHint": "Puerto del host en todas las interfaces. Requiere orígenes permitidos y TLS.",
+    "publicDisabled": "El acceso público no se ofrece: este host no puede aplicar reglas de origen. {{reason}}",
+    "changeNote": "Aún no se puede cambiar la exposición desde esta página. Usa las tarjetas de alcance y orígenes permitidos de abajo."
+  },
+  "credentials": {
+    "title": "Credenciales",
+    "description": "El acceso de la plataforma a esta base de datos: mostrarlo o rotarlo.",
+    "sourceTitle": "Origen de las credenciales",
+    "managed": "Gestionadas por Levelrail",
+    "managedHint": "Levelrail genera y guarda la contraseña."
+  },
+  "access": {
+    "title": "Acceso",
+    "description": "Quién puede conectarse a esta base de datos y qué puede hacer.",
+    "credentialsChip": "Origen de las credenciales: gestionadas por Levelrail",
+    "keyvalueTitle": "Este motor aún no tiene inicios de sesión por usuario en Levelrail",
+    "keyvalueBody": "El usuario por defecto no tiene contraseña, así que las reglas de red son el límite. Abre Red para controlar quién puede llegar.",
+    "memcachedTitle": "Memcached no tiene autenticación",
+    "memcachedBody": "Mantenlo privado o en loopback. Abre Red para controlar quién puede llegar.",
+    "otherTitle": "Los usuarios de este motor aún no se gestionan aquí",
+    "otherBody": "El explorador se conecta con el acceso de la plataforma y las escrituras requieren un desbloqueo. Abre Red para controlar quién puede llegar.",
+    "openNetworking": "Abrir Red"
+  }
+}

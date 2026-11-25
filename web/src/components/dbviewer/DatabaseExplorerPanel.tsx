@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDatabase } from '../../queries/databases'
 import { BetaBadge } from '../BetaBadge'
+import { ExplorerStatusStrip } from './ExplorerStatusStrip'
 import { SchemaExplorer } from './SchemaExplorer'
 import { EngineStatsPanel } from './EngineStatsPanel'
 import {
@@ -39,6 +40,10 @@ export function DatabaseExplorerPanel({
           : t('viewer.explorer.title')}
         <BetaBadge />
       </h1>
+      <ExplorerStatusStrip
+        databaseName={databaseName}
+        writable={SQL_ENGINES.has(engine)}
+      />
       {SQL_ENGINES.has(engine) ? (
         <SchemaExplorer databaseName={databaseName} />
       ) : KV_ENGINES.has(engine) ? (

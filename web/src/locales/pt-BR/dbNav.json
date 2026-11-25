@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "access": "Acesso",
+    "networking": "Rede",
+    "credentials": "Credenciais"
+  },
+  "networking": {
+    "exposureTitle": "Exposição",
+    "exposureDescription": "Quem pode alcançar este banco de dados de fora da plataforma.",
+    "current": "Atual",
+    "unavailable": "Indisponível",
+    "private": "Privado",
+    "privateHint": "Somente apps na rede da plataforma.",
+    "loopback": "Esta máquina",
+    "loopbackHint": "Porta do host apenas em 127.0.0.1.",
+    "public": "Público",
+    "publicHint": "Porta do host em todas as interfaces. Exige origens permitidas e TLS.",
+    "publicDisabled": "O acesso público não é oferecido: este host não consegue aplicar regras de origem. {{reason}}",
+    "changeNote": "Ainda não é possível alterar a exposição nesta página. Use os cartões de escopo e origens permitidas abaixo."
+  },
+  "credentials": {
+    "title": "Credenciais",
+    "description": "O login da plataforma neste banco de dados: revelar ou rotacionar.",
+    "sourceTitle": "Origem das credenciais",
+    "managed": "Gerenciadas pela Levelrail",
+    "managedHint": "A Levelrail gera e guarda a senha."
+  },
+  "access": {
+    "title": "Acesso",
+    "description": "Quem pode se conectar a este banco de dados e o que pode fazer.",
+    "credentialsChip": "Origem das credenciais: gerenciadas pela Levelrail",
+    "keyvalueTitle": "Este mecanismo ainda não tem logins por usuário na Levelrail",
+    "keyvalueBody": "O usuário padrão não tem senha, então as regras de rede são o limite. Abra Rede para controlar quem pode alcançá-lo.",
+    "memcachedTitle": "O Memcached não tem autenticação",
+    "memcachedBody": "Mantenha privado ou em loopback. Abra Rede para controlar quem pode alcançá-lo.",
+    "otherTitle": "Usuários deste mecanismo ainda não são gerenciados aqui",
+    "otherBody": "O explorador conecta com o login da plataforma e gravações exigem desbloqueio. Abra Rede para controlar quem pode alcançá-lo.",
+    "openNetworking": "Abrir Rede"
+  }
+}

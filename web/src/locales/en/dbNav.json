@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "access": "Access",
+    "networking": "Networking",
+    "credentials": "Credentials"
+  },
+  "networking": {
+    "exposureTitle": "Exposure",
+    "exposureDescription": "Who can reach this database from outside the platform.",
+    "current": "Current",
+    "unavailable": "Not available",
+    "private": "Private",
+    "privateHint": "Only apps on the platform network.",
+    "loopback": "This machine",
+    "loopbackHint": "Host port on 127.0.0.1 only.",
+    "public": "Public",
+    "publicHint": "Host port on all interfaces. Needs allowed sources and TLS.",
+    "publicDisabled": "Public access is not offered: this host cannot enforce source rules. {{reason}}",
+    "changeNote": "Changing exposure from this page is not available yet. Use the scope and allowed sources cards below."
+  },
+  "credentials": {
+    "title": "Credentials",
+    "description": "The platform login for this database: reveal it or rotate it.",
+    "sourceTitle": "Credentials source",
+    "managed": "Levelrail managed",
+    "managedHint": "Levelrail generates and stores the password."
+  },
+  "access": {
+    "title": "Access",
+    "description": "Who can connect to this database and what they can do.",
+    "credentialsChip": "Credentials source: Levelrail managed",
+    "keyvalueTitle": "This engine has no per user logins in Levelrail yet",
+    "keyvalueBody": "The default user has no password, so network rules are the boundary. Open Networking to control who can reach it.",
+    "memcachedTitle": "Memcached has no authentication",
+    "memcachedBody": "Keep it private or on loopback. Open Networking to control who can reach it.",
+    "otherTitle": "Database users for this engine are not managed here yet",
+    "otherBody": "The explorer connects with the platform login and writes need an unlock. Open Networking to control who can reach it.",
+    "openNetworking": "Open Networking"
+  }
+}

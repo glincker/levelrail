@@ -55,6 +55,8 @@ export const NAMESPACES = [
   'appExposure',
   'appAccess',
   'databaseAccess',
+  'dbNav',
+  'dbExplorerStrip',
   'databaseUpgrades',
   'databaseVersions',
   'iam',

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDatabaseNetwork } from '../../queries/databaseAccess'
+import { ExposureCard } from './ExposureCard'
 import { AllowedSourcesCard } from './AllowedSourcesCard'
 import { ReachabilityCard } from './ReachabilityCard'
 import { ScopeCard } from './ScopeCard'
@@ -43,6 +44,7 @@ export function NetworkPanel({ databaseName }: { databaseName: string }) {
             disabled={!canEdit}
             className="m-0 min-w-0 space-y-4 border-0 p-0"
           >
+            <ExposureCard network={data} />
             <ReachabilityCard databaseName={databaseName} network={data} />
             <AllowedSourcesCard databaseName={databaseName} network={data} />
             <ScopeCard
