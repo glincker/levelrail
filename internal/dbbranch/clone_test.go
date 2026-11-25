@@ -26,6 +26,9 @@ func (f *fakeCloneStore) UpdateDatabaseBranchState(_ context.Context, _, from, t
 	f.reason = reason
 	return nil
 }
+func (f *fakeCloneStore) GetDatabaseBranch(context.Context, string) (store.DatabaseBranch, error) {
+	return store.DatabaseBranch{ID: "b1"}, nil
+}
 func (f *fakeCloneStore) SetDatabaseBranchClone(_ context.Context, _, _, reason, _ string) error {
 	f.clone = reason
 	return nil
@@ -37,10 +40,14 @@ func (f *fakeCloneStore) SetDatabaseBranchSize(context.Context, string, int64, s
 type fakeDumper struct {
 	err        error
 	schemaOnly bool
+	body       io.Reader
 }
 
 func (d *fakeDumper) Dump(_ context.Context, _, _ string, schemaOnly bool) (io.ReadCloser, string, error) {
 	d.schemaOnly = schemaOnly
+	if d.body != nil {
+		return io.NopCloser(d.body), "best_effort", d.err
+	}
 	return io.NopCloser(strings.NewReader("dump")), "best_effort", d.err
 }
 
@@ -135,5 +142,44 @@ func TestExpiryJobDeletesDueAndSkipsProtectedAndParents(t *testing.T) {
 	}
 	if len(warned) != 1 || warned[0] != "kid" {
 		t.Fatalf("warned once expected, got %v", warned)
+	}
+}
+
+type errAfterReader struct{ sent bool }
+
+func (r *errAfterReader) Read(p []byte) (int, error) {
+	if !r.sent {
+		r.sent = true
+		return copy(p, "partial"), nil
+	}
+	return 0, errors.New("pq: copy failed on row 7 secret-value")
+}
+
+func TestCloneTruncatedDumpFailsWithFixedReason(t *testing.T) {
+	s := &fakeCloneStore{}
+	var torn []string
+	c := newCloner(s, &fakeDumper{body: &errAfterReader{}}, fakeRestorer{}, &torn)
+	err := c.Run(context.Background(), store.DatabaseBranch{ID: "b1", DatabaseName: "br", ParentName: "p", State: StateRequested}, "postgres")
+	if err == nil || strings.Contains(err.Error(), "secret-value") || strings.Contains(s.reason, "secret-value") {
+		t.Fatalf("err=%v reason=%q", err, s.reason)
+	}
+	if s.reason != "clone failed at step dump (postgres)" || len(torn) != 1 || s.states[len(s.states)-1] != "cloning>failed" {
+		t.Fatalf("reason=%q torn=%v states=%v", s.reason, torn, s.states)
+	}
+}
+
+func TestCloneEmptyBranchFailsVerify(t *testing.T) {
+	s := &fakeCloneStore{}
+	var torn []string
+	c := newCloner(s, &fakeDumper{}, fakeRestorer{}, &torn)
+	c.Count = func(_ context.Context, _, container string) (int64, error) {
+		if container == "c-p" {
+			return 5, nil
+		}
+		return 0, nil
+	}
+	err := c.Run(context.Background(), store.DatabaseBranch{ID: "b1", DatabaseName: "br", ParentName: "p", State: StateRequested}, "redis")
+	if err == nil || s.reason != "clone failed at step verify (redis)" {
+		t.Fatalf("err=%v reason=%q", err, s.reason)
 	}
 }
