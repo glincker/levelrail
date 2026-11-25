@@ -1,9 +1,12 @@
 package api
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/dbviewer"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -55,5 +58,16 @@ func TestMongoGateLimitsPerDatabaseAndPrincipal(t *testing.T) {
 	}
 	if len(g.busy) != 0 {
 		t.Errorf("busy map leaked: %v", g.busy)
+	}
+}
+
+func TestMongoHistoryErrorHidesFilterValues(t *testing.T) {
+	t.Parallel()
+	err := &dbviewer.QueryError{Message: `E11000 duplicate key { email: "a@b.c" }`}
+	if got := mongoHistoryError(err); got != "query rejected by server" || strings.Contains(got, "a@b.c") {
+		t.Fatalf("history error = %q", got)
+	}
+	if got := mongoHistoryError(errors.New("boom")); got != "internal error" {
+		t.Fatalf("history error = %q", got)
 	}
 }

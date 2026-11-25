@@ -115,13 +115,23 @@ func (rt *Router) runMongo(w http.ResponseWriter, r *http.Request, target dbview
 	}
 	if err != nil {
 		rt.logger.Info("api: mongo viewer read failed", attrs...)
-		rt.recordQuery(r, desired.Name, "mongo", label, q.Fingerprint, false, queryErrorText(err), 0, 0)
+		rt.recordQuery(r, desired.Name, "mongo", label, q.Fingerprint, false, mongoHistoryError(err), 0, 0)
 		rt.writeViewerError(w, "api: mongo viewer read failed", desired.Name, err)
 		return dbviewer.MongoResult{}, q, false
 	}
 	rt.logger.Info("api: mongo viewer read", append(attrs, slog.Int("docs", len(res.Documents)), slog.Int64("duration_ms", res.DurationMs))...)
 	rt.recordQuery(r, desired.Name, "mongo", label, q.Fingerprint, true, "", res.DurationMs, len(res.Documents))
 	return res, q, true
+}
+
+// mongoHistoryError keeps server error text out of history: it can echo filter
+// values. The full message still goes back in the HTTP response.
+func mongoHistoryError(err error) string {
+	var qe *dbviewer.QueryError
+	if errors.As(err, &qe) {
+		return "query rejected by server"
+	}
+	return queryErrorText(err)
 }
 
 type mongoCollectionsResponse struct {
@@ -187,10 +197,8 @@ func (rt *Router) handleMongoFind(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, int64(4*target.Limits.SQLBytes+mongoBodyMargin))
-	var body mongoFindRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	body, ok := decodeJSON[mongoFindRequest](w, r, int64(4*target.Limits.SQLBytes+mongoBodyMargin))
+	if !ok {
 		return
 	}
 	res, q, ok := rt.runMongo(w, r, target, desired, dbviewer.MongoRequest{

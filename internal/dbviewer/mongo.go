@@ -31,8 +31,10 @@ type MongoResult struct {
 
 // mongoCmd runs mongosh in the container. Credentials come from the
 // container's own environment inside the script, never from an argument.
-func mongoCmd() []string {
-	return []string{"sh", "-c", "exec mongosh --quiet --norc --file /dev/stdin"}
+func mongoCmd(timeout time.Duration) []string {
+	// timeout(1) makes a stuck exec end inside the container, not only on our side.
+	secs := max(1, int((timeout+time.Second-1)/time.Second))
+	return []string{"sh", "-c", fmt.Sprintf("exec timeout -k 2 %d mongosh --quiet --norc --file /dev/stdin", secs)}
 }
 
 func jsLit(s string) string {
@@ -102,12 +104,12 @@ func mongoOverviewScript(database string) string {
 	if database != "" {
 		dbs = `[` + jsLit(database) + `]`
 	}
-	return `var left=SR,DBS=db.getMongo().getDBs().databases;` + dbs + `.forEach(function(dn){var d=db.getSiblingDB(dn);` +
+	return `var left=SR,DBS=db.getMongo().getDBs().databases;` + dbs + `.forEach(function(dn){if(left<=0){return;}var d=db.getSiblingDB(dn);` +
 		`print(JSON.stringify({kind:"db",name:dn,sizeOnDisk:Number((DBS.filter(function(x){return x.name===dn;})[0]||{}).sizeOnDisk||0)}));` +
-		`d.getCollectionInfos({},true).forEach(function(ci){if(left<=0||ci.name.toLowerCase().indexOf("system.")===0){return;}left--;` +
+		`d.runCommand({listCollections:1,nameOnly:true,maxTimeMS:MS,cursor:{batchSize:1048576}}).cursor.firstBatch.forEach(function(ci){if(left<=0||ci.name.toLowerCase().indexOf("system.")===0){return;}left--;` +
 		`var o={kind:"collection",db:dn,name:ci.name,type:ci.type,count:0,size:0,storageSize:0,indexes:[]};` +
 		`try{if(ci.type==="collection"){var c=d.getCollection(ci.name);o.count=Number(c.estimatedDocumentCount({maxTimeMS:MS}));` +
-		`var s=d.runCommand({collStats:ci.name});o.size=Number(s.size||0);o.storageSize=Number(s.storageSize||0);` +
+		`var s=d.runCommand({collStats:ci.name,maxTimeMS:MS});o.size=Number(s.size||0);o.storageSize=Number(s.storageSize||0);` +
 		`o.indexes=c.getIndexes().map(function(x){return {name:x.name,key:x.key,unique:!!x.unique};});}}catch(e){o.error=String(e.message||e);}` +
 		`print(JSON.stringify(o));});});if(left<=0){print("` + mongoMoreMark + `");}`
 }
@@ -118,7 +120,7 @@ func (t Target) RunMongo(ctx context.Context, q MongoQuery) (MongoResult, error)
 	defer cancel()
 
 	start := time.Now()
-	rc, err := t.Exec.ExecWithInput(ctx, t.ContainerID, mongoCmd(), strings.NewReader(q.script))
+	rc, err := t.Exec.ExecWithInput(ctx, t.ContainerID, mongoCmd(t.Limits.Timeout), strings.NewReader(q.script))
 	if err != nil {
 		return MongoResult{}, wrapExecError(ctx, err)
 	}

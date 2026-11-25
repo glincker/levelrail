@@ -154,3 +154,25 @@ func TestRunMongoEndMarkerAndCursor(t *testing.T) {
 		t.Fatalf("oversized line must truncate, got %+v %v", res, err)
 	}
 }
+
+func TestMongoCmdWrapsInTimeout(t *testing.T) {
+	cmd := mongoCmd(15 * time.Second)
+	if !strings.Contains(cmd[2], "exec timeout -k 2 15 mongosh") {
+		t.Fatalf("cmd = %v", cmd)
+	}
+	if got := mongoCmd(1500 * time.Millisecond)[2]; !strings.Contains(got, "timeout -k 2 2 ") {
+		t.Fatalf("cmd = %s", got)
+	}
+}
+
+func TestMongoOverviewScriptIsBounded(t *testing.T) {
+	q, err := CheckMongo(MongoRequest{Op: MongoCollections}, mongoTestLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range []string{`collStats:ci.name,maxTimeMS:MS`, `listCollections:1,nameOnly:true,maxTimeMS:MS`, `if(left<=0){return;}var d=`} {
+		if !strings.Contains(q.script, w) {
+			t.Errorf("overview script missing %s", w)
+		}
+	}
+}
