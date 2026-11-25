@@ -1020,7 +1020,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/pooler | AbilityRead | handleGetDatabasePooler |
 | POST | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleEnableDatabasePooler |
 | DELETE | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleDisableDatabasePooler |
-| POST | /api/v1/databases/{name}/branches | AbilityWriteSensitive | handleBranchDatabase |
+| POST | /api/v1/databases/{name}/branches | AbilityRoot | handleCreateDatabaseBranch |
 | GET | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImportCheck |
 | POST | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImport |
 | POST | /api/v1/databases/bulk | AbilityWriteSensitive | handleBulkDatabases |
@@ -1044,6 +1044,13 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/redis/info | AbilityReadSensitive | handleGetRedisInfo |
 | GET | /api/v1/databases/{name}/redis/slowlog | AbilityReadSensitive | handleGetRedisSlowlog |
 | GET | /api/v1/databases/{name}/redis/clients | AbilityReadSensitive | handleGetRedisClients |
+| GET | /api/v1/databases/{name}/branches | AbilityReadSensitive | handleListDatabaseBranches |
+| GET | /api/v1/databases/{name}/branch-capabilities | AbilityReadSensitive | handleBranchCapabilities |
+| GET | /api/v1/databases/{name}/branches/{branch} | AbilityReadSensitive | handleGetDatabaseBranch |
+| PATCH | /api/v1/databases/{name}/branches/{branch} | AbilityRoot | handlePatchDatabaseBranch |
+| DELETE | /api/v1/databases/{name}/branches/{branch} | AbilityRoot | handleDeleteDatabaseBranch |
+| POST | /api/v1/databases/{name}/branches/{branch}/reset | AbilityRoot | handleResetDatabaseBranch |
+| POST | /api/v1/databases/{name}/branches/{branch}/promote | AbilityRoot | handlePromoteDatabaseBranch |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

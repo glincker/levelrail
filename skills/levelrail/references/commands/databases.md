@@ -15,7 +15,7 @@ Usage:
   levelrail-cli databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   levelrail-cli databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
   levelrail-cli databases integrations list <database> [flags]  integration catalog with per card status
-  levelrail-cli databases branch create <source> <new-name> [--from-backup ID | --at TIME] [flags]  new independent database from a backup or point in time
+  levelrail-cli databases branch create|ls|show|reset|promote|protect|rm ...  copy a database into a branch, or from a backup or point in time
   levelrail-cli databases export <name> [--out FILE|-] [--fresh | --latest] [--wait DURATION] [flags]  write a dump of a database to a file or stdout
   levelrail-cli databases import <name> --in FILE|- [--force] [--yes] [flags]  restore a dump into a database
   levelrail-cli databases clone <source> <new-name> [--backup ID] [flags]  new database from a fresh or chosen backup
@@ -91,7 +91,17 @@ Subcommands: create
 
 ```
 Usage:
+  levelrail-cli databases branch create <parent> <new-name> [--mode data|schema] [--ttl 1d|7d|never] [--protected] [flags]
   levelrail-cli databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
+  levelrail-cli databases branch ls <database>
+  levelrail-cli databases branch show <database> <branch>
+  levelrail-cli databases branch reset <database> <branch>
+  levelrail-cli databases branch promote <database> <branch>
+  levelrail-cli databases branch protect <database> <branch> [--off]
+  levelrail-cli databases branch rm <database> <branch> --confirm <branch>
+
+Without --from-backup or --at, create copies the live parent in the background
+(--mode data copies rows, schema copies tables only). --ttl sets auto delete.
 
 Creates a new, independent database from a backup of <source>, or from a
 point in time when point-in-time recovery is enabled on it (MySQL and
@@ -102,6 +112,9 @@ Flags:
   --from-backup string  id of a succeeded backup of <source>
   --at string           RFC3339 time to branch from
   --project string      project id for the branch (default: the source's project)
+  --mode string         data (default) or schema, for a live copy
+  --ttl string          auto delete after 1h, 1d, 7d, 30d or never (default: the platform setting)
+  --protected           block delete, reset and expiry until unprotected
 ```
 
 ## levelrail-cli databases catalog

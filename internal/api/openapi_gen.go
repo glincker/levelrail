@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2412 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2419 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -829,7 +829,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/access/temp/{id}", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRevokeDatabaseTempCredential", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListBaseBackupHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleTriggerBaseBackup", Description: ""},
-	{Method: "POST", Path: "/api/v1/databases/{name}/branches", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleBranchDatabase", Description: "Branch (database_branch.go): a new independent database from a backup or point in time, same tier as restore-as-new."},
+	{Method: "GET", Path: "/api/v1/databases/{name}/branch-capabilities", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleBranchCapabilities", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/branches", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseBranches", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/branches", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleCreateDatabaseBranch", Description: "Branch (database_branch.go): a new independent database from a backup or point in time, same tier as restore-as-new."},
+	{Method: "DELETE", Path: "/api/v1/databases/{name}/branches/{branch}", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDeleteDatabaseBranch", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/branches/{branch}", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseBranch", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/databases/{name}/branches/{branch}", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handlePatchDatabaseBranch", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/branches/{branch}/promote", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handlePromoteDatabaseBranch", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/branches/{branch}/reset", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleResetDatabaseBranch", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/credentials/reveal", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRevealDatabaseCredentials", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/engine-stats", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseEngineStats", Description: "Live counts for engines with no data browser; index names can name tenants."},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/environment", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseEnvironment", Description: ""},
