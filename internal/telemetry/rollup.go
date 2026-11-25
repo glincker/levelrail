@@ -139,6 +139,13 @@ const sizePruneMaxPasses = 20
 // has data already covered by the next tier. Raw rows are never dropped for
 // size before they are rolled up.
 func (db *DB) Prune(ctx context.Context, now time.Time) (PruneResult, error) {
+	res, err := db.prune(ctx, now)
+	// A passive checkpoint cannot pass an active reader, so it never blocks them.
+	_, _ = db.ExecContext(ctx, `PRAGMA wal_checkpoint(PASSIVE)`)
+	return res, err
+}
+
+func (db *DB) prune(ctx context.Context, now time.Time) (PruneResult, error) {
 	cfg := db.tierConfig()
 	var res PruneResult
 	var err error
