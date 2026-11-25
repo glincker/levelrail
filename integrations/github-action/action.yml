@@ -50,6 +50,18 @@ inputs:
     description: 'Commit to report on. Defaults to the pull request head, or the pushed commit.'
     required: false
     default: ${{ github.event.pull_request.head.sha || github.sha }}
+  preview:
+    description: 'Set to "true" to deploy the image as the preview for the pull request instead of the app itself. Needs pr-number or a pull_request event.'
+    required: false
+    default: 'false'
+  pr-number:
+    description: 'Pull request number for preview and preview-teardown. Defaults to the pull request of the triggering event.'
+    required: false
+    default: ${{ github.event.pull_request.number }}
+  preview-teardown:
+    description: 'Set to "true" to remove the pull request preview instead of deploying (run it on pull_request closed)'
+    required: false
+    default: 'false'
   cli-version:
     description: 'levelrail-cli release tag to install'
     required: false
@@ -62,6 +74,9 @@ outputs:
   report-warnings:
     description: 'Number of GitHub report calls that failed. The deploy result is unaffected.'
     value: ${{ steps.deploy.outputs.report-warnings }}
+  preview-url:
+    description: 'Preview URL when preview is "true"'
+    value: ${{ steps.preview.outputs.preview-url }}
 
 runs:
   using: composite
@@ -79,8 +94,58 @@ runs:
         LEVELRAIL_CLI_INSTALL_DIR="$install_dir" sh "${GITHUB_ACTION_PATH}/../../install-cli.sh"
         echo "$install_dir" >> "$GITHUB_PATH"
 
+    - name: Preview
+      id: preview
+      if: inputs.preview == 'true' || inputs.preview-teardown == 'true'
+      shell: bash
+      env:
+        APP_API_URL: ${{ inputs.api-url }}
+        APP_API_TOKEN: ${{ inputs.api-token }}
+        LR_APP: ${{ inputs.app }}
+        LR_IMAGE: ${{ inputs.image }}
+        LR_PR: ${{ inputs.pr-number }}
+        LR_TEARDOWN: ${{ inputs.preview-teardown }}
+        LR_SHA: ${{ inputs.sha }}
+        LR_OIDC: ${{ inputs.oidc }}
+        LR_BRANCH: ${{ github.head_ref }}
+        LR_REPO: ${{ github.repository }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        set -uo pipefail
+        case "$LR_PR" in
+          ''|*[!0-9]*|0*) echo "::error::pr-number must be a positive integer"; exit 1 ;;
+        esac
+        if [ "$LR_OIDC" = "true" ]; then
+          APP_API_TOKEN=$(levelrail-cli apps github-actions token "$LR_APP") || { echo "::error::OIDC token exchange failed. Add a CI trust for this repository on the app."; exit 1; }
+          export APP_API_TOKEN
+          echo "::add-mask::$APP_API_TOKEN"
+        fi
+        if [ "$LR_TEARDOWN" = "true" ]; then
+          levelrail-cli apps previews teardown "$LR_APP" "$LR_PR" || exit 1
+          echo "preview-url=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        out=$(levelrail-cli apps previews create "$LR_APP" --pr "$LR_PR" --image "$LR_IMAGE" --branch "$LR_BRANCH" --sha "$LR_SHA") || { echo "::error::Preview create failed"; exit 1; }
+        printf '%s\n' "$out"
+        host=$(printf '%s\n' "$out" | awk '$1=="preview"{print $4; exit}')
+        url=""
+        if [ -n "$host" ]; then
+          case "$host" in http://*|https://*) url="$host" ;; *) url="https://$host" ;; esac
+        fi
+        echo "preview-url=$url" >> "$GITHUB_OUTPUT"
+        [ -n "$url" ] || exit 0
+        body="Levelrail preview for #$LR_PR: $url"
+        if [ -n "${GITHUB_TOKEN:-}" ] && command -v gh >/dev/null 2>&1 \
+          && GH_TOKEN="$GITHUB_TOKEN" gh api "repos/$LR_REPO/issues/$LR_PR/comments" -f body="$body" >/dev/null 2>&1; then
+          :
+        else
+          echo "::notice::Could not comment on the pull request (needs pull-requests: write). Preview URL is in the job summary."
+          [ -z "${GITHUB_STEP_SUMMARY:-}" ] || printf '%s\n' "$body" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
     - name: Deploy and report
       id: deploy
+      if: inputs.preview != 'true' && inputs.preview-teardown != 'true'
       shell: bash
       env:
         APP_API_URL: ${{ inputs.api-url }}
