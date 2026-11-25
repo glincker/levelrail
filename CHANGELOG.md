@@ -1,5 +1,107 @@
 # Changelog
 
+## [1.5.10](https://github.com/glincker/levelrail/compare/v1.5.9...v1.5.10) (2026-11-25)
+
+
+### release
+
+* v1.5.10, safer deletes, reconciler lag, metric rollups and clearer updates ([#1716](https://github.com/glincker/levelrail/issues/1716)) ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+
+
+### Features
+
+* add pure log normalizer for failure clustering ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* automatic upgrades wait one day after a release by default ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* cached update notices in the CLI and one-line update status in the agent ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* create a preview from a CI-built image via API and CLI ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* deny test for per-app auto rollback override write ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* doctor check for docker live-restore ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* doctor shows CLI update state and base image warming ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* explain why a deploy failed from stored facts ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* github action preview and pr-number inputs with PR comment ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* Go SDK package generated from the OpenAPI document ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* goal-first entry and prefilled forms in the create modal ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* keep encrypted env revisions with a names-only diff ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* levelrail-cli schema prints a JSON schema per command ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* live remote MCP toggle and per-caller deploy and alert stream events ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* log template miner with per-deploy template store ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* metric tier retention and query ranges are live settings ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* next-step hint on empty connections, bindings and ai sessions lists ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* one status line for automatic updates with local time, hold reason and action ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* one-click compact sidebar preset and a live setting for how many API routes the health page tracks ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* optional outbound dead man's switch ping ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* Pages deploy notifications card in site settings ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* Pages failed deploys show a plain-language fix hint ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* pages first-deploy success view with live URL, deploy time and next-step chips ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* phone status home with confirmed actions and bottom tab bar ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* preview env changes and restore earlier env revisions ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* Python SDK generated from the OpenAPI document ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* read-time collapse of repeated log lines ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* reconciler lag gauge, live resync and lag settings, doctor check ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* send confirm name when restoring a recently deleted app from the dashboard ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* ship alerting.db in the encrypted control plane backup and restore it ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* soft delete keeps app history, name reserved, guarded restore ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* translate 1.5.10 locale gaps for de, es, fr, ja, pt-BR, ru, zh-CN ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* translate settings for de, fr and ja ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* wire reconciler lag into metrics, health and alerts ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+
+
+### Bug Fixes
+
+* anchor service container match and combine replicas into one telemetry sample ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* apply metrics rollup and prune intervals live ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* apps delete prints the restore command and undo deadline ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* apps scale notes that create-time limits recreate the container ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* average replica gauges, skip counters on failed stats, filter log targets by owner ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* buildkitd container restarts with the docker daemon ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* **build:** start the base image warm loop ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* changing an app's disk IO caps now recreates its container so they apply ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* clearer CLI and API error text, flags and help ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* CLI and API polish from the v1.5.9 QA ledger ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* close legacy webhook and failed purge gaps ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* close personal builder scope gaps ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* close remaining function data gaps ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* cumulative byte metrics read the running total from rollup max ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* cumulative lookback follows sample interval and prune keeps it ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* cumulative metrics roll up as reset aware increase ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* database restore needs the typed name and runs under a name lock ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* database restore rechecks under lock, rolls back on failure and clears only its own row ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* goal labels wrap instead of truncating and the sidebar dialog no longer scrolls sideways ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* guard image update and OIDC discovery requests ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* guard OIDC token exchange and tighten probe and redirect checks ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* harden app soft delete and restore ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* harden dead man's switch redirects, arming and url check ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* harden deploy failure samples ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* harden env revisions ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* harden lag alert, Go SDK client and log collapse ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* image preview handler decodes its body through decodeJSON ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* list deploys why in the command tree ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* list status-page uptime-report in the command tree ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* move overview details and traffic strings to i18n ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* node placed-service metrics keep rollup counts and min and max so long ranges stop averaging averages. ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* option drift recreate stops gracefully, skips legacy labels and covers recreate strategy ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* purge function webhook and key-value data with the app ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* require root for upgrade attempt actions and pin the self-upgrade signer to release tags ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* restore routes decode the confirm body with the shared helper ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* rollback target list matches what rollback accepts ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* rollup metrics weigh by sample count and keep min and max ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* scope personal builders to their owner and bind build results to assignments ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* show why an automatic upgrade is held when the plan lookup fails ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* stage both restore files before swapping, harden bundle unpack, keep backing up when alerting.db is unreadable ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* tests and dashboard follow-up for the CLI polish batch ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* translate remaining ru and ja strings ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* wire cumulative lookback and cap target to live runtime settings ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* zone drain back button, responsive pool form and aligned what-if table ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+
+
+### Performance
+
+* buffer docker events and bound the drain so bursts coalesce ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* coalesce a burst of docker events and nudges into one reconcile pass ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* safer log budget, platform restarts, batched retention and live log cap ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* size cap counts metric tables only and prunes to headroom ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+* telemetry read pool and post-prune checkpoint so retention sweeps never stall readers ([9825a7f](https://github.com/glincker/levelrail/commit/9825a7f9b5912c33fd10fcead0bc7e963bcf50d7))
+
 ## [1.5.9](https://github.com/glincker/levelrail/compare/v1.5.8...v1.5.9) (2026-11-22)
 
 
