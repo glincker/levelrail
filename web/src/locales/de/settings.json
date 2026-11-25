@@ -1,0 +1,900 @@
+{
+  "nav": {
+    "areas": {
+      "general": {
+        "title": "Arbeitsbereich",
+        "description": "Profil, Organisationen, Umgebungen und Einrichtung."
+      },
+      "access": {
+        "title": "Personen und Zugriff",
+        "description": "Wer sich anmelden darf und was er tun kann."
+      },
+      "security": {
+        "title": "Sicherheit",
+        "description": "Secrets-Tresor, Host-Firewall und Sicherheitslage."
+      },
+      "developer": {
+        "title": "Entwickler",
+        "description": "CLI- und API-Zugriff."
+      },
+      "ai": {
+        "title": "KI und Agenten",
+        "description": "Agentenverbindungen, KI-Steuerung und der Assistent."
+      },
+      "domains": {
+        "title": "Domains und TLS",
+        "description": "Plattform-Ingress und Zertifikate."
+      },
+      "backups": {
+        "title": "Backups und Speicher",
+        "description": "Wo Backups und Artefakte abgelegt werden."
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Alarmkanäle, E-Mail und die Statusseite."
+      },
+      "integrations": {
+        "title": "Git und Registries",
+        "description": "Git-Provider-Apps und Container-Registries."
+      },
+      "beta": {
+        "title": "Beta-Funktionen",
+        "description": "Funktionen, die laufen, aber noch feinjustiert werden."
+      },
+      "updates": {
+        "title": "Updates",
+        "description": "Aktuelle Version und verfügbare Releases."
+      },
+      "advanced": {
+        "title": "System",
+        "description": "Provider, Container, Observability und Low-Level-Steuerung."
+      }
+    },
+    "items": {
+      "account": {
+        "title": "Konto",
+        "description": "Profil und Passwort."
+      },
+      "iam-policies": {
+        "title": "IAM-Richtlinien"
+      },
+      "security": {
+        "title": "Sicherheit",
+        "description": "Sitzungen und Anmeldeschutz."
+      },
+      "security-runtime": {
+        "title": "Sicherheit und Laufzeit"
+      },
+      "security-center": {
+        "title": "Sicherheitscenter",
+        "description": "Sicherheitsbewertung, alle Sitzungen und Geräte sowie Token-Richtlinie."
+      },
+      "tokens": {
+        "title": "API-Tokens",
+        "description": "Eingegrenzte, widerrufbare Zugangsdaten für CLI, CI und MCP."
+      },
+      "mobile-devices": {
+        "title": "Mobilgeräte",
+        "description": "Ein Telefon per QR-Code koppeln und gekoppelte Telefone widerrufen."
+      },
+      "plugins": {
+        "title": "Plugins"
+      },
+      "agents": {
+        "title": "Agenten",
+        "description": "Einen KI-Agenten über MCP verbinden und seine Tokens verwalten."
+      },
+      "ai-control": {
+        "title": "KI-Steuerung"
+      },
+      "cli-access": {
+        "title": "CLI-Zugriff"
+      },
+      "api-explorer": {
+        "title": "API-Explorer",
+        "description": "Echte Endpunkte durchsuchen und ausprobieren, ohne das Dashboard zu verlassen."
+      },
+      "users": {
+        "title": "Benutzer",
+        "description": "Alle mit Zugriff auf diese Plattform."
+      },
+      "teams": {
+        "title": "Teams",
+        "description": "Mitglieder, Rollen und Einladungen für jedes Team."
+      },
+      "roles": {
+        "title": "Rollen",
+        "description": "Benannte Berechtigungssätze, einschließlich der Gastrolle."
+      },
+      "oauth": {
+        "title": "OAuth-Anmeldung",
+        "description": "Anmeldung mit Google oder GitHub erlauben."
+      },
+      "sso": {
+        "title": "Single Sign-on",
+        "description": "SAML-Identitätsanbieter, Verzeichnissynchronisierung und Gruppenrollen."
+      },
+      "session-policy": {
+        "title": "Sitzungsrichtlinie"
+      },
+      "organizations": {
+        "title": "Organisationen",
+        "description": "Zusammengehörige Projekte unter einer Organisation bündeln."
+      },
+      "environments": {
+        "title": "Umgebungen"
+      },
+      "stacks": {
+        "title": "Stacks",
+        "description": "Ressourcensätze mit Revisionsverlauf, Rollback und Pinning."
+      },
+      "stack-templates": {
+        "title": "Stack-Vorlagen",
+        "description": "Stack-Starterpakete zum Rendern, Ansehen und Herauskopieren."
+      },
+      "github-app": {
+        "title": "GitHub App",
+        "description": "Zugriff auf private Repositories für Git-basierte Deploys."
+      },
+      "gitlab-app": {
+        "title": "GitLab App"
+      },
+      "bitbucket-app": {
+        "title": "Bitbucket App",
+        "description": "Zugriff auf Bitbucket-Cloud-Repositories für Git-basierte Deploys."
+      },
+      "gitea-app": {
+        "title": "Gitea App",
+        "description": "Zugriff auf selbst gehostete Gitea-Repositories für Git-basierte Deploys."
+      },
+      "forgejo-app": {
+        "title": "Forgejo App",
+        "description": "Zugriff auf selbst gehostete Forgejo-Repositories für Git-basierte Deploys."
+      },
+      "bitbucket-server-app": {
+        "title": "Bitbucket Server"
+      },
+      "notification-channels": {
+        "title": "Benachrichtigungskanäle",
+        "description": "Slack-, Discord-, Telegram-, Webhook- und E-Mail-Alarme."
+      },
+      "deploy-policies": {
+        "title": "Deploy-Richtlinien"
+      },
+      "build-performance": {
+        "title": "Build-Leistung",
+        "description": "Build-Timeout und wie viele Builds gleichzeitig laufen."
+      },
+      "maintenance": {
+        "title": "Geplante Wartung"
+      },
+      "status-page": {
+        "title": "Statusseite"
+      },
+      "backup-targets": {
+        "title": "Backup-Ziele",
+        "description": "S3-kompatible Buckets für verwaltete Datenbank-Backups."
+      },
+      "storage": {
+        "title": "Speicherziele"
+      },
+      "registry-credentials": {
+        "title": "Registry-Zugangsdaten",
+        "description": "Private Images mit build.type: image abrufen."
+      },
+      "node-providers": {
+        "title": "Cloud-Node-Provider"
+      },
+      "registry": {
+        "title": "Container-Registry",
+        "description": "Integrierte Image-Registry für Build-Caching über mehrere Nodes."
+      },
+      "email": {
+        "title": "E-Mail",
+        "description": "Ausgehendes SMTP für Alarme und Passwort-Zurücksetzungen."
+      },
+      "email-templates": {
+        "title": "E-Mail-Vorlagen",
+        "description": "Jede von der Plattform gesendete E-Mail bearbeiten, mit Live-Vorschau."
+      },
+      "email-audiences": {
+        "title": "E-Mail-Zielgruppen",
+        "description": "Gespeicherte Personengruppen zum Anschreiben, mit Abmeldungen."
+      },
+      "email-messages": {
+        "title": "E-Mail-Nachrichten",
+        "description": "Eine Zielgruppe anschreiben und den Zustellverlauf sehen."
+      },
+      "cloudflare-tunnel": {
+        "title": "Cloudflare Tunnel",
+        "description": "Diese Control Plane ohne offenen eingehenden Port bereitstellen."
+      },
+      "vault": {
+        "title": "Vault"
+      },
+      "data-export": {
+        "title": "Datenexport"
+      },
+      "event-webhooks": {
+        "title": "Event-Webhooks"
+      },
+      "traffic-export": {
+        "title": "Traffic-Export"
+      },
+      "observability": {
+        "title": "Observability"
+      },
+      "ai-assistant": {
+        "title": "KI-Assistent",
+        "description": "Eigenen LLM-API-Schlüssel für den Chat-Assistenten der Plattform verwenden."
+      },
+      "import-platform": {
+        "title": "Von einer anderen Plattform importieren",
+        "description": "Apps aus Coolify, Dokploy oder CapRover übernehmen."
+      },
+      "general": {
+        "title": "Allgemein",
+        "description": "Systemstatus und Konfiguration."
+      },
+      "control-plane-backup": {
+        "title": "Control-Plane-Backup"
+      },
+      "dr-report": {
+        "title": "Wiederherstellungsbericht"
+      },
+      "control-plane-health": {
+        "title": "Zustand der Control Plane"
+      },
+      "system-status": {
+        "title": "Doctor"
+      },
+      "firewall": {
+        "title": "Firewall"
+      },
+      "containers": {
+        "title": "Container"
+      },
+      "cleanup": {
+        "title": "Bereinigung"
+      },
+      "platform": {
+        "title": "Plattform"
+      },
+      "domains": {
+        "title": "Domains",
+        "description": "Plattform-Ingress: Dashboard-Domain und ACME-Zertifikate."
+      },
+      "certificates": {
+        "title": "TLS-Zertifikate"
+      },
+      "infrastructure": {
+        "title": "Infrastructure as Code",
+        "description": "YAML-Ressourcendateien planen und anwenden sowie den Live-Zustand exportieren."
+      },
+      "database-upgrades": {
+        "title": "Datenbank-Upgrades",
+        "description": "Standard-Upgrade-Richtlinie und Wartungsfenster."
+      },
+      "updates": {
+        "title": "Updates",
+        "description": "Aktuelle Version und verfügbare Releases."
+      },
+      "beta-features": {
+        "title": "Beta-Funktionen",
+        "description": "Funktionen aktivieren, die laufen, aber noch feinjustiert werden."
+      },
+      "audit-log": {
+        "title": "Audit-Log",
+        "description": "Wer was geändert hat, über jede Sitzung und jeden API-Token."
+      },
+      "integrations": {
+        "title": "Integrationen"
+      },
+      "git-connections": {
+        "title": "Git-Verbindungen"
+      },
+      "benchmarks": {
+        "title": "Benchmarks"
+      },
+      "appearance": {
+        "title": "Darstellung",
+        "description": "Theme, Akzent, Schrift, Breite und Dichte."
+      },
+      "azure-devops-app": {
+        "title": "Azure DevOps",
+        "description": "Zugriff auf Azure-DevOps-Repositories mit einem persönlichen Zugriffstoken."
+      }
+    },
+    "search": "Einstellungen durchsuchen",
+    "back": "Zurück",
+    "pins": {
+      "group": "Angeheftet",
+      "pin": "{{label}} anheften",
+      "unpin": "{{label}} lösen",
+      "limit": "Limit für angeheftete Einträge erreicht ({{max}}). Lösen Sie zuerst einen."
+    },
+    "expandAll": "Alle Gruppen aufklappen",
+    "collapseAll": "Alle Gruppen zuklappen",
+    "oneAtATime": "Jeweils eine Gruppe öffnen",
+    "groupCount": "{{count}} Seiten",
+    "noMatchTitle": "Keine Einstellungen passen zu \"{{query}}\"",
+    "noMatchDescription": "Versuchen Sie ein anderes Wort oder leeren Sie die Suche, um alle Bereiche zu sehen.",
+    "searchLoading": "Einstellungen werden durchsucht",
+    "searchFailedTitle": "Die Suche konnte nicht abgeschlossen werden",
+    "retry": "Erneut versuchen",
+    "title": "Einstellungen",
+    "description": "Konto-, Team- und Plattformkonfiguration.",
+    "jumpTo": "Zu einem Bereich springen"
+  },
+  "securityPage": {
+    "session": {
+      "title": "Aktuelle Sitzung",
+      "description": "Das Konto und die Sitzung, mit denen dieser Browser angemeldet ist.",
+      "account": "Angemeldet als",
+      "accountHelp": "Das Konto, dem jede Aktion hier zugeordnet wird.",
+      "until": "Angemeldet bis",
+      "untilHelp": "Danach müssen Sie sich erneut anmelden."
+    },
+    "rail": {
+      "label": "Zusammenfassung des Anmeldeschutzes",
+      "protection": "Anmeldeschutz",
+      "twoFactor": "Zwei-Faktor-Authentifizierung",
+      "on": "Ein",
+      "off": "Aus",
+      "passkeys": "Registrierte Passkeys",
+      "signedIn": "Angemeldet als",
+      "until": "Sitzung läuft ab",
+      "jump": "Auf dieser Seite",
+      "sessionsLink": "Sitzungen",
+      "twoFactorLink": "Zwei-Faktor-Authentifizierung",
+      "passkeysLink": "Passkeys"
+    },
+    "eyebrow": "Konto",
+    "title": "Sicherheit",
+    "help": "Sicherheitsleitfaden",
+    "status": {
+      "protected": "Zweiter Faktor aktiv",
+      "open": "Nur Passwort"
+    },
+    "banner": {
+      "title": "Die Anmeldung stützt sich nur auf ein Passwort"
+    },
+    "account": {
+      "title": "Ihre Anmeldemethoden",
+      "open": "Konto öffnen"
+    },
+    "loginProtection": {
+      "title": "Anmeldeschutz"
+    }
+  },
+  "generalPage": {
+    "rail": {
+      "label": "Instanzübersicht",
+      "instance": "Instanz",
+      "url": "Instanz-URL",
+      "version": "Version",
+      "health": "Zustand",
+      "docker": "Docker-Daemon",
+      "connected": "Verbunden",
+      "disconnected": "Nicht verbunden",
+      "secrets": "Secrets",
+      "configured": "Konfiguriert",
+      "notConfigured": "Nicht konfiguriert",
+      "docs": "Doku"
+    },
+    "eyebrow": "Plattform",
+    "title": "Allgemein",
+    "help": "Leitfaden zur Fehlerbehebung",
+    "density": {
+      "title": "Oberflächendichte",
+      "compact": "Kompakt",
+      "comfortable": "Komfortabel"
+    },
+    "status": {
+      "healthy": "Gesund",
+      "attention": "Benötigt Aufmerksamkeit"
+    },
+    "banner": {
+      "docker": "Docker ist nicht erreichbar",
+      "secrets": "Secrets-Verschlüsselung ist nicht konfiguriert"
+    },
+    "width": {
+      "title": "Seitenbreite",
+      "comfortable": "Komfortabel",
+      "comfortableHint": "Zentrierte Spalte mit großzügigen Seitenrändern",
+      "wide": "Breit",
+      "wideHint": "Große Bildschirme besser nutzen",
+      "full": "Volle Breite",
+      "fullHint": "Von Rand zu Rand",
+      "compact": "Kompakt",
+      "compactHint": "Schmale Spalte zum Lesen",
+      "custom": "Exakte Breite",
+      "customHint": "Eine Breite in Pixeln wählen"
+    },
+    "appearanceLink": {
+      "title": "Darstellung",
+      "description": "Theme, Schrift, Seitenbreite und Dichte finden Sie jetzt an einem Ort.",
+      "open": "Darstellung öffnen"
+    }
+  },
+  "tokensPage": {
+    "eyebrow": "Zugriff",
+    "title": "API-Tokens",
+    "help": "API-Referenz",
+    "docsLink": "API-Doku ansehen",
+    "activeCount_one": "{{count}} aktiver Token",
+    "activeCount_other": "{{count}} aktive Tokens",
+    "expiring": {
+      "title_one": "{{count}} Token läuft innerhalb von 14 Tagen ab",
+      "title_other": "{{count}} Tokens laufen innerhalb von 14 Tagen ab"
+    },
+    "banner": {
+      "title_one": "{{count}} Root-Token läuft nie ab",
+      "title_other": "{{count}} Root-Tokens laufen nie ab"
+    },
+    "revoked": {
+      "title": "Widerrufene Tokens",
+      "autoDelete": "Widerrufene Tokens löschen nach",
+      "janitorLink": "Bereinigungseinstellungen",
+      "cleanNow": "Jetzt bereinigen",
+      "revokedAt": "Widerrufen",
+      "confirmTitle": "Widerrufene Tokens entfernen?",
+      "confirmBody_one": "{{count}} widerrufener Token wird endgültig entfernt.",
+      "confirmBody_other": "{{count}} widerrufene Tokens werden endgültig entfernt.",
+      "confirmAction": "Widerrufene Tokens entfernen",
+      "cleaned_one": "{{count}} widerrufener Token entfernt.",
+      "cleaned_other": "{{count}} widerrufene Tokens entfernt."
+    },
+    "attention": {
+      "title_one": "1 Token benötigt Aufmerksamkeit",
+      "title_other": "{{count}} Token-Probleme benötigen Aufmerksamkeit"
+    }
+  },
+  "usersPage": {
+    "eyebrow": "Zugriff",
+    "title": "Benutzer",
+    "help": "Leitfaden zu Teams und Rollen",
+    "count_one": "{{count}} Benutzer",
+    "count_other": "{{count}} Benutzer",
+    "pendingInvites": "Ausstehende Einladungen",
+    "empty": {
+      "title": "Keine Benutzer gefunden",
+      "body": "Laden Sie ein Teammitglied ein oder erstellen Sie über die Aktionen oben einen Benutzer."
+    },
+    "banner": {
+      "title_one": "{{count}} Einladung wartet auf Annahme",
+      "title_other": "{{count}} Einladungen warten auf Annahme"
+    },
+    "table": {
+      "label": "Benutzer",
+      "email": "E-Mail",
+      "displayName": "Anzeigename",
+      "signsInWith": "Anmeldung mit",
+      "role": "Rolle",
+      "abilities": "Berechtigungen",
+      "lastLogin": "Letzte Anmeldung",
+      "never": "Nie",
+      "password": "Passwort",
+      "noMethod": "keine",
+      "firstUser": "Erster Benutzer",
+      "you": "Sie",
+      "custom": "Benutzerdefiniert",
+      "editAbilities": "Berechtigungen bearbeiten",
+      "selfEditHint": "Sie können Ihre eigenen Berechtigungen nicht bearbeiten",
+      "disabled": "Deaktiviert",
+      "mustChangePassword": "Passwortänderung erforderlich"
+    },
+    "passwordChange": {
+      "require": "Passwortänderung verlangen",
+      "clear": "Passwortanforderung aufheben",
+      "requireTitle": "Von {{email}} eine Passwortänderung verlangen?",
+      "clearTitle": "Passwortanforderung für {{email}} aufheben?",
+      "clearBody": "Die Person kann sich wieder mit dem aktuellen Passwort anmelden.",
+      "cancel": "Abbrechen",
+      "confirmRequire": "Änderung verlangen",
+      "confirmClear": "Anforderung aufheben",
+      "saving": "Wird gespeichert...",
+      "required": "{{email}} muss das Passwort ändern.",
+      "cleared": "{{email}} kann sich mit dem aktuellen Passwort anmelden."
+    }
+  },
+  "accountPage": {
+    "title": "Konto",
+    "profile": {
+      "title": "Profil",
+      "email": "E-Mail",
+      "emailVerified": "Bestätigt",
+      "emailUnverified": "Nicht bestätigt",
+      "displayName": "Anzeigename",
+      "hasPassword": "Dieses Konto meldet sich mit einem Passwort an.",
+      "noPassword": "Für dieses Konto ist kein Passwort gesetzt, nur OAuth-Anmeldung.",
+      "edit": "Anzeigenamen bearbeiten",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "saved": "Anzeigename aktualisiert",
+      "saving": "Wird gespeichert...",
+      "counter": "{{used}} von {{max}} Zeichen"
+    },
+    "loading": "Wird geladen...",
+    "loadError": "Dieser Bereich konnte nicht geladen werden.",
+    "sessions": {
+      "title": "Aktive Sitzungen und vertrauenswürdige Geräte",
+      "current": "Diese Sitzung",
+      "lastSeen": "zuletzt gesehen",
+      "revoke": "Abmelden",
+      "revoked": "Sitzung beendet",
+      "revokeOthers": "Alle anderen Sitzungen abmelden",
+      "revokedOthers_one": "{{count}} andere Sitzung beendet",
+      "revokedOthers_other": "{{count}} andere Sitzungen beendet",
+      "devices": "Vertrauenswürdige Geräte",
+      "devicesEmpty": "Keine vertrauenswürdigen Geräte.",
+      "deviceRemove": "Entfernen",
+      "deviceRemoved": "Vertrauenswürdiges Gerät entfernt",
+      "canApprove": "Kann Anmeldungen genehmigen",
+      "signedInAt": "Angemeldet",
+      "networks_one": "{{count}} Netzwerk",
+      "networks_other": "{{count}} Netzwerke",
+      "tone": {
+        "live": "Jetzt aktiv",
+        "recent": "In der letzten Stunde aktiv",
+        "idle": "Inaktiv"
+      },
+      "revoking": "Wird abgemeldet...",
+      "revokeLabel": "{{device}} ({{ip}}) abmelden",
+      "revokeConfirmTitle": "{{device}} abmelden?",
+      "revokeConsequence": "Dieser Browser wird sofort abgemeldet.",
+      "revokeReloginConsequence": "Wer ihn nutzt, muss sich erneut anmelden.",
+      "revokeOthersConfirmTitle": "Alle anderen Sitzungen abmelden?",
+      "revokeOthersConsequence": "Jeder andere Browser und jedes andere Gerät wird sofort abgemeldet.",
+      "revokeOthersKeep": "Dieser Browser bleibt angemeldet.",
+      "empty": "Keine aktiven Sitzungen",
+      "emptyBody": "Sitzungen erscheinen hier, nachdem Sie sich über einen Browser angemeldet haben.",
+      "deviceRemoving": "Wird entfernt...",
+      "deviceRemoveLabel": "Vertrauenswürdiges Gerät {{device}} entfernen",
+      "deviceConfirmTitle": "Vertrauenswürdiges Gerät {{device}} entfernen?"
+    },
+    "providers": {
+      "title": "Verknüpfte Anmeldeanbieter",
+      "none": "Auf dieser Instanz sind keine Anmeldeanbieter aktiviert.",
+      "linked": "Verknüpft",
+      "link": "Verknüpfen",
+      "configure": "Anbieter einrichten"
+    },
+    "tokens": {
+      "title": "Meine API-Tokens",
+      "description": "Tokens, die Sie für CLI, CI oder Agenten erstellt haben.",
+      "manage": "Alle Tokens und Verlauf",
+      "emptyTitle": "Keine aktiven API-Tokens"
+    },
+    "access": {
+      "title": "Mein Zugriff",
+      "tier": "Zugriffsstufe",
+      "tiers": {
+        "admin": "Administrator",
+        "operator": "Operator",
+        "developer": "Entwickler",
+        "viewer": "Betrachter"
+      },
+      "teams": "Teams",
+      "noTeams": "In keinem Team Mitglied.",
+      "policies": "Zugewiesene IAM-Richtlinien",
+      "noPolicies": "Keine Richtlinien zugewiesen.",
+      "missing": "Fehlende Berechtigung: {{ability}}",
+      "areas": {
+        "view": "Apps, Services und Logs ansehen",
+        "deploy": "Deployen und zurückrollen",
+        "configure": "App- und Service-Konfiguration ändern",
+        "secrets_read": "Secrets und sensible Werte anzeigen",
+        "sensitive_write": "Sensible Einstellungen ändern",
+        "users_and_access": "Benutzer, Rollen und Richtlinien verwalten",
+        "platform_settings": "Plattformweite Einstellungen ändern"
+      },
+      "colArea": "Fähigkeit",
+      "colStatus": "Status",
+      "colAction": "Aktion",
+      "allowed": "Erlaubt",
+      "request": "Zugriff anfordern",
+      "requestLabel": "Zugriff anfordern für: {{area}}"
+    },
+    "retry": "Erneut versuchen",
+    "password": {
+      "titleChange": "Passwort ändern",
+      "titleSet": "Passwort festlegen",
+      "current": "Aktuelles Passwort",
+      "currentRequired": "Das aktuelle Passwort ist erforderlich",
+      "new": "Neues Passwort",
+      "confirm": "Neues Passwort bestätigen",
+      "tooShort": "Das neue Passwort muss mindestens {{min}} Zeichen lang sein",
+      "mismatch": "Die Passwörter stimmen nicht überein",
+      "minHint": "Mindestens {{min}} Zeichen.",
+      "changed": "Passwort geändert",
+      "saving": "Wird gespeichert...",
+      "submitChange": "Passwort ändern",
+      "submitSet": "Passwort festlegen",
+      "strength": {
+        "label": "Passwortstärke",
+        "level0": "Leer",
+        "level1": "Schwach",
+        "level2": "Mittel",
+        "level3": "Gut",
+        "level4": "Stark"
+      },
+      "rules": {
+        "length": "Mindestens {{min}} Zeichen",
+        "mixedCase": "Groß- und Kleinbuchstaben",
+        "digit": "Eine Ziffer",
+        "symbol": "Ein Sonderzeichen",
+        "met": "(erfüllt)",
+        "unmet": "(nicht erfüllt)"
+      }
+    },
+    "twoFactor": {
+      "title": "Zwei-Faktor-Authentifizierung",
+      "enabled_one": "Aktiviert. {{count}} Wiederherstellungscode übrig.",
+      "enabled_other": "Aktiviert. {{count}} Wiederherstellungscodes übrig.",
+      "enable": "Zwei-Faktor-Authentifizierung aktivieren",
+      "setupTitle": "Zwei-Faktor-Authentifizierung einrichten",
+      "qrFallback": "Scannen nicht möglich? Geben Sie diesen Schlüssel ein",
+      "qrLabel": "QR-Code für Ihre Authenticator-App",
+      "qrLoading": "QR-Code wird geladen",
+      "setupKey": "Einrichtungsschlüssel",
+      "setupLink": "Oder verwenden Sie diesen Link",
+      "codeLabel": "Code aus Ihrer Authenticator-App",
+      "codePlaceholder": "123456",
+      "recoveryPlaceholder": "xxxx-xxxx-xxxx-xxxx",
+      "cancel": "Abbrechen",
+      "verify": "Prüfen und aktivieren",
+      "verifying": "Wird geprüft...",
+      "enabledTitle": "Zwei-Faktor-Authentifizierung aktiviert",
+      "saved": "Ich habe diese Codes gespeichert",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "copyAll": "Alle kopieren",
+      "regenerate": "Wiederherstellungscodes neu erzeugen",
+      "regenerateAction": "Neu erzeugen",
+      "regenerating": "Wird neu erzeugt...",
+      "regeneratedTitle": "Neue Wiederherstellungscodes erzeugt",
+      "done": "Fertig",
+      "disable": "Zwei-Faktor-Authentifizierung deaktivieren",
+      "disableTitle": "Zwei-Faktor-Authentifizierung deaktivieren?",
+      "recoveryCodeLabel": "Wiederherstellungscode",
+      "authCodeLabel": "Authenticator-Code",
+      "useAuthCode": "Authenticator-Code verwenden",
+      "useRecoveryCode": "Wiederherstellungscode verwenden",
+      "disableAction": "Deaktivieren",
+      "disabling": "Wird deaktiviert..."
+    }
+  },
+  "appearancePage": {
+    "title": "Darstellung",
+    "reset": "Auf Standard zurücksetzen",
+    "defaultBadge": "Standard",
+    "recommendedBadge": "Empfohlen",
+    "presets": {
+      "title": "Voreinstellungen",
+      "description": "Ein Klick setzt mehrere Optionen auf einmal.",
+      "default": "Standard",
+      "defaultHint": "Das Standardaussehen",
+      "focusDark": "Fokus dunkel",
+      "focusDarkHint": "Graphit, großzügiger Abstand, komfortable Dichte",
+      "oled": "OLED",
+      "oledHint": "Echtes Schwarz, breite Seiten, kompakte Dichte",
+      "paper": "Papier",
+      "paperHint": "Warmes Hell, gut lesbare Schrift, schmale Seiten",
+      "customDescription": "Ihre Einstellungen entsprechen keiner Voreinstellung.",
+      "custom": "Benutzerdefiniert"
+    },
+    "theme": {
+      "title": "Farbmodus",
+      "description": "Hell, dunkel oder dem Browser folgen."
+    },
+    "darkBase": {
+      "title": "Dunkle Basis",
+      "description": "Die Flächenfarbe im Dunkelmodus.",
+      "soft": "Weiches Dunkel",
+      "softHint": "Ruhiges Fast-Schwarz",
+      "black": "Echtes Schwarz",
+      "blackHint": "OLED, spart Strom",
+      "graphite": "Graphit",
+      "graphiteHint": "Neutral, schonend für die Augen",
+      "midnight": "Mitternacht",
+      "midnightHint": "Blauer Stich"
+    },
+    "lightBase": {
+      "title": "Helle Basis",
+      "description": "Die Flächenfarbe im Hellmodus.",
+      "white": "Weiß",
+      "whiteHint": "Klassisch, höchste Helligkeit",
+      "grey": "Weiches Grau",
+      "greyHint": "Weniger Blendung, weiße Karten",
+      "paper": "Papier",
+      "paperHint": "Warmer Stich",
+      "cool": "Kühles Grau",
+      "coolHint": "Leichter Blaustich"
+    },
+    "accent": {
+      "title": "Akzent",
+      "description": "Wird für die aktive Seite, ausgewählte Karten, Links und den Fokus verwendet.",
+      "teal": "Petrolblau",
+      "indigo": "Indigo",
+      "violet": "Violett",
+      "green": "Grün",
+      "amber": "Bernstein",
+      "rose": "Rosa",
+      "custom": "Eigene Farbe",
+      "customColor": "Eigene Akzentfarbe wählen",
+      "customHex": "Hex-Farbe",
+      "customInvalid": "Verwenden Sie sechs Hex-Ziffern, etwa #0e7490.",
+      "adjusted": "Für die Lesbarkeit angepasst"
+    },
+    "font": {
+      "title": "Schrift",
+      "system": "Geist",
+      "systemHint": "Standard, in der App enthalten",
+      "device": "System",
+      "deviceHint": "Ihre Gerätschrift",
+      "rounded": "Gerundet",
+      "roundedHint": "Weiche Buchstabenformen",
+      "serif": "Serif",
+      "serifHint": "Klassisch, textähnlich",
+      "mono": "Mono",
+      "monoHint": "Feste Breite",
+      "readable": "Gut lesbar",
+      "readableHint": "Breite Buchstaben, mehr Zeilenabstand"
+    },
+    "textSize": {
+      "title": "Textgröße",
+      "description": "Skaliert den gesamten Text und die Abstände.",
+      "slider": "Textgröße",
+      "quick": "Schnellauswahl",
+      "sample": "Aa Zwölf Boxkämpfer jagen Viktor",
+      "reset": "Größe zurücksetzen"
+    },
+    "width": {
+      "title": "Seitenbreite",
+      "slider": "Inhaltsbreite",
+      "reset": "Breite zurücksetzen"
+    },
+    "gutter": {
+      "title": "Seitenabstand",
+      "tight": "Eng",
+      "tightHint": "Mehr Platz für Inhalte",
+      "normal": "Normal",
+      "normalHint": "Ausgewogen",
+      "roomy": "Großzügig",
+      "roomyHint": "Ruhiger, mehr Rand"
+    },
+    "density": {
+      "description": "Wie viel Abstand Karten, Listen und Formulare verwenden.",
+      "compactHint": "Mehr passt auf den Bildschirm",
+      "comfortableHint": "Mehr Luft"
+    },
+    "sections": {
+      "color": "Farbe",
+      "type": "Schrift",
+      "layout": "Layout",
+      "look": "Aussehen und Hintergrund",
+      "sync": "Synchronisierung"
+    },
+    "motion": {
+      "title": "Bewegung",
+      "description": "Animationen und Übergänge im gesamten Dashboard.",
+      "system": "System folgen",
+      "systemHint": "Geräteeinstellung verwenden",
+      "on": "Reduzieren",
+      "onHint": "Minimale Animation",
+      "off": "Alle erlauben",
+      "offHint": "Geräteeinstellung ignorieren"
+    },
+    "sync": {
+      "label": "Mit meinem Konto synchronisieren",
+      "hint": "Diese Auswahl in jedem Browser behalten, mit dem Sie sich anmelden.",
+      "syncing": "Wird synchronisiert...",
+      "synced": "Synchronisiert {{when}}",
+      "justNow": "gerade eben",
+      "notSynced": "Nicht synchronisiert",
+      "tooLarge": "Zu groß zum Synchronisieren. Ihre Auswahl bleibt in diesem Browser.",
+      "off": "Synchronisierung ist aus. Die Auswahl bleibt in diesem Browser.",
+      "export": "Exportieren",
+      "import": "Importieren",
+      "importLabel": "Darstellung aus einer JSON-Datei importieren",
+      "importBad": "Diese Datei ist kein gültiger Darstellungsexport.",
+      "imported": "Importiert."
+    },
+    "look": {
+      "title": "Aussehen",
+      "glass": "Glas-betont",
+      "glassHint": "Weicher Schleier, Kapseln",
+      "restrained": "Zurückhaltend",
+      "restrainedHint": "Flach, kompakte Ecken"
+    },
+    "backdrop": {
+      "title": "Hintergrund",
+      "branded": "Mit Markenfarbe",
+      "brandedHint": "Weicher Farbschleier",
+      "plain": "Schlicht",
+      "plainHint": "Kein Schleier, einfarbiger Hintergrund"
+    },
+    "radius": {
+      "title": "Eckenrundung",
+      "description": "Wie rund Buttons, Karten und Eingabefelder sind.",
+      "sharp": "Scharf",
+      "sharpHint": "Eckig, technisch",
+      "normal": "Normal",
+      "normalHint": "Das Standardaussehen",
+      "soft": "Weich",
+      "softHint": "Runder, freundlicher"
+    },
+    "contrast": {
+      "title": "Hoher Kontrast",
+      "description": "Stärkere Rahmen, gedämpfter Text und Fokusring.",
+      "system": "System folgen",
+      "systemHint": "Geräteeinstellung verwenden",
+      "on": "Ein",
+      "onHint": "Immer hoher Kontrast",
+      "off": "Aus",
+      "offHint": "Geräteeinstellung ignorieren",
+      "sample": "Beispiel für gedämpften Text"
+    },
+    "codeFont": {
+      "title": "Code-Schrift",
+      "system-mono": "Geist Mono",
+      "system-monoHint": "Standard, in der App enthalten",
+      "device-mono": "System-Mono",
+      "device-monoHint": "Ihre Geräte-Standardschrift",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "Falls installiert",
+      "fira": "Fira Code",
+      "firaHint": "Falls installiert",
+      "menlo": "Menlo",
+      "menloHint": "Mac und ähnliche"
+    },
+    "codeSize": {
+      "title": "Code-Größe",
+      "description": "Textgröße für Code, Logs und Terminals.",
+      "slider": "Code-Größe",
+      "reset": "Größe zurücksetzen",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "Code-Beispiel"
+    },
+    "hub": {
+      "saved": "Gespeichert",
+      "resetDone": "Auf Standard zurückgesetzt",
+      "theme": {
+        "title": "Theme",
+        "system": "System",
+        "systemHint": "Folgt Ihrem Gerät",
+        "light": "Hell",
+        "lightHint": "Helle Flächen",
+        "dark": "Dunkel",
+        "darkHint": "Wenig Blendung",
+        "oled": "OLED",
+        "oledHint": "Echtes Schwarz, dieses Gerät"
+      },
+      "preview": {
+        "title": "Live-Vorschau",
+        "nav": "Beispielnavigation",
+        "apps": "Apps",
+        "deployments": "Deployments",
+        "servers": "Server",
+        "running": "Läuft",
+        "stopped": "Gestoppt",
+        "field": "App-Name",
+        "fieldValue": "web",
+        "primary": "Deploy",
+        "secondary": "Abbrechen",
+        "toast": "web in 12 s deployt",
+        "dialogTitle": "App löschen?",
+        "dialogBody": "Das kann nicht rückgängig gemacht werden.",
+        "danger": "Löschen"
+      }
+    },
+    "listKeys": {
+      "title": "Tastenkürzel für Listen",
+      "on": "Aktiviert",
+      "onHint": "j, k, x, Enter, /, ?",
+      "off": "Deaktiviert",
+      "offHint": "Nur Maus und Tab"
+    }
+  }
+}

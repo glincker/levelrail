@@ -1,0 +1,900 @@
+{
+  "nav": {
+    "areas": {
+      "general": {
+        "title": "ワークスペース",
+        "description": "プロフィール、組織、環境、セットアップ。"
+      },
+      "access": {
+        "title": "ユーザーとアクセス",
+        "description": "サインインできる人と、その権限。"
+      },
+      "security": {
+        "title": "セキュリティ",
+        "description": "シークレット保管庫、ホストファイアウォール、セキュリティ状況。"
+      },
+      "developer": {
+        "title": "開発者",
+        "description": "CLI と API のアクセス。"
+      },
+      "ai": {
+        "title": "AI とエージェント",
+        "description": "エージェント接続、AI 制御、アシスタント。"
+      },
+      "domains": {
+        "title": "ドメインと TLS",
+        "description": "プラットフォームの ingress と証明書。"
+      },
+      "backups": {
+        "title": "バックアップとストレージ",
+        "description": "バックアップとアーティファクトの保存先。"
+      },
+      "notifications": {
+        "title": "通知",
+        "description": "アラートチャンネル、メール、ステータスページ。"
+      },
+      "integrations": {
+        "title": "Git とレジストリ",
+        "description": "Git プロバイダーアプリとコンテナレジストリ。"
+      },
+      "beta": {
+        "title": "ベータ機能",
+        "description": "動作はするが、まだ調整中の機能。"
+      },
+      "updates": {
+        "title": "アップデート",
+        "description": "現在のバージョンと利用可能なリリース。"
+      },
+      "advanced": {
+        "title": "システム",
+        "description": "プロバイダー、コンテナ、オブザーバビリティ、低レベルの制御。"
+      }
+    },
+    "items": {
+      "account": {
+        "title": "アカウント",
+        "description": "プロフィールとパスワード。"
+      },
+      "iam-policies": {
+        "title": "IAM ポリシー"
+      },
+      "security": {
+        "title": "セキュリティ",
+        "description": "セッションとログイン保護。"
+      },
+      "security-runtime": {
+        "title": "セキュリティとランタイム"
+      },
+      "security-center": {
+        "title": "セキュリティセンター",
+        "description": "セキュリティスコア、すべてのセッションとデバイス、トークンポリシー。"
+      },
+      "tokens": {
+        "title": "API トークン",
+        "description": "CLI、CI、MCP 用の、スコープ付きで取り消し可能な認証情報。"
+      },
+      "mobile-devices": {
+        "title": "モバイルデバイス",
+        "description": "QR コードでスマートフォンをペアリングし、ペアリング済みの端末を取り消します。"
+      },
+      "plugins": {
+        "title": "プラグイン"
+      },
+      "agents": {
+        "title": "エージェント",
+        "description": "MCP 経由で AI エージェントを接続し、そのトークンを管理します。"
+      },
+      "ai-control": {
+        "title": "AI 制御"
+      },
+      "cli-access": {
+        "title": "CLI アクセス"
+      },
+      "api-explorer": {
+        "title": "API エクスプローラー",
+        "description": "ダッシュボードを離れずに、実際のエンドポイントを閲覧して試せます。"
+      },
+      "users": {
+        "title": "ユーザー",
+        "description": "このプラットフォームにアクセスできる全員。"
+      },
+      "teams": {
+        "title": "チーム",
+        "description": "各チームのメンバー、ロール、招待。"
+      },
+      "roles": {
+        "title": "ロール",
+        "description": "ゲストロールを含む、名前付きの権限セット。"
+      },
+      "oauth": {
+        "title": "OAuth サインイン",
+        "description": "Google または GitHub でのサインインを許可します。"
+      },
+      "sso": {
+        "title": "シングルサインオン",
+        "description": "SAML ID プロバイダー、ディレクトリ同期、グループロール。"
+      },
+      "session-policy": {
+        "title": "セッションポリシー"
+      },
+      "organizations": {
+        "title": "組織",
+        "description": "関連するプロジェクトを組織にまとめます。"
+      },
+      "environments": {
+        "title": "環境"
+      },
+      "stacks": {
+        "title": "スタック",
+        "description": "リビジョン履歴、rollback、ピン留めを備えたリソースセット。"
+      },
+      "stack-templates": {
+        "title": "スタックテンプレート",
+        "description": "描画、プレビュー、コピーができるスターターのスタックバンドル。"
+      },
+      "github-app": {
+        "title": "GitHub App",
+        "description": "Git ベースの deploy 用のプライベートリポジトリアクセス。"
+      },
+      "gitlab-app": {
+        "title": "GitLab App"
+      },
+      "bitbucket-app": {
+        "title": "Bitbucket App",
+        "description": "Git ベースの deploy 用の Bitbucket Cloud リポジトリアクセス。"
+      },
+      "gitea-app": {
+        "title": "Gitea App",
+        "description": "Git ベースの deploy 用のセルフホスト Gitea リポジトリアクセス。"
+      },
+      "forgejo-app": {
+        "title": "Forgejo App",
+        "description": "Git ベースの deploy 用のセルフホスト Forgejo リポジトリアクセス。"
+      },
+      "bitbucket-server-app": {
+        "title": "Bitbucket Server"
+      },
+      "notification-channels": {
+        "title": "通知チャンネル",
+        "description": "Slack、Discord、Telegram、Webhook、メールのアラート。"
+      },
+      "deploy-policies": {
+        "title": "deploy ポリシー"
+      },
+      "build-performance": {
+        "title": "ビルド性能",
+        "description": "ビルドのタイムアウトと同時実行数。"
+      },
+      "maintenance": {
+        "title": "計画メンテナンス"
+      },
+      "status-page": {
+        "title": "ステータスページ"
+      },
+      "backup-targets": {
+        "title": "バックアップ先",
+        "description": "マネージドデータベースのバックアップ用の S3 互換バケット。"
+      },
+      "storage": {
+        "title": "ストレージの保存先"
+      },
+      "registry-credentials": {
+        "title": "レジストリ認証情報",
+        "description": "build.type: image でプライベートイメージを取得します。"
+      },
+      "node-providers": {
+        "title": "クラウドノードプロバイダー"
+      },
+      "registry": {
+        "title": "コンテナレジストリ",
+        "description": "マルチノードのビルドキャッシュ用の組み込みイメージレジストリ。"
+      },
+      "email": {
+        "title": "メール",
+        "description": "アラートとパスワードリセット用の送信 SMTP。"
+      },
+      "email-templates": {
+        "title": "メールテンプレート",
+        "description": "プラットフォームが送信するすべてのメールを、ライブプレビューで編集します。"
+      },
+      "email-audiences": {
+        "title": "メールオーディエンス",
+        "description": "オプトアウト付きの、送信先として保存したグループ。"
+      },
+      "email-messages": {
+        "title": "メールメッセージ",
+        "description": "オーディエンスにメールを書き、配信履歴を確認します。"
+      },
+      "cloudflare-tunnel": {
+        "title": "Cloudflare Tunnel",
+        "description": "受信ポートを開けずにこのコントロールプレーンを公開します。"
+      },
+      "vault": {
+        "title": "Vault"
+      },
+      "data-export": {
+        "title": "データエクスポート"
+      },
+      "event-webhooks": {
+        "title": "イベント Webhook"
+      },
+      "traffic-export": {
+        "title": "トラフィックエクスポート"
+      },
+      "observability": {
+        "title": "オブザーバビリティ"
+      },
+      "ai-assistant": {
+        "title": "AI アシスタント",
+        "description": "プラットフォームのチャットアシスタント用に、独自の LLM API キーを使います。"
+      },
+      "import-platform": {
+        "title": "別のプラットフォームからインポート",
+        "description": "Coolify、Dokploy、CapRover からアプリを移行します。"
+      },
+      "general": {
+        "title": "一般",
+        "description": "システムの状態と設定。"
+      },
+      "control-plane-backup": {
+        "title": "コントロールプレーンのバックアップ"
+      },
+      "dr-report": {
+        "title": "復旧レポート"
+      },
+      "control-plane-health": {
+        "title": "コントロールプレーンの状態"
+      },
+      "system-status": {
+        "title": "Doctor"
+      },
+      "firewall": {
+        "title": "ファイアウォール"
+      },
+      "containers": {
+        "title": "コンテナ"
+      },
+      "cleanup": {
+        "title": "クリーンアップ"
+      },
+      "platform": {
+        "title": "プラットフォーム"
+      },
+      "domains": {
+        "title": "ドメイン",
+        "description": "プラットフォームの ingress: ダッシュボードのドメインと ACME 証明書。"
+      },
+      "certificates": {
+        "title": "TLS 証明書"
+      },
+      "infrastructure": {
+        "title": "Infrastructure as Code",
+        "description": "YAML のリソースファイルを計画して適用し、現在の状態をエクスポートします。"
+      },
+      "database-upgrades": {
+        "title": "データベースのアップグレード",
+        "description": "既定のアップグレードポリシーとメンテナンスウィンドウ。"
+      },
+      "updates": {
+        "title": "アップデート",
+        "description": "現在のバージョンと利用可能なリリース。"
+      },
+      "beta-features": {
+        "title": "ベータ機能",
+        "description": "動作はするが、まだ調整中の機能を有効にします。"
+      },
+      "audit-log": {
+        "title": "監査ログ",
+        "description": "すべてのセッションと API トークンについて、誰が何を変更したか。"
+      },
+      "integrations": {
+        "title": "連携"
+      },
+      "git-connections": {
+        "title": "Git 接続"
+      },
+      "benchmarks": {
+        "title": "ベンチマーク"
+      },
+      "appearance": {
+        "title": "外観",
+        "description": "テーマ、アクセント、フォント、幅、密度。"
+      },
+      "azure-devops-app": {
+        "title": "Azure DevOps",
+        "description": "個人用アクセストークンによる Azure DevOps リポジトリアクセス。"
+      }
+    },
+    "search": "設定を検索",
+    "back": "戻る",
+    "pins": {
+      "group": "ピン留め",
+      "pin": "{{label}} をピン留め",
+      "unpin": "{{label}} のピン留めを解除",
+      "limit": "ピン留めの上限({{max}})に達しました。先に 1 つ解除してください。"
+    },
+    "expandAll": "すべてのグループを展開",
+    "collapseAll": "すべてのグループを折りたたむ",
+    "oneAtATime": "一度に 1 つのグループだけ開く",
+    "groupCount": "{{count}} ページ",
+    "noMatchTitle": "\"{{query}}\" に一致する設定はありません",
+    "noMatchDescription": "別の言葉を試すか、検索をクリアしてすべての領域を表示してください。",
+    "searchLoading": "設定を検索しています",
+    "searchFailedTitle": "検索を完了できませんでした",
+    "retry": "再試行",
+    "title": "設定",
+    "description": "アカウント、チーム、プラットフォームの設定。",
+    "jumpTo": "領域へ移動"
+  },
+  "securityPage": {
+    "session": {
+      "title": "現在のセッション",
+      "description": "このブラウザがサインインしているアカウントとセッション。",
+      "account": "サインイン中のアカウント",
+      "accountHelp": "ここでのすべての操作が記録されるアカウント。",
+      "until": "サインインの有効期限",
+      "untilHelp": "この時刻を過ぎると、再度サインインが必要です。"
+    },
+    "rail": {
+      "label": "サインイン保護の概要",
+      "protection": "サインイン保護",
+      "twoFactor": "二要素認証",
+      "on": "オン",
+      "off": "オフ",
+      "passkeys": "登録済みパスキー",
+      "signedIn": "サインイン中のアカウント",
+      "until": "セッションの有効期限",
+      "jump": "このページ内",
+      "sessionsLink": "セッション",
+      "twoFactorLink": "二要素認証",
+      "passkeysLink": "パスキー"
+    },
+    "eyebrow": "アカウント",
+    "title": "セキュリティ",
+    "help": "セキュリティガイド",
+    "status": {
+      "protected": "第 2 要素が有効",
+      "open": "パスワードのみ"
+    },
+    "banner": {
+      "title": "サインインがパスワードのみに依存しています"
+    },
+    "account": {
+      "title": "サインイン方法",
+      "open": "アカウントを開く"
+    },
+    "loginProtection": {
+      "title": "ログイン保護"
+    }
+  },
+  "generalPage": {
+    "rail": {
+      "label": "インスタンスの概要",
+      "instance": "インスタンス",
+      "url": "インスタンス URL",
+      "version": "バージョン",
+      "health": "ヘルス",
+      "docker": "Docker デーモン",
+      "connected": "接続済み",
+      "disconnected": "未接続",
+      "secrets": "シークレット",
+      "configured": "設定済み",
+      "notConfigured": "未設定",
+      "docs": "ドキュメント"
+    },
+    "eyebrow": "プラットフォーム",
+    "title": "一般",
+    "help": "トラブルシューティングガイド",
+    "density": {
+      "title": "インターフェースの密度",
+      "compact": "コンパクト",
+      "comfortable": "ゆったり"
+    },
+    "status": {
+      "healthy": "正常",
+      "attention": "要確認"
+    },
+    "banner": {
+      "docker": "Docker に接続できません",
+      "secrets": "シークレットの暗号化が設定されていません"
+    },
+    "width": {
+      "title": "ページ幅",
+      "comfortable": "ゆったり",
+      "comfortableHint": "余白の広い中央寄せの 1 カラム",
+      "wide": "ワイド",
+      "wideHint": "大きな画面をより広く使います",
+      "full": "全幅",
+      "fullHint": "端から端まで",
+      "compact": "コンパクト",
+      "compactHint": "読みやすい狭いカラム",
+      "custom": "幅を指定",
+      "customHint": "ピクセル単位で幅を選びます"
+    },
+    "appearanceLink": {
+      "title": "外観",
+      "description": "テーマ、フォント、ページ幅、密度は 1 か所にまとまりました。",
+      "open": "外観を開く"
+    }
+  },
+  "tokensPage": {
+    "eyebrow": "アクセス",
+    "title": "API トークン",
+    "help": "API リファレンス",
+    "docsLink": "API ドキュメントを見る",
+    "activeCount_one": "有効なトークン {{count}} 件",
+    "activeCount_other": "有効なトークン {{count}} 件",
+    "expiring": {
+      "title_one": "14 日以内に期限が切れるトークン {{count}} 件",
+      "title_other": "14 日以内に期限が切れるトークン {{count}} 件"
+    },
+    "banner": {
+      "title_one": "期限のない root トークン {{count}} 件",
+      "title_other": "期限のない root トークン {{count}} 件"
+    },
+    "revoked": {
+      "title": "取り消されたトークン",
+      "autoDelete": "取り消されたトークンを削除するまでの期間",
+      "janitorLink": "クリーンアップ設定",
+      "cleanNow": "今すぐクリーンアップ",
+      "revokedAt": "取り消し日時",
+      "confirmTitle": "取り消されたトークンを削除しますか?",
+      "confirmBody_one": "取り消されたトークン {{count}} 件が完全に削除されます。",
+      "confirmBody_other": "取り消されたトークン {{count}} 件が完全に削除されます。",
+      "confirmAction": "取り消されたトークンを削除",
+      "cleaned_one": "取り消されたトークン {{count}} 件を削除しました。",
+      "cleaned_other": "取り消されたトークン {{count}} 件を削除しました。"
+    },
+    "attention": {
+      "title_one": "要確認のトークンが 1 件あります",
+      "title_other": "要確認のトークンの問題が {{count}} 件あります"
+    }
+  },
+  "usersPage": {
+    "eyebrow": "アクセス",
+    "title": "ユーザー",
+    "help": "チームとロールのガイド",
+    "count_one": "{{count}} 人のユーザー",
+    "count_other": "{{count}} 人のユーザー",
+    "pendingInvites": "保留中の招待",
+    "empty": {
+      "title": "ユーザーが見つかりません",
+      "body": "上の操作から、チームメイトを招待するかユーザーを作成してください。"
+    },
+    "banner": {
+      "title_one": "承認待ちの招待が {{count}} 件あります",
+      "title_other": "承認待ちの招待が {{count}} 件あります"
+    },
+    "table": {
+      "label": "ユーザー",
+      "email": "メール",
+      "displayName": "表示名",
+      "signsInWith": "サインイン方法",
+      "role": "ロール",
+      "abilities": "権限",
+      "lastLogin": "最終ログイン",
+      "never": "なし",
+      "password": "パスワード",
+      "noMethod": "なし",
+      "firstUser": "最初のユーザー",
+      "you": "あなた",
+      "custom": "カスタム",
+      "editAbilities": "権限を編集",
+      "selfEditHint": "自分自身の権限は編集できません",
+      "disabled": "無効",
+      "mustChangePassword": "パスワードの変更が必要"
+    },
+    "passwordChange": {
+      "require": "パスワードの変更を必須にする",
+      "clear": "パスワードの要件を解除",
+      "requireTitle": "{{email}} にパスワードの変更を求めますか?",
+      "clearTitle": "{{email}} のパスワード要件を解除しますか?",
+      "clearBody": "現在のパスワードで再びサインインできるようになります。",
+      "cancel": "キャンセル",
+      "confirmRequire": "変更を必須にする",
+      "confirmClear": "要件を解除",
+      "saving": "保存中...",
+      "required": "{{email}} はパスワードを変更する必要があります。",
+      "cleared": "{{email}} は現在のパスワードでサインインできます。"
+    }
+  },
+  "accountPage": {
+    "title": "アカウント",
+    "profile": {
+      "title": "プロフィール",
+      "email": "メール",
+      "emailVerified": "確認済み",
+      "emailUnverified": "未確認",
+      "displayName": "表示名",
+      "hasPassword": "このアカウントはパスワードでサインインします。",
+      "noPassword": "このアカウントにはパスワードが設定されておらず、OAuth サインインのみです。",
+      "edit": "表示名を編集",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "saved": "表示名を更新しました",
+      "saving": "保存中...",
+      "counter": "{{used}} / {{max}} 文字"
+    },
+    "loading": "読み込み中...",
+    "loadError": "このセクションを読み込めませんでした。",
+    "sessions": {
+      "title": "アクティブなセッションと信頼済みデバイス",
+      "current": "このセッション",
+      "lastSeen": "最終確認",
+      "revoke": "サインアウト",
+      "revoked": "セッションを終了しました",
+      "revokeOthers": "他のすべてのセッションをサインアウト",
+      "revokedOthers_one": "他のセッション {{count}} 件を終了しました",
+      "revokedOthers_other": "他のセッション {{count}} 件を終了しました",
+      "devices": "信頼済みデバイス",
+      "devicesEmpty": "信頼済みデバイスはありません。",
+      "deviceRemove": "削除",
+      "deviceRemoved": "信頼済みデバイスを削除しました",
+      "canApprove": "サインインを承認できます",
+      "signedInAt": "サインイン日時",
+      "networks_one": "{{count}} ネットワーク",
+      "networks_other": "{{count}} ネットワーク",
+      "tone": {
+        "live": "現在アクティブ",
+        "recent": "過去 1 時間以内にアクティブ",
+        "idle": "アイドル"
+      },
+      "revoking": "サインアウトしています...",
+      "revokeLabel": "{{device}}({{ip}})をサインアウト",
+      "revokeConfirmTitle": "{{device}} をサインアウトしますか?",
+      "revokeConsequence": "そのブラウザは直ちにサインアウトされます。",
+      "revokeReloginConsequence": "使用している人は再度サインインが必要です。",
+      "revokeOthersConfirmTitle": "他のすべてのセッションをサインアウトしますか?",
+      "revokeOthersConsequence": "他のすべてのブラウザとデバイスが直ちにサインアウトされます。",
+      "revokeOthersKeep": "このブラウザはサインインしたままです。",
+      "empty": "アクティブなセッションはありません",
+      "emptyBody": "ブラウザからサインインすると、セッションがここに表示されます。",
+      "deviceRemoving": "削除しています...",
+      "deviceRemoveLabel": "信頼済みデバイス {{device}} を削除",
+      "deviceConfirmTitle": "信頼済みデバイス {{device}} を削除しますか?"
+    },
+    "providers": {
+      "title": "連携済みのサインインプロバイダー",
+      "none": "このインスタンスで有効なサインインプロバイダーはありません。",
+      "linked": "連携済み",
+      "link": "連携",
+      "configure": "プロバイダーを設定"
+    },
+    "tokens": {
+      "title": "自分の API トークン",
+      "description": "CLI、CI、エージェント用に作成したトークン。",
+      "manage": "すべてのトークンと履歴",
+      "emptyTitle": "有効な API トークンはありません"
+    },
+    "access": {
+      "title": "自分のアクセス",
+      "tier": "アクセスレベル",
+      "tiers": {
+        "admin": "管理者",
+        "operator": "オペレーター",
+        "developer": "開発者",
+        "viewer": "閲覧者"
+      },
+      "teams": "チーム",
+      "noTeams": "どのチームにも所属していません。",
+      "policies": "アタッチ済みの IAM ポリシー",
+      "noPolicies": "アタッチされたポリシーはありません。",
+      "missing": "不足している権限: {{ability}}",
+      "areas": {
+        "view": "アプリ、サービス、ログを表示",
+        "deploy": "deploy と rollback",
+        "configure": "アプリとサービスの設定を変更",
+        "secrets_read": "シークレットと機密値を表示",
+        "sensitive_write": "機密設定を変更",
+        "users_and_access": "ユーザー、ロール、ポリシーを管理",
+        "platform_settings": "プラットフォーム全体の設定を変更"
+      },
+      "colArea": "機能",
+      "colStatus": "ステータス",
+      "colAction": "操作",
+      "allowed": "許可",
+      "request": "アクセスを申請",
+      "requestLabel": "アクセスを申請: {{area}}"
+    },
+    "retry": "再試行",
+    "password": {
+      "titleChange": "パスワードを変更",
+      "titleSet": "パスワードを設定",
+      "current": "現在のパスワード",
+      "currentRequired": "現在のパスワードは必須です",
+      "new": "新しいパスワード",
+      "confirm": "新しいパスワード(確認)",
+      "tooShort": "新しいパスワードは {{min}} 文字以上にしてください",
+      "mismatch": "パスワードが一致しません",
+      "minHint": "{{min}} 文字以上。",
+      "changed": "パスワードを変更しました",
+      "saving": "保存中...",
+      "submitChange": "パスワードを変更",
+      "submitSet": "パスワードを設定",
+      "strength": {
+        "label": "パスワードの強度",
+        "level0": "未入力",
+        "level1": "弱い",
+        "level2": "普通",
+        "level3": "良い",
+        "level4": "強い"
+      },
+      "rules": {
+        "length": "{{min}} 文字以上",
+        "mixedCase": "大文字と小文字",
+        "digit": "数字",
+        "symbol": "記号",
+        "met": "(満たしている)",
+        "unmet": "(満たしていない)"
+      }
+    },
+    "twoFactor": {
+      "title": "二要素認証",
+      "enabled_one": "有効です。残りのリカバリーコードは {{count}} 個です。",
+      "enabled_other": "有効です。残りのリカバリーコードは {{count}} 個です。",
+      "enable": "二要素認証を有効にする",
+      "setupTitle": "二要素認証を設定",
+      "qrFallback": "スキャンできませんか? このキーを入力してください",
+      "qrLabel": "認証アプリ用の QR コード",
+      "qrLoading": "QR コードを読み込み中",
+      "setupKey": "セットアップキー",
+      "setupLink": "またはこのリンクを使用",
+      "codeLabel": "認証アプリのコード",
+      "codePlaceholder": "123456",
+      "recoveryPlaceholder": "xxxx-xxxx-xxxx-xxxx",
+      "cancel": "キャンセル",
+      "verify": "確認して有効にする",
+      "verifying": "確認しています...",
+      "enabledTitle": "二要素認証を有効にしました",
+      "saved": "これらのコードを保存しました",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "copyAll": "すべてコピー",
+      "regenerate": "リカバリーコードを再生成",
+      "regenerateAction": "再生成",
+      "regenerating": "再生成しています...",
+      "regeneratedTitle": "新しいリカバリーコードを生成しました",
+      "done": "完了",
+      "disable": "二要素認証を無効にする",
+      "disableTitle": "二要素認証を無効にしますか?",
+      "recoveryCodeLabel": "リカバリーコード",
+      "authCodeLabel": "認証コード",
+      "useAuthCode": "認証コードを使用",
+      "useRecoveryCode": "リカバリーコードを使用",
+      "disableAction": "無効にする",
+      "disabling": "無効にしています..."
+    }
+  },
+  "appearancePage": {
+    "title": "外観",
+    "reset": "既定値に戻す",
+    "defaultBadge": "既定",
+    "recommendedBadge": "おすすめ",
+    "presets": {
+      "title": "プリセット",
+      "description": "1 クリックで複数の項目をまとめて設定します。",
+      "default": "既定",
+      "defaultHint": "標準の見た目",
+      "focusDark": "フォーカスダーク",
+      "focusDarkHint": "グラファイト、ゆったりした余白、ゆったりした密度",
+      "oled": "OLED",
+      "oledHint": "純黒、ワイドなページ、コンパクトな密度",
+      "paper": "ペーパー",
+      "paperHint": "暖かいライト、読みやすいフォント、狭いページ",
+      "customDescription": "現在の設定はどのプリセットとも一致しません。",
+      "custom": "カスタム"
+    },
+    "theme": {
+      "title": "カラーモード",
+      "description": "ライト、ダーク、またはブラウザに合わせます。"
+    },
+    "darkBase": {
+      "title": "ダークの基調色",
+      "description": "ダークモードで使う面の色。",
+      "soft": "ソフトダーク",
+      "softHint": "落ち着いた黒に近い色",
+      "black": "純黒",
+      "blackHint": "OLED、省電力",
+      "graphite": "グラファイト",
+      "graphiteHint": "中立的で目に優しい",
+      "midnight": "ミッドナイト",
+      "midnightHint": "青みがかった色"
+    },
+    "lightBase": {
+      "title": "ライトの基調色",
+      "description": "ライトモードで使う面の色。",
+      "white": "ホワイト",
+      "whiteHint": "定番、最も明るい",
+      "grey": "ソフトグレー",
+      "greyHint": "まぶしさを抑え、白いカード",
+      "paper": "ペーパー",
+      "paperHint": "暖かい色味",
+      "cool": "クールグレー",
+      "coolHint": "わずかに青みがかった色"
+    },
+    "accent": {
+      "title": "アクセント",
+      "description": "アクティブなページ、選択したカード、リンク、フォーカスに使われます。",
+      "teal": "ティールブルー",
+      "indigo": "インディゴ",
+      "violet": "バイオレット",
+      "green": "グリーン",
+      "amber": "アンバー",
+      "rose": "ローズ",
+      "custom": "カスタムカラー",
+      "customColor": "カスタムのアクセントカラーを選択",
+      "customHex": "16 進カラー",
+      "customInvalid": "#0e7490 のように 6 桁の 16 進数で指定してください。",
+      "adjusted": "読みやすさのために調整済み"
+    },
+    "font": {
+      "title": "フォント",
+      "system": "Geist",
+      "systemHint": "既定、アプリに同梱",
+      "device": "システム",
+      "deviceHint": "お使いのデバイスのフォント",
+      "rounded": "丸ゴシック",
+      "roundedHint": "やわらかい字形",
+      "serif": "セリフ",
+      "serifHint": "クラシック、本文向き",
+      "mono": "等幅",
+      "monoHint": "固定幅",
+      "readable": "読みやすさ重視",
+      "readableHint": "幅広の文字、広めの行間"
+    },
+    "textSize": {
+      "title": "文字サイズ",
+      "description": "すべての文字と余白を拡大縮小します。",
+      "slider": "文字サイズ",
+      "quick": "クイック選択",
+      "sample": "Aa あいうえお The quick brown fox",
+      "reset": "サイズをリセット"
+    },
+    "width": {
+      "title": "ページ幅",
+      "slider": "コンテンツ幅",
+      "reset": "幅をリセット"
+    },
+    "gutter": {
+      "title": "左右の余白",
+      "tight": "狭い",
+      "tightHint": "コンテンツの領域を広く",
+      "normal": "標準",
+      "normalHint": "バランス重視",
+      "roomy": "広い",
+      "roomyHint": "落ち着いた、余白多め"
+    },
+    "density": {
+      "description": "カード、リスト、フォームで使う間隔の大きさ。",
+      "compactHint": "画面により多く収まります",
+      "comfortableHint": "余裕のある間隔"
+    },
+    "sections": {
+      "color": "カラー",
+      "type": "文字",
+      "layout": "レイアウト",
+      "look": "見た目と背景",
+      "sync": "同期"
+    },
+    "motion": {
+      "title": "モーション",
+      "description": "ダッシュボード全体のアニメーションとトランジション。",
+      "system": "システムに従う",
+      "systemHint": "デバイスの設定を使用",
+      "on": "減らす",
+      "onHint": "最小限のアニメーション",
+      "off": "すべて許可",
+      "offHint": "デバイスの設定を無視"
+    },
+    "sync": {
+      "label": "アカウントに同期",
+      "hint": "サインインするすべてのブラウザでこれらの選択を保持します。",
+      "syncing": "同期しています...",
+      "synced": "{{when}}に同期しました",
+      "justNow": "たった今",
+      "notSynced": "未同期",
+      "tooLarge": "サイズが大きすぎて同期できません。選択内容はこのブラウザに残ります。",
+      "off": "同期はオフです。選択内容はこのブラウザに残ります。",
+      "export": "エクスポート",
+      "import": "インポート",
+      "importLabel": "JSON ファイルから外観をインポート",
+      "importBad": "このファイルは有効な外観のエクスポートではありません。",
+      "imported": "インポートしました。"
+    },
+    "look": {
+      "title": "スタイル",
+      "glass": "ガラス調",
+      "glassHint": "やわらかな色味、カプセル型",
+      "restrained": "控えめ",
+      "restrainedHint": "フラット、コンパクトな角"
+    },
+    "backdrop": {
+      "title": "背景",
+      "branded": "ブランドカラー",
+      "brandedHint": "やわらかな色の重なり",
+      "plain": "シンプル",
+      "plainHint": "重なりなし、単色の背景"
+    },
+    "radius": {
+      "title": "角の丸み",
+      "description": "ボタン、カード、入力欄の丸さ。",
+      "sharp": "シャープ",
+      "sharpHint": "四角い、技術的",
+      "normal": "標準",
+      "normalHint": "標準の見た目",
+      "soft": "やわらか",
+      "softHint": "より丸く、親しみやすい"
+    },
+    "contrast": {
+      "title": "ハイコントラスト",
+      "description": "枠線、薄い文字、フォーカスリングを強めます。",
+      "system": "システムに従う",
+      "systemHint": "デバイスの設定を使用",
+      "on": "オン",
+      "onHint": "常にハイコントラスト",
+      "off": "オフ",
+      "offHint": "デバイスの設定を無視",
+      "sample": "薄い文字のサンプル"
+    },
+    "codeFont": {
+      "title": "コードのフォント",
+      "system-mono": "Geist Mono",
+      "system-monoHint": "既定、アプリに同梱",
+      "device-mono": "システム等幅",
+      "device-monoHint": "お使いのデバイスの既定",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "インストールされている場合",
+      "fira": "Fira Code",
+      "firaHint": "インストールされている場合",
+      "menlo": "Menlo",
+      "menloHint": "Mac など"
+    },
+    "codeSize": {
+      "title": "コードのサイズ",
+      "description": "コード、ログ、ターミナルの文字サイズ。",
+      "slider": "コードのサイズ",
+      "reset": "サイズをリセット",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "コードのサンプル"
+    },
+    "hub": {
+      "saved": "保存しました",
+      "resetDone": "既定値に戻しました",
+      "theme": {
+        "title": "テーマ",
+        "system": "システム",
+        "systemHint": "デバイスに合わせる",
+        "light": "ライト",
+        "lightHint": "明るい面",
+        "dark": "ダーク",
+        "darkHint": "まぶしさを抑える",
+        "oled": "OLED",
+        "oledHint": "純黒、このデバイス"
+      },
+      "preview": {
+        "title": "ライブプレビュー",
+        "nav": "サンプルナビゲーション",
+        "apps": "アプリ",
+        "deployments": "デプロイ",
+        "servers": "サーバー",
+        "running": "実行中",
+        "stopped": "停止中",
+        "field": "アプリ名",
+        "fieldValue": "web",
+        "primary": "Deploy",
+        "secondary": "キャンセル",
+        "toast": "web を 12 秒で deploy しました",
+        "dialogTitle": "アプリを削除しますか?",
+        "dialogBody": "この操作は元に戻せません。",
+        "danger": "削除"
+      }
+    },
+    "listKeys": {
+      "title": "リストのキーボードショートカット",
+      "on": "有効",
+      "onHint": "j, k, x, Enter, /, ?",
+      "off": "無効",
+      "offHint": "マウスと Tab のみ"
+    }
+  }
+}
