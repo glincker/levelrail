@@ -114,7 +114,10 @@ func (rt *Router) boundDatabaseURL(ctx context.Context, d *store.DesiredDatabase
 	if err != nil {
 		return "", false
 	}
-	u := url.URL{Scheme: d.Engine, User: url.UserPassword(d.Name, pw), Host: database.ContainerName(d.Name) + ":" + strconv.Itoa(port), Path: "/" + d.Name}
+	u := url.URL{Scheme: database.ClientScheme(d.Engine), User: url.UserPassword(d.Name, pw), Host: database.ContainerName(d.Name) + ":" + strconv.Itoa(port), Path: "/" + d.Name}
+	if d.Engine == store.EngineDocumentDB {
+		u.RawQuery = database.DocumentDBClientQuery
+	}
 	return u.String(), true
 }
 

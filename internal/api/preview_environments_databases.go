@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -103,9 +104,15 @@ func (rt *Router) provisionOneEphemeralDatabase(ctx context.Context, previewEnvi
 		return store.PreviewEphemeralDatabase{}, false, fmt.Errorf("check existing ephemeral database: %w", err)
 	}
 
+	if d.Engine == spec.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB) {
+		return store.PreviewEphemeralDatabase{}, false, fmt.Errorf("engine %q is not supported", d.Engine)
+	}
 	version := d.Version
 	if version == "" {
 		version = "latest"
+		if d.Engine == spec.EngineDocumentDB {
+			version = documentDBDefaultVersion
+		}
 	}
 
 	dbName := ephemeralDatabaseName(previewName, sourceKey)
@@ -251,3 +258,6 @@ func (rt *Router) teardownOneEphemeralDatabase(ctx context.Context, d store.Prev
 	}
 	return nil
 }
+
+// documentDBDefaultVersion is pinned because the registry's moving tags change the on-disk format.
+const documentDBDefaultVersion = "pg17-1.2.0"

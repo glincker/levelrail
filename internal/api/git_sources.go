@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -316,6 +317,9 @@ func validateGitSourceDatabases(databases map[string]spec.Database) error {
 		case spec.EnginePostgres, spec.EngineRedis, spec.EngineMySQL, spec.EngineMongoDB, spec.EngineDocumentDB, spec.EngineMariaDB, spec.EngineKeyDB, spec.EngineClickHouse, spec.EngineDragonfly, spec.EngineValkey,
 			spec.EngineMeilisearch, spec.EngineQdrant, spec.EngineTypesense, spec.EngineMemcached:
 		default:
+			return fmt.Errorf("databases[%q]: engine %q is not supported", name, d.Engine)
+		}
+		if d.Engine == spec.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB) {
 			return fmt.Errorf("databases[%q]: engine %q is not supported", name, d.Engine)
 		}
 	}

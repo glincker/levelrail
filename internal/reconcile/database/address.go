@@ -179,3 +179,14 @@ func SupportsField(engine, field string) bool {
 		return false
 	}
 }
+
+// ClientScheme is the URL scheme drivers expect for engine: DocumentDB speaks the MongoDB wire protocol.
+func ClientScheme(engine string) string {
+	if engine == store.EngineDocumentDB {
+		return "mongodb"
+	}
+	return engine
+}
+
+// DocumentDBClientQuery is the URI query the gateway needs while its certificate is self signed.
+const DocumentDBClientQuery = "tls=true&tlsAllowInvalidCertificates=true"

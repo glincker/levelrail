@@ -46,3 +46,17 @@ func TestConnectSnippetsPostgresURL(t *testing.T) {
 		t.Errorf("got %q want %q", got, want)
 	}
 }
+
+func TestConnectSnippetsDocumentDBUsesMongoScheme(t *testing.T) {
+	tgt := ConnectSnippetTarget{Engine: "documentdb", Host: "db.internal", Port: 10260, User: "app", Database: "main"}
+	for _, s := range BuildConnectSnippets(tgt, "pw", true) {
+		if s.ID != "url" {
+			continue
+		}
+		if !strings.HasPrefix(s.Code, "mongodb://") || !strings.Contains(s.Code, "tls=true") || !strings.Contains(s.Code, "tlsAllowInvalidCertificates=true") {
+			t.Errorf("url = %s", s.Code)
+		}
+		return
+	}
+	t.Fatal("no url snippet")
+}

@@ -527,6 +527,12 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		env := map[string]string{
 			"USERNAME": c.mongoCreds.Username,
 			"PASSWORD": c.mongoCreds.Password,
+			// Both telemetry switches off: a self-hosted platform sends nothing upstream.
+			"ENABLE_TELEMETRY":           "false",
+			"DOCUMENTDB_USAGE_TELEMETRY": "false",
+		}
+		if desired.PubliclyAccessible {
+			env["TLS_MODE"] = "requireTLS"
 		}
 		return c.reconcileEngine(ctx, desired, env, nil, documentdbDataPath, documentdbContainerPort, nil)
 

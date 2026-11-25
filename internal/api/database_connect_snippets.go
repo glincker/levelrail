@@ -68,8 +68,12 @@ func BuildConnectSnippets(t ConnectSnippetTarget, password string, reveal bool) 
 			{"node", "Node.js (ioredis)", fmt.Sprintf("const redis = new Redis(%q);", u)},
 			{"python", "Python (redis-py)", fmt.Sprintf("r = redis.Redis.from_url(%q)", u)},
 		}
-	case "mongodb":
-		u := snippetURL("mongodb", t, pw, addr, t.Database, nil)
+	case "mongodb", "documentdb":
+		var q map[string]string
+		if t.Engine == "documentdb" {
+			q = map[string]string{"tls": "true", "tlsAllowInvalidCertificates": "true"}
+		}
+		u := snippetURL("mongodb", t, pw, addr, t.Database, q)
 		return []ConnectSnippet{
 			{"url", "Connection URL", u},
 			{"cli", "mongosh", fmt.Sprintf("mongosh %q", u)},

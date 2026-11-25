@@ -173,6 +173,9 @@ func (rt *Router) coverageResources(ctx context.Context, health []backup.Resourc
 
 	out := make([]backup.CoverageResource, 0, len(dbs)+len(services))
 	for _, d := range dbs {
+		if !store.EngineSupportsBackups(d.Engine) {
+			continue
+		}
 		out = append(out, backup.CoverageResource{
 			Kind: store.BackupResourceKindDatabase, Name: d.Name,
 			Schedule: d.BackupSchedule, TargetID: d.BackupTargetID, Scratch: scratchDBs[d.Name],
@@ -395,6 +398,9 @@ func (rt *Router) handleProtectAll(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Router) protectOne(ctx context.Context, item protectPlanItem, targetID, schedule string, retain, retainDays int) error {
 	if item.Kind == store.BackupResourceKindDatabase {
+		if d, err := rt.databases.GetDesiredDatabase(ctx, item.Name); err == nil && !store.EngineSupportsBackups(d.Engine) {
+			return fmt.Errorf("backups are not supported for %s databases", d.Engine)
+		}
 		return rt.databases.SetDatabaseBackupSchedule(ctx, item.Name, targetID, schedule, retain, retainDays)
 	}
 	sqlitePath := ""
