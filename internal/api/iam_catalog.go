@@ -1,6 +1,10 @@
 package api
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/dbauthz"
+)
 
 const (
 	riskRead      = "read"
@@ -24,6 +28,11 @@ var abilityCatalog = []abilityInfo{
 	{AbilityWriteSensitive, "change", riskSensitive, "Write sensitive", "Change secrets, domains, access rules and other security relevant settings."},
 	{AbilityDeploy, "deploy", riskWrite, "Deploy", "Ship a new version, roll back and approve deploys."},
 	{AbilityRoot, "admin", riskRoot, "Root", "Everything, including users, tokens, policies and nodes."},
+	{string(dbauthz.ActionRead), "database", riskSensitive, "Database read", "Browse schema, rows and keys in the explorer. Needs read:sensitive today. Denying it also denies db:query and db:export."},
+	{string(dbauthz.ActionQuery), "database", riskSensitive, "Database query", "Run read only statements in the explorer. Needs read:sensitive today. Denying it also denies db:export; denying db:read denies it."},
+	{string(dbauthz.ActionExport), "database", riskSensitive, "Database export", "Export explorer results. Needs read:sensitive today. Denying db:read or db:query denies it."},
+	{string(dbauthz.ActionWrite), "database", riskRoot, "Database write", "Run statements that change data. Needs root today."},
+	{string(dbauthz.ActionAdmin), "database", riskRoot, "Database admin", "Administer database access. Needs root today."},
 }
 
 func abilityRisk(id string) string {

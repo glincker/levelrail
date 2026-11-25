@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/dbauthz"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -110,7 +111,7 @@ func isKnownAbility(a string) bool {
 			return true
 		}
 	}
-	return false
+	return dbauthz.Known(a)
 }
 
 // matchesPattern reports whether value matches pattern, where pattern

@@ -51,7 +51,7 @@ func loadUnscopedParamRoutes(t *testing.T) map[string]bool {
 					path += p[2]
 				}
 			}
-			if !strings.Contains(path, "{") || strings.Contains(rest, "requireAbilityForResource(") {
+			if !strings.Contains(path, "{") || strings.Contains(rest, "requireAbilityForResource(") || strings.Contains(rest, "requireAbilityForDatabase(") {
 				continue
 			}
 			found[m[1]+" "+path] = true
