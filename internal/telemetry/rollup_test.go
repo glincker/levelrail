@@ -413,3 +413,134 @@ func TestRollup_CumulativeIncreaseHandlesReset(t *testing.T) {
 		t.Errorf("increase = %v max = %v, want 100 and 150", sum, top)
 	}
 }
+
+func cumSamples(start time.Time, n int, step time.Duration, value func(i int) float64) []Sample {
+	rows := make([]Sample, 0, n)
+	for i := 0; i < n; i++ {
+		rows = append(rows, Sample{ResourceID: "service:web", Metric: "disk_read_bytes", Timestamp: start.Add(time.Duration(i) * step), Value: value(i)})
+	}
+	return rows
+}
+
+func cumIncreaseByBucket(rows []Sample, width int64) map[int64]float64 {
+	out := map[int64]float64{}
+	for i := 1; i < len(rows); i++ {
+		inc := rows[i].Value - rows[i-1].Value
+		if inc < 0 {
+			inc = rows[i].Value
+		}
+		out[rows[i].Timestamp.Unix()/width*width] += inc
+	}
+	return out
+}
+
+func cumRollupSums(t *testing.T, db *DB, tier int) map[int64]float64 {
+	t.Helper()
+	rows, err := db.QueryContext(context.Background(), `SELECT ts, sum FROM metric_rollups WHERE tier = ? AND metric = 'disk_read_bytes' ORDER BY ts`, tier)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[int64]float64{}
+	for rows.Next() {
+		var ts int64
+		var sum float64
+		if err := rows.Scan(&ts, &sum); err != nil {
+			t.Fatal(err)
+		}
+		out[ts] = sum
+	}
+	return out
+}
+
+func resetValue(i int) float64 { return float64((i % 500) * 7) }
+
+func TestRollup_CumulativeAcrossChunkBoundary(t *testing.T) {
+	ctx := context.Background()
+	start := time.Unix(1_699_999_200, 0).UTC()
+	cfg := testTierConfig()
+	cfg.MaxBucketsPerRun = 1
+	db, clk := newClockDB(t, cfg, start.Add(40*time.Minute))
+	rows := cumSamples(start, 120, 15*time.Second, resetValue)
+	if err := db.WriteSamples(ctx, rows); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 30; i++ {
+		res, err := db.Rollup(ctx, clk.now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !res.More {
+			break
+		}
+	}
+	want := cumIncreaseByBucket(rows, 60)
+	got := cumRollupSums(t, db, tierMinute)
+	for ts, w := range want {
+		if got[ts] != w {
+			t.Errorf("bucket %d increase = %v, want %v", ts, got[ts], w)
+		}
+	}
+}
+
+func TestRollup_CumulativeGapLongerThanLookbackCountsNothing(t *testing.T) {
+	ctx := context.Background()
+	start := time.Unix(1_699_999_200, 0).UTC()
+	cfg := testTierConfig()
+	cfg.MaxBucketsPerRun = 1
+	db, clk := newClockDB(t, cfg, start.Add(30*time.Minute))
+	rows := []Sample{
+		{ResourceID: "service:web", Metric: "disk_read_bytes", Timestamp: start, Value: 100},
+		{ResourceID: "service:web", Metric: "disk_read_bytes", Timestamp: start.Add(20 * time.Minute), Value: 150},
+		{ResourceID: "service:web", Metric: "disk_read_bytes", Timestamp: start.Add(20*time.Minute + 15*time.Second), Value: 160},
+	}
+	if err := db.WriteSamples(ctx, rows); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 40; i++ {
+		res, err := db.Rollup(ctx, clk.now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !res.More {
+			break
+		}
+	}
+	// The jump over the gap is unknown, so only the 10 after it counts.
+	if got := cumRollupSums(t, db, tierMinute)[start.Add(20*time.Minute).Unix()]; got != 10 {
+		t.Errorf("increase after gap = %v, want 10", got)
+	}
+}
+
+func TestRollup_CumulativeHourSumEqualsRawIncreaseAndRerunIsIdentical(t *testing.T) {
+	ctx := context.Background()
+	start := time.Unix(1_699_999_200, 0).UTC()
+	db, clk := newClockDB(t, testTierConfig(), start.Add(3*time.Hour+time.Minute))
+	rows := cumSamples(start, 720, 15*time.Second, resetValue)
+	if err := db.WriteSamples(ctx, rows); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Rollup(ctx, clk.now()); err != nil {
+		t.Fatal(err)
+	}
+	hour := start.Add(time.Hour).Unix()
+	if got, want := cumRollupSums(t, db, tierHour)[hour], cumIncreaseByBucket(rows, 3600)[hour]; got != want {
+		t.Errorf("hour increase = %v, want raw increase %v", got, want)
+	}
+	first := cumRollupSums(t, db, tierMinute)
+	if _, err := db.ExecContext(ctx, `DELETE FROM rollup_state`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Rollup(ctx, clk.now()); err != nil {
+		t.Fatal(err)
+	}
+	second := cumRollupSums(t, db, tierMinute)
+	if len(first) != len(second) {
+		t.Fatalf("rerun changed row count %d to %d", len(first), len(second))
+	}
+	for ts, v := range first {
+		if second[ts] != v {
+			t.Errorf("rerun changed bucket %d: %v to %v", ts, v, second[ts])
+		}
+	}
+}

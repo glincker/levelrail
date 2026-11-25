@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
@@ -117,14 +118,33 @@ func (db *DB) rollupTier(ctx context.Context, tier int, now time.Time, cfg TierC
 	return int((end - start) / width), more, nil
 }
 
-// cumulativeLookback widens the scan so the delta across a bucket edge is not lost.
-const cumulativeLookback = 2 * 60
+// minCumulativeLookback is the floor, in seconds, of the scan widening that keeps the delta across a bucket edge.
+const minCumulativeLookback = 120
+
+var cumulativeLookbackSource atomic.Pointer[func() time.Duration]
+
+// SetCumulativeLookbackSource makes the lookback follow fn, so a saved sample or idle interval applies to the next run.
+func SetCumulativeLookbackSource(fn func() time.Duration) { cumulativeLookbackSource.Store(&fn) }
+
+// CumulativeLookback is twice the slowest gap between samples: the idle interval, or four times the live one.
+func CumulativeLookback(idle, sample time.Duration) time.Duration {
+	return 2 * max(idle, 4*sample)
+}
+
+// cumulativeLookbackSeconds never drops below the floor, so a missing source still bridges one bucket edge.
+func cumulativeLookbackSeconds() int64 {
+	secs := int64(minCumulativeLookback)
+	if fn := cumulativeLookbackSource.Load(); fn != nil {
+		secs = max(secs, int64((*fn)()/time.Second))
+	}
+	return secs
+}
 
 // rollupCumulative stores the reset aware increase per bucket: a negative step is a reset, so the new total counts whole.
 func (db *DB) rollupCumulative(ctx context.Context, tx *sql.Tx, tier int, start, end int64) error {
 	width := int64(tier)
 	in, inArgs := cumulativeIn()
-	args := append([]any{start - cumulativeLookback, end}, inArgs...)
+	args := append([]any{start - cumulativeLookbackSeconds(), end}, inArgs...)
 	args = append([]any{tier, width, width}, args...)
 	args = append(args, start, width)
 	query := `
@@ -257,6 +277,8 @@ func (db *DB) pruneOldestTenth(ctx context.Context) ([3]int64, error) {
 	if err != nil {
 		return out, err
 	}
+	// Keep the lookback of raw below the watermark so the next bucket still finds its previous total.
+	rawDone -= cumulativeLookbackSeconds()
 	minuteDone, err := db.rollupWatermark(ctx, tierHour)
 	if err != nil {
 		return out, err
