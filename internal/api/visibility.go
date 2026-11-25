@@ -96,6 +96,19 @@ type resourceScope struct {
 	dbOwner  map[string]*store.ResourceOwner
 }
 
+// resourceMentionsEnvironment is true for environment: and environment-kind:
+// resources and for trailing wildcards that can match either prefix.
+func resourceMentionsEnvironment(r string) bool {
+	if strings.HasPrefix(r, resourcePrefixEnvironment) || strings.HasPrefix(r, resourcePrefixEnvironmentKind) {
+		return true
+	}
+	if r == "*" || !strings.HasSuffix(r, "*") {
+		return false
+	}
+	p := strings.TrimSuffix(r, "*")
+	return strings.HasPrefix(resourcePrefixEnvironment, p) || strings.HasPrefix(resourcePrefixEnvironmentKind, p)
+}
+
 func policiesMentionEnvironments(policies []store.Policy) bool {
 	for _, p := range policies {
 		doc, err := ParseDocument(p.Document)
@@ -104,7 +117,7 @@ func policiesMentionEnvironments(policies []store.Policy) bool {
 		}
 		for _, s := range doc.Statement {
 			for _, r := range s.Resource {
-				if strings.HasPrefix(r, resourcePrefixEnvironment) {
+				if resourceMentionsEnvironment(r) {
 					return true
 				}
 			}
