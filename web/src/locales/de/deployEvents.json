@@ -97,7 +97,8 @@
     "p95": "p95-Latenz",
     "noTraffic": "Kein Traffic in diesem Fenster",
     "open": "Das Fenster nach der Umschaltung ist noch offen, daher können sich diese Zahlen ändern.",
-    "window": "Die Fenster betragen {{window}} auf jeder Seite der Umschaltung."
+    "window": "Die Fenster betragen {{window}} auf jeder Seite der Umschaltung.",
+    "gap": "Umschaltlücke {{ms}} ms: {{failed}} fehlgeschlagene, {{queued}} wartende Anfragen"
   },
   "phases": {
     "title": "Zeit pro Phase",

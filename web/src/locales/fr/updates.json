@@ -846,5 +846,23 @@
     "month": "Mois",
     "loading": "Chargement de la disponibilité...",
     "none": "Aucune donnée de disponibilité ce mois-ci. Ajoutez l'app à la page d'état pour commencer l'enregistrement."
+  },
+  "smoke": {
+    "title": "Contrôle rapide après mise à jour",
+    "run": "Lancer le contrôle rapide",
+    "running": "Vérification...",
+    "error": "Le contrôle rapide n’a pas pu s’exécuter : {{message}}",
+    "item": {
+      "apps": "Les applications sont en ligne",
+      "domains": "Les domaines se résolvent",
+      "certificates": "Les certificats sont valides",
+      "backups": "Les sauvegardes sont à jour"
+    },
+    "status": {
+      "pass": "réussi",
+      "warn": "avertissement",
+      "fail": "échec",
+      "skipped": "ignoré"
+    }
   }
 }

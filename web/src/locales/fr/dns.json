@@ -366,7 +366,9 @@
     },
     "record": "Ajoutez un enregistrement A avec l'hôte {{host}} et la valeur {{value}}. Un TTL de 300 secondes convient.",
     "proxyOff": "Désactivez le nuage orange (proxy) pour cet enregistrement jusqu'à l'émission du certificat.",
-    "docs": "Documentation DNS de {{provider}}"
+    "docs": "Documentation DNS de {{provider}}",
+    "copyHost": "Copier l’hôte",
+    "copyValue": "Copier la valeur"
   },
   "verification": {
     "ok_one": "Token accepté. {{count}} zone est visible.",

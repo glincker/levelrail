@@ -98,7 +98,8 @@
     "p95": "Latência p95",
     "noTraffic": "Sem tráfego nesta janela",
     "open": "A janela após o cutover ainda está aberta, então estes números podem mudar.",
-    "window": "As janelas têm {{window}} de cada lado do cutover."
+    "window": "As janelas têm {{window}} de cada lado do cutover.",
+    "gap": "Lacuna na troca de {{ms}} ms: {{failed}} falhas, {{queued}} requisições na fila"
   },
   "phases": {
     "title": "Tempo por fase",

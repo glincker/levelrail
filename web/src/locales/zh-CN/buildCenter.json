@@ -116,5 +116,18 @@
       "bounded": "已达到记录数上限,其余将在下次构建时处理",
       "partial": "提前停止,已释放的部分会保留"
     }
+  },
+  "farm": {
+    "title": "构建集群，最近 {{hours}} 小时",
+    "builds": "{{count}} 次构建，每小时 {{perHour}} 次",
+    "waitP50": "排队等待 p50",
+    "waitP95": "排队等待 p95",
+    "cache": "缓存命中率",
+    "cacheUnknown": "暂无数据",
+    "peak": "槽位使用峰值",
+    "slotsOf": "每个节点 {{peak}} / {{total}}",
+    "chart": "每小时使用的槽位数，峰值为 {{peak}}",
+    "seconds": "{{value}} 秒",
+    "sizeHint": "峰值接近槽位上限，或 p95 等待时间很长，说明构建集群需要再加一个节点或更多槽位。"
   }
 }

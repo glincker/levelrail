@@ -81,7 +81,14 @@
     "cancel": "Cancelar",
     "started": "Restaurando en {{name}}",
     "startedDescription": "Sigue el progreso en el historial de restauraciones de este volumen.",
-    "failed": "No se pudo iniciar la restauración"
+    "failed": "No se pudo iniciar la restauración",
+    "stepCheck": "Revisa tu aplicación",
+    "checkTitle": "Restauración iniciada. Ahora revisa tu aplicación.",
+    "checkOpen": "Abre tu aplicación y comprueba que sigue cargando.",
+    "checkData": "Cuando termine la restauración, confirma que tus datos han vuelto a {{name}}.",
+    "checkSwitch": "Apunta la aplicación a {{name}} (su ajuste de volumen) y vuelve a desplegar para que use los datos restaurados.",
+    "checkLink": "Abrir la aplicación",
+    "done": "Listo"
   },
   "policy": {
     "title": "Política de respaldo de {{app}}/{{volume}}",
@@ -622,5 +629,49 @@
     "startedTitle": "Prueba de restauración iniciada.",
     "startedBody": "El resultado aparece aquí cuando termine.",
     "startFailed": "No se pudo iniciar la prueba de restauración."
+  },
+  "sameDisk": {
+    "title": "Si este servidor cae, los respaldos también.",
+    "body": "Todos los destinos de respaldo están en el disco de este servidor. Conecta almacenamiento en otro lugar para conservar una copia.",
+    "connect": "Conectar almacenamiento"
+  },
+  "newServer": {
+    "open": "Restaurar en un servidor nuevo",
+    "title": "Restaurar en un servidor nuevo",
+    "description": "Recupera una aplicación, sus volúmenes y bases de datos en otro nodo desde sus últimos respaldos. No se sobrescribe nada existente.",
+    "stepChoose": "Elegir aplicación y nodo",
+    "stepReview": "Revisar",
+    "stepProgress": "Progreso",
+    "app": "Aplicación",
+    "appPlaceholder": "Selecciona una aplicación",
+    "noApps": "No se encontró ninguna aplicación con datos respaldados.",
+    "node": "Nodo",
+    "nodePlaceholder": "Selecciona un nodo",
+    "noNodes": "No hay otro nodo disponible. Añade primero un servidor y vuelve.",
+    "nodeOffline": "{{name}} (sin conexión)",
+    "review": "Estos elementos se restaurarán en {{node}}.",
+    "reviewEmpty": "No hay nada que restaurar para esta aplicación.",
+    "kind": {
+      "volume": "Volumen",
+      "database": "Base de datos"
+    },
+    "status": {
+      "planned": "Listo",
+      "started": "Restaurando",
+      "skipped": "Omitido",
+      "failed": "Fallido"
+    },
+    "asName": "restaurado como {{name}}",
+    "nothingRestorable": "Ningún elemento tiene un respaldo correcto, así que no hay nada que iniciar.",
+    "next": "Revisar",
+    "back": "Atrás",
+    "confirm": "Restaurar ahora",
+    "cancel": "Cancelar",
+    "done": "Listo",
+    "planFailed": "No se pudo planificar la restauración: {{error}}",
+    "startFailed": "No se pudo iniciar la restauración: {{error}}",
+    "startedTitle": "Restauración iniciada",
+    "startedBody": "Cada elemento se restaura en segundo plano en un recurso nuevo en {{node}}. Sigue el progreso en el historial de restauraciones de abajo.",
+    "openApp": "Abrir la aplicación"
   }
 }

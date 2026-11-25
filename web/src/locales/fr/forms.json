@@ -184,5 +184,20 @@
     "ok": "Il est marqué comme test dans la boîte de réception ci-dessous.",
     "flagged": "Il a été signalé comme spam.",
     "failed": "Impossible d'envoyer le test."
+  },
+  "recipes": {
+    "title": "Partir d’un modèle (facultatif)",
+    "contact": {
+      "title": "Formulaire de contact par e-mail",
+      "body": "Nom, e-mail et message. Notifie votre canal e-mail."
+    },
+    "newsletter": {
+      "title": "Inscription à la newsletter",
+      "body": "Un seul champ e-mail. Exportez la liste en CSV."
+    },
+    "feedback": {
+      "title": "Retours vers Slack",
+      "body": "Un message et un e-mail facultatif. Notifie votre canal Slack."
+    }
   }
 }

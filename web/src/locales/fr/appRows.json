@@ -96,5 +96,19 @@
     "restarts_other": "{{count}} redémarrages",
     "restartsRising": "Le nombre de redémarrages augmente",
     "dbSize": "Taille de la base {{size}}"
+  },
+  "group": {
+    "label": "Grouper par",
+    "none": "Aucun groupe",
+    "node": "Nœud",
+    "project": "Projet",
+    "environment": "Environnement",
+    "noneNode": "Aucun nœud",
+    "noneProject": "Aucun projet",
+    "noneEnvironment": "Aucun environnement",
+    "count_one": "{{count}} application",
+    "count_other": "{{count}} applications",
+    "select": "Sélectionner le groupe",
+    "deselect": "Désélectionner le groupe"
   }
 }

@@ -151,7 +151,9 @@
     "healthCheck": "Comprobación de salud",
     "healthEnable": "Activar una comprobación de salud",
     "healthPath": "Ruta",
-    "healthHint": "Se comprueba antes de pasar el tráfico a un contenedor nuevo, y para detectar después uno caído. Las apps detectadas por Railpack que no sirvan esta ruta deberían desactivarla."
+    "healthHint": "Se comprueba antes de pasar el tráfico a un contenedor nuevo, y para detectar después uno caído. Las apps detectadas por Railpack que no sirvan esta ruta deberían desactivarla.",
+    "showMore": "Más opciones",
+    "hideMore": "Menos opciones"
   },
   "sshKey": {
     "title": "Clave de despliegue SSH",

@@ -96,5 +96,19 @@
     "restarts_other": "{{count}} Neustarts",
     "restartsRising": "Neustart-Zähler steigt",
     "dbSize": "Datenbankgröße {{size}}"
+  },
+  "group": {
+    "label": "Gruppieren nach",
+    "none": "Keine Gruppierung",
+    "node": "Node",
+    "project": "Projekt",
+    "environment": "Umgebung",
+    "noneNode": "Kein Node",
+    "noneProject": "Kein Projekt",
+    "noneEnvironment": "Keine Umgebung",
+    "count_one": "{{count}} App",
+    "count_other": "{{count}} Apps",
+    "select": "Gruppe auswählen",
+    "deselect": "Gruppe abwählen"
   }
 }

@@ -35,5 +35,12 @@
   "code": {
     "copy": "复制",
     "copied": "已复制"
+  },
+  "glossary": {
+    "title": "术语表",
+    "description": "对仪表盘中用到的术语的通俗解释。",
+    "search": "搜索术语",
+    "searchLabel": "搜索术语表",
+    "empty": "没有匹配的术语。"
   }
 }

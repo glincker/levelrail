@@ -97,7 +97,8 @@
     "p95": "Latencia p95",
     "noTraffic": "No hubo tráfico en esta ventana",
     "open": "La ventana posterior al cambio de tráfico sigue abierta, así que estas cifras pueden cambiar.",
-    "window": "Las ventanas son de {{window}} a cada lado del cambio de tráfico."
+    "window": "Las ventanas son de {{window}} a cada lado del cambio de tráfico.",
+    "gap": "Hueco de cambio de {{ms}} ms: {{failed}} fallidas, {{queued}} solicitudes en cola"
   },
   "phases": {
     "title": "Tiempo por fase",

@@ -846,5 +846,23 @@
     "month": "Mês",
     "loading": "Carregando disponibilidade...",
     "none": "Sem dados de disponibilidade neste mês. Adicione o app à página de status para começar a registrar."
+  },
+  "smoke": {
+    "title": "Verificação rápida pós-upgrade",
+    "run": "Executar verificação rápida",
+    "running": "Verificando...",
+    "error": "Não foi possível executar a verificação rápida: {{message}}",
+    "item": {
+      "apps": "Os apps estão no ar",
+      "domains": "Os domínios resolvem",
+      "certificates": "Os certificados são válidos",
+      "backups": "Os backups estão em dia"
+    },
+    "status": {
+      "pass": "ok",
+      "warn": "aviso",
+      "fail": "falha",
+      "skipped": "ignorado"
+    }
   }
 }

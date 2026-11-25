@@ -81,7 +81,14 @@
     "cancel": "Abbrechen",
     "started": "Wiederherstellung in {{name}} läuft",
     "startedDescription": "Verfolgen Sie den Fortschritt im Wiederherstellungsverlauf dieses Volumes.",
-    "failed": "Die Wiederherstellung konnte nicht gestartet werden"
+    "failed": "Die Wiederherstellung konnte nicht gestartet werden",
+    "stepCheck": "App prüfen",
+    "checkTitle": "Wiederherstellung gestartet. Jetzt Ihre App prüfen.",
+    "checkOpen": "Öffnen Sie Ihre App und prüfen Sie, ob sie noch lädt.",
+    "checkData": "Sobald die Wiederherstellung abgeschlossen ist, prüfen Sie, ob Ihre Daten wieder in {{name}} sind.",
+    "checkSwitch": "Richten Sie die App auf {{name}} aus (Volume-Einstellung) und deployen Sie neu, damit sie die wiederhergestellten Daten nutzt.",
+    "checkLink": "App öffnen",
+    "done": "Fertig"
   },
   "policy": {
     "title": "Backup-Richtlinie für {{app}}/{{volume}}",
@@ -622,5 +629,49 @@
     "startedTitle": "Wiederherstellungstest gestartet.",
     "startedBody": "Das Ergebnis erscheint hier, sobald er fertig ist.",
     "startFailed": "Wiederherstellungstest konnte nicht gestartet werden."
+  },
+  "sameDisk": {
+    "title": "Fällt dieser Server aus, sind die Backups auch weg.",
+    "body": "Alle Backup-Ziele liegen auf dem eigenen Datenträger dieses Servers. Verbinden Sie Speicher an anderer Stelle, damit eine Kopie erhalten bleibt.",
+    "connect": "Speicher verbinden"
+  },
+  "newServer": {
+    "open": "Auf neuem Server wiederherstellen",
+    "title": "Auf neuem Server wiederherstellen",
+    "description": "Stellt eine App, ihre Volumes und Datenbanken aus den neuesten Backups auf einem anderen Node wieder her. Vorhandenes wird nicht überschrieben.",
+    "stepChoose": "App und Node wählen",
+    "stepReview": "Prüfen",
+    "stepProgress": "Fortschritt",
+    "app": "App",
+    "appPlaceholder": "App auswählen",
+    "noApps": "Keine App mit gesicherten Daten gefunden.",
+    "node": "Node",
+    "nodePlaceholder": "Node auswählen",
+    "noNodes": "Kein weiterer Node verfügbar. Fügen Sie zuerst einen Server hinzu und kommen Sie dann zurück.",
+    "nodeOffline": "{{name}} (offline)",
+    "review": "Diese Elemente werden auf {{node}} wiederhergestellt.",
+    "reviewEmpty": "Für diese App gibt es nichts wiederherzustellen.",
+    "kind": {
+      "volume": "Volume",
+      "database": "Datenbank"
+    },
+    "status": {
+      "planned": "Bereit",
+      "started": "Wird wiederhergestellt",
+      "skipped": "Übersprungen",
+      "failed": "Fehlgeschlagen"
+    },
+    "asName": "wiederhergestellt als {{name}}",
+    "nothingRestorable": "Kein Element hat ein erfolgreiches Backup, daher gibt es nichts zu starten.",
+    "next": "Prüfen",
+    "back": "Zurück",
+    "confirm": "Jetzt wiederherstellen",
+    "cancel": "Abbrechen",
+    "done": "Fertig",
+    "planFailed": "Wiederherstellung konnte nicht geplant werden: {{error}}",
+    "startFailed": "Wiederherstellung konnte nicht gestartet werden: {{error}}",
+    "startedTitle": "Wiederherstellung gestartet",
+    "startedBody": "Jedes Element wird im Hintergrund in eine neue Ressource auf {{node}} wiederhergestellt. Den Fortschritt sehen Sie unten im Wiederherstellungsverlauf.",
+    "openApp": "App öffnen"
   }
 }

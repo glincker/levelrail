@@ -184,5 +184,20 @@
     "ok": "Sie ist im Posteingang unten als Test markiert.",
     "flagged": "Sie wurde als Spam markiert.",
     "failed": "Der Test konnte nicht gesendet werden."
+  },
+  "recipes": {
+    "title": "Rezept zum Start (optional)",
+    "contact": {
+      "title": "Kontaktformular per E-Mail",
+      "body": "Name, E-Mail und Nachricht. Benachrichtigt Ihren E-Mail-Kanal."
+    },
+    "newsletter": {
+      "title": "Newsletter-Anmeldung",
+      "body": "Ein E-Mail-Feld. Liste als CSV exportieren."
+    },
+    "feedback": {
+      "title": "Feedback an Slack",
+      "body": "Eine Nachricht und optional E-Mail. Benachrichtigt Ihren Slack-Kanal."
+    }
   }
 }

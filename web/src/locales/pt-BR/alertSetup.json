@@ -93,5 +93,16 @@
     "minRequestsHelp": "Ignora a verificação quando ontem teve menos requisições que isto, para que domínios calmos não gerem alertas.",
     "daysLabel": "Dias restantes",
     "daysHelp": "Dispara quando o certificado de um domínio estacionado tem menos dias restantes que isto."
+  },
+  "emailQuick": {
+    "label": "Seu e-mail",
+    "placeholder": "voce@exemplo.com",
+    "hint": "Um endereço recebe alertas quando algo cai, um backup falha ou o espaço em disco acaba.",
+    "submit": "Avisar por e-mail sobre problemas",
+    "submitting": "Configurando...",
+    "invalid": "Informe um e-mail válido",
+    "channelName": "E-mail do proprietário",
+    "done": "Os alertas por e-mail estão ativos",
+    "failed": "Não foi possível configurar os alertas por e-mail"
   }
 }

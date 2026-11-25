@@ -717,54 +717,54 @@
     }
   },
   "quick": {
-    "channel": "Release channel",
+    "channel": "リリースチャンネル",
     "dayOption": {
-      "custom": "Custom (keep current)",
-      "daily": "Every day",
-      "weekdays": "Weekdays",
-      "weekends": "Weekends"
+      "custom": "カスタム (現在の設定を維持)",
+      "daily": "毎日",
+      "weekdays": "平日",
+      "weekends": "週末"
     },
     "days": {
-      "custom": "on your custom schedule",
-      "daily": "every night",
-      "weekdays": "on weekdays",
-      "weekends": "on weekends"
+      "custom": "カスタムスケジュールで",
+      "daily": "毎晩",
+      "weekdays": "平日に",
+      "weekends": "週末に"
     },
-    "daysLabel": "Days",
-    "error": "Could not save: {{message}}",
-    "hours": "{{hours}} h",
-    "length": "Length",
+    "daysLabel": "曜日",
+    "error": "保存できませんでした: {{message}}",
+    "hours": "{{hours}} 時間",
+    "length": "長さ",
     "level": {
-      "any": "Minor and patch",
-      "label": "What to install",
-      "patch": "Patch releases"
+      "any": "マイナーとパッチ",
+      "label": "インストール対象",
+      "patch": "パッチリリース"
     },
-    "loadError": "Could not load automatic update settings.",
+    "loadError": "自動更新の設定を読み込めませんでした。",
     "more": {
-      "checks": "Safety checks",
-      "history": "Update history",
-      "restore": "Restore points"
+      "checks": "安全確認",
+      "history": "更新履歴",
+      "restore": "復元ポイント"
     },
-    "off": "Updates are never installed on their own. You choose when to update.",
-    "paused": "Automatic updates are paused until {{date}}.",
-    "released": "Released {{date}}",
+    "off": "更新は自動ではインストールされません。更新のタイミングはご自身で選べます。",
+    "paused": "自動更新は {{date}} まで一時停止中です。",
+    "released": "{{date}} に公開",
     "rows": {
-      "migrations": "Database changes",
-      "notes": "Release notes",
-      "plan": "Backup and scheduling"
+      "migrations": "データベースの変更",
+      "notes": "リリースノート",
+      "plan": "バックアップとスケジュール"
     },
-    "save": "Save schedule",
-    "savedOff": "Automatic updates turned off.",
-    "savedOn": "Automatic updates turned on.",
-    "scheduleSaved": "Schedule saved.",
+    "save": "スケジュールを保存",
+    "savedOff": "自動更新をオフにしました。",
+    "savedOn": "自動更新をオンにしました。",
+    "scheduleSaved": "スケジュールを保存しました。",
     "scheduleSummary": "{{start}} から {{end}} {{zone}}、{{days}}",
-    "scheduleToggle": "Schedule",
-    "start": "Start",
+    "scheduleToggle": "スケジュール",
+    "start": "開始",
     "title": "自動更新",
-    "undo": "Undo",
-    "zone": "Time zone",
-    "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "undo": "元に戻す",
+    "zone": "タイムゾーン",
+    "zoneHelp": "サーバーのタイムゾーンは {{zone}} です。バックアップと安全確認が先に実行されます。",
+    "zoneInvalid": "有効なタイムゾーンを入力してください (例: Europe/Berlin)。",
     "checkOn": "新しいリリースのバックグラウンド確認はオンです。確認のみで、インストールは上のスイッチで制御します。",
     "checkOff": "新しいリリースのバックグラウンド確認はオフです。自動更新をオンにすると、これもオンになります。",
     "onBlocked": "自動更新はオンですが、このサーバーでは実行できません。下のステータスを確認してください。",
@@ -831,5 +831,23 @@
     "month": "月",
     "loading": "稼働率を読み込み中...",
     "none": "この月の稼働率データはありません。アプリをステータスページに追加すると記録が始まります。"
+  },
+  "smoke": {
+    "title": "アップグレード後のスモークチェック",
+    "run": "スモークチェックを実行",
+    "running": "確認中...",
+    "error": "スモークチェックを実行できませんでした: {{message}}",
+    "item": {
+      "apps": "アプリが稼働中",
+      "domains": "ドメインが解決される",
+      "certificates": "証明書が有効",
+      "backups": "バックアップが最新"
+    },
+    "status": {
+      "pass": "成功",
+      "warn": "警告",
+      "fail": "失敗",
+      "skipped": "スキップ"
+    }
   }
 }

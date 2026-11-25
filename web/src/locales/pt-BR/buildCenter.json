@@ -118,5 +118,18 @@
       "bounded": "Limite de registros atingido, o restante segue no próximo build",
       "partial": "Interrompido cedo, o que foi liberado é mantido"
     }
+  },
+  "farm": {
+    "title": "Farm de builds, últimas {{hours}} horas",
+    "builds": "{{count}} builds, {{perHour}} por hora",
+    "waitP50": "Espera na fila p50",
+    "waitP95": "Espera na fila p95",
+    "cache": "Taxa de acerto do cache",
+    "cacheUnknown": "Sem dados",
+    "peak": "Pico de slots em uso",
+    "slotsOf": "{{peak}} de {{total}} por nó",
+    "chart": "Slots em uso por hora, {{peak}} no pico",
+    "seconds": "{{value}} s",
+    "sizeHint": "Pico perto do limite de slots ou espera p95 longa indica que o farm precisa de outro nó ou mais slots."
   }
 }

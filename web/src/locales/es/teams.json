@@ -130,7 +130,10 @@
     "clear": "Quitar todos los límites",
     "saved": "Cuota guardada",
     "cleared": "Límites de cuota eliminados",
-    "readOnly": "Solo los administradores y propietarios del equipo pueden cambiar estos límites."
+    "readOnly": "Solo los administradores y propietarios del equipo pueden cambiar estos límites.",
+    "live": "En uso ahora: {{live}} de {{reserved}} reservados ({{sampled}} de {{total}} aplicaciones informan)",
+    "liveOfReserved": "{{percent}} % de lo reservado",
+    "liveLabel": "{{resource}} en uso ahora"
   },
   "errors": {
     "generic": "Algo salió mal: {{message}}"

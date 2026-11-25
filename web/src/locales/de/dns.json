@@ -358,7 +358,9 @@
     },
     "record": "Fügen Sie einen A-Eintrag mit Host {{host}} und Wert {{value}} hinzu. Eine TTL von 300 Sekunden ist in Ordnung.",
     "proxyOff": "Schalten Sie die orange Wolke (Proxy) für diesen Eintrag aus, bis das Zertifikat ausgestellt ist.",
-    "docs": "DNS-Dokumentation von {{provider}}"
+    "docs": "DNS-Dokumentation von {{provider}}",
+    "copyHost": "Host kopieren",
+    "copyValue": "Wert kopieren"
   },
   "verification": {
     "ok_one": "Token akzeptiert. {{count}} Zone ist sichtbar.",

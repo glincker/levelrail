@@ -184,5 +184,20 @@
     "ok": "Está marcado como prueba en la bandeja de entrada de abajo.",
     "flagged": "Se marcó como spam.",
     "failed": "No se pudo enviar la prueba."
+  },
+  "recipes": {
+    "title": "Empezar desde una receta (opcional)",
+    "contact": {
+      "title": "Formulario de contacto por correo",
+      "body": "Nombre, correo y mensaje. Avisa a tu canal de correo."
+    },
+    "newsletter": {
+      "title": "Suscripción a boletín",
+      "body": "Un solo campo de correo. Exporta la lista como CSV."
+    },
+    "feedback": {
+      "title": "Comentarios a Slack",
+      "body": "Un mensaje y correo opcional. Avisa a tu canal de Slack."
+    }
   }
 }

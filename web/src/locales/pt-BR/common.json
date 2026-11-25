@@ -314,7 +314,14 @@
   },
   "confirmDialog": {
     "cancel": "Cancelar",
-    "typePrompt": "Digite {{value}} para confirmar"
+    "typePrompt": "Digite {{value}} para confirmar",
+    "impactLead": "Você perde: {{items}}.",
+    "impactVolumes_one": "{{count}} volume",
+    "impactVolumes_other": "{{count}} volumes",
+    "impactDomains_one": "{{count}} domínio",
+    "impactDomains_other": "{{count}} domínios",
+    "impactBackups_one": "os backups ficam por {{count}} dia",
+    "impactBackups_other": "os backups ficam por {{count}} dias"
   },
   "deleteApp": {
     "trigger": "Excluir",
@@ -520,7 +527,9 @@
       "systemStatus": "Doctor",
       "report": "Relatar um problema",
       "community": "Perguntar à comunidade",
-      "suggest": "Sugerir um recurso"
+      "suggest": "Sugerir um recurso",
+      "copyDetails": "Copiar detalhes para o suporte",
+      "detailsHeader": "Detalhes de suporte do Levelrail"
     },
     "account": {
       "controlPlane": "Control plane",
@@ -1287,8 +1296,14 @@
         "title": "O e-mail não está configurado",
         "message": "Nenhum provedor de e-mail está configurado ainda.",
         "action": "Adicione um em Configurações, E-mail, e tente novamente."
+      },
+      "badToken": {
+        "title": "Token rejeitado",
+        "message": "O token ou as credenciais foram recusados ou expiraram.",
+        "action": "Crie um token novo com o acesso correto e tente de novo."
       }
-    }
+    },
+    "whatThisMeans": "O que isso significa:"
   },
   "notFound": {
     "requested": "Solicitado: {{name}}",

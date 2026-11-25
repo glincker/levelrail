@@ -839,5 +839,23 @@
     "month": "Mes",
     "loading": "Cargando disponibilidad...",
     "none": "Sin datos de disponibilidad este mes. Añade la app a la página de estado para empezar a registrar."
+  },
+  "smoke": {
+    "title": "Comprobación rápida tras la actualización",
+    "run": "Ejecutar comprobación rápida",
+    "running": "Comprobando...",
+    "error": "No se pudo ejecutar la comprobación rápida: {{message}}",
+    "item": {
+      "apps": "Las aplicaciones están activas",
+      "domains": "Los dominios resuelven",
+      "certificates": "Los certificados son válidos",
+      "backups": "Los respaldos están al día"
+    },
+    "status": {
+      "pass": "correcto",
+      "warn": "aviso",
+      "fail": "fallo",
+      "skipped": "omitido"
+    }
   }
 }

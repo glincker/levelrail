@@ -643,5 +643,8 @@
       "title": "Previsualizaciones recientes",
       "none": "Todavía no hay previsualizaciones de ramas."
     }
+  },
+  "dashDrop": {
+    "prompt": "Suelta una carpeta o zip de un sitio compilado para publicarlo"
   }
 }

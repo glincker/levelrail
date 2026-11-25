@@ -16,12 +16,17 @@
     "label": "Провайдер",
     "generic": "Произвольный URL",
     "duckdns": "DuckDNS",
-    "godaddy": "GoDaddy"
+    "godaddy": "GoDaddy",
+    "porkbun": "Porkbun",
+    "desec": "deSEC"
   },
   "domains": {
     "label": "Домены DuckDNS",
     "placeholder": "myhome,office",
-    "placeholderGodaddy": "home.example.com"
+    "placeholderGodaddy": "home.example.com",
+    "labelHosts": "Имена хостов для обновления",
+    "placeholderPorkbun": "home.example.com",
+    "placeholderDesec": "home.example.dedyn.io"
   },
   "target": {
     "labelGeneric": "URL обновления",
@@ -32,7 +37,9 @@
     "notConfigured": "Не настроено",
     "clear": "Очистить",
     "cleared": "Учетные данные удалены.",
-    "labelGodaddy": "GoDaddy ключ:секрет"
+    "labelGodaddy": "GoDaddy ключ:секрет",
+    "labelPorkbun": "Porkbun apikey:secretapikey",
+    "labelDesec": "API-токен deSEC"
   },
   "advanced": {
     "toggle": "Дополнительно",

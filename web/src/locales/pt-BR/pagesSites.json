@@ -647,5 +647,8 @@
       "title": "Previews recentes",
       "none": "Ainda não há previews de branches."
     }
+  },
+  "dashDrop": {
+    "prompt": "Solte uma pasta ou zip de um site compilado para publicá-lo"
   }
 }

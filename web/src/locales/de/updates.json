@@ -839,5 +839,23 @@
     "month": "Monat",
     "loading": "Verfügbarkeit wird geladen...",
     "none": "Keine Verfügbarkeitsdaten für diesen Monat. Fügen Sie die App der Statusseite hinzu, um die Aufzeichnung zu starten."
+  },
+  "smoke": {
+    "title": "Smoke-Check nach dem Upgrade",
+    "run": "Smoke-Check starten",
+    "running": "Prüfung läuft...",
+    "error": "Smoke-Check konnte nicht laufen: {{message}}",
+    "item": {
+      "apps": "Apps laufen",
+      "domains": "Domains lösen auf",
+      "certificates": "Zertifikate sind gültig",
+      "backups": "Backups sind aktuell"
+    },
+    "status": {
+      "pass": "bestanden",
+      "warn": "Warnung",
+      "fail": "fehlgeschlagen",
+      "skipped": "übersprungen"
+    }
   }
 }

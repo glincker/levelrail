@@ -93,5 +93,16 @@
     "minRequestsHelp": "Ignore le contrôle quand hier a eu moins de requêtes que cette valeur, pour que les domaines calmes ne déclenchent pas d'alerte.",
     "daysLabel": "Jours restants",
     "daysHelp": "Se déclenche quand le certificat d'un domaine parqué a moins de jours restants que cette valeur."
+  },
+  "emailQuick": {
+    "label": "Votre adresse e-mail",
+    "placeholder": "vous@exemple.fr",
+    "hint": "Une seule adresse reçoit les alertes quand un service tombe, qu’une sauvegarde échoue ou que l’espace disque manque.",
+    "submit": "M’alerter par e-mail en cas de problème",
+    "submitting": "Configuration...",
+    "invalid": "Saisissez une adresse e-mail valide",
+    "channelName": "E-mail du propriétaire",
+    "done": "Les alertes e-mail sont activées",
+    "failed": "Impossible de configurer les alertes e-mail"
   }
 }

@@ -129,7 +129,10 @@
     "clear": "すべての上限を削除",
     "saved": "クォータを保存しました",
     "cleared": "クォータの上限を削除しました",
-    "readOnly": "これらの上限を変更できるのは、チームの管理者とオーナーのみです。"
+    "readOnly": "これらの上限を変更できるのは、チームの管理者とオーナーのみです。",
+    "live": "現在の使用量: 予約 {{reserved}} のうち {{live}} ({{total}} 個のアプリ中 {{sampled}} 個が報告)",
+    "liveOfReserved": "予約の {{percent}}%",
+    "liveLabel": "{{resource}} の現在の使用量"
   },
   "errors": {
     "generic": "リクエストに失敗しました: {{message}}"

@@ -93,5 +93,16 @@
     "minRequestsHelp": "Omite la comprobación si ayer hubo menos peticiones, para que los dominios tranquilos no avisen.",
     "daysLabel": "Días restantes",
     "daysHelp": "Se activa cuando el certificado de un dominio aparcado tiene menos días que esto."
+  },
+  "emailQuick": {
+    "label": "Tu correo electrónico",
+    "placeholder": "tu@ejemplo.com",
+    "hint": "Una dirección recibe alertas cuando algo cae, falla un respaldo o se agota el espacio en disco.",
+    "submit": "Avisarme por correo de los problemas",
+    "submitting": "Configurando...",
+    "invalid": "Introduce un correo válido",
+    "channelName": "Correo del propietario",
+    "done": "Las alertas por correo están activas",
+    "failed": "No se pudieron configurar las alertas por correo"
   }
 }

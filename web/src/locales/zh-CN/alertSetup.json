@@ -93,5 +93,16 @@
     "minRequestsHelp": "当昨天的请求数少于此值时跳过检查,这样低流量域名不会产生告警。",
     "daysLabel": "剩余天数",
     "daysHelp": "当停放域名的证书剩余天数少于此值时触发。"
+  },
+  "emailQuick": {
+    "label": "你的邮箱地址",
+    "placeholder": "you@example.com",
+    "hint": "服务宕机、备份失败或磁盘空间不足时，会向这个地址发送告警。",
+    "submit": "出问题时邮件通知我",
+    "submitting": "正在设置...",
+    "invalid": "请输入有效的邮箱地址",
+    "channelName": "所有者邮箱",
+    "done": "邮件告警已开启",
+    "failed": "无法设置邮件告警"
   }
 }

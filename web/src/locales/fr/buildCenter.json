@@ -118,5 +118,18 @@
       "bounded": "Limite d'entrées atteinte, le reste suivra au prochain build",
       "partial": "Arrêté en avance, ce qui a été libéré est conservé"
     }
+  },
+  "farm": {
+    "title": "Parc de builds, {{hours}} dernières heures",
+    "builds": "{{count}} builds, {{perHour}} par heure",
+    "waitP50": "Attente en file p50",
+    "waitP95": "Attente en file p95",
+    "cache": "Taux de réussite du cache",
+    "cacheUnknown": "Aucune donnée",
+    "peak": "Pic de slots utilisés",
+    "slotsOf": "{{peak}} sur {{total}} par nœud",
+    "chart": "Slots utilisés par heure, {{peak}} au pic",
+    "seconds": "{{value}} s",
+    "sizeHint": "Un pic proche de la limite de slots ou une attente p95 longue signifie qu’il faut un autre nœud ou plus de slots."
   }
 }

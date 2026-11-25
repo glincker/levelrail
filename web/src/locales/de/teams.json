@@ -130,7 +130,10 @@
     "clear": "Alle Limits entfernen",
     "saved": "Kontingent gespeichert",
     "cleared": "Kontingent-Limits entfernt",
-    "readOnly": "Nur Team-Admins und Inhaber können diese Limits ändern."
+    "readOnly": "Nur Team-Admins und Inhaber können diese Limits ändern.",
+    "live": "Aktuell genutzt: {{live}} von {{reserved}} reserviert ({{sampled}} von {{total}} Apps melden)",
+    "liveOfReserved": "{{percent}} % der Reservierung",
+    "liveLabel": "{{resource}} aktuell genutzt"
   },
   "errors": {
     "generic": "Die Anfrage ist fehlgeschlagen: {{message}}"

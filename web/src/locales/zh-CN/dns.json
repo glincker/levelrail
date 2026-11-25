@@ -350,7 +350,9 @@
     },
     "record": "添加一条主机为 {{host}}、值为 {{value}} 的 A 记录。TTL 设为 300 秒即可。",
     "proxyOff": "在证书签发之前，请为此记录关闭橙色云朵（代理）。",
-    "docs": "{{provider}} DNS 文档"
+    "docs": "{{provider}} DNS 文档",
+    "copyHost": "复制主机",
+    "copyValue": "复制值"
   },
   "verification": {
     "ok_other": "令牌已接受。可见 {{count}} 个区域。",

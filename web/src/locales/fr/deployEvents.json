@@ -98,7 +98,8 @@
     "p95": "latence p95",
     "noTraffic": "Aucun trafic dans cette fenêtre",
     "open": "La fenêtre après la bascule est encore ouverte, donc ces chiffres peuvent changer.",
-    "window": "Les fenêtres sont de {{window}} de chaque côté de la bascule."
+    "window": "Les fenêtres sont de {{window}} de chaque côté de la bascule.",
+    "gap": "Coupure de bascule de {{ms}} ms : {{failed}} requêtes en échec, {{queued}} en attente"
   },
   "phases": {
     "title": "Temps par phase",

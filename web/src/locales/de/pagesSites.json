@@ -643,5 +643,8 @@
       "title": "Letzte Previews",
       "none": "Noch keine Branch-Previews."
     }
+  },
+  "dashDrop": {
+    "prompt": "Ordner oder Zip einer gebauten Site hierher ziehen, um sie zu veröffentlichen"
   }
 }

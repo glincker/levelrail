@@ -156,7 +156,9 @@
     "healthCheck": "Health check",
     "healthEnable": "Activer un health check",
     "healthPath": "Chemin",
-    "healthHint": "Vérifié avant de basculer le trafic vers un nouveau conteneur, puis pour détecter un conteneur planté. Les apps détectées par Railpack qui ne servent pas ce chemin devraient le désactiver."
+    "healthHint": "Vérifié avant de basculer le trafic vers un nouveau conteneur, puis pour détecter un conteneur planté. Les apps détectées par Railpack qui ne servent pas ce chemin devraient le désactiver.",
+    "showMore": "Plus d’options",
+    "hideMore": "Moins d’options"
   },
   "sshKey": {
     "title": "Clé de déploiement SSH",
