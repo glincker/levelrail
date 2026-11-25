@@ -438,6 +438,8 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
 	rt.RecoverMailHolds(context.Background())
+	// Flushed by the writer's own interval; a process exit loses at most one interval of rows.
+	_ = startDatabaseAudit(context.Background(), rt, db, logger)
 	if builder != nil {
 		// Spec file deploys (webhook, git push, builds) admit host ports like POST /apps.
 		builder.SetPortAdmitter(rt)
