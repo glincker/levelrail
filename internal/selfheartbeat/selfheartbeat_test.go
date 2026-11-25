@@ -100,3 +100,43 @@ func TestUnreachableDoesNotLeakURL(t *testing.T) {
 		t.Fatalf("log: %s", buf.String())
 	}
 }
+
+func TestPollArmsWithinIntervalChange(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) { hits.Add(1) }))
+	defer srv.Close()
+	t.Setenv("APP_NOTIFY_ALLOW_PRIVATE_NETWORKS", "true")
+	set := &fakeSettings{interval: "86400"}
+	p := newTestPinger(set, &bytes.Buffer{})
+	now := time.Unix(1000000, 0)
+	p.now = func() time.Time { return now }
+	ctx := context.Background()
+	p.Poll(ctx)
+	set.url = srv.URL
+	p.Poll(ctx)
+	if hits.Load() != 1 {
+		t.Fatalf("saving a url should arm at once, hits %d", hits.Load())
+	}
+	now = now.Add(15 * time.Second)
+	p.Poll(ctx)
+	if hits.Load() != 1 {
+		t.Fatal("pinged before the long interval")
+	}
+	set.interval = "10"
+	p.Poll(ctx)
+	if hits.Load() != 2 {
+		t.Fatalf("lowered interval should ping, hits %d", hits.Load())
+	}
+}
+
+func TestRedirectToHTTPRefused(t *testing.T) {
+	p := New(Config{}, &fakeSettings{}, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
+	req := httptest.NewRequest(http.MethodGet, "http://monitor.example/x", nil)
+	if err := p.client.CheckRedirect(req, nil); err == nil {
+		t.Fatal("http redirect must be refused")
+	}
+	req = httptest.NewRequest(http.MethodGet, "https://monitor.example/x", nil)
+	if err := p.client.CheckRedirect(req, nil); err != nil {
+		t.Fatalf("https redirect refused: %v", err)
+	}
+}

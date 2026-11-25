@@ -25,8 +25,11 @@ const (
 
 	defaultTimeout  = 10 * time.Second
 	defaultLogEvery = 10 * time.Minute
+	maxTimeout      = 30 * time.Second
 	defaultInterval = 60 * time.Second
 	maxRedirects    = 3
+	// pollEvery is how often Run re-reads the settings, so a saved URL or a lowered interval arms within seconds.
+	pollEvery = 5 * time.Second
 )
 
 // Settings reads live runtime settings; *runtimesettings.Service satisfies it.
@@ -46,7 +49,7 @@ func ConfigFromEnv(lookup func(string) (string, bool)) Config {
 	dur := func(k string, def time.Duration) time.Duration {
 		v, _ := lookup(k)
 		if d, err := time.ParseDuration(strings.TrimSpace(v)); err == nil && d > 0 {
-			return d
+			return min(d, maxTimeout)
 		}
 		return def
 	}
@@ -63,6 +66,7 @@ type Pinger struct {
 	now      func() time.Time
 
 	failing   bool
+	lastPing  time.Time
 	lastLogAt time.Time
 }
 
@@ -75,9 +79,12 @@ func New(cfg Config, set Settings, log *slog.Logger) *Pinger {
 		cfg.LogEvery = defaultLogEvery
 	}
 	c := netguard.NewClient()
-	c.CheckRedirect = func(_ *http.Request, via []*http.Request) error {
+	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) > maxRedirects {
 			return errors.New("too many redirects")
+		}
+		if req.URL.Scheme != "https" && !netguard.AllowPrivate() {
+			return errors.New("redirect to a non-https url refused")
 		}
 		return nil
 	}
@@ -87,24 +94,37 @@ func New(cfg Config, set Settings, log *slog.Logger) *Pinger {
 // Interval is the live ping interval, clamped to the setting's range.
 func (p *Pinger) Interval(ctx context.Context) time.Duration {
 	n := p.set.Int(ctx, runtimesettings.KeyAlertingSelfHeartbeatInterval)
-	if n < 10 || n > 86400 {
+	if n < runtimesettings.SelfHeartbeatMinInterval || n > runtimesettings.SelfHeartbeatMaxInterval {
 		return defaultInterval
 	}
 	return time.Duration(n) * time.Second
 }
 
-// Run pings until ctx ends, re-reading the interval before each wait so a change applies at once.
+// Run polls the settings every few seconds and pings once the live interval has elapsed.
 func (p *Pinger) Run(ctx context.Context) {
+	t := time.NewTicker(pollEvery)
+	defer t.Stop()
 	for {
-		p.Tick(ctx)
-		t := time.NewTimer(p.Interval(ctx))
+		p.Poll(ctx)
 		select {
 		case <-ctx.Done():
-			t.Stop()
 			return
 		case <-t.C:
 		}
 	}
+}
+
+// Poll pings when the interval has elapsed since the last ping; with no URL it does nothing.
+func (p *Pinger) Poll(ctx context.Context) {
+	if p.now().Sub(p.lastPing) < p.Interval(ctx) {
+		return
+	}
+	if strings.TrimSpace(p.set.String(ctx, runtimesettings.KeyAlertingSelfHeartbeatURL)) == "" {
+		p.failing = false
+		return
+	}
+	p.lastPing = p.now()
+	p.Tick(ctx)
 }
 
 // Tick sends one ping. With no URL set it makes no request.
@@ -137,7 +157,7 @@ func (p *Pinger) ping(ctx context.Context, target string) error {
 	if err := p.validate(ctx, target); err != nil {
 		return errors.New("heartbeat url refused")
 	}
-	rctx, cancel := context.WithTimeout(ctx, p.cfg.Timeout)
+	rctx, cancel := context.WithTimeout(ctx, min(p.cfg.Timeout, p.Interval(ctx)))
 	defer cancel()
 	req, err := http.NewRequestWithContext(rctx, http.MethodGet, target, nil)
 	if err != nil {
