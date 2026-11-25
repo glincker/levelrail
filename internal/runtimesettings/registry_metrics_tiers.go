@@ -107,16 +107,16 @@ func init() {
 		Description: "How long a bucket stays open after its end so late samples still land in it, from 1s to 1h. A saved change applies to the next rollup.",
 	})
 	Register(Definition{
-		Key: KeyMetricsRollupEvery, Category: CategoryObservability, Kind: KindDuration, Default: "1m", Env: "APP_METRICS_ROLLUP_EVERY", Apply: ApplyRestart,
+		Key: KeyMetricsRollupEvery, Category: CategoryObservability, Kind: KindDuration, Default: "1m", Env: "APP_METRICS_ROLLUP_EVERY", Apply: ApplyLive,
 		CheckValue:  durationRangeCheck(10*time.Second, metricsRollupMaxInterval),
 		Title:       "Metrics rollup interval",
-		Description: "How often the rollup job runs, from 10s to 24h. Takes effect after a restart.",
+		Description: "How often the rollup job runs, from 10s to 24h. A saved change applies after the current wait ends.",
 	})
 	Register(Definition{
-		Key: KeyMetricsPruneEvery, Category: CategoryObservability, Kind: KindDuration, Default: "1h", Env: "APP_METRICS_PRUNE_EVERY", Apply: ApplyRestart,
+		Key: KeyMetricsPruneEvery, Category: CategoryObservability, Kind: KindDuration, Default: "1h", Env: "APP_METRICS_PRUNE_EVERY", Apply: ApplyLive,
 		CheckValue:  durationRangeCheck(time.Minute, metricsRollupMaxInterval),
 		Title:       "Metrics prune interval",
-		Description: "How often the retention sweep runs, from 1m to 24h. Takes effect after a restart.",
+		Description: "How often the retention sweep runs, from 1m to 24h. A saved change applies after the current wait ends.",
 	})
 	Register(Definition{
 		Key: KeyMetricsRollupBudget, Category: CategoryObservability, Kind: KindDuration, Default: "5s", Env: "APP_METRICS_ROLLUP_BUDGET", Apply: ApplyLive,

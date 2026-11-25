@@ -323,6 +323,29 @@ type Maintainer struct {
 	logger      *slog.Logger
 	rollupEvery time.Duration
 	pruneEvery  time.Duration
+	// intervals, when set, is re-read after each run so a saved interval applies without a restart.
+	intervals func() (rollup, prune time.Duration)
+}
+
+// SetIntervalSource makes the next wait of each job follow fn, so saved intervals apply live.
+func (m *Maintainer) SetIntervalSource(fn func() (rollup, prune time.Duration)) { m.intervals = fn }
+
+// refreshEvery resets the ticker when the wanted interval changed and returns the interval now in force.
+func refreshEvery(t *time.Ticker, cur, want time.Duration) time.Duration {
+	if want <= 0 || want == cur {
+		return cur
+	}
+	t.Reset(want)
+	return want
+}
+
+func (m *Maintainer) refreshIntervals(rollup, prune *time.Ticker) {
+	if m.intervals == nil {
+		return
+	}
+	r, p := m.intervals()
+	m.rollupEvery = refreshEvery(rollup, m.rollupEvery, r)
+	m.pruneEvery = refreshEvery(prune, m.pruneEvery, p)
 }
 
 // NewMaintainer builds a Maintainer; zero intervals default to 1 minute for
@@ -390,6 +413,7 @@ func (m *Maintainer) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-rollup.C:
+			m.refreshIntervals(rollup, prune)
 			start := time.Now()
 			err := m.RollupOnce(ctx)
 			rollupLoop.Observe(start, err)
@@ -397,6 +421,7 @@ func (m *Maintainer) Run(ctx context.Context) {
 				m.logger.ErrorContext(ctx, "metrics rollup failed", slog.String("error", err.Error()))
 			}
 		case <-prune.C:
+			m.refreshIntervals(rollup, prune)
 			start := time.Now()
 			err := m.PruneOnce(ctx)
 			pruneLoop.Observe(start, err)
