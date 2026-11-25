@@ -8,7 +8,7 @@ import (
 )
 
 func auditRow(i int, db, principal, action, outcome string, at time.Time) DatabaseStatementAudit {
-	return DatabaseStatementAudit{ID: fmt.Sprintf("a%03d", i), At: at.UTC().Format(time.RFC3339Nano), DatabaseName: db, Engine: "postgres", PrincipalType: "user", PrincipalID: principal, Action: action, OpKind: "rows", Outcome: outcome, BranchName: ""}
+	return DatabaseStatementAudit{ID: fmt.Sprintf("a%03d", i), At: at.UTC().Format(StatementAuditTimeLayout), DatabaseName: db, Engine: "postgres", PrincipalType: "user", PrincipalID: principal, Action: action, OpKind: "rows", Outcome: outcome, BranchName: ""}
 }
 
 func TestDatabaseStatementAuditListFilterAndPage(t *testing.T) {
@@ -32,7 +32,7 @@ func TestDatabaseStatementAuditListFilterAndPage(t *testing.T) {
 	if len(got) != 1 || got[0].Outcome != "denied" {
 		t.Fatalf("principal filter: %+v", got)
 	}
-	got, _, _ = db.ListDatabaseStatementAudits(ctx, DatabaseStatementAuditFilter{DatabaseName: "app", Action: "db:read", Outcome: "ok", Since: now.Add(2 * time.Second).UTC().Format(time.RFC3339Nano)})
+	got, _, _ = db.ListDatabaseStatementAudits(ctx, DatabaseStatementAuditFilter{DatabaseName: "app", Action: "db:read", Outcome: "ok", Since: now.Add(2 * time.Second).UTC().Format(StatementAuditTimeLayout)})
 	if len(got) != 3 {
 		t.Fatalf("time and action filter: %d", len(got))
 	}

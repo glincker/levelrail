@@ -108,6 +108,7 @@ func (rt *Router) runDatabaseStatement(w http.ResponseWriter, r *http.Request, m
 		return
 	}
 
+	noteStatement(r, st.Fingerprint, req.SQL, 0)
 	start := time.Now()
 	var res dbviewer.Result
 	if mode == queryModeExplain {
@@ -135,6 +136,7 @@ func (rt *Router) runDatabaseStatement(w http.ResponseWriter, r *http.Request, m
 		return
 	}
 	rt.logger.Info("api: database console statement", append(attrs, slog.Int("rows", res.RowCount))...)
+	noteStatement(r, st.Fingerprint, req.SQL, res.RowCount)
 	rt.recordQuery(r, desired.Name, mode, req.SQL, st.Fingerprint, true, "", elapsed, res.RowCount)
 	if write {
 		rt.recordWriteAudit(r, desired.Name, st.Fingerprint, http.StatusOK)

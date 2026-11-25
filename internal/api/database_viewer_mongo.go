@@ -262,6 +262,7 @@ func (rt *Router) handleMongoFind(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	noteStatement(r, q.Fingerprint, "", len(res.Documents))
 	resp := mongoFindResponse{Documents: res.Documents, Truncated: res.Truncated, Fingerprint: q.Fingerprint, DurationMs: res.DurationMs}
 	if res.Truncated {
 		resp.NextAfter = res.NextAfter

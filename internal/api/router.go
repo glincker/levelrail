@@ -79,6 +79,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/compliance"
+	"github.com/GLINCKER/levelrail/internal/dbaudit"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/hostpressure"
@@ -703,6 +704,8 @@ type Router struct {
 	scheduleScan                 schedulescan.Source                                   // nil is valid: the schedule never runs doctor check then reports unknown
 	canaryProgress               CanaryProgress                                        // nil is valid: GET canary then omits the live stage comparison
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries
+	dbAudit                      *dbaudit.Writer                                       // nil until WithDatabaseAudit; explorer audit stays off then
+	dbAuditStore                 DatabaseStatementAuditStore                           // always set, GET /databases/{name}/audit
 	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings
 	ciTrusts                     CIOIDCTrustStore                                      // always set, CI OIDC trusts
 	ciVerifier                   CIIDTokenVerifier                                     // nil uses the GitHub Actions OIDC verifier
@@ -1094,6 +1097,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		externalDatabases:           s,
 		canaries:                    s,
 		dbQueries:                   s,
+		dbAuditStore:                s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		gitCommits:                  newGitCommitsCache(),
 		previewEnvironments:         s,

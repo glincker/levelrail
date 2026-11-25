@@ -252,6 +252,7 @@ type Store interface {
 	ExternalDatabaseStore
 	CanaryStore
 	DatabaseQueryStore
+	DatabaseStatementAuditStore
 	PreviewEnvironmentStore
 	BranchDeployStore
 	GitHubAppStore

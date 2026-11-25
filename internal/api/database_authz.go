@@ -107,6 +107,6 @@ func (rt *Router) requireAbilityForDatabase(ability string, action dbauthz.Actio
 			}
 			next(w, r)
 		}
-		rt.requireAbilityDecided(ability, decision, gated)(w, r)
+		rt.withDatabaseAudit(ability, action, rt.requireAbilityDecided(ability, decision, gated))(w, r)
 	}
 }

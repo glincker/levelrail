@@ -2,10 +2,14 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 )
+
+// ErrStatementAuditCursor marks a cursor the list could not parse.
+var ErrStatementAuditCursor = errors.New("store: invalid statement audit cursor")
 
 // DatabaseStatementAudit is one explorer action. Raw values never live here;
 // StatementText is filled only when the live setting allows it.
@@ -44,6 +48,9 @@ type DatabaseStatementAuditFilter struct {
 	Cursor       string
 	Limit        int
 }
+
+// StatementAuditTimeLayout is fixed width so stored times compare correctly as text.
+const StatementAuditTimeLayout = "2006-01-02T15:04:05.000000000Z"
 
 const (
 	statementAuditCols     = `id, at, database_name, engine, principal_type, principal_id, principal_name, ability, action, op_kind, fingerprint, statement_text, rows_returned, bytes, duration_ms, outcome, error_class, client_ip, client_kind, branch_name, request_id`
@@ -103,7 +110,7 @@ func (db *DB) ListDatabaseStatementAudits(ctx context.Context, f DatabaseStateme
 	if f.Cursor != "" {
 		at, id, ok := strings.Cut(f.Cursor, "|")
 		if !ok {
-			return nil, "", fmt.Errorf("store: invalid statement audit cursor")
+			return nil, "", ErrStatementAuditCursor
 		}
 		where = append(where, "(at < ? OR (at = ? AND id < ?))")
 		args = append(args, at, at, id)
@@ -143,7 +150,7 @@ func (db *DB) PruneDatabaseStatementAudits(ctx context.Context, cutoff time.Time
 		chunk = statementAuditMaxLimit
 	}
 	var total int64
-	at := cutoff.UTC().Format(time.RFC3339Nano)
+	at := cutoff.UTC().Format(StatementAuditTimeLayout)
 	for {
 		res, err := db.ExecContext(ctx, `DELETE FROM database_statement_audit WHERE id IN (SELECT id FROM database_statement_audit WHERE at < ? LIMIT ?)`, at, chunk)
 		if err != nil {

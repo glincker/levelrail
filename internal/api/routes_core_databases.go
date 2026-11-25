@@ -65,6 +65,7 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/redis/clients", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetRedisClients))
 	mux.HandleFunc("GET /api/v1/databases/{name}/mongo/collections", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetMongoCollections))
 	mux.HandleFunc("POST /api/v1/databases/{name}/mongo/find", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionQuery, rt.handleMongoFind))
+	mux.HandleFunc("GET /api/v1/databases/{name}/audit", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handleListDatabaseStatementAudit))
 	mux.HandleFunc("GET /api/v1/databases/{name}/query-history", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleListDatabaseQueryHistory))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/query-history", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleClearDatabaseQueryHistory))
 	mux.HandleFunc("GET /api/v1/databases/{name}/saved-queries", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleListDatabaseSavedQueries))

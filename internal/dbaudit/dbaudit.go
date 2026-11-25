@@ -159,7 +159,7 @@ func (w *Writer) row(ctx context.Context, ev Event) (store.DatabaseStatementAudi
 		text = ev.StatementText
 	}
 	return store.DatabaseStatementAudit{
-		ID: id, At: at.UTC().Format(time.RFC3339Nano), DatabaseName: ev.DatabaseName, Engine: ev.Engine,
+		ID: id, At: at.UTC().Format(store.StatementAuditTimeLayout), DatabaseName: ev.DatabaseName, Engine: ev.Engine,
 		PrincipalType: ev.PrincipalType, PrincipalID: ev.PrincipalID, PrincipalName: ev.PrincipalName,
 		Ability: ev.Ability, Action: ev.Action, OpKind: ev.OpKind, Fingerprint: ev.Fingerprint, StatementText: text,
 		RowsReturned: ev.RowsReturned, Bytes: ev.Bytes, DurationMs: ev.DurationMs, Outcome: ev.Outcome,
