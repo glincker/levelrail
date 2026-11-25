@@ -510,6 +510,26 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 		pass()
 	}
 
+	var firstEventTimer *time.Timer
+	defer func() {
+		if firstEventTimer != nil {
+			firstEventTimer.Stop()
+		}
+	}()
+	onEvent := func(ev docker.Event) {
+		if !firstEventSeen {
+			firstEventSeen = true
+			if e.firstEventDelay > 0 {
+				firstEventTimer = time.AfterFunc(e.firstEventDelay, e.Nudge)
+			}
+		}
+		e.markContainerDirty(ev.ContainerName)
+		e.logger.Debug("event triggered reconcile",
+			slog.String("container", ev.ContainerName),
+			slog.String("action", string(ev.Action)),
+		)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -528,6 +548,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 
 		case <-e.nudge:
 			e.logger.Debug("nudge triggered reconcile")
+			events = drainPending(events, e.nudge, onEvent)
 			trigger()
 
 		case ev, ok := <-events:
@@ -536,19 +557,26 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 				events = nil // avoid a hot loop selecting on a closed, always-ready channel
 				continue
 			}
-			if !firstEventSeen {
-				firstEventSeen = true
-				if e.firstEventDelay > 0 {
-					t := time.AfterFunc(e.firstEventDelay, e.Nudge)
-					defer t.Stop()
-				}
-			}
-			e.markContainerDirty(ev.ContainerName)
-			e.logger.Debug("event triggered reconcile",
-				slog.String("container", ev.ContainerName),
-				slog.String("action", string(ev.Action)),
-			)
+			onEvent(ev)
+			events = drainPending(events, e.nudge, onEvent)
 			trigger()
+		}
+	}
+}
+
+// drainPending consumes queued events and a pending nudge without blocking so
+// a burst runs one pass. It returns nil once the event stream is closed.
+func drainPending(events <-chan docker.Event, nudge <-chan struct{}, onEvent func(docker.Event)) <-chan docker.Event {
+	for {
+		select {
+		case <-nudge:
+		case ev, ok := <-events:
+			if !ok {
+				return nil
+			}
+			onEvent(ev)
+		default:
+			return events
 		}
 	}
 }
