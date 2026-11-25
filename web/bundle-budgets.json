@@ -1,6 +1,6 @@
 {
   "chunks": {
-    "CreateResourceWizard": 104000,
+    "CreateResourceWizard": 116000,
     "EnvironmentEditor": 40000,
     "TemplateLogo": 60000,
     "_domain": 50000,
@@ -24,7 +24,7 @@
     "cloudreve": 159000,
     "control-plane-backup": 42000,
     "cytoscape.esm": 501000,
-    "databases": 74400,
+    "databases": 76500,
     "deploy-settings": 117500,
     "deploying-apps": 69000,
     "deployments": 63000,
@@ -68,7 +68,7 @@
     "react": 252000,
     "registry-credentials": 36000,
     "resilience": 35000,
-    "routes": 82500,
+    "routes": 86500,
     "schemas": 149000,
     "security": 48000,
     "settings": 272500,
