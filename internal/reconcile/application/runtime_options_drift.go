@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"strconv"
@@ -12,21 +13,33 @@ import (
 
 const reasonRuntimeOptionsDriftRecreate = "RuntimeOptionsDriftRecreateFailed"
 
-func desiredRuntimeOptionsHash(desired *store.DesiredService) string {
+// runtimeOptionsBaseKey is the identity before the io term, which is also the
+// whole identity older releases stamped on containers.
+func runtimeOptionsBaseKey(desired *store.DesiredService) string {
 	k := desired.Runtime.IdentityKey()
 	// Granted caps join the identity so a grant or its revocation recreates the container.
 	if len(desired.GrantedCaps) > 0 {
 		k += "|caps:" + strings.Join(desired.GrantedCaps, ",")
 	}
-	// Block IO caps are set at container create and cannot be changed live, so a new cap recreates.
-	if r := desired.Resources; r != nil && (r.IOReadBps > 0 || r.IOWriteBps > 0) {
-		k += "|io:" + strconv.FormatInt(r.IOReadBps, 10) + "," + strconv.FormatInt(r.IOWriteBps, 10)
-	}
+	return k
+}
+
+func hashRuntimeOptionsKey(k string) string {
 	if k == "" {
 		return ""
 	}
 	sum := sha256.Sum256([]byte(k))
 	return hex.EncodeToString(sum[:8])
+}
+
+func desiredRuntimeOptionsHash(desired *store.DesiredService) string {
+	k := runtimeOptionsBaseKey(desired)
+	// Block IO caps are set at create and cannot change live, so a new cap recreates. The v2
+	// marker only appears with a cap, so apps without caps keep the hash older releases stamped.
+	if r := desired.Resources; r != nil && (r.IOReadBps > 0 || r.IOWriteBps > 0) {
+		k += "|v2|io:" + strconv.FormatInt(r.IOReadBps, 10) + "," + strconv.FormatInt(r.IOWriteBps, 10)
+	}
+	return hashRuntimeOptionsKey(k)
 }
 
 // runtimeOptionsSpec stamps the option hash as a reserved label (replacing any user
@@ -53,5 +66,22 @@ func runtimeOptionsDrifted(state *docker.ContainerState, desired *store.DesiredS
 	if state == nil || state.LabelsUnknown {
 		return false
 	}
-	return state.Labels[docker.RuntimeOptionsLabelKey] != desiredRuntimeOptionsHash(desired)
+	got := state.Labels[docker.RuntimeOptionsLabelKey]
+	if got == desiredRuntimeOptionsHash(desired) {
+		return false
+	}
+	// A label from before io caps joined the hash counts as converged, so an upgrade does not
+	// roll every labeled capped container. No label cannot be told from "never capped", so it recreates.
+	return got == "" || got != hashRuntimeOptionsKey(runtimeOptionsBaseKey(desired))
+}
+
+// imageLocal guards a drift recreate: if the image is gone locally the recreate
+// could fail to pull and leave an outage, so keep the running container. Unknown counts as present.
+func (c *Controller) imageLocal(ctx context.Context, ref string) bool {
+	insp, ok := c.runtime.(docker.ImageInspector)
+	if !ok {
+		return true
+	}
+	id, err := insp.InspectImageID(ctx, ref)
+	return err != nil || id != ""
 }

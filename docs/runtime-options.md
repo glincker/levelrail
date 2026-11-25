@@ -26,7 +26,7 @@ Counts and sizes are bounded by the `runtime.*` [runtime settings](/runtime-sett
 
 `resources.io_read_bps` and `resources.io_write_bps` cap an app's disk read and write rate in bytes per second, and `resources.net_mbit` records a bandwidth cap in megabits per second. `0` or unset is unlimited, and an operator ceiling may apply (`APP_RESOURCES_MAX_IO_BPS`, `APP_RESOURCES_MAX_NET_MBIT`).
 
-The disk caps apply to the block device behind the Docker data root, on the node that runs the container (local and agent nodes alike), when the container is created, so changing a cap recreates the container on the next reconcile (a brief restart for a single replica). If the device cannot be resolved, such as on network or overlay storage, the caps are skipped and the app still starts. Docker has no bandwidth control, so `net_mbit` is stored and shown but not enforced yet. Set them with `levelrail-cli apps scale <app> --io-read 50Mi --io-write 20Mi --net-mbit 100`.
+The disk caps apply to the block device behind the Docker data root, on the node that runs the container (local and agent nodes alike), when the container is created, so changing a cap recreates the container on the next reconcile (a brief restart for a single replica, whatever the deploy strategy; the old container is stopped gracefully first). Containers created by an earlier release keep their current caps until their next recreate. If the device cannot be resolved, such as on network or overlay storage, the caps are skipped and the app still starts. Docker has no bandwidth control, so `net_mbit` is stored and shown but not enforced yet. Set them with `levelrail-cli apps scale <app> --io-read 50Mi --io-write 20Mi --net-mbit 100`.
 
 ## Change them without editing the spec
 

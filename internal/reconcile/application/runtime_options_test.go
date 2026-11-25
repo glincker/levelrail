@@ -80,6 +80,82 @@ func TestRuntimeOptions_IOCapChangeRecreates(t *testing.T) {
 	}
 }
 
+func TestRuntimeOptions_LegacyLabelWithoutIOTermDoesNotRecreate(t *testing.T) {
+	to := 30
+	svc := &store.DesiredService{Name: "web", Image: "img:v1", Replicas: 1,
+		Runtime:   &spec.RuntimeOptions{StopTimeout: &to},
+		Resources: &store.ServiceResources{IOReadBps: 50 << 20}}
+	legacy := hashRuntimeOptionsKey(runtimeOptionsBaseKey(svc))
+	st := &docker.ContainerState{Labels: map[string]string{docker.RuntimeOptionsLabelKey: legacy}}
+	if runtimeOptionsDrifted(st, svc) {
+		t.Fatal("old-formula label must count as converged")
+	}
+	st.Labels[docker.RuntimeOptionsLabelKey] = "deadbeef"
+	if !runtimeOptionsDrifted(st, svc) {
+		t.Fatal("unrelated label must drift")
+	}
+	delete(st.Labels, docker.RuntimeOptionsLabelKey)
+	if !runtimeOptionsDrifted(st, svc) {
+		t.Fatal("no label cannot be told from never capped, so a cap must apply")
+	}
+}
+
+func TestRuntimeOptions_IOCapRemovalRecreatesOnce(t *testing.T) {
+	svc := &store.DesiredService{Name: "web", Image: "img:v1", Replicas: 1, Resources: &store.ServiceResources{IOReadBps: 1 << 20}}
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: svc}, rt)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	creates := rt.createCalls
+	svc.Resources = nil
+	for i := 0; i < 2; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if rt.createCalls != creates+1 {
+		t.Fatalf("cap removal: %d creates, want 1", rt.createCalls-creates)
+	}
+}
+
+func TestRuntimeOptions_ZeroResourcesEqualsNil(t *testing.T) {
+	svc := &store.DesiredService{Name: "web", Image: "img:v1", Replicas: 1}
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: svc}, rt)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	creates := rt.createCalls
+	svc.Resources = &store.ServiceResources{}
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if rt.createCalls != creates {
+		t.Fatal("zero resources recreated against nil")
+	}
+}
+
+func TestRuntimeOptions_RecreateStrategyPicksUpCapChangeGracefully(t *testing.T) {
+	svc := &store.DesiredService{Name: "web", Image: "img:v1", Replicas: 1, Strategy: "recreate"}
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: svc}, rt)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	creates, stops := rt.createCalls, rt.stopCalls
+	svc.Resources = &store.ServiceResources{IOWriteBps: 1 << 20}
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if rt.createCalls != creates+1 {
+		t.Fatalf("recreate strategy: %d creates, want 1", rt.createCalls-creates)
+	}
+	if rt.stopCalls <= stops {
+		t.Fatal("drift recreate must stop gracefully before removing")
+	}
+}
+
 func application0Name(svc *store.DesiredService) string {
 	return ReplicaContainerName(svc.Name, NameImage(*svc), svc.RestartNonce, 0)
 }
