@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2405 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2406 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -849,6 +849,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrades/{id}/rollback", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRollbackMajorUpgrade", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/major-upgrades/{id}/snapshot", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDiscardMajorUpgradeSnapshot", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/metrics", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseMetrics", Description: "Telemetry query, the database counterpart to GET /apps/{name}/metrics, /logs, /logs/stream above: same TelemetryQuerier/logBroadcaster gating (501 when unconfigured). database_metrics.go/database_logs.go share the actual query/stream logic with their app equivalents via queryResourceMetrics/ queryResourceLogs/streamResourceLogs (metrics.go/logs.go/ live_logs.go), parameterized on a resourceLookup, not a hand-copied duplicate."},
+	{Method: "GET", Path: "/api/v1/databases/{name}/mongo/collections", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetMongoCollections", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/mongo/find", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleMongoFind", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/move", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleStartMove", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/network", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseNetwork", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/network/make-private", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleMakeDatabasePrivate", Description: ""},

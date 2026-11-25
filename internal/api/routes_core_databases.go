@@ -55,6 +55,8 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/explorer/capabilities", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseExplorerCapabilities))
 	mux.HandleFunc("GET /api/v1/databases/{name}/keys", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleScanDatabaseKeys))
 	mux.HandleFunc("GET /api/v1/databases/{name}/key", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseKey))
+	mux.HandleFunc("GET /api/v1/databases/{name}/mongo/collections", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetMongoCollections))
+	mux.HandleFunc("POST /api/v1/databases/{name}/mongo/find", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleMongoFind))
 	mux.HandleFunc("GET /api/v1/databases/{name}/query-history", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseQueryHistory))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/query-history", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleClearDatabaseQueryHistory))
 	mux.HandleFunc("GET /api/v1/databases/{name}/saved-queries", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseSavedQueries))
