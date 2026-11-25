@@ -12,12 +12,14 @@ const (
 	bootDockerCallTimeout = 10 * time.Second
 	eventRetryFloor       = time.Second
 	eventRetryMax         = 30 * time.Second
+	// eventBufferSize lets a burst queue while a pass runs so the engine can coalesce it.
+	eventBufferSize = 64
 )
 
 // resilientEvents re-subscribes to the Docker event stream with backoff, so
 // the reconciler recovers when the daemon restarts or was down at boot.
 func resilientEvents(ctx context.Context, subscribe func(context.Context) (<-chan docker.Event, <-chan error), logger *slog.Logger) <-chan docker.Event {
-	out := make(chan docker.Event)
+	out := make(chan docker.Event, eventBufferSize)
 	go func() {
 		defer close(out)
 		wait := eventRetryFloor

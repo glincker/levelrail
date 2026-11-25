@@ -548,7 +548,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 
 		case <-e.nudge:
 			e.logger.Debug("nudge triggered reconcile")
-			events = drainPending(events, e.nudge, onEvent)
+			events = drainPending(ctx, events, e.nudge, onEvent, e.logger)
 			trigger()
 
 		case ev, ok := <-events:
@@ -558,20 +558,26 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 				continue
 			}
 			onEvent(ev)
-			events = drainPending(events, e.nudge, onEvent)
+			events = drainPending(ctx, events, e.nudge, onEvent, e.logger)
 			trigger()
 		}
 	}
 }
 
+// maxDrainPerPass bounds one drain so the ticker and shutdown are never starved.
+const maxDrainPerPass = 1024
+
 // drainPending consumes queued events and a pending nudge without blocking so
 // a burst runs one pass. It returns nil once the event stream is closed.
-func drainPending(events <-chan docker.Event, nudge <-chan struct{}, onEvent func(docker.Event)) <-chan docker.Event {
-	for {
+func drainPending(ctx context.Context, events <-chan docker.Event, nudge <-chan struct{}, onEvent func(docker.Event), logger *slog.Logger) <-chan docker.Event {
+	for i := 0; i < maxDrainPerPass; i++ {
 		select {
+		case <-ctx.Done():
+			return events
 		case <-nudge:
 		case ev, ok := <-events:
 			if !ok {
+				logger.Warn("docker event stream closed, continuing on resync ticker alone")
 				return nil
 			}
 			onEvent(ev)
@@ -579,4 +585,5 @@ func drainPending(events <-chan docker.Event, nudge <-chan struct{}, onEvent fun
 			return events
 		}
 	}
+	return events
 }

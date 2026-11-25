@@ -322,6 +322,7 @@ func TestEngine_ReconcileAll_SourceErrorSkipsDynamicPassButNotFixed(t *testing.T
 func TestEngine_Run_BurstOfEventsCoalescesPasses(t *testing.T) {
 	c := &countingController{name: "c"}
 	e := NewEngine(testLogger(), c)
+	e.SetGuard(NewGuard(GuardConfig{PassBurst: 100, PassesPerSec: 100}))
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -343,7 +344,7 @@ func TestEngine_Run_BurstOfEventsCoalescesPasses(t *testing.T) {
 		t.Logf("run returned: %v", err)
 	}
 
-	if got := c.calls.Load(); got >= burst {
-		t.Errorf("got %d passes for %d queued events, want fewer", got, burst)
+	if got := c.calls.Load(); got > 2 {
+		t.Errorf("got %d passes for %d queued events, want at most 2 (initial plus one)", got, burst)
 	}
 }
