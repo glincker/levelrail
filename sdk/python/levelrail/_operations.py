@@ -1209,6 +1209,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handleIssueGitRemote": Operation("POST", "/api/v1/apps/{name}/git-remote", True, False),
     "handleKeepTrialApp": Operation("POST", "/api/v1/apps/{name}/keep", True, False),
     "handleKillAllBuilds": Operation("POST", "/api/v1/builds/kill-all", True, False),
+    "handleLatestDatabaseVersion": Operation("GET", "/api/v1/database-engines/{id}/latest", False, False),
     "handleLatestMigrationVerify": Operation("GET", "/api/v1/migrations/verify/latest", False, False),
     "handleLeaveTeam": Operation("DELETE", "/api/v1/teams/{id}/members/me", False, False),
     "handleLiftFirewallEdgeBan": Operation("DELETE", "/api/v1/firewall/edge/bans/{ip}", False, False),

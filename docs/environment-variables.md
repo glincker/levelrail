@@ -336,8 +336,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINER_LOG_MAX_FILES` | [`containers.log_max_files`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINER_LOG_MAX_SIZE_MB` | [`containers.log_max_size_mb`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
+| `LEVELRAIL_DATABASES_AUTO_LATEST` | [`databases.auto_latest`](/runtime-settings#deploys) | `true` |
 | `APP_DATABASES_BULK_CONCURRENCY` | [`databases.bulk_concurrency`](/runtime-settings#deploys) | `4` |
 | `APP_DATABASES_BULK_MAX_ITEMS` | [`databases.bulk_max_items`](/runtime-settings#deploys) | `200` |
+| `LEVELRAIL_DATABASES_LATEST_LOOKUP_TIMEOUT_SECONDS` | [`databases.latest_lookup_timeout_seconds`](/runtime-settings#deploys) | `8` |
+| `LEVELRAIL_DATABASES_LATEST_VERSION_CACHE_SECONDS` | [`databases.latest_version_cache_seconds`](/runtime-settings#deploys) | `3600` |
 | `APP_DB_PARAMS_MAX_CONNECTIONS` | [`databases.params_max_connections`](/runtime-settings#deploys) | `5000` |
 | `APP_DB_PARAMS_MAX_MEMORY_MB` | [`databases.params_max_memory_mb`](/runtime-settings#deploys) | `4096` |
 | `APP_DATABASES_POOLER_DEFAULT` | [`databases.pooler_default`](/runtime-settings#deploys) | `off` |

@@ -1201,6 +1201,7 @@ var Operations = map[string]Operation{
 	"handleIssueGitRemote":                     {Method: "POST", Path: "/api/v1/apps/{name}/git-remote", HasBody: true, Stream: false},
 	"handleKeepTrialApp":                       {Method: "POST", Path: "/api/v1/apps/{name}/keep", HasBody: true, Stream: false},
 	"handleKillAllBuilds":                      {Method: "POST", Path: "/api/v1/builds/kill-all", HasBody: true, Stream: false},
+	"handleLatestDatabaseVersion":              {Method: "GET", Path: "/api/v1/database-engines/{id}/latest", HasBody: false, Stream: false},
 	"handleLatestMigrationVerify":              {Method: "GET", Path: "/api/v1/migrations/verify/latest", HasBody: false, Stream: false},
 	"handleLeaveTeam":                          {Method: "DELETE", Path: "/api/v1/teams/{id}/members/me", HasBody: false, Stream: false},
 	"handleLiftFirewallEdgeBan":                {Method: "DELETE", Path: "/api/v1/firewall/edge/bans/{ip}", HasBody: false, Stream: false},
