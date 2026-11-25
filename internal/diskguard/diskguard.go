@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -63,6 +64,7 @@ const (
 	OpBuild  Op = "build"
 	OpPull   Op = "pull"
 	OpBackup Op = "backup"
+	OpBranch Op = "branch"
 )
 
 // Thresholds are free-byte floors.
@@ -239,7 +241,7 @@ func (g *Guard) Status() Status {
 
 func volumesFor(op Op) []string {
 	switch op {
-	case OpPull:
+	case OpPull, OpBranch:
 		return []string{VolumeDocker}
 	case OpBackup:
 		return []string{VolumeData}
@@ -360,6 +362,36 @@ func writeReserve(path string, size int64) (err error) {
 	}
 	if err = os.Rename(tmp, path); err != nil {
 		return fmt.Errorf("diskguard: publish reserve: %w", err)
+	}
+	return nil
+}
+
+// RefuseBranch refuses a database branch when the Docker volume cannot hold the copy.
+// The slow path needs parentBytes times factor plus the reserve; the fast path only the reserve.
+func (g *Guard) RefuseBranch(parentBytes int64, factor float64, slowPath bool) error {
+	if g == nil {
+		return nil
+	}
+	if err := g.Refuse(OpBranch); err != nil {
+		return err
+	}
+	reserve := g.thresholds().Reserve
+	need := reserve
+	// A NaN or sub-1 factor would shrink the check, so it is clamped; an overflow is refused, never converted.
+	if !(factor >= 1) {
+		factor = 1
+	}
+	if slowPath {
+		want := float64(max(parentBytes, 0)) * factor
+		if !(want < float64(math.MaxInt64-reserve)) {
+			return &LowDiskError{Op: OpBranch, Volume: VolumeDocker, NeedBytes: math.MaxInt64}
+		}
+		need += int64(want)
+	}
+	for _, v := range g.Status().Volumes {
+		if v.Name == VolumeDocker && v.Level != LevelUnknown && v.FreeBytes < need {
+			return &LowDiskError{Op: OpBranch, Volume: v.Name, Path: v.Path, FreeBytes: v.FreeBytes, NeedBytes: need}
+		}
 	}
 	return nil
 }

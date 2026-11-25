@@ -409,19 +409,27 @@ func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredData
 // gap DeleteDesiredService's own doc comment documents, applied to a
 // database instead of a service.
 func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM desired_databases WHERE name = ?`, name)
+	// The branch guards live in the DELETE itself so no child can appear between a check and the delete.
+	res, err := db.ExecContext(ctx, `
+		DELETE FROM desired_databases WHERE name = ?
+		  AND NOT EXISTS (SELECT 1 FROM database_branches WHERE parent_name = ? AND `+branchLiveFilter+`)
+		  AND NOT EXISTS (SELECT 1 FROM database_branches WHERE database_name = ? AND protected = 1)
+	`, name, name, name)
 	if err != nil {
 		return fmt.Errorf("store: delete desired database %q: %w", name, err)
-	}
-	if _, err := db.ExecContext(ctx, `DELETE FROM database_provision_events WHERE database_name = ?`, name); err != nil {
-		return fmt.Errorf("store: delete provision events for database %q: %w", name, err)
 	}
 	n, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("store: delete desired database %q: rows affected: %w", name, err)
 	}
 	if n == 0 {
+		if err := db.CheckDatabaseDeletable(ctx, name); err != nil {
+			return err
+		}
 		return ErrDatabaseNotFound
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM database_provision_events WHERE database_name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete provision events for database %q: %w", name, err)
 	}
 	return nil
 }

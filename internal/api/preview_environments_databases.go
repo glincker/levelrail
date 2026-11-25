@@ -214,6 +214,10 @@ func (rt *Router) teardownPreviewEphemeralDatabases(ctx context.Context, preview
 		if err := rt.teardownOneEphemeralDatabase(ctx, d); err != nil {
 			rt.logger.Error("api: teardown ephemeral preview database failed", slog.String("error", err.Error()), slog.String("database", d.DatabaseName))
 			now := time.Now().UTC().Format(time.RFC3339Nano)
+			if errors.Is(err, errEphemeralDatabaseRefused) {
+				// Terminal: nothing was touched and a retry cannot succeed until the branches are dealt with.
+				rt.logger.Warn("api: ephemeral preview database kept", slog.String("database", d.DatabaseName))
+			}
 			if updErr := rt.previewEnvironments.UpdatePreviewEphemeralDatabaseStatus(ctx, d.ID, store.PreviewEphemeralDatabaseStatusTeardownFailed, err.Error(), now); updErr != nil {
 				rt.logger.Error("api: record ephemeral preview database teardown failure failed", slog.String("error", updErr.Error()), slog.String("database", d.DatabaseName))
 			}
@@ -234,6 +238,10 @@ func (rt *Router) teardownPreviewEphemeralDatabases(ctx context.Context, preview
 // failure, so a retried teardown always converges instead of getting
 // stuck re-reporting the same already-finished step.
 func (rt *Router) teardownOneEphemeralDatabase(ctx context.Context, d store.PreviewEphemeralDatabase) error {
+	// A protected branch or a parent with live children must keep its container and data.
+	if err := rt.checkDatabaseDeletable(ctx, d.DatabaseName); isBranchBlock(err) {
+		return fmt.Errorf("%w: %s", errEphemeralDatabaseRefused, branchBlockMessage(err))
+	}
 	if rt.execRuntime != nil {
 		runtime, err := rt.execRuntime("")
 		if err != nil {
@@ -261,3 +269,6 @@ func (rt *Router) teardownOneEphemeralDatabase(ctx context.Context, d store.Prev
 
 // documentDBDefaultVersion is pinned because the registry's moving tags change the on-disk format.
 const documentDBDefaultVersion = "pg17-1.2.0"
+
+// errEphemeralDatabaseRefused marks a teardown refused before any container or volume was touched.
+var errEphemeralDatabaseRefused = errors.New("refused")

@@ -393,3 +393,32 @@ func TestSeedFromLatest_LowDiskFallsBackToEmpty(t *testing.T) {
 		t.Errorf("status reason = %q", got)
 	}
 }
+
+func TestTeardownPreviewEphemeralDatabase_ProtectedBranchKeepsContainer(t *testing.T) {
+	rt, db, secret, runtime := setUpPreviewAppWithDatabase(t)
+	ctx := context.Background()
+
+	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
+	preview, _ := db.GetPreviewEnvironmentByAppAndPR(ctx, "web", 42)
+	tracked, err := db.GetPreviewEphemeralDatabaseByPreviewAndKey(ctx, preview.ID, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtime.seed(database.ContainerName(tracked.DatabaseName), true)
+	if err := db.CreateDatabaseBranch(ctx, store.DatabaseBranch{ID: "b", DatabaseName: tracked.DatabaseName, ParentName: "x", RootName: "x", Mode: "full", Source: "live", State: "ready", Protected: true, CreatedAt: "t", UpdatedAt: "t"}); err != nil {
+		t.Fatal(err)
+	}
+
+	sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
+
+	if _, ok := runtime.containers[database.ContainerName(tracked.DatabaseName)]; !ok {
+		t.Fatal("protected branch container was removed")
+	}
+	if _, err := db.GetDesiredDatabase(ctx, tracked.DatabaseName); err != nil {
+		t.Fatalf("protected database row lost: %v", err)
+	}
+	got, err := db.GetPreviewEphemeralDatabaseByPreviewAndKey(ctx, preview.ID, "main")
+	if err != nil || got.Status != store.PreviewEphemeralDatabaseStatusTeardownFailed {
+		t.Fatalf("tracking row = %+v, %v", got, err)
+	}
+}

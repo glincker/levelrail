@@ -519,6 +519,9 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if err := rt.checkDatabaseDeletable(r.Context(), name); writeBranchBlock(w, err) {
+		return
+	}
 	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID, true)
 	if !ok {
 		return
@@ -534,6 +537,9 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	err = rt.databases.DeleteDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
+		return
+	}
+	if writeBranchBlock(w, err) {
 		return
 	}
 	if err != nil {
