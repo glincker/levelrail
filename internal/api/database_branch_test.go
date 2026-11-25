@@ -95,7 +95,7 @@ func TestHandleBranchDatabase_NameCollision(t *testing.T) {
 	if rec := postBranch(t, rt, cookie, "main", `{"name":"taken","backup_id":"bkh_1"}`); rec.Code != http.StatusConflict {
 		t.Errorf("collision status = %d, want 409, body = %s", rec.Code, rec.Body.String())
 	}
-	for _, body := range []string{`{"name":"main","backup_id":"bkh_1"}`, `{"name":"Bad Name","backup_id":"bkh_1"}`, `{"name":"x"}`, `{"name":"x","backup_id":"bkh_1","at":"2026-01-01T00:00:00Z"}`} {
+	for _, body := range []string{`{"name":"main","backup_id":"bkh_1"}`, `{"name":"Bad Name","backup_id":"bkh_1"}`, `{"name":"x","backup_id":"bkh_1","at":"2026-01-01T00:00:00Z"}`} {
 		if rec := postBranch(t, rt, cookie, "main", body); rec.Code != http.StatusBadRequest {
 			t.Errorf("body %s: status = %d, want 400", body, rec.Code)
 		}

@@ -1,6 +1,10 @@
 package api
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/dbauthz"
+)
 
 // registerBackupRoutes registers the databases, backups, restore and usage routes.
 func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
@@ -176,7 +180,14 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleCloneRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListCloneRestores))
 	// Branch (database_branch.go): a new independent database from a backup or point in time, same tier as restore-as-new.
-	mux.HandleFunc("POST /api/v1/databases/{name}/branches", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleBranchDatabase))
+	mux.HandleFunc("POST /api/v1/databases/{name}/branches", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionWrite, rt.handleCreateDatabaseBranch))
+	mux.HandleFunc("GET /api/v1/databases/{name}/branches", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleListDatabaseBranches))
+	mux.HandleFunc("GET /api/v1/databases/{name}/branch-capabilities", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleBranchCapabilities))
+	mux.HandleFunc("GET /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseBranch))
+	mux.HandleFunc("PATCH /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionWrite, rt.handlePatchDatabaseBranch))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handleDeleteDatabaseBranch))
+	mux.HandleFunc("POST /api/v1/databases/{name}/branches/{branch}/reset", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handleResetDatabaseBranch))
+	mux.HandleFunc("POST /api/v1/databases/{name}/branches/{branch}/promote", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handlePromoteDatabaseBranch))
 
 	// Object-storage attachment per app: AbilityWriteSensitive, it decides which bucket credentials
 	// the container receives. No GET: handleGetApp already returns storage_target_id.

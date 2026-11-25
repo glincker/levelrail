@@ -350,6 +350,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 				Restorer:   &backup.ContainerRestorer{Runtime: client},
 				Identities: backupIdentities(backupRunner),
 			}),
+			api.WithBranchBackends(&backup.BranchDumper{Runtime: client}, &backup.ContainerRestorer{Runtime: client}),
 			// Creates the volume synchronously: a bare volume has no reconciler to wait on.
 			api.WithVolumeCloneRestoreRunner(&backup.VolumeCloneRestoreRunner{
 				Store:          db,

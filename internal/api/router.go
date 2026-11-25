@@ -622,6 +622,7 @@ type Router struct {
 	restoreHistory               RestoreHistoryStore                                                                 // always set, same "core Store interface" shape as backupHistory above
 	restoreRunner                RestoreRunner                                                                       // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
 	cloneRestoreHistory          CloneRestoreHistoryStore                                                            // always set, same "core Store interface" shape as restoreHistory above
+	branchCloner                 BranchCloner                                                                        // nil is valid: creating or resetting a branch returns 501
 	cloneRestoreRunner           CloneRestoreRunner                                                                  // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
 	baseBackupHistory            BaseBackupHistoryStore                                                              // always set, same "core Store interface" shape as backupHistory above
 	baseBackupRunner             BaseBackupRunner                                                                    // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
