@@ -160,15 +160,23 @@ func TestNewOIDCOAuthClient_DiscoveryFailure(t *testing.T) {
 	}
 }
 
-func TestDefaultOAuthClientFactory_OIDC(t *testing.T) {
+func TestDefaultOAuthClientFactory_OIDCRefusesLoopbackIssuer(t *testing.T) {
 	issuer := newFakeOIDCIssuer(t)
 	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
-	client, err := defaultOAuthClientFactory(store.OAuthProviderOIDC, settings, "secret", "https://levelrail.example/callback")
+	if _, err := defaultOAuthClientFactory(store.OAuthProviderOIDC, settings, "secret", "https://levelrail.example/callback"); err == nil {
+		t.Fatal("factory reached a loopback issuer, want the network guard to refuse it")
+	}
+}
+
+func TestNewOIDCOAuthClientWith_ReturnsOIDCClient(t *testing.T) {
+	issuer := newFakeOIDCIssuer(t)
+	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
+	client, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback")
 	if err != nil {
-		t.Fatalf("defaultOAuthClientFactory: %v", err)
+		t.Fatalf("newOIDCOAuthClientWith: %v", err)
 	}
 	if _, ok := client.(*oidcOAuthClient); !ok {
-		t.Errorf("defaultOAuthClientFactory returned %T, want *oidcOAuthClient", client)
+		t.Errorf("got %T, want *oidcOAuthClient", client)
 	}
 }
 
