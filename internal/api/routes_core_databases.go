@@ -7,6 +7,7 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	// Databases CRUD. No PUT: engine, version and name never change in place (that is a migration).
 	// The engine registry list sits first since it is not scoped to one database.
 	mux.HandleFunc("GET /api/v1/database-engines", rt.requireAbility(AbilityRead, rt.handleListDatabaseEngines))
+	mux.HandleFunc("GET /api/v1/database-engines/{id}/latest", rt.requireAbility(AbilityRead, rt.handleLatestDatabaseVersion))
 
 	mux.HandleFunc("GET /api/v1/databases", rt.requireAbility(AbilityRead, rt.handleListDatabases))
 	mux.HandleFunc("POST /api/v1/databases", rt.requireAbility(AbilityWrite, rt.handleCreateDatabase))

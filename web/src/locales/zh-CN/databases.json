@@ -1174,6 +1174,10 @@
     "note": "清空字段即可恢复为引擎默认值。",
     "pendingNote": "应用会重启数据库。停止后再启动也会应用它。"
   },
+  "latestVersion": {
+    "resolved": "最新（已解析：{{version}}）",
+    "pending": "最新：创建数据库时会选择最新的稳定版本。"
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "密码",

@@ -1188,6 +1188,10 @@
     "note": "Leeren Sie ein Feld, um zum Engine-Standard zurückzukehren.",
     "pendingNote": "Das Anwenden startet die Datenbank neu. Ein Start nach einem Stopp wendet es ebenfalls an."
   },
+  "latestVersion": {
+    "resolved": "Neueste (aufgelöst: {{version}})",
+    "pending": "Neueste: Beim Anlegen der Datenbank wird die neueste stabile Version gewählt."
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "Passwort",

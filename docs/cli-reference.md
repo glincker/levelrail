@@ -725,7 +725,7 @@ levelrail-cli preview prune <app> [--all] [flags]
 ## Databases
 
 ```
-levelrail-cli databases create --name NAME --engine ENGINE --version VERSION [flags]
+levelrail-cli databases create --name NAME --engine ENGINE [--version VERSION] [flags]
 levelrail-cli databases create --interactive
 levelrail-cli databases list [flags]
 levelrail-cli databases get <name> [flags]

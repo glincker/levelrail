@@ -1036,9 +1036,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/restore-test | AbilityRead | handleGetDatabaseRestoreTest |
 | GET | /api/v1/databases/{name}/restore-preview | AbilityRead | handleDatabaseRestorePreview |
 | GET | /api/v1/databases/{name}/major-upgrade/check | AbilityRead | handleMajorUpgradeCheck |
-| GET | /api/v1/databases/{name}/mongo/collections | AbilityReadSensitive | handleGetMongoCollections |
-| POST | /api/v1/databases/{name}/mongo/find | AbilityReadSensitive | handleMongoFind |
-| GET | /api/v1/databases/{name}/explorer/capabilities | AbilityReadSensitive | handleGetDatabaseExplorerCapabilities |
+| GET | /api/v1/database-engines/{id}/latest | AbilityRead | handleLatestDatabaseVersion |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

@@ -1202,6 +1202,10 @@
     "note": "Videz un champ pour revenir à la valeur par défaut du moteur.",
     "pendingNote": "L'application redémarre la base de données. Un démarrage après un arrêt l'applique aussi."
   },
+  "latestVersion": {
+    "resolved": "Dernière (résolue : {{version}})",
+    "pending": "Dernière : la version stable la plus récente est choisie à la création de la base."
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "Mot de passe",

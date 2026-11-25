@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2407 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2405 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -814,6 +814,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/start", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleStartDatabase", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/stop", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleStopDatabase", Description: "Stop/start, per database (database_stop_start.go). AbilityWriteSensitive, same tier public-access above uses: taking a database offline (and, on start, back online) is real operational impact, not an ordinary desired-state edit."},
 	{Method: "GET", Path: "/api/v1/database-engines", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseEngines", Description: "Databases CRUD. No PUT: engine, version and name never change in place (that is a migration). The engine registry list sits first since it is not scoped to one database."},
+	{Method: "GET", Path: "/api/v1/database-engines/{id}/latest", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleLatestDatabaseVersion", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabases", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleCreateDatabase", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/bulk", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleBulkDatabases", Description: "Per-database authz and audit happen in the handler, at the single-item ability."},

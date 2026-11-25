@@ -1202,6 +1202,10 @@
     "note": "Limpe um campo para voltar ao padrão do mecanismo.",
     "pendingNote": "Aplicar reinicia o banco de dados. Uma inicialização após uma parada também o aplica."
   },
+  "latestVersion": {
+    "resolved": "Mais recente (resolvida: {{version}})",
+    "pending": "Mais recente: a versão estável mais nova é escolhida ao criar o banco."
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "Senha",

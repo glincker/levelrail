@@ -1188,6 +1188,10 @@
     "note": "Clear a field to go back to the engine default.",
     "pendingNote": "Applying restarts the database. A start after a stop applies it too."
   },
+  "latestVersion": {
+    "resolved": "Latest (resolved: {{version}})",
+    "pending": "Latest: the newest stable version is picked when the database is created."
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "Password",

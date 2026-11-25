@@ -1188,6 +1188,10 @@
     "note": "Vacía un campo para volver al valor del motor.",
     "pendingNote": "Aplicar reinicia la base de datos. Iniciarla después de detenerla también lo aplica."
   },
+  "latestVersion": {
+    "resolved": "Última (resuelta: {{version}})",
+    "pending": "Última: se elige la versión estable más reciente al crear la base de datos."
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "Contraseña",

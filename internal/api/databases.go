@@ -29,7 +29,9 @@ type databaseResource struct {
 	Name           string `json:"name"`
 	Engine         string `json:"engine"`
 	Version        string `json:"version"`
-	NodeID         string `json:"node_id,omitempty"`
+	// VersionResolution is response-only: set when the request omitted the version or sent "latest".
+	VersionResolution *versionResolution `json:"version_resolution,omitempty"`
+	NodeID            string             `json:"node_id,omitempty"`
 	// NodeName and NodeIsLocal are response-only display fields, see
 	// appResource.
 	NodeName    string `json:"node_name,omitempty"`
@@ -438,6 +440,9 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !rt.applyLatestDatabaseVersion(w, r, &req) {
+		return
+	}
 	if !rt.createDesiredDatabase(w, r, req) {
 		return
 	}
