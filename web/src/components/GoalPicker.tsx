@@ -52,7 +52,7 @@ export function GoalPicker({
             <span className="shrink-0 text-muted-foreground">
               {GOAL_ICONS[goal.id]}
             </span>
-            <span className="min-w-0 truncate">
+            <span className="min-w-0 leading-tight">
               {t(`wizard.goals.items.${goal.id}.label`)}
             </span>
           </button>

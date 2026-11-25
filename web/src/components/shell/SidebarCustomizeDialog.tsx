@@ -236,7 +236,7 @@ export function SidebarCustomizeDialog({
           <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>{t('description')}</DialogDescription>
         </DialogHeader>
-        <div className="max-h-[60vh] overflow-y-auto pr-1">
+        <div className="max-h-[60vh] overflow-y-auto overflow-x-hidden pr-1">
           <ul aria-label={t('groups')} className="space-y-3">
             {listIds.map((gid) => {
               const g = groups.find((x) => x.id === gid)
