@@ -1,0 +1,26 @@
+{
+  "title": "集成",
+  "description": "将此数据库连接到监控、开发和数据工具。",
+  "search": "搜索集成",
+  "featured": "精选",
+  "empty": "没有符合搜索的集成。",
+  "loadFailed": "无法加载集成：{{error}}",
+  "configure": "配置",
+  "docs": "文档",
+  "docsPlanned": "文档计划中",
+  "categories": {
+    "monitor": "监控",
+    "develop": "开发",
+    "deploy": "部署",
+    "query": "查询与 BI",
+    "replicate": "复制"
+  },
+  "state": {
+    "connected": "已连接",
+    "available": "可用",
+    "needs_setup": "需要设置",
+    "docs_only": "指南",
+    "unavailable": "不可用",
+    "planned": "计划中"
+  }
+}

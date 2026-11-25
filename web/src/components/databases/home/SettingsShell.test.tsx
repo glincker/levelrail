@@ -4,7 +4,6 @@ import i18n from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import en from '../../../locales/en/databases.json'
 import { BranchesPlaceholder } from './BranchesPlaceholder'
-import { IntegrationsPlaceholder } from './IntegrationsPlaceholder'
 import { SettingsShell } from './SettingsShell'
 
 vi.mock('@tanstack/react-router', () => ({
@@ -62,7 +61,6 @@ describe('database home pages', () => {
     const { container } = render(
       <I18nextProvider i18n={inst}>
         <BranchesPlaceholder />
-        <IntegrationsPlaceholder />
       </I18nextProvider>,
     )
     expect(texts(container).filter((s) => RAW_KEY.test(s))).toEqual([])

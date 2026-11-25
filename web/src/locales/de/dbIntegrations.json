@@ -1,0 +1,26 @@
+{
+  "title": "Integrationen",
+  "description": "Verbinden Sie diese Datenbank mit Monitoring-, Entwicklungs- und Datenwerkzeugen.",
+  "search": "Integrationen suchen",
+  "featured": "Empfohlen",
+  "empty": "Keine Integration passt zu Ihrer Suche.",
+  "loadFailed": "Integrationen konnten nicht geladen werden: {{error}}",
+  "configure": "Konfigurieren",
+  "docs": "Doku",
+  "docsPlanned": "Doku geplant",
+  "categories": {
+    "monitor": "Monitoring",
+    "develop": "Entwicklung",
+    "deploy": "Bereitstellung",
+    "query": "Abfragen und BI",
+    "replicate": "Replikation"
+  },
+  "state": {
+    "connected": "Verbunden",
+    "available": "Verfügbar",
+    "needs_setup": "Einrichtung nötig",
+    "docs_only": "Anleitung",
+    "unavailable": "Nicht verfügbar",
+    "planned": "Geplant"
+  }
+}

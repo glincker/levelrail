@@ -1,6 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { IntegrationsPlaceholder } from '../../../components/databases/home/IntegrationsPlaceholder'
+import { IntegrationsPage } from '../../../components/databases/home/IntegrationsPage'
 
 export const Route = createFileRoute('/databases/$name/integrations')({
-  component: IntegrationsPlaceholder,
+  component: IntegrationsSection,
 })
+
+function IntegrationsSection() {
+  const { name } = Route.useParams()
+  return <IntegrationsPage name={name} />
+}

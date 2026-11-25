@@ -82,6 +82,7 @@ import type ingressProtection from '../locales/en/ingressProtection.json'
 import type platformSettings from '../locales/en/platformSettings.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type dbNav from '../locales/en/dbNav.json'
+import type dbIntegrations from '../locales/en/dbIntegrations.json'
 import type dbExplorerStrip from '../locales/en/dbExplorerStrip.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type databaseVersions from '../locales/en/databaseVersions.json'
@@ -266,6 +267,7 @@ declare module 'i18next' {
       ingressProtection: typeof ingressProtection
       databaseAccess: typeof databaseAccess
       dbNav: typeof dbNav
+      dbIntegrations: typeof dbIntegrations
       dbExplorerStrip: typeof dbExplorerStrip
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions

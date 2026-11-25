@@ -1,0 +1,26 @@
+{
+  "title": "Intégrations",
+  "description": "Connectez cette base de données à des outils de supervision, de développement et de données.",
+  "search": "Rechercher des intégrations",
+  "featured": "En vedette",
+  "empty": "Aucune intégration ne correspond à votre recherche.",
+  "loadFailed": "Impossible de charger les intégrations : {{error}}",
+  "configure": "Configurer",
+  "docs": "Docs",
+  "docsPlanned": "Docs prévues",
+  "categories": {
+    "monitor": "Supervision",
+    "develop": "Développement",
+    "deploy": "Déploiement",
+    "query": "Requêtes et BI",
+    "replicate": "Réplication"
+  },
+  "state": {
+    "connected": "Connectée",
+    "available": "Disponible",
+    "needs_setup": "Configuration requise",
+    "docs_only": "Guide",
+    "unavailable": "Indisponible",
+    "planned": "Prévue"
+  }
+}

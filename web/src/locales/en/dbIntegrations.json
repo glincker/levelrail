@@ -1,0 +1,26 @@
+{
+  "title": "Integrations",
+  "description": "Connect this database to monitoring, development and data tools.",
+  "search": "Search integrations",
+  "featured": "Featured",
+  "empty": "No integration matches your search.",
+  "loadFailed": "Could not load integrations: {{error}}",
+  "configure": "Configure",
+  "docs": "Docs",
+  "docsPlanned": "Docs planned",
+  "categories": {
+    "monitor": "Monitoring",
+    "develop": "Development",
+    "deploy": "Deployment",
+    "query": "Query and BI",
+    "replicate": "Replication"
+  },
+  "state": {
+    "connected": "Connected",
+    "available": "Available",
+    "needs_setup": "Needs setup",
+    "docs_only": "Guide",
+    "unavailable": "Unavailable",
+    "planned": "Planned"
+  }
+}
