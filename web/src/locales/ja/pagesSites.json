@@ -183,7 +183,15 @@
     "next": "次へ",
     "addDomain": "ドメインを追加",
     "editRoutes": "ルートを編集",
-    "viewDeploys": "デプロイを表示"
+    "viewDeploys": "デプロイを表示",
+    "copied": "コピーしました",
+    "copiedAnnounce": "{{domain}} のURLをコピーしました",
+    "took": "{{time}}で公開",
+    "chip": {
+      "domain": "ドメインを追加",
+      "git": "Gitを接続",
+      "password": "パスワードを設定"
+    }
   },
   "entry": {
     "drop": {

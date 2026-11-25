@@ -188,7 +188,15 @@
     "next": "Next",
     "addDomain": "Add domain",
     "editRoutes": "Edit routes",
-    "viewDeploys": "View deploys"
+    "viewDeploys": "View deploys",
+    "copied": "Copied",
+    "copiedAnnounce": "Copied {{domain}} URL",
+    "took": "Live in {{time}}",
+    "chip": {
+      "domain": "Add a domain",
+      "git": "Connect git",
+      "password": "Set a password"
+    }
   },
   "entry": {
     "drop": {

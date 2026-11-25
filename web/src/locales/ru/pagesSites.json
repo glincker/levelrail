@@ -189,7 +189,15 @@
     "next": "Далее",
     "addDomain": "Добавить домен",
     "editRoutes": "Изменить маршруты",
-    "viewDeploys": "Смотреть деплои"
+    "viewDeploys": "Смотреть деплои",
+    "copied": "Скопировано",
+    "copiedAnnounce": "URL {{domain}} скопирован",
+    "took": "Опубликовано за {{time}}",
+    "chip": {
+      "domain": "Добавить домен",
+      "git": "Подключить git",
+      "password": "Задать пароль"
+    }
   },
   "entry": {
     "drop": {
