@@ -159,7 +159,7 @@ func databasesUsage(prog string) string {
   %[1]s databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   %[1]s databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
   %[1]s databases integrations list <database> [flags]  integration catalog with per card status
-  %[1]s databases branch create <source> <new-name> [--from-backup ID | --at TIME] [flags]  new independent database from a backup or point in time
+  %[1]s databases branch create|ls|show|reset|promote|protect|rm ...  copy a database into a branch, or from a backup or point in time
   %[1]s databases export <name> [--out FILE|-] [--fresh | --latest] [--wait DURATION] [flags]  write a dump of a database to a file or stdout
   %[1]s databases import <name> --in FILE|- [--force] [--yes] [flags]  restore a dump into a database
   %[1]s databases clone <source> <new-name> [--backup ID] [flags]  new database from a fresh or chosen backup
