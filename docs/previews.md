@@ -84,6 +84,16 @@ levelrail-cli previews approve <app> <pr> --yes [--share-secrets]
 
 `previews` is the same command as `apps previews`. `settings` shows the policy, or changes it when you give flags: `--max-previews`, `--ttl-hours`, `--memory`, `--cpu`, `--idle-sleep-minutes`, `--database none|shared|fresh|seed`, `--seed-database`, `--allow-forks`, `--fork-secrets`, `--gate --gate-username --gate-password`, `--allow-indexing`.
 
+### Previews from an image your CI built
+
+`levelrail-cli apps previews create <app> --pr N --image REF [--branch B] [--sha S]` deploys an image as the preview for one pull request, with no source fetch or build on the server. It calls `POST /api/v1/apps/{name}/previews` with `pr_number`, `image`, `branch` and `sha`, and needs the deploy ability. `apps previews ls` and `apps previews rm <app> <pr>` are aliases of `list` and `teardown`.
+
+```
+levelrail-cli apps previews create web --pr 42 --image ghcr.io/acme/web:pr-42
+```
+
+The app needs a connected source repository with previews enabled. Image previews never evict another preview, so at the app's preview limit the request gets 409 and you remove one first. Apps with databases or more than one service are refused with 409, as are protected environments. The GitHub Action does this for you with the `preview`, `pr-number` and `preview-teardown` inputs, see `integrations/github-action/README.md`.
+
 ## API
 
 | Route | Does |
