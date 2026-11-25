@@ -95,6 +95,20 @@ func TestDeploySafety_PutValidatesAndResolves(t *testing.T) {
 	}
 }
 
+// A read-only user may see the per-app rollback policy but not change it.
+func TestDeploySafety_PutDeniedWithoutDeployAbility(t *testing.T) {
+	rt, db, _ := newGateRouter(t)
+	u := storeUserWithAbilitiesForTest(t, db, "gate-viewer@example.com", []string{AbilityRead})
+	viewer := sessionCookieForTest(t, rt, u.ID)
+	rec := serve(rt, authedRequest(t, viewer, http.MethodPut, "/api/v1/apps/web/deploy-safety", `{"auto_rollback":false}`))
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("PUT as read-only = %d %s, want 403", rec.Code, rec.Body.String())
+	}
+	if rec := serve(rt, authedRequest(t, viewer, http.MethodGet, "/api/v1/apps/web/deploy-safety", "")); rec.Code != http.StatusOK {
+		t.Errorf("GET as read-only = %d, want 200", rec.Code)
+	}
+}
+
 func TestDeployGate_NotWiredIs501(t *testing.T) {
 	rt, _, cookie := newSafetyRouter(t, inspectResolver{})
 	if rec := serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploy-safety", "")); rec.Code != http.StatusNotImplemented {
