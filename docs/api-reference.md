@@ -1038,6 +1038,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/major-upgrade/check | AbilityRead | handleMajorUpgradeCheck |
 | GET | /api/v1/databases/{name}/mongo/collections | AbilityReadSensitive | handleGetMongoCollections |
 | POST | /api/v1/databases/{name}/mongo/find | AbilityReadSensitive | handleMongoFind |
+| GET | /api/v1/databases/{name}/explorer/capabilities | AbilityReadSensitive | handleGetDatabaseExplorerCapabilities |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 
