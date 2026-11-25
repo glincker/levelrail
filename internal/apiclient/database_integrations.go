@@ -1,9 +1,6 @@
 package apiclient
 
-import (
-	"context"
-	"net/http"
-)
+import "context"
 
 // DatabaseIntegrationState mirrors internal/dbintegrations.State.
 type DatabaseIntegrationState struct {
@@ -34,7 +31,5 @@ type DatabaseIntegrationsResource struct {
 
 // ListDatabaseIntegrations calls GET /api/v1/databases/{name}/integrations.
 func (c *Client) ListDatabaseIntegrations(ctx context.Context, name string) (DatabaseIntegrationsResource, error) {
-	var out DatabaseIntegrationsResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/integrations", nil, &out)
-	return out, err
+	return getJSON[DatabaseIntegrationsResource](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/integrations")
 }
