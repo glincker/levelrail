@@ -28,6 +28,7 @@ const TAGLINE_KEYS = {
   keydb: 'picker.taglines.keydb',
   dragonfly: 'picker.taglines.dragonfly',
   mongodb: 'picker.taglines.mongodb',
+  documentdb: 'picker.taglines.documentdb',
   clickhouse: 'picker.taglines.clickhouse',
   meilisearch: 'picker.taglines.meilisearch',
   qdrant: 'picker.taglines.qdrant',

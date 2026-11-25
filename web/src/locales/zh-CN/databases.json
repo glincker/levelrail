@@ -524,6 +524,7 @@
       "keydb": "多线程的 Redis 兼容存储，可在单节点上获得更高吞吐。",
       "dragonfly": "为超高吞吐而生的现代 Redis 兼容存储。",
       "mongodb": "文档数据库，适用于灵活的 JSON 形态数据。",
+      "documentdb": "基于 PostgreSQL 的开源文档数据库，兼容 MongoDB 协议。",
       "clickhouse": "列式存储，用于对大量事件数据进行快速分析查询。",
       "meilisearch": "容错拼写的全文搜索，通过 HTTP API 即时返回结果。",
       "qdrant": "向量数据库，用于嵌入、语义搜索和 RAG 检索。",

@@ -531,6 +531,7 @@
       "keydb": "Almacén multihilo compatible con Redis para mayor rendimiento en un solo nodo.",
       "dragonfly": "Almacén moderno compatible con Redis, creado para un rendimiento muy alto.",
       "mongodb": "Base de datos documental para datos flexibles con forma de JSON.",
+      "documentdb": "Base de datos documental de código abierto sobre PostgreSQL, compatible con el protocolo de MongoDB.",
       "clickhouse": "Almacén columnar para consultas analíticas rápidas sobre grandes volúmenes de eventos.",
       "meilisearch": "Búsqueda de texto completo tolerante a errores tipográficos, con resultados instantáneos mediante una API HTTP.",
       "qdrant": "Base de datos vectorial para embeddings, búsqueda semántica y recuperación RAG.",

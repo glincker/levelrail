@@ -531,6 +531,7 @@
       "keydb": "Multithreaded Redis-kompatibler Speicher für höheren Durchsatz auf einem Node.",
       "dragonfly": "Moderner Redis-kompatibler Speicher für sehr hohen Durchsatz.",
       "mongodb": "Dokumentdatenbank für flexible Daten in JSON-Form.",
+      "documentdb": "Quelloffene Dokumentendatenbank auf PostgreSQL, kompatibel mit dem MongoDB-Protokoll.",
       "clickhouse": "Spaltenspeicher für schnelle analytische Abfragen über große Ereignisdaten.",
       "meilisearch": "Tippfehlertolerante Volltextsuche mit sofortigen Ergebnissen über eine HTTP-API.",
       "qdrant": "Vektordatenbank für Embeddings, semantische Suche und RAG-Abruf.",

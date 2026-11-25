@@ -26,6 +26,7 @@ const (
 	postgresDataPath   = "/var/lib/postgresql/data"
 	mysqlDataPath      = "/var/lib/mysql"
 	mongoDataPath      = "/data/db"
+	documentdbDataPath = "/data"
 	clickhouseDataPath = "/var/lib/clickhouse"
 )
 
@@ -36,10 +37,12 @@ const (
 // than in database_engines.yaml, the same "identity/display metadata
 // only" boundary that registry's own doc comment already draws.
 const (
-	redisContainerPort      = 6379
-	postgresContainerPort   = 5432
-	mysqlContainerPort      = 3306
-	mongoContainerPort      = 27017
+	redisContainerPort    = 6379
+	postgresContainerPort = 5432
+	mysqlContainerPort    = 3306
+	mongoContainerPort    = 27017
+	// documentdbContainerPort is the image gateway port, kept off 27017 by upstream default.
+	documentdbContainerPort = 10260
 	clickhouseContainerPort = 8123
 	// redisTLSContainerPort is Redis's own --tls-port value this
 	// controller sets when TLS is enabled (WithTLS): --port 0 disables
@@ -515,6 +518,17 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
 		}
 		return c.reconcileEngine(ctx, desired, env, mongoCommand(c.tls), mongoDataPath, mongoContainerPort, c.tls, c.engineParamsSpec(desired))
+
+	case store.EngineDocumentDB:
+		if c.mongoCreds == nil {
+			return credentialsBlockedResult(), nil
+		}
+		// The image reads USERNAME and PASSWORD and serves SCRAM auth plus a self-signed TLS gateway.
+		env := map[string]string{
+			"USERNAME": c.mongoCreds.Username,
+			"PASSWORD": c.mongoCreds.Password,
+		}
+		return c.reconcileEngine(ctx, desired, env, nil, documentdbDataPath, documentdbContainerPort, nil)
 
 	case store.EngineMariaDB:
 		if c.mariadbCreds == nil {
@@ -1049,7 +1063,9 @@ func normalizedPortSet(ports []docker.PortBinding) map[docker.PortBinding]bool {
 // database_engines.yaml) doesn't match its Docker image name; any id
 // absent here is used as its own image name.
 var dockerImageMapping = map[string]string{
-	store.EngineMongoDB:     "mongo",
+	store.EngineMongoDB: "mongo",
+	// Taken unmodified from the project registry, never rebuilt here.
+	store.EngineDocumentDB:  "ghcr.io/documentdb/documentdb/documentdb-local",
 	store.EngineKeyDB:       "eqalpha/keydb",
 	store.EngineDragonfly:   "docker.dragonflydb.io/dragonflydb/dragonfly",
 	store.EngineValkey:      "valkey/valkey",

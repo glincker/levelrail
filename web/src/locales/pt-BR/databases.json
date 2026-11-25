@@ -538,6 +538,7 @@
       "keydb": "Armazenamento multithread compatível com Redis para maior vazão em um único node.",
       "dragonfly": "Armazenamento moderno compatível com Redis, criado para vazão muito alta.",
       "mongodb": "Banco de dados de documentos para dados flexíveis em formato JSON.",
+      "documentdb": "Banco de documentos de código aberto sobre PostgreSQL, compatível com o protocolo do MongoDB.",
       "clickhouse": "Armazenamento colunar para consultas analíticas rápidas sobre grandes volumes de eventos.",
       "meilisearch": "Busca de texto completo tolerante a erros de digitação com resultados instantâneos por uma API HTTP.",
       "qdrant": "Banco de dados de vetores para embeddings, busca semântica e recuperação para RAG.",

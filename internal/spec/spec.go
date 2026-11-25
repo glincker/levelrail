@@ -410,6 +410,7 @@ const (
 	EngineRedis       = "redis"
 	EngineMySQL       = "mysql"
 	EngineMongoDB     = "mongodb"
+	EngineDocumentDB  = "documentdb"
 	EngineMariaDB     = "mariadb"
 	EngineKeyDB       = "keydb"
 	EngineClickHouse  = "clickhouse"

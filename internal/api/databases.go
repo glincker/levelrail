@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -175,7 +176,7 @@ func validateDatabaseResource(d databaseResource) error {
 		// A registry parse failure is a build-time invariant, so it is an error rather than treating every engine as valid.
 		return fmt.Errorf("check supported database engines: %w", err)
 	}
-	if !supported {
+	if !supported || (d.Engine == store.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB)) {
 		return errors.New("unsupported engine")
 	}
 	if d.Version == "" {

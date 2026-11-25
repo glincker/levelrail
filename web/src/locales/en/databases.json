@@ -531,6 +531,7 @@
       "keydb": "Multithreaded Redis-compatible store for higher throughput on one node.",
       "dragonfly": "Modern Redis-compatible store built for very high throughput.",
       "mongodb": "Document database for flexible, JSON-shaped data.",
+      "documentdb": "Open source document database on PostgreSQL, MongoDB wire compatible.",
       "clickhouse": "Column store for fast analytical queries over large event data.",
       "meilisearch": "Typo-tolerant full-text search with instant results over an HTTP API.",
       "qdrant": "Vector database for embeddings, semantic search and RAG retrieval.",

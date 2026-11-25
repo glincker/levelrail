@@ -559,7 +559,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		}
 		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
-	case store.EngineMongoDB:
+	case store.EngineMongoDB, store.EngineDocumentDB:
 		creds, err := mongoCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {
 			deps.logger.Warn("skipping mongodb credentials for this reconcile pass",

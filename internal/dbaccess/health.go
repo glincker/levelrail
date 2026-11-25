@@ -55,6 +55,8 @@ func dataPath(engine string) (string, bool) {
 		return "/var/lib/mysql", true
 	case store.EngineMongoDB:
 		return "/data/db", true
+	case store.EngineDocumentDB:
+		return "/data", true
 	}
 	if store.IsRedisFamily(engine) {
 		return "/data", true

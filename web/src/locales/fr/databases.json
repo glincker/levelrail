@@ -538,6 +538,7 @@
       "keydb": "Stockage multithread compatible Redis pour un débit plus élevé sur un seul node.",
       "dragonfly": "Stockage moderne compatible Redis conçu pour un très haut débit.",
       "mongodb": "Base de données de documents pour des données flexibles au format JSON.",
+      "documentdb": "Base de données documentaire open source sur PostgreSQL, compatible avec le protocole MongoDB.",
       "clickhouse": "Stockage en colonnes pour des requêtes analytiques rapides sur de gros volumes d'événements.",
       "meilisearch": "Recherche plein texte tolérante aux fautes de frappe avec résultats instantanés via une API HTTP.",
       "qdrant": "Base de données vectorielle pour les embeddings, la recherche sémantique et la récupération RAG.",

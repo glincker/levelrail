@@ -44,6 +44,8 @@ printf '%s\n' "$out" | sed -n 1p`
 		script = `exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -B -e 'SELECT VERSION(); SELECT 1'`
 	case store.EngineMongoDB:
 		script = `exec mongosh --quiet --host 127.0.0.1 --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'if (db.adminCommand({ping: 1}).ok !== 1) { quit(1) }; print(db.version())'`
+	case store.EngineDocumentDB:
+		script = `exec mongosh --quiet "mongodb://$USERNAME:$PASSWORD@127.0.0.1:10260/?tls=true&tlsAllowInvalidCertificates=true" --eval 'if (db.adminCommand({ping: 1}).ok !== 1) { quit(1) }; print("documentdb")'`
 	case store.EngineDragonfly:
 		return []string{"bash", "-c", dragonflyHealthScript}, nil
 	case store.EngineRedis, store.EngineKeyDB, store.EngineValkey:

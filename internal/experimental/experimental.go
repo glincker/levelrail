@@ -53,6 +53,8 @@ const (
 	Cloud Feature = "cloud"
 	// MacOSAgent shows the macOS node agent join command in the dashboard (default off).
 	MacOSAgent Feature = "macos-agent"
+	// DocumentDB is the DocumentDB managed database engine (MongoDB wire compatible, default off).
+	DocumentDB Feature = "documentdb"
 	// AgentIngressTunnel lets ingress reach an app on a node with no mesh through the agent connection (default off).
 	AgentIngressTunnel Feature = "agent-ingress-tunnel"
 )
@@ -62,7 +64,7 @@ const EnvVar = "APP_EXPERIMENTAL"
 
 // All returns every gated feature, sorted.
 func All() []Feature {
-	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM, Plugins, GitPush, Canvas, Mail, MCPHTTP, Cloud, TrafficAnalytics, MacOSAgent, AgentIngressTunnel}
+	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM, Plugins, GitPush, Canvas, Mail, MCPHTTP, Cloud, TrafficAnalytics, MacOSAgent, AgentIngressTunnel, DocumentDB}
 	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
 	return fs
 }

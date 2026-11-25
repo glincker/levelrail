@@ -42,6 +42,8 @@ func ContainerPort(engine string) (int, bool) {
 		return mysqlContainerPort, true
 	case store.EngineMongoDB:
 		return mongoContainerPort, true
+	case store.EngineDocumentDB:
+		return documentdbContainerPort, true
 	case store.EngineMariaDB:
 		// MariaDB reuses the mysql image's port, same reason
 		// controller.go's own MariaDB case reuses mysqlContainerPort.
@@ -77,7 +79,7 @@ func PasswordSecretKey(engine string) (key string, ok bool) {
 		return PostgresPasswordEnvKey, true
 	case store.EngineMySQL:
 		return MySQLPasswordEnvKey, true
-	case store.EngineMongoDB:
+	case store.EngineMongoDB, store.EngineDocumentDB:
 		return MongoPasswordEnvKey, true
 	case store.EngineMariaDB:
 		return MariaDBPasswordEnvKey, true
