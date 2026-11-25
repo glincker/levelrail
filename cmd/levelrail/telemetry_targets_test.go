@@ -45,7 +45,7 @@ func TestTelemetryTargets_RemoteService_RoutesThroughRegisteredAgent(t *testing.
 		t.Fatalf("place web on node-2: %v", err)
 	}
 
-	remote := &fakeNodeTransport{names: []string{"web-abc123"}}
+	remote := &fakeNodeTransport{names: []string{"web-abc12345"}}
 	registry := agent.NewRegistry()
 	registry.Register("node-2", remote)
 
@@ -92,7 +92,7 @@ func TestTelemetryTargets_DisconnectedRemoteNode_SkipsServiceNotWholeTick(t *tes
 		t.Fatalf("seed service local: %v", err)
 	}
 
-	local := &fakeNodeTransport{names: []string{"local-abc123"}}
+	local := &fakeNodeTransport{names: []string{"local-abc12345"}}
 	registry := agent.NewRegistry() // node-unreachable deliberately never registered
 
 	targetsFunc := telemetryTargets(db, local, registry, nil, slog.Default())
@@ -102,5 +102,23 @@ func TestTelemetryTargets_DisconnectedRemoteNode_SkipsServiceNotWholeTick(t *tes
 	}
 	if len(targets) != 1 || targets[0].ResourceID != "service:local" {
 		t.Errorf("targets = %+v, want exactly local's container, offline's skipped", targets)
+	}
+}
+
+// Service web must not claim web-api's containers through the shared name prefix.
+func TestTelemetryTargets_AnchoredMatch_SkipsPrefixSibling(t *testing.T) {
+	db := openCredentialsTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatalf("seed service web: %v", err)
+	}
+	local := &fakeNodeTransport{names: []string{"web-01234567", "web-01234567-r1", "web-api-01234567"}}
+
+	targets, err := telemetryTargets(db, local, agent.NewRegistry(), nil, slog.Default())(ctx)
+	if err != nil {
+		t.Fatalf("telemetryTargets() error = %v", err)
+	}
+	if len(targets) != 2 {
+		t.Errorf("targets = %+v, want web's replica 0 and 1 only", targets)
 	}
 }

@@ -146,6 +146,10 @@ func (c *Collector) collect(ctx context.Context, targets []Target, prune bool) e
 	now := time.Now()
 	samples := make([]Sample, 0, len(targets)*7) // 7 metrics per container, see sampleValues
 	var errs []error
+	// One sample set per resource: replicas and blue-green overlaps are summed, since the store
+	// keeps a single value per (resource, metric, ts). Churn shows as a counter reset to the rollup.
+	combined := map[string]*docker.ContainerStats{}
+	var order []string
 
 	for _, target := range targets {
 		stats, err := c.source.Stats(ctx, target.NodeID, target.ContainerID)
@@ -154,7 +158,16 @@ func (c *Collector) collect(ctx context.Context, targets []Target, prune bool) e
 			continue
 		}
 		stats.CPUPercent = c.cpuPercent(cpuCacheKey(target.NodeID, target.ContainerID), stats.CPURaw)
-		samples = append(samples, sampleValues(target.ResourceID, now, stats)...)
+		if acc, ok := combined[target.ResourceID]; ok {
+			addStats(acc, stats)
+		} else {
+			cp := stats
+			combined[target.ResourceID] = &cp
+			order = append(order, target.ResourceID)
+		}
+	}
+	for _, id := range order {
+		samples = append(samples, sampleValues(id, now, *combined[id])...)
 	}
 
 	if err := c.store.WriteSamples(ctx, samples); err != nil {
@@ -165,6 +178,17 @@ func (c *Collector) collect(ctx context.Context, targets []Target, prune bool) e
 		c.pruneCPUCache(targets)
 	}
 	return errors.Join(errs...)
+}
+
+// addStats sums every field sampleValues writes into acc.
+func addStats(acc *docker.ContainerStats, s docker.ContainerStats) {
+	acc.CPUPercent += s.CPUPercent
+	acc.MemoryUsageBytes += s.MemoryUsageBytes
+	acc.MemoryLimitBytes += s.MemoryLimitBytes
+	acc.NetworkRxBytes += s.NetworkRxBytes
+	acc.NetworkTxBytes += s.NetworkTxBytes
+	acc.DiskReadBytes += s.DiskReadBytes
+	acc.DiskWriteBytes += s.DiskWriteBytes
 }
 
 func (c *Collector) cpuPercent(cacheKey string, raw docker.CPUStatsRaw) float64 {

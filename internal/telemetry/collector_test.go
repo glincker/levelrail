@@ -265,3 +265,29 @@ func TestRun_TargetsFuncError_ContinuesToNextTick(t *testing.T) {
 		t.Errorf("targetsFunc called %d times, want at least 2: a failing tick must not stop the collector from trying again", callCount)
 	}
 }
+
+// Two replicas of one resource are written as one summed sample, not last-wins.
+func TestCollectOnce_CombinesReplicasIntoOneSample(t *testing.T) {
+	db := newTestDB(t)
+	const gb, mb = 1 << 30, 1 << 20
+	source := &fakeStatsSource{stats: map[string]docker.ContainerStats{
+		"a": {NetworkRxBytes: 5 * gb, MemoryUsageBytes: 100},
+		"b": {NetworkRxBytes: 50 * mb, MemoryUsageBytes: 200},
+	}}
+	c := NewCollector(source, db, time.Second, nil)
+	targets := []Target{{ResourceID: "service:web", ContainerID: "a"}, {ResourceID: "service:web", ContainerID: "b"}}
+	if err := c.CollectOnce(context.Background(), targets); err != nil {
+		t.Fatalf("CollectOnce() error = %v", err)
+	}
+	got, err := db.Query(context.Background(), "service:web", "network_rx_bytes", time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatalf("Query() error = %v", err)
+	}
+	if len(got) != 1 || got[0].Value != float64(5*gb+50*mb) {
+		t.Errorf("network_rx_bytes = %+v, want one sample of %d", got, 5*gb+50*mb)
+	}
+	mem, _ := db.Query(context.Background(), "service:web", "memory_usage_bytes", time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
+	if len(mem) != 1 || mem[0].Value != 300 {
+		t.Errorf("memory_usage_bytes = %+v, want 300", mem)
+	}
+}
