@@ -114,3 +114,21 @@ func TestDatabaseAuditReadRouteAuthz(t *testing.T) {
 		t.Fatalf("bad cursor: %d", rec.Code)
 	}
 }
+
+func TestDatabaseAuditFingerprintIdentifiesNormalizedStatement(t *testing.T) {
+	rt, db, fake, w := auditedRouter(t, false)
+	fake.out = "?column?\n1\n"
+	cookie := loginTestSession(t, rt, db)
+	for _, sql := range []string{"select * from t where id = 1", "select * from t where id = 2", "select * from u where id = 1"} {
+		viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/query", `{"sql":"`+sql+`"}`)
+	}
+	w.Flush(context.Background())
+	rows, _, _ := db.ListDatabaseStatementAudits(context.Background(), store.DatabaseStatementAuditFilter{DatabaseName: "main"})
+	fp := map[string]string{}
+	for _, r := range rows {
+		fp[r.Fingerprint] = r.ID
+	}
+	if len(rows) != 3 || len(fp) != 2 {
+		t.Fatalf("want 3 rows and 2 distinct fingerprints (same shape, different literal collapses), got %d rows %d fingerprints", len(rows), len(fp))
+	}
+}
