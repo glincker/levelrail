@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ChevronDownGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
@@ -40,13 +41,14 @@ function TailBody({ appName }: { appName: string }) {
 }
 
 export function LogsTail({ appName }: { appName: string }) {
+  const { t } = useTranslation('appOverview')
   const isMobile = useIsMobile()
   const [override, setOverride] = useState<boolean | null>(null)
   const open = override ?? !isMobile
 
   return (
     <section
-      aria-label="Live logs"
+      aria-label={t('liveLogsLabel')}
       className="rounded-xl border border-border bg-card"
     >
       <div className="flex items-center justify-between px-3 py-2">

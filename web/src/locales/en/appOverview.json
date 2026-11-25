@@ -162,5 +162,15 @@
     "none": "No preview environments yet.",
     "all": "All previews",
     "pr": "PR #{{number}}"
-  }
+  },
+  "detailsTrigger": "Configuration and diagnostics",
+  "activityLabel": "Activity",
+  "liveLogsLabel": "Live logs",
+  "appSummaryLabel": "App summary",
+  "suggestedFixes": "Suggested fixes",
+  "liveTrafficLabel": "Live traffic and resources",
+  "trafficUnavailable": "Live traffic numbers are unavailable right now.",
+  "trafficRetry": "Retry",
+  "noTrafficTitle": "No traffic yet",
+  "noTrafficHint": "Send a request to see live numbers."
 }

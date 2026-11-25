@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Timeline } from '@/components/kit'
 import { useAppTimeline } from '../../queries/appTimeline'
@@ -17,6 +18,7 @@ export function ActivityTimeline({
   conditions: ReconcileCondition[]
 }) {
   const navigate = useNavigate()
+  const { t } = useTranslation('appOverview')
   const timeline = useAppTimeline(app.name)
   const entries =
     timeline.data ??
@@ -29,7 +31,7 @@ export function ActivityTimeline({
   })
 
   return (
-    <section aria-label="Activity" className="space-y-2">
+    <section aria-label={t('activityLabel')} className="space-y-2">
       <div className="flex items-center justify-between">
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           Activity

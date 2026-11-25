@@ -162,5 +162,15 @@
     "none": "Aucun environnement de preview pour l'instant.",
     "all": "Toutes les previews",
     "pr": "PR #{{number}}"
-  }
+  },
+  "detailsTrigger": "Configuration et diagnostic",
+  "activityLabel": "Activité",
+  "liveLogsLabel": "Journaux en direct",
+  "appSummaryLabel": "Résumé de l'app",
+  "suggestedFixes": "Correctifs suggérés",
+  "liveTrafficLabel": "Trafic et ressources en direct",
+  "trafficUnavailable": "Les chiffres du trafic en direct sont indisponibles pour le moment.",
+  "trafficRetry": "Réessayer",
+  "noTrafficTitle": "Pas encore de trafic",
+  "noTrafficHint": "Envoyez une requête pour voir les chiffres en direct."
 }

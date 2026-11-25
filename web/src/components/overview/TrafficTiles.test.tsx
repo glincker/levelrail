@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 import type { TrafficStats } from '../../queries/appTraffic'
 import { TrafficTiles } from './TrafficTiles'
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k: string) => k }),
+}))
+
 vi.mock('@/components/kit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/components/kit')>()),
   SkeletonTile: () => <div data-testid="skeleton" />,
@@ -38,10 +42,8 @@ describe('TrafficTiles', () => {
       data: { ...stats(), hasTraffic: false },
     }
     render(<TrafficTiles appName="web" url="https://a.io" />)
-    expect(screen.getByText('No traffic yet')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Send a request to see live numbers/),
-    ).toBeInTheDocument()
+    expect(screen.getByText('noTrafficTitle')).toBeInTheDocument()
+    expect(screen.getByText('noTrafficHint')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /copy app url/i }),
     ).toBeInTheDocument()
@@ -54,7 +56,7 @@ describe('TrafficTiles', () => {
       data: { ...stats(), hasTraffic: false },
     }
     render(<TrafficTiles appName="web" url="https://a.io" hideEmpty />)
-    expect(screen.queryByText('No traffic yet')).toBeNull()
+    expect(screen.queryByText('noTrafficTitle')).toBeNull()
   })
 
   it('omits the copy action when the app has no URL', () => {
@@ -108,7 +110,9 @@ describe('TrafficTiles', () => {
   it('shows an inline error with retry', () => {
     state = { isPending: false, isError: true }
     render(<TrafficTiles appName="web" url="https://a.io" />)
-    expect(screen.getByText(/unavailable right now/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+    expect(screen.getByText('trafficUnavailable')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'trafficRetry' }),
+    ).toBeInTheDocument()
   })
 })

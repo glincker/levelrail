@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   Fragment,
   Suspense,
@@ -72,6 +73,7 @@ export function OverviewPage({
   conditions: ReconcileCondition[]
   attempts: DeployAttempt[]
 }) {
+  const { t } = useTranslation('appOverview')
   const [deployTab, setDeployTab] = useState<DeployTab | null>(null)
   const [range, setRange] = useState<VisitorsWindow>('24h')
   const baseUrl = useAppUrl(app)
@@ -186,7 +188,7 @@ export function OverviewPage({
       <div className="space-y-4">
         {isStatic ? null : (
           <section
-            aria-label="Live traffic and resources"
+            aria-label={t('liveTrafficLabel')}
             className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3"
           >
             {layout.containerMetrics ? (

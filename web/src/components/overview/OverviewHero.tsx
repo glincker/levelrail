@@ -135,7 +135,7 @@ export function OverviewHero({
         </section>
         {summary ?? (
           <section
-            aria-label="App summary"
+            aria-label={tApp('appSummaryLabel')}
             className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1"
           >
             <div className="flex min-w-0 items-center gap-0.5">

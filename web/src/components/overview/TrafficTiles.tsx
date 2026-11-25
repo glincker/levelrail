@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   ActivityGlassIcon,
   CheckGlassIcon,
@@ -104,6 +105,7 @@ export function TrafficTiles({
 }) {
   const { data, isPending, isError, refetch } = useAppTraffic(appName)
   const { copied, copy } = useCopyToClipboard()
+  const { t } = useTranslation('appOverview')
 
   if (isPending) {
     return (
@@ -117,9 +119,9 @@ export function TrafficTiles({
   if (isError) {
     return (
       <div className="col-span-full flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground">
-        <span>Live traffic numbers are unavailable right now.</span>
+        <span>{t('trafficUnavailable')}</span>
         <Button size="sm" variant="ghost" onClick={() => void refetch()}>
-          Retry
+          {t('trafficRetry')}
         </Button>
       </div>
     )
@@ -130,8 +132,10 @@ export function TrafficTiles({
       <div className="col-span-full flex items-center justify-between gap-3 rounded-xl border border-dashed border-border px-4 py-2 text-sm text-muted-foreground">
         <span className="flex items-center gap-2">
           <ActivityGlassIcon className="size-5 shrink-0" aria-hidden="true" />
-          <span className="font-medium text-foreground">No traffic yet</span>
-          <span>Send a request to see live numbers.</span>
+          <span className="font-medium text-foreground">
+            {t('noTrafficTitle')}
+          </span>
+          <span>{t('noTrafficHint')}</span>
         </span>
         {url ? (
           <Button size="sm" variant="ghost" onClick={() => copy(url)}>
