@@ -57,6 +57,29 @@ func TestRuntimeOptions_ChangeRecreatesInPlaceAndUnchangedDoesNot(t *testing.T) 
 	}
 }
 
+func TestRuntimeOptions_IOCapChangeRecreates(t *testing.T) {
+	svc := &store.DesiredService{Name: "web", Image: "img:v1", Replicas: 1}
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: svc}, rt)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	creates := rt.createCalls
+	svc.Resources = &store.ServiceResources{IOReadBps: 50 << 20, IOWriteBps: 20 << 20}
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if rt.createCalls != creates+1 {
+		t.Fatalf("new io caps: %d creates, want 1", rt.createCalls-creates)
+	}
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if rt.createCalls != creates+1 {
+		t.Fatal("unchanged io caps recreated again")
+	}
+}
+
 func application0Name(svc *store.DesiredService) string {
 	return ReplicaContainerName(svc.Name, NameImage(*svc), svc.RestartNonce, 0)
 }

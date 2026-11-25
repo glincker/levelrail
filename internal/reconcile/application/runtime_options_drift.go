@@ -3,6 +3,7 @@ package application
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -16,6 +17,10 @@ func desiredRuntimeOptionsHash(desired *store.DesiredService) string {
 	// Granted caps join the identity so a grant or its revocation recreates the container.
 	if len(desired.GrantedCaps) > 0 {
 		k += "|caps:" + strings.Join(desired.GrantedCaps, ",")
+	}
+	// Block IO caps are set at container create and cannot be changed live, so a new cap recreates.
+	if r := desired.Resources; r != nil && (r.IOReadBps > 0 || r.IOWriteBps > 0) {
+		k += "|io:" + strconv.FormatInt(r.IOReadBps, 10) + "," + strconv.FormatInt(r.IOWriteBps, 10)
 	}
 	if k == "" {
 		return ""
