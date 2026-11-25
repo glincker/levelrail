@@ -118,3 +118,25 @@ func TestSumAcrossResources_ChainsIntoAggregate(t *testing.T) {
 		t.Errorf("bucket 1 = %v, want 70 (30+40)", got[1].Value)
 	}
 }
+
+func TestSumAcrossResources_CarriesRollupCounts(t *testing.T) {
+	base := time.Unix(1_700_000_000, 0).UTC()
+	samples := []Sample{
+		{ResourceID: "service:web", Metric: "cpu_percent", Timestamp: base, Value: 10, Count: 4, Sum: 40, Min: 5, Max: 15},
+		{ResourceID: "service:worker", Metric: "cpu_percent", Timestamp: base, Value: 20, Count: 2, Sum: 40, Min: 18, Max: 22},
+	}
+
+	got := SumAcrossResources("node:n1", "cpu_percent", samples)
+	if len(got) != 1 {
+		t.Fatalf("got %d points, want 1", len(got))
+	}
+	p := got[0]
+	if p.Value != 30 || p.Count != 4 || p.Sum != 120 || p.Min != 23 || p.Max != 37 {
+		t.Errorf("got %+v, want value 30 count 4 sum 120 min 23 max 37", p)
+	}
+
+	agg := Aggregate(got, base, 60*time.Second)
+	if len(agg) != 1 || agg[0].Value != 30 || agg[0].Count != 4 || agg[0].Min != 23 || agg[0].Max != 37 {
+		t.Errorf("aggregate = %+v, want value 30 count 4 min 23 max 37", agg)
+	}
+}
