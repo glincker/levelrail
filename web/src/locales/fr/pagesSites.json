@@ -548,6 +548,15 @@
     "empty": "Aucune sortie dans le journal.",
     "error": "Impossible de charger le journal.",
     "failedAt": "Échec pendant {{step}}",
+    "hint": {
+      "outOfMemory": "Le build a manqué de mémoire. Réduisez la mémoire utilisée par le script de build, par exemple en découpant les étapes lourdes.",
+      "timeout": "Le build a dépassé le délai. Cherchez une étape qui attend une saisie ou ne se termine jamais.",
+      "installFailed": "L'installation des dépendances a échoué. Vérifiez que le lockfile correspond à package.json et que tous les paquets sont accessibles.",
+      "nodeVersion": "Une dépendance exige une autre version de Node. Définissez engines.node dans package.json ou ajoutez un fichier .nvmrc.",
+      "missingBuildCommand": "Aucune commande de build utilisable n'a été trouvée. Définissez-la dans les Paramètres ou ajoutez un script build dans package.json.",
+      "outputDirEmpty": "Le build est terminé mais le dossier de sortie est vide. Vérifiez le dossier de sortie dans les Paramètres.",
+      "outputDirMissing": "Le dossier de sortie est introuvable après le build. Indiquez le bon dossier dans les Paramètres."
+    },
     "step": {
       "cloning": "Clonage",
       "building": "Build",

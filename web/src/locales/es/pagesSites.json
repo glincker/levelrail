@@ -548,6 +548,15 @@
     "empty": "No hay salida en el registro.",
     "error": "No se pudo cargar el registro.",
     "failedAt": "Falló durante {{step}}",
+    "hint": {
+      "outOfMemory": "El build se quedó sin memoria. Reduce el uso de memoria en el script de build, por ejemplo dividiendo los pasos pesados.",
+      "timeout": "El build superó el tiempo límite. Revisa si algún paso espera una entrada o nunca termina.",
+      "installFailed": "Falló la instalación de dependencias. Comprueba que el lockfile coincide con package.json y que todos los paquetes son accesibles.",
+      "nodeVersion": "Una dependencia necesita otra versión de Node. Define engines.node en package.json o añade un archivo .nvmrc.",
+      "missingBuildCommand": "No se encontró un comando de build válido. Defínelo en Ajustes o añade un script build en package.json.",
+      "outputDirEmpty": "El build terminó pero el directorio de salida está vacío. Revisa el directorio de salida en Ajustes.",
+      "outputDirMissing": "No se encontró el directorio de salida tras el build. Indica el directorio correcto en Ajustes."
+    },
     "step": {
       "cloning": "Clonando",
       "building": "Compilando",

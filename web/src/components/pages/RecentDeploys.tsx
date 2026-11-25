@@ -31,6 +31,8 @@ const DeployFailTail = lazy(() => import('./DeployFailTail'))
 const SHOWN = 5
 /** Lines of a failed build shown inline under its row. */
 const FAIL_TAIL_LINES = 5
+/** Trailing lines the fix-hint matcher reads, wider than the shown tail. */
+const FAIL_SCAN_LINES = 80
 const COLUMNS = 8
 
 const DOT: Record<string, string> = {
@@ -249,6 +251,7 @@ function DeployRow({
                 name={name}
                 deployId={a.id}
                 lines={FAIL_TAIL_LINES}
+                scan={FAIL_SCAN_LINES}
               />
             </Suspense>
           </TableCell>

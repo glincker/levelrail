@@ -552,6 +552,15 @@
     "empty": "Nenhuma saída de log.",
     "error": "Não foi possível carregar o log.",
     "failedAt": "Falhou durante {{step}}",
+    "hint": {
+      "outOfMemory": "O build ficou sem memória. Reduza o uso de memória no script de build, por exemplo dividindo passos pesados.",
+      "timeout": "O build excedeu o tempo limite. Procure um passo que espere uma entrada ou nunca termine.",
+      "installFailed": "A instalação das dependências falhou. Confira se o lockfile bate com o package.json e se todos os pacotes estão acessíveis.",
+      "nodeVersion": "Uma dependência precisa de outra versão do Node. Defina engines.node no package.json ou adicione um arquivo .nvmrc.",
+      "missingBuildCommand": "Nenhum comando de build utilizável foi encontrado. Defina-o em Configurações ou adicione um script build no package.json.",
+      "outputDirEmpty": "O build terminou, mas o diretório de saída está vazio. Confira o diretório de saída em Configurações.",
+      "outputDirMissing": "O diretório de saída não foi encontrado após o build. Defina o diretório correto em Configurações."
+    },
     "step": {
       "cloning": "Clonando",
       "building": "Compilando",

@@ -548,6 +548,15 @@
     "empty": "Keine Log-Ausgabe.",
     "error": "Das Log konnte nicht geladen werden.",
     "failedAt": "Fehlgeschlagen bei {{step}}",
+    "hint": {
+      "outOfMemory": "Dem Build ist der Speicher ausgegangen. Verringere den Speicherbedarf im Build-Skript, zum Beispiel durch Aufteilen schwerer Schritte.",
+      "timeout": "Der Build hat das Zeitlimit überschritten. Suche nach einem Schritt, der auf Eingaben wartet oder nie endet.",
+      "installFailed": "Die Installation der Abhängigkeiten ist fehlgeschlagen. Prüfe, ob die Lockfile zu package.json passt und alle Pakete erreichbar sind.",
+      "nodeVersion": "Eine Abhängigkeit benötigt eine andere Node-Version. Setze engines.node in package.json oder füge eine .nvmrc-Datei hinzu.",
+      "missingBuildCommand": "Es wurde kein brauchbarer Build-Befehl gefunden. Lege ihn in den Einstellungen fest oder füge ein build-Skript in package.json hinzu.",
+      "outputDirEmpty": "Der Build ist durchgelaufen, aber das Ausgabeverzeichnis ist leer. Prüfe das Ausgabeverzeichnis in den Einstellungen.",
+      "outputDirMissing": "Das Ausgabeverzeichnis wurde nach dem Build nicht gefunden. Lege in den Einstellungen das richtige Verzeichnis fest."
+    },
     "step": {
       "cloning": "Klonen",
       "building": "Build",

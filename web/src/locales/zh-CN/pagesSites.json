@@ -544,6 +544,15 @@
     "empty": "没有日志输出。",
     "error": "无法加载日志。",
     "failedAt": "在{{step}}期间失败",
+    "hint": {
+      "outOfMemory": "构建内存不足。请降低构建脚本的内存占用,例如拆分耗内存的步骤。",
+      "timeout": "构建超时。请检查是否有等待输入或永不退出的步骤。",
+      "installFailed": "依赖安装失败。请确认锁文件与 package.json 一致,且所有包都可访问。",
+      "nodeVersion": "某个依赖需要不同的 Node 版本。请在 package.json 中设置 engines.node,或添加 .nvmrc 文件。",
+      "missingBuildCommand": "未找到可用的构建命令。请在设置中填写构建命令,或在 package.json 中添加 build 脚本。",
+      "outputDirEmpty": "构建已完成,但输出目录为空。请检查设置中的输出目录。",
+      "outputDirMissing": "构建后未找到输出目录。请在设置中填写正确的输出目录。"
+    },
     "step": {
       "cloning": "克隆",
       "building": "构建",
