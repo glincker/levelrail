@@ -284,6 +284,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BRANCHES_MAX_PER_ROOT` | [`branches.max_per_root`](/runtime-settings#deploys) | `10` |
 | `APP_BRANCHES_MAX_TOTAL` | [`branches.max_total`](/runtime-settings#deploys) | `50` |
 | `APP_BRANCHES_MAX_TOTAL_BYTES` | [`branches.max_total_bytes`](/runtime-settings#deploys) | `53687091200` |
+| `APP_BRANCHES_MIN_TTL` | [`branches.min_ttl`](/runtime-settings#deploys) | `5m` |
 | `APP_BRANCHES_PREVIEW_DEFAULT_TTL` | [`branches.preview_default_ttl`](/runtime-settings#deploys) | `72h` |
 | `APP_BRANCHES_SIZE_INTERVAL` | [`branches.size_interval`](/runtime-settings#deploys) | `15m` |
 | `APP_BRANCHES_SLOW_PATH_HEADROOM` | [`branches.slow_path_headroom_factor`](/runtime-settings#deploys) | `1.5` |

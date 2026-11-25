@@ -126,7 +126,7 @@ func TestBranchAPI_DiskRefusalIs409WithReason(t *testing.T) {
 func TestBranchAPI_PromoteDetachesAndResetNeedsReady(t *testing.T) {
 	rt, db, cookie, _ := newLiveBranchRouter(t)
 	branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches", `{"name":"b1"}`)
-	if rec := branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches/b1/promote", ""); rec.Code != http.StatusConflict {
+	if rec := branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches/b1/promote", `{"confirm":"b1"}`); rec.Code != http.StatusConflict {
 		t.Fatalf("promote of a branch that is not ready = %d", rec.Code)
 	}
 	row, _ := db.GetDatabaseBranch(context.Background(), "b1")
@@ -136,7 +136,7 @@ func TestBranchAPI_PromoteDetachesAndResetNeedsReady(t *testing.T) {
 			t.Fatalf("advance: %v", err)
 		}
 	}
-	if rec := branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches/b1/promote", ""); rec.Code != http.StatusOK {
+	if rec := branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches/b1/promote", `{"confirm":"b1"}`); rec.Code != http.StatusOK {
 		t.Fatalf("promote = %d %s", rec.Code, rec.Body.String())
 	}
 	got, _ := db.GetDatabaseBranch(context.Background(), "b1")
@@ -161,6 +161,36 @@ func TestBranchAPI_AuthzDenyReadOnlyToken(t *testing.T) {
 		rt.Handler().ServeHTTP(rec, bearerRequest(c.method, c.path, c.body, plain))
 		if rec.Code != http.StatusForbidden {
 			t.Errorf("%s %s = %d, want 403", c.method, c.path, rec.Code)
+		}
+	}
+}
+
+func TestBranchAPI_InFlightBranchIsBusyAndUnreachable(t *testing.T) {
+	rt, _, cookie, _ := newLiveBranchRouter(t)
+	branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches", `{"name":"b1"}`)
+	rec := branchDo(t, rt, cookie, http.MethodDelete, "/api/v1/databases/main/branches/b1?confirm=b1", "")
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("delete while copying = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = branchDo(t, rt, cookie, http.MethodGet, "/api/v1/databases/b1/schema", "")
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "branch_not_ready") {
+		t.Fatalf("explorer on a copying branch = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := branchDo(t, rt, cookie, http.MethodDelete, "/api/v1/databases/main/branches/b1", ""); rec.Code != http.StatusBadRequest {
+		t.Fatalf("delete without confirm = %d", rec.Code)
+	}
+}
+
+func TestBranchAPI_MinTTLAndTypedConfirm(t *testing.T) {
+	rt, db, cookie, _ := newLiveBranchRouter(t)
+	rt.runtimeSettings = runtimesettings.New(db, func(string) (string, bool) { return "", false })
+	if rec := branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches", `{"name":"b1","ttl":"1s"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("1s ttl = %d %s", rec.Code, rec.Body.String())
+	}
+	branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches", `{"name":"b2"}`)
+	for _, sub := range []string{"reset", "promote"} {
+		if rec := branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/branches/b2/"+sub, `{"confirm":"nope"}`); rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s with wrong confirm = %d", sub, rec.Code)
 		}
 	}
 }

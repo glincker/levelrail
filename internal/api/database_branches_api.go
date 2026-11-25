@@ -59,6 +59,11 @@ type branchAPIStore interface {
 	SetDatabaseBranchExpiry(ctx context.Context, id, expiresAt, preset, now string) error
 }
 
+// branchSizer measures the parent so quotas and the disk guard see its real size.
+type branchSizer interface {
+	ParentSize(ctx context.Context, engine, database string) (int64, error)
+}
+
 func (rt *Router) branchStore(w http.ResponseWriter) (branchAPIStore, bool) {
 	s, ok := rt.databases.(branchAPIStore)
 	if !ok {
@@ -154,12 +159,13 @@ func (rt *Router) branchLimits(ctx context.Context) dbbranch.Limits {
 func (rt *Router) dbActionVerdict(r *http.Request, action dbauthz.Action, database string) (allowed, hidden bool) {
 	pt, pid, abilities, err := rt.callerPrincipal(r)
 	if err != nil {
-		return false, false
+		return false, true
 	}
 	resolver := &dbauthz.Resolver{Engine: &dbPolicyEngine{rt: rt}}
 	d, err := resolver.Resolve(r.Context(), dbauthz.Caller{PrincipalType: pt, PrincipalID: pid, Abilities: abilities}, dbauthz.ResourcePrefix+database, action)
 	if err != nil {
-		return false, false
+		// Fail closed: an engine error must never make a database look visible.
+		return false, true
 	}
 	return d.Allowed, d.Hidden
 }
@@ -324,6 +330,10 @@ func (rt *Router) createLiveBranch(w http.ResponseWriter, r *http.Request, req c
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
+		if rt.branchTTLTooShort(ctx, ttl) {
+			writeError(w, http.StatusBadRequest, "ttl is shorter than the minimum branch lifetime")
+			return
+		}
 		preset = req.TTL
 	}
 	if _, err := rt.databases.GetDesiredDatabase(ctx, req.Name); err == nil {
@@ -333,13 +343,23 @@ func (rt *Router) createLiveBranch(w http.ResponseWriter, r *http.Request, req c
 		rt.internalError(w, "api: create branch: check name failed", err, slog.String("name", req.Name))
 		return
 	}
+	parentBytes := parentRow.SizeBytes
+	if sz, ok := rt.branchCloner.(branchSizer); ok {
+		n, serr := sz.ParentSize(ctx, parentDB.Engine, parentName)
+		if serr != nil {
+			rt.logger.Warn("api: create branch: measure parent failed", slog.String("parent", parentName), slog.String("error", serr.Error()))
+			writeError(w, http.StatusConflict, "could not measure the parent database size, so the copy was refused")
+			return
+		}
+		parentBytes = n
+	}
 	limits := rt.branchLimits(ctx)
 	all, err := bs.ListAllDatabaseBranches(ctx)
 	if err != nil {
 		rt.internalError(w, "api: create branch: list branches failed", err)
 		return
 	}
-	if rt.writeBranchRefusal(w, dbbranch.CheckQuota(limits, dbbranch.Request{Parent: parentRow, ParentIsRoot: !parentIsBranch, RootName: root, ParentBytes: parentRow.SizeBytes, SlowPath: true}, all, rt.diskGuard)) {
+	if rt.writeBranchRefusal(w, dbbranch.CheckQuota(limits, dbbranch.Request{Parent: parentRow, ParentIsRoot: !parentIsBranch, RootName: root, ParentBytes: parentBytes, SlowPath: true}, all, rt.diskGuard)) {
 		return
 	}
 
@@ -365,8 +385,8 @@ func (rt *Router) createLiveBranch(w http.ResponseWriter, r *http.Request, req c
 		ExpiresAt: dbbranch.ExpiryFor(now, ttl), ExpiryPreset: preset, BranchedAt: now.Format(time.RFC3339),
 		CreatedBy: rt.accessActor(r).id, CreatedAt: now.Format(time.RFC3339), UpdatedAt: now.Format(time.RFC3339),
 	}
-	if err := bs.CreateDatabaseBranchWithinQuota(ctx, row, store.BranchQuota{MaxPerRoot: limits.MaxPerRoot, MaxTotal: limits.MaxTotal, MaxTotalBytes: limits.MaxTotalBytes, ParentBytes: parentRow.SizeBytes}); err != nil {
-		rt.discardBranchDatabase(ctx, req.Name, parentDB.NodeID)
+	if err := bs.CreateDatabaseBranchWithinQuota(ctx, row, store.BranchQuota{MaxPerRoot: limits.MaxPerRoot, MaxTotal: limits.MaxTotal, MaxTotalBytes: limits.MaxTotalBytes, ParentBytes: parentBytes}); err != nil {
+		rt.discardBranchDatabase(ctx, req.Name, rt.databaseNodeOf(ctx, req.Name))
 		if errors.Is(err, store.ErrDatabaseBranchQuota) {
 			writeError(w, http.StatusConflict, "branch quota reached")
 			return
@@ -378,6 +398,73 @@ func (rt *Router) createLiveBranch(w http.ResponseWriter, r *http.Request, req c
 	rt.auditBranch(ctx, r, AuditActionDatabaseBranchCreate, map[string]any{"parent": parentName, "branch": req.Name, "mode": mode, "clone_path": "dump"})
 	rt.startBranchClone(row, parentDB.Engine)
 	writeJSON(w, http.StatusAccepted, toBranchResource(row))
+}
+
+// databaseNodeOf is the node of a database just created, which is what a rollback must clean up.
+func (rt *Router) databaseNodeOf(ctx context.Context, name string) string {
+	d, err := rt.databases.GetDesiredDatabase(ctx, name)
+	if err != nil {
+		return ""
+	}
+	return d.NodeID
+}
+
+// branchTTLTooShort is true for a finite ttl under branches.min_ttl.
+func (rt *Router) branchTTLTooShort(ctx context.Context, ttl time.Duration) bool {
+	return ttl > 0 && ttl < rt.runtimeSettings.Duration(ctx, runtimesettings.KeyBranchesMinTTL)
+}
+
+// requireTypedConfirm needs the branch name typed back, in the body or the confirm query parameter.
+func requireTypedConfirm(w http.ResponseWriter, r *http.Request, name string) bool {
+	confirm := r.URL.Query().Get("confirm")
+	if r.ContentLength > 0 {
+		var req deleteBranchRequest
+		if !decodeReq(w, r, &req) {
+			return false
+		}
+		confirm = req.Confirm
+	}
+	if confirm != name {
+		writeError(w, http.StatusBadRequest, "confirm must be the branch name "+name)
+		return false
+	}
+	return true
+}
+
+// withBranchReadyGate keeps a branch that is not ready, or failed, unreachable: every database route except
+// the branch routes and the plain status read answers 409 branch_not_ready until the copy is complete.
+func (rt *Router) withBranchReadyGate(next http.HandlerFunc) http.HandlerFunc {
+	const prefix = "/api/v1/databases/"
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := r.PathValue("name")
+		bs, ok := rt.databases.(branchAPIStore)
+		if name == "" || !ok || !strings.HasPrefix(r.URL.Path, prefix+name) {
+			next(w, r)
+			return
+		}
+		rest := strings.TrimPrefix(r.URL.Path, prefix+name)
+		if rest == "/branch-capabilities" || rest == "/branches" || strings.HasPrefix(rest, "/branches/") {
+			next(w, r)
+			return
+		}
+		b, err := bs.GetDatabaseBranch(r.Context(), name)
+		if errors.Is(err, store.ErrDatabaseBranchNotFound) {
+			next(w, r)
+			return
+		}
+		if err != nil {
+			rt.internalError(w, "api: branch ready gate failed", err, slog.String("name", name))
+			return
+		}
+		switch {
+		case dbbranch.Reachable(b.State):
+			next(w, r)
+		case rest == "" && (r.Method == http.MethodGet || (r.Method == http.MethodDelete && b.State == dbbranch.StateFailed)):
+			next(w, r)
+		default:
+			writeCodedError(w, http.StatusConflict, "branch_not_ready", "branch "+name+" is "+b.State+" and not available yet")
+		}
+	}
 }
 
 // schemaBranchEngine lists the engines whose dump has a schema only flag.
@@ -468,11 +555,31 @@ func (rt *Router) handleListDatabaseBranches(w http.ResponseWriter, r *http.Requ
 	}
 	sort.SliceStable(rows, func(i, j int) bool { return rows[i].CreatedAt < rows[j].CreatedAt })
 	out := make([]branchResource, 0, len(rows))
+	visible := map[string]bool{}
+	canSee := func(n string) bool {
+		v, ok := visible[n]
+		if !ok {
+			_, hidden := rt.dbActionVerdict(r, dbauthz.ActionRead, n)
+			v = !hidden
+			visible[n] = v
+		}
+		return v
+	}
 	for _, b := range rows {
-		if _, hidden := rt.dbActionVerdict(r, dbauthz.ActionRead, b.DatabaseName); hidden {
+		if !canSee(b.DatabaseName) {
 			continue
 		}
-		out = append(out, toBranchResource(b))
+		res := toBranchResource(b)
+		if res.ParentName != "" && !canSee(res.ParentName) {
+			res.ParentName = "hidden"
+		}
+		if !canSee(res.RootName) {
+			res.RootName = "hidden"
+		}
+		out = append(out, res)
+	}
+	if !canSee(root) {
+		root = "hidden"
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"root": root, "branches": out})
 }
@@ -520,6 +627,13 @@ func (rt *Router) handlePatchDatabaseBranch(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusConflict, "only a ready branch can change its expiry")
 			return
 		}
+		if rt.branchTTLTooShort(ctx, ttl) {
+			writeError(w, http.StatusBadRequest, "ttl is shorter than the minimum branch lifetime")
+			return
+		}
+		if shortensExpiry(b.ExpiresAt, ttl, now) && !rt.requireDBAction(w, r, dbauthz.ActionAdmin, b.DatabaseName) {
+			return
+		}
 		if err := bs.SetDatabaseBranchExpiry(ctx, b.ID, dbbranch.ExpiryFor(now, ttl), *req.TTL, now.Format(time.RFC3339)); err != nil {
 			rt.internalError(w, "api: patch branch: set expiry failed", err)
 			return
@@ -527,6 +641,9 @@ func (rt *Router) handlePatchDatabaseBranch(w http.ResponseWriter, r *http.Reque
 		rt.auditBranch(ctx, r, AuditActionDatabaseBranchExtend, map[string]any{"branch": b.DatabaseName, "ttl": *req.TTL})
 	}
 	if req.Protected != nil && *req.Protected != b.Protected {
+		if !*req.Protected && !rt.requireDBAction(w, r, dbauthz.ActionAdmin, b.DatabaseName) {
+			return
+		}
 		err := bs.SetDatabaseBranchProtected(ctx, b.ID, b.Protected, *req.Protected, now.Format(time.RFC3339))
 		if errors.Is(err, store.ErrDatabaseBranchStateRace) {
 			writeError(w, http.StatusConflict, "branch protection changed, retry")
@@ -550,6 +667,18 @@ func (rt *Router) handlePatchDatabaseBranch(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, toBranchResource(cur))
 }
 
+// shortensExpiry is true when the new lifetime ends earlier than the current one; never is the longest.
+func shortensExpiry(current string, ttl time.Duration, now time.Time) bool {
+	if ttl == 0 {
+		return false
+	}
+	if current == "" {
+		return true
+	}
+	t, err := time.Parse(time.RFC3339, current)
+	return err != nil || now.Add(ttl).Before(t)
+}
+
 type deleteBranchRequest struct {
 	Confirm string `json:"confirm"`
 }
@@ -570,6 +699,11 @@ func (rt *Router) handleDeleteDatabaseBranch(w http.ResponseWriter, r *http.Requ
 	}
 	if confirm != b.DatabaseName {
 		writeError(w, http.StatusBadRequest, "confirm must be the branch name "+b.DatabaseName)
+		return
+	}
+	// A branch that is still being copied is not deleted: the clone worker owns its database until it finishes or fails.
+	if b.State != dbbranch.StateReady && b.State != dbbranch.StateFailed && b.State != dbbranch.StatePromoted {
+		writeError(w, http.StatusConflict, "branch is "+b.State+"; wait for it to finish or fail before deleting it")
 		return
 	}
 	if err := rt.checkDatabaseDeletable(r.Context(), b.DatabaseName); writeBranchBlock(w, err) {
@@ -600,6 +734,9 @@ func (rt *Router) handleDeleteDatabaseBranch(w http.ResponseWriter, r *http.Requ
 
 // handlePromoteDatabaseBranch detaches a ready branch from its parent so it survives the parent and expiry.
 func (rt *Router) handlePromoteDatabaseBranch(w http.ResponseWriter, r *http.Request) {
+	if !requireTypedConfirm(w, r, r.PathValue("branch")) {
+		return
+	}
 	b, bs, ok := rt.loadPathBranch(w, r, dbauthz.ActionAdmin)
 	if !ok {
 		return
@@ -626,8 +763,19 @@ func (rt *Router) handlePromoteDatabaseBranch(w http.ResponseWriter, r *http.Req
 
 // handleResetDatabaseBranch clones the parent's current data again. The database is recreated, so it gets new credentials.
 func (rt *Router) handleResetDatabaseBranch(w http.ResponseWriter, r *http.Request) {
+	if !requireTypedConfirm(w, r, r.PathValue("branch")) {
+		return
+	}
 	b, bs, ok := rt.loadPathBranch(w, r, dbauthz.ActionAdmin)
 	if !ok {
+		return
+	}
+	// A reset copies the parent again, so it needs the same right on the parent as the first copy did.
+	need := dbauthz.ActionAdmin
+	if b.Mode == dbbranch.ModeSchema {
+		need = dbauthz.ActionWrite
+	}
+	if !rt.requireDBAction(w, r, need, b.ParentName) {
 		return
 	}
 	if rt.branchCloner == nil {
@@ -669,10 +817,15 @@ func (rt *Router) handleResetDatabaseBranch(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if !rt.createDesiredDatabase(w, r, databaseResource{Name: b.DatabaseName, Engine: old.Engine, Version: old.Version, ProjectID: old.ProjectID, Resources: copyResources(old.Resources)}) {
+		// The old database and its row are gone; leave a trace instead of a silent loss.
+		rt.logger.Error("api: reset branch: recreate failed after teardown", slog.String("name", b.DatabaseName))
+		rt.auditBranch(r.Context(), r, AuditActionDatabaseBranchFailed, map[string]any{"parent": b.ParentName, "branch": b.DatabaseName, "step": "reset_recreate"})
 		return
 	}
 	// The delete cascaded the row away, so it is written back with its lineage and the same id.
 	if err := bs.CreateDatabaseBranch(r.Context(), row); err != nil {
+		rt.discardBranchDatabase(r.Context(), b.DatabaseName, rt.databaseNodeOf(r.Context(), b.DatabaseName))
+		rt.auditBranch(r.Context(), r, AuditActionDatabaseBranchFailed, map[string]any{"parent": b.ParentName, "branch": b.DatabaseName, "step": "reset_row"})
 		rt.internalError(w, "api: reset branch: restore row failed", err, slog.String("name", b.DatabaseName))
 		return
 	}

@@ -27,7 +27,7 @@ func branchLine(n apiclient.DatabaseBranchNode) string {
 	if exp == "" {
 		exp = "never"
 	}
-	return fmt.Sprintf("%s\tparent=%s\tmode=%s\tstate=%s\texpires=%s%s\n", n.Name, n.Parent, n.Mode, n.State, exp, flags)
+	return fmt.Sprintf("%s\tparent=%s\tmode=%s\tstate=%s\texpires=%s%s\n", safeTerminalText(n.Name), safeTerminalText(n.Parent), safeTerminalText(n.Mode), safeTerminalText(n.State), safeTerminalText(exp), flags)
 }
 
 // runDatabasesBranchManage handles ls, show, reset, promote, protect and rm.
@@ -82,13 +82,13 @@ func runDatabasesBranchManage(prog, sub string, args []string, stdout, stderr io
 		if err != nil {
 			return fail(err)
 		}
-		return renderBranchNode(stdout, stderr, of, n, fmt.Sprintf("branch %q is being reset from %q\n", n.Name, n.Parent))
+		return renderBranchNode(stdout, stderr, of, n, fmt.Sprintf("branch %q is being reset from %q\n", safeTerminalText(n.Name), safeTerminalText(n.Parent)))
 	case "promote":
 		n, err := client.PromoteDatabaseBranch(ctx, rest[0], rest[1])
 		if err != nil {
 			return fail(err)
 		}
-		return renderBranchNode(stdout, stderr, of, n, fmt.Sprintf("branch %q is now a standalone database\n", n.Name))
+		return renderBranchNode(stdout, stderr, of, n, fmt.Sprintf("branch %q is now a standalone database\n", safeTerminalText(n.Name)))
 	case "protect":
 		on := !off
 		n, err := client.PatchDatabaseBranch(ctx, rest[0], rest[1], apiclient.PatchDatabaseBranchRequest{Protected: &on})
@@ -116,5 +116,5 @@ func reasonLine(n apiclient.DatabaseBranchNode) string {
 	if strings.TrimSpace(n.StateReason) == "" {
 		return ""
 	}
-	return "reason: " + n.StateReason + "\n"
+	return "reason: " + safeTerminalText(n.StateReason) + "\n"
 }

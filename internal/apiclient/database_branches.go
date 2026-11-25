@@ -87,13 +87,13 @@ func (c *Client) DeleteDatabaseBranch(ctx context.Context, db, branch, confirm s
 // ResetDatabaseBranch clones the parent's current data into the branch again.
 func (c *Client) ResetDatabaseBranch(ctx context.Context, db, branch string) (DatabaseBranchNode, error) {
 	var out DatabaseBranchNode
-	err := c.do(ctx, http.MethodPost, branchPath(db, branch)+"/reset", nil, &out)
+	err := c.do(ctx, http.MethodPost, branchPath(db, branch)+"/reset", map[string]string{"confirm": branch}, &out)
 	return out, err
 }
 
 // PromoteDatabaseBranch detaches a ready branch from its parent.
 func (c *Client) PromoteDatabaseBranch(ctx context.Context, db, branch string) (DatabaseBranchNode, error) {
 	var out DatabaseBranchNode
-	err := c.do(ctx, http.MethodPost, branchPath(db, branch)+"/promote", nil, &out)
+	err := c.do(ctx, http.MethodPost, branchPath(db, branch)+"/promote", map[string]string{"confirm": branch}, &out)
 	return out, err
 }

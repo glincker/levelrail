@@ -26,6 +26,7 @@ const (
 	KeyBranchesSizeInterval       = "branches.size_interval"
 	KeyBranchesMaskPreviewRows    = "branches.mask_preview_rows"
 	KeyBranchesCloneTimeout       = "branches.clone_timeout"
+	KeyBranchesMinTTL             = "branches.min_ttl"
 	branchBytesCeil               = 1 << 50
 	branchDefaultMaxTotalBytes    = "53687091200"
 	branchDefaultSlowPathMaxBytes = "21474836480"
@@ -101,5 +102,6 @@ func init() {
 	dur(KeyBranchesActivityInterval, "5m", "APP_BRANCHES_ACTIVITY_INTERVAL", "Branch activity sampling", "How often branch client activity is sampled.", 24*time.Hour)
 	dur(KeyBranchesSizeInterval, "15m", "APP_BRANCHES_SIZE_INTERVAL", "Branch size sampling", "How often branch disk use is measured.", 24*time.Hour)
 	num(KeyBranchesMaskPreviewRows, "5", "APP_BRANCHES_MASK_PREVIEW_ROWS", "Masking preview rows", "Sample rows per table in a masking dry run.", intRangeCheck(1, 100))
+	dur(KeyBranchesMinTTL, "5m", "APP_BRANCHES_MIN_TTL", "Shortest branch lifetime", "Shortest auto delete time a branch may be given, so a tiny value cannot purge it at once.", 30*24*time.Hour)
 	dur(KeyBranchesCloneTimeout, "2h", "APP_BRANCHES_CLONE_TIMEOUT", "Branch clone timeout", "Longest a branch may stay in a copying step before it is marked failed.", 48*time.Hour)
 }

@@ -262,11 +262,12 @@ func (rt *Router) recordLegacyBranch(w http.ResponseWriter, r *http.Request, sou
 	limits := rt.branchLimits(ctx)
 	err = bs.CreateDatabaseBranchWithinQuota(ctx, row, store.BranchQuota{MaxPerRoot: limits.MaxPerRoot, MaxTotal: limits.MaxTotal, MaxTotalBytes: limits.MaxTotalBytes})
 	if errors.Is(err, store.ErrDatabaseBranchQuota) {
-		rt.discardBranchDatabase(ctx, req.Name, sourceDB.NodeID)
+		rt.discardBranchDatabase(ctx, req.Name, rt.databaseNodeOf(ctx, req.Name))
 		writeError(w, http.StatusConflict, "branch quota reached")
 		return false
 	}
 	if err != nil {
+		rt.discardBranchDatabase(ctx, req.Name, rt.databaseNodeOf(ctx, req.Name))
 		rt.internalError(w, "api: branch database: save row failed", err, slog.String("name", req.Name))
 		return false
 	}

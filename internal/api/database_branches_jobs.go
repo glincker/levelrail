@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -40,8 +41,62 @@ func (c *routerBranchCloner) Run(ctx context.Context, b store.DatabaseBranch, en
 			return c.rt.runtimeSettings.Duration(ctx, runtimesettings.KeyBranchesCloneTimeout)
 		},
 		Log: c.rt.logger,
+		MaxBytes: func(ctx context.Context) int64 {
+			return int64(c.rt.runtimeSettings.Int(ctx, runtimesettings.KeyBranchesSlowPathMaxBytes))
+		},
+	}
+	if m, ok := c.dumper.(branchMeasurer); ok {
+		w.Count = m.Count
+		w.MeasureSize = func(ctx context.Context, name string) (int64, error) {
+			return m.Size(ctx, engine, databaseContainerName(name))
+		}
 	}
 	return w.Run(ctx, b, engine)
+}
+
+type branchMeasurer interface {
+	Size(ctx context.Context, engine, containerName string) (int64, error)
+	Count(ctx context.Context, engine, containerName string) (int64, error)
+}
+
+// ParentSize measures the data directory of the parent database.
+func (c *routerBranchCloner) ParentSize(ctx context.Context, engine, database string) (int64, error) {
+	m, ok := c.dumper.(branchMeasurer)
+	if !ok {
+		return 0, nil
+	}
+	return m.Size(ctx, engine, databaseContainerName(database))
+}
+
+// SweepInFlightBranches fails rows left in a copying state by a restart, once they are older than the clone timeout.
+// They stay as failed rows so the user sees why, and the expiry job removes them after branches.failed_retention.
+func (rt *Router) SweepInFlightBranches(ctx context.Context) {
+	es, ok := rt.databases.(dbbranch.ExpiryStore)
+	if !ok {
+		return
+	}
+	rows, err := es.ListAllDatabaseBranches(ctx)
+	if err != nil {
+		rt.logger.Warn("api: branch sweep: list failed", slog.String("error", err.Error()))
+		return
+	}
+	limit := rt.runtimeSettings.Duration(ctx, runtimesettings.KeyBranchesCloneTimeout)
+	now := time.Now().UTC()
+	for _, b := range rows {
+		switch b.State {
+		case dbbranch.StateRequested, dbbranch.StateCloning, dbbranch.StateCredentials, dbbranch.StateVerifying, dbbranch.StateResetting:
+		default:
+			continue
+		}
+		t, perr := time.Parse(time.RFC3339, b.UpdatedAt)
+		if perr != nil || now.Sub(t) < limit {
+			continue
+		}
+		if err := dbbranch.Move(ctx, es, b.ID, b.State, dbbranch.StateFailed, "clone interrupted by a restart or timed out", now.Format(time.RFC3339)); err != nil {
+			continue
+		}
+		rt.auditBranch(ctx, nil, AuditActionDatabaseBranchFailed, map[string]any{"parent": b.ParentName, "branch": b.DatabaseName, "step": "boot_sweep"})
+	}
 }
 
 // waitDatabaseReady polls the database reconciler's conditions until Ready; the context bounds the wait.
@@ -93,7 +148,10 @@ func (rt *Router) StartBranchExpiry(ctx context.Context) {
 		Warn: rt.warnBranchExpiry,
 		Log:  rt.logger,
 	}
-	go job.Run(ctx)
+	go func() {
+		rt.SweepInFlightBranches(ctx)
+		job.Run(ctx)
+	}()
 }
 
 // warnBranchExpiry writes an inbox entry through the same history path the DNS watch uses.
