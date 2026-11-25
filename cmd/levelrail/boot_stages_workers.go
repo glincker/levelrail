@@ -31,6 +31,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/schedulescan"
+	"github.com/GLINCKER/levelrail/internal/selfheartbeat"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/tlsowner"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
@@ -568,6 +569,8 @@ func (s *bootState) startSchedulers() {
 	anchorExp := auditanchor.NewExporter(auditanchor.ExportConfigFromEnv(os.LookupEnv), auditanchor.ConfigFromEnv(os.LookupEnv).Interval, db, apiRouter.RuntimeSettings(), logger)
 	apiRouter.SetAnchorStatus(anchorExp.Status)
 	go anchorExp.Run(ctx)
+	// Dead man's switch: pings an operator URL so an external monitor pages when the control plane goes silent. Empty URL means off.
+	go selfheartbeat.New(selfheartbeat.ConfigFromEnv(os.LookupEnv), apiRouter.RuntimeSettings(), logger).Run(ctx)
 
 	// Moves cold audit, deploy and pipeline rows into archive bundles when the policy is on.
 	go func() {

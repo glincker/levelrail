@@ -485,6 +485,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
+| `APP_ALERTING_SELF_HEARTBEAT_INTERVAL` | [`alerting.self_heartbeat_interval`](/runtime-settings#observability) | `60` |
+| `APP_ALERTING_SELF_HEARTBEAT_URL` | [`alerting.self_heartbeat_url`](/runtime-settings#observability) | empty |
 | `APP_ALERTS_ADVISORY_MIN_SEVERITY` | [`alerts.advisory_min_severity`](/runtime-settings#observability) | `high` |
 | `APP_ALERTS_ADVISORY_NOTIFY` | [`alerts.advisory_notify`](/runtime-settings#observability) | `false` |
 | `APP_ALERTS_DEFAULT_5XX_MIN_REQUESTS` | [`alerts.default_5xx_min_requests`](/runtime-settings#observability) | `20` |
