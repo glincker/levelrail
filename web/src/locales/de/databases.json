@@ -515,6 +515,77 @@
       "noLookups": "Noch keine Abfragen",
       "evictions": "Verdrängungen",
       "connections": "Verbindungen"
+    },
+    "mongo": {
+      "tree": {
+        "label": "Datenbanken und Sammlungen",
+        "search": "Sammlungen suchen",
+        "truncated": "Es wird nur ein Teil der Liste angezeigt.",
+        "noCollections": "Keine Sammlungen",
+        "meta": "{{size}}, Indizes: {{count}}",
+        "items": "Länge {{count}}",
+        "fields": "Felder {{count}}",
+        "root": "Dokument"
+      },
+      "readOnly": "Nur Lesen",
+      "readOnlyReason": "Beim Durchsuchen werden keine Daten geändert: erlaubt sind nur find, Zählungen und das Lesen von Indizes.",
+      "noCollections": "In dieser Datenbank gibt es noch keine Sammlungen.",
+      "tabs": {
+        "documents": "Dokumente",
+        "indexes": "Indizes",
+        "stats": "Statistik"
+      },
+      "docs": {
+        "filter": "Filter",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "Limit",
+        "run": "Ausführen",
+        "options": "Optionen",
+        "sort": "Sortierung",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "Projektion",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "Beispiele",
+        "status": "Dokumente: {{count}}, {{ms}} ms, Seite {{page}}",
+        "truncated": "Ergebnis an der Größengrenze gekürzt.",
+        "expandAll": "Alle aufklappen",
+        "collapseAll": "Alle zuklappen",
+        "rejected": "Der Server hat diese Abfrage abgelehnt",
+        "failed": "Die Abfrage ist fehlgeschlagen",
+        "noMatches": "Kein Dokument passt zu diesem Filter.",
+        "empty": "Diese Sammlung enthält keine Dokumente.",
+        "details": "Details",
+        "copyDoc": "Als JSON kopieren",
+        "prev": "Vorherige Seite",
+        "next": "Nächste Seite",
+        "invalid": {
+          "syntax": "{{kind}} ist kein gültiges JSON.",
+          "notObject": "{{kind}} muss ein JSON-Objekt sein.",
+          "sortDirection": "Sortierwerte müssen 1 oder -1 sein.",
+          "projectionValue": "Projektionswerte müssen Zahlen, Booleans oder Objekte sein."
+        },
+        "kind": {
+          "filter": "Filter",
+          "sort": "Sortierung",
+          "projection": "Projektion"
+        }
+      },
+      "indexes": {
+        "empty": "Keine Indizes gemeldet.",
+        "label": "Indizes",
+        "name": "Name",
+        "keys": "Schlüssel",
+        "unique": "Eindeutig",
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "stats": {
+        "documents": "Dokumente",
+        "dataSize": "Datengröße",
+        "storageSize": "Speichergröße",
+        "indexes": "Indizes",
+        "type": "Typ"
+      }
     }
   },
   "createFlavor": {
@@ -608,7 +679,14 @@
     "loading": "Datenbanken werden geladen",
     "notCreated": "Noch nicht erstellt",
     "failedToCreate": "Die Datenbank konnte nicht erstellt werden",
-    "pendingActionHint": "Verfügbar, sobald die Datenbank erstellt ist"
+    "pendingActionHint": "Verfügbar, sobald die Datenbank erstellt ist",
+    "colLocation": "Wo es läuft",
+    "summary": "{{total}} Datenbanken: {{local}} auf diesem Server, {{node}} auf Knoten, {{hosted}} extern gehostet",
+    "viewGroup": "Listenansicht",
+    "viewTable": "Tabelle",
+    "viewCards": "Karten",
+    "connect": "Verbinden",
+    "explorer": "Explorer"
   },
   "detail": {
     "backupNow": "Jetzt sichern",
@@ -1259,5 +1337,115 @@
     "noProject": "Kein Projekt",
     "on": "Aktiv",
     "none": "Keine"
+  },
+  "home": {
+    "nav": {
+      "back": "Zurück zu Datenbanken",
+      "overview": "Übersicht",
+      "branches": "Branches",
+      "monitoring": "Überwachung",
+      "integrations": "Integrationen",
+      "settings": "Einstellungen",
+      "tables": "Tabellen",
+      "collections": "Collections",
+      "keys": "Schlüssel",
+      "explorer": "Explorer",
+      "query": "Abfrage-Editor",
+      "backups": "Backups und Wiederherstellung",
+      "users": "Benutzer und Rollen",
+      "data": "Daten"
+    },
+    "monitoring": {
+      "metrics": "Metriken",
+      "logs": "Logs",
+      "slow": "Langsame Abfragen"
+    },
+    "branches": {
+      "title": "Branches",
+      "body": "Branches kommen in diesem Release.",
+      "planned": "Geplante Aktionen",
+      "actions": {
+        "create": "Einen Child-Branch dieser Datenbank erstellen",
+        "reset": "Einen Branch auf seinen Parent zurücksetzen",
+        "restore": "Einen Branch zu einem Zeitpunkt wiederherstellen",
+        "expire": "Ablauf für einen Branch festlegen"
+      }
+    },
+    "integrations": {
+      "title": "Integrationen",
+      "body": "Verbinde Dienste mit dieser Datenbank. Noch sind keine verfügbar.",
+      "categories": {
+        "auth": "Authentifizierung",
+        "storage": "Objektspeicher",
+        "functions": "Funktionen",
+        "realtime": "Echtzeit",
+        "ai": "KI-Gateway",
+        "observability": "Observability"
+      },
+      "soon": "Demnächst"
+    },
+    "settings": {
+      "sections": {
+        "general": "Allgemein",
+        "networking": "Netzwerk",
+        "credentials": "Zugangsdaten",
+        "backups": "Backups und Upgrades",
+        "danger": "Gefahrenzone"
+      },
+      "general": {
+        "title": "Allgemein",
+        "name": "Name",
+        "engine": "Engine",
+        "copyName": "Datenbanknamen kopieren",
+        "immutable": "Der Name identifiziert diese Datenbank und kann nicht geändert werden."
+      },
+      "danger": {
+        "title": "Gefahrenzone",
+        "body": "Beim Löschen wird der Container entfernt. Du entscheidest, ob die Daten mitgelöscht werden."
+      }
+    },
+    "overview": {
+      "services": "Dienste",
+      "facts": "Eckdaten",
+      "manage": "Verwalten",
+      "rows": {
+        "engine": "Engine und Version",
+        "backups": "Backups",
+        "network": "Netzwerkfreigabe",
+        "access": "Zugriff",
+        "upgrades": "Upgrades"
+      },
+      "backupsOn": "Aktiv, Zeitplan {{schedule}}",
+      "backupsOff": "Kein Zeitplan gesetzt",
+      "backupsNone": "Von dieser Engine nicht unterstützt",
+      "networkPublic": "Veröffentlicht auf Port {{port}}",
+      "networkPrivate": "Privat auf diesem Server",
+      "accessHint": "Benutzer, Rollen und Plattformzugriff",
+      "upgradesHint": "Versionswechsel und Major-Upgrades"
+    }
+  },
+  "location": {
+    "local": "Dieser Server",
+    "node": "Knoten {{name}}",
+    "hosted": "Extern gehostet: {{host}}",
+    "filterGroup": "Nach Ort filtern",
+    "short": {
+      "local": "Dieser Server",
+      "node": "Knoten",
+      "hosted": "Extern gehostet"
+    }
+  },
+  "where": {
+    "title": "Wo soll sie laufen?",
+    "local": "Dieser Server",
+    "localHint": "Läuft neben Levelrail",
+    "node": "Ein Knoten",
+    "nodeHint": "Einer von {{count}} Knoten",
+    "nodeNone": "Braucht einen zweiten Knoten",
+    "nodeNext": "Den Knoten wählst du im nächsten Schritt.",
+    "cloud": "Cloud-Konto",
+    "cloudSoon": "Demnächst",
+    "hosted": "Vorhandene gehostete Datenbank",
+    "hostedAction": "Verbinden"
   }
 }

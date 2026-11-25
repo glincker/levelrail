@@ -26,6 +26,11 @@ export type BrandIconName =
   | 'qdrant'
   | 'typesense'
   | 'memcached'
+  | 'documentdb'
+  | 'dynamodb'
+  | 'neon'
+  | 'supabase'
+  | 'aws-rds'
   | 'node'
   | 'go'
   | 'java'
@@ -188,6 +193,11 @@ const LOADERS: Record<
   qdrant: () => import('@thesvg/react/qdrant'),
   typesense: () => import('@thesvg/react/typesense'),
   memcached: () => import('@thesvg/react/memcached'),
+  documentdb: () => import('@thesvg/react/aws-amazon-documentdb'),
+  dynamodb: () => import('@thesvg/react/aws-amazon-dynamodb'),
+  neon: () => import('@thesvg/react/neon'),
+  supabase: () => import('@thesvg/react/supabase'),
+  'aws-rds': () => import('@thesvg/react/aws-amazon-rds'),
   node: () => import('@thesvg/react/nodedotjs'),
   go: () => import('@thesvg/react/go'),
   java: () => import('@thesvg/react/java'),

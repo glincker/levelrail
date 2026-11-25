@@ -2,9 +2,11 @@ import { lazy, Suspense, useMemo, useState, type KeyboardEvent } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { FilterChips, type ActiveFilter } from '../../components/FilterChips'
 import { ListKeyboardHint } from '../../components/ListKeyboardHint'
+import { usePersistedFlag } from '../../hooks/usePersistedFlag'
 import { useListKeyboard } from '../../hooks/useListKeyboard'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { routeErrorMessage } from '../../lib/apiError'
@@ -17,6 +19,7 @@ import {
   DatabasesPending,
   DatabasesShell,
 } from '../../components/DatabasesPage'
+import { DatabaseCards } from '../../components/DatabaseCards'
 import { DatabasesTable } from '../../components/DatabasesTable'
 import {
   DatabasesFilterBar,
@@ -26,6 +29,7 @@ import { DatabasesBulkBar } from '../../components/DatabasesBulkBar'
 const SavedViewsMenu = lazy(() => import('../../components/SavedViewsMenu'))
 import {
   EMPTY_DB_FILTERS,
+  countByLocation,
   countByStatus,
   databaseViewFilter,
   engineOptions,
@@ -64,6 +68,7 @@ function DatabaseListPage() {
   const navigate = useNavigate({ from: Route.fullPath })
   const filters = useMemo(() => filtersFromSearch(search), [search])
   const [labelSelector, setLabelSelector] = useState('')
+  const [cards, setCards] = usePersistedFlag('levelrail.databases.cards', false)
   const [selected, setSelected] = useState<string[]>([])
   const labelMatches = useLabelMatches('databases', labelSelector)
   const { t: tf } = useTranslation('uiShared')
@@ -82,6 +87,7 @@ function DatabaseListPage() {
   )
   const engines = useMemo(() => engineOptions(databases), [databases])
   const tags = useMemo(() => tagOptions(databases), [databases])
+  const where = useMemo(() => countByLocation(labelled), [labelled])
   const counts = useMemo(() => countByStatus(labelled), [labelled])
   const shown = useMemo(
     () => filterDatabases(labelled, filters),
@@ -124,6 +130,17 @@ function DatabaseListPage() {
             label: tf('filterChips.status', { value: filters.status }),
             onRemove: () => {
               setFilters({ ...filters, status: null })
+            },
+          },
+        ]
+      : []),
+    ...(filters.location
+      ? [
+          {
+            id: 'location',
+            label: t(`location.short.${filters.location}`),
+            onRemove: () => {
+              setFilters({ ...filters, location: null })
             },
           },
         ]
@@ -186,6 +203,44 @@ function DatabaseListPage() {
   return (
     <DatabasesShell size="compact" empty={false}>
       <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">
+            {t('list.summary', {
+              total: labelled.length,
+              local: where.local,
+              node: where.node,
+              hosted: where.hosted,
+            })}
+          </p>
+          <div
+            role="group"
+            aria-label={t('list.viewGroup')}
+            className="flex items-center gap-1"
+          >
+            <Button
+              type="button"
+              size="sm"
+              variant={cards ? 'outline' : 'default'}
+              aria-pressed={!cards}
+              onClick={() => {
+                setCards(false)
+              }}
+            >
+              {t('list.viewTable')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={cards ? 'default' : 'outline'}
+              aria-pressed={cards}
+              onClick={() => {
+                setCards(true)
+              }}
+            >
+              {t('list.viewCards')}
+            </Button>
+          </div>
+        </div>
         <DatabasesStatusStrip
           counts={counts}
           active={filters.status}
@@ -237,15 +292,19 @@ function DatabaseListPage() {
               />
               {t('bulk.selectAll', { count: shown.length })}
             </label>
-            <DatabasesTable
-              databases={shown}
-              selected={selected}
-              onSelect={(name, checked) => {
-                setSelected((cur) =>
-                  checked ? [...cur, name] : cur.filter((n) => n !== name),
-                )
-              }}
-            />
+            {cards ? (
+              <DatabaseCards databases={shown} />
+            ) : (
+              <DatabasesTable
+                databases={shown}
+                selected={selected}
+                onSelect={(name, checked) => {
+                  setSelected((cur) =>
+                    checked ? [...cur, name] : cur.filter((n) => n !== name),
+                  )
+                }}
+              />
+            )}
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -42,7 +43,19 @@ import { ThemeToggle } from '../ThemeToggle'
 import { HeaderLanguageSelect } from '../language/HeaderLanguageSelect'
 import { CliStatusBadge } from '../cli/CliStatusBadge'
 import { NotificationCenter } from './NotificationCenter'
-import { WhatsNewPanel } from './WhatsNewPanel'
+
+// Popover plus changelog parsing is not needed for first paint.
+const WhatsNewPanel = lazy(() =>
+  import('./WhatsNewPanel').then((m) => ({ default: m.WhatsNewPanel })),
+)
+
+function LazyWhatsNewPanel() {
+  return (
+    <Suspense fallback={null}>
+      <WhatsNewPanel />
+    </Suspense>
+  )
+}
 
 const THEMES: { value: Theme; icon: UiIcon }[] = [
   { value: 'light', icon: SunGlassIcon },
@@ -70,7 +83,7 @@ export function HeaderUtilities() {
         aria-hidden="true"
         className="pointer-events-none absolute right-0 bottom-0 size-px overflow-hidden opacity-0 @max-md:hidden"
       >
-        <WhatsNewPanel />
+        <LazyWhatsNewPanel />
         <DockToggle />
       </div>
       <DropdownMenu>
@@ -157,7 +170,7 @@ export function HeaderOverflow() {
           <TeamSwitcher />
           <CliStatusBadge />
           <NotificationCenter />
-          <WhatsNewPanel />
+          <LazyWhatsNewPanel />
           <DockToggle />
           <HelpMenu />
           <HeaderLanguageSelect />

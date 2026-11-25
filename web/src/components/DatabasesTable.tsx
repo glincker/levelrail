@@ -26,7 +26,7 @@ import {
 import type { DatabaseListEntry } from '../types/databaseDetail'
 import { StatusLabel } from './AppRow'
 import { BrandTile } from './BrandLogoBadge'
-import { PlacementLabel } from './PlacementLabel'
+import { DatabaseLocationBadge } from './DatabaseLocationBadge'
 import { ManagedByStackTag } from './stacks/ManagedByStackNotice'
 
 const MIB = 1024 * 1024
@@ -249,21 +249,10 @@ export function DatabasesTable({
       },
       {
         id: 'node',
-        header: t('list.colNode'),
+        header: t('list.colLocation'),
         priority: 2,
-        width: 'w-36',
-        cell: (db) =>
-          db.external ? (
-            <span className="text-xs text-muted-foreground">-</span>
-          ) : (
-            <span className="block truncate text-xs text-muted-foreground">
-              <PlacementLabel
-                nodeId={db.node_id}
-                nodeName={db.node_name}
-                nodeIsLocal={db.node_is_local}
-              />
-            </span>
-          ),
+        width: 'w-48',
+        cell: (db) => <DatabaseLocationBadge database={db} />,
       },
     ],
     [t],

@@ -1,0 +1,103 @@
+{
+  "title": "モニタリング",
+  "asOf": "{{time}} に更新",
+  "refresh": "更新",
+  "autoRefresh": "自動更新",
+  "chartLabel": "{{title}} のグラフ（データ点 {{count}} 件）",
+  "tabs": {
+    "aria": "モニタリングのセクション",
+    "metrics": "メトリクス",
+    "slow": "スロークエリ",
+    "logs": "ログ",
+    "active": "アクティブなクエリ",
+    "perf": "クエリのパフォーマンス",
+    "soon": "まだ収集されていません",
+    "soonBadge": "近日対応"
+  },
+  "instance": {
+    "label": "インスタンス",
+    "active": "稼働中",
+    "stopped": "停止中",
+    "provisioning": "プロビジョニング中"
+  },
+  "range": {
+    "label": "期間",
+    "custom": "カスタム",
+    "from": "開始",
+    "to": "終了",
+    "apply": "適用",
+    "errors": {
+      "invalid": "有効な開始と終了を入力してください。",
+      "order": "開始は終了より前にしてください。",
+      "future": "終了は未来にできません。",
+      "tooLong": "この期間は保持期間の上限を超えています。"
+    }
+  },
+  "export": {
+    "label": "メトリクスをエクスポート",
+    "csv": "CSVでエクスポート",
+    "json": "JSON"
+  },
+  "stats": {
+    "label": "サマリー",
+    "none": "データなし",
+    "ofLimit": "上限 {{limit}}",
+    "delta": "前の期間比 {{sign}}{{value}}%",
+    "noPrevious": "前の期間なし"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "メモリ",
+    "network": "ネットワークI/O",
+    "disk": "ディスクI/O",
+    "connections": "接続数",
+    "dbSize": "データベースサイズ",
+    "cacheHit": "キャッシュヒット率",
+    "deadlocks": "デッドロック",
+    "rows": "挿入・更新・削除された行"
+  },
+  "series": {
+    "cpu": "CPU",
+    "usage": "使用量",
+    "limit": "上限",
+    "received": "受信",
+    "sent": "送信",
+    "read": "読み取り",
+    "write": "書き込み"
+  },
+  "states": {
+    "stopped": {
+      "title": "データベースは停止中です",
+      "body": "停止中はメトリクスを収集しません。再開するには起動してください。",
+      "chart": "エンドポイント停止中: 停止"
+    },
+    "provisioning": {
+      "title": "データベースをプロビジョニング中です",
+      "body": "コンテナーが起動するとメトリクスの収集が始まります。",
+      "chart": "エンドポイント停止中: プロビジョニング中"
+    },
+    "failed": {
+      "title": "プロビジョニングに失敗しました",
+      "body": "コンテナーが起動しなかったため、計測するものがありません。",
+      "chart": "エンドポイント停止中: プロビジョニング失敗"
+    },
+    "restarting": {
+      "title": "最近再起動しました",
+      "body": "復旧するまで値に欠落が表示されることがあります。"
+    },
+    "noData": {
+      "title": "まだデータがありません",
+      "body": "この期間にサンプルはありません。データベースが稼働するとサンプルが数秒ごとに届きます。",
+      "chart": "この期間にサンプルなし"
+    },
+    "notCollected": {
+      "title": "未収集",
+      "body": "このエンジンはまだこの系列を報告しません。"
+    }
+  },
+  "actions": {
+    "start": "データベースを起動",
+    "starting": "起動中",
+    "viewProgress": "進行状況を見る"
+  }
+}

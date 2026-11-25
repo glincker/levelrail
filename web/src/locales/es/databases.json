@@ -515,6 +515,77 @@
       "noLookups": "Aún sin consultas",
       "evictions": "Expulsiones",
       "connections": "Conexiones"
+    },
+    "mongo": {
+      "tree": {
+        "label": "Bases de datos y colecciones",
+        "search": "Buscar colecciones",
+        "truncated": "Solo se muestra una parte de la lista.",
+        "noCollections": "Sin colecciones",
+        "meta": "{{size}}, índices: {{count}}",
+        "items": "longitud {{count}}",
+        "fields": "campos {{count}}",
+        "root": "documento"
+      },
+      "readOnly": "Solo lectura",
+      "readOnlyReason": "Explorar nunca cambia los datos: solo se permiten find, recuentos y lectura de índices.",
+      "noCollections": "Esta base de datos aún no tiene colecciones.",
+      "tabs": {
+        "documents": "Documentos",
+        "indexes": "Índices",
+        "stats": "Estadísticas"
+      },
+      "docs": {
+        "filter": "Filtro",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "Límite",
+        "run": "Ejecutar",
+        "options": "Opciones",
+        "sort": "Orden",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "Proyección",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "Ejemplos",
+        "status": "Documentos: {{count}}, {{ms}} ms, página {{page}}",
+        "truncated": "Resultado cortado en el límite de tamaño.",
+        "expandAll": "Expandir todo",
+        "collapseAll": "Contraer todo",
+        "rejected": "El servidor rechazó esta consulta",
+        "failed": "La consulta falló",
+        "noMatches": "Ningún documento coincide con este filtro.",
+        "empty": "Esta colección no tiene documentos.",
+        "details": "Detalles",
+        "copyDoc": "Copiar como JSON",
+        "prev": "Página anterior",
+        "next": "Página siguiente",
+        "invalid": {
+          "syntax": "El {{kind}} no es un JSON válido.",
+          "notObject": "El {{kind}} debe ser un objeto JSON.",
+          "sortDirection": "Los valores de orden deben ser 1 o -1.",
+          "projectionValue": "Los valores de proyección deben ser números, booleanos u objetos."
+        },
+        "kind": {
+          "filter": "filtro",
+          "sort": "orden",
+          "projection": "proyección"
+        }
+      },
+      "indexes": {
+        "empty": "No se informaron índices.",
+        "label": "Índices",
+        "name": "Nombre",
+        "keys": "Claves",
+        "unique": "Único",
+        "yes": "Sí",
+        "no": "No"
+      },
+      "stats": {
+        "documents": "Documentos",
+        "dataSize": "Tamaño de datos",
+        "storageSize": "Tamaño de almacenamiento",
+        "indexes": "Índices",
+        "type": "Tipo"
+      }
     }
   },
   "createFlavor": {
@@ -608,7 +679,14 @@
     "loading": "Cargando bases de datos",
     "notCreated": "Aún no creada",
     "failedToCreate": "Falló la creación",
-    "pendingActionHint": "Disponible cuando se cree la base de datos"
+    "pendingActionHint": "Disponible cuando se cree la base de datos",
+    "colLocation": "Dónde se ejecuta",
+    "summary": "{{total}} bases de datos: {{local}} en este servidor, {{node}} en nodos, {{hosted}} alojadas fuera",
+    "viewGroup": "Vista de lista",
+    "viewTable": "Tabla",
+    "viewCards": "Tarjetas",
+    "connect": "Conectar",
+    "explorer": "Explorador"
   },
   "detail": {
     "backupNow": "Respaldar ahora",
@@ -1259,5 +1337,115 @@
     "noProject": "Sin proyecto",
     "on": "Activo",
     "none": "Ninguno"
+  },
+  "home": {
+    "nav": {
+      "back": "Volver a Bases de datos",
+      "overview": "Resumen",
+      "branches": "Ramas",
+      "monitoring": "Monitorización",
+      "integrations": "Integraciones",
+      "settings": "Ajustes",
+      "tables": "Tablas",
+      "collections": "Colecciones",
+      "keys": "Claves",
+      "explorer": "Explorador",
+      "query": "Editor de consultas",
+      "backups": "Copias y restauración",
+      "users": "Usuarios y roles",
+      "data": "Datos"
+    },
+    "monitoring": {
+      "metrics": "Métricas",
+      "logs": "Registros",
+      "slow": "Consultas lentas"
+    },
+    "branches": {
+      "title": "Ramas",
+      "body": "Las ramas llegan en esta versión.",
+      "planned": "Acciones previstas",
+      "actions": {
+        "create": "Crear una rama hija de esta base de datos",
+        "reset": "Restablecer una rama a su origen",
+        "restore": "Restaurar una rama a un momento dado",
+        "expire": "Definir la caducidad de una rama"
+      }
+    },
+    "integrations": {
+      "title": "Integraciones",
+      "body": "Conecta servicios a esta base de datos. Aún no hay ninguno disponible.",
+      "categories": {
+        "auth": "Autenticación",
+        "storage": "Almacenamiento de objetos",
+        "functions": "Funciones",
+        "realtime": "Tiempo real",
+        "ai": "Pasarela de IA",
+        "observability": "Observabilidad"
+      },
+      "soon": "Próximamente"
+    },
+    "settings": {
+      "sections": {
+        "general": "General",
+        "networking": "Red",
+        "credentials": "Credenciales",
+        "backups": "Copias y actualizaciones",
+        "danger": "Zona de peligro"
+      },
+      "general": {
+        "title": "General",
+        "name": "Nombre",
+        "engine": "Motor",
+        "copyName": "Copiar nombre de la base de datos",
+        "immutable": "El nombre identifica esta base de datos y no se puede cambiar."
+      },
+      "danger": {
+        "title": "Zona de peligro",
+        "body": "Eliminar una base de datos quita su contenedor. Tú decides si los datos también se borran."
+      }
+    },
+    "overview": {
+      "services": "Servicios",
+      "facts": "Datos clave",
+      "manage": "Gestionar",
+      "rows": {
+        "engine": "Motor y versión",
+        "backups": "Copias de seguridad",
+        "network": "Exposición de red",
+        "access": "Acceso",
+        "upgrades": "Actualizaciones"
+      },
+      "backupsOn": "Activas, programación {{schedule}}",
+      "backupsOff": "Sin programación",
+      "backupsNone": "No compatible con este motor",
+      "networkPublic": "Publicada en el puerto {{port}}",
+      "networkPrivate": "Privada en este servidor",
+      "accessHint": "Usuarios, roles y acceso a la plataforma",
+      "upgradesHint": "Cambios de versión y actualizaciones mayores"
+    }
+  },
+  "location": {
+    "local": "Este servidor",
+    "node": "Nodo {{name}}",
+    "hosted": "Alojada fuera: {{host}}",
+    "filterGroup": "Filtrar por ubicación",
+    "short": {
+      "local": "Este servidor",
+      "node": "Nodos",
+      "hosted": "Alojada fuera"
+    }
+  },
+  "where": {
+    "title": "¿Dónde debe ejecutarse?",
+    "local": "Este servidor",
+    "localHint": "Se ejecuta junto a Levelrail",
+    "node": "Un nodo",
+    "nodeHint": "Uno de {{count}} nodos",
+    "nodeNone": "Necesita un segundo nodo",
+    "nodeNext": "Eliges el nodo en el siguiente paso.",
+    "cloud": "Cuenta en la nube",
+    "cloudSoon": "Próximamente",
+    "hosted": "Base de datos alojada existente",
+    "hostedAction": "Conectar"
   }
 }

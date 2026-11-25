@@ -515,6 +515,77 @@
       "noLookups": "No lookups yet",
       "evictions": "Evictions",
       "connections": "Connections"
+    },
+    "mongo": {
+      "tree": {
+        "label": "Databases and collections",
+        "search": "Search collections",
+        "truncated": "Only part of the list is shown.",
+        "noCollections": "No collections",
+        "meta": "{{size}}, indexes: {{count}}",
+        "items": "length {{count}}",
+        "fields": "fields {{count}}",
+        "root": "document"
+      },
+      "readOnly": "Read only",
+      "readOnlyReason": "Browsing never changes data: only find, counts and index reads are allowed.",
+      "noCollections": "No collections in this database yet.",
+      "tabs": {
+        "documents": "Documents",
+        "indexes": "Indexes",
+        "stats": "Stats"
+      },
+      "docs": {
+        "filter": "Filter",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "Limit",
+        "run": "Run",
+        "options": "Options",
+        "sort": "Sort",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "Projection",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "Examples",
+        "status": "Documents: {{count}}, {{ms}} ms, page {{page}}",
+        "truncated": "Result cut at the size limit.",
+        "expandAll": "Expand all",
+        "collapseAll": "Collapse all",
+        "rejected": "The server rejected this query",
+        "failed": "The query failed",
+        "noMatches": "No documents match this filter.",
+        "empty": "This collection has no documents.",
+        "details": "Details",
+        "copyDoc": "Copy as JSON",
+        "prev": "Previous page",
+        "next": "Next page",
+        "invalid": {
+          "syntax": "The {{kind}} is not valid JSON.",
+          "notObject": "The {{kind}} must be a JSON object.",
+          "sortDirection": "Sort values must be 1 or -1.",
+          "projectionValue": "Projection values must be numbers, booleans or objects."
+        },
+        "kind": {
+          "filter": "filter",
+          "sort": "sort",
+          "projection": "projection"
+        }
+      },
+      "indexes": {
+        "empty": "No indexes reported.",
+        "label": "Indexes",
+        "name": "Name",
+        "keys": "Keys",
+        "unique": "Unique",
+        "yes": "Yes",
+        "no": "No"
+      },
+      "stats": {
+        "documents": "Documents",
+        "dataSize": "Data size",
+        "storageSize": "Storage size",
+        "indexes": "Indexes",
+        "type": "Type"
+      }
     }
   },
   "createFlavor": {
@@ -557,12 +628,12 @@
       "keydb": "Multithreaded Redis-compatible store for higher throughput on one node.",
       "dragonfly": "Modern Redis-compatible store built for very high throughput.",
       "mongodb": "Document database for flexible, JSON-shaped data.",
-      "documentdb": "Open source document database on PostgreSQL, MongoDB wire compatible.",
       "clickhouse": "Column store for fast analytical queries over large event data.",
       "meilisearch": "Typo-tolerant full-text search with instant results over an HTTP API.",
       "qdrant": "Vector database for embeddings, semantic search and RAG retrieval.",
       "typesense": "Fast, typo-tolerant search engine with faceting and geo search.",
-      "memcached": "Plain in-memory cache for sessions and query results. Nothing is kept on disk."
+      "memcached": "Plain in-memory cache for sessions and query results. Nothing is kept on disk.",
+      "documentdb": "Open source document database on PostgreSQL, compatible with the MongoDB protocol."
     },
     "chips": {
       "port": "Port {{port}}",
@@ -608,7 +679,14 @@
     "loading": "Loading databases",
     "notCreated": "Not created yet",
     "failedToCreate": "Could not create the database",
-    "pendingActionHint": "Available once the database is created"
+    "pendingActionHint": "Available once the database is created",
+    "colLocation": "Where it runs",
+    "summary": "{{total}} databases: {{local}} on this server, {{node}} on nodes, {{hosted}} hosted elsewhere",
+    "viewGroup": "List view",
+    "viewTable": "Table",
+    "viewCards": "Cards",
+    "connect": "Connect",
+    "explorer": "Explorer"
   },
   "detail": {
     "backupNow": "Back up now",
@@ -1213,10 +1291,6 @@
     "note": "Clear a field to go back to the engine default.",
     "pendingNote": "Applying restarts the database. A start after a stop applies it too."
   },
-  "latestVersion": {
-    "resolved": "Latest (resolved: {{version}})",
-    "pending": "Latest: the newest stable version is picked when the database is created."
-  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "Password",
@@ -1259,5 +1333,119 @@
     "noProject": "No project",
     "on": "On",
     "none": "None"
+  },
+  "home": {
+    "nav": {
+      "back": "Back to Databases",
+      "overview": "Overview",
+      "branches": "Branches",
+      "monitoring": "Monitoring",
+      "integrations": "Integrations",
+      "settings": "Settings",
+      "tables": "Tables",
+      "collections": "Collections",
+      "keys": "Keys",
+      "explorer": "Explorer",
+      "query": "Query editor",
+      "backups": "Backups and restore",
+      "users": "Users and roles",
+      "data": "Data"
+    },
+    "monitoring": {
+      "metrics": "Metrics",
+      "logs": "Logs",
+      "slow": "Slow queries"
+    },
+    "branches": {
+      "title": "Branches",
+      "body": "Branches arrive in this release.",
+      "planned": "Planned actions",
+      "actions": {
+        "create": "Create a child branch from this database",
+        "reset": "Reset a branch to its parent",
+        "restore": "Restore a branch to a point in time",
+        "expire": "Set a branch expiration"
+      }
+    },
+    "integrations": {
+      "title": "Integrations",
+      "body": "Connect services to this database. None are available yet.",
+      "categories": {
+        "auth": "Authentication",
+        "storage": "Object storage",
+        "functions": "Functions",
+        "realtime": "Realtime",
+        "ai": "AI gateway",
+        "observability": "Observability"
+      },
+      "soon": "Coming soon"
+    },
+    "settings": {
+      "sections": {
+        "general": "General",
+        "networking": "Networking",
+        "credentials": "Credentials",
+        "backups": "Backups and upgrades",
+        "danger": "Danger zone"
+      },
+      "general": {
+        "title": "General",
+        "name": "Name",
+        "engine": "Engine",
+        "copyName": "Copy database name",
+        "immutable": "The name identifies this database and cannot be changed."
+      },
+      "danger": {
+        "title": "Danger zone",
+        "body": "Deleting a database removes its container. You choose whether the data goes too."
+      }
+    },
+    "overview": {
+      "services": "Services",
+      "facts": "Key facts",
+      "manage": "Manage",
+      "rows": {
+        "engine": "Engine and version",
+        "backups": "Backups",
+        "network": "Network exposure",
+        "access": "Access",
+        "upgrades": "Upgrades"
+      },
+      "backupsOn": "On, schedule {{schedule}}",
+      "backupsOff": "No schedule set",
+      "backupsNone": "Not supported by this engine",
+      "networkPublic": "Published on port {{port}}",
+      "networkPrivate": "Private to this server",
+      "accessHint": "Users, roles and platform access",
+      "upgradesHint": "Version changes and major upgrades"
+    }
+  },
+  "latestVersion": {
+    "resolved": "Latest (resolved: {{version}})",
+    "pending": "Latest: the newest stable version is picked when the database is created."
+  },
+  "location": {
+    "local": "This server",
+    "node": "Node {{name}}",
+    "hosted": "Hosted elsewhere: {{host}}",
+    "filterGroup": "Filter by location",
+    "short": {
+      "local": "This server",
+      "node": "Nodes",
+      "hosted": "Hosted elsewhere"
+    }
+  },
+  "where": {
+    "title": "Where should it run?",
+    "local": "This server",
+    "localHint": "Runs next to Levelrail",
+    "node": "A node",
+    "nodeHint": "One of {{count}} nodes",
+    "nodeNone": "Needs a second node",
+    "nodeNext": "You pick the node in the next step.",
+    "cloud": "Cloud account",
+    "cloudSoon": "Coming soon",
+    "hosted": "Existing hosted database",
+    "hostedAction": "Connect"
   }
 }

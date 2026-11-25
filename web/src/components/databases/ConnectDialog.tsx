@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { EngineMark } from '@/components/EngineMark'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
 import {
@@ -183,7 +184,8 @@ export function ConnectDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="rich">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <EngineMark engine={engine} className="size-5 shrink-0" />
             {t('connect.title', { name: database.name })}
           </DialogTitle>
           <DialogDescription>{t('connect.description')}</DialogDescription>

@@ -522,6 +522,77 @@
       "noLookups": "Aucune recherche pour l'instant",
       "evictions": "Évictions",
       "connections": "Connexions"
+    },
+    "mongo": {
+      "tree": {
+        "label": "Bases de données et collections",
+        "search": "Rechercher des collections",
+        "truncated": "Seule une partie de la liste est affichée.",
+        "noCollections": "Aucune collection",
+        "meta": "{{size}}, index : {{count}}",
+        "items": "longueur {{count}}",
+        "fields": "champs {{count}}",
+        "root": "document"
+      },
+      "readOnly": "Lecture seule",
+      "readOnlyReason": "La navigation ne modifie jamais les données : seuls find, les comptages et la lecture des index sont autorisés.",
+      "noCollections": "Cette base de données ne contient pas encore de collection.",
+      "tabs": {
+        "documents": "Documents",
+        "indexes": "Index",
+        "stats": "Statistiques"
+      },
+      "docs": {
+        "filter": "Filtre",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "Limite",
+        "run": "Exécuter",
+        "options": "Options",
+        "sort": "Tri",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "Projection",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "Exemples",
+        "status": "Documents : {{count}}, {{ms}} ms, page {{page}}",
+        "truncated": "Résultat coupé à la limite de taille.",
+        "expandAll": "Tout développer",
+        "collapseAll": "Tout réduire",
+        "rejected": "Le serveur a rejeté cette requête",
+        "failed": "La requête a échoué",
+        "noMatches": "Aucun document ne correspond à ce filtre.",
+        "empty": "Cette collection ne contient aucun document.",
+        "details": "Détails",
+        "copyDoc": "Copier en JSON",
+        "prev": "Page précédente",
+        "next": "Page suivante",
+        "invalid": {
+          "syntax": "Le {{kind}} n'est pas un JSON valide.",
+          "notObject": "Le {{kind}} doit être un objet JSON.",
+          "sortDirection": "Les valeurs de tri doivent être 1 ou -1.",
+          "projectionValue": "Les valeurs de projection doivent être des nombres, des booléens ou des objets."
+        },
+        "kind": {
+          "filter": "filtre",
+          "sort": "tri",
+          "projection": "projection"
+        }
+      },
+      "indexes": {
+        "empty": "Aucun index signalé.",
+        "label": "Index",
+        "name": "Nom",
+        "keys": "Clés",
+        "unique": "Unique",
+        "yes": "Oui",
+        "no": "Non"
+      },
+      "stats": {
+        "documents": "Documents",
+        "dataSize": "Taille des données",
+        "storageSize": "Taille de stockage",
+        "indexes": "Index",
+        "type": "Type"
+      }
     }
   },
   "createFlavor": {
@@ -616,7 +687,14 @@
     "loading": "Chargement des bases de données",
     "notCreated": "Pas encore créée",
     "failedToCreate": "Impossible de créer la base de données",
-    "pendingActionHint": "Disponible une fois la base de données créée"
+    "pendingActionHint": "Disponible une fois la base de données créée",
+    "colLocation": "Où elle tourne",
+    "summary": "{{total}} bases de données : {{local}} sur ce serveur, {{node}} sur des nœuds, {{hosted}} hébergées ailleurs",
+    "viewGroup": "Affichage de la liste",
+    "viewTable": "Tableau",
+    "viewCards": "Cartes",
+    "connect": "Se connecter",
+    "explorer": "Explorateur"
   },
   "detail": {
     "backupNow": "Sauvegarder maintenant",
@@ -1273,5 +1351,115 @@
     "noProject": "Aucun projet",
     "on": "Actif",
     "none": "Aucun"
+  },
+  "home": {
+    "nav": {
+      "back": "Retour aux bases de données",
+      "overview": "Aperçu",
+      "branches": "Branches",
+      "monitoring": "Supervision",
+      "integrations": "Intégrations",
+      "settings": "Paramètres",
+      "tables": "Tables",
+      "collections": "Collections",
+      "keys": "Clés",
+      "explorer": "Explorateur",
+      "query": "Éditeur de requêtes",
+      "backups": "Sauvegardes et restauration",
+      "users": "Utilisateurs et rôles",
+      "data": "Données"
+    },
+    "monitoring": {
+      "metrics": "Métriques",
+      "logs": "Journaux",
+      "slow": "Requêtes lentes"
+    },
+    "branches": {
+      "title": "Branches",
+      "body": "Les branches arrivent dans cette version.",
+      "planned": "Actions prévues",
+      "actions": {
+        "create": "Créer une branche enfant de cette base",
+        "reset": "Réinitialiser une branche sur son parent",
+        "restore": "Restaurer une branche à un instant donné",
+        "expire": "Définir l'expiration d'une branche"
+      }
+    },
+    "integrations": {
+      "title": "Intégrations",
+      "body": "Connectez des services à cette base de données. Aucun n'est encore disponible.",
+      "categories": {
+        "auth": "Authentification",
+        "storage": "Stockage d'objets",
+        "functions": "Fonctions",
+        "realtime": "Temps réel",
+        "ai": "Passerelle IA",
+        "observability": "Observabilité"
+      },
+      "soon": "Bientôt disponible"
+    },
+    "settings": {
+      "sections": {
+        "general": "Général",
+        "networking": "Réseau",
+        "credentials": "Identifiants",
+        "backups": "Sauvegardes et mises à niveau",
+        "danger": "Zone de danger"
+      },
+      "general": {
+        "title": "Général",
+        "name": "Nom",
+        "engine": "Moteur",
+        "copyName": "Copier le nom de la base",
+        "immutable": "Le nom identifie cette base et ne peut pas être modifié."
+      },
+      "danger": {
+        "title": "Zone de danger",
+        "body": "Supprimer une base retire son conteneur. Vous choisissez si les données sont aussi supprimées."
+      }
+    },
+    "overview": {
+      "services": "Services",
+      "facts": "Infos clés",
+      "manage": "Gérer",
+      "rows": {
+        "engine": "Moteur et version",
+        "backups": "Sauvegardes",
+        "network": "Exposition réseau",
+        "access": "Accès",
+        "upgrades": "Mises à niveau"
+      },
+      "backupsOn": "Activées, planification {{schedule}}",
+      "backupsOff": "Aucune planification",
+      "backupsNone": "Non pris en charge par ce moteur",
+      "networkPublic": "Publié sur le port {{port}}",
+      "networkPrivate": "Privé à ce serveur",
+      "accessHint": "Utilisateurs, rôles et accès à la plateforme",
+      "upgradesHint": "Changements de version et mises à niveau majeures"
+    }
+  },
+  "location": {
+    "local": "Ce serveur",
+    "node": "Nœud {{name}}",
+    "hosted": "Hébergée ailleurs : {{host}}",
+    "filterGroup": "Filtrer par emplacement",
+    "short": {
+      "local": "Ce serveur",
+      "node": "Nœuds",
+      "hosted": "Hébergée ailleurs"
+    }
+  },
+  "where": {
+    "title": "Où doit-elle tourner ?",
+    "local": "Ce serveur",
+    "localHint": "Tourne à côté de Levelrail",
+    "node": "Un nœud",
+    "nodeHint": "Un des {{count}} nœuds",
+    "nodeNone": "Nécessite un second nœud",
+    "nodeNext": "Vous choisissez le nœud à l'étape suivante.",
+    "cloud": "Compte cloud",
+    "cloudSoon": "Bientôt disponible",
+    "hosted": "Base hébergée existante",
+    "hostedAction": "Se connecter"
   }
 }

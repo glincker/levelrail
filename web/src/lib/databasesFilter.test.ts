@@ -95,6 +95,7 @@ describe('filterDatabases', () => {
 describe('URL state', () => {
   it('round trips filters through the search params', () => {
     const filters = {
+      location: 'node' as const,
       q: 'ord',
       engines: ['postgres', 'redis'],
       status: 'healthy' as const,
@@ -102,6 +103,7 @@ describe('URL state', () => {
     }
     const search = searchFromFilters(filters)
     expect(search).toEqual({
+      loc: 'node',
       q: 'ord',
       engine: 'postgres,redis',
       status: 'healthy',

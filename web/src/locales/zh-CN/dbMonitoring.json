@@ -1,0 +1,103 @@
+{
+  "title": "监控",
+  "asOf": "更新于 {{time}}",
+  "refresh": "刷新",
+  "autoRefresh": "自动刷新",
+  "chartLabel": "{{title}} 图表，共 {{count}} 个数据点",
+  "tabs": {
+    "aria": "监控分区",
+    "metrics": "指标",
+    "slow": "慢查询",
+    "logs": "日志",
+    "active": "活动查询",
+    "perf": "查询性能",
+    "soon": "尚未采集",
+    "soonBadge": "即将推出"
+  },
+  "instance": {
+    "label": "实例",
+    "active": "运行中",
+    "stopped": "已停止",
+    "provisioning": "正在配置"
+  },
+  "range": {
+    "label": "时间范围",
+    "custom": "自定义",
+    "from": "开始",
+    "to": "结束",
+    "apply": "应用",
+    "errors": {
+      "invalid": "请输入有效的开始和结束时间。",
+      "order": "开始时间必须早于结束时间。",
+      "future": "结束时间不能在未来。",
+      "tooLong": "该范围超出了数据保留上限。"
+    }
+  },
+  "export": {
+    "label": "导出指标",
+    "csv": "导出 CSV",
+    "json": "JSON"
+  },
+  "stats": {
+    "label": "概览",
+    "none": "无数据",
+    "ofLimit": "上限 {{limit}}",
+    "delta": "较上一周期 {{sign}}{{value}}%",
+    "noPrevious": "无上一周期"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "内存",
+    "network": "网络 I/O",
+    "disk": "磁盘 I/O",
+    "connections": "连接数",
+    "dbSize": "数据库大小",
+    "cacheHit": "缓存命中率",
+    "deadlocks": "死锁",
+    "rows": "插入、更新、删除的行数"
+  },
+  "series": {
+    "cpu": "CPU",
+    "usage": "使用量",
+    "limit": "上限",
+    "received": "接收",
+    "sent": "发送",
+    "read": "读取",
+    "write": "写入"
+  },
+  "states": {
+    "stopped": {
+      "title": "数据库已停止",
+      "body": "数据库停止期间不会采集指标。启动后即可恢复。",
+      "chart": "端点未激活：已停止"
+    },
+    "provisioning": {
+      "title": "数据库正在配置",
+      "body": "容器运行后才会开始采集指标。",
+      "chart": "端点未激活：正在配置"
+    },
+    "failed": {
+      "title": "配置失败",
+      "body": "容器从未启动，没有可测量的内容。",
+      "chart": "端点未激活：配置失败"
+    },
+    "restarting": {
+      "title": "最近重启过",
+      "body": "恢复期间读数可能出现空档。"
+    },
+    "noData": {
+      "title": "暂无数据",
+      "body": "此范围内没有样本。数据库运行后每隔几秒会有新样本。",
+      "chart": "此范围内没有样本"
+    },
+    "notCollected": {
+      "title": "未采集",
+      "body": "该引擎暂未上报此系列。"
+    }
+  },
+  "actions": {
+    "start": "启动数据库",
+    "starting": "正在启动",
+    "viewProgress": "查看进度"
+  }
+}

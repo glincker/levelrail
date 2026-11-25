@@ -1,15 +1,12 @@
 import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
 import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
-import { ChangeDatabaseVersionDialog } from '../../../components/ChangeDatabaseVersionDialog'
 import { PlacementCard } from '../../../components/PlacementCard'
 import {
-  MoveToThisServerButton,
-  PlacementLabel,
-} from '../../../components/PlacementLabel'
-import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
+  KeyFacts,
+  ServiceSummary,
+} from '../../../components/databases/home/OverviewSummary'
 import { BackupsSection } from '../../../components/BackupsSection'
 import { NoBackupsCard } from '../../../components/databases/NoBackupsCard'
 import { engineHasBackups } from '@/lib/databaseCatalog'
@@ -20,7 +17,7 @@ import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAcce
 import { DatabasePoolerCard } from '../../../components/DatabasePoolerCard'
 import { useProjectListOptional } from '../../../queries/projects'
 import { ExternalDatabaseOverview } from '../../../components/ExternalDatabaseOverview'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { ResourceLabelsCard } from '../../../components/ResourceLabelsCard'
 import { DatabaseLinksCard } from '../../../components/databases/DatabaseLinksCard'
 const ConnectionCard = lazy(() =>
@@ -48,6 +45,8 @@ const ProvisioningPanel = lazy(() =>
     default: m.ProvisioningPanel,
   })),
 )
+import { PageToc, type TocItem } from '@/components/PageToc'
+import { useTranslation } from 'react-i18next'
 import { DatabaseWiring } from '../../../components/databases/overview/DatabaseWiring'
 import { StatusHeader } from '../../../components/databases/overview/StatusHeader'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -59,10 +58,10 @@ export const Route = createFileRoute('/databases/$name/overview')({
 })
 
 function OverviewSection() {
-  const { t } = useTranslation('databases')
   const { name } = Route.useParams()
   const { data: database } = useDatabase(name)
   const { data: conditions } = useDatabaseStatus(name)
+  const { t } = useTranslation('dbOverview')
   // Optional convenience only, see useProjectListOptional's own doc
   // comment: resolving project_id to a name is a display nicety.
   const projectList = useProjectListOptional()
@@ -70,120 +69,84 @@ function OverviewSection() {
     (p) => p.id === database.project_id,
   )?.name
 
+  const toc: TocItem[] = [
+    'wiring',
+    'details',
+    'labels',
+    'connection',
+    'access',
+    'backups',
+    'placement',
+    'status',
+    ...(database.engine === 'postgres' ? ['upgrade'] : []),
+  ].map((id) => ({
+    id,
+    label: t(`toc.sections.${id}` as 'toc.sections.wiring'),
+  }))
+
   if (database.external) {
     return <ExternalDatabaseOverview db={database.external} />
   }
 
   return (
     <div className="space-y-6">
+      <PageToc items={toc} />
       <OptimiseHint kind="database" name={name} />
       <Suspense fallback={null}>
         <ProvisioningPanel name={name} hideWhenReady />
       </Suspense>
       <StatusHeader database={database} conditions={conditions} />
-      <DatabaseWiring database={database} projectName={projectName} />
-      <ResourceLabelsCard path="databases" name={name} />
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('status.details')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div>
-              <dt className="text-xs text-muted-foreground uppercase">
-                {t('connection.engine')}
-              </dt>
-              <dd className="mt-1 text-sm font-medium text-foreground capitalize">
-                {database.engine}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground uppercase">
-                {t('overview.version')}
-              </dt>
-              <dd className="mt-1 flex items-center gap-2 break-all font-mono text-sm text-foreground">
-                {database.version}
-                <ChangeDatabaseVersionDialog
-                  name={database.name}
-                  engine={database.engine}
-                  currentVersion={database.version}
-                />
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground uppercase">
-                {t('overview.node')}
-              </dt>
-              <dd className="mt-1 flex items-center gap-2 break-all font-mono text-sm text-foreground">
-                <PlacementLabel
-                  nodeId={database.node_id}
-                  nodeName={database.node_name}
-                  nodeIsLocal={database.node_is_local}
-                />
-                <MoveToThisServerButton
-                  kind="database"
-                  name={database.name}
-                  nodeId={database.node_id}
-                  nodeName={database.node_name}
-                  nodeIsLocal={database.node_is_local}
-                />
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground uppercase">
-                {t('overview.project')}
-              </dt>
-              <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
-                {database.project_id ? (
-                  (projectName ?? database.project_id)
-                ) : (
-                  <span className="text-muted-foreground italic">
-                    {t('overview.noProject')}
-                  </span>
-                )}
-                <MoveToProjectDialog
-                  kind="database"
-                  name={database.name}
-                  currentProjectId={database.project_id}
-                />
-              </dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
+      <div id="wiring" className="scroll-mt-20">
+        <DatabaseWiring
+          database={database}
+          conditions={conditions}
+          projectName={projectName}
+        />
+      </div>
+      <div id="labels" className="scroll-mt-20">
+        <ResourceLabelsCard path="databases" name={name} />
+      </div>
+      <div
+        id="details"
+        className="grid scroll-mt-20 items-start gap-4 lg:grid-cols-[1fr_18rem]"
+      >
+        <ServiceSummary database={database} />
+        <KeyFacts database={database} projectName={projectName} />
+      </div>
 
-      {database.provision_state ? null : (
-        <Suspense
-          fallback={
-            <Card aria-hidden="true">
-              <CardContent className="space-y-3">
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-10 w-full" />
-              </CardContent>
-            </Card>
-          }
-        >
-          <ConnectionCard database={database} />
-        </Suspense>
-      )}
-      {!database.provision_state && isCacheEngine(database.engine) ? (
+      <div id="connection" className="scroll-mt-20 space-y-6">
+        {database.provision_state ? null : (
+          <Suspense
+            fallback={
+              <Card aria-hidden="true">
+                <CardContent className="space-y-3">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            }
+          >
+            <ConnectionCard database={database} />
+          </Suspense>
+        )}
+        {!database.provision_state && isCacheEngine(database.engine) ? (
+          <Suspense fallback={null}>
+            <CacheConnectionCard database={database} />
+          </Suspense>
+        ) : null}
+        <DatabaseLinksCard database={database.name} />
         <Suspense fallback={null}>
-          <CacheConnectionCard database={database} />
+          <DatabaseDataActionsCard database={database.name} />
         </Suspense>
-      ) : null}
+      </div>
 
-      <DatabaseLinksCard database={database.name} />
-      <Suspense fallback={null}>
-        <DatabaseDataActionsCard database={database.name} />
-      </Suspense>
-
-      <DatabasePublicAccessCard database={database} />
-
-      <DatabasePoolerCard database={database} />
-
-      <Suspense fallback={null}>
-        <DatabaseParamsCard database={database.name} />
-      </Suspense>
+      <div id="access" className="scroll-mt-20 space-y-6">
+        <DatabasePublicAccessCard database={database} />
+        <DatabasePoolerCard database={database} />
+        <Suspense fallback={null}>
+          <DatabaseParamsCard database={database.name} />
+        </Suspense>
+      </div>
 
       <div id="backups" className="scroll-mt-20 space-y-6">
         {engineHasBackups(database.engine) ? (
@@ -196,18 +159,24 @@ function OverviewSection() {
         )}
       </div>
 
-      <PlacementCard
-        kind="database"
-        name={database.name}
-        currentNodeId={database.node_id}
-        currentNodeName={database.node_name}
-        currentNodeIsLocal={database.node_is_local}
-      />
+      <div id="placement" className="scroll-mt-20">
+        <PlacementCard
+          kind="database"
+          name={database.name}
+          currentNodeId={database.node_id}
+          currentNodeName={database.node_name}
+          currentNodeIsLocal={database.node_is_local}
+        />
+      </div>
 
-      <ConditionsPanel conditions={conditions} />
+      <div id="status" className="scroll-mt-20">
+        <ConditionsPanel conditions={conditions} />
+      </div>
 
       {database.engine === 'postgres' ? (
-        <MajorUpgradeCard database={database} />
+        <div id="upgrade" className="scroll-mt-20">
+          <MajorUpgradeCard database={database} />
+        </div>
       ) : null}
     </div>
   )

@@ -1,0 +1,103 @@
+{
+  "title": "Überwachung",
+  "asOf": "Aktualisiert {{time}}",
+  "refresh": "Aktualisieren",
+  "autoRefresh": "Automatisch aktualisieren",
+  "chartLabel": "Diagramm {{title}} mit {{count}} Datenpunkten",
+  "tabs": {
+    "aria": "Überwachungsbereiche",
+    "metrics": "Metriken",
+    "slow": "Langsame Abfragen",
+    "logs": "Logs",
+    "active": "Aktive Abfragen",
+    "perf": "Abfrageleistung",
+    "soon": "Noch nicht erfasst",
+    "soonBadge": "Bald"
+  },
+  "instance": {
+    "label": "Instanz",
+    "active": "Aktiv",
+    "stopped": "Gestoppt",
+    "provisioning": "Wird bereitgestellt"
+  },
+  "range": {
+    "label": "Zeitraum",
+    "custom": "Benutzerdefiniert",
+    "from": "Von",
+    "to": "Bis",
+    "apply": "Anwenden",
+    "errors": {
+      "invalid": "Gültigen Start und Ende eingeben.",
+      "order": "Der Start muss vor dem Ende liegen.",
+      "future": "Das Ende darf nicht in der Zukunft liegen.",
+      "tooLong": "Der Zeitraum überschreitet die Aufbewahrungsgrenze."
+    }
+  },
+  "export": {
+    "label": "Metriken exportieren",
+    "csv": "CSV exportieren",
+    "json": "JSON"
+  },
+  "stats": {
+    "label": "Zusammenfassung",
+    "none": "Keine Daten",
+    "ofLimit": "von {{limit}}",
+    "delta": "{{sign}}{{value}} % ggü. Vorperiode",
+    "noPrevious": "Keine Vorperiode"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "Arbeitsspeicher",
+    "network": "Netzwerk-E/A",
+    "disk": "Festplatten-E/A",
+    "connections": "Verbindungen",
+    "dbSize": "Datenbankgröße",
+    "cacheHit": "Cache-Trefferquote",
+    "deadlocks": "Deadlocks",
+    "rows": "Eingefügte, aktualisierte, gelöschte Zeilen"
+  },
+  "series": {
+    "cpu": "CPU",
+    "usage": "Nutzung",
+    "limit": "Limit",
+    "received": "Empfangen",
+    "sent": "Gesendet",
+    "read": "Gelesen",
+    "write": "Geschrieben"
+  },
+  "states": {
+    "stopped": {
+      "title": "Datenbank ist gestoppt",
+      "body": "Solange die Datenbank gestoppt ist, werden keine Metriken erfasst. Starten Sie sie, um fortzufahren.",
+      "chart": "Endpunkt inaktiv: gestoppt"
+    },
+    "provisioning": {
+      "title": "Datenbank wird bereitgestellt",
+      "body": "Metriken beginnen, sobald der Container läuft.",
+      "chart": "Endpunkt inaktiv: wird bereitgestellt"
+    },
+    "failed": {
+      "title": "Bereitstellung fehlgeschlagen",
+      "body": "Der Container wurde nie gestartet, daher gibt es nichts zu messen.",
+      "chart": "Endpunkt inaktiv: Bereitstellung fehlgeschlagen"
+    },
+    "restarting": {
+      "title": "Datenbank wurde kürzlich neu gestartet",
+      "body": "Die Werte können eine Lücke zeigen, bis sie wieder erreichbar ist."
+    },
+    "noData": {
+      "title": "Noch keine Daten",
+      "body": "Keine Messwerte in diesem Zeitraum. Sobald die Datenbank läuft, treffen sie alle paar Sekunden ein.",
+      "chart": "Keine Messwerte in diesem Zeitraum"
+    },
+    "notCollected": {
+      "title": "Nicht erfasst",
+      "body": "Diese Engine meldet diese Reihe noch nicht."
+    }
+  },
+  "actions": {
+    "start": "Datenbank starten",
+    "starting": "Wird gestartet",
+    "viewProgress": "Fortschritt ansehen"
+  }
+}

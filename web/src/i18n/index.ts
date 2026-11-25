@@ -139,6 +139,7 @@ export const NAMESPACES = [
   'appExpiry',
   'tokenExpiry',
   'appRestartSchedule',
+  'dbMonitoring',
   'appFiles',
   'appContainers',
   'maintenance',
@@ -205,6 +206,7 @@ export const NAMESPACES = [
   'storageParts',
   'installCard',
   'restorePreview',
+  'dbOverview',
 ] as const
 
 void i18n

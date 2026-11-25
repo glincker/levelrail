@@ -19,6 +19,7 @@ import {
 } from '../../lib/paletteAction'
 import { DeleteExternalDatabaseDialog } from '../../components/ExternalDatabaseOverview'
 import { resourceErrorComponent } from '@/components/resourceErrorComponent'
+import { EngineMark } from '@/components/EngineMark'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -53,6 +54,11 @@ function DatabaseDetailLayout() {
   return (
     <PageTemplate
       title={database.name}
+      logo={
+        <span className="flex size-12 items-center justify-center rounded-xl border border-border bg-card">
+          <EngineMark engine={database.engine} className="size-7" />
+        </span>
+      }
       breadcrumb={
         <Breadcrumbs projectId={database.project_id} page={database.name} />
       }

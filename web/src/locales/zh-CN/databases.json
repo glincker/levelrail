@@ -508,6 +508,77 @@
       "noLookups": "还没有查询",
       "evictions": "驱逐",
       "connections": "连接"
+    },
+    "mongo": {
+      "tree": {
+        "label": "数据库和集合",
+        "search": "搜索集合",
+        "truncated": "仅显示部分列表。",
+        "noCollections": "没有集合",
+        "meta": "{{size}}，索引：{{count}}",
+        "items": "长度 {{count}}",
+        "fields": "字段 {{count}}",
+        "root": "文档"
+      },
+      "readOnly": "只读",
+      "readOnlyReason": "浏览不会更改数据：只允许 find、计数和读取索引。",
+      "noCollections": "此数据库中还没有集合。",
+      "tabs": {
+        "documents": "文档",
+        "indexes": "索引",
+        "stats": "统计"
+      },
+      "docs": {
+        "filter": "筛选",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "限制",
+        "run": "运行",
+        "options": "选项",
+        "sort": "排序",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "投影",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "示例",
+        "status": "文档：{{count}}，{{ms}} 毫秒，第 {{page}} 页",
+        "truncated": "结果已按大小上限截断。",
+        "expandAll": "全部展开",
+        "collapseAll": "全部折叠",
+        "rejected": "服务器拒绝了此查询",
+        "failed": "查询失败",
+        "noMatches": "没有文档匹配此筛选条件。",
+        "empty": "此集合中没有文档。",
+        "details": "详情",
+        "copyDoc": "复制为 JSON",
+        "prev": "上一页",
+        "next": "下一页",
+        "invalid": {
+          "syntax": "{{kind}}不是有效的 JSON。",
+          "notObject": "{{kind}}必须是 JSON 对象。",
+          "sortDirection": "排序值必须为 1 或 -1。",
+          "projectionValue": "投影值必须是数字、布尔值或对象。"
+        },
+        "kind": {
+          "filter": "筛选条件",
+          "sort": "排序",
+          "projection": "投影"
+        }
+      },
+      "indexes": {
+        "empty": "未报告索引。",
+        "label": "索引",
+        "name": "名称",
+        "keys": "键",
+        "unique": "唯一",
+        "yes": "是",
+        "no": "否"
+      },
+      "stats": {
+        "documents": "文档",
+        "dataSize": "数据大小",
+        "storageSize": "存储大小",
+        "indexes": "索引",
+        "type": "类型"
+      }
     }
   },
   "createFlavor": {
@@ -600,7 +671,14 @@
     "loading": "正在加载数据库",
     "notCreated": "尚未创建",
     "failedToCreate": "无法创建数据库",
-    "pendingActionHint": "数据库创建后可用"
+    "pendingActionHint": "数据库创建后可用",
+    "colLocation": "运行位置",
+    "summary": "共 {{total}} 个数据库：此服务器 {{local}}，节点 {{node}}，托管在别处 {{hosted}}",
+    "viewGroup": "列表视图",
+    "viewTable": "表格",
+    "viewCards": "卡片",
+    "connect": "连接",
+    "explorer": "浏览器"
   },
   "detail": {
     "backupNow": "立即备份",
@@ -1245,5 +1323,115 @@
     "noProject": "无项目",
     "on": "开启",
     "none": "无"
+  },
+  "home": {
+    "nav": {
+      "back": "返回数据库",
+      "overview": "概览",
+      "branches": "分支",
+      "monitoring": "监控",
+      "integrations": "集成",
+      "settings": "设置",
+      "tables": "表",
+      "collections": "集合",
+      "keys": "键",
+      "explorer": "浏览器",
+      "query": "查询编辑器",
+      "backups": "备份与恢复",
+      "users": "用户与角色",
+      "data": "数据"
+    },
+    "monitoring": {
+      "metrics": "指标",
+      "logs": "日志",
+      "slow": "慢查询"
+    },
+    "branches": {
+      "title": "分支",
+      "body": "分支将在此版本中推出。",
+      "planned": "计划中的操作",
+      "actions": {
+        "create": "从此数据库创建子分支",
+        "reset": "将分支重置为其父分支",
+        "restore": "将分支恢复到某个时间点",
+        "expire": "设置分支过期时间"
+      }
+    },
+    "integrations": {
+      "title": "集成",
+      "body": "将服务连接到此数据库。目前暂无可用项。",
+      "categories": {
+        "auth": "身份验证",
+        "storage": "对象存储",
+        "functions": "函数",
+        "realtime": "实时",
+        "ai": "AI 网关",
+        "observability": "可观测性"
+      },
+      "soon": "即将推出"
+    },
+    "settings": {
+      "sections": {
+        "general": "常规",
+        "networking": "网络",
+        "credentials": "凭据",
+        "backups": "备份与升级",
+        "danger": "危险区域"
+      },
+      "general": {
+        "title": "常规",
+        "name": "名称",
+        "engine": "引擎",
+        "copyName": "复制数据库名称",
+        "immutable": "名称用于标识此数据库,无法更改。"
+      },
+      "danger": {
+        "title": "危险区域",
+        "body": "删除数据库会移除其容器。是否同时删除数据由你选择。"
+      }
+    },
+    "overview": {
+      "services": "服务",
+      "facts": "关键信息",
+      "manage": "管理",
+      "rows": {
+        "engine": "引擎与版本",
+        "backups": "备份",
+        "network": "网络暴露",
+        "access": "访问",
+        "upgrades": "升级"
+      },
+      "backupsOn": "已启用,计划 {{schedule}}",
+      "backupsOff": "未设置计划",
+      "backupsNone": "此引擎不支持",
+      "networkPublic": "已发布在端口 {{port}}",
+      "networkPrivate": "仅限此服务器",
+      "accessHint": "用户、角色与平台访问",
+      "upgradesHint": "版本变更与大版本升级"
+    }
+  },
+  "location": {
+    "local": "此服务器",
+    "node": "节点 {{name}}",
+    "hosted": "托管在别处：{{host}}",
+    "filterGroup": "按位置筛选",
+    "short": {
+      "local": "此服务器",
+      "node": "节点",
+      "hosted": "托管在别处"
+    }
+  },
+  "where": {
+    "title": "在哪里运行？",
+    "local": "此服务器",
+    "localHint": "与 Levelrail 一起运行",
+    "node": "某个节点",
+    "nodeHint": "{{count}} 个节点之一",
+    "nodeNone": "需要第二个节点",
+    "nodeNext": "下一步中选择节点。",
+    "cloud": "云账户",
+    "cloudSoon": "即将推出",
+    "hosted": "已有的托管数据库",
+    "hostedAction": "连接"
   }
 }

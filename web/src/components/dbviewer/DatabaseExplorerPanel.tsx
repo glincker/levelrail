@@ -5,9 +5,17 @@ import { useDatabase } from '../../queries/databases'
 import { BetaBadge } from '../BetaBadge'
 import { SchemaExplorer } from './SchemaExplorer'
 import { EngineStatsPanel } from './EngineStatsPanel'
-import { KV_ENGINES, SQL_ENGINES, STATS_ENGINES } from './engines'
+import {
+  DOCUMENT_ENGINES,
+  KV_ENGINES,
+  SQL_ENGINES,
+  STATS_ENGINES,
+} from './engines'
+import { ExplorerLoading } from './explorer/ExplorerStates'
 import { UnsupportedEngine } from './UnsupportedEngine'
 
+// Own chunk: the document explorer only loads for MongoDB-compatible engines.
+const MongoExplorer = lazy(() => import('./mongo/MongoExplorer'))
 const RedisKeyBrowser = lazy(() =>
   import('./RedisKeyBrowser').then((m) => ({ default: m.RedisKeyBrowser })),
 )
@@ -36,6 +44,10 @@ export function DatabaseExplorerPanel({
       ) : KV_ENGINES.has(engine) ? (
         <Suspense fallback={<Skeleton className="h-48 w-full" />}>
           <RedisKeyBrowser databaseName={databaseName} />
+        </Suspense>
+      ) : DOCUMENT_ENGINES.has(engine) ? (
+        <Suspense fallback={<ExplorerLoading />}>
+          <MongoExplorer databaseName={databaseName} />
         </Suspense>
       ) : STATS_ENGINES.has(engine) ? (
         <EngineStatsPanel databaseName={databaseName} engine={engine} />

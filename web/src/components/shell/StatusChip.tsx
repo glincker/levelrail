@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { StatusPill, type Tone } from '@/components/kit'
-import { CleanUpDockerDialog } from '../CleanUpDockerDialog'
+import { LazyCleanUpDockerDialog } from '../LazyCleanUpDockerDialog'
 import type { AttentionItem } from '../../lib/attention'
 import { attentionHref, type AttentionLevel } from '../../lib/attentionSummary'
 import { SilenceMenu } from '../attention/SilenceMenu'
@@ -52,7 +52,7 @@ function IssueRow({ issue }: { issue: AttentionItem }) {
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {issue.id === 'disk' ? (
-            <CleanUpDockerDialog key="cleanup" />
+            <LazyCleanUpDockerDialog key="cleanup" />
           ) : (
             <Button
               type="button"

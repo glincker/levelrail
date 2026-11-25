@@ -508,6 +508,77 @@
       "noLookups": "まだ参照がありません",
       "evictions": "エビクション",
       "connections": "接続数"
+    },
+    "mongo": {
+      "tree": {
+        "label": "データベースとコレクション",
+        "search": "コレクションを検索",
+        "truncated": "リストの一部のみ表示しています。",
+        "noCollections": "コレクションなし",
+        "meta": "{{size}}、インデックス: {{count}}",
+        "items": "長さ {{count}}",
+        "fields": "フィールド {{count}}",
+        "root": "ドキュメント"
+      },
+      "readOnly": "読み取り専用",
+      "readOnlyReason": "閲覧ではデータは変更されません。find、件数取得、インデックスの読み取りのみ可能です。",
+      "noCollections": "このデータベースにはまだコレクションがありません。",
+      "tabs": {
+        "documents": "ドキュメント",
+        "indexes": "インデックス",
+        "stats": "統計"
+      },
+      "docs": {
+        "filter": "フィルター",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "上限",
+        "run": "実行",
+        "options": "オプション",
+        "sort": "ソート",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "プロジェクション",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "例",
+        "status": "ドキュメント: {{count}} 件、{{ms}} ms、{{page}} ページ",
+        "truncated": "サイズ上限で結果を切り詰めました。",
+        "expandAll": "すべて展開",
+        "collapseAll": "すべて折りたたむ",
+        "rejected": "サーバーがこのクエリを拒否しました",
+        "failed": "クエリに失敗しました",
+        "noMatches": "このフィルターに一致するドキュメントはありません。",
+        "empty": "このコレクションにドキュメントはありません。",
+        "details": "詳細",
+        "copyDoc": "JSON としてコピー",
+        "prev": "前のページ",
+        "next": "次のページ",
+        "invalid": {
+          "syntax": "{{kind}}が有効な JSON ではありません。",
+          "notObject": "{{kind}}は JSON オブジェクトである必要があります。",
+          "sortDirection": "ソート値は 1 または -1 にしてください。",
+          "projectionValue": "プロジェクション値は数値、真偽値、オブジェクトのいずれかにしてください。"
+        },
+        "kind": {
+          "filter": "フィルター",
+          "sort": "ソート",
+          "projection": "プロジェクション"
+        }
+      },
+      "indexes": {
+        "empty": "インデックスは報告されていません。",
+        "label": "インデックス",
+        "name": "名前",
+        "keys": "キー",
+        "unique": "一意",
+        "yes": "はい",
+        "no": "いいえ"
+      },
+      "stats": {
+        "documents": "ドキュメント",
+        "dataSize": "データサイズ",
+        "storageSize": "ストレージサイズ",
+        "indexes": "インデックス",
+        "type": "種類"
+      }
     }
   },
   "createFlavor": {
@@ -600,7 +671,14 @@
     "loading": "データベースを読み込み中",
     "notCreated": "まだ作成されていません",
     "failedToCreate": "データベースを作成できませんでした",
-    "pendingActionHint": "データベースの作成後に利用できます"
+    "pendingActionHint": "データベースの作成後に利用できます",
+    "colLocation": "実行場所",
+    "summary": "データベース {{total}} 件: このサーバー {{local}}、ノード {{node}}、外部ホスト {{hosted}}",
+    "viewGroup": "一覧表示",
+    "viewTable": "表",
+    "viewCards": "カード",
+    "connect": "接続",
+    "explorer": "エクスプローラー"
   },
   "detail": {
     "backupNow": "今すぐバックアップ",
@@ -1245,5 +1323,115 @@
     "noProject": "プロジェクトなし",
     "on": "有効",
     "none": "なし"
+  },
+  "home": {
+    "nav": {
+      "back": "データベースに戻る",
+      "overview": "概要",
+      "branches": "ブランチ",
+      "monitoring": "モニタリング",
+      "integrations": "連携",
+      "settings": "設定",
+      "tables": "テーブル",
+      "collections": "コレクション",
+      "keys": "キー",
+      "explorer": "エクスプローラー",
+      "query": "クエリエディタ",
+      "backups": "バックアップと復元",
+      "users": "ユーザーとロール",
+      "data": "データ"
+    },
+    "monitoring": {
+      "metrics": "メトリクス",
+      "logs": "ログ",
+      "slow": "スロークエリ"
+    },
+    "branches": {
+      "title": "ブランチ",
+      "body": "ブランチはこのリリースで提供されます。",
+      "planned": "予定されている操作",
+      "actions": {
+        "create": "このデータベースの子ブランチを作成",
+        "reset": "ブランチを親にリセット",
+        "restore": "ブランチを特定時点に復元",
+        "expire": "ブランチの有効期限を設定"
+      }
+    },
+    "integrations": {
+      "title": "連携",
+      "body": "このデータベースにサービスを接続します。現在利用できるものはありません。",
+      "categories": {
+        "auth": "認証",
+        "storage": "オブジェクトストレージ",
+        "functions": "関数",
+        "realtime": "リアルタイム",
+        "ai": "AIゲートウェイ",
+        "observability": "オブザーバビリティ"
+      },
+      "soon": "近日公開"
+    },
+    "settings": {
+      "sections": {
+        "general": "一般",
+        "networking": "ネットワーク",
+        "credentials": "認証情報",
+        "backups": "バックアップとアップグレード",
+        "danger": "危険ゾーン"
+      },
+      "general": {
+        "title": "一般",
+        "name": "名前",
+        "engine": "エンジン",
+        "copyName": "データベース名をコピー",
+        "immutable": "名前はこのデータベースを識別するもので、変更できません。"
+      },
+      "danger": {
+        "title": "危険ゾーン",
+        "body": "データベースを削除するとコンテナが削除されます。データも削除するかは選択できます。"
+      }
+    },
+    "overview": {
+      "services": "サービス",
+      "facts": "主要情報",
+      "manage": "管理",
+      "rows": {
+        "engine": "エンジンとバージョン",
+        "backups": "バックアップ",
+        "network": "ネットワーク公開",
+        "access": "アクセス",
+        "upgrades": "アップグレード"
+      },
+      "backupsOn": "有効、スケジュール {{schedule}}",
+      "backupsOff": "スケジュール未設定",
+      "backupsNone": "このエンジンでは未対応",
+      "networkPublic": "ポート {{port}} で公開",
+      "networkPrivate": "このサーバー内のみ",
+      "accessHint": "ユーザー、ロール、プラットフォームアクセス",
+      "upgradesHint": "バージョン変更とメジャーアップグレード"
+    }
+  },
+  "location": {
+    "local": "このサーバー",
+    "node": "ノード {{name}}",
+    "hosted": "外部ホスト: {{host}}",
+    "filterGroup": "場所で絞り込み",
+    "short": {
+      "local": "このサーバー",
+      "node": "ノード",
+      "hosted": "外部ホスト"
+    }
+  },
+  "where": {
+    "title": "どこで実行しますか？",
+    "local": "このサーバー",
+    "localHint": "Levelrail と同じ場所で実行",
+    "node": "ノード",
+    "nodeHint": "{{count}} 台のノードから選択",
+    "nodeNone": "2 台目のノードが必要です",
+    "nodeNext": "ノードは次のステップで選びます。",
+    "cloud": "クラウドアカウント",
+    "cloudSoon": "近日対応",
+    "hosted": "既存のホスト型データベース",
+    "hostedAction": "接続"
   }
 }

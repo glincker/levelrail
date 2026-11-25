@@ -1,11 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { NetworkPanel } from '../../../components/databaseNetwork/NetworkPanel'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
+// Old tab URL: the content now lives in the Settings shell.
 export const Route = createFileRoute('/databases/$name/network')({
-  component: NetworkSection,
+  beforeLoad: ({ params }) => {
+    redirect({
+      to: '/databases/$name/settings',
+      params,
+      search: { section: 'networking' },
+      throw: true,
+    })
+  },
 })
-
-function NetworkSection() {
-  const { name } = Route.useParams()
-  return <NetworkPanel databaseName={name} />
-}

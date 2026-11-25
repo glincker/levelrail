@@ -98,6 +98,7 @@ import type delivery from '../locales/en/delivery.json'
 import type branchDeploys from '../locales/en/branchDeploys.json'
 import type deployContexts from '../locales/en/deployContexts.json'
 import type restorePreview from '../locales/en/restorePreview.json'
+import type dbOverview from '../locales/en/dbOverview.json'
 import type backups from '../locales/en/backups.json'
 import type backupPins from '../locales/en/backupPins.json'
 import type alertEscalation from '../locales/en/alertEscalation.json'
@@ -187,6 +188,7 @@ import type secretScan from '../locales/en/secretScan.json'
 import type appExpiry from '../locales/en/appExpiry.json'
 import type tokenExpiry from '../locales/en/tokenExpiry.json'
 import type appRestartSchedule from '../locales/en/appRestartSchedule.json'
+import type dbMonitoring from '../locales/en/dbMonitoring.json'
 import type appFiles from '../locales/en/appFiles.json'
 import type appContainers from '../locales/en/appContainers.json'
 import type sso from '../locales/en/sso.json'
@@ -275,6 +277,7 @@ declare module 'i18next' {
       deployContexts: typeof deployContexts
       backups: typeof backups
       restorePreview: typeof restorePreview
+      dbOverview: typeof dbOverview
       backupPins: typeof backupPins
       alertEscalation: typeof alertEscalation
       alertRunbook: typeof alertRunbook
@@ -353,6 +356,7 @@ declare module 'i18next' {
       appExpiry: typeof appExpiry
       tokenExpiry: typeof tokenExpiry
       appRestartSchedule: typeof appRestartSchedule
+      dbMonitoring: typeof dbMonitoring
       appFiles: typeof appFiles
       appContainers: typeof appContainers
       maintenance: typeof maintenance
