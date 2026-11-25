@@ -4,6 +4,107 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.5.10" description="2026-11-25">
+**release**
+
+* v1.5.10, safer deletes, reconciler lag, metric rollups and clearer updates (#1716)
+
+
+**Features**
+
+* add pure log normalizer for failure clustering
+* automatic upgrades wait one day after a release by default
+* cached update notices in the CLI and one-line update status in the agent
+* create a preview from a CI-built image via API and CLI
+* deny test for per-app auto rollback override write
+* doctor check for docker live-restore
+* doctor shows CLI update state and base image warming
+* explain why a deploy failed from stored facts
+* github action preview and pr-number inputs with PR comment
+* Go SDK package generated from the OpenAPI document
+* goal-first entry and prefilled forms in the create modal
+* keep encrypted env revisions with a names-only diff
+* levelrail-cli schema prints a JSON schema per command
+* live remote MCP toggle and per-caller deploy and alert stream events
+* log template miner with per-deploy template store
+* metric tier retention and query ranges are live settings
+* next-step hint on empty connections, bindings and ai sessions lists
+* one status line for automatic updates with local time, hold reason and action
+* one-click compact sidebar preset and a live setting for how many API routes the health page tracks
+* optional outbound dead man's switch ping
+* Pages deploy notifications card in site settings
+* Pages failed deploys show a plain-language fix hint
+* pages first-deploy success view with live URL, deploy time and next-step chips
+* phone status home with confirmed actions and bottom tab bar
+* preview env changes and restore earlier env revisions
+* Python SDK generated from the OpenAPI document
+* read-time collapse of repeated log lines
+* reconciler lag gauge, live resync and lag settings, doctor check
+* send confirm name when restoring a recently deleted app from the dashboard
+* ship alerting.db in the encrypted control plane backup and restore it
+* soft delete keeps app history, name reserved, guarded restore
+* translate 1.5.10 locale gaps for de, es, fr, ja, pt-BR, ru, zh-CN
+* translate settings for de, fr and ja
+* wire reconciler lag into metrics, health and alerts
+
+
+**Bug Fixes**
+
+* anchor service container match and combine replicas into one telemetry sample
+* apply metrics rollup and prune intervals live
+* apps delete prints the restore command and undo deadline
+* apps scale notes that create-time limits recreate the container
+* average replica gauges, skip counters on failed stats, filter log targets by owner
+* buildkitd container restarts with the docker daemon
+* **build:** start the base image warm loop
+* changing an app's disk IO caps now recreates its container so they apply
+* clearer CLI and API error text, flags and help
+* CLI and API polish from the v1.5.9 QA ledger
+* close legacy webhook and failed purge gaps
+* close personal builder scope gaps
+* close remaining function data gaps
+* cumulative byte metrics read the running total from rollup max
+* cumulative lookback follows sample interval and prune keeps it
+* cumulative metrics roll up as reset aware increase
+* database restore needs the typed name and runs under a name lock
+* database restore rechecks under lock, rolls back on failure and clears only its own row
+* goal labels wrap instead of truncating and the sidebar dialog no longer scrolls sideways
+* guard image update and OIDC discovery requests
+* guard OIDC token exchange and tighten probe and redirect checks
+* harden app soft delete and restore
+* harden dead man's switch redirects, arming and url check
+* harden deploy failure samples
+* harden env revisions
+* harden lag alert, Go SDK client and log collapse
+* image preview handler decodes its body through decodeJSON
+* list deploys why in the command tree
+* list status-page uptime-report in the command tree
+* move overview details and traffic strings to i18n
+* node placed-service metrics keep rollup counts and min and max so long ranges stop averaging averages.
+* option drift recreate stops gracefully, skips legacy labels and covers recreate strategy
+* purge function webhook and key-value data with the app
+* require root for upgrade attempt actions and pin the self-upgrade signer to release tags
+* restore routes decode the confirm body with the shared helper
+* rollback target list matches what rollback accepts
+* rollup metrics weigh by sample count and keep min and max
+* scope personal builders to their owner and bind build results to assignments
+* show why an automatic upgrade is held when the plan lookup fails
+* stage both restore files before swapping, harden bundle unpack, keep backing up when alerting.db is unreadable
+* tests and dashboard follow-up for the CLI polish batch
+* translate remaining ru and ja strings
+* wire cumulative lookback and cap target to live runtime settings
+* zone drain back button, responsive pool form and aligned what-if table
+
+
+**Performance**
+
+* buffer docker events and bound the drain so bursts coalesce
+* coalesce a burst of docker events and nudges into one reconcile pass
+* safer log budget, platform restarts, batched retention and live log cap
+* size cap counts metric tables only and prunes to headroom
+* telemetry read pool and post-prune checkpoint so retention sweeps never stall readers
+</Update>
+
 <Update label="1.5.9" description="2026-11-22">
 **release**
 
