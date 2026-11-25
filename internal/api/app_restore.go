@@ -13,6 +13,11 @@ import (
 )
 
 // deletedNameReserved reports whether name is held by an app inside its undo window.
+// restoreConfirmBody is the typed-name confirmation both restore routes require.
+type restoreConfirmBody struct {
+	Confirm string `json:"confirm"`
+}
+
 func (rt *Router) deletedNameReserved(ctx context.Context, name string) bool {
 	if rt.recentlyDeleted() == nil {
 		return false
@@ -144,10 +149,11 @@ func (rt *Router) authorizeAppRestore(w http.ResponseWriter, r *http.Request, e 
 		writeError(w, http.StatusForbidden, "a policy denies restoring this app")
 		return false
 	}
-	var body struct {
-		Confirm string `json:"confirm"`
+	body, ok := decodeJSON[restoreConfirmBody](w, r, 4096, decodeMessage("restore needs confirm set to the exact app name"))
+	if !ok {
+		return false
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&body); err != nil || body.Confirm != e.Name {
+	if body.Confirm != e.Name {
 		writeError(w, http.StatusBadRequest, "restore needs confirm set to the exact app name")
 		return false
 	}
@@ -220,10 +226,11 @@ func (rt *Router) authorizeDatabaseRestore(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusForbidden, "a policy denies restoring this database")
 		return false
 	}
-	var body struct {
-		Confirm string `json:"confirm"`
+	body, ok := decodeJSON[restoreConfirmBody](w, r, 4096, decodeMessage("restore needs confirm set to the exact database name"))
+	if !ok {
+		return false
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&body); err != nil || body.Confirm != name {
+	if body.Confirm != name {
 		writeError(w, http.StatusBadRequest, "restore needs confirm set to the exact database name")
 		return false
 	}
