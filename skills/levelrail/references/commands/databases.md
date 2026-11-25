@@ -14,6 +14,7 @@ Usage:
   levelrail-cli databases connect <name> [--user U] [--launch] [flags]  tunnel to a managed database, print a connection string, optionally start psql, mysql or redis-cli
   levelrail-cli databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   levelrail-cli databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
+  levelrail-cli databases integrations list <database> [flags]  integration catalog with per card status
   levelrail-cli databases branch create <source> <new-name> [--from-backup ID | --at TIME] [flags]  new independent database from a backup or point in time
   levelrail-cli databases export <name> [--out FILE|-] [--fresh | --latest] [--wait DURATION] [flags]  write a dump of a database to a file or stdout
   levelrail-cli databases import <name> --in FILE|- [--force] [--yes] [flags]  restore a dump into a database

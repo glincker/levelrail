@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2408 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2409 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -837,6 +837,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/explorer/capabilities", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseExplorerCapabilities", Description: "Static per engine capability model plus viewer limits; drives the explorer UI."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/import", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseImportCheck", Description: "Restore as a new database (database_clone_restore.go): the non-destructive counterpart just above, AbilityWriteSensitive rather than AbilityRoot, see handleCloneRestore's own doc comment for why this endpoint doesn't need the top tier the in-place restore route does. History listing is ordinary AbilityRead, the same boundary the in-place restore history route above draws. Import (database_import.go): a dump streamed into the database; AbilityRoot like restore since it can replace live data."},
 	{Method: "POST", Path: "/api/v1/databases/{name}/import", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseImport", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/integrations", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseIntegrations", Description: "Integration catalog with per card status for one database: a read of registry data and export status."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/key", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/keys", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleScanDatabaseKeys", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/links", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseLinks", Description: ""},

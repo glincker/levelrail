@@ -1305,6 +1305,7 @@ var Operations = map[string]Operation{
 	"handleListDashboards":                     {Method: "GET", Path: "/api/v1/dashboards", HasBody: false, Stream: false},
 	"handleListDatabaseDataCopies":             {Method: "GET", Path: "/api/v1/imports/platform/databases", HasBody: false, Stream: false},
 	"handleListDatabaseEngines":                {Method: "GET", Path: "/api/v1/database-engines", HasBody: false, Stream: false},
+	"handleListDatabaseIntegrations":           {Method: "GET", Path: "/api/v1/databases/{name}/integrations", HasBody: false, Stream: false},
 	"handleListDatabaseLinks":                  {Method: "GET", Path: "/api/v1/databases/{name}/links", HasBody: false, Stream: false},
 	"handleListDatabaseQueryHistory":           {Method: "GET", Path: "/api/v1/databases/{name}/query-history", HasBody: false, Stream: false},
 	"handleListDatabaseSavedQueries":           {Method: "GET", Path: "/api/v1/databases/{name}/saved-queries", HasBody: false, Stream: false},

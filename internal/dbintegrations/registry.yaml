@@ -1,0 +1,139 @@
+# Catalog of database integration cards. Titles are product names users see,
+# so they are data here, not Go identifiers. A connector card needs a Go
+# provider; a docs card needs docs/<docs>.md unless docs_planned is true.
+# status_source: none, dataexport:<kind,...>, template:<id>, git, docs.
+cards:
+  - id: datadog
+    category: monitor
+    title: Datadog
+    summary: Send this database's logs and metrics to Datadog.
+    engines: ["*"]
+    kind: connector
+    docs: managing-databases
+    status_source: dataexport:logs_datadog
+    notes: Read only status today, export is configured under settings data export.
+    featured: true
+  - id: opentelemetry
+    category: monitor
+    title: OpenTelemetry
+    summary: Push this database's metrics and logs to an OTLP endpoint.
+    engines: ["*"]
+    kind: connector
+    docs: managing-databases
+    status_source: dataexport:metrics_otlp,logs_otlp
+    notes: Read only status today, export is configured under settings data export.
+    featured: true
+  - id: prometheus
+    category: monitor
+    title: Prometheus remote write
+    summary: Ship database metrics to a Prometheus compatible store.
+    engines: ["*"]
+    kind: connector
+    docs: managing-databases
+    status_source: dataexport:metrics_remote_write
+    notes: Same export code as OpenTelemetry, provider in a later slice.
+  - id: loki
+    category: monitor
+    title: Loki
+    summary: Ship database logs to Loki.
+    engines: ["*"]
+    kind: connector
+    docs: managing-databases
+    status_source: dataexport:logs_loki
+    notes: Provider in a later slice.
+  - id: github
+    category: develop
+    title: GitHub
+    summary: Create a database branch for every pull request.
+    engines: [postgres, mysql, mariadb]
+    kind: connector
+    docs: managing-databases
+    status_source: git
+    notes: Needs the branch per preview work and a linked repository.
+    featured: true
+  - id: prisma
+    category: develop
+    title: Prisma
+    summary: Connect Prisma with a pooled and a direct URL.
+    engines: [postgres, mysql, mariadb]
+    kind: docs
+    docs: connecting-apps-to-databases
+    status_source: docs
+    notes: Shadow database helper later.
+  - id: connect-platforms
+    category: deploy
+    title: Connect from hosting platforms
+    summary: Connection snippets for apps hosted elsewhere.
+    engines: ["*"]
+    kind: docs
+    docs: database-access
+    status_source: docs
+    notes: One page with a snippet per platform.
+  - id: hyperdrive
+    category: deploy
+    title: Cloudflare Hyperdrive
+    summary: Point Hyperdrive at this database over public access or a tunnel.
+    engines: [postgres, mysql]
+    kind: docs
+    docs: database-hyperdrive
+    docs_planned: true
+    status_source: docs
+    notes: Pooler sidecar is the self hosted answer.
+  - id: hasura
+    category: query
+    title: Hasura
+    summary: Run Hasura next to this database over the private network.
+    engines: [postgres]
+    kind: connector
+    docs: connecting-apps-to-databases
+    status_source: template:hasura
+    notes: Template prefill with a database binding, provider later.
+    featured: true
+  - id: directus
+    category: query
+    title: Directus
+    summary: Run Directus next to this database.
+    engines: [postgres, mysql, mariadb]
+    kind: connector
+    docs: connecting-apps-to-databases
+    status_source: template:directus
+    notes: Same mechanism as Hasura.
+  - id: metabase
+    category: query
+    title: Metabase
+    summary: Run Metabase next to this database with a read only role.
+    engines: [postgres, mysql, mariadb]
+    kind: connector
+    docs: connecting-apps-to-databases
+    status_source: template:metabase
+    notes: Needs read only roles.
+  - id: logical-replication
+    category: replicate
+    title: Logical replication
+    summary: Enable wal_level logical with a publication and replication role.
+    engines: [postgres]
+    kind: connector
+    docs: database-logical-replication
+    docs_planned: true
+    status_source: none
+    notes: Prerequisite for every change data capture tool below.
+  - id: airbyte
+    category: replicate
+    title: Airbyte
+    summary: Sync this database with Airbyte using logical replication.
+    engines: [postgres, mysql]
+    kind: docs
+    docs: database-replicate-airbyte
+    docs_planned: true
+    status_source: docs
+    notes: Docs only by default.
+  - id: debezium
+    category: replicate
+    title: Debezium
+    summary: Stream changes from this database with Debezium.
+    engines: [postgres, mysql, mongodb]
+    kind: docs
+    docs: database-replicate-debezium
+    docs_planned: true
+    status_source: docs
+    notes: Needs logical replication.

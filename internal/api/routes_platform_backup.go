@@ -17,6 +17,9 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// Restore preview: read-only size, age, target and overwrite scope of one restore.
 	mux.HandleFunc("GET /api/v1/databases/{name}/restore-preview", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDatabaseRestorePreview))
 
+	// Integration catalog with per card status for one database: a read of registry data and export status.
+	mux.HandleFunc("GET /api/v1/databases/{name}/integrations", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListDatabaseIntegrations))
+
 	// Instance-wide backup history across every database and app volume,
 	// the aggregated counterpart of the per-resource routes above and
 	// below: ordinary AbilityRead, same tier as those, since this is only
