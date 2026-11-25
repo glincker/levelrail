@@ -85,7 +85,9 @@ func TestRun_BackupsProtectAll_RequiresTarget(t *testing.T) {
 func TestRun_DeleteDataNeedsTypedConfirm(t *testing.T) {
 	var gotQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotQuery = r.URL.RawQuery
+		if r.Method == http.MethodDelete {
+			gotQuery = r.URL.RawQuery
+		}
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer srv.Close()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -64,7 +65,25 @@ func runAppsDelete(prog string, args []string, stdout, stderr io.Writer, lookupE
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
+	if !jsonOut && (of.Format == "" || of.Format == "table" || of.Format == "text") {
+		_, _ = fmt.Fprint(stderr, deleteUndoHint(prog, name, client))
+	}
 	return exitOK
+}
+
+// deleteUndoHint names the restore command and, when the recently-deleted list knows it, the undo deadline.
+func deleteUndoHint(prog, name string, client *Client) string {
+	hint := undoHint(prog, "apps", "restore", name)
+	rows, err := client.ListRecentlyDeleted(context.Background())
+	if err != nil {
+		return hint
+	}
+	for _, r := range rows {
+		if r.Kind == "app" && r.Name == name && !r.ExpiresAt.IsZero() {
+			return strings.TrimSuffix(hint, "\n") + " (until " + r.ExpiresAt.Format("2006-01-02 15:04") + ")\n"
+		}
+	}
+	return hint
 }
 
 func appsDeleteUsage(prog string) string {
