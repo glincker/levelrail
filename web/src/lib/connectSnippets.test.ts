@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildConnectSnippets,
+  connectDatabase,
+  connectHasPassword,
+  connectUser,
   connectFrameworks,
   downloadContent,
   type ConnectInput,
@@ -82,7 +85,7 @@ describe('buildConnectSnippets', () => {
       expect(s.node).toContain('ioredis')
       expect(s.python).toContain('redis.from_url')
       expect(s.go).toContain('redis.ParseURL')
-      expect(s.url).toBe('rediss://:<password>@127.0.0.1:6379')
+      expect(s.url).toBe('rediss://127.0.0.1:6379')
       expect(s.env).toContain('REDIS_URL=rediss://')
     },
   )
@@ -112,5 +115,38 @@ describe('downloadContent', () => {
     expect(downloadContent('properties', base)).toContain('spring.datasource')
     expect(downloadContent('yaml', base)).toContain('spring:')
     expect(downloadContent('yaml', { ...base, engine: 'qdrant' })).toBeNull()
+  })
+})
+
+describe('engine defaults', () => {
+  it.each([
+    ['postgres', 'demo', 'demo'],
+    ['mysql', 'demo', 'demo'],
+    ['mariadb', 'demo', 'demo'],
+    ['mongodb', 'demo', 'admin'],
+  ])('%s has a generated password', (engine, user, database) => {
+    expect(connectHasPassword(engine)).toBe(true)
+    expect(connectUser(engine, 'demo')).toBe(user)
+    expect(connectDatabase(engine, 'demo')).toBe(database)
+  })
+
+  it.each(['redis', 'valkey', 'keydb', 'dragonfly'])(
+    '%s is passwordless',
+    (engine) => {
+      expect(connectHasPassword(engine)).toBe(false)
+      expect(connectUser(engine, 'demo')).toBe('')
+      expect(connectDatabase(engine, 'demo')).toBe('')
+    },
+  )
+
+  it('redis family has no password anywhere', () => {
+    const s = buildConnectSnippets({
+      ...base,
+      engine: 'valkey',
+      port: 6379,
+      database: '',
+      user: '',
+    })
+    expect(JSON.stringify(s)).not.toContain('password')
   })
 })

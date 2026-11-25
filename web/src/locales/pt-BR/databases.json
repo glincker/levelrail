@@ -33,6 +33,7 @@
     "hidePassword": "Ocultar senha",
     "autoHide": "Oculta novamente após 30 segundos.",
     "placeholderNote": "Os trechos usam <password> até você revelá-la.",
+    "noPassword": "Sem senha: este mecanismo funciona sem autenticação na rede privada.",
     "revealFailed": "Não foi possível revelar a senha",
     "url": "URL de conexão",
     "download": "Baixar",

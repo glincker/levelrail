@@ -33,6 +33,7 @@
     "hidePassword": "パスワードを隠す",
     "autoHide": "30 秒後に再び隠れます。",
     "placeholderNote": "表示するまでスニペットでは <password> を使います。",
+    "noPassword": "パスワードなし: このエンジンはプライベートネットワーク上で認証なしで動作します。",
     "revealFailed": "パスワードを表示できませんでした",
     "url": "接続 URL",
     "download": "ダウンロード",

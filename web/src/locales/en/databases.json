@@ -33,6 +33,7 @@
     "hidePassword": "Hide password",
     "autoHide": "Hides again after 30 seconds.",
     "placeholderNote": "Snippets use <password> until you reveal it.",
+    "noPassword": "No password: this engine runs without authentication on its private network.",
     "revealFailed": "Could not reveal the password",
     "url": "Connection URL",
     "download": "Download",

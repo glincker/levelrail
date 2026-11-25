@@ -33,6 +33,7 @@
     "hidePassword": "Ocultar contraseña",
     "autoHide": "Se oculta de nuevo tras 30 segundos.",
     "placeholderNote": "Los fragmentos usan <password> hasta que la reveles.",
+    "noPassword": "Sin contraseña: este motor funciona sin autenticación en su red privada.",
     "revealFailed": "No se pudo revelar la contraseña",
     "url": "URL de conexión",
     "download": "Descargar",

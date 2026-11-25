@@ -33,6 +33,7 @@
     "hidePassword": "Masquer le mot de passe",
     "autoHide": "Se masque de nouveau après 30 secondes.",
     "placeholderNote": "Les extraits utilisent <password> tant que vous ne le révélez pas.",
+    "noPassword": "Pas de mot de passe : ce moteur fonctionne sans authentification sur son réseau privé.",
     "revealFailed": "Impossible de révéler le mot de passe",
     "url": "URL de connexion",
     "download": "Télécharger",

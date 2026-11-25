@@ -30,6 +30,30 @@ export type ConnectSnippets = Partial<Record<ConnectFramework, string>>
 
 const REDIS_ENGINES = new Set(['redis', 'valkey', 'keydb', 'dragonfly'])
 
+// Defaults mirror the reconciler (internal/reconcile/database): Postgres,
+// MySQL, MariaDB and MongoDB create a user named after the resource, the
+// SQL engines also a database of that name, MongoDB authenticates against
+// admin. The Redis family has no generated password.
+export const MONGO_AUTH_DB = 'admin'
+
+export function connectUser(engine: string, resourceName: string): string {
+  return connectFamily(engine) === 'redis' || connectFamily(engine) === 'other'
+    ? ''
+    : resourceName
+}
+
+export function connectDatabase(engine: string, resourceName: string): string {
+  const f = connectFamily(engine)
+  if (f === 'mongodb') return MONGO_AUTH_DB
+  return f === 'postgres' || f === 'mysql' ? resourceName : ''
+}
+
+/** Redis, Valkey, KeyDB and Dragonfly run passwordless; other engines keep a generated one. */
+export function connectHasPassword(engine: string): boolean {
+  const f = connectFamily(engine)
+  return f !== 'redis' && f !== 'other'
+}
+
 export function connectFamily(engine: string): ConnectFamily {
   if (engine === 'postgres') return 'postgres'
   if (engine === 'mysql' || engine === 'mariadb') return 'mysql'
@@ -84,11 +108,9 @@ export function connectUrl(i: ConnectInput): string {
     case 'mysql':
       return `mysql://${userUrl(i)}:${pwUrl(i)}@${addr}/${i.database}${i.tls ? '?ssl-mode=REQUIRED' : ''}`
     case 'mongodb':
-      return `mongodb://${userUrl(i)}:${pwUrl(i)}@${addr}/${i.database}?authSource=admin&directConnection=true${i.tls ? '&tls=true' : ''}`
-    case 'redis': {
-      const auth = i.user ? `${userUrl(i)}:${pwUrl(i)}` : `:${pwUrl(i)}`
-      return `${i.tls ? 'rediss' : 'redis'}://${auth}@${addr}`
-    }
+      return `mongodb://${userUrl(i)}:${pwUrl(i)}@${addr}/${i.database}?authSource=${MONGO_AUTH_DB}&directConnection=true${i.tls ? '&tls=true' : ''}`
+    case 'redis':
+      return `${i.tls ? 'rediss' : 'redis'}://${addr}`
     default:
       return addr
   }
@@ -124,8 +146,6 @@ function springProperties(i: ConnectInput): string {
     `spring.data.redis.host=${i.host}`,
     `spring.data.redis.port=${i.port}`,
   ]
-  if (i.user) lines.push(`spring.data.redis.username=${i.user}`)
-  lines.push(`spring.data.redis.password=${pw(i)}`)
   if (i.tls) lines.push('spring.data.redis.ssl.enabled=true')
   return lines.join('\n')
 }
@@ -160,8 +180,6 @@ function springYaml(i: ConnectInput): string {
     `      host: ${i.host}`,
     `      port: ${i.port}`,
   ]
-  if (i.user) lines.push(`      username: ${q(i.user)}`)
-  lines.push(`      password: ${q(pw(i))}`)
   if (i.tls) lines.push('      ssl:', '        enabled: true')
   return lines.join('\n')
 }
@@ -221,7 +239,7 @@ function dotnetSnippet(i: ConnectInput): string {
       conn = connectUrl(i)
       break
     default:
-      conn = `${i.host}:${i.port}${i.user ? `,user=${i.user}` : ''},password=${pw(i)}${i.tls ? ',ssl=true' : ''}`
+      conn = `${i.host}:${i.port}${i.tls ? ',ssl=true' : ''}`
   }
   return JSON.stringify({ ConnectionStrings: { Default: conn } }, null, 2)
 }
@@ -232,7 +250,7 @@ export function envFile(i: ConnectInput): string {
   lines.push(`DB_HOST=${i.host}`, `DB_PORT=${i.port}`)
   if (i.database) lines.push(`DB_NAME=${i.database}`)
   if (i.user) lines.push(`DB_USER=${i.user}`)
-  lines.push(`DB_PASSWORD=${pw(i)}`)
+  if (connectHasPassword(i.engine)) lines.push(`DB_PASSWORD=${pw(i)}`)
   return lines.join('\n')
 }
 

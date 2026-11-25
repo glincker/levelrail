@@ -21,14 +21,15 @@ import { toast } from '@/components/ui/toast'
 import {
   buildConnectSnippets,
   CONNECT_DOWNLOAD_FILES,
-  connectFamily,
+  connectDatabase,
+  connectHasPassword,
+  connectUser,
   connectFrameworks,
   downloadContent,
   type ConnectDownload,
   type ConnectFramework,
   type ConnectInput,
 } from '@/lib/connectSnippets'
-import { defaultConnectUser } from '@/lib/databaseConnect'
 import { useStepUpGate } from '../../hooks/useStepUpGate'
 import {
   databaseAccessKeys,
@@ -48,20 +49,6 @@ const LOOPBACK = '127.0.0.1'
 const DOWNLOADS: ConnectDownload[] = ['env', 'properties', 'yaml']
 
 type Target = 'machine' | 'apps'
-
-function defaultDatabase(database: DatabaseResource): string {
-  const family = connectFamily(database.engine)
-  if (family === 'postgres') return 'postgres'
-  if (family === 'mongodb') return 'admin'
-  if (family === 'mysql') return database.name
-  return ''
-}
-
-function defaultUser(engine: string): string {
-  return connectFamily(engine) === 'mongodb'
-    ? 'levelrail'
-    : defaultConnectUser(engine)
-}
 
 function saveFile(filename: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
@@ -127,6 +114,7 @@ export function ConnectDialog({
   }
 
   const engine = database.engine
+  const hasPassword = connectHasPassword(engine)
   const published = network?.published
   const publishedPort = published?.host_port ?? database.public_port
   const isPublished =
@@ -154,8 +142,8 @@ export function ConnectDialog({
         engine,
         host: endpoint.host,
         port: endpoint.port,
-        database: defaultDatabase(database),
-        user: defaultUser(engine),
+        database: connectDatabase(engine, database.name),
+        user: connectUser(engine, database.name),
         password,
         tls,
       }
@@ -251,40 +239,48 @@ export function ConnectDialog({
               <Detail label={t('connect.port')} value={String(input.port)} />
               <Detail label={t('connect.database')} value={input.database} />
               <Detail label={t('connect.user')} value={input.user} />
-              <div className="min-w-0">
-                <dt className="text-xs text-muted-foreground uppercase">
-                  {t('connect.password')}
-                </dt>
-                <dd className="flex items-center gap-1">
-                  <span
-                    className="min-w-0 flex-1 truncate font-mono text-sm"
-                    title={password ?? undefined}
-                  >
-                    {password ?? '••••••••'}
-                  </span>
-                  <Button
-                    size="icon-xs"
-                    variant="ghost"
-                    aria-label={
-                      password ? t('connect.hidePassword') : t('connect.reveal')
-                    }
-                    aria-pressed={password !== null}
-                    onClick={() => {
-                      if (password) hide()
-                      else void reveal()
-                    }}
-                  >
-                    {password ? (
-                      <EyeOffGlassIcon size="1.4em" aria-hidden="true" />
-                    ) : (
-                      <EyeGlassIcon size="1.4em" aria-hidden="true" />
-                    )}
-                  </Button>
-                </dd>
-              </div>
+              {hasPassword ? (
+                <div className="min-w-0">
+                  <dt className="text-xs text-muted-foreground uppercase">
+                    {t('connect.password')}
+                  </dt>
+                  <dd className="flex items-center gap-1">
+                    <span
+                      className="min-w-0 flex-1 truncate font-mono text-sm"
+                      title={password ?? undefined}
+                    >
+                      {password ?? '••••••••'}
+                    </span>
+                    <Button
+                      size="icon-xs"
+                      variant="ghost"
+                      aria-label={
+                        password
+                          ? t('connect.hidePassword')
+                          : t('connect.reveal')
+                      }
+                      aria-pressed={password !== null}
+                      onClick={() => {
+                        if (password) hide()
+                        else void reveal()
+                      }}
+                    >
+                      {password ? (
+                        <EyeOffGlassIcon size="1.4em" aria-hidden="true" />
+                      ) : (
+                        <EyeGlassIcon size="1.4em" aria-hidden="true" />
+                      )}
+                    </Button>
+                  </dd>
+                </div>
+              ) : null}
             </dl>
             <p className="-mt-2 text-xs text-muted-foreground">
-              {password ? t('connect.autoHide') : t('connect.placeholderNote')}
+              {!hasPassword
+                ? t('connect.noPassword')
+                : password
+                  ? t('connect.autoHide')
+                  : t('connect.placeholderNote')}
             </p>
             {failure ? (
               <Alert variant="destructive">

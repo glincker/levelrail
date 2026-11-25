@@ -33,6 +33,7 @@
     "hidePassword": "Passwort verbergen",
     "autoHide": "Wird nach 30 Sekunden wieder verborgen.",
     "placeholderNote": "Snippets enthalten <password>, bis Sie es anzeigen.",
+    "noPassword": "Kein Passwort: Diese Engine läuft ohne Authentifizierung im privaten Netzwerk.",
     "revealFailed": "Passwort konnte nicht angezeigt werden",
     "url": "Verbindungs-URL",
     "download": "Herunterladen",

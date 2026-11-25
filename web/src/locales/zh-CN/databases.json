@@ -33,6 +33,7 @@
     "hidePassword": "隐藏密码",
     "autoHide": "30 秒后再次隐藏。",
     "placeholderNote": "显示密码之前，代码片段使用 <password>。",
+    "noPassword": "无密码：此引擎在私有网络中无需认证运行。",
     "revealFailed": "无法显示密码",
     "url": "连接 URL",
     "download": "下载",
