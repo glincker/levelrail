@@ -78,3 +78,5 @@ func Move(ctx context.Context, s Store, id, from, to, reason, now string) error 
 }
 
 var _ Store = (*store.DB)(nil)
+
+var _ CloneStore = (*store.DB)(nil)
