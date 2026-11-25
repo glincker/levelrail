@@ -231,6 +231,15 @@ sudo levelrail self-upgrade --recover
 
 Recovery closes an attempt that never stopped the service as failed (nothing to undo), rolls back one that stopped or swapped the binary, and confirms one whose health check had already passed.
 
+## CLI update notices
+
+The CLI prints at most one line when a newer release is known, using the result of its last update check (no network call for the notice itself). `levelrail-cli doctor` also shows the cached state as `CLI x, latest y, checked Nh ago`, and the same values in `--json` under `cli_update`. Two environment variables tune the notices:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `LEVELRAIL_CLI_UPDATE_NOTICES` | on | Set to `off`, `0`, `false` or `no` to silence the notice. It seeds the `cli.update_notices` setting. |
+| `LEVELRAIL_CLI_UPDATE_NOTICE_HOURS` | `24` | Hours a shown notice stays quiet before it can print again. |
+
 ## Signature pin
 
 The first verified release signature writes `<data dir>/release-signature.pin`. After that every upgrade, from the dashboard, `levelrail-cli upgrade --apply`, `sudo levelrail self-upgrade` or `install.sh upgrade`, requires a valid signature: a missing bundle (an unsigned or pre-signing release, including a downgrade to one) or Sigstore trust data that cannot be loaded is refused with the reason and the way out. A bad signature is always refused, pinned or not.

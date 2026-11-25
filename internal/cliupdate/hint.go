@@ -122,3 +122,16 @@ func (h Hinter) Notice(every time.Duration) string {
 	writeState(path, st)
 	return fmt.Sprintf("A newer release is available: %s (you have %s).", st.Latest, h.Current)
 }
+
+// Cached returns the last stored check result without touching the network;
+// ok is false when no check has succeeded yet.
+func (h Hinter) Cached() (latest string, checkedAt time.Time, ok bool) {
+	if h.Dir == "" {
+		return "", time.Time{}, false
+	}
+	st := readState(filepath.Join(h.Dir, stateFile))
+	if st.Latest == "" || st.CheckedAt.IsZero() {
+		return "", time.Time{}, false
+	}
+	return st.Latest, st.CheckedAt, true
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/cliupdate"
 	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
 
@@ -119,4 +121,76 @@ func localPortCheck(ctx context.Context, port int) doctorCheckResource {
 		c.Status, c.Message = "unknown", err.Error()
 	}
 	return c
+}
+
+// doctorExtras are context lines printed after the checks; each is omitted when it cannot be known.
+type doctorExtras struct {
+	CLIUpdate      *doctorCLIUpdate `json:"cli_update,omitempty"`
+	WarmBaseImages *doctorWarmBase  `json:"warm_base_images,omitempty"`
+}
+
+type doctorCLIUpdate struct {
+	Current         string `json:"current"`
+	Latest          string `json:"latest"`
+	CheckedHoursAgo int    `json:"checked_hours_ago"`
+	UpdateAvailable bool   `json:"update_available"`
+}
+
+type doctorWarmBase struct {
+	Enabled bool `json:"enabled"`
+	Count   int  `json:"count"`
+}
+
+// doctorCLIUpdateState reads only the cached update check, never the network.
+func doctorCLIUpdateState(prog string, now time.Time) *doctorCLIUpdate {
+	dir, err := configDir(prog)
+	if err != nil {
+		return nil
+	}
+	cur := localVersionInfo().Version
+	latest, at, ok := cliupdate.Hinter{Current: cur, Dir: dir}.Cached()
+	if !ok {
+		return nil
+	}
+	return &doctorCLIUpdate{Current: cur, Latest: latest, CheckedHoursAgo: max(0, int(now.Sub(at)/time.Hour)), UpdateAvailable: cliupdate.Newer(cur, latest)}
+}
+
+// doctorWarmBaseState reads build.warm_base_images live; nil when it cannot be read.
+func doctorWarmBaseState(ctx context.Context, client *Client) *doctorWarmBase {
+	st, err := client.GetRuntimeSetting(ctx, "build.warm_base_images")
+	if err != nil {
+		return nil
+	}
+	n := 0
+	switch v := st.Value.(type) {
+	case string:
+		for _, p := range strings.FieldsFunc(v, func(r rune) bool { return r == ',' || r == '\n' }) {
+			if strings.TrimSpace(p) != "" {
+				n++
+			}
+		}
+	case []any:
+		for _, e := range v {
+			if s, ok := e.(string); ok && strings.TrimSpace(s) != "" {
+				n++
+			}
+		}
+	case nil:
+	default:
+		return nil
+	}
+	return &doctorWarmBase{Enabled: n > 0, Count: n}
+}
+
+func printDoctorExtras(out io.Writer, ex doctorExtras) {
+	if u := ex.CLIUpdate; u != nil {
+		_, _ = fmt.Fprintf(out, "\nCLI %s, latest %s, checked %dh ago\n", u.Current, u.Latest, u.CheckedHoursAgo)
+	}
+	if w := ex.WarmBaseImages; w != nil {
+		if !w.Enabled {
+			_, _ = fmt.Fprintln(out, "Base image warming: off (build.warm_base_images is empty)")
+		} else {
+			_, _ = fmt.Fprintf(out, "Base image warming: %d images configured. The control plane node itself is skipped; warming only pulls on remote build nodes (BuildKit handles the local one).\n", w.Count)
+		}
+	}
 }

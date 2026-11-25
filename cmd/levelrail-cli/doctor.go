@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/hostprovider"
@@ -15,6 +16,13 @@ type doctorOutput struct {
 	Checks  []apiclient.DoctorCheckResource `json:"checks"`
 	Applied []apiclient.FixResult           `json:"applied"`
 	Skipped []doctorSkippedFix              `json:"skipped"`
+	doctorExtras
+}
+
+// doctorReportOutput is the plain report plus the extra context lines, additive to the API shape.
+type doctorReportOutput struct {
+	systemDoctorResource
+	doctorExtras
 }
 
 type doctorSkippedFix struct {
@@ -68,27 +76,30 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		if of.Format == outputTable {
 			_, _ = fmt.Fprintln(stderr, "no control plane configured, running local checks only (Docker, disk, ports)")
 		}
-		return finishDoctor(stdout, stderr, of, report, report)
+		ex := doctorExtras{CLIUpdate: doctorCLIUpdateState(prog, time.Now())}
+		return finishDoctorExtras(stdout, stderr, of, doctorReportOutput{report, ex}, report, ex)
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	ex := doctorExtras{CLIUpdate: doctorCLIUpdateState(prog, time.Now()), WarmBaseImages: doctorWarmBaseState(ctx, client)}
 	report, err := client.GetSystemDoctor(ctx)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system doctor report: %w", err))
 	}
 	if diskOnly {
 		report = filterDiskChecks(report, true)
-		return finishDoctor(stdout, stderr, of, report, report)
+		return finishDoctorExtras(stdout, stderr, of, doctorReportOutput{report, ex}, report, ex)
 	}
 	if !*fix {
-		return finishDoctor(stdout, stderr, of, report, report)
+		return finishDoctorExtras(stdout, stderr, of, doctorReportOutput{report, ex}, report, ex)
 	}
 
 	out, err := applyDoctorFixes(ctx, client, report, *yes, stderr)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, newValidationError("%v", err))
 	}
-	return finishDoctor(stdout, stderr, of, out, systemDoctorResource{OK: out.OK, Checks: out.Checks})
+	out.doctorExtras = ex
+	return finishDoctorExtras(stdout, stderr, of, out, systemDoctorResource{OK: out.OK, Checks: out.Checks}, ex)
 }
 
 func doctorServerConfigured(tokenFlag, apiURLFlag, profileFlag, prog string, lookupEnv func(string) (string, bool)) bool {
@@ -102,7 +113,15 @@ func doctorServerConfigured(tokenFlag, apiURLFlag, profileFlag, prog string, loo
 }
 
 func finishDoctor(stdout, stderr io.Writer, of outputFlags, data any, report systemDoctorResource) int {
-	if err := renderResult(stdout, of.Format, of.Query, data, func() { printSystemDoctorHuman(stdout, report) }); err != nil {
+	return finishDoctorExtras(stdout, stderr, of, data, report, doctorExtras{})
+}
+
+func finishDoctorExtras(stdout, stderr io.Writer, of outputFlags, data any, report systemDoctorResource, ex doctorExtras) int {
+	render := func() {
+		printSystemDoctorHuman(stdout, report)
+		printDoctorExtras(stdout, ex)
+	}
+	if err := renderResult(stdout, of.Format, of.Query, data, render); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
