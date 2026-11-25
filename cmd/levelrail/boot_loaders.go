@@ -252,7 +252,8 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	memGuard := build.MemGuardFromEnv(os.LookupEnv)
 	limitsSource := api.BuildLimitsSourceWithHost(db, derivedBuildLimits(), buildMemoryCap(memGuard), buildCPUCap(buildCPUPercentSeed()))
 	var limiter *build.Limiter
-	routerOpts := []build.RouterOption{}
+	warmSettings := runtimesettings.New(db, os.LookupEnv)
+	routerOpts := []build.RouterOption{buildWarmOption(warmSettings, agentRegistry, rawDockerCli)}
 	if recordOpt != nil {
 		routerOpts = append(routerOpts, recordOpt)
 	}
@@ -271,6 +272,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 				o(r)
 			}
 		})
+	runBaseWarm(ctx, router, warmSettings)
 	fairSettings := runtimesettings.New(db, os.LookupEnv)
 	limiter = build.NewLimiter(router, limitsSource,
 		build.WithMemoryGuard(memGuard, hostMemoryMB),
