@@ -283,6 +283,9 @@ databases.params_max_connections
 databases.params_max_memory_mb
 databases.pooler_default
 databases.pooler_image
+databases.stats_interval_seconds
+databases.stats_max_databases
+databases.stats_timeout_seconds
 db.compact_min_free_percent
 db.space_report_rows
 deploy.approval_claim_timeout_seconds

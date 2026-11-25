@@ -71,6 +71,7 @@ func (s *bootState) startTelemetry() {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
+	s.startDBStats(telemetryDB)
 	var tiers runtimesettings.MetricsTiers
 	if s.apiRouter != nil {
 		tiers = s.apiRouter.RuntimeSettings().MetricsTiers(ctx)
