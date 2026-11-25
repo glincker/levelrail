@@ -50,6 +50,8 @@ func buildExplainTable() map[string]Explanation {
 			"Start the engine on the host, then press Re-check on this check. From a terminal, systemctl start docker works on most Linux hosts.", "", KindManual),
 		ex("docker_version", "The container engine is older than the oldest version this release is tested with.", "Old engines miss features builds and networks rely on.",
 			"Upgrade the engine through your package manager, then press Re-check. The Docker docs list the supported install steps.", "", KindManual),
+		ex("docker_live_restore", "Docker live-restore is off, so a Docker restart or upgrade stops every container on this host.", "Apps go down until the control plane starts them again.",
+			"Set \"live-restore\": true in /etc/docker/daemon.json, then run systemctl reload docker. Levelrail never edits that file for you.", "", KindManual),
 		ex("install_state", "This install is not in a normal released state.", "An unusual build or half finished upgrade can behave differently from what the docs describe.",
 			"Open Settings, then Updates, and move to the latest release. From a terminal, levelrail-cli update does the same.", "", KindGuided),
 		ex("container_runtime", "The container runtime is running with reduced support on this host.", "Some isolation or networking features may be missing.",

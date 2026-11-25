@@ -211,6 +211,17 @@ func (c *Client) ServerVersion(ctx context.Context) (string, error) {
 	return v.Version, nil
 }
 
+// LiveRestorePosture reports whether the daemon keeps containers running
+// across its own restart, and whether it is in swarm mode (where the
+// option does not apply).
+func (c *Client) LiveRestorePosture(ctx context.Context) (liveRestore, swarm bool, err error) {
+	info, err := c.cli.Info(ctx)
+	if err != nil {
+		return false, false, fmt.Errorf("docker: info: %w", err)
+	}
+	return info.LiveRestoreEnabled, info.Swarm.LocalNodeState == "active", nil
+}
+
 // EngineIdentity asks the daemon who it is (/version, then /info for the
 // OS string), so the doctor can tell Podman and desktop runtimes apart.
 func (c *Client) EngineIdentity(ctx context.Context) (EngineIdentity, error) {
