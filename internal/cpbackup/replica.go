@@ -227,11 +227,11 @@ func (r *Replicator) ship(ctx context.Context) (size int64, uploaded bool, err e
 	r.mu.Unlock()
 	key := ReplicaKey(installID, slot)
 	m := Manifest{
-		ManifestVersion: manifestFormat, InstallID: installID, Key: key, CreatedAt: s.now().UTC().Truncate(time.Second),
+		ManifestVersion: formatFor(pl.bundleKind), InstallID: installID, Key: key, CreatedAt: s.now().UTC().Truncate(time.Second),
 		BinaryVersion: s.BinaryVersion, SchemaVersion: pl.schemaVersion, MigrationsApplied: pl.migrations,
 		SHA256: sl.SHA256, SizeBytes: sl.Size, PlainSHA256: sl.PlainSHA256, PlainSizeBytes: sl.PlainSize,
 		Compression: "gzip", Encryption: "age", RecipientCount: len(recipients),
-		ContainsWrappedSecrets: true, IncludesMasterKey: false, Bundle: pl.bundleKind, IncludesAlerting: pl.hasAlerting,
+		ContainsWrappedSecrets: true, IncludesMasterKey: false, Bundle: pl.bundleKind, IncludesAlerting: pl.hasAlerting, AlertingWarning: pl.alertingWarning,
 	}
 	// The slot's old manifest goes first so a half-written ciphertext is never described by a stale one.
 	_ = bucket.Delete(ctx, ManifestKey(key))

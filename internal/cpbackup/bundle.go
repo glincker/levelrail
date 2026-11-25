@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -117,6 +118,7 @@ func unpackBundle(bundle, dir string, maxBytes int64) (mainPath, alertPath strin
 	}
 	defer func() { _ = in.Close() }()
 	tr := tar.NewReader(io.LimitReader(in, maxBytes+1))
+	remaining := maxBytes
 	for {
 		h, err := tr.Next()
 		if errors.Is(err, io.EOF) {
@@ -125,6 +127,13 @@ func unpackBundle(bundle, dir string, maxBytes int64) (mainPath, alertPath strin
 		if err != nil {
 			return "", "", fmt.Errorf("read bundle: %w", err)
 		}
+		if h.Typeflag != tar.TypeReg {
+			return "", "", fmt.Errorf("backup bundle entry %q is not a regular file", h.Name)
+		}
+		if h.Size < 0 || h.Size > remaining {
+			return "", "", errors.New("backup bundle is larger than its manifest declares")
+		}
+		remaining -= h.Size
 		var dst *string
 		switch h.Name {
 		case mainEntry:
@@ -133,6 +142,9 @@ func unpackBundle(bundle, dir string, maxBytes int64) (mainPath, alertPath strin
 			dst = &alertPath
 		default:
 			return "", "", fmt.Errorf("unexpected entry %q in backup bundle", h.Name)
+		}
+		if *dst != "" {
+			return "", "", fmt.Errorf("duplicate entry %q in backup bundle", h.Name)
 		}
 		*dst = filepath.Join(dir, "restored-"+h.Name)
 		if err := writeLimited(*dst, tr, h.Size); err != nil {
@@ -147,12 +159,14 @@ func unpackBundle(bundle, dir string, maxBytes int64) (mainPath, alertPath strin
 
 // payload is what one backup run encrypts: the control plane snapshot, plus alerting.db when present.
 type payload struct {
-	path          string
-	snapshot      string
-	hasAlerting   bool
-	bundleKind    string
-	schemaVersion int
-	migrations    int
+	path        string
+	snapshot    string
+	hasAlerting bool
+	// alertingWarning is set when alerting.db exists but could not be snapshotted.
+	alertingWarning string
+	bundleKind      string
+	schemaVersion   int
+	migrations      int
 }
 
 // buildPayload snapshots the databases into tmp and returns the file to seal.
@@ -171,7 +185,10 @@ func (s *Service) buildPayload(ctx context.Context, tmp string) (payload, error)
 	alertSnap := filepath.Join(tmp, "alerting-snapshot.db")
 	has, err := snapshotAlerting(ctx, s.DataDir, alertSnap)
 	if err != nil {
-		return p, err
+		// A broken alerting.db must not stop the control plane database from being backed up.
+		p.alertingWarning = err.Error()
+		s.logger().Warn("alerting.db left out of the backup", slog.String("error", err.Error()))
+		has = false
 	}
 	if !has {
 		p.path = p.snapshot

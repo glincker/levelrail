@@ -135,6 +135,8 @@ type RestoreReport struct {
 	Checks        []Check  `json:"checks"`
 	DryRun        bool     `json:"dry_run"`
 	PreRestore    string   `json:"pre_restore,omitempty"`
+	// PreRestoreAlerting is where the previous alerting.db was kept, when one was replaced.
+	PreRestoreAlerting string `json:"pre_restore_alerting,omitempty"`
 }
 
 // Restore downloads, verifies and decrypts a backup, then swaps it in
@@ -168,6 +170,8 @@ func Restore(ctx context.Context, src Source, opts RestoreOptions) (RestoreRepor
 			return rep, fmt.Errorf("restored alerting database failed integrity check: %w", err)
 		}
 		rep.Checks = append(rep.Checks, Check{Name: "alerting", OK: true, Detail: "alerting.db integrity_check ok"})
+	} else {
+		rep.Checks = append(rep.Checks, Check{Name: "alerting", OK: true, Detail: "alerting.db not in backup, current file kept"})
 	}
 	version, err := store.InspectSnapshot(ctx, restored)
 	if err != nil {
@@ -198,17 +202,45 @@ func Restore(ctx context.Context, src Source, opts RestoreOptions) (RestoreRepor
 			return rep, err
 		}
 	}
-	// Alerting goes first so the control plane database rename is the last step of the restore.
+	// Both files are staged before either is renamed, and the main rename is last so a failure there can roll alerting back.
+	var alertPlan *swapPlan
 	if restoredAlerting != "" {
 		alertOpts := opts
-		alertOpts.LivePath, alertOpts.hook = filepath.Join(dir, AlertingFile), nil
-		if _, err := swapIn(restoredAlerting, alertOpts); err != nil {
+		alertOpts.hook = nil
+		pl, err := stageSwap(restoredAlerting, filepath.Join(dir, AlertingFile), alertOpts)
+		if err != nil {
+			return rep, fmt.Errorf("stage %s: %w", AlertingFile, err)
+		}
+		defer pl.cleanup()
+		alertPlan = &pl
+		rep.PreRestoreAlerting = pl.pre
+	}
+	mainPlan, err := stageSwap(restored, opts.LivePath, opts)
+	rep.PreRestore = mainPlan.pre
+	defer mainPlan.cleanup()
+	if err != nil {
+		return rep, err
+	}
+	if alertPlan != nil {
+		if err := alertPlan.commit(); err != nil {
 			return rep, fmt.Errorf("restore %s: %w", AlertingFile, err)
 		}
 	}
-	pre, err := swapIn(restored, opts)
-	rep.PreRestore = pre
-	return rep, err
+	if opts.hook != nil {
+		err = opts.hook("before-main-commit")
+	}
+	if err == nil {
+		err = mainPlan.commit()
+	}
+	if err != nil {
+		if alertPlan != nil {
+			if rbErr := alertPlan.rollback(); rbErr != nil {
+				err = fmt.Errorf("%w (and rolling back %s failed: %w)", err, AlertingFile, rbErr)
+			}
+		}
+		return rep, err
+	}
+	return rep, nil
 }
 
 func fetchAndVerify(ctx context.Context, src Source, m Manifest, work string, ids []age.Identity, rep *RestoreReport) (restored, alerting string, err error) {
@@ -244,6 +276,9 @@ func fetchAndVerify(ctx context.Context, src Source, m Manifest, work string, id
 		if err != nil {
 			return "", "", err
 		}
+		if m.IncludesAlerting && alertPath == "" {
+			return "", "", fmt.Errorf("%w: manifest says alerting.db is included but the bundle has none", ErrBadManifest)
+		}
 		return mainPath, alertPath, nil
 	}
 	return "", "", fmt.Errorf("%w: unknown bundle kind %q", ErrBadManifest, m.Bundle)
@@ -278,11 +313,21 @@ func readInstallID(ctx context.Context, path string) string {
 	return id
 }
 
-// swapIn keeps the current database as <live>.pre-restore, then renames the
-// restored file over it. Hard links keep the live name in place until the
-// final rename, so there is no moment without a database.
-func swapIn(restored string, opts RestoreOptions) (string, error) {
-	live := opts.LivePath
+// swapPlan is a restored file staged beside its live path. Hard links keep the
+// live name in place until commit, so there is no moment without a database.
+type swapPlan struct {
+	live, staged, pre string
+	committed         bool
+}
+
+func (p *swapPlan) cleanup() {
+	if p.staged != "" {
+		_ = os.Remove(p.staged)
+	}
+}
+
+// stageSwap writes the restored file next to live and keeps the current one as <live>.pre-restore.
+func stageSwap(restored, live string, opts RestoreOptions) (swapPlan, error) {
 	dir := filepath.Dir(live)
 	stage := func(name string) error {
 		if opts.hook == nil {
@@ -292,52 +337,69 @@ func swapIn(restored string, opts RestoreOptions) (string, error) {
 	}
 	staged, err := os.CreateTemp(dir, ".restore-*.tmp")
 	if err != nil {
-		return "", fmt.Errorf("stage restored database: %w", err)
+		return swapPlan{}, fmt.Errorf("stage restored database: %w", err)
 	}
-	stagedPath := staged.Name()
+	p := swapPlan{live: live, staged: staged.Name()}
 	_ = staged.Close()
-	defer func() { _ = os.Remove(stagedPath) }()
-	if err := copyFileSync(restored, stagedPath); err != nil {
-		return "", err
+	if err := copyFileSync(restored, p.staged); err != nil {
+		return p, err
 	}
 	if err := stage("temp-written"); err != nil {
-		return "", err
+		return p, err
 	}
-
 	pre := live + ".pre-restore"
 	if _, err := os.Stat(live); err == nil {
 		if _, err := os.Stat(pre); err == nil {
 			older := pre + "-" + nowUTC(opts).Format(nameLayout)
 			if err := os.Rename(pre, older); err != nil {
-				return "", fmt.Errorf("age earlier pre-restore copy: %w", err)
+				return p, fmt.Errorf("age earlier pre-restore copy: %w", err)
 			}
 		}
 		if err := preserve(live, pre); err != nil {
-			return "", err
+			return p, err
 		}
+		p.pre = pre
 		for _, suffix := range []string{"-wal", "-shm"} {
 			if _, err := os.Stat(live + suffix); err == nil {
 				if err := preserve(live+suffix, pre+suffix); err != nil {
-					return "", err
+					return p, err
 				}
 			}
 		}
-	} else {
-		pre = ""
 	}
-	if err := stage("pre-restore-kept"); err != nil {
-		return pre, err
-	}
+	return p, stage("pre-restore-kept")
+}
+
+func (p *swapPlan) commit() error {
 	for _, suffix := range []string{"-wal", "-shm"} {
-		if err := os.Remove(live + suffix); err != nil && !os.IsNotExist(err) {
-			return pre, fmt.Errorf("remove stale %s file: %w", suffix, err)
+		if err := os.Remove(p.live + suffix); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove stale %s file: %w", suffix, err)
 		}
 	}
-	if err := os.Rename(stagedPath, live); err != nil {
-		return pre, fmt.Errorf("put restored database in place: %w", err)
+	if err := os.Rename(p.staged, p.live); err != nil {
+		return fmt.Errorf("put restored database in place: %w", err)
 	}
-	syncDir(dir)
-	return pre, nil
+	p.staged, p.committed = "", true
+	syncDir(filepath.Dir(p.live))
+	return nil
+}
+
+// rollback puts the kept copy back over a committed file, or removes the new file when there was none.
+func (p *swapPlan) rollback() error {
+	if !p.committed {
+		return nil
+	}
+	if p.pre == "" {
+		return os.Remove(p.live)
+	}
+	for _, suffix := range []string{"-wal", "-shm"} {
+		if _, err := os.Stat(p.pre + suffix); err == nil {
+			if err := os.Rename(p.pre+suffix, p.live+suffix); err != nil {
+				return err
+			}
+		}
+	}
+	return os.Rename(p.pre, p.live)
 }
 
 func nowUTC(opts RestoreOptions) time.Time {
