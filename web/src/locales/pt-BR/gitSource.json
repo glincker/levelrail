@@ -156,7 +156,9 @@
     "healthCheck": "Verificação de saúde",
     "healthEnable": "Ativar uma verificação de saúde",
     "healthPath": "Caminho",
-    "healthHint": "Verificada antes de direcionar o tráfego a um novo container, e para detectar depois um que tenha travado. Apps detectados pelo Railpack que não servem este caminho devem desligá-la."
+    "healthHint": "Verificada antes de direcionar o tráfego a um novo container, e para detectar depois um que tenha travado. Apps detectados pelo Railpack que não servem este caminho devem desligá-la.",
+    "showMore": "Mais opções",
+    "hideMore": "Menos opções"
   },
   "sshKey": {
     "title": "Chave de deploy SSH",

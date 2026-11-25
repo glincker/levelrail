@@ -81,7 +81,14 @@
     "cancel": "Annuler",
     "started": "Restauration dans {{name}}",
     "startedDescription": "Suivez la progression dans l'historique des restaurations de ce volume.",
-    "failed": "Impossible de démarrer la restauration"
+    "failed": "Impossible de démarrer la restauration",
+    "stepCheck": "Vérifier votre application",
+    "checkTitle": "Restauration lancée. Vérifiez maintenant votre application.",
+    "checkOpen": "Ouvrez votre application et vérifiez qu’elle se charge toujours.",
+    "checkData": "Une fois la restauration terminée, vérifiez que vos données sont de retour dans {{name}}.",
+    "checkSwitch": "Pointez l’application vers {{name}} (réglage du volume), puis redéployez pour qu’elle utilise les données restaurées.",
+    "checkLink": "Ouvrir l’application",
+    "done": "Terminé"
   },
   "policy": {
     "title": "Politique de sauvegarde pour {{app}}/{{volume}}",
@@ -631,5 +638,49 @@
     "startedTitle": "Test de restauration lancé.",
     "startedBody": "Le résultat apparaît ici une fois terminé.",
     "startFailed": "Impossible de lancer le test de restauration."
+  },
+  "sameDisk": {
+    "title": "Si ce serveur tombe, les sauvegardes aussi.",
+    "body": "Toutes les cibles de sauvegarde sont sur le disque de ce serveur. Connectez un stockage ailleurs pour conserver une copie.",
+    "connect": "Connecter un stockage"
+  },
+  "newServer": {
+    "open": "Restaurer sur un nouveau serveur",
+    "title": "Restaurer sur un nouveau serveur",
+    "description": "Remet une application, ses volumes et ses bases de données sur un autre nœud depuis leurs dernières sauvegardes. Rien d’existant n’est écrasé.",
+    "stepChoose": "Choisir l’application et le nœud",
+    "stepReview": "Vérifier",
+    "stepProgress": "Progression",
+    "app": "Application",
+    "appPlaceholder": "Sélectionner une application",
+    "noApps": "Aucune application avec des données sauvegardées.",
+    "node": "Nœud",
+    "nodePlaceholder": "Sélectionner un nœud",
+    "noNodes": "Aucun autre nœud disponible. Ajoutez d’abord un serveur, puis revenez.",
+    "nodeOffline": "{{name}} (hors ligne)",
+    "review": "Ces éléments seront restaurés sur {{node}}.",
+    "reviewEmpty": "Rien à restaurer pour cette application.",
+    "kind": {
+      "volume": "Volume",
+      "database": "Base de données"
+    },
+    "status": {
+      "planned": "Prêt",
+      "started": "Restauration en cours",
+      "skipped": "Ignoré",
+      "failed": "Échec"
+    },
+    "asName": "restauré sous {{name}}",
+    "nothingRestorable": "Aucun élément n’a de sauvegarde réussie, il n’y a donc rien à lancer.",
+    "next": "Vérifier",
+    "back": "Retour",
+    "confirm": "Restaurer maintenant",
+    "cancel": "Annuler",
+    "done": "Terminé",
+    "planFailed": "Impossible de planifier la restauration : {{error}}",
+    "startFailed": "Impossible de lancer la restauration : {{error}}",
+    "startedTitle": "Restauration lancée",
+    "startedBody": "Chaque élément est restauré en arrière-plan dans une nouvelle ressource sur {{node}}. Suivez la progression dans l’historique des restaurations ci-dessous.",
+    "openApp": "Ouvrir l’application"
   }
 }

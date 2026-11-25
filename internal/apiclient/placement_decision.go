@@ -66,6 +66,7 @@ type PlacementDecisionView struct {
 	Kind     string             `json:"kind"`
 	Name     string             `json:"name"`
 	NodeID   string             `json:"node_id"`
+	Pool     string             `json:"pool,omitempty"`
 	Recorded *RecordedPlacement `json:"recorded"`
 	Preview  PlacementDecision  `json:"preview"`
 	Warnings []string           `json:"warnings,omitempty"`

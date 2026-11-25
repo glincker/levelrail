@@ -37,6 +37,7 @@ const (
 	imageUpdateUpToDate   = "up to date"
 	imageUpdateRedeployed = "redeployed with a newer image"
 	imageUpdateWaiting    = "newer image found, waiting for the update window"
+	imageUpdateAvailable  = "newer image found, not deployed: repeat the check with apply=true to deploy it"
 )
 
 type imageAutoUpdateResource struct {
@@ -135,9 +136,10 @@ func (rt *Router) handleSetImageAutoUpdate(w http.ResponseWriter, r *http.Reques
 }
 
 // handleCheckImageAutoUpdate runs one update check now, regardless of the opt-in.
+// It only reports a newer image; ?apply=true is the explicit request to deploy it.
 func (rt *Router) handleCheckImageAutoUpdate(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	result, err := rt.checkImageUpdateRecorded(r.Context(), name, true)
+	result, err := rt.checkImageUpdateRecorded(r.Context(), name, true, r.URL.Query().Get("apply") == "true")
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -162,12 +164,13 @@ func (rt *Router) handleCheckImageAutoUpdate(w http.ResponseWriter, r *http.Requ
 // built from source, stopped, frozen, or in a protected environment: an
 // unattended pull must never bypass the gates a manual deploy goes through.
 func (rt *Router) CheckImageUpdate(ctx context.Context, serviceName string) (string, error) {
-	return rt.checkImageUpdateRecorded(ctx, serviceName, false)
+	return rt.checkImageUpdateRecorded(ctx, serviceName, false, true)
 }
 
-// checkImageUpdateRecorded is CheckImageUpdate; manual checks ignore the apply window.
-func (rt *Router) checkImageUpdateRecorded(ctx context.Context, serviceName string, manual bool) (string, error) {
-	result, err := rt.checkImageUpdate(ctx, serviceName, manual)
+// checkImageUpdateRecorded is CheckImageUpdate; manual checks ignore the apply window and
+// deploy only when apply is set. The opted-in scheduler and webhook paths always apply.
+func (rt *Router) checkImageUpdateRecorded(ctx context.Context, serviceName string, manual, apply bool) (string, error) {
+	result, err := rt.checkImageUpdate(ctx, serviceName, manual, apply)
 	if err != nil {
 		if errors.Is(err, store.ErrServiceNotFound) {
 			return "", err
@@ -181,7 +184,7 @@ func (rt *Router) checkImageUpdateRecorded(ctx context.Context, serviceName stri
 	return result, err
 }
 
-func (rt *Router) checkImageUpdate(ctx context.Context, serviceName string, manual bool) (string, error) {
+func (rt *Router) checkImageUpdate(ctx context.Context, serviceName string, manual, apply bool) (string, error) {
 	svc, err := rt.apps.GetDesiredService(ctx, serviceName)
 	if err != nil {
 		return "", err
@@ -210,6 +213,9 @@ func (rt *Router) checkImageUpdate(ctx context.Context, serviceName string, manu
 		if u, uerr := rt.imageAutoUpdates.GetImageAutoUpdate(ctx, serviceName); uerr == nil && !inUpdateWindow(u.WindowCron, u.WindowMinutes, time.Now()) {
 			return imageUpdateWaiting, nil
 		}
+	}
+	if !apply {
+		return imageUpdateAvailable, nil
 	}
 	trigger.Source = store.DeployAttemptSourceImage
 	trigger.Locks = rt.deployPublishLocks()

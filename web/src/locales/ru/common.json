@@ -318,7 +318,20 @@
   },
   "confirmDialog": {
     "cancel": "Отмена",
-    "typePrompt": "Введите {{value}} для подтверждения"
+    "typePrompt": "Введите {{value}} для подтверждения",
+    "impactLead": "Вы потеряете: {{items}}.",
+    "impactVolumes_one": "{{count}} том",
+    "impactVolumes_few": "{{count}} тома",
+    "impactVolumes_many": "{{count}} томов",
+    "impactVolumes_other": "{{count}} тома",
+    "impactDomains_one": "{{count}} домен",
+    "impactDomains_few": "{{count}} домена",
+    "impactDomains_many": "{{count}} доменов",
+    "impactDomains_other": "{{count}} домена",
+    "impactBackups_one": "резервные копии сохранятся: {{count}} день",
+    "impactBackups_few": "резервные копии сохранятся: {{count}} дня",
+    "impactBackups_many": "резервные копии сохранятся: {{count}} дней",
+    "impactBackups_other": "резервные копии сохранятся: {{count}} дня"
   },
   "deleteApp": {
     "trigger": "Удалить",
@@ -525,7 +538,9 @@
       "systemStatus": "Doctor",
       "report": "Сообщить о проблеме",
       "community": "Спросить сообщество",
-      "suggest": "Предложить функцию"
+      "suggest": "Предложить функцию",
+      "copyDetails": "Скопировать данные для поддержки",
+      "detailsHeader": "Данные для поддержки Levelrail"
     },
     "account": {
       "controlPlane": "Панель управления",
@@ -1295,8 +1310,14 @@
         "title": "Почта не настроена",
         "message": "Почтовый провайдер пока не настроен.",
         "action": "Добавьте его в разделе Настройки, Почта, затем повторите."
+      },
+      "badToken": {
+        "title": "Токен отклонён",
+        "message": "Токен или учётные данные отклонены либо истекли.",
+        "action": "Создайте новый токен с нужными правами и повторите попытку."
       }
-    }
+    },
+    "whatThisMeans": "Что это значит:"
   },
   "notFound": {
     "requested": "Запрошено: {{name}}",

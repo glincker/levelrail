@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 	xgithub "golang.org/x/oauth2/github"
@@ -217,7 +219,10 @@ func (c *microsoftOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.
 	return oauthUserInfo{ProviderUserID: body.ID, Email: email, DisplayName: name}, nil
 }
 
+var errOIDCDiscovery = errors.New("oidc discovery failed")
+
 type oidcOAuthClient struct {
+	hc       *http.Client
 	cfg      oauth2.Config
 	verifier *oidc.IDTokenVerifier
 }
@@ -226,13 +231,20 @@ type oidcOAuthClient struct {
 // operator-configured issuer, so a misconfigured issuer fails the sign-in
 // attempt immediately rather than at token-exchange time.
 func newOIDCOAuthClient(settings store.OAuthProviderSettings, clientSecret, redirectURL string) (oauthProviderClient, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// LAN issuers stay allowed; loopback, link-local and metadata are refused.
+	return newOIDCOAuthClientWith(netguard.NewClientPrivateNetworks(), settings, clientSecret, redirectURL)
+}
+
+func newOIDCOAuthClientWith(hc *http.Client, settings store.OAuthProviderSettings, clientSecret, redirectURL string) (oauthProviderClient, error) {
+	ctx, cancel := context.WithTimeout(oidc.ClientContext(context.Background(), hc), 10*time.Second)
 	defer cancel()
 	provider, err := oidc.NewProvider(ctx, settings.IssuerURL)
 	if err != nil {
-		return nil, fmt.Errorf("oidc discovery for issuer %q: %w", settings.IssuerURL, err)
+		// The library error can carry the issuer's response body.
+		return nil, errOIDCDiscovery
 	}
 	return &oidcOAuthClient{
+		hc: hc,
 		cfg: oauth2.Config{
 			ClientID:     settings.ClientID,
 			ClientSecret: clientSecret,
@@ -249,7 +261,8 @@ func (c *oidcOAuthClient) AuthCodeURL(state string, opts ...oauth2.AuthCodeOptio
 }
 
 func (c *oidcOAuthClient) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
-	return c.cfg.Exchange(ctx, code, opts...)
+	// The token POST carries the client secret to a discovered endpoint, so it uses the guarded client.
+	return c.cfg.Exchange(oidc.ClientContext(ctx, c.hc), code, opts...)
 }
 
 // FetchUserInfo verifies the token response's id_token (signature, issuer,
@@ -261,7 +274,7 @@ func (c *oidcOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.Token
 	if !ok || rawIDToken == "" {
 		return oauthUserInfo{}, fmt.Errorf("oidc token response missing id_token")
 	}
-	idToken, err := c.verifier.Verify(ctx, rawIDToken)
+	idToken, err := c.verifier.Verify(oidc.ClientContext(ctx, c.hc), rawIDToken)
 	if err != nil {
 		return oauthUserInfo{}, fmt.Errorf("verify oidc id_token: %w", err)
 	}

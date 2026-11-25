@@ -28,6 +28,7 @@ import { LazySection } from '../../components/settings/updates/LazySection'
 import {
   ATTEMPTS_SECTION_ID,
   ROLLBACK_SECTION_ID,
+  UPDATE_STATUS_ID,
 } from '../../lib/updatesAnchors'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import {
@@ -101,7 +102,9 @@ function UpdatesSettingsPage() {
       description={t('page.description')}
     >
       <AutoUpdatesCard />
-      <UpdateStatusHeader initial={status} />
+      <div id={UPDATE_STATUS_ID}>
+        <UpdateStatusHeader initial={status} />
+      </div>
       <div className="divide-y divide-border rounded-lg border border-border bg-card">
         <LazySection id={ATTEMPTS_SECTION_ID} title={t('quick.more.history')}>
           <UpgradeAttempts currentVersion={status.current_version} />

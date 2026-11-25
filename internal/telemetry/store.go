@@ -14,6 +14,12 @@ type Sample struct {
 	Metric     string
 	Timestamp  time.Time
 	Value      float64
+	// Count, Sum, Min and Max are set only on rollup rows (Count > 0) so a
+	// merge can weight a bucket by the raw points it covers.
+	Count int64
+	Sum   float64
+	Min   float64
+	Max   float64
 }
 
 // WriteSamples inserts every sample in one transaction: a collection

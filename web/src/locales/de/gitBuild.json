@@ -233,5 +233,23 @@
       "githubNoApp": "ein GitHub-Repository ohne installierte GitHub-App",
       "fix": "Verbinden Sie das Repository über eine GitHub-App oder eine GitLab-Verbindung und schalten Sie die Schranke dann erneut ein."
     }
+  },
+  "why": {
+    "title": "Warum ist dieses Deployment fehlgeschlagen",
+    "loading": "Wird geladen",
+    "failed": "Das Ergebnis konnte nicht geladen werden",
+    "rawLogs": "Rohe Logs ansehen",
+    "exit": "Exit-Code {{code}}",
+    "healthOk": "Letzter Health-Check bestanden: {{target}}",
+    "healthFailed": "Letzter Health-Check fehlgeschlagen: {{target}}",
+    "template": "{{count}}x {{sample}}",
+    "verdict": {
+      "oom_killed": "Dem Container ging der Speicher aus",
+      "exit_nonzero": "Der Container wurde mit einem Fehler beendet",
+      "health_failing": "Der Health-Check schlug dauerhaft fehl",
+      "new_log_patterns": "Neue Logmuster seit dem letzten guten Deployment",
+      "no_signal": "Keine klare Ursache erfasst",
+      "ok": "Kein Problem gefunden"
+    }
   }
 }

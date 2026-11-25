@@ -16,12 +16,17 @@
     "label": "提供商",
     "generic": "通用 URL",
     "duckdns": "DuckDNS",
-    "godaddy": "GoDaddy"
+    "godaddy": "GoDaddy",
+    "porkbun": "Porkbun",
+    "desec": "deSEC"
   },
   "domains": {
     "label": "DuckDNS 域名",
     "placeholder": "myhome,office",
-    "placeholderGodaddy": "home.example.com"
+    "placeholderGodaddy": "home.example.com",
+    "labelHosts": "要更新的主机名",
+    "placeholderPorkbun": "home.example.com",
+    "placeholderDesec": "home.example.dedyn.io"
   },
   "target": {
     "labelGeneric": "更新 URL",
@@ -32,7 +37,9 @@
     "notConfigured": "未配置",
     "clear": "清除",
     "cleared": "凭据已清除。",
-    "labelGodaddy": "GoDaddy 密钥:密文"
+    "labelGodaddy": "GoDaddy 密钥:密文",
+    "labelPorkbun": "Porkbun apikey:secretapikey",
+    "labelDesec": "deSEC API 令牌"
   },
   "advanced": {
     "toggle": "高级",

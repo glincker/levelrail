@@ -278,6 +278,7 @@ func (rt *Router) recordEnvChanges(r *http.Request, app string, oldEnv, newEnv m
 		return
 	}
 	_, _, actor, _ := rt.currentActor(r)
+	rt.snapshotEnvRevision(r.Context(), app, actor, newEnv)
 	if err := rt.envProtect.changes.RecordEnvChanges(r.Context(), app, actor, source, changes); err != nil {
 		rt.logger.Warn("api: record env changes failed", slog.String("error", err.Error()), slog.String("name", app))
 	}

@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { pagesDeployLogQueryOptions } from '../../queries/pagesDeployLog'
+import DeployFailHint from './DeployFailHint'
 
 /** Build log of one Pages deploy. Loaded lazily by RecentDeploys. */
 export default function DeployLogDialog({
@@ -105,6 +106,9 @@ export default function DeployLogDialog({
           ))}
           <div ref={endRef} />
         </div>
+        {data?.status === 'failed' ? (
+          <DeployFailHint lines={lines.map((l) => l.line)} />
+        ) : null}
       </DialogContent>
     </Dialog>
   )

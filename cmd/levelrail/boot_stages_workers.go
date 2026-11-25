@@ -31,6 +31,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/schedulescan"
+	"github.com/GLINCKER/levelrail/internal/selfheartbeat"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/tlsowner"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
@@ -70,7 +71,19 @@ func (s *bootState) startTelemetry() {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
-	startTelemetryMaintenance(ctx, telemetryDB, metricsCollectionInterval, logger)
+	var tiers runtimesettings.MetricsTiers
+	if s.apiRouter != nil {
+		tiers = s.apiRouter.RuntimeSettings().MetricsTiers(ctx)
+	}
+	var intervals func() (time.Duration, time.Duration)
+	if s.apiRouter != nil {
+		rs := s.apiRouter.RuntimeSettings()
+		intervals = func() (time.Duration, time.Duration) {
+			t := rs.MetricsTiers(context.Background())
+			return t.RollupEvery, t.PruneEvery
+		}
+	}
+	startTelemetryMaintenance(ctx, telemetryDB, metricsCollectionInterval, tiers.RollupEvery, tiers.PruneEvery, intervals, logger)
 
 	// Needs the local node row from setupMesh; with mesh off there is no node to attribute samples to.
 	if meshCfg != nil {
@@ -176,6 +189,9 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetJobFailing(db, scheduledtask.FailureAlertWindow, scheduledtask.FailureAlertBatch)
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
+	alertingEngine.SetReconcilerLag(reconcilerLagAlertSource{lag: engine.Lag, warn: func(c context.Context) time.Duration {
+		return time.Duration(apiRouter.RuntimeSettings().Int(c, runtimesettings.KeyReconcileLagWarnSeconds)) * time.Second
+	}})
 	alertingEngine.SetBackupCopy(backupCopyAlertSource{db: db}, backup.CopyLagAlertFromEnv(os.LookupEnv))
 	alertingEngine.SetBackupSizeAnomaly(backupSizeAlertSource{db: db}, func(c context.Context) alerting.BackupSizePolicy {
 		live := apiRouter.RuntimeSettings()
@@ -553,6 +569,8 @@ func (s *bootState) startSchedulers() {
 	anchorExp := auditanchor.NewExporter(auditanchor.ExportConfigFromEnv(os.LookupEnv), auditanchor.ConfigFromEnv(os.LookupEnv).Interval, db, apiRouter.RuntimeSettings(), logger)
 	apiRouter.SetAnchorStatus(anchorExp.Status)
 	go anchorExp.Run(ctx)
+	// Dead man's switch: pings an operator URL so an external monitor pages when the control plane goes silent. Empty URL means off.
+	go selfheartbeat.New(selfheartbeat.ConfigFromEnv(os.LookupEnv), apiRouter.RuntimeSettings(), logger).Run(ctx)
 
 	// Moves cold audit, deploy and pipeline rows into archive bundles when the policy is on.
 	go func() {

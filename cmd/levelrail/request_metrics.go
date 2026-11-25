@@ -32,9 +32,11 @@ func requestSummaryWindow() time.Duration {
 }
 
 // startTelemetryMaintenance runs the ingress request sampler, the rollup job
-// and the retention sweep until ctx is cancelled.
-func startTelemetryMaintenance(ctx context.Context, db *telemetry.DB, interval time.Duration, logger *slog.Logger) {
+// and the retention sweep until ctx is cancelled. Zero job intervals use the built-in ones.
+func startTelemetryMaintenance(ctx context.Context, db *telemetry.DB, interval, rollupEvery, pruneEvery time.Duration, intervals func() (rollup, prune time.Duration), logger *slog.Logger) {
 	sampler := telemetry.NewRequestSampler(ingress.DefaultRequestStats(), db, interval, logger)
 	go sampler.Run(ctx)
-	go telemetry.NewMaintainer(db, 0, 0, logger).Run(ctx)
+	m := telemetry.NewMaintainer(db, rollupEvery, pruneEvery, logger)
+	m.SetIntervalSource(intervals)
+	go m.Run(ctx)
 }

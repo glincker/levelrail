@@ -744,8 +744,6 @@
   "quick": {
     "title": "Automatic updates",
     "off": "Updates are never installed on their own. You choose when to update.",
-    "onPatch": "Patch releases install automatically between {{start}} and {{end}}, {{days}}.",
-    "onAny": "New releases, including minor ones, install automatically between {{start}} and {{end}}, {{days}}.",
     "days": {
       "daily": "every night",
       "weekdays": "on weekdays",
@@ -759,14 +757,13 @@
       "custom": "Custom (keep current)"
     },
     "paused": "Automatic updates are paused until {{date}}.",
-    "next": "Next window starts {{time}}.",
     "savedOn": "Automatic updates turned on.",
     "savedOff": "Automatic updates turned off.",
     "undo": "Undo",
     "error": "Could not save: {{message}}",
     "loadError": "Could not load automatic update settings.",
     "scheduleToggle": "Schedule",
-    "scheduleSummary": "{{start}} to {{end}}, {{days}}",
+    "scheduleSummary": "{{start}} to {{end}} {{zone}}, {{days}}",
     "scheduleSaved": "Schedule saved.",
     "level": {
       "label": "What to install",
@@ -795,10 +792,22 @@
     },
     "checkOn": "Checking for new releases in the background is on. It only looks; installing is controlled by the switch above.",
     "checkOff": "Background checks for new releases are off. Turning on automatic updates also turns them on.",
-    "installSteps": "Updates install between {{start}} and {{end}} {{zone}}; backup first, health check, automatic rollback.",
-    "nextWindows": "Next windows: {{list}}",
     "onBlocked": "Automatic updates are switched on but cannot run on this server. See the status below.",
-    "checkOffActive": "Background checks for new releases are off, so no update will be found until they are turned on."
+    "checkOffActive": "Background checks for new releases are off, so no update will be found until they are turned on.",
+    "headline": {
+      "held": "{{tag}} is held: {{reason}}",
+      "review": "Review changes",
+      "installNow": "Install now",
+      "idle": "Up to date. Updates install in the nightly window, next opens {{day}} {{time}}.",
+      "now": "{{tag}} is installing now (window open until it finishes).",
+      "tonight": "{{tag}} installs tonight at {{time}} ({{eta}})",
+      "later": "{{tag}} installs {{day}} at {{time}} ({{eta}})",
+      "inMinutes": "in {{count}} min",
+      "inHours": "in {{count}} h"
+    },
+    "age": "Wait after release",
+    "ageDays_one": "{{count}} day",
+    "ageDays_other": "{{count}} days"
   },
   "autoStatus": {
     "state": {

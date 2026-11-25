@@ -162,5 +162,15 @@
     "none": "Aún no hay entornos de vista previa.",
     "all": "Todas las vistas previas",
     "pr": "PR #{{number}}"
-  }
+  },
+  "detailsTrigger": "Configuración y diagnóstico",
+  "activityLabel": "Actividad",
+  "liveLogsLabel": "Registros en vivo",
+  "appSummaryLabel": "Resumen de la app",
+  "suggestedFixes": "Correcciones sugeridas",
+  "liveTrafficLabel": "Tráfico y recursos en vivo",
+  "trafficUnavailable": "Las cifras de tráfico en vivo no están disponibles ahora.",
+  "trafficRetry": "Reintentar",
+  "noTrafficTitle": "Aún no hay tráfico",
+  "noTrafficHint": "Envía una petición para ver cifras en vivo."
 }

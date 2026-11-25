@@ -163,7 +163,8 @@
         "succeeded": "Drenado",
         "partial": "Drenado en parte",
         "failed": "Falló"
-      }
+      },
+      "back": "Volver al drenaje del nodo"
     }
   },
   "drains": {

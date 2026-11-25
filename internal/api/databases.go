@@ -429,6 +429,7 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defer lockAppName("database:" + req.Name)()
 	// Databases carry no domains, so placement never prefers the local
 	// node for ingress reasons here.
 	cp := &createPlacement{Kind: store.NodeMoveKindDatabase, Name: req.Name}
@@ -475,6 +476,7 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 // The data volume is kept on delete, so a mistaken delete never destroys data.
 func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	defer lockAppName("database:" + name)()
 
 	existing, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {

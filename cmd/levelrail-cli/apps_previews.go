@@ -21,9 +21,11 @@ func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, looku
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsPreviewsUsage(prog))
 		return exitOK
-	case "list":
+	case "list", "ls":
 		return runAppsPreviewsList(prog, args[1:], stdout, stderr, lookupEnv)
-	case "teardown", "delete":
+	case "create":
+		return runAppsPreviewsCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "teardown", "delete", "rm":
 		return runAppsPreviewsTeardown(prog, args[1:], stdout, stderr, lookupEnv)
 	case "open":
 		return runAppsPreviewsOpen(prog, args[1:], stdout, stderr, lookupEnv)
@@ -53,6 +55,7 @@ func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, looku
 func appsPreviewsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps previews list [app-name] [flags]                list previews for an app, or across every app
+  %[1]s apps previews create <app-name> --pr N --image REF [flags]   deploy a CI-built image as a preview (aliases: ls for list, rm for teardown)
   %[1]s apps previews limits [app-name] [flags]              show or change preview caps, fork policy and TTL
   %[1]s apps previews approve <app-name> <pr-number> --yes   deploy a held fork pull request once
   %[1]s apps previews teardown <app-name> <pr-number> [flags]   tear down one PR's preview right now (alias: delete)
@@ -196,7 +199,7 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print previews as a JSON array to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -246,7 +249,7 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {} to stdout on success instead of a plain confirmation
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -293,7 +296,7 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the resulting setting as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, verb)
@@ -399,7 +402,7 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the swept count as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

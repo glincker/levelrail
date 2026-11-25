@@ -21,7 +21,7 @@ Flags:
   --watch                  redraw the fleet status on an interval until Ctrl+C
   --interval duration  redraw interval with --watch (env LEVELRAIL_WATCH_INTERVAL, default 5s)
   --json                    print status as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 ```

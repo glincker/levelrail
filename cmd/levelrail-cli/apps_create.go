@@ -1008,8 +1008,12 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	return f, nil
 }
 
+// errorsAsJSON is set per run when --output json was given, so reportError matches --json.
+var errorsAsJSON bool
+
 // reportError writes err to stderr, and to stdout as a JSON error object when jsonOut is set. Writers are passed in so it is testable.
 func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
+	jsonOut = jsonOut || errorsAsJSON
 	var dry *apiclient.DryRunError
 	if errors.As(err, &dry) {
 		if jsonOut {
@@ -1140,7 +1144,7 @@ Common flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

@@ -112,13 +112,13 @@ System endpoints for:
 | GET | /api/v1/system/resilience | AbilityRead | handleGetResilience |
 | POST | /api/v1/system/resilience/simulate | AbilityWrite | handleSimulateResilience |
 | POST | /api/v1/system/resilience/snapshot | AbilityRoot | handleResilienceFix |
-| POST | /api/v1/updates/self-upgrade/attempts/{id}/fix | AbilityWrite | handleSelfUpgradeAttemptFix |
-| POST | /api/v1/updates/self-upgrade/attempts/{id}/retry | AbilityWrite | handleSelfUpgradeAttemptRetry |
-| POST | /api/v1/updates/self-upgrade/attempts/{id}/rollback | AbilityWrite | handleSelfUpgradeAttemptRollback |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/fix | AbilityRoot | handleSelfUpgradeAttemptFix |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/retry | AbilityRoot | handleSelfUpgradeAttemptRetry |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/rollback | AbilityRoot | handleSelfUpgradeAttemptRollback |
 | POST | /api/v1/system/proxy-integration/install | AbilityRoot | handleInstallProxy |
 | GET | /api/v1/updates/self-upgrade/status | AbilityRead | handleSelfUpgradeStatus |
 | GET | /api/v1/system/footprint | AbilityRead | handleGetIdleFootprint |
-| POST | /api/v1/updates/self-upgrade/attempts/{id}/cancel | AbilityWrite | handleSelfUpgradeAttemptCancel |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/cancel | AbilityRoot | handleSelfUpgradeAttemptCancel |
 | POST | /api/v1/updates/migration-dry-run | AbilityWrite | handleMigrationDryRun |
 | GET | /api/v1/system/storage/inventory | AbilityRead | handleStorageInventory |
 | GET | /api/v1/system/disk/history | AbilityRead | handleDiskHistory |
@@ -811,6 +811,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/warm | AbilityRead | handleGetAppWarm |
 | PUT | /api/v1/apps/{name}/warm | AbilityRoot | handleSetAppWarm |
 | POST | /api/v1/apps/{name}/rollout/abort | AbilityDeploy | handleAbortRollout |
+| GET | /api/v1/apps/{name}/env/revisions | AbilityReadSensitive | handleListEnvRevisions |
+| GET | /api/v1/apps/{name}/env/revisions/diff | AbilityReadSensitive | handleDiffEnvRevisions |
+| POST | /api/v1/apps/{name}/env/revisions/{rev}/restore | AbilityWrite | handleRestoreEnvRevision |
+| GET | /api/v1/deploys/{id}/why | AbilityRead | handleGetDeployWhy |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -870,6 +874,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/git-source/ssh-key | AbilityWriteSensitive | handleDeleteGitSSHKey |
 | POST | /api/v1/apps/{name}/git-source/plan | AbilityDeploy | handleGitSourcePlan |
 | POST | /api/v1/apps/{name}/git-source/deploy | AbilityDeploy | handleGitSourceDeploy |
+| POST | /api/v1/apps/{name}/previews | AbilityDeploy | handleCreatePreviewFromImage |
 
 ## Telemetry
 

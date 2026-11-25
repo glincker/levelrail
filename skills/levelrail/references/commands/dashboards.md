@@ -22,7 +22,7 @@ Flags:
   --api-url string   control plane base URL (default: LEVELRAIL_TOKEN or APP_API_TOKEN env var, then LEVELRAIL_API_URL or APP_API_URL)
   --profile string   named credentials profile to read
   --json             print the result as JSON to stdout, nothing else
-  --output string    output format: json, table, or text
+  --output string    output format: json, ndjson, yaml, table, wide, text or name
   --query string     JMESPath expression to filter the result before printing
   -h, --help         show this help
 ```

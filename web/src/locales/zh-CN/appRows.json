@@ -94,5 +94,18 @@
     "restarts_other": "重启 {{count}} 次",
     "restartsRising": "重启次数正在增加",
     "dbSize": "数据库大小 {{size}}"
+  },
+  "group": {
+    "label": "分组方式",
+    "none": "不分组",
+    "node": "节点",
+    "project": "项目",
+    "environment": "环境",
+    "noneNode": "无节点",
+    "noneProject": "无项目",
+    "noneEnvironment": "无环境",
+    "count_other": "{{count}} 个应用",
+    "select": "选择分组",
+    "deselect": "取消选择分组"
   }
 }

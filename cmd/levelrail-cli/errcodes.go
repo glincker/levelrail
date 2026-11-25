@@ -56,7 +56,7 @@ func errorCodeFor(status int) (code, hint string) {
 	case status >= 500:
 		return errCodeServer, "the control plane failed: check its logs and doctor output"
 	case status >= 400:
-		return errCodeInvalid, ""
+		return errCodeInvalid, "fix the flagged input and retry, see the verb's --help"
 	default:
 		return errCodeAPI, ""
 	}

@@ -134,18 +134,24 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
     )
   }
 
-  function checkNow() {
-    check.mutate(undefined, {
-      onSuccess: () => {
-        void imageStatus.refetch()
+  // The server words a pending, undeployed update this way after a report-only check.
+  const applyPending = Boolean(lastResult?.includes('apply=true'))
+
+  function checkNow(apply = false) {
+    check.mutate(
+      { apply },
+      {
+        onSuccess: () => {
+          void imageStatus.refetch()
+        },
+        onError: (error) =>
+          toast.add({
+            title: t('imageAutoUpdate.toast.checkFailed'),
+            description: error.message,
+            type: 'error',
+          }),
       },
-      onError: (error) =>
-        toast.add({
-          title: t('imageAutoUpdate.toast.checkFailed'),
-          description: error.message,
-          type: 'error',
-        }),
-    })
+    )
   }
 
   const webhookUrl = rotate.data
@@ -194,7 +200,7 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
             <Button
               type="button"
               size="sm"
-              onClick={checkNow}
+              onClick={() => checkNow(true)}
               disabled={check.isPending}
             >
               {t('imageAutoUpdate.status.updateNow')}
@@ -212,17 +218,29 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
                 })
               : t('imageAutoUpdate.neverChecked')}
           </p>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={checkNow}
-            disabled={check.isPending}
-          >
-            {check.isPending
-              ? t('imageAutoUpdate.checking')
-              : t('imageAutoUpdate.checkNow')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {applyPending ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => checkNow(true)}
+                disabled={check.isPending}
+              >
+                {t('imageAutoUpdate.apply')}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => checkNow(false)}
+              disabled={check.isPending}
+            >
+              {check.isPending
+                ? t('imageAutoUpdate.checking')
+                : t('imageAutoUpdate.checkNow')}
+            </Button>
+          </div>
         </div>
         <div className="space-y-1 border-t border-border pt-3">
           <div className="flex flex-wrap items-end gap-2">

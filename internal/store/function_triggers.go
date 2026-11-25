@@ -32,6 +32,8 @@ type FunctionWebhook struct {
 	Path      string
 	CreatedAt time.Time
 	RotatedAt *time.Time
+	// Incarnation is the life of the app the webhook was enabled on; empty on a row from before the binding.
+	Incarnation string
 }
 
 // FunctionInvocation is one queued call to a function.
@@ -62,16 +64,16 @@ func parseTS(s string) time.Time {
 }
 
 // SetFunctionWebhook upserts a function's webhook trigger; rotated marks a secret rotation.
-func (db *DB) SetFunctionWebhook(ctx context.Context, fn, path string, rotated bool, now time.Time) error {
+func (db *DB) SetFunctionWebhook(ctx context.Context, fn, path, incarnation string, rotated bool, now time.Time) error {
 	rot := sql.NullString{}
 	if rotated {
 		rot = sql.NullString{String: fmtTS(now), Valid: true}
 	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO function_webhooks (function, path, created_at, rotated_at) VALUES (?, ?, ?, ?)
-		ON CONFLICT(function) DO UPDATE SET path = excluded.path,
+		INSERT INTO function_webhooks (function, path, created_at, rotated_at, incarnation) VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(function) DO UPDATE SET path = excluded.path, incarnation = excluded.incarnation,
 			rotated_at = COALESCE(excluded.rotated_at, function_webhooks.rotated_at)
-	`, fn, path, fmtTS(now), rot)
+	`, fn, path, fmtTS(now), rot, incarnation)
 	if err != nil {
 		return fmt.Errorf("store: set function webhook %q: %w", fn, err)
 	}
@@ -83,7 +85,7 @@ func (db *DB) GetFunctionWebhook(ctx context.Context, fn string) (FunctionWebhoo
 	w := FunctionWebhook{Function: fn}
 	var created string
 	var rotated sql.NullString
-	err := db.QueryRowContext(ctx, `SELECT path, created_at, rotated_at FROM function_webhooks WHERE function = ?`, fn).Scan(&w.Path, &created, &rotated)
+	err := db.QueryRowContext(ctx, `SELECT path, created_at, rotated_at, incarnation FROM function_webhooks WHERE function = ?`, fn).Scan(&w.Path, &created, &rotated, &w.Incarnation)
 	if errors.Is(err, sql.ErrNoRows) {
 		return FunctionWebhook{}, ErrFunctionWebhookNotFound
 	}
@@ -96,6 +98,14 @@ func (db *DB) GetFunctionWebhook(ctx context.Context, fn string) (FunctionWebhoo
 		w.RotatedAt = &t
 	}
 	return w, nil
+}
+
+// BindFunctionWebhook ties a function's webhook to one life of its app.
+func (db *DB) BindFunctionWebhook(ctx context.Context, fn, incarnation string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE function_webhooks SET incarnation = ? WHERE function = ?`, incarnation, fn); err != nil {
+		return fmt.Errorf("store: bind function webhook %q: %w", fn, err)
+	}
+	return nil
 }
 
 // DeleteFunctionWebhook removes a function's webhook; missing is not an error.

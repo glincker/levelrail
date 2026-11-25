@@ -11,6 +11,8 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"os"
+	"strconv"
 	"time"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" database/sql driver
@@ -23,6 +25,7 @@ import (
 // never contends with internal/store's own WAL.
 type DB struct {
 	*sql.DB
+	reader         *sql.DB // read-only pool so queries never queue behind the writer connection
 	tiers          *TierConfig
 	rawRetentionFn func() time.Duration
 	clock          func() time.Time
@@ -58,7 +61,54 @@ func Open(ctx context.Context, path string) (*DB, error) {
 		return nil, fmt.Errorf("telemetry: migrate %s: %w", path, err)
 	}
 
+	db.openReader(path)
 	return db, nil
+}
+
+// EnvReadConns sizes the telemetry read-only pool; 0 sends reads to the writer connection.
+const (
+	EnvReadConns     = "APP_TELEMETRY_READ_CONNS"
+	defaultReadConns = 4
+)
+
+func (db *DB) openReader(path string) {
+	n := defaultReadConns
+	if v, err := strconv.Atoi(os.Getenv(EnvReadConns)); err == nil && v >= 0 {
+		n = v
+	}
+	if n == 0 {
+		return
+	}
+	r, err := sql.Open("sqlite", dsn(path)+"&_pragma=query_only(1)")
+	if err != nil {
+		return
+	}
+	r.SetMaxOpenConns(n)
+	db.reader = r
+}
+
+// QueryContext runs reads on the read pool when there is one.
+func (db *DB) QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error) {
+	if db.reader != nil {
+		return db.reader.QueryContext(ctx, q, args...)
+	}
+	return db.DB.QueryContext(ctx, q, args...)
+}
+
+// QueryRowContext runs reads on the read pool when there is one.
+func (db *DB) QueryRowContext(ctx context.Context, q string, args ...any) *sql.Row {
+	if db.reader != nil {
+		return db.reader.QueryRowContext(ctx, q, args...)
+	}
+	return db.DB.QueryRowContext(ctx, q, args...)
+}
+
+// Close closes the read pool and the writer connection.
+func (db *DB) Close() error {
+	if db.reader != nil {
+		_ = db.reader.Close()
+	}
+	return db.DB.Close()
 }
 
 func dsn(path string) string {

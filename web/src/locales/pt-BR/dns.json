@@ -366,7 +366,9 @@
     },
     "record": "Adicione um registro A com host {{host}} e valor {{value}}. Um TTL de 300 segundos serve.",
     "proxyOff": "Desligue a nuvem laranja (proxy) deste registro até o certificado ser emitido.",
-    "docs": "Documentação de DNS do {{provider}}"
+    "docs": "Documentação de DNS do {{provider}}",
+    "copyHost": "Copiar host",
+    "copyValue": "Copiar valor"
   },
   "verification": {
     "ok_one": "Token aceito. {{count}} zona está visível.",

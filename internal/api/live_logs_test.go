@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -294,5 +295,39 @@ func TestHandleLiveLogStream_MultiLineSecretAcrossBackfillAndLive(t *testing.T) 
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("stream never delivered the masked line")
+	}
+}
+
+func TestHandleLiveLogStream_CapReturns429AndSlotReleases(t *testing.T) {
+	rt, db, _, _ := newTestRouterWithLiveLogs(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	limit := int64(rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyLogMaxLiveSubscribers))
+	rt.liveLogSlots.Store(limit)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/logs/stream", ""))
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("status = %d, want 429", rec.Code)
+	}
+	if rec.Header().Get("Retry-After") == "" {
+		t.Error("missing Retry-After header")
+	}
+	if got := rt.liveLogSlots.Load(); got != limit {
+		t.Errorf("slots after refusal = %d, want %d", got, limit)
+	}
+
+	rt.liveLogSlots.Store(limit - 1)
+	if !rt.acquireLiveLogSlot(context.Background()) {
+		t.Fatal("slot below the cap was refused")
+	}
+	if rt.acquireLiveLogSlot(context.Background()) {
+		t.Fatal("slot above the cap was granted")
+	}
+	rt.liveLogSlots.Add(-1)
+	if !rt.acquireLiveLogSlot(context.Background()) {
+		t.Fatal("released slot was not reusable")
 	}
 }

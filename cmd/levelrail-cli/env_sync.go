@@ -24,6 +24,8 @@ func runEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		return runEnvSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "unset":
 		return runEnvUnset(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restore":
+		return runEnvRestore(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pull":
 		return runEnvPull(prog, args[1:], stdout, stderr, lookupEnv)
 	case "push":
@@ -39,12 +41,13 @@ func envUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s env set <app> KEY=VALUE... [--apply] [flags]                    set plain env vars on an app
   %[1]s env unset <app> KEY... [--apply] [flags]                        remove plain env vars from an app
+  %[1]s env restore <app> <revision> --confirm <app> [flags]            restore an earlier env revision as a new one
   %[1]s env pull <app> [--file .env] [--masked] [flags]                 write an app's env vars to a local .env file
   %[1]s env push <app> [--file .env] [--dry-run] [--keep-existing] [flags]   merge a local .env file into an app's env vars
 
 Pull asks for your password (and authenticator code) once so secret values
 are written too, and creates the file with owner-only permissions. Use
---masked to skip that and write secrets as empty keys. Database and storage
+--masked to skip that and write every value, plain ones too, as empty keys. Database and storage
 links inject their connection env at container start and are not part of the
 pulled file. Push checks new values for credentials and warns by key name
 only; keys already stored as secrets are never overwritten.
@@ -77,7 +80,10 @@ func splitEnvSyncFlags(args []string) (file string, masked bool, rest []string) 
 func runEnvPull(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	file, masked, rest := splitEnvSyncFlags(args)
 	wrapped := append(rest, "--out", file)
-	if !masked {
+	if masked {
+		// --masked promises no values in the file, plain ones included.
+		wrapped = append(wrapped, "--mask-all")
+	} else {
 		wrapped = append(wrapped, "--reveal")
 	}
 	return runAppsEnvExport(prog, wrapped, stdout, stderr, lookupEnv)

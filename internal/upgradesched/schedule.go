@@ -252,6 +252,7 @@ func (s *Scheduler) considerAuto(ctx context.Context) error {
 		if errors.Is(err, ErrReleaseNotFound) {
 			return nil
 		}
+		s.decide(ctx, row, cand.Tag, "held: the upgrade plan could not be built, retrying", false)
 		return fmt.Errorf("upgradesched: plan %s: %w", cand.Tag, err)
 	}
 	if cand.PublishedAt.IsZero() {

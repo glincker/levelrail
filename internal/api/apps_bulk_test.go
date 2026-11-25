@@ -297,3 +297,19 @@ func TestBulkApps_SetMemoryCPUEnvDryRunAndQuota(t *testing.T) {
 		t.Errorf("b-app = %+v err=%v", svc, err)
 	}
 }
+
+func TestBulkSetEnv_RecordsActorAndChange(t *testing.T) {
+	f := newEnvFixture(t)
+	rec := f.do(t, f.cookie, http.MethodPost, "/api/v1/apps/bulk", `{"action":"set-env","names":["web"],"env_key":"LOG_LEVEL","env_value":"debug"}`, http.StatusMultiStatus)
+	if strings.Contains(rec.Body.String(), `"status":"error"`) {
+		t.Fatalf("bulk = %s", rec.Body.String())
+	}
+	revs, err := f.db.ListEnvRevisions(context.Background(), "web", 5)
+	if err != nil || len(revs) != 1 || revs[0].Actor == "bulk" || revs[0].Actor == "" {
+		t.Fatalf("revisions = %+v, %v", revs, err)
+	}
+	changes, err := f.db.ListEnvChanges(context.Background(), "web", 10, 0)
+	if err != nil || len(changes) != 1 || changes[0].Key != "LOG_LEVEL" || changes[0].Actor != revs[0].Actor {
+		t.Fatalf("changes = %+v, %v", changes, err)
+	}
+}

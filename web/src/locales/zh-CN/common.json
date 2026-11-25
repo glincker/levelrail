@@ -306,7 +306,8 @@
   },
   "confirmDialog": {
     "cancel": "取消",
-    "typePrompt": "输入 {{value}} 以确认"
+    "typePrompt": "输入 {{value}} 以确认",
+    "impactLead": "你将失去: {{items}}。"
   },
   "deleteApp": {
     "trigger": "删除",
@@ -510,7 +511,9 @@
       "systemStatus": "Doctor",
       "report": "报告问题",
       "community": "向社区提问",
-      "suggest": "建议新功能"
+      "suggest": "建议新功能",
+      "copyDetails": "复制详情以便联系支持",
+      "detailsHeader": "Levelrail 支持详情"
     },
     "account": {
       "controlPlane": "控制平面",
@@ -1271,8 +1274,14 @@
         "title": "邮件尚未设置",
         "message": "尚未配置邮件提供商。",
         "action": "在设置的邮件中添加一个，然后重试。"
+      },
+      "badToken": {
+        "title": "令牌被拒绝",
+        "message": "令牌或凭据被拒绝，或已过期。",
+        "action": "请创建一个具有正确权限的新令牌，然后重试。"
       }
-    }
+    },
+    "whatThisMeans": "这意味着:"
   },
   "notFound": {
     "requested": "请求的内容：{{name}}",

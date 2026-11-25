@@ -81,7 +81,14 @@
     "cancel": "取消",
     "started": "正在恢复到 {{name}}",
     "startedDescription": "请在此卷的恢复历史中查看进度。",
-    "failed": "无法开始恢复"
+    "failed": "无法开始恢复",
+    "stepCheck": "检查应用",
+    "checkTitle": "恢复已开始。现在请检查你的应用。",
+    "checkOpen": "打开应用，确认它仍能正常加载。",
+    "checkData": "恢复完成后，确认数据已回到 {{name}}。",
+    "checkSwitch": "把应用指向 {{name}} (其卷设置)，然后重新部署，让它使用恢复后的数据。",
+    "checkLink": "打开应用",
+    "done": "完成"
   },
   "policy": {
     "title": "{{app}}/{{volume}} 的备份策略",
@@ -613,5 +620,49 @@
     "startedTitle": "恢复测试已开始。",
     "startedBody": "完成后结果会显示在此处。",
     "startFailed": "无法开始恢复测试。"
+  },
+  "sameDisk": {
+    "title": "这台服务器出故障时，备份也会一起丢失。",
+    "body": "所有备份目标都在这台服务器自己的磁盘上。请连接其他位置的存储，以保留一份可幸存的副本。",
+    "connect": "连接存储"
+  },
+  "newServer": {
+    "open": "恢复到新服务器",
+    "title": "恢复到新服务器",
+    "description": "根据最新备份，在另一个节点上恢复应用、其卷和数据库。不会覆盖任何现有内容。",
+    "stepChoose": "选择应用和节点",
+    "stepReview": "检查",
+    "stepProgress": "进度",
+    "app": "应用",
+    "appPlaceholder": "选择应用",
+    "noApps": "没有找到带有已备份数据的应用。",
+    "node": "节点",
+    "nodePlaceholder": "选择节点",
+    "noNodes": "没有其他可用节点。请先添加服务器，然后再回来。",
+    "nodeOffline": "{{name}} (离线)",
+    "review": "这些项目将恢复到 {{node}}。",
+    "reviewEmpty": "这个应用没有可恢复的内容。",
+    "kind": {
+      "volume": "卷",
+      "database": "数据库"
+    },
+    "status": {
+      "planned": "就绪",
+      "started": "恢复中",
+      "skipped": "已跳过",
+      "failed": "失败"
+    },
+    "asName": "恢复为 {{name}}",
+    "nothingRestorable": "没有项目拥有成功的备份，因此无法开始。",
+    "next": "检查",
+    "back": "返回",
+    "confirm": "立即恢复",
+    "cancel": "取消",
+    "done": "完成",
+    "planFailed": "无法规划恢复: {{error}}",
+    "startFailed": "无法开始恢复: {{error}}",
+    "startedTitle": "恢复已开始",
+    "startedBody": "每个项目都会在后台恢复为 {{node}} 上的新资源。可在下方的恢复历史中查看进度。",
+    "openApp": "打开应用"
   }
 }

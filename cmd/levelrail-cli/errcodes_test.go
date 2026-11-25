@@ -25,7 +25,7 @@ func TestNewJSONError(t *testing.T) {
 		{"conflict", &apiError{StatusCode: 409, Message: "protected"}, errCodeConflict, exitAPIError, 409, true, ""},
 		{"precondition", &apiError{StatusCode: 412, Message: "stale"}, errCodeConflict, exitAPIError, 412, true, ""},
 		{"rate limited", &apiError{StatusCode: 429, Message: "slow down", RetryAfter: 30 * time.Second}, errCodeRateLimited, exitAPIError, 429, true, "30s"},
-		{"bad request", &apiError{StatusCode: 400, Message: "bad"}, errCodeInvalid, exitAPIError, 400, false, ""},
+		{"bad request", &apiError{StatusCode: 400, Message: "bad"}, errCodeInvalid, exitAPIError, 400, true, ""},
 		{"server", &apiError{StatusCode: 502, Message: "boom"}, errCodeServer, exitAPIError, 502, true, ""},
 		{"validation", newValidationError("--name is required"), errCodeValidation, exitValidation, 0, false, ""},
 		{"network", errors.New("dial tcp: refused"), errCodeNetwork, exitNetwork, 0, true, ""},

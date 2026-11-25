@@ -9,6 +9,8 @@
   "moved": "{{label}} movido para a posição {{position}} de {{total}}",
   "currentPage": "Página atual",
   "currentGroup": "Contém a página atual",
+  "compact": "Barra lateral compacta",
+  "compactDone": "Barra lateral em modo compacto",
   "reset": "Restaurar padrão",
   "resetDone": "Barra lateral restaurada ao padrão",
   "done": "Concluído",

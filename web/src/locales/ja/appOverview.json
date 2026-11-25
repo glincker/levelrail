@@ -161,5 +161,15 @@
     "none": "プレビュー環境はまだありません。",
     "all": "すべてのプレビュー",
     "pr": "PR #{{number}}"
-  }
+  },
+  "detailsTrigger": "設定と診断",
+  "activityLabel": "アクティビティ",
+  "liveLogsLabel": "ライブログ",
+  "appSummaryLabel": "アプリの概要",
+  "suggestedFixes": "推奨される修正",
+  "liveTrafficLabel": "ライブトラフィックとリソース",
+  "trafficUnavailable": "ライブのトラフィック数値は現在利用できません。",
+  "trafficRetry": "再試行",
+  "noTrafficTitle": "まだトラフィックがありません",
+  "noTrafficHint": "リクエストを送信すると、ライブの数値が表示されます。"
 }

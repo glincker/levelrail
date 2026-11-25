@@ -105,6 +105,7 @@ export function DrainNodeDialog({
               <ZoneDrainPanel
                 initialZone={node.zone ?? ''}
                 onClose={() => handleOpenChange(false)}
+                onBack={() => setScope('node')}
               />
             </Suspense>
           </>

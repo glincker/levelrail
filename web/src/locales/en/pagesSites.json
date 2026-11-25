@@ -188,7 +188,15 @@
     "next": "Next",
     "addDomain": "Add domain",
     "editRoutes": "Edit routes",
-    "viewDeploys": "View deploys"
+    "viewDeploys": "View deploys",
+    "copied": "Copied",
+    "copiedAnnounce": "Copied {{domain}} URL",
+    "took": "Live in {{time}}",
+    "chip": {
+      "domain": "Add a domain",
+      "git": "Connect git",
+      "password": "Set a password"
+    }
   },
   "entry": {
     "drop": {
@@ -551,6 +559,15 @@
     "empty": "No log output.",
     "error": "Could not load the log.",
     "failedAt": "Failed during {{step}}",
+    "hint": {
+      "outOfMemory": "The build ran out of memory. Reduce memory use in the build script, for example by splitting heavy steps.",
+      "timeout": "The build timed out. Check for a step that waits for input or never exits.",
+      "installFailed": "Installing dependencies failed. Check that the lockfile matches package.json and that every package is reachable.",
+      "nodeVersion": "A dependency needs a different Node version. Set engines.node in package.json or add an .nvmrc file.",
+      "missingBuildCommand": "No usable build command was found. Set the build command in Settings, or add a build script to package.json.",
+      "outputDirEmpty": "The build finished but the output directory is empty. Check the output directory in Settings.",
+      "outputDirMissing": "The output directory was not found after the build. Set the correct output directory in Settings."
+    },
     "step": {
       "cloning": "Cloning",
       "building": "Building",
@@ -646,5 +663,22 @@
       "title": "Recent previews",
       "none": "No branch previews yet."
     }
+  },
+  "notify": {
+    "title": "Deploy notifications",
+    "tip": "Send a message to a channel when a deploy of this site finishes",
+    "failed": "Could not load notification settings.",
+    "enabled": "Notify",
+    "onFailure": "On failure",
+    "onSuccess": "On success",
+    "channel": "Channel",
+    "pick": "Attach channel",
+    "save": "Save",
+    "readOnly": "You need write access to change this.",
+    "needEvent": "Pick at least one event.",
+    "channelsFailed": "Could not load channels.",
+    "sendingTo": "Sending to {{channels}}",
+    "noneAttached": "No channel attached yet.",
+    "noChannels": "No notification channels exist yet. Create one under Alerts."
   }
 }

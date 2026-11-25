@@ -94,5 +94,18 @@
     "restarts_other": "再起動 {{count}} 回",
     "restartsRising": "再起動回数が増えています",
     "dbSize": "データベースサイズ {{size}}"
+  },
+  "group": {
+    "label": "グループ化",
+    "none": "グループなし",
+    "node": "ノード",
+    "project": "プロジェクト",
+    "environment": "環境",
+    "noneNode": "ノードなし",
+    "noneProject": "プロジェクトなし",
+    "noneEnvironment": "環境なし",
+    "count_other": "{{count}} 個のアプリ",
+    "select": "グループを選択",
+    "deselect": "グループの選択を解除"
   }
 }

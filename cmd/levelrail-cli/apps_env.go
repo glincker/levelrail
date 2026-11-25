@@ -7,6 +7,8 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -92,6 +94,9 @@ type envImportResult struct {
 	App     string `json:"app"`
 	DryRun  bool   `json:"dry_run"`
 	Applied bool   `json:"applied"`
+	// Saved is true once the change is stored; Pending means it still waits for a restart.
+	Saved   bool `json:"saved,omitempty"`
+	Pending bool `json:"pending,omitempty"`
 	// SecretsSet counts keys written to the secret store.
 	SecretsSet int           `json:"secrets_set"`
 	Plan       envImportPlan `json:"plan"`
@@ -238,7 +243,7 @@ func printEnvImportHuman(w io.Writer, name string, r envImportResult) {
 	switch {
 	case r.DryRun:
 		_, _ = fmt.Fprintf(w, "dry run: nothing saved for app %q\n", name)
-	case r.Applied:
+	case r.Applied || r.Saved:
 		_, _ = fmt.Fprintf(w, "saved env for app %q (%d new, %d changed, %d to secrets)\n", name, len(r.Plan.New), len(r.Plan.Changed), r.SecretsSet)
 	default:
 		_, _ = fmt.Fprintf(w, "nothing to change for app %q\n", name)
@@ -271,10 +276,11 @@ func buildTimeEnvKeys(groups ...[]string) []string {
 func runAppsEnvExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps env export", "unused for this subcommand", stderr)
 	var out, format string
-	var reveal bool
+	var reveal, maskAll bool
 	fs.StringVar(&out, "out", "", "write to this file instead of stdout")
 	fs.BoolVar(&reveal, "reveal", false, "include sensitive and secret values; asks for your password (and authenticator code) interactively")
 	fs.StringVar(&format, "format", "dotenv", "dotenv or json (json needs --reveal)")
+	fs.BoolVar(&maskAll, "mask-all", false, "write every value empty, plain ones included")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]\n\nWrites an app's env vars as .env text. Without --reveal, sensitive and\nsecret keys are written empty with a comment.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -308,7 +314,14 @@ func runAppsEnvExport(prog string, args []string, stdout, stderr io.Writer, look
 		if err != nil {
 			return reportError(stdout, stderr, false, err)
 		}
-		text = renderDotenv(app.Env, secretKeys)
+		env := app.Env
+		if maskAll {
+			env = make(map[string]string, len(app.Env))
+			for k := range app.Env {
+				env[k] = apiclient.MaskedEnvValue
+			}
+		}
+		text = renderDotenv(env, secretKeys)
 	}
 
 	if out == "" {

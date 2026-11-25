@@ -62,6 +62,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	// Always set so a previous run() in this process never leaks the opt-in.
 	apiclient.SetInsecureHTTP(insecureHTTP)
 	args, scopeFlags = extractScopeFlags(expandTemplateFlag(expandOutputShorthand(args)))
+	// --output json must shape errors like --json does.
+	errorsAsJSON = wantsJSONOutput(args)
 	// Reset every run so a saved setting never leaks between calls in one process.
 	defaultOutput = readSetting(prog, settingOutput)
 	installServerTrust(prog, args, stderr, lookupEnv)
@@ -245,7 +247,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runDashboards(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pipelines":
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
-	case "deployments":
+	case "deployments", "deploys":
 		return runDeployments(prog, args[1:], stdout, stderr, lookupEnv)
 	case "traffic":
 		return runTraffic(prog, args[1:], stdout, stderr, lookupEnv)
@@ -377,6 +379,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runMCP(prog, args[1:], stdout, stderr, lookupEnv)
 	case "docs":
 		return runDocs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "schema":
+		return runSchema(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-link":

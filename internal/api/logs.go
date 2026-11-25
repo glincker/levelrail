@@ -29,6 +29,11 @@ type logEntryResource struct {
 	Level string `json:"level,omitempty"`
 	// Container is the id of the container that wrote the line.
 	Container string `json:"container,omitempty"`
+	// Count, First and Last are set only on a collapsed run of identical
+	// lines (collapse=1); Timestamp then equals First.
+	Count int       `json:"count,omitempty"`
+	First time.Time `json:"first,omitzero"`
+	Last  time.Time `json:"last,omitzero"`
 }
 
 // logContainer is one container seen in a log query, with its line count.
@@ -116,6 +121,7 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		return
 	}
 	container := r.URL.Query().Get("container")
+	collapse := r.URL.Query().Get("collapse") == "1"
 	order := r.URL.Query().Get("order")
 	if order != "" && order != logOrderNewest && order != logOrderRelevance {
 		writeError(w, http.StatusBadRequest, "order must be newest or relevance")
@@ -144,18 +150,35 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		entries = filterLogsByContainer(entries, container)
 	}
 	total := len(entries)
+	var runs []collapsedLog
+	if collapse {
+		runs = collapseLogs(entries)
+		// Trim the runs themselves so each kept entry still lines up with its run.
+		if (order != logOrderRelevance || strings.TrimSpace(query) == "") && limit > 0 && len(runs) > limit {
+			runs = runs[len(runs)-limit:]
+		}
+		entries = entries[:0:0]
+		for _, c := range runs {
+			entries = append(entries, c.entry)
+		}
+	}
 	if order == logOrderRelevance && strings.TrimSpace(query) != "" {
 		entries = telemetry.RankLogsByRelevance(entries, query)
 		if limit > 0 && len(entries) > limit {
 			entries = entries[:limit]
 		}
-	} else if limit > 0 && len(entries) > limit {
+	} else if !collapse && limit > 0 && len(entries) > limit {
 		entries = entries[len(entries)-limit:]
 	}
 
-	out := make([]logEntryResource, len(entries))
-	for i, e := range entries {
-		out[i] = toLogEntryResource(e)
+	var out []logEntryResource
+	if collapse {
+		out = collapsedResources(entries, runs)
+	} else {
+		out = make([]logEntryResource, len(entries))
+		for i, e := range entries {
+			out[i] = toLogEntryResource(e)
+		}
 	}
 	writeJSON(w, http.StatusOK, logsResponse{Entries: out, Total: total, Containers: containers})
 }

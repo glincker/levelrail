@@ -30,6 +30,7 @@ const SiteSettingsForm = lazy(() => import('./SiteSettingsForm'))
 const SiteGitCard = lazy(() => import('./SiteGitCard'))
 const SiteFormsCard = lazy(() => import('./SiteFormsCard'))
 const SiteHookCard = lazy(() => import('./SiteHookCard'))
+const SiteNotifyCard = lazy(() => import('./SiteNotifyCard'))
 const SitePresetCard = lazy(() => import('./SitePresetCard'))
 const SiteCiCard = lazy(() => import('./SiteCiCard'))
 const SitePreviewsCard = lazy(() => import('./SitePreviewsCard'))
@@ -82,6 +83,9 @@ function Settings({
       </Suspense>
       <Suspense fallback={<Skeleton className="h-12 w-full" />}>
         <SiteHookCard name={name} />
+      </Suspense>
+      <Suspense fallback={<Skeleton className="h-12 w-full" />}>
+        <SiteNotifyCard name={name} />
       </Suspense>
       <Suspense fallback={<Skeleton className="h-24 w-full" />}>
         <SiteCiCard name={name} />

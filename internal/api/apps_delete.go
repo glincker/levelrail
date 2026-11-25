@@ -34,7 +34,14 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if !purge {
 		undo, _ = rt.apps.GetDesiredService(r.Context(), name)
 	}
-	teardownErr, err := rt.deleteApp(r.Context(), name)
+	delCtx := r.Context()
+	if st := rt.recentlyDeleted(); undo != nil && st != nil && rt.recentlyDeletedWindow(delCtx) > 0 {
+		if entry, ok := rt.deletedEntry(r, store.RecentlyDeletedApp, name, undo, ""); ok {
+			// The reservation is written under the name lock, in deleteAppGuarded, before history is relied on.
+			delCtx = withSoftDelete(store.WithKeptRevisions(delCtx), func(c context.Context) error { return st.AddRecentlyDeleted(c, entry) })
+		}
+	}
+	teardownErr, err := rt.deleteApp(delCtx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -45,9 +52,6 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if purge && teardownErr == nil {
 		rt.purgeVolumes(context.WithoutCancel(r.Context()), "app/"+name, volumes)
-	}
-	if undo != nil {
-		rt.rememberDeleted(context.WithoutCancel(r.Context()), r, store.RecentlyDeletedApp, name, undo, "")
 	}
 	rt.changes.Publish(changeApps, name)
 	rt.purgeAppAccess(name)
@@ -61,6 +65,13 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type softDeleteKey struct{}
+
+// withSoftDelete carries the undo reservation write into deleteAppGuarded.
+func withSoftDelete(ctx context.Context, reserve func(context.Context) error) context.Context {
+	return context.WithValue(ctx, softDeleteKey{}, reserve)
 }
 
 // appNameLocks serializes a delete's row removal and credential erase with a
@@ -121,6 +132,20 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 			return nil, err
 		}
 	}
+	// A hard delete clears function data first, so a failure leaves the app in place rather than handing it to the next one.
+	soft, _ := ctx.Value(softDeleteKey{}).(func(context.Context) error)
+	if soft == nil {
+		if err := rt.purgeFunctionData(ctx, name); err != nil {
+			return nil, fmt.Errorf("remove function data of %q: %w", name, err)
+		}
+	}
+	// Reserve the name before the row goes: if that fails nothing has changed. A reservation left for an
+	// app that stays alive is harmless, the purge skips live names.
+	if soft != nil {
+		if err := soft(context.WithoutCancel(ctx)); err != nil {
+			return nil, fmt.Errorf("reserve %q for undo: %w", name, err)
+		}
+	}
 	finalizer := rt.deleteFinalizer()
 	if finalizer != nil {
 		if err := finalizer.Begin(ctx, name, existing.NodeID); err != nil {
@@ -134,6 +159,9 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	// Erase right after the row is gone, under the name lock (held since the
 	// load): a same-name create cannot write secrets this cleanup then removes.
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
+		if soft == nil {
+			return nil, fmt.Errorf("delete app %q: function data was already removed, repeat the delete to finish: %w", name, err)
+		}
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
 	rt.removeAppCredentials(ctx, name, integrationNS)

@@ -131,7 +131,10 @@
     "clear": "Remover todos os limites",
     "saved": "Cota salva",
     "cleared": "Limites da cota removidos",
-    "readOnly": "Somente administradores e proprietários da equipe podem alterar estes limites."
+    "readOnly": "Somente administradores e proprietários da equipe podem alterar estes limites.",
+    "live": "Em uso agora: {{live}} de {{reserved}} reservados ({{sampled}} de {{total}} apps informando)",
+    "liveOfReserved": "{{percent}}% do reservado",
+    "liveLabel": "{{resource}} em uso agora"
   },
   "errors": {
     "generic": "A requisição falhou: {{message}}"

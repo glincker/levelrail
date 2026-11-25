@@ -82,7 +82,7 @@ Flags:
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                        print the new policy as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -128,7 +128,7 @@ Flags:
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print policies as a JSON array to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -170,7 +170,7 @@ Flags:
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print the policy as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -235,7 +235,7 @@ Flags:
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                        print the updated policy as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -272,7 +272,7 @@ Flags:
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print {"deleted":true} to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -360,7 +360,7 @@ Flags:
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                              print {"ok":true} to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -377,7 +377,7 @@ Flags:
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                              print {"ok":true} to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
@@ -420,7 +420,7 @@ Flags:
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print attachments as a JSON array to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

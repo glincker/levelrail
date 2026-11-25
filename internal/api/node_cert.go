@@ -212,7 +212,7 @@ func (rt *Router) handleCreateNodeReenrollToken(w http.ResponseWriter, r *http.R
 	}
 	now := time.Now()
 	rec := store.NodeJoinToken{
-		ID: tokenID, TokenHash: hashToken(plaintext), CreatedAt: now, ExpiresAt: now.Add(nodeJoinTokenTTL),
+		ID: tokenID, TokenHash: hashToken(plaintext), CreatedAt: now, ExpiresAt: now.Add(rt.joinTokenTTLFor(r.Context(), false)),
 		Purpose: store.NodeJoinTokenPurposeReenroll, NodeID: id,
 	}
 	if err := rt.nodes.SaveNodeJoinToken(r.Context(), rec); err != nil {

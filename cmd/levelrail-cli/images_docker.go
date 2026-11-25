@@ -111,7 +111,7 @@ func runImagesStatus(prog string, args []string, stdout, stderr io.Writer, looku
 			_, _ = fmt.Fprintf(stdout, "arch:    image %s, node %s, mismatch %t\n", res.ImageArch, res.NodeArch, res.ArchMismatch)
 		}
 		if res.UpdateAvailable {
-			_, _ = fmt.Fprintf(stdout, "apply it with: %s apps auto-update check %s\n", prog, c.rest[0])
+			_, _ = fmt.Fprintf(stdout, "apply it with: %s apps auto-update check %s --apply\n", prog, c.rest[0])
 		}
 	})
 }

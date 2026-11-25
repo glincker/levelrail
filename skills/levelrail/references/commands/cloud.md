@@ -158,7 +158,7 @@ Usage of levelrail-cli cloud aws acm:
   -names string
     	comma separated metric names, for metrics
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
@@ -232,7 +232,7 @@ Usage of levelrail-cli cloud aws ecr:
   -names string
     	comma separated metric names, for metrics
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
@@ -306,7 +306,7 @@ Usage of levelrail-cli cloud aws elasticache:
   -names string
     	comma separated metric names, for metrics
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
@@ -354,7 +354,7 @@ Usage of levelrail-cli cloud aws lightsail:
   -key-pair string
     	key pair name, for create
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -project string
@@ -418,7 +418,7 @@ Usage of levelrail-cli cloud aws logs:
   -names string
     	comma separated metric names, for metrics
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
@@ -492,7 +492,7 @@ Usage of levelrail-cli cloud aws rds:
   -names string
     	comma separated metric names, for metrics
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
@@ -566,7 +566,7 @@ Usage of levelrail-cli cloud aws secrets:
   -names string
     	comma separated metric names, for metrics
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string
@@ -640,7 +640,7 @@ Usage of levelrail-cli cloud aws snapshots:
   -names string
     	comma separated metric names, for metrics
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -overwrite
     	overwrite an existing parameter
   -path string

@@ -27,12 +27,16 @@ const (
 	envNoUpdateCheck    = "LEVELRAIL_NO_UPDATE_CHECK"
 	envUpdateCheckDays  = "LEVELRAIL_UPDATE_CHECK_DAYS"
 	envUpdateHintWaitMS = "LEVELRAIL_UPDATE_HINT_WAIT_MS"
+	// envUpdateNotices seeds cli.update_notices; set to off to silence update notices.
+	envUpdateNotices     = "LEVELRAIL_CLI_UPDATE_NOTICES"
+	envUpdateNoticeHours = "LEVELRAIL_CLI_UPDATE_NOTICE_HOURS"
 
-	defaultReleaseAPIURL    = "https://api.github.com"
-	defaultUpdateCheckDays  = 7
-	defaultUpdateHintWaitMS = 750
-	updateHTTPTimeout       = 10 * time.Minute
-	tufCacheDirName         = "sigstore-tuf"
+	defaultReleaseAPIURL     = "https://api.github.com"
+	defaultUpdateCheckDays   = 7
+	defaultUpdateHintWaitMS  = 750
+	defaultUpdateNoticeHours = 24
+	updateHTTPTimeout        = 10 * time.Minute
+	tufCacheDirName          = "sigstore-tuf"
 )
 
 // Seams for tests: the running executable's path and the signature check.
@@ -297,7 +301,7 @@ Flags:
   --force                  replace the binary even when a package manager owns it
   --yes                    do not ask for confirmation (required in CI mode or without a terminal)
   --json                   print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 

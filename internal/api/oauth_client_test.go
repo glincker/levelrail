@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"golang.org/x/oauth2"
@@ -102,7 +103,7 @@ func TestNewOIDCOAuthClient_DiscoveryAndVerify(t *testing.T) {
 	})
 
 	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
-	client, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback")
+	client, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback")
 	if err != nil {
 		t.Fatalf("newOIDCOAuthClient: %v", err)
 	}
@@ -137,7 +138,7 @@ func TestOIDCOAuthClient_FetchUserInfo_RejectsInvalidClaims(t *testing.T) {
 			issuer := newFakeOIDCIssuer(t)
 			issuer.nextIDToken = issuer.signIDToken(t, tc.claims)
 			settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
-			client, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback")
+			client, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback")
 			if err != nil {
 				t.Fatalf("newOIDCOAuthClient: %v", err)
 			}
@@ -154,20 +155,28 @@ func TestOIDCOAuthClient_FetchUserInfo_RejectsInvalidClaims(t *testing.T) {
 
 func TestNewOIDCOAuthClient_DiscoveryFailure(t *testing.T) {
 	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: "x", IssuerURL: "http://127.0.0.1:1/nonexistent"}
-	if _, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback"); err == nil {
+	if _, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback"); err == nil {
 		t.Fatal("newOIDCOAuthClient succeeded against an unreachable issuer, want error")
 	}
 }
 
-func TestDefaultOAuthClientFactory_OIDC(t *testing.T) {
+func TestDefaultOAuthClientFactory_OIDCRefusesLoopbackIssuer(t *testing.T) {
 	issuer := newFakeOIDCIssuer(t)
 	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
-	client, err := defaultOAuthClientFactory(store.OAuthProviderOIDC, settings, "secret", "https://levelrail.example/callback")
+	if _, err := defaultOAuthClientFactory(store.OAuthProviderOIDC, settings, "secret", "https://levelrail.example/callback"); err == nil {
+		t.Fatal("factory reached a loopback issuer, want the network guard to refuse it")
+	}
+}
+
+func TestNewOIDCOAuthClientWith_ReturnsOIDCClient(t *testing.T) {
+	issuer := newFakeOIDCIssuer(t)
+	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
+	client, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback")
 	if err != nil {
-		t.Fatalf("defaultOAuthClientFactory: %v", err)
+		t.Fatalf("newOIDCOAuthClientWith: %v", err)
 	}
 	if _, ok := client.(*oidcOAuthClient); !ok {
-		t.Errorf("defaultOAuthClientFactory returned %T, want *oidcOAuthClient", client)
+		t.Errorf("got %T, want *oidcOAuthClient", client)
 	}
 }
 
@@ -244,5 +253,27 @@ func TestMicrosoftOAuthClient_FetchUserInfo_NoEmailAvailable(t *testing.T) {
 	client := &microsoftOAuthClient{}
 	if _, err := client.FetchUserInfo(ctx, &oauth2.Token{AccessToken: "test"}); err == nil {
 		t.Fatal("FetchUserInfo succeeded with no mail or userPrincipalName, want error")
+	}
+}
+
+func TestNewOIDCOAuthClientRefusesInternalIssuerGenerically(t *testing.T) {
+	issuer := newFakeOIDCIssuer(t)
+	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
+	_, err := newOIDCOAuthClient(settings, "secret", "https://levelrail.example/callback")
+	if err == nil || err.Error() != errOIDCDiscovery.Error() {
+		t.Fatalf("err = %v, want generic discovery error", err)
+	}
+}
+
+func TestOIDCExchangeUsesGuardedClient(t *testing.T) {
+	issuer := newFakeOIDCIssuer(t)
+	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderOIDC, ClientID: issuer.clientID, IssuerURL: issuer.srv.URL}
+	client, err := newOIDCOAuthClientWith(http.DefaultClient, settings, "secret", "https://levelrail.example/callback")
+	if err != nil {
+		t.Fatalf("discovery: %v", err)
+	}
+	client.(*oidcOAuthClient).hc = netguard.NewClientPrivateNetworks()
+	if _, err := client.Exchange(context.Background(), "code"); err == nil {
+		t.Fatal("token exchange to loopback succeeded, want refusal")
 	}
 }

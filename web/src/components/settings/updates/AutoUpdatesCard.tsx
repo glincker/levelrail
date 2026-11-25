@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ChevronRightGlassIcon, ClockGlassIcon } from '@thesvg/ui-react'
+import { ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { ApiErrorAlert } from '@/components/ApiErrorAlert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,7 +29,9 @@ import {
 } from '@/lib/autoUpdateWindow'
 import {
   updateSettingsQueryOptions,
+  updatesQueryOptions,
   useSetUpdateSettings,
+  type UpdateStatus,
   type UpdateChannel,
   type UpdateSettings,
 } from '@/queries/updates'
@@ -41,9 +43,12 @@ import {
   type UpgradePolicyInput,
 } from '@/queries/upgradeSchedule'
 import { cn } from '@/lib/utils'
+import { AutoUpdateHeadline } from './AutoUpdateHeadline'
 import { AutoUpdateStatus } from './AutoUpdateStatus'
 
 const LEVELS = ['patch', 'any'] as const
+// Days a release must age before it installs on its own.
+const AGE_CHOICES = [0, 1, 2, 3, 7]
 const DAY_CHOICES: WindowDays[] = ['daily', 'weekdays', 'weekends']
 
 function inputFrom(
@@ -84,6 +89,7 @@ function ScheduleForm({
     policy.window_duration_minutes || DEFAULT_MINUTES,
   )
   const [days, setDays] = useState<WindowDays>(parts.days)
+  const [age, setAge] = useState(policy.min_release_age_days)
   const [zone, setZone] = useState(policy.timezone || policy.server_timezone)
   const [channel, setChannel] = useState<UpdateChannel>(settings.channel)
   const channels = settings.offered_channels?.length
@@ -97,6 +103,10 @@ function ScheduleForm({
     ? DURATION_CHOICES
     : [...DURATION_CHOICES, minutes].sort((a, b) => a - b)
 
+  const ages = AGE_CHOICES.includes(age)
+    ? AGE_CHOICES
+    : [...AGE_CHOICES, age].sort((a, b) => a - b)
+
   function save(e: React.FormEvent) {
     e.preventDefault()
     if (!clock) return
@@ -106,6 +116,7 @@ function ScheduleForm({
         window_cron: buildWindowCron({ ...clock, days }, policy.window_cron),
         window_duration_minutes: minutes,
         timezone: zone.trim(),
+        min_release_age_days: age,
       }),
       {
         onSuccess: () =>
@@ -149,7 +160,7 @@ function ScheduleForm({
           ))}
         </div>
       </fieldset>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Field>
           <FieldLabel htmlFor="au-start">{t('quick.start')}</FieldLabel>
           <Input
@@ -206,6 +217,27 @@ function ScheduleForm({
                   {t('quick.dayOption.custom')}
                 </SelectItem>
               ) : null}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="au-age">{t('quick.age')}</FieldLabel>
+          <Select
+            value={String(age)}
+            onValueChange={(v) => {
+              const n = Number(v)
+              if (!Number.isNaN(n)) setAge(n)
+            }}
+          >
+            <SelectTrigger id="au-age" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ages.map((d) => (
+                <SelectItem key={d} value={String(d)}>
+                  {t('quick.ageDays', { count: d })}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </Field>
@@ -283,13 +315,16 @@ function summaryParts(policy: UpgradePolicy) {
 function AutoUpdatesBody({
   policy,
   settings,
+  update,
 }: {
   policy: UpgradePolicy
   settings: UpdateSettings
+  update: UpdateStatus | undefined
 }) {
   const { t } = useTranslation('updates')
   const savePolicy = useSetPolicy()
   const saveSettings = useSetUpdateSettings()
+  const [now] = useState(() => Date.now())
   const [optimistic, setOptimistic] = useState<boolean | null>(null)
   const [open, setOpen] = useState(false)
   const formId = useId()
@@ -336,7 +371,7 @@ function AutoUpdatesBody({
   }
 
   const blocked = policy.status?.state === 'blocked'
-  let sentence: string
+  let sentence: string | null = null
   if (policy.paused_until) {
     sentence = t('quick.paused', {
       date: new Date(policy.paused_until).toLocaleDateString(),
@@ -346,16 +381,7 @@ function AutoUpdatesBody({
   } else if (blocked) {
     // The switch is a saved choice; say plainly that this host cannot act on it.
     sentence = t('quick.onBlocked')
-  } else {
-    sentence = t(policy.mode === 'any' ? 'quick.onAny' : 'quick.onPatch', {
-      start: win.start,
-      end: win.end,
-      days: t(`quick.days.${win.days}`),
-    })
   }
-  const next =
-    on && !blocked && policy.next_window ? policy.next_window.start : null
-
   return (
     <Card>
       <CardContent className="space-y-3">
@@ -371,48 +397,18 @@ function AutoUpdatesBody({
             <label htmlFor="update-auto-switch" className="text-sm font-medium">
               {t('quick.title')}
             </label>
-            <p
-              role="status"
-              className="max-w-prose text-sm text-muted-foreground"
-            >
-              {sentence}
-            </p>
-            {next ? (
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <ClockGlassIcon aria-hidden="true" className="size-4" />
-                {t('quick.next', {
-                  time: new Date(next).toLocaleString([], {
-                    weekday: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }),
-                })}
+            {sentence ? (
+              <p
+                role="status"
+                className="max-w-prose text-sm text-muted-foreground"
+              >
+                {sentence}
               </p>
             ) : null}
           </div>
         </div>
-        {on && !blocked ? (
-          <div className="space-y-0.5 text-xs text-muted-foreground">
-            <p>
-              {t('quick.installSteps', {
-                start: win.start,
-                end: win.end,
-                zone: policy.timezone || 'UTC',
-              })}
-            </p>
-            {policy.next_windows && policy.next_windows.length > 0 ? (
-              <p>
-                {t('quick.nextWindows', {
-                  list: policy.next_windows
-                    .map(
-                      (w) =>
-                        `${new Date(w.start).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })} / ${new Date(w.start).toISOString().slice(11, 16)} UTC`,
-                    )
-                    .join(', '),
-                })}
-              </p>
-            ) : null}
-          </div>
+        {on && !blocked && !policy.paused_until ? (
+          <AutoUpdateHeadline policy={policy} update={update} now={now} />
         ) : null}
         <p className="text-xs text-muted-foreground">
           {settings.auto_update_enabled
@@ -442,6 +438,7 @@ function AutoUpdatesBody({
                   start: win.start,
                   end: win.end,
                   days: t(`quick.days.${win.days}`),
+                  zone: policy.timezone || 'UTC',
                 })}
               </span>
             </button>
@@ -466,6 +463,7 @@ export function AutoUpdatesCard() {
   const { t } = useTranslation('updates')
   const policy = useQuery(policyQueryOptions())
   const settings = useQuery(updateSettingsQueryOptions())
+  const update = useQuery(updatesQueryOptions())
   if (policy.isError) {
     return (
       <Card>
@@ -492,5 +490,11 @@ export function AutoUpdatesCard() {
       </Card>
     )
   }
-  return <AutoUpdatesBody policy={policy.data} settings={settings.data} />
+  return (
+    <AutoUpdatesBody
+      policy={policy.data}
+      settings={settings.data}
+      update={update.data}
+    />
+  )
 }

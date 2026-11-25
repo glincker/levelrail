@@ -33,12 +33,46 @@ func runNodesList(prog string, args []string, stdout, stderr io.Writer, lookupEn
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list nodes: %w", err))
 		}
 
+		nodes = withLocalNode(context.Background(), client, nodes, opts)
+
 		if err := renderResult(stdout, of.Format, of.Query, nodes, func() { printNodesTable(stdout, nodes) }); err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return exitCodeForError(err)
 		}
 		return exitOK
 	})
+}
+
+// withLocalNode prepends the control plane host, which /nodes does not list,
+// using deploy-targets. It is skipped for filtered or paged lists and when the
+// token cannot read targets, so the plain list still works.
+func withLocalNode(ctx context.Context, client *apiclient.Client, nodes []nodeResource, opts apiclient.ListNodesOptions) []nodeResource {
+	if opts.Query != "" || opts.Offset > 0 {
+		return nodes
+	}
+	groups, err := client.ListDeployTargets(ctx)
+	if err != nil {
+		return nodes
+	}
+	for _, g := range groups {
+		for _, n := range g.Nodes {
+			if !n.IsLocal && g.Kind != "local" {
+				continue
+			}
+			for _, have := range nodes {
+				if n.ID != "" && have.ID == n.ID {
+					return nodes
+				}
+			}
+			id := n.ID
+			if id == "" {
+				id = "local"
+			}
+			local := nodeResource{IsLocal: true, ID: id, Name: n.Name + " (local)", Address: "this server", Status: n.Status, Schedulable: n.Health != "cordoned", Region: n.Region}
+			return append([]nodeResource{local}, nodes...)
+		}
+	}
+	return nodes
 }
 
 func nodesListUsage(prog string) string {
@@ -57,7 +91,7 @@ Flags:
   --watch                  redraw on an interval until Ctrl+C
   --interval duration  redraw interval with --watch (env LEVELRAIL_WATCH_INTERVAL, default 5s)
   --json                    print nodes as a JSON array to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

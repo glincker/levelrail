@@ -33,3 +33,16 @@ func TestRefreshResync_AppliesLiveValue(t *testing.T) {
 		t.Fatalf("zero keeps = %v", got)
 	}
 }
+
+func TestRefreshResync_ResetsTickerToLiveInterval(t *testing.T) {
+	e := &Engine{}
+	e.SetResyncSource(func() time.Duration { return 10 * time.Millisecond })
+	tk := time.NewTicker(time.Hour)
+	defer tk.Stop()
+	e.refreshResync(tk, time.Hour)
+	select {
+	case <-tk.C:
+	case <-time.After(time.Second):
+		t.Fatal("ticker did not fire at the new interval")
+	}
+}

@@ -117,5 +117,18 @@
       "bounded": "Se alcanzó el límite de registros, el resto sigue en la próxima compilación",
       "partial": "Se detuvo antes de tiempo, lo liberado se conserva"
     }
+  },
+  "farm": {
+    "title": "Granja de builds, últimas {{hours}} horas",
+    "builds": "{{count}} builds, {{perHour}} por hora",
+    "waitP50": "Espera en cola p50",
+    "waitP95": "Espera en cola p95",
+    "cache": "Tasa de aciertos de caché",
+    "cacheUnknown": "Sin datos",
+    "peak": "Pico de slots en uso",
+    "slotsOf": "{{peak}} de {{total}} por nodo",
+    "chart": "Slots en uso por hora, {{peak}} en el pico",
+    "seconds": "{{value}} s",
+    "sizeHint": "Un pico cercano al límite de slots o una espera p95 larga indica que la granja necesita otro nodo o más slots."
   }
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -46,7 +47,8 @@ func telemetryTargets(db *store.DB, local docker.Runtime, registry *agent.Regist
 				continue
 			}
 			for _, c := range containers {
-				if !c.Running {
+				// OwnsContainer anchors on the hash suffix so service web never claims web-api-*.
+				if !c.Running || !application.OwnsContainer(svc.Name, c.Name) {
 					continue
 				}
 				targets = append(targets, telemetry.Target{
@@ -154,6 +156,9 @@ func logTargets(db *store.DB, runtime docker.Runtime, registry *agent.Registry, 
 				continue
 			}
 			for _, c := range containers {
+				if !application.OwnsContainer(svc.Name, c.Name) {
+					continue
+				}
 				targets = append(targets, telemetry.LogTarget{
 					ResourceID:  "service:" + svc.Name,
 					ContainerID: c.ID,

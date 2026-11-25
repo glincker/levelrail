@@ -66,7 +66,7 @@ func TestUpgradePolicyDefaultsAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Mode != "off" || p.Paused || p.MinReleaseAgeDays != 3 || p.WindowTimezone != "UTC" {
+	if p.Mode != "off" || p.Paused || p.MinReleaseAgeDays != 1 || p.WindowTimezone != "UTC" {
 		t.Fatalf("unexpected defaults: %+v", p)
 	}
 	p.Mode, p.WindowCron, p.Paused, p.NotifyChannelIDs = "patch", "0 3 * * *", true, `["ch_1"]`

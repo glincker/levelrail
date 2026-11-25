@@ -9,6 +9,8 @@
   "moved": "{{label}} 已移至第 {{position}} 位(共 {{total}} 项)",
   "currentPage": "当前页面",
   "currentGroup": "包含当前页面",
+  "compact": "紧凑侧边栏",
+  "compactDone": "侧边栏已设为紧凑",
   "reset": "恢复默认",
   "resetDone": "侧边栏已恢复默认",
   "done": "完成",

@@ -185,7 +185,15 @@
     "next": "Siguiente",
     "addDomain": "Añadir dominio",
     "editRoutes": "Editar rutas",
-    "viewDeploys": "Ver despliegues"
+    "viewDeploys": "Ver despliegues",
+    "copied": "Copiado",
+    "copiedAnnounce": "URL de {{domain}} copiada",
+    "took": "En vivo en {{time}}",
+    "chip": {
+      "domain": "Añadir un dominio",
+      "git": "Conectar git",
+      "password": "Definir una contraseña"
+    }
   },
   "entry": {
     "drop": {
@@ -548,6 +556,15 @@
     "empty": "No hay salida en el registro.",
     "error": "No se pudo cargar el registro.",
     "failedAt": "Falló durante {{step}}",
+    "hint": {
+      "outOfMemory": "El build se quedó sin memoria. Reduce el uso de memoria en el script de build, por ejemplo dividiendo los pasos pesados.",
+      "timeout": "El build superó el tiempo límite. Revisa si algún paso espera una entrada o nunca termina.",
+      "installFailed": "Falló la instalación de dependencias. Comprueba que el lockfile coincide con package.json y que todos los paquetes son accesibles.",
+      "nodeVersion": "Una dependencia necesita otra versión de Node. Define engines.node en package.json o añade un archivo .nvmrc.",
+      "missingBuildCommand": "No se encontró un comando de build válido. Defínelo en Ajustes o añade un script build en package.json.",
+      "outputDirEmpty": "El build terminó pero el directorio de salida está vacío. Revisa el directorio de salida en Ajustes.",
+      "outputDirMissing": "No se encontró el directorio de salida tras el build. Indica el directorio correcto en Ajustes."
+    },
     "step": {
       "cloning": "Clonando",
       "building": "Compilando",
@@ -643,5 +660,25 @@
       "title": "Previsualizaciones recientes",
       "none": "Todavía no hay previsualizaciones de ramas."
     }
+  },
+  "dashDrop": {
+    "prompt": "Suelta una carpeta o zip de un sitio compilado para publicarlo"
+  },
+  "notify": {
+    "title": "Notificaciones de despliegue",
+    "tip": "Envía un mensaje a un canal cuando termina un despliegue de este sitio",
+    "failed": "No se pudo cargar la configuración de notificaciones.",
+    "enabled": "Notificar",
+    "onFailure": "Al fallar",
+    "onSuccess": "Al completar",
+    "channel": "Canal",
+    "pick": "Adjuntar canal",
+    "save": "Guardar",
+    "readOnly": "Necesitas permiso de escritura para cambiar esto.",
+    "needEvent": "Elige al menos un evento.",
+    "channelsFailed": "No se pudieron cargar los canales.",
+    "sendingTo": "Enviando a {{channels}}",
+    "noneAttached": "Aún no hay canal adjunto.",
+    "noChannels": "Aún no hay canales de notificación. Crea uno en Alertas."
   }
 }

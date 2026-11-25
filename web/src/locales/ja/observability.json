@@ -309,6 +309,8 @@
     "createAlert": "アラートを作成",
     "alertCreated": "アラートルール「{{name}}」を作成しました。",
     "wrap": "折り返し",
+    "collapse": "まとめる",
+    "collapseHint": "繰り返しの行を回数付きの1行にまとめます。オフにすると元の行をすべて表示します。",
     "entryDetail": "ログ行",
     "copyLine": "行をコピー",
     "closeDetail": "詳細を閉じる",

@@ -670,7 +670,47 @@
     "uploadLabel": "Upload a compose file or Dockerfile",
     "looksLike": "Looks like: {{source}}",
     "tryLabel": "Try:",
-    "fileTooLarge": "That file is larger than 512 KB."
+    "fileTooLarge": "That file is larger than 512 KB.",
+    "goals": {
+      "title": "What do you want to run?",
+      "advanced": "Advanced options",
+      "deploy": "Deploy",
+      "deploying": "Deploying...",
+      "healthOff": "Off",
+      "fields": {
+        "image": "Image",
+        "imagePlaceholder": "ghcr.io/you/app:latest",
+        "name": "Name",
+        "port": "Port",
+        "health": "Health path"
+      },
+      "items": {
+        "website": {
+          "label": "Website",
+          "hint": "Web app from an image, port and health check prefilled."
+        },
+        "api": {
+          "label": "API",
+          "hint": "Service from an image with a /healthz check prefilled."
+        },
+        "database": {
+          "label": "Database",
+          "hint": "Managed engine with backups and credentials."
+        },
+        "static-site": {
+          "label": "Static site",
+          "hint": "Build and serve from a git repository."
+        },
+        "scheduled-job": {
+          "label": "Scheduled job",
+          "hint": "Backup and cron-style runners from the catalog."
+        },
+        "self-hosted": {
+          "label": "Self-hosted app",
+          "hint": "Curated apps from the template catalog."
+        }
+      }
+    }
   },
   "noBackups": {
     "title": "Backups",

@@ -35,5 +35,12 @@
   "code": {
     "copy": "Kopieren",
     "copied": "Kopiert"
+  },
+  "glossary": {
+    "title": "Glossar",
+    "description": "Einfache Erklärungen der Begriffe im Dashboard.",
+    "search": "Begriffe suchen",
+    "searchLabel": "Glossar durchsuchen",
+    "empty": "Keine Begriffe gefunden."
   }
 }

@@ -136,6 +136,10 @@ The `status` output is `succeeded`, `failed`, `timeout`, or `accepted` (when `wa
 
 Triggers are ordinary GitHub triggers on your workflow: `push`, `workflow_dispatch`, or `repository_dispatch` (for example `curl -X POST -H "Authorization: Bearer $TOKEN" https://api.github.com/repos/OWNER/REPO/dispatches -d '{"event_type":"levelrail-deploy"}'`). Teams that deploy several apps can call the reusable workflow `.github/workflows/levelrail-deploy.yml` with `uses:` and pass `app` and `image`.
 
+### Pull request previews
+
+Set `preview: true` to deploy the built image as the preview for the pull request instead of the app. The action runs `levelrail-cli apps previews create <app> --pr N --image IMAGE`, then comments the preview URL on the PR (needs `pull-requests: write`, otherwise the URL goes to the job summary and the `preview-url` output). `pr-number` defaults to the event's pull request and must be an integer. Add a job on `pull_request: closed` with `preview-teardown: true` to remove the preview. The app needs a connected source with previews enabled.
+
 ### Per-app settings
 
 Each app stores the GitHub environment name used for deployments (default `production`) and whether deployments and check runs are posted. Change them in the dashboard on the app's Deploys page (GitHub Actions card), or with the CLI:

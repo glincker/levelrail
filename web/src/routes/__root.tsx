@@ -21,6 +21,7 @@ import { useChangesStream } from '../hooks/useChangesStream'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { PreferencesApplier } from '../components/account/PreferencesApplier'
 import { AppearanceSyncApplier } from '../components/account/AppearanceSyncApplier'
+import { BottomTabBar } from '../components/shell/BottomTabBar'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
 import { VacationBanner } from '../components/shell/VacationBanner'
@@ -270,6 +271,7 @@ function AppShell() {
         <React.Suspense fallback={null}>
           <DockPanel />
         </React.Suspense>
+        <BottomTabBar />
       </SidebarInset>
     </SidebarProvider>
   )

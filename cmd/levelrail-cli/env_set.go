@@ -20,9 +20,10 @@ var envSetStdin io.Reader = os.Stdin
 // runEnvSet implements "env set <app> KEY=VALUE...": the plain-env counterpart of "env push" for a few values.
 func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "env set", "print the plan as JSON to stdout and nothing else", stderr)
-	var apply, noApply, allowFiles bool
+	var apply, noApply, allowFiles, quiet bool
 	refs := secretRefFlag{}
 	fs.Var(refs, "secret", "env var read from a secret connection as NAME=secret://conn/path#key, repeatable; only the reference is stored, never a value")
+	fs.BoolVar(&quiet, "quiet", false, "skip the names-only diff printed before the change is applied")
 	fs.BoolVar(&allowFiles, "allow-file-values", false, "let KEY=@/path, @./path and @~/path read the value from a local file")
 	fs.BoolVar(&apply, "apply", false, "restart the app now so the new env reaches the running container")
 	fs.BoolVar(&noApply, "no-apply", false, "leave the change pending even when apps.env_apply_on_set is on")
@@ -72,6 +73,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		}
 	}
 	var rebuildKeys []string
+	changed := false
 	plan := planEnvImport(app.Env, entries, secretKeys, false)
 	result := envImportResult{App: name, Plan: plan}
 	warnEnvSecrets(ctx, client, stderr, name, plan)
@@ -79,13 +81,17 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return reportError(stdout, stderr, jsonOut, newValidationError("%s is stored as a secret; change it with \"%s apps secrets set %s KEY VALUE\"", strings.Join(plan.Secret, ", "), prog, name))
 	}
 	if len(plan.New) > 0 || len(plan.Changed) > 0 {
+		// Stderr keeps stdout the result only; names only, never a value.
+		if !quiet {
+			printEnvNameDiff(stderr, plan.New, plan.Changed, nil)
+		}
 		app.Env = plan.Merged
 		saved, err := client.UpdateApp(ctx, name, app)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
 		}
 		rebuildKeys = saved.RebuildKeys
-		result.Applied = true
+		changed = true
 	}
 	// After the env PUT, which would otherwise resend a stale vault_env map.
 	for _, k := range sortedRefKeys(refs) {
@@ -94,10 +100,15 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		}
 	}
 	if len(refs) > 0 {
-		result.Applied = true
+		changed = true
 	}
+	doApply, reason := resolveEnvApply(ctx, client, apply, noApply)
+	// A saved env only reaches the container after a restart, so applied stays false until then.
+	result.Saved = changed
+	result.Applied = changed && doApply
+	result.Pending = changed && !doApply
 	code := writeScheduledTaskResult(stdout, stderr, of, result, func() { printEnvImportHuman(stdout, name, result) })
-	if result.Applied {
+	if changed {
 		hintOut := stdout
 		if of.Format == outputJSON || of.Query != "" {
 			hintOut = io.Discard
@@ -116,7 +127,6 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			}
 			printEnvUndoHint(undoOut, prog, name, plan)
 		}
-		doApply, reason := resolveEnvApply(ctx, client, apply, noApply)
 		if applyCode := afterConfigWriteReason(ctx, client, prog, name, doApply, reason, hintOut, stderr); code == exitOK {
 			code = applyCode
 		}
@@ -279,11 +289,12 @@ Flags:
   --allow-file-values let KEY=@/path, @./path and @~/path read the value from a local file
   --apply             restart the app now so the new env reaches the running container
   --no-apply          leave the change pending even when apps.env_apply_on_set is on
+  --quiet             skip the names-only diff printed before the change is applied
   --token string      API token (default: %[2]s env var, then the credentials file)
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json              print the plan as JSON to stdout, nothing else
-  --output string     output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string     output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string      JMESPath expression to filter the result before printing
   -h, --help          show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

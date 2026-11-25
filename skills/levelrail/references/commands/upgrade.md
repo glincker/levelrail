@@ -49,7 +49,7 @@ Flags:
   -now
     	bypass the release cache and look up the newest release now
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -plan
     	show the breaking changes between the running version and the target, change nothing
   -profile string
@@ -95,7 +95,7 @@ Flags:
   -notify ids
     	comma-separated notification channel ids (empty keeps the current ones)
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -pause
     	pause automatic upgrades without losing the policy
   -profile string
@@ -139,7 +139,7 @@ Flags:
   -json
     	print the result as JSON to stdout and nothing else
   -output string
-    	output format: json, table, or text (default table; --json is shorthand for --output json)
+    	output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   -profile string
     	named credentials profile to read (overrides APP_PROFILE, default "default")
   -query string

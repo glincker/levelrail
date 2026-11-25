@@ -96,5 +96,19 @@
     "restarts_other": "{{count}} reinícios",
     "restartsRising": "O número de reinícios está aumentando",
     "dbSize": "Tamanho do banco {{size}}"
+  },
+  "group": {
+    "label": "Agrupar por",
+    "none": "Sem agrupamento",
+    "node": "Nó",
+    "project": "Projeto",
+    "environment": "Ambiente",
+    "noneNode": "Sem nó",
+    "noneProject": "Sem projeto",
+    "noneEnvironment": "Sem ambiente",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "select": "Selecionar grupo",
+    "deselect": "Desmarcar grupo"
   }
 }

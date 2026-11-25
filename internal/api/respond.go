@@ -62,6 +62,10 @@ func errorCodeForStatus(status int) string {
 // v writes only the status and headers, for handlers that have nothing
 // to return (204 responses).
 func writeJSON(w http.ResponseWriter, status int, v any) {
+	if e, ok := v.(runtimeSettingError); ok {
+		e.RequestID = w.Header().Get(requestIDHeader)
+		v = e
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if v == nil {

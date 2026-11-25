@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -78,10 +79,26 @@ func (db *DB) SetClock(now func() time.Time) { db.clock = now }
 // SetRawRetentionSource makes the raw sample retention follow fn on every prune and query. Call before the DB is shared.
 func (db *DB) SetRawRetentionSource(fn func() time.Duration) { db.rawRetentionFn = fn }
 
+var tierSource atomic.Pointer[func(TierConfig) TierConfig]
+
+// SetTierConfigSource makes every prune, rollup and query take its tier
+// settings from fn, which receives the booted config and returns the live one.
+// A nil fn restores the booted config.
+func SetTierConfigSource(fn func(TierConfig) TierConfig) {
+	if fn == nil {
+		tierSource.Store(nil)
+		return
+	}
+	tierSource.Store(&fn)
+}
+
 func (db *DB) tierConfig() TierConfig {
 	cfg := DefaultTierConfig()
 	if db.tiers != nil {
 		cfg = *db.tiers
+	}
+	if fn := tierSource.Load(); fn != nil {
+		cfg = (*fn)(cfg)
 	}
 	if db.rawRetentionFn != nil {
 		if d := db.rawRetentionFn(); d > 0 {
@@ -136,6 +153,9 @@ func (db *DB) queryTier(ctx context.Context, tier int, resourceID, metric string
 	if err != nil {
 		return nil, err
 	}
+	// Round down so a bucket the watermark cuts through is read from the
+	// finer tier whole, never half from the rollup and half from the tail.
+	done -= done % int64(tier)
 	var out []Sample
 	head := to
 	if done > 0 && time.Unix(done, 0).Before(to) {
@@ -165,32 +185,40 @@ func (db *DB) queryTier(ctx context.Context, tier int, resourceID, metric string
 	return append(out, tail...), nil
 }
 
+// isCumulativeMetric reports running-total counters, whose rollup bucket is
+// read from the max column while sum holds the reset-aware increase.
+func isCumulativeMetric(metric string) bool { return KindOf(metric) == KindCumulative }
+
 func (db *DB) queryRollup(ctx context.Context, tier int, resourceID, metric string, from, to time.Time) ([]Sample, error) {
 	width := int64(tier)
-	lo := from.Unix() / width * width
+	first := from.Unix() / width * width
 	rows, err := db.QueryContext(ctx, `
-		SELECT ts, sum, count FROM metric_rollups
+		SELECT ts, sum, min, max, count FROM metric_rollups
 		WHERE tier = ? AND resource_id = ? AND metric = ? AND ts BETWEEN ? AND ?
 		ORDER BY ts ASC
-	`, tier, resourceID, metric, lo, to.Unix())
+	`, tier, resourceID, metric, first, to.Unix())
 	if err != nil {
 		return nil, fmt.Errorf("telemetry: query rollup %s/%s: %w", resourceID, metric, err)
 	}
 	defer func() { _ = rows.Close() }()
 
 	sumKind := IsSumMetric(metric)
+	cumulative := isCumulativeMetric(metric)
 	var out []Sample
 	for rows.Next() {
 		var ts, count int64
-		var sum float64
-		if err := rows.Scan(&ts, &sum, &count); err != nil {
+		var sum, lo, hi float64
+		if err := rows.Scan(&ts, &sum, &lo, &hi, &count); err != nil {
 			return nil, fmt.Errorf("telemetry: scan rollup row: %w", err)
 		}
 		v := sum
-		if !sumKind && count > 0 {
+		if cumulative {
+			v = hi
+		} else if !sumKind && count > 0 {
 			v = sum / float64(count)
 		}
-		out = append(out, Sample{ResourceID: resourceID, Metric: metric, Timestamp: time.Unix(ts, 0).UTC(), Value: v})
+		out = append(out, Sample{ResourceID: resourceID, Metric: metric, Timestamp: time.Unix(ts, 0).UTC(), Value: v,
+			Count: count, Sum: sum, Min: lo, Max: hi})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("telemetry: iterate rollup rows: %w", err)

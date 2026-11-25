@@ -112,7 +112,7 @@ export function NodePoolsCard() {
             aria-label={t('pools.nameLabel')}
             placeholder={t('pools.namePlaceholder')}
             value={name}
-            className="w-40"
+            className="w-full sm:w-40"
             onChange={(e) => {
               setName(e.target.value)
             }}
@@ -121,7 +121,8 @@ export function NodePoolsCard() {
             aria-label={t('pools.selectorLabel')}
             placeholder={t('pools.selectorPlaceholder')}
             value={selector}
-            className="w-64"
+            aria-invalid={invalid}
+            className="w-full sm:w-64"
             onChange={(e) => {
               setSelector(e.target.value)
             }}

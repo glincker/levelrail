@@ -25,6 +25,7 @@ func runTemplatesInstall(prog string, args []string, stdout, stderr io.Writer, l
 	if !ok {
 		return code
 	}
+	warnTemplateNeedsDomain(context.Background(), cmd.client, stderr, prog, cmd.args[0], len(domains) > 0)
 	res, err := cmd.client.InstallTemplate(context.Background(), cmd.args[0], apiclient.TemplateInstallRequest{Name: name, Env: env, Domains: domains, ProjectID: project})
 	if err != nil {
 		return reportError(stdout, stderr, cmd.json, fmt.Errorf("install template %q: %w", cmd.args[0], err))
@@ -36,4 +37,16 @@ func runTemplatesInstall(prog string, args []string, stdout, stderr io.Writer, l
 		}
 		_, _ = fmt.Fprintf(stdout, "watch it converge: %s compose status %s\n", prog, res.AppID)
 	})
+}
+
+// warnTemplateNeedsDomain warns, never refuses: a lookup failure or a bare-IP test install must still go through.
+func warnTemplateNeedsDomain(ctx context.Context, client *Client, stderr io.Writer, prog, id string, haveDomain bool) {
+	if haveDomain {
+		return
+	}
+	detail, err := client.GetServiceTemplate(ctx, id)
+	if err != nil || !detail.NeedsDomain {
+		return
+	}
+	_, _ = fmt.Fprintf(stderr, "warning: template %q needs a domain but none was given; it installs anyway, add one with --domain SERVICE=HOST (see %s templates get %s)\n", id, prog, id)
 }

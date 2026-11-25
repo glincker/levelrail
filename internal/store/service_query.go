@@ -199,9 +199,11 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if err := forgetBindingTarget(ctx, tx, BindingTargetApp, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
-	// Config history belongs to the app, a recreated one starts clean.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM app_config_revisions WHERE app_name = ?`, name); err != nil {
-		return fmt.Errorf("store: delete desired service %q: config revisions: %w", name, err)
+	// A soft delete keeps history for a restore; the name stays reserved so no new app inherits it.
+	if !revisionsKept(ctx) {
+		if err := dropAppRevisions(ctx, tx, name); err != nil {
+			return fmt.Errorf("store: delete desired service %q: %w", name, err)
+		}
 	}
 	// Whatever route removed the app, tokens scoped to its name must not carry over to a new one.
 	if err := invalidateSiteScopes(ctx, tx, name); err != nil {

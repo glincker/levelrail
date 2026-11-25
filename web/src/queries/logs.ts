@@ -26,6 +26,7 @@ export const logSearchKeys = {
     fields: string[],
     signature: string,
     order: string,
+    collapse: boolean,
   ) =>
     [
       ...logSearchKeys.all(appName),
@@ -39,6 +40,7 @@ export const logSearchKeys = {
       fields,
       signature,
       order,
+      collapse,
     ] as const,
 }
 
@@ -59,6 +61,8 @@ export interface LogSearchParams {
   signature?: string
   /** Best text matches first (bm25); only applies with q. */
   order?: 'relevance'
+  /** Fold runs of identical consecutive lines into one entry with a count. */
+  collapse?: boolean
 }
 
 export async function fetchLogEntries(
@@ -104,6 +108,7 @@ export function logSearchQueryOptions(
       (params.fields ?? []).map(formatFieldFilter),
       params.signature ?? '',
       params.q ? (params.order ?? '') : '',
+      params.collapse ?? false,
     ),
     queryFn: () => fetchLogEntries(appName, params),
   })

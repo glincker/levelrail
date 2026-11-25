@@ -1093,7 +1093,16 @@ func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResourc
 // q empty means every entry in the window, matching the server's own
 // "empty query" contract.
 func (c *Client) QueryLogs(ctx context.Context, name string, from, to time.Time, q string) ([]LogEntryResource, error) {
+	return c.QueryLogsCollapsed(ctx, name, from, to, q, false)
+}
+
+// QueryLogsCollapsed is QueryLogs with the server-side read-time collapse of
+// repeated lines (collapse=1) when collapse is true.
+func (c *Client) QueryLogsCollapsed(ctx context.Context, name string, from, to time.Time, q string, collapse bool) ([]LogEntryResource, error) {
 	query := url.Values{}
+	if collapse {
+		query.Set("collapse", "1")
+	}
 	query.Set("from", from.UTC().Format(time.RFC3339))
 	query.Set("to", to.UTC().Format(time.RFC3339))
 	if q != "" {
@@ -3367,6 +3376,15 @@ func (c *Client) GetEnvironmentEnv(ctx context.Context, id string) (map[string]s
 func (c *Client) ListPreviewEnvironments(ctx context.Context, appName string) ([]PreviewEnvironmentResource, error) {
 	var out []PreviewEnvironmentResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/previews", nil, &out)
+	return out, err
+}
+
+// CreatePreviewFromImage calls POST /api/v1/apps/{name}/previews to deploy a
+// CI-built image as one pull request's preview.
+func (c *Client) CreatePreviewFromImage(ctx context.Context, appName string, prNumber int, image, branch, sha string) (PreviewEnvironmentResource, error) {
+	body := map[string]any{"pr_number": prNumber, "image": image, "branch": branch, "sha": sha}
+	var out PreviewEnvironmentResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/previews", body, &out)
 	return out, err
 }
 

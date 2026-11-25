@@ -151,7 +151,9 @@
     "healthCheck": "Health-Check",
     "healthEnable": "Einen Health-Check aktivieren",
     "healthPath": "Pfad",
-    "healthHint": "Wird geprüft, bevor der Traffic auf einen neuen Container umgeschaltet wird, und um danach einen abgestürzten zu erkennen. Von Railpack erkannte Apps, die diesen Pfad nicht ausliefern, sollten ihn ausschalten."
+    "healthHint": "Wird geprüft, bevor der Traffic auf einen neuen Container umgeschaltet wird, und um danach einen abgestürzten zu erkennen. Von Railpack erkannte Apps, die diesen Pfad nicht ausliefern, sollten ihn ausschalten.",
+    "showMore": "Weitere Optionen",
+    "hideMore": "Weniger Optionen"
   },
   "sshKey": {
     "title": "SSH-Deploy-Key",

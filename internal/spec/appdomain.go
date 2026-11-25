@@ -3,6 +3,7 @@ package spec
 import (
 	"errors"
 	"fmt"
+	"net/netip"
 	"strings"
 	"unicode"
 
@@ -28,6 +29,9 @@ func ValidateAppDomain(domain string) (string, error) {
 		if unicode.IsSpace(r) || unicode.IsControl(r) || strings.ContainsRune("{}/:\\@%", r) {
 			return "", fmt.Errorf("domain %q contains a forbidden character", domain)
 		}
+	}
+	if _, err := netip.ParseAddr(strings.Trim(d, "[]")); err == nil {
+		return "", fmt.Errorf("domain %q must be a hostname, not an IP address", domain)
 	}
 	prefix := ""
 	base := d

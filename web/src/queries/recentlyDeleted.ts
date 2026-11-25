@@ -46,7 +46,16 @@ export function useRestoreRecentlyDeleted() {
     fn: async (entry: Pick<RecentlyDeletedEntry, 'kind' | 'name'>) => {
       const res = await fetch(
         `/api/v1/recently-deleted/${entry.kind}/${encodeURIComponent(entry.name)}/restore`,
-        { method: 'POST' },
+        {
+          method: 'POST',
+          // The app restore handler refuses unless confirm is the exact name.
+          ...(entry.kind === 'app'
+            ? {
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm: entry.name }),
+              }
+            : {}),
+        },
       )
       if (!res.ok) {
         throw new ApiError(

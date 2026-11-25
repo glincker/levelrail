@@ -350,7 +350,9 @@
     },
     "record": "ホスト{{host}}、値{{value}}のAレコードを追加してください。TTLは300秒で問題ありません。",
     "proxyOff": "証明書が発行されるまで、このレコードのオレンジ色の雲(プロキシ)をオフにしてください。",
-    "docs": "{{provider}}のDNSドキュメント"
+    "docs": "{{provider}}のDNSドキュメント",
+    "copyHost": "ホストをコピー",
+    "copyValue": "値をコピー"
   },
   "verification": {
     "ok_other": "トークンが受け付けられました。{{count}}個のゾーンが表示されています。",

@@ -162,5 +162,15 @@
     "none": "Nenhum ambiente de prévia ainda.",
     "all": "Todas as prévias",
     "pr": "PR #{{number}}"
-  }
+  },
+  "detailsTrigger": "Configuração e diagnóstico",
+  "activityLabel": "Atividade",
+  "liveLogsLabel": "Logs ao vivo",
+  "appSummaryLabel": "Resumo do app",
+  "suggestedFixes": "Correções sugeridas",
+  "liveTrafficLabel": "Tráfego e recursos ao vivo",
+  "trafficUnavailable": "Os números de tráfego ao vivo não estão disponíveis agora.",
+  "trafficRetry": "Tentar novamente",
+  "noTrafficTitle": "Ainda sem tráfego",
+  "noTrafficHint": "Envie uma requisição para ver os números ao vivo."
 }

@@ -231,13 +231,27 @@ func autoUpdateLoop(ctx context.Context, lookup func(string) (string, bool), log
 			logger.Warn("agent update did not apply; the agent keeps running", slog.String("error", err.Error()))
 			continue
 		}
-		if res.Action == agentupdate.ActionNone && res.Target != "" {
-			logger.Info("agent update waiting", slog.String("target", res.Target), slog.String("reason", res.Reason))
-		}
-		if res.Action != agentupdate.ActionNone {
-			logger.Info("agent update", slog.String("action", res.Action), slog.String("target", res.Target))
-		}
+		logger.Info(updateStatusLine(res))
 	}
+}
+
+// updateStatusLine is the one-line update status: checked, available, held
+// with its reason, or installed.
+func updateStatusLine(res agentupdate.Result) string {
+	switch res.Action {
+	case agentupdate.ActionHold:
+		return fmt.Sprintf("agent update held: %s (target %s, reason: %s)", res.Current, res.Target, res.Reason)
+	case agentupdate.ActionAvailable:
+		return fmt.Sprintf("agent update available: %s -> %s", res.Current, res.Target)
+	case agentupdate.ActionStaged, agentupdate.ActionRestarted:
+		return fmt.Sprintf("agent update installed: %s -> %s", res.Current, res.Target)
+	case agentupdate.ActionRolled:
+		return fmt.Sprintf("agent update rolled back to %s", res.Current)
+	}
+	if res.Target != "" {
+		return fmt.Sprintf("agent update waiting: target %s (reason: %s)", res.Target, res.Reason)
+	}
+	return "agent update checked: up to date at " + res.Current
 }
 
 // rollbackToPrev swaps the kept .prev binary back after the health tracker

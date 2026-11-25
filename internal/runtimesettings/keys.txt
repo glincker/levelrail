@@ -14,6 +14,8 @@ abuse.shards
 abuse.suggest_burst_seconds
 abuse.suggest_client_share
 account.preferences_max_bytes
+alerting.self_heartbeat_interval
+alerting.self_heartbeat_url
 alerts.advisory_min_severity
 alerts.advisory_notify
 alerts.default_5xx_min_requests
@@ -35,6 +37,7 @@ api.max_header_bytes
 api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm
 api.rate_limit_write_rpm
+api.route_stat_bound
 api.slow_request_threshold
 app.image_keep
 app.image_keep_overrides
@@ -60,6 +63,7 @@ apps.size_presets
 apps.summary_cache_max_entries
 apps.summary_cache_seconds
 apps.summary_timeout
+apps.undo_window_days
 apps_run.cpu_limit_millis
 apps_run.max_concurrent_per_app
 apps_run.max_timeout_seconds
@@ -355,6 +359,7 @@ domains.tuning_min_timeout_seconds
 domains.wait_poll
 domains.wait_timeout
 domains.www_mode
+env.revisions_keep
 errors.dedup_hours
 errors.dedup_max
 events.changes_buffer
@@ -472,6 +477,7 @@ log_rules.max_rows
 log_rules.max_window
 log_rules.samples
 logs.export_max_lines
+logs.max_live_subscribers
 mesh.apply_retries
 mesh.apply_retry_delay
 mesh.apply_timeout
@@ -479,8 +485,22 @@ mesh.hub_resolve_ttl
 mesh.hub_stale_max
 mesh.ready_retry_seconds
 mesh.wake_debounce
+metrics.1h_query_max_range
+metrics.1m_query_max_range
+metrics.5m_query_max_range
+metrics.cap_target_percent
 metrics.idle_interval
+metrics.max_db_bytes
 metrics.presence_window
+metrics.prune_every
+metrics.raw_query_max_range
+metrics.retention_1d
+metrics.retention_1h
+metrics.retention_1m
+metrics.retention_5m
+metrics.rollup_budget
+metrics.rollup_every
+metrics.rollup_lag
 metrics.sample_interval
 models.hf_max_listed_files
 models.hf_max_response_bytes
@@ -596,6 +616,7 @@ quota.default_max_databases
 quota.default_max_memory_mb
 quota.default_max_previews
 reconcile.event_driven
+reconcile.lag_warn_seconds
 reconcile.resync_seconds
 registry.dockerhub.limit_warn_percent
 registry.dockerhub.limits_cache_seconds
@@ -721,6 +742,9 @@ telemetry.access_search_max_window
 telemetry.log_budget_mb
 telemetry.logs_retention
 telemetry.metrics_retention
+telemetry.retention_batch_pause
+telemetry.retention_batch_rows
+telemetry.retention_sweep_budget
 telemetry.visitor_history_retention
 telemetry.visitor_salt_rotation
 templates.capability_net_admin_enabled

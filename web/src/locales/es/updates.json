@@ -752,10 +752,7 @@
       "history": "Update history",
       "restore": "Restore points"
     },
-    "next": "Next window starts {{time}}.",
     "off": "Updates are never installed on their own. You choose when to update.",
-    "onAny": "New releases, including minor ones, install automatically between {{start}} and {{end}}, {{days}}.",
-    "onPatch": "Patch releases install automatically between {{start}} and {{end}}, {{days}}.",
     "paused": "Automatic updates are paused until {{date}}.",
     "released": "Released {{date}}",
     "rows": {
@@ -767,7 +764,7 @@
     "savedOff": "Automatic updates turned off.",
     "savedOn": "Automatic updates turned on.",
     "scheduleSaved": "Schedule saved.",
-    "scheduleSummary": "{{start}} to {{end}}, {{days}}",
+    "scheduleSummary": "{{start}} a {{end}} {{zone}}, {{days}}",
     "scheduleToggle": "Schedule",
     "start": "Start",
     "title": "Automatic updates",
@@ -777,10 +774,22 @@
     "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
     "checkOn": "La comprobación en segundo plano de nuevas versiones está activada. Solo busca; la instalación la controla el interruptor de arriba.",
     "checkOff": "La comprobación en segundo plano de nuevas versiones está desactivada. Activar las actualizaciones automáticas también la activa.",
-    "installSteps": "Las actualizaciones se instalan entre {{start}} y {{end}} {{zone}}; primero copia de seguridad, comprobación de salud y reversión automática.",
-    "nextWindows": "Próximas ventanas: {{list}}",
     "onBlocked": "Las actualizaciones automáticas están activadas, pero no pueden ejecutarse en este servidor. Consulta el estado más abajo.",
-    "checkOffActive": "Las comprobaciones en segundo plano de nuevas versiones están desactivadas, así que no se encontrará ninguna actualización hasta activarlas."
+    "checkOffActive": "Las comprobaciones en segundo plano de nuevas versiones están desactivadas, así que no se encontrará ninguna actualización hasta activarlas.",
+    "headline": {
+      "held": "{{tag}} está retenida: {{reason}}",
+      "review": "Revisar cambios",
+      "installNow": "Instalar ahora",
+      "idle": "Al día. Las actualizaciones se instalan en la ventana nocturna, la próxima abre {{day}} a las {{time}}.",
+      "now": "{{tag}} se está instalando ahora (ventana abierta hasta que termine).",
+      "tonight": "{{tag}} se instala esta noche a las {{time}} ({{eta}})",
+      "later": "{{tag}} se instala el {{day}} a las {{time}} ({{eta}})",
+      "inMinutes": "en {{count}} min",
+      "inHours": "en {{count}} h"
+    },
+    "age": "Espera tras la publicación",
+    "ageDays_one": "{{count}} día",
+    "ageDays_other": "{{count}} días"
   },
   "autoStatus": {
     "state": {
@@ -830,5 +839,23 @@
     "month": "Mes",
     "loading": "Cargando disponibilidad...",
     "none": "Sin datos de disponibilidad este mes. Añade la app a la página de estado para empezar a registrar."
+  },
+  "smoke": {
+    "title": "Comprobación rápida tras la actualización",
+    "run": "Ejecutar comprobación rápida",
+    "running": "Comprobando...",
+    "error": "No se pudo ejecutar la comprobación rápida: {{message}}",
+    "item": {
+      "apps": "Las aplicaciones están activas",
+      "domains": "Los dominios resuelven",
+      "certificates": "Los certificados son válidos",
+      "backups": "Los respaldos están al día"
+    },
+    "status": {
+      "pass": "correcto",
+      "warn": "aviso",
+      "fail": "fallo",
+      "skipped": "omitido"
+    }
   }
 }

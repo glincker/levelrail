@@ -311,6 +311,8 @@
     "createAlert": "Alarm erstellen",
     "alertCreated": "Alarmregel \"{{name}}\" erstellt.",
     "wrap": "Umbrechen",
+    "collapse": "Zusammenfassen",
+    "collapseHint": "Wiederholte Zeilen zu einer Zeile mit Zähler zusammenfassen. Ausschalten zeigt jede Rohzeile.",
     "entryDetail": "Log-Zeile",
     "copyLine": "Zeile kopieren",
     "closeDetail": "Detail schließen",

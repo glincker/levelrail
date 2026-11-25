@@ -3,6 +3,7 @@ package api
 import (
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
@@ -53,6 +54,10 @@ func (rt *Router) handleGetRolloutState(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: rollout state: list attempts", err, slog.String("name", svc.Name))
 		return
 	}
+	// A refused deploy never started a rollout, so it must not show as a held release.
+	attempts = slices.DeleteFunc(slices.Clone(attempts), func(a store.DeployAttempt) bool {
+		return a.Status == store.DeployAttemptStatusRefused
+	})
 	var gate []store.DeployGateEvent
 	if len(attempts) > 0 {
 		gate, err = rt.deployGate.ListGateEvents(ctx, attempts[0].ID)

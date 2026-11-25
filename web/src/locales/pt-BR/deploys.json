@@ -141,6 +141,7 @@
     "switchAriaLabel": "Atualização automática de imagem ativada",
     "checkNow": "Verificar agora",
     "checking": "Verificando...",
+    "apply": "Aplicar atualização",
     "lastCheck": "Última verificação ({{when}}): {{result}}",
     "neverChecked": "Ainda não verificado.",
     "status": {

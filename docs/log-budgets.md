@@ -20,7 +20,7 @@ In the dashboard, open **Settings, Observability, Log volume** and click the pen
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `APP_LOG_BUDGET_MB` | unset (unlimited) | Fleet default per app, in MiB. 0 or unset means no limit |
+| `APP_LOG_BUDGET_MB` | 1024 | Fleet default per app, in MiB. Set 0 for no limit. An explicitly saved value keeps applying |
 
 A per-app value of 0, or `clear`, falls back to the fleet default. Changing a budget needs the same ability as enabling tracing.
 

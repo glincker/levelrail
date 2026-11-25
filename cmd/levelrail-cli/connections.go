@@ -61,7 +61,7 @@ const connectionsFlagHelp = `  --token string          API token (default: %[2]s
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `
@@ -144,7 +144,7 @@ func runConnectionsCatalog(prog string, args []string, stdout, stderr io.Writer,
 
 func printConnectionsTable(out io.Writer, list []apiclient.Connection) {
 	if len(list) == 0 {
-		_, _ = fmt.Fprintln(out, "No connections")
+		_, _ = fmt.Fprintln(out, emptyNextStep("connections", "connections catalog"))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
@@ -459,7 +459,7 @@ func printBindingsTable(out io.Writer, res apiclient.AppConnectionBindings, effe
 		}
 	}
 	if len(rows) == 0 {
-		_, _ = fmt.Fprintln(out, "No bindings")
+		_, _ = fmt.Fprintln(out, emptyNextStep("bindings", "connections bind --help"))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)

@@ -37,6 +37,7 @@ func (e *Engine) eventDrivenOn() bool {
 }
 
 func (e *Engine) markAllDirty() {
+	e.lag.markAll(e.controllerNames(), e.now())
 	e.dmu.Lock()
 	e.dirty.all = true
 	e.dmu.Unlock()
@@ -55,6 +56,7 @@ func (e *Engine) markContainerDirty(name string) {
 }
 
 func (e *Engine) markControllerDirty(name string) {
+	e.lag.markOne(name, e.now())
 	e.dmu.Lock()
 	if e.dirty.controllers == nil {
 		e.dirty.controllers = map[string]struct{}{}

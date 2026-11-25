@@ -16,6 +16,10 @@ export interface LogEntry {
   level?: string
   // Container id the line came from, absent on rows that predate it.
   container?: string
+  // Set on a collapsed run of identical lines: how many, and the time span.
+  count?: number
+  first?: string
+  last?: string
 }
 
 export interface LogContainer {

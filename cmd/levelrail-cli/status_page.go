@@ -14,12 +14,12 @@ import (
 // runStatusPage dispatches "status-page <verb>": the operator side of the
 // opt-in public status page.
 func runStatusPage(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	top := map[string]apiCmd{"get": statusGetCommand(), "set": statusSetCommand(), "preview": statusPreviewCommand()}
+	top := map[string]apiCmd{"get": statusGetCommand(), "set": statusSetCommand(), "preview": statusPreviewCommand(), "uptime-report": statusUptimeReportCommand()}
 	compSubs := map[string]apiCmd{"list": statusComponentsListCommand(), "add": statusComponentAddCommand(), "set": statusComponentSetCommand(),
 		"delete": statusDeleteCommand("component", func(ctx context.Context, c *Client, id string) error { return c.DeleteStatusComponent(ctx, id) })}
 	if len(args) > 0 {
 		switch args[0] {
-		case "get", "set", "preview":
+		case "get", "set", "preview", "uptime-report":
 			return dispatchSub(prog, "status-page", statusPageUsage, top, args, stdout, stderr, lookupEnv)
 		case "components", "component":
 			return dispatchSub(prog, "status-page components", statusPageUsage, compSubs, args[1:], stdout, stderr, lookupEnv)
@@ -44,6 +44,7 @@ func statusPageUsage(prog string) string {
   %[1]s status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
                         [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   %[1]s status-page preview
+  %[1]s status-page uptime-report [--month YYYY-MM]
   %[1]s status-page components list
   %[1]s status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
   %[1]s status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
@@ -72,6 +73,33 @@ func statusGetCommand() apiCmd {
 		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
 			s, err := c.GetStatusPage(ctx)
 			return s, func(w io.Writer) { printStatusSettings(w, s) }, err
+		}}
+}
+
+func statusUptimeReportCommand() apiCmd {
+	var month string
+	return apiCmd{label: "status-page uptime-report", usage: statusPageUsage,
+		setup: func(fs *flag.FlagSet) {
+			fs.StringVar(&month, "month", "", "month as YYYY-MM (default: the current month)")
+		},
+		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
+			rep, err := c.StatusUptimeReport(ctx, month)
+			return rep, func(w io.Writer) {
+				if len(rep.Rows) == 0 {
+					_, _ = fmt.Fprintf(w, "no uptime data for %s yet\n", rep.Month)
+					return
+				}
+				tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
+				_, _ = fmt.Fprintln(tw, "COMPONENT\tKIND\tUPTIME\tPROBES\tDOWN")
+				for _, r := range rep.Rows {
+					up := "-"
+					if r.Uptime != nil {
+						up = fmt.Sprintf("%.2f%%", *r.Uptime)
+					}
+					_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%d\n", r.Component, r.Kind, up, r.Probes, r.DownProbe)
+				}
+				_ = tw.Flush()
+			}, err
 		}}
 }
 

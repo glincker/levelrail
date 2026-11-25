@@ -20,6 +20,7 @@ export type CPHealthFindingId =
   | 'reconcile_breakers'
   | 'reconcile_storm'
   | 'db_integrity'
+  | 'reconciler_lagging'
 
 export type CPHealthFix =
   | 'wal_checkpoint'

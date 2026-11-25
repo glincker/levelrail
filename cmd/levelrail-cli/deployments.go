@@ -33,6 +33,8 @@ func runDeployments(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runDeploymentsSummary(prog, rest, stdout, stderr, lookupEnv)
 	case "timeline":
 		return runDeploymentsTimeline(prog, rest, stdout, stderr, lookupEnv)
+	case "why":
+		return runDeploymentsWhy(prog, rest, stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown deployments subcommand %q\n\n%s", prog, args[0], deploymentsUsage(prog))
 	return exitUsage
@@ -204,6 +206,7 @@ func deploymentsUsage(prog string) string {
   %[1]s deployments summary [--window 24h]      counts by status, failure rate, duration percentiles
   %[1]s deployments watch [flags]               stream deployment changes until interrupted
   %[1]s deployments timeline <deploy-id> [--follow]   one deploy's ordered story, live or replayed
+  %[1]s deploys why <deploy-id>                 why a deploy failed: exit, health, new log patterns
 
 List filters:
   --status a,b      building, ready, failed, canceled, rolled_back, superseded, held

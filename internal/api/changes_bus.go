@@ -26,8 +26,17 @@ var changeTopicNames = [changeTopicCount]string{"apps", "nodes", "alerts", "doma
 // changeEvent carries the resource name only so the stream can check read
 // access; the name never leaves the server.
 type changeEvent struct {
-	topic changeTopic
-	name  string
+	topic  changeTopic
+	name   string
+	detail *changeDetail
+}
+
+// changeDetail is the optional payload of a deploy or alert event: ids and
+// status only, never env values, args or secrets.
+type changeDetail struct {
+	Type       string `json:"type"`
+	ResourceID string `json:"resource_id"`
+	Status     int    `json:"status"`
 }
 
 type changeSub struct {
@@ -46,14 +55,22 @@ type changeBus struct {
 	streams map[string]int
 }
 
-func (b *changeBus) Publish(t changeTopic, name string) {
+func (b *changeBus) Publish(t changeTopic, name string) { b.publish(t, name, nil) }
+
+// PublishDetail is Publish plus a payload that only callers allowed to read
+// the named resource receive. A full buffer degrades to the topic nudge.
+func (b *changeBus) PublishDetail(t changeTopic, name, eventType string, status int) {
+	b.publish(t, name, &changeDetail{Type: eventType, ResourceID: name, Status: status})
+}
+
+func (b *changeBus) publish(t changeTopic, name string, d *changeDetail) {
 	p := b.subs.Load()
 	if p == nil || t >= changeTopicCount {
 		return
 	}
 	for _, s := range *p {
 		select {
-		case s.ch <- changeEvent{topic: t, name: name}:
+		case s.ch <- changeEvent{topic: t, name: name, detail: d}:
 		default:
 			s.overflow.Or(1 << t)
 			// The reader may have drained ch just before the Or, so wake it once.

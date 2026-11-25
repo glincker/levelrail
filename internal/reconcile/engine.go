@@ -109,6 +109,8 @@ type Engine struct {
 	dmu               sync.Mutex
 	dirty             dirtySet
 	idle              map[string]idleState
+
+	lag lagLedger
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -347,6 +349,7 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 	}
 	e.persisted.forget(live)
 	e.forgetIdle(live)
+	e.lag.forget(live)
 }
 
 // safeReconcile turns a controller panic into an error so one broken resource cannot crash the process.
@@ -369,11 +372,16 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 // runOne reconciles c once; keyed says a KeyOnly requeue is the caller's to schedule.
 func (e *Engine) runOne(ctx context.Context, c Controller, keyed bool) Result {
 	if !e.guard.Before(c.Name()) {
+		// A tripped breaker is a failing controller, not a missed reconcile.
+		if e.guard.BreakerOpen(c.Name()) {
+			e.lag.observed(c.Name(), time.Now(), true)
+		}
 		return Result{}
 	}
 	start := time.Now()
 	result, panicked, err := e.safeReconcile(ctx, c)
 	e.guard.After(c.Name(), err, panicked)
+	defer func() { e.lag.observed(c.Name(), start, true) }()
 	dur := time.Since(start)
 	e.recordController(c.Name(), dur)
 	e.costs.add(c.Name(), dur, err != nil || panicked)
@@ -502,6 +510,26 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 		pass()
 	}
 
+	var firstEventTimer *time.Timer
+	defer func() {
+		if firstEventTimer != nil {
+			firstEventTimer.Stop()
+		}
+	}()
+	onEvent := func(ev docker.Event) {
+		if !firstEventSeen {
+			firstEventSeen = true
+			if e.firstEventDelay > 0 {
+				firstEventTimer = time.AfterFunc(e.firstEventDelay, e.Nudge)
+			}
+		}
+		e.markContainerDirty(ev.ContainerName)
+		e.logger.Debug("event triggered reconcile",
+			slog.String("container", ev.ContainerName),
+			slog.String("action", string(ev.Action)),
+		)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -520,6 +548,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 
 		case <-e.nudge:
 			e.logger.Debug("nudge triggered reconcile")
+			events = drainPending(ctx, events, e.nudge, onEvent, e.logger)
 			trigger()
 
 		case ev, ok := <-events:
@@ -528,19 +557,33 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 				events = nil // avoid a hot loop selecting on a closed, always-ready channel
 				continue
 			}
-			if !firstEventSeen {
-				firstEventSeen = true
-				if e.firstEventDelay > 0 {
-					t := time.AfterFunc(e.firstEventDelay, e.Nudge)
-					defer t.Stop()
-				}
-			}
-			e.markContainerDirty(ev.ContainerName)
-			e.logger.Debug("event triggered reconcile",
-				slog.String("container", ev.ContainerName),
-				slog.String("action", string(ev.Action)),
-			)
+			onEvent(ev)
+			events = drainPending(ctx, events, e.nudge, onEvent, e.logger)
 			trigger()
 		}
 	}
+}
+
+// maxDrainPerPass bounds one drain so the ticker and shutdown are never starved.
+const maxDrainPerPass = 1024
+
+// drainPending consumes queued events and a pending nudge without blocking so
+// a burst runs one pass. It returns nil once the event stream is closed.
+func drainPending(ctx context.Context, events <-chan docker.Event, nudge <-chan struct{}, onEvent func(docker.Event), logger *slog.Logger) <-chan docker.Event {
+	for i := 0; i < maxDrainPerPass; i++ {
+		select {
+		case <-ctx.Done():
+			return events
+		case <-nudge:
+		case ev, ok := <-events:
+			if !ok {
+				logger.Warn("docker event stream closed, continuing on resync ticker alone")
+				return nil
+			}
+			onEvent(ev)
+		default:
+			return events
+		}
+	}
+	return events
 }

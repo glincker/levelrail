@@ -73,7 +73,7 @@ Flags:
   --api-url string    control plane base URL (default: %[2]s env var, then %[3]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json              print the unused tokens as JSON to stdout, nothing else
-  --output string     output format: json, table, or text (default table)
+  --output string     output format: json, ndjson, yaml, table, wide, text or name (default table)
   --query string      JMESPath expression to filter the result before printing
   -h, --help          show this help
 `, prog, apiURLEnvHelp, defaultAPIURL)

@@ -261,7 +261,14 @@
   },
   "confirmDialog": {
     "cancel": "Cancelar",
-    "typePrompt": "Escribe {{value}} para confirmar"
+    "typePrompt": "Escribe {{value}} para confirmar",
+    "impactLead": "Perderás: {{items}}.",
+    "impactVolumes_one": "{{count}} volumen",
+    "impactVolumes_other": "{{count}} volúmenes",
+    "impactDomains_one": "{{count}} dominio",
+    "impactDomains_other": "{{count}} dominios",
+    "impactBackups_one": "los respaldos se conservan {{count}} día",
+    "impactBackups_other": "los respaldos se conservan {{count}} días"
   },
   "deleteApp": {
     "trigger": "Eliminar",
@@ -363,7 +370,9 @@
       "systemStatus": "Estado del sistema",
       "report": "Informar de un problema",
       "community": "Preguntar a la comunidad",
-      "suggest": "Sugerir una función"
+      "suggest": "Sugerir una función",
+      "copyDetails": "Copiar detalles para soporte",
+      "detailsHeader": "Detalles de soporte de Levelrail"
     },
     "account": {
       "controlPlane": "Plano de control",
@@ -1011,7 +1020,8 @@
     "recheckDocker": "Volver a comprobar Docker",
     "rechecking": "Comprobando...",
     "requestId": "ID de solicitud: {{id}}",
-    "toastTitle": "No se pudo completar"
+    "toastTitle": "No se pudo completar",
+    "whatThisMeans": "Qué significa:"
   },
   "appPower": {
     "applying": "Aplicando los cambios.",

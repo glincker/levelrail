@@ -35,5 +35,12 @@
   "code": {
     "copy": "Copier",
     "copied": "Copié"
+  },
+  "glossary": {
+    "title": "Glossaire",
+    "description": "Définitions simples des termes utilisés dans le tableau de bord.",
+    "search": "Rechercher des termes",
+    "searchLabel": "Rechercher dans le glossaire",
+    "empty": "Aucun terme ne correspond."
   }
 }

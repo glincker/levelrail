@@ -95,6 +95,7 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		kind      Kind
 		severity  string
 	}{
+		{"reconciler-lagging", "A reconciler is lagging", KindReconcilerLagging, SeverityWarning},
 		{"restore-drill-failed", "Restore drill failed", KindRestoreDrillFailed, SeverityCritical},
 		{"control-plane-backup-stale", "Control plane backup is stale", KindControlPlaneBackupStale, SeverityWarning},
 		{"node-offline", "Node offline", KindNodeOffline, SeverityCritical},

@@ -55,7 +55,11 @@ describe('RecentlyDeletedCard', () => {
     await waitFor(() => {
       expect(fetchFn).toHaveBeenCalledWith(
         '/api/v1/recently-deleted/app/web/restore',
-        { method: 'POST' },
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ confirm: 'web' }),
+        },
       )
     })
   })

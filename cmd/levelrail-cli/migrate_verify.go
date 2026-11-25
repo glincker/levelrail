@@ -43,7 +43,7 @@ func runMigrateVerify(prog string, args []string, stdout, stderr io.Writer, look
 	fs.StringVar(&req.SourceIP, "source-ip", "", "IP (or ip:port) of the source's ingress to probe directly")
 	fs.BoolVar(&req.Recheck, "recheck", false, "run again with the source credential the control plane still holds from the last check")
 	fs.BoolVar(&latest, "latest", false, "print the last stored report without running a check")
-	fs.StringVar(&outputFlag, "output", "", "output format: json, table, or text (default table; --json is shorthand for --output json)")
+	fs.StringVar(&outputFlag, "output", "", "output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)")
 	fs.StringVar(&query, "query", "", "JMESPath expression to filter the result before printing")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateVerifyUsage(prog)) }
 

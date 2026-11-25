@@ -233,5 +233,23 @@
       "githubNoApp": "GitHub Appがインストールされていない GitHubリポジトリ",
       "fix": "GitHub AppまたはGitLab接続でリポジトリを接続してから、もう一度ゲートをオンにしてください。"
     }
+  },
+  "why": {
+    "title": "このデプロイが失敗した理由",
+    "loading": "読み込み中",
+    "failed": "判定を読み込めませんでした",
+    "rawLogs": "生ログを見る",
+    "exit": "終了コード {{code}}",
+    "healthOk": "直近のヘルスチェックは成功: {{target}}",
+    "healthFailed": "直近のヘルスチェックは失敗: {{target}}",
+    "template": "{{count}}x {{sample}}",
+    "verdict": {
+      "oom_killed": "コンテナのメモリが不足しました",
+      "exit_nonzero": "コンテナがエラーで終了しました",
+      "health_failing": "ヘルスチェックが失敗し続けました",
+      "new_log_patterns": "前回の正常なデプロイ以降の新しいログパターン",
+      "no_signal": "明確な原因は記録されていません",
+      "ok": "問題は見つかりませんでした"
+    }
   }
 }

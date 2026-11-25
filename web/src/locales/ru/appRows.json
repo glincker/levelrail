@@ -100,5 +100,21 @@
     "restarts_other": "{{count}} перезапуска",
     "restartsRising": "Число перезапусков растёт",
     "dbSize": "Размер базы данных {{size}}"
+  },
+  "group": {
+    "label": "Группировать по",
+    "none": "Без группировки",
+    "node": "Узел",
+    "project": "Проект",
+    "environment": "Окружение",
+    "noneNode": "Без узла",
+    "noneProject": "Без проекта",
+    "noneEnvironment": "Без окружения",
+    "count_one": "{{count}} приложение",
+    "count_few": "{{count}} приложения",
+    "count_many": "{{count}} приложений",
+    "count_other": "{{count}} приложения",
+    "select": "Выбрать группу",
+    "deselect": "Снять выбор с группы"
   }
 }

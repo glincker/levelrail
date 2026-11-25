@@ -21,7 +21,7 @@ func TestRecentlyDeleted_RestoreApp(t *testing.T) {
 	}
 	do := func(method, target string) *httptest.ResponseRecorder {
 		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, target, ""))
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, target, `{"confirm":"web"}`))
 		return rec
 	}
 	if rec := do(http.MethodDelete, "/api/v1/apps/web"); rec.Code != http.StatusNoContent {

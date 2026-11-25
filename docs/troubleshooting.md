@@ -232,6 +232,10 @@ The `ram`/`cpu` checks warn when this host is below the recommended minimums (`A
 
 The `disk_io_latency` check writes and fsyncs a 1MiB file to the data directory and warns when that took longer than `APP_DOCTOR_DISK_IO_WARN_MS` (default 200ms). Free space (`disk_space`) says nothing about this: a disk can have plenty of room left and still write slowly enough to make every deploy, log write, and SQLite commit feel stuck. Check for a saturated disk with `iostat`/`iotop`, a network volume under load, or a nearly-full disk whose remaining space is fragmented.
 
+### Docker live-restore is off
+
+Without `live-restore`, restarting or upgrading the Docker daemon stops every container on the host. Set `"live-restore": true` in `/etc/docker/daemon.json` and run `systemctl reload docker`; the reload is enough, no daemon restart is needed. It does not apply in swarm mode, and Levelrail never edits `daemon.json` for you.
+
 ### Agent advertise host is unreachable
 
 The `agent_advertise_reachability` check confirms `APP_AGENT_ADVERTISE_HOST`, the address a remote agent dials to reach this control plane, is actually reachable. It fails when that address is still the loopback default (`127.0.0.1`) while one or more nodes are enrolled, since a remote agent can never dial its own machine's loopback address to reach a different host. It warns when the configured address doesn't accept a connection from this host itself. Set `APP_AGENT_ADVERTISE_HOST` to this control plane's real, reachable hostname or IP before enrolling a second node, restart, then re-enroll or re-issue certificates for any node that joined before the fix.

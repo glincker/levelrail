@@ -287,6 +287,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_FAIR_SHARE` | [`build.fair_share`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `60` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
+| `APP_BUILD_PERSONAL_BUILDER_SCOPE` | [`build.personal_builder_scope`](/runtime-settings#deploys) | `owner` |
 | `APP_BUILD_PERSONAL_IN_PRODUCTION` | [`build.personal_builders_in_production`](/runtime-settings#deploys) | `false` |
 | `APP_BUILD_QUEUE_AUTO_RESUME_AFTER` | [`build.queue_auto_resume_after`](/runtime-settings#deploys) | `0s` |
 | `APP_BUILD_QUEUE_PAUSED_WARN_AFTER` | [`build.queue_paused_warn_after`](/runtime-settings#deploys) | `1h` |
@@ -406,6 +407,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_JOBS_TIMEOUT_MAX_SECONDS` | [`jobs.timeout_max_seconds`](/runtime-settings#deploys) | `86400` |
 | `APP_JOBS_TIMEOUT_MIN_SECONDS` | [`jobs.timeout_min_seconds`](/runtime-settings#deploys) | `1` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
+| `APP_NODE_JOIN_TOKEN_LONG_TTL_MINUTES` | [`nodes.join_token_long_ttl_minutes`](/runtime-settings#deploys) | `60` |
+| `APP_NODE_JOIN_TOKEN_TTL_MINUTES` | [`nodes.join_token_ttl_minutes`](/runtime-settings#deploys) | `15` |
 | `APP_PAGES_PREVIEW_MAX_PER_SITE` | [`pages.preview_max_per_site`](/runtime-settings#deploys) | `20` |
 | `APP_PAGES_SERVING_WAIT` | [`pages.serving_wait`](/runtime-settings#deploys) | `8s` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
@@ -482,6 +485,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
+| `APP_ALERTING_SELF_HEARTBEAT_INTERVAL` | [`alerting.self_heartbeat_interval`](/runtime-settings#observability) | `60` |
+| `APP_ALERTING_SELF_HEARTBEAT_URL` | [`alerting.self_heartbeat_url`](/runtime-settings#observability) | empty |
 | `APP_ALERTS_ADVISORY_MIN_SEVERITY` | [`alerts.advisory_min_severity`](/runtime-settings#observability) | `high` |
 | `APP_ALERTS_ADVISORY_NOTIFY` | [`alerts.advisory_notify`](/runtime-settings#observability) | `false` |
 | `APP_ALERTS_DEFAULT_5XX_MIN_REQUESTS` | [`alerts.default_5xx_min_requests`](/runtime-settings#observability) | `20` |
@@ -493,6 +498,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ALERTS_RENOTIFY_INTERVAL` | [`alerts.renotify_interval`](/runtime-settings#observability) | `0` |
 | `APP_APPS_METRICS_MAX` | [`api.apps_metrics_max`](/runtime-settings#observability) | `200` |
 | `LEVELRAIL_EXPENSIVE_READ_TTL_SECONDS` | [`api.expensive_read_ttl`](/runtime-settings#observability) | `0` |
+| `APP_API_ROUTE_STAT_BOUND` | [`api.route_stat_bound`](/runtime-settings#observability) | `1024` |
 | `APP_SLOW_REQUEST_THRESHOLD` | [`api.slow_request_threshold`](/runtime-settings#observability) | `500ms` |
 | `APP_APP_METRICS_MAX_BODY_BYTES` | [`app_metrics.max_body_bytes`](/runtime-settings#observability) | `1048576` |
 | `APP_APP_METRICS_MAX_LABEL_BYTES` | [`app_metrics.max_label_bytes`](/runtime-settings#observability) | `65536` |
@@ -623,8 +629,22 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_LOG_RULE_MAX_WINDOW` | [`log_rules.max_window`](/runtime-settings#observability) | `1h` |
 | `APP_LOG_RULE_SAMPLES` | [`log_rules.samples`](/runtime-settings#observability) | `5` |
 | `APP_LOG_EXPORT_MAX_LINES` | [`logs.export_max_lines`](/runtime-settings#observability) | `5000` |
+| `APP_LOG_MAX_LIVE_SUBSCRIBERS` | [`logs.max_live_subscribers`](/runtime-settings#observability) | `64` |
+| `APP_METRICS_1H_QUERY_MAX_RANGE` | [`metrics.1h_query_max_range`](/runtime-settings#observability) | `840h` |
+| `APP_METRICS_MINUTE_QUERY_MAX_RANGE` | [`metrics.1m_query_max_range`](/runtime-settings#observability) | `168h` |
+| `APP_METRICS_5M_QUERY_MAX_RANGE` | [`metrics.5m_query_max_range`](/runtime-settings#observability) | `72h` |
 | `APP_METRICS_IDLE_INTERVAL` | [`metrics.idle_interval`](/runtime-settings#observability) | `1m` |
+| `APP_METRICS_MAX_DB_BYTES` | [`metrics.max_db_bytes`](/runtime-settings#observability) | `1073741824` |
 | `APP_METRICS_PRESENCE_WINDOW` | [`metrics.presence_window`](/runtime-settings#observability) | `2m` |
+| `APP_METRICS_PRUNE_EVERY` | [`metrics.prune_every`](/runtime-settings#observability) | `1h` |
+| `APP_METRICS_RAW_QUERY_MAX_RANGE` | [`metrics.raw_query_max_range`](/runtime-settings#observability) | `6h` |
+| `APP_METRICS_RETENTION_1D` | [`metrics.retention_1d`](/runtime-settings#observability) | `9600h` |
+| `APP_METRICS_RETENTION_1H` | [`metrics.retention_1h`](/runtime-settings#observability) | `8760h` |
+| `APP_METRICS_RETENTION_1M` | [`metrics.retention_1m`](/runtime-settings#observability) | `720h` |
+| `APP_METRICS_RETENTION_5M` | [`metrics.retention_5m`](/runtime-settings#observability) | `72h` |
+| `APP_METRICS_ROLLUP_BUDGET` | [`metrics.rollup_budget`](/runtime-settings#observability) | `5s` |
+| `APP_METRICS_ROLLUP_EVERY` | [`metrics.rollup_every`](/runtime-settings#observability) | `1m` |
+| `APP_METRICS_ROLLUP_LAG` | [`metrics.rollup_lag`](/runtime-settings#observability) | `30s` |
 | `APP_MONITORS_ENABLED` | [`monitors.enabled`](/runtime-settings#observability) | `false` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
 | `APP_NODE_AGENT_AUTO_UPDATE` | [`nodes.agent_auto_update`](/runtime-settings#observability) | `false` |
@@ -651,6 +671,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PERF_SLOW_STATEMENT_MS` | [`perf.slow_statement_ms`](/runtime-settings#observability) | `100` |
 | `APP_PERF_SLOW_STATEMENT_RING` | [`perf.slow_statement_ring`](/runtime-settings#observability) | `20` |
 | `APP_PERF_STATEMENT_TIMING` | [`perf.statement_timing`](/runtime-settings#observability) | `false` |
+| `APP_RECONCILE_LAG_WARN_SECONDS` | [`reconcile.lag_warn_seconds`](/runtime-settings#observability) | `120` |
 | `APP_RECONCILE_RESYNC_SECONDS` | [`reconcile.resync_seconds`](/runtime-settings#observability) | `30` |
 | `APP_SIZING_CPU_MARGIN_PCT` | [`sizing.cpu_margin_pct`](/runtime-settings#observability) | `130` |
 | `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | [`sizing.lookback`](/runtime-settings#observability) | `168h` |
@@ -679,9 +700,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ACCESS_SEARCH_MAX_SCAN` | [`telemetry.access_search_max_scan`](/runtime-settings#observability) | `200000` |
 | `APP_ACCESS_SEARCH_MAX_TERM` | [`telemetry.access_search_max_term`](/runtime-settings#observability) | `256` |
 | `APP_ACCESS_SEARCH_MAX_WINDOW` | [`telemetry.access_search_max_window`](/runtime-settings#observability) | `24h` |
-| `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
+| `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `1024` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
+| `APP_RETENTION_BATCH_PAUSE` | [`telemetry.retention_batch_pause`](/runtime-settings#observability) | `50ms` |
+| `APP_RETENTION_BATCH_ROWS` | [`telemetry.retention_batch_rows`](/runtime-settings#observability) | `5000` |
+| `APP_RETENTION_SWEEP_BUDGET` | [`telemetry.retention_sweep_budget`](/runtime-settings#observability) | `10s` |
 | `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
 | `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
 | `APP_UI_OUTBOUND_UTM` | [`ui.outbound_utm`](/runtime-settings#observability) | `true` |
@@ -695,6 +719,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_SIZE_HISTORY_RETENTION` | [`volumes.size_history_retention`](/runtime-settings#observability) | `168h` |
 | `APP_VOLUMES_USAGE_ALERT_PERCENT` | [`volumes.usage_alert_percent`](/runtime-settings#observability) | `90` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
+| `APP_APPS_UNDO_WINDOW_DAYS` | [`apps.undo_window_days`](/runtime-settings#data-retention) | `7` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | [`backup.hook_max_output_bytes`](/runtime-settings#data-retention) | `4096` |
 | `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | [`backup.hook_timeout_seconds`](/runtime-settings#data-retention) | `60` |
@@ -712,6 +737,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLEANUP_FAILING_FLOOR` | [`cleanup.failing_floor`](/runtime-settings#data-retention) | `1` |
 | `APP_CLEANUP_FAILING_WINDOW` | [`cleanup.failing_window`](/runtime-settings#data-retention) | `24h` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
+| `APP_ENV_REVISIONS_KEEP` | [`env.revisions_keep`](/runtime-settings#data-retention) | `20` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
 | `APP_NODES_PATCH_RUN_HISTORY` | [`nodes.patch_run_history`](/runtime-settings#data-retention) | `20` |
 | `APP_PAGES_BUILD_CACHE_MAX_BYTES` | [`pages.build_cache_max_bytes`](/runtime-settings#data-retention) | `1073741824` |

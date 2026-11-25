@@ -93,5 +93,16 @@
     "minRequestsHelp": "Die Prüfung überspringen, wenn gestern weniger Anfragen vorlagen, damit ruhige Domains keinen Alarm auslösen.",
     "daysLabel": "Verbleibende Tage",
     "daysHelp": "Löst aus, wenn für das Zertifikat einer geparkten Domain weniger Tage übrig sind."
+  },
+  "emailQuick": {
+    "label": "Ihre E-Mail-Adresse",
+    "placeholder": "sie@beispiel.de",
+    "hint": "Eine Adresse erhält Alarme, wenn etwas ausfällt, ein Backup fehlschlägt oder der Speicherplatz knapp wird.",
+    "submit": "Bei Problemen per E-Mail benachrichtigen",
+    "submitting": "Wird eingerichtet...",
+    "invalid": "Gültige E-Mail-Adresse eingeben",
+    "channelName": "E-Mail des Besitzers",
+    "done": "E-Mail-Alarme sind aktiv",
+    "failed": "E-Mail-Alarme konnten nicht eingerichtet werden"
   }
 }

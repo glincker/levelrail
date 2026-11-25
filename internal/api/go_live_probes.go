@@ -8,10 +8,14 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 const (
@@ -129,8 +133,29 @@ func (rt *Router) goLiveProxyView(ctx context.Context, r *http.Request) *proxyIn
 	return view
 }
 
-func defaultTLSProbe(ctx context.Context, dialAddr, sni string) (tlsProbeResult, error) {
+// probeDialer refuses internal targets unless the probe goes to this
+// server's own ingress, so a tenant name cannot steer a probe inward.
+func probeDialer(dialAddr string) net.Dialer {
 	d := net.Dialer{Timeout: probeDialTimeout}
+	if host, _, err := net.SplitHostPort(dialAddr); err == nil && host == "127.0.0.1" {
+		return d
+	}
+	d.Control = func(_, address string, _ syscall.RawConn) error {
+		host, _, err := net.SplitHostPort(address)
+		if err != nil {
+			return netguard.ErrBlockedAddress
+		}
+		ip, err := netip.ParseAddr(host)
+		if err != nil || !netguard.IsPrivateNetworkAllowed(ip) {
+			return netguard.ErrBlockedAddress
+		}
+		return nil
+	}
+	return d
+}
+
+func defaultTLSProbe(ctx context.Context, dialAddr, sni string) (tlsProbeResult, error) {
+	d := probeDialer(dialAddr)
 	raw, err := d.DialContext(ctx, "tcp", dialAddr)
 	if err != nil {
 		return tlsProbeResult{}, err
@@ -167,10 +192,13 @@ func defaultHTTPProbe(ctx context.Context, rawURL, dialAddr string) (int, error)
 		TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}, //nolint:gosec // status probe only, certificate trust is its own step
 	}
 	if dialAddr != "" {
-		d := net.Dialer{Timeout: probeDialTimeout}
+		d := probeDialer(dialAddr)
 		tr.DialContext = func(ctx context.Context, network, _ string) (net.Conn, error) {
 			return d.DialContext(ctx, network, dialAddr)
 		}
+	} else {
+		d := probeDialer("")
+		tr.DialContext = d.DialContext
 	}
 	client := &http.Client{
 		Transport:     tr,
@@ -195,6 +223,10 @@ func defaultHTTPProbe(ctx context.Context, rawURL, dialAddr string) (int, error)
 // public name when a proxy upstream owns TLS.
 func (rt *Router) probeDialAddr(domain string, upstreamTLS bool, publicPort int) string {
 	if upstreamTLS {
+		// An IP-literal tenant domain must never reach the loopback exemption.
+		if _, err := netip.ParseAddr(strings.Trim(domain, "[]")); err == nil {
+			return "[::]:0"
+		}
 		port := publicPort
 		if port == 0 {
 			port = 443

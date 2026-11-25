@@ -289,6 +289,8 @@ func (c *Controller) Reconcile(ctx context.Context) (res reconcile.Result, err e
 		Command:    []string{htpasswdBootScript},
 		Volumes:    []docker.VolumeMount{{Name: volName, ContainerPath: dataPath}},
 		Ports:      []docker.PortBinding{{ContainerPort: containerPort, HostPort: HostPort, HostIP: loopbackIP}},
+		// Platform container: it must come back after a daemon or host restart.
+		RestartPolicy: "unless-stopped",
 	}
 	wantAuth := ""
 	if tok != nil {

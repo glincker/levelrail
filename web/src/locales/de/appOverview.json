@@ -162,5 +162,15 @@
     "none": "Noch keine Preview-Umgebungen.",
     "all": "Alle Previews",
     "pr": "PR #{{number}}"
-  }
+  },
+  "detailsTrigger": "Konfiguration und Diagnose",
+  "activityLabel": "Aktivität",
+  "liveLogsLabel": "Live-Logs",
+  "appSummaryLabel": "App-Zusammenfassung",
+  "suggestedFixes": "Vorgeschlagene Korrekturen",
+  "liveTrafficLabel": "Live-Traffic und Ressourcen",
+  "trafficUnavailable": "Live-Traffic-Zahlen sind derzeit nicht verfügbar.",
+  "trafficRetry": "Erneut versuchen",
+  "noTrafficTitle": "Noch kein Traffic",
+  "noTrafficHint": "Sende eine Anfrage, um Live-Zahlen zu sehen."
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { SuggestionList } from '@/components/kit'
 import {
   Dialog,
@@ -24,6 +25,7 @@ export function OverviewSuggestions({
   latest?: DeployAttempt
   anchorId?: string
 }) {
+  const { t } = useTranslation('appOverview')
   const actions = useSuggestionActions(app, latest)
   if (descriptors.length === 0) return null
   return (
@@ -35,7 +37,7 @@ export function OverviewSuggestions({
       <Dialog open={actions.fixOpen} onOpenChange={actions.setFixOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Suggested fixes</DialogTitle>
+            <DialogTitle>{t('suggestedFixes')}</DialogTitle>
           </DialogHeader>
           <DiagnosisFixes appName={app.name} deployId={latest?.id} />
         </DialogContent>

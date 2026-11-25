@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ChevronRightGlassIcon } from '@thesvg/ui-react'
 import {
   Collapsible,
@@ -23,6 +24,7 @@ export function DetailsSection({
   /** Static sites have no container to place or preflight. */
   isStatic?: boolean
 }) {
+  const { t } = useTranslation('appOverview')
   return (
     <Collapsible>
       <CollapsibleTrigger className="group flex items-center gap-2 py-1 text-sm font-medium">
@@ -30,7 +32,7 @@ export function DetailsSection({
           className="size-5 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
           aria-hidden="true"
         />
-        Configuration and diagnostics
+        {t('detailsTrigger')}
       </CollapsibleTrigger>
       <CollapsiblePanel>
         <div className="space-y-6 pt-4">

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/nodecapacity"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -39,6 +40,7 @@ func buildRunnerNodeSource(db *store.DB, agentRegistry *agent.Registry, reports 
 			info := build.NodeInfo{
 				ID: n.ID, Name: n.Name, AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
 				Draining: !n.Schedulable, Labels: labels[n.ID], Pressure: build.PressureUnknown, Trust: trust[n.ID],
+				OwnerID: labels[n.ID][api.NodeLabelBuilderOwner], TeamID: labels[n.ID][api.NodeLabelBuilderTeam],
 			}
 			if _, err := agentRegistry.Get(n.ID); err == nil {
 				info.Online = true
@@ -105,6 +107,12 @@ func buildRunnerQuery(db *store.DB) func(ctx context.Context, app string) build.
 				}
 			}
 		}
+		if o, err := db.OwnerOfApp(ctx, app); err == nil && o != nil {
+			q.AppTeamID = o.TeamID
+			if ms, err := db.ListTeamMembers(ctx, o.TeamID); err == nil {
+				q.AppTeamMembers = developerMemberIDs(ms)
+			}
+		}
 		if env, err := db.EnvironmentOfApp(ctx, app); err == nil && env != nil {
 			q.EnvKind = env.Kind
 			if allowed, err := db.GetEnvironmentBuilders(ctx, env.ID); err == nil {
@@ -142,4 +150,15 @@ func parseRunnerLabels(in []string) map[string]string {
 		out[k] = v
 	}
 	return out
+}
+
+// developerMemberIDs lists members who may deploy; viewers never count as a builder's owner.
+func developerMemberIDs(ms []store.TeamMember) []string {
+	var ids []string
+	for _, m := range ms {
+		if store.TeamRoleAtLeast(m.Role, store.TeamRoleDeveloper) {
+			ids = append(ids, m.UserID)
+		}
+	}
+	return ids
 }

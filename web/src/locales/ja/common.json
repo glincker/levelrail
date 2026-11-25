@@ -306,7 +306,8 @@
   },
   "confirmDialog": {
     "cancel": "キャンセル",
-    "typePrompt": "確認のため {{value}} と入力してください"
+    "typePrompt": "確認のため {{value}} と入力してください",
+    "impactLead": "失われるもの: {{items}}。"
   },
   "deleteApp": {
     "trigger": "削除",
@@ -510,7 +511,9 @@
       "systemStatus": "Doctor",
       "report": "問題を報告",
       "community": "コミュニティに質問",
-      "suggest": "機能を提案"
+      "suggest": "機能を提案",
+      "copyDetails": "サポート用の詳細をコピー",
+      "detailsHeader": "Levelrail サポート情報"
     },
     "account": {
       "controlPlane": "コントロールプレーン",
@@ -1271,8 +1274,14 @@
         "title": "メールが設定されていません",
         "message": "メールプロバイダーがまだ設定されていません。",
         "action": "設定のメールでプロバイダーを追加してから、再試行してください。"
+      },
+      "badToken": {
+        "title": "トークンが拒否されました",
+        "message": "トークンまたは認証情報が拒否されたか、期限切れです。",
+        "action": "適切な権限を持つ新しいトークンを作成して、もう一度お試しください。"
       }
-    }
+    },
+    "whatThisMeans": "意味:"
   },
   "notFound": {
     "requested": "リクエスト: {{name}}",

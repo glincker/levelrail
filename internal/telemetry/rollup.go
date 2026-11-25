@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
@@ -79,14 +81,19 @@ func (db *DB) rollupTier(ctx context.Context, tier int, now time.Time, cfg TierC
 	var query string
 	var args []any
 	if tier == tierMinute {
+		in, inArgs := cumulativeIn()
 		query = `
 			INSERT INTO metric_rollups (tier, resource_id, metric, ts, sum, min, max, count)
 			SELECT ?, resource_id, metric, (ts / ?) * ?, SUM(value), MIN(value), MAX(value), COUNT(*)
-			FROM metric_samples WHERE ts >= ? AND ts < ?
+			FROM metric_samples WHERE ts >= ? AND ts < ? AND metric NOT IN ` + in + `
 			GROUP BY resource_id, metric, ts / ?
 			ON CONFLICT (tier, resource_id, metric, ts) DO UPDATE SET
 				sum = excluded.sum, min = excluded.min, max = excluded.max, count = excluded.count`
-		args = []any{tier, width, width, start, end, width}
+		args = append([]any{tier, width, width, start, end}, inArgs...)
+		args = append(args, width)
+		if err := db.rollupCumulative(ctx, tx, tier, start, end); err != nil {
+			return 0, false, err
+		}
 	} else {
 		query = `
 			INSERT INTO metric_rollups (tier, resource_id, metric, ts, sum, min, max, count)
@@ -111,6 +118,57 @@ func (db *DB) rollupTier(ctx context.Context, tier int, now time.Time, cfg TierC
 	return int((end - start) / width), more, nil
 }
 
+// minCumulativeLookback is the floor, in seconds, of the scan widening that keeps the delta across a bucket edge.
+const minCumulativeLookback = 120
+
+var cumulativeLookbackSource atomic.Pointer[func() time.Duration]
+
+// SetCumulativeLookbackSource makes the lookback follow fn, so a saved sample or idle interval applies to the next run.
+func SetCumulativeLookbackSource(fn func() time.Duration) { cumulativeLookbackSource.Store(&fn) }
+
+// CumulativeLookback is twice the slowest gap between samples: the idle interval, or four times the live one.
+func CumulativeLookback(idle, sample time.Duration) time.Duration {
+	return 2 * max(idle, 4*sample)
+}
+
+// cumulativeLookbackSeconds never drops below the floor, so a missing source still bridges one bucket edge.
+func cumulativeLookbackSeconds() int64 {
+	secs := int64(minCumulativeLookback)
+	if fn := cumulativeLookbackSource.Load(); fn != nil {
+		secs = max(secs, int64((*fn)()/time.Second))
+	}
+	return secs
+}
+
+// rollupCumulative stores the reset aware increase per bucket: a negative step is a reset, so the new total counts whole.
+func (db *DB) rollupCumulative(ctx context.Context, tx *sql.Tx, tier int, start, end int64) error {
+	width := int64(tier)
+	in, inArgs := cumulativeIn()
+	args := append([]any{start - cumulativeLookbackSeconds(), end}, inArgs...)
+	args = append([]any{tier, width, width}, args...)
+	args = append(args, start, width)
+	query := `
+		INSERT INTO metric_rollups (tier, resource_id, metric, ts, sum, min, max, count)
+		SELECT ?, resource_id, metric, (ts / ?) * ?, SUM(inc), MIN(value), MAX(value), COUNT(*)
+		FROM (
+			SELECT resource_id, metric, ts, value,
+				CASE WHEN prev IS NULL THEN 0 WHEN value >= prev THEN value - prev ELSE value END AS inc
+			FROM (
+				SELECT resource_id, metric, ts, value,
+					LAG(value) OVER (PARTITION BY resource_id, metric ORDER BY ts) AS prev
+				FROM metric_samples WHERE ts >= ? AND ts < ? AND metric IN {in}
+			)
+		) WHERE ts >= ?
+		GROUP BY resource_id, metric, ts / ?
+		ON CONFLICT (tier, resource_id, metric, ts) DO UPDATE SET
+			sum = excluded.sum, min = excluded.min, max = excluded.max, count = excluded.count`
+	_, err := tx.ExecContext(ctx, strings.Replace(query, "{in}", in, 1), args...)
+	if err != nil {
+		return fmt.Errorf("telemetry: rollup %d: cumulative increase: %w", tier, err)
+	}
+	return nil
+}
+
 func (db *DB) oldestSourceTS(ctx context.Context, table string, srcTier int) (int64, error) {
 	var ts sql.NullInt64
 	var err error
@@ -130,35 +188,42 @@ type PruneResult struct {
 	Raw, Minute, Hour int64
 	// OverCap is true when the size cap is still exceeded after pruning.
 	OverCap bool
+	// RawDroppedEarly is true when the size cap, not retention, removed raw rows.
+	RawDroppedEarly bool
 }
 
 const sizePruneMaxPasses = 20
 
 // Prune deletes samples and rollups past their retention and then, while the
-// database exceeds MaxBytes, the oldest tenth of the finest tier that still
-// has data already covered by the next tier. Raw rows are never dropped for
-// size before they are rolled up.
+// metric tables exceed MaxBytes, the oldest tenth of the finest tier that
+// still has data already covered by the next tier, down to the headroom
+// target. Raw rows are never dropped for size before they are rolled up.
 func (db *DB) Prune(ctx context.Context, now time.Time) (PruneResult, error) {
+	res, err := db.prune(ctx, now)
+	// A passive checkpoint cannot pass an active reader, so it never blocks them.
+	_, _ = db.ExecContext(ctx, `PRAGMA wal_checkpoint(PASSIVE)`)
+	return res, err
+}
+
+func (db *DB) prune(ctx context.Context, now time.Time) (PruneResult, error) {
 	cfg := db.tierConfig()
 	var res PruneResult
 	var err error
-	if res.Raw, err = db.deleteBefore(ctx, `DELETE FROM metric_samples WHERE ts < ?`, now.Add(-cfg.RawRetention).Unix()); err != nil {
+	deadline := time.Now().Add(currentRetentionTuning().SweepBudget)
+	trafficCutoff := now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()
+	if res.Raw, err = db.sweepBatched(ctx, rawSampleRetention, now.Add(-cfg.RawRetention).Unix(), deadline); err != nil {
 		return res, err
 	}
-	if res.Minute, err = db.deleteBefore(ctx, `DELETE FROM metric_rollups WHERE tier = 60 AND ts < ?`, now.Add(-cfg.MinuteRetention).Unix()); err != nil {
+	if res.Minute, err = db.sweepBatched(ctx, minuteRollupRetention, now.Add(-cfg.MinuteRetention).Unix(), deadline); err != nil {
 		return res, err
 	}
-	if res.Hour, err = db.deleteBefore(ctx, `DELETE FROM metric_rollups WHERE tier = 3600 AND ts < ?`, now.Add(-cfg.HourRetention).Unix()); err != nil {
+	if res.Hour, err = db.sweepBatched(ctx, hourRollupRetention, now.Add(-cfg.HourRetention).Unix(), deadline); err != nil {
 		return res, err
 	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_breakdown WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
-		return res, err
-	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_upstreams WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
-		return res, err
-	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_audience WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
-		return res, err
+	for _, target := range []retentionTarget{breakdownRetention, upstreamRetention, audienceRetention} {
+		if _, err = db.sweepBatched(ctx, target, trafficCutoff, deadline); err != nil {
+			return res, err
+		}
 	}
 	if _, err = db.deleteBefore(ctx, `DELETE FROM request_samples WHERE ts < ?`, now.Add(-SampleRetentionFromEnv()).Unix()); err != nil {
 		return res, err
@@ -167,28 +232,28 @@ func (db *DB) Prune(ctx context.Context, now time.Time) (PruneResult, error) {
 		return res, nil
 	}
 
-	for pass := 0; pass < sizePruneMaxPasses; pass++ {
-		size, err := db.liveBytes(ctx)
-		if err != nil {
-			return res, err
-		}
-		if size <= cfg.MaxBytes {
-			return res, nil
-		}
-		n, err := db.pruneOldestTenth(ctx)
-		if err != nil {
-			return res, err
-		}
-		res.Raw += n[0]
-		res.Minute += n[1]
-		res.Hour += n[2]
-		if n[0]+n[1]+n[2] == 0 {
-			break
-		}
-	}
-	size, err := db.liveBytes(ctx)
+	size, err := db.metricBytes(ctx)
 	if err != nil {
 		return res, err
+	}
+	if size > cfg.MaxBytes {
+		target := cfg.MaxBytes / 100 * int64(currentCapTargetPercent())
+		for pass := 0; pass < sizePruneMaxPasses && size > target; pass++ {
+			n, err := db.pruneOldestTenth(ctx)
+			if err != nil {
+				return res, err
+			}
+			res.Raw += n[0]
+			res.Minute += n[1]
+			res.Hour += n[2]
+			res.RawDroppedEarly = res.RawDroppedEarly || n[0] > 0
+			if n[0]+n[1]+n[2] == 0 {
+				break
+			}
+			if size, err = db.metricBytes(ctx); err != nil {
+				return res, err
+			}
+		}
 	}
 	res.OverCap = size > cfg.MaxBytes
 	return res, nil
@@ -212,6 +277,8 @@ func (db *DB) pruneOldestTenth(ctx context.Context) ([3]int64, error) {
 	if err != nil {
 		return out, err
 	}
+	// Keep the lookback of raw below the watermark so the next bucket still finds its previous total.
+	rawDone -= cumulativeLookbackSeconds()
 	minuteDone, err := db.rollupWatermark(ctx, tierHour)
 	if err != nil {
 		return out, err
@@ -250,26 +317,35 @@ func (db *DB) pruneOldestTenth(ctx context.Context) ([3]int64, error) {
 	return out, nil
 }
 
-func (db *DB) liveBytes(ctx context.Context) (int64, error) {
-	var pages, free, size int64
-	if err := db.QueryRowContext(ctx, `PRAGMA page_count`).Scan(&pages); err != nil {
-		return 0, fmt.Errorf("telemetry: page_count: %w", err)
-	}
-	if err := db.QueryRowContext(ctx, `PRAGMA freelist_count`).Scan(&free); err != nil {
-		return 0, fmt.Errorf("telemetry: freelist_count: %w", err)
-	}
-	if err := db.QueryRowContext(ctx, `PRAGMA page_size`).Scan(&size); err != nil {
-		return 0, fmt.Errorf("telemetry: page_size: %w", err)
-	}
-	return (pages - free) * size, nil
-}
-
 // Maintainer runs rollups and pruning on timers.
 type Maintainer struct {
 	db          *DB
 	logger      *slog.Logger
 	rollupEvery time.Duration
 	pruneEvery  time.Duration
+	// intervals, when set, is re-read after each run so a saved interval applies without a restart.
+	intervals func() (rollup, prune time.Duration)
+}
+
+// SetIntervalSource makes the next wait of each job follow fn, so saved intervals apply live.
+func (m *Maintainer) SetIntervalSource(fn func() (rollup, prune time.Duration)) { m.intervals = fn }
+
+// refreshEvery resets the ticker when the wanted interval changed and returns the interval now in force.
+func refreshEvery(t *time.Ticker, cur, want time.Duration) time.Duration {
+	if want <= 0 || want == cur {
+		return cur
+	}
+	t.Reset(want)
+	return want
+}
+
+func (m *Maintainer) refreshIntervals(rollup, prune *time.Ticker) {
+	if m.intervals == nil {
+		return
+	}
+	r, p := m.intervals()
+	m.rollupEvery = refreshEvery(rollup, m.rollupEvery, r)
+	m.pruneEvery = refreshEvery(prune, m.pruneEvery, p)
 }
 
 // NewMaintainer builds a Maintainer; zero intervals default to 1 minute for
@@ -314,7 +390,10 @@ func (m *Maintainer) PruneOnce(ctx context.Context) error {
 			slog.Int64("raw", res.Raw), slog.Int64("minute", res.Minute), slog.Int64("hour", res.Hour))
 	}
 	if res.OverCap {
-		m.logger.WarnContext(ctx, "metrics database still over size cap after pruning")
+		m.logger.WarnContext(ctx, "metrics tables still over size cap after pruning")
+	}
+	if res.RawDroppedEarly {
+		m.logger.WarnContext(ctx, "metrics size cap dropped raw data before retention, raise the cap or shorten retention")
 	}
 	return nil
 }
@@ -334,6 +413,7 @@ func (m *Maintainer) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-rollup.C:
+			m.refreshIntervals(rollup, prune)
 			start := time.Now()
 			err := m.RollupOnce(ctx)
 			rollupLoop.Observe(start, err)
@@ -341,6 +421,7 @@ func (m *Maintainer) Run(ctx context.Context) {
 				m.logger.ErrorContext(ctx, "metrics rollup failed", slog.String("error", err.Error()))
 			}
 		case <-prune.C:
+			m.refreshIntervals(rollup, prune)
 			start := time.Now()
 			err := m.PruneOnce(ctx)
 			pruneLoop.Observe(start, err)

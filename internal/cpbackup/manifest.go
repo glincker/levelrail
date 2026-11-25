@@ -18,6 +18,8 @@ const (
 	dataSuffix     = ".db.age"
 	manifestSuffix = ".json"
 	manifestFormat = 1
+	// manifestBundleFormat marks bundled backups so older binaries refuse them instead of misreading a tar.
+	manifestBundleFormat = 2
 )
 
 // Manifest describes one off-box backup. It is stored unencrypted beside the
@@ -42,6 +44,11 @@ type Manifest struct {
 	// wrapped data keys. IncludesMasterKey is always false.
 	ContainsWrappedSecrets bool `json:"contains_wrapped_secrets"`
 	IncludesMasterKey      bool `json:"includes_master_key"`
+	// Bundle is "tar" when the payload holds levelrail.db and alerting.db; empty means a bare database.
+	Bundle           string `json:"bundle,omitempty"`
+	IncludesAlerting bool   `json:"includes_alerting,omitempty"`
+	// AlertingWarning says why alerting.db was left out although it exists.
+	AlertingWarning string `json:"alerting_warning,omitempty"`
 }
 
 var keyPattern = regexp.MustCompile(`^` + Prefix + `/([^/]+)/(\d{4})/(\d{2})/(\d{2})/(\d{8}T\d{6}Z)\.db\.age$`)
@@ -70,6 +77,13 @@ func ParseKey(key string) (installID string, ts time.Time, err error) {
 	return m[1], ts.UTC(), nil
 }
 
+func formatFor(bundle string) int {
+	if bundle != "" {
+		return manifestBundleFormat
+	}
+	return manifestFormat
+}
+
 // ErrBadManifest means a manifest is unreadable or self-inconsistent.
 var ErrBadManifest = errors.New("invalid backup manifest")
 
@@ -80,7 +94,7 @@ func ParseManifest(data []byte) (Manifest, error) {
 		return Manifest{}, fmt.Errorf("%w: %w", ErrBadManifest, err)
 	}
 	switch {
-	case m.ManifestVersion != manifestFormat:
+	case m.ManifestVersion != manifestFormat && m.ManifestVersion != manifestBundleFormat:
 		return Manifest{}, fmt.Errorf("%w: unsupported manifest version %d", ErrBadManifest, m.ManifestVersion)
 	case m.SHA256 == "" || m.PlainSHA256 == "" || m.SizeBytes <= 0 || m.PlainSizeBytes <= 0:
 		return Manifest{}, fmt.Errorf("%w: missing checksum or size", ErrBadManifest)

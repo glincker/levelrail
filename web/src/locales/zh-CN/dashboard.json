@@ -311,5 +311,36 @@
     "body": "你有备份,但尚未测试过恢复。从未恢复过的备份只是一种猜测。",
     "action": "测试恢复",
     "dismiss": "忽略"
+  },
+  "phoneHome": {
+    "list": "应用状态",
+    "tabs": {
+      "label": "主导航",
+      "apps": "应用",
+      "alerts": "告警",
+      "deploys": "部署",
+      "settings": "设置"
+    },
+    "lastDeploy": "部署于 {{when}}",
+    "neverDeployed": "从未部署",
+    "health": {
+      "ready": "健康",
+      "notReady": "未就绪",
+      "unknown": "健康状态未知"
+    },
+    "restart": "重启",
+    "redeploy": "重新部署",
+    "rollback": "回滚",
+    "restartTitle": "重启 {{name}}?",
+    "restartBody": "容器将逐个重启,可能出现短暂中断。",
+    "redeployTitle": "重新部署 {{name}}?",
+    "redeployBody": "重新构建并发布当前镜像。",
+    "rollbackTitle": "回滚 {{name}}?",
+    "rollbackBody": "回到 {{when}} 的版本。",
+    "rollbackNone": "没有可回滚的更早版本。",
+    "restarting": "正在重启“{{name}}”。",
+    "rollingBack": "正在回滚“{{name}}”。",
+    "rollbackWaiting": "“{{name}}”的回滚正在等待批准。",
+    "cancel": "取消"
   }
 }

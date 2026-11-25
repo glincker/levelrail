@@ -46,7 +46,8 @@ func ParseRange(spec string) (Range, error) {
 	for _, tok := range strings.Fields(spec) {
 		cs, err := parseToken(tok)
 		if err != nil {
-			return Range{}, err
+			// Quote the whole value so the caller sees what they sent.
+			return Range{}, fmt.Errorf("invalid version range %q", spec)
 		}
 		r.cs = append(r.cs, cs...)
 	}

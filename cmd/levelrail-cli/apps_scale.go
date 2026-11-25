@@ -130,6 +130,10 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
 		_, _ = fmt.Fprintf(stderr, "app %q scaled to %d replica(s), strategy %s; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Replicas, updated.Strategy, prog, updated.Name)
 		printAppHuman(stdout, updated)
+		if tp.any() {
+			// Disk and network caps are fixed when a container is created, so they only apply to a fresh one.
+			_, _ = fmt.Fprintln(stderr, "note: the running container is recreated so the new limits apply (a single replica restarts briefly)")
+		}
 		if undo := scaleUndoArgs(updated, prevReplicas, prevStrategy); len(undo) > 0 {
 			_, _ = fmt.Fprint(stderr, undoHint(prog, append([]string{"apps", "scale", updated.Name}, undo...)...))
 		}
@@ -288,7 +292,7 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the app as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

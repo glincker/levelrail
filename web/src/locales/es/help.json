@@ -35,5 +35,12 @@
   "code": {
     "copy": "Copiar",
     "copied": "Copiado"
+  },
+  "glossary": {
+    "title": "Glosario",
+    "description": "Definiciones sencillas de los términos usados en el panel.",
+    "search": "Buscar términos",
+    "searchLabel": "Buscar en el glosario",
+    "empty": "Ningún término coincide con tu búsqueda."
   }
 }

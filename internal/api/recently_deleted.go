@@ -63,15 +63,47 @@ func (rt *Router) rememberDeleted(ctx context.Context, r *http.Request, kind, na
 	if st == nil || rt.recentlyDeletedWindow(ctx) <= 0 {
 		return
 	}
+	e, ok := rt.deletedEntry(r, kind, name, snapshot, lastBackup)
+	if !ok {
+		return
+	}
+	if err := st.AddRecentlyDeleted(ctx, e); err != nil {
+		rt.logger.Warn("api: undo window save failed", slog.String("name", name), slog.String("error", err.Error()))
+	}
+}
+
+// deletedEntry builds the undo row for a snapshot; false when it cannot be encoded.
+func (rt *Router) deletedEntry(r *http.Request, kind, name string, snapshot any, lastBackup string) (store.RecentlyDeleted, bool) {
 	b, err := json.Marshal(snapshot)
 	if err != nil {
 		rt.logger.Warn("api: undo window snapshot failed", slog.String("name", name), slog.String("error", err.Error()))
-		return
+		return store.RecentlyDeleted{}, false
 	}
 	_, _, by, _ := rt.currentActor(r)
-	if err := st.AddRecentlyDeleted(ctx, store.RecentlyDeleted{Kind: kind, Name: name, Snapshot: string(b), LastBackup: lastBackup, DeletedBy: by}); err != nil {
-		rt.logger.Warn("api: undo window save failed", slog.String("name", name), slog.String("error", err.Error()))
+	return store.RecentlyDeleted{Kind: kind, Name: name, Snapshot: string(b), LastBackup: lastBackup, DeletedBy: by}, true
+}
+
+// liveDeleted is GetRecentlyDeleted that treats a row past the window as gone, so a name is not
+// held past it. An expired row is purged on the spot, with its kept history.
+func (rt *Router) liveDeleted(ctx context.Context, kind, name string) (store.RecentlyDeleted, error) {
+	st := rt.recentlyDeleted()
+	if st == nil {
+		return store.RecentlyDeleted{}, store.ErrRecentlyDeletedNotFound
 	}
+	window := rt.recentlyDeletedWindow(ctx)
+	e, err := st.GetRecentlyDeleted(ctx, kind, name)
+	if err != nil {
+		return store.RecentlyDeleted{}, err
+	}
+	if window <= 0 || !e.DeletedAt.Add(window).After(time.Now()) {
+		// A failed purge keeps the name reserved: its webhook and data are still there.
+		if _, perr := st.PurgeRecentlyDeleted(ctx, time.Now().Add(-window)); perr != nil {
+			rt.logger.Warn("api: purge expired undo rows failed", slog.String("error", perr.Error()))
+			return store.RecentlyDeleted{}, perr
+		}
+		return store.RecentlyDeleted{}, store.ErrRecentlyDeletedNotFound
+	}
+	return e, nil
 }
 
 type recentlyDeletedResource struct {
@@ -98,6 +130,9 @@ func (rt *Router) handleListRecentlyDeleted(w http.ResponseWriter, r *http.Reque
 	window := rt.recentlyDeletedWindow(r.Context())
 	out := make([]recentlyDeletedResource, 0, len(rows))
 	for _, e := range rows {
+		if !rt.deletedVisibleToCaller(r, e) {
+			continue
+		}
 		res := recentlyDeletedResource{Kind: e.Kind, Name: e.Name, DeletedAt: e.DeletedAt, ExpiresAt: e.DeletedAt.Add(window), DeletedBy: e.DeletedBy}
 		if e.LastBackup != "" {
 			res.LastBackup = json.RawMessage(e.LastBackup)
@@ -107,16 +142,8 @@ func (rt *Router) handleListRecentlyDeleted(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, out)
 }
 
-// recentlyDeletedResourceFromPath scopes a restore to the deleted app or database.
-func recentlyDeletedResourceFromPath(r *http.Request) string {
-	if r.PathValue("kind") == store.RecentlyDeletedDatabase {
-		return databaseResourceFromPath(r)
-	}
-	return appResourceFromPath(r)
-}
-
 // handleRestoreRecentlyDeleted handles POST /api/v1/recently-deleted/{kind}/{name}/restore.
-// It recreates the config; secrets were erased with the original and must be set again.
+// It recreates the config; secrets and the function KV token were erased with the original and must be set again (mint a new KV token; its data is kept).
 func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Request) {
 	kind, name := r.PathValue("kind"), r.PathValue("name")
 	st := rt.recentlyDeleted()
@@ -124,7 +151,7 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusNotFound, "nothing to restore")
 		return
 	}
-	e, err := st.GetRecentlyDeleted(r.Context(), kind, name)
+	e, err := rt.liveDeleted(r.Context(), kind, name)
 	if errors.Is(err, store.ErrRecentlyDeletedNotFound) {
 		writeError(w, http.StatusNotFound, "nothing to restore: the undo window has passed or it was never deleted")
 		return
@@ -134,9 +161,43 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if kind == store.RecentlyDeletedApp {
+		if !rt.authorizeAppRestore(w, r, e) {
+			return
+		}
+		unlock := lockAppName(name)
 		err = rt.restoreDeletedApp(r.Context(), e)
+		if err == nil {
+			// A failed clear leaves a row the purge skips while the app is live, and the name is taken anyway.
+			if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
+				rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
+			}
+		}
+		unlock()
 	} else {
-		err = rt.restoreDeletedDatabase(r.Context(), e)
+		if !rt.authorizeDatabaseRestore(w, r, e.Name) {
+			return
+		}
+		unlock := lockAppName("database:" + name)
+		// Re-read under the lock so a concurrent restore or purge cannot be restored twice.
+		cur, lerr := rt.liveDeleted(r.Context(), kind, name)
+		switch {
+		case errors.Is(lerr, store.ErrRecentlyDeletedNotFound):
+			unlock()
+			writeError(w, http.StatusNotFound, "nothing to restore: the undo window has passed or it was never deleted")
+			return
+		case lerr != nil:
+			unlock()
+			rt.internalError(w, "api: restore recently deleted", lerr, slog.String("name", name))
+			return
+		}
+		err = rt.restoreDeletedDatabase(r.Context(), cur)
+		if err == nil {
+			// Only the row restored from is cleared; a newer delete of the same name stays.
+			if derr := rt.clearRestoredDatabaseEntry(r.Context(), st, cur); derr != nil {
+				rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
+			}
+		}
+		unlock()
 	}
 	var conflict errRestoreConflict
 	if errors.As(err, &conflict) {
@@ -147,10 +208,11 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		rt.internalError(w, "api: restore recently deleted failed", err, slog.String("name", name))
 		return
 	}
-	if err := st.DeleteRecentlyDeleted(r.Context(), kind, name); err != nil {
-		rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", err.Error()))
+	if kind == store.RecentlyDeletedDatabase {
+		rt.changes.Publish(changeDatabases, name)
+	} else {
+		rt.changes.Publish(changeApps, name)
 	}
-	rt.changes.Publish(changeApps, name)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, map[string]string{"status": "restored", "kind": kind, "name": name})
 }
@@ -184,12 +246,47 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 		}
 	}
 	if node != "" {
-		return rt.apps.UpdateServiceNode(ctx, e.Name, node)
+		if err := rt.apps.UpdateServiceNode(ctx, e.Name, node); err != nil {
+			return err
+		}
 	}
-	return nil
+	// The restored app is a new life of the name; the kept webhook follows it.
+	if rt.functionTriggers != nil {
+		if _, err := rt.functionTriggers.GetFunctionWebhook(ctx, e.Name); err == nil {
+			if err := rt.bindFunctionWebhook(ctx, e.Name); err != nil {
+				return err
+			}
+		}
+	}
+	if svc.EnvironmentID != "" {
+		if es, ok := rt.apps.(interface {
+			SetServiceEnvironment(ctx context.Context, serviceName, envID string) error
+		}); ok {
+			if err := es.SetServiceEnvironment(ctx, e.Name, svc.EnvironmentID); err != nil {
+				return err
+			}
+		}
+	}
+	// Comes back stopped so nothing runs until the owner starts it.
+	return rt.apps.UpdateServiceSuspended(ctx, e.Name, true)
 }
 
-func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDeleted) error {
+// clearRestoredDatabaseEntry drops the undo row only while it is still the one restored from.
+func (rt *Router) clearRestoredDatabaseEntry(ctx context.Context, st recentlyDeletedStore, e store.RecentlyDeleted) error {
+	cur, err := st.GetRecentlyDeleted(ctx, e.Kind, e.Name)
+	if errors.Is(err, store.ErrRecentlyDeletedNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if !cur.DeletedAt.Equal(e.DeletedAt) {
+		return nil
+	}
+	return st.DeleteRecentlyDeleted(ctx, e.Kind, e.Name)
+}
+
+func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDeleted) (err error) {
 	var d store.DesiredDatabase
 	if err := json.Unmarshal([]byte(e.Snapshot), &d); err != nil {
 		return err
@@ -201,6 +298,14 @@ func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDe
 		}
 		return err
 	}
+	// A half-restored row would block the retry with a conflict, so undo the insert on failure.
+	defer func() {
+		if err != nil {
+			if derr := rt.databases.DeleteDesiredDatabase(context.WithoutCancel(ctx), e.Name); derr != nil {
+				rt.logger.Warn("api: roll back failed database restore", slog.String("name", e.Name), slog.String("error", derr.Error()))
+			}
+		}
+	}()
 	if d.NodeID != "" {
 		if err := rt.databases.UpdateDatabaseNode(ctx, e.Name, d.NodeID); err != nil {
 			return err

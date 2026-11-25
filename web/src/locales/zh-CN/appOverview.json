@@ -161,5 +161,15 @@
     "none": "暂无预览环境。",
     "all": "全部预览",
     "pr": "PR #{{number}}"
-  }
+  },
+  "detailsTrigger": "配置与诊断",
+  "activityLabel": "活动",
+  "liveLogsLabel": "实时日志",
+  "appSummaryLabel": "应用摘要",
+  "suggestedFixes": "建议的修复",
+  "liveTrafficLabel": "实时流量与资源",
+  "trafficUnavailable": "实时流量数据暂时不可用。",
+  "trafficRetry": "重试",
+  "noTrafficTitle": "暂无流量",
+  "noTrafficHint": "发送一个请求即可查看实时数据。"
 }

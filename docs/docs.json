@@ -306,6 +306,7 @@
               "loki-api",
               "log-pipelines",
               "log-budgets",
+              "log-collapse",
               "data-export",
               "traffic-export",
               "audit-event-schema",

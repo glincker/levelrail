@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dataexport"
+	"github.com/GLINCKER/levelrail/internal/metrics"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
@@ -53,6 +54,18 @@ func (rt *Router) handleScrapeMetrics(w http.ResponseWriter, r *http.Request) {
 	if err := dataexport.WritePrometheus(&buf, series); err != nil {
 		rt.internalError(w, "api: scrape metrics: render", err)
 		return
+	}
+	if !scope.restricted() {
+		if p := rt.cpHealth.probe.Load(); p != nil && p.Lag != nil {
+			prefix := levelrailMetricPrefix
+			if pf, ok := svc.(interface{ MetricPrefix() string }); ok {
+				prefix = pf.MetricPrefix()
+			}
+			if err := metrics.WriteReconcileLag(&buf, prefix, p.Lag()); err != nil {
+				rt.internalError(w, "api: scrape metrics: render reconcile lag", err)
+				return
+			}
+		}
 	}
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 	_, _ = w.Write(buf.Bytes())

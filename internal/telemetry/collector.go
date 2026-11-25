@@ -146,15 +146,30 @@ func (c *Collector) collect(ctx context.Context, targets []Target, prune bool) e
 	now := time.Now()
 	samples := make([]Sample, 0, len(targets)*7) // 7 metrics per container, see sampleValues
 	var errs []error
+	// One sample set per resource: gauges are averaged (limit: max) so they stay per-container,
+	// counters are summed. A failed replica drops the resource's counters this tick, so totals never dip.
+	combined := map[string]*statsAgg{}
+	failed := map[string]bool{}
+	var order []string
 
 	for _, target := range targets {
 		stats, err := c.source.Stats(ctx, target.NodeID, target.ContainerID)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("collect %s: %w", target.ResourceID, err))
+			failed[target.ResourceID] = true
 			continue
 		}
 		stats.CPUPercent = c.cpuPercent(cpuCacheKey(target.NodeID, target.ContainerID), stats.CPURaw)
-		samples = append(samples, sampleValues(target.ResourceID, now, stats)...)
+		acc, ok := combined[target.ResourceID]
+		if !ok {
+			acc = &statsAgg{}
+			combined[target.ResourceID] = acc
+			order = append(order, target.ResourceID)
+		}
+		acc.add(stats)
+	}
+	for _, id := range order {
+		samples = append(samples, combined[id].samples(id, now, failed[id])...)
 	}
 
 	if err := c.store.WriteSamples(ctx, samples); err != nil {
@@ -165,6 +180,45 @@ func (c *Collector) collect(ctx context.Context, targets []Target, prune bool) e
 		c.pruneCPUCache(targets)
 	}
 	return errors.Join(errs...)
+}
+
+// statsAgg folds one resource's containers into a single sample set.
+type statsAgg struct {
+	n                        int
+	cpu                      float64
+	mem                      float64
+	memLimit                 float64
+	rx, tx, diskRead, diskWr float64
+}
+
+func (a *statsAgg) add(s docker.ContainerStats) {
+	a.n++
+	a.cpu += s.CPUPercent
+	a.mem += float64(s.MemoryUsageBytes)
+	a.memLimit = max(a.memLimit, float64(s.MemoryLimitBytes))
+	a.rx += float64(s.NetworkRxBytes)
+	a.tx += float64(s.NetworkTxBytes)
+	a.diskRead += float64(s.DiskReadBytes)
+	a.diskWr += float64(s.DiskWriteBytes)
+}
+
+// samples averages the gauges; counters are skipped when a replica failed so the total cannot dip and rebound.
+func (a *statsAgg) samples(id string, at time.Time, skipCounters bool) []Sample {
+	n := float64(a.n)
+	out := []Sample{
+		{ResourceID: id, Metric: "cpu_percent", Timestamp: at, Value: a.cpu / n},
+		{ResourceID: id, Metric: "memory_usage_bytes", Timestamp: at, Value: a.mem / n},
+		{ResourceID: id, Metric: "memory_limit_bytes", Timestamp: at, Value: a.memLimit},
+	}
+	if skipCounters {
+		return out
+	}
+	return append(out,
+		Sample{ResourceID: id, Metric: "network_rx_bytes", Timestamp: at, Value: a.rx},
+		Sample{ResourceID: id, Metric: "network_tx_bytes", Timestamp: at, Value: a.tx},
+		Sample{ResourceID: id, Metric: "disk_read_bytes", Timestamp: at, Value: a.diskRead},
+		Sample{ResourceID: id, Metric: "disk_write_bytes", Timestamp: at, Value: a.diskWr},
+	)
 }
 
 func (c *Collector) cpuPercent(cacheKey string, raw docker.CPUStatsRaw) float64 {

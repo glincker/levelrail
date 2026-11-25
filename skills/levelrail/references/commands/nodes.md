@@ -127,7 +127,7 @@ Flags:
   --api-url string         control plane base URL (default: LEVELRAIL_API_URL or APP_API_URL env var, then http://localhost:8080)
   --profile string         named credentials profile to read
   --json                   print the result as JSON
-  --output string          output format: json, table, or text
+  --output string          output format: json, ndjson, yaml, table, wide, text or name
   --query string           JMESPath expression to filter the result
   -h, --help               show this help
 ```

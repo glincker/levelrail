@@ -20,6 +20,7 @@ type hintState struct {
 	CheckedAt   time.Time `json:"checked_at"`
 	AttemptedAt time.Time `json:"attempted_at"`
 	Latest      string    `json:"latest"`
+	NoticedAt   time.Time `json:"noticed_at"`
 }
 
 // Hinter prints a one-line notice at most once per Interval days.
@@ -96,4 +97,41 @@ func writeState(path string, st hintState) {
 	if os.Rename(tmp, path) != nil {
 		_ = os.Remove(tmp)
 	}
+}
+
+// Notice reads only the cached check result, never the network, and returns
+// the hint line when a newer release is known and none was shown within every.
+func (h Hinter) Notice(every time.Duration) string {
+	if h.Current == "dev" || h.Dir == "" || every <= 0 {
+		return ""
+	}
+	now := time.Now
+	if h.Now != nil {
+		now = h.Now
+	}
+	path := filepath.Join(h.Dir, stateFile)
+	st := readState(path)
+	t := now()
+	if st.Latest == "" || !Newer(h.Current, st.Latest) {
+		return ""
+	}
+	if !st.NoticedAt.IsZero() && t.Sub(st.NoticedAt) < every {
+		return ""
+	}
+	st.NoticedAt = t
+	writeState(path, st)
+	return fmt.Sprintf("A newer release is available: %s (you have %s).", st.Latest, h.Current)
+}
+
+// Cached returns the last stored check result without touching the network;
+// ok is false when no check has succeeded yet.
+func (h Hinter) Cached() (latest string, checkedAt time.Time, ok bool) {
+	if h.Dir == "" {
+		return "", time.Time{}, false
+	}
+	st := readState(filepath.Join(h.Dir, stateFile))
+	if st.Latest == "" || st.CheckedAt.IsZero() {
+		return "", time.Time{}, false
+	}
+	return st.Latest, st.CheckedAt, true
 }

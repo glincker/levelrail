@@ -101,6 +101,9 @@ func printRestoreReport(w io.Writer, rep cpbackup.RestoreReport, ok bool) {
 		if rep.PreRestore != "" {
 			_, _ = fmt.Fprintf(w, "previous database kept as %s\n", rep.PreRestore)
 		}
+		if rep.PreRestoreAlerting != "" {
+			_, _ = fmt.Fprintf(w, "previous alerting database kept as %s\n", rep.PreRestoreAlerting)
+		}
 		_, _ = fmt.Fprintln(w, "restored. Make sure the master key is in place (master.key in the data directory or APP_MASTER_KEY), then start the control plane.")
 	}
 }

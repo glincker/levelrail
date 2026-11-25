@@ -131,7 +131,10 @@
     "clear": "Supprimer toutes les limites",
     "saved": "Quota enregistré",
     "cleared": "Limites de quota supprimées",
-    "readOnly": "Seuls les admins et propriétaires de l'équipe peuvent modifier ces limites."
+    "readOnly": "Seuls les admins et propriétaires de l'équipe peuvent modifier ces limites.",
+    "live": "En cours d’utilisation : {{live}} sur {{reserved}} réservés ({{sampled}} applications sur {{total}} remontent des données)",
+    "liveOfReserved": "{{percent}} % du réservé",
+    "liveLabel": "{{resource}} en cours d’utilisation"
   },
   "errors": {
     "generic": "La requête a échoué : {{message}}"

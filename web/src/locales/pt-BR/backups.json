@@ -81,7 +81,14 @@
     "cancel": "Cancelar",
     "started": "Restaurando em {{name}}",
     "startedDescription": "Acompanhe o progresso no histórico de restaurações deste volume.",
-    "failed": "Não foi possível iniciar a restauração"
+    "failed": "Não foi possível iniciar a restauração",
+    "stepCheck": "Verifique seu app",
+    "checkTitle": "Restauração iniciada. Agora verifique seu app.",
+    "checkOpen": "Abra seu app e confirme que ele ainda carrega.",
+    "checkData": "Quando a restauração terminar, confirme que seus dados voltaram em {{name}}.",
+    "checkSwitch": "Aponte o app para {{name}} (a configuração de volume) e faça um novo deploy para usar os dados restaurados.",
+    "checkLink": "Abrir o app",
+    "done": "Concluído"
   },
   "policy": {
     "title": "Política de backup de {{app}}/{{volume}}",
@@ -631,5 +638,49 @@
     "startedTitle": "Teste de restauração iniciado.",
     "startedBody": "O resultado aparece aqui quando terminar.",
     "startFailed": "Não foi possível iniciar o teste de restauração."
+  },
+  "sameDisk": {
+    "title": "Se este servidor cair, os backups caem junto.",
+    "body": "Todos os destinos de backup estão no disco deste servidor. Conecte um armazenamento em outro lugar para manter uma cópia.",
+    "connect": "Conectar armazenamento"
+  },
+  "newServer": {
+    "open": "Restaurar em um novo servidor",
+    "title": "Restaurar em um novo servidor",
+    "description": "Traz um app, seus volumes e bancos de dados de volta em outro nó a partir dos backups mais recentes. Nada existente é sobrescrito.",
+    "stepChoose": "Escolher app e nó",
+    "stepReview": "Revisar",
+    "stepProgress": "Progresso",
+    "app": "App",
+    "appPlaceholder": "Selecione um app",
+    "noApps": "Nenhum app com dados em backup foi encontrado.",
+    "node": "Nó",
+    "nodePlaceholder": "Selecione um nó",
+    "noNodes": "Nenhum outro nó disponível. Adicione um servidor primeiro e volte.",
+    "nodeOffline": "{{name}} (offline)",
+    "review": "Estes itens serão restaurados em {{node}}.",
+    "reviewEmpty": "Não há nada para restaurar neste app.",
+    "kind": {
+      "volume": "Volume",
+      "database": "Banco de dados"
+    },
+    "status": {
+      "planned": "Pronto",
+      "started": "Restaurando",
+      "skipped": "Ignorado",
+      "failed": "Falhou"
+    },
+    "asName": "restaurado como {{name}}",
+    "nothingRestorable": "Nenhum item tem um backup bem-sucedido, então não há o que iniciar.",
+    "next": "Revisar",
+    "back": "Voltar",
+    "confirm": "Restaurar agora",
+    "cancel": "Cancelar",
+    "done": "Concluído",
+    "planFailed": "Não foi possível planejar a restauração: {{error}}",
+    "startFailed": "Não foi possível iniciar a restauração: {{error}}",
+    "startedTitle": "Restauração iniciada",
+    "startedBody": "Cada item é restaurado em segundo plano em um novo recurso em {{node}}. Acompanhe o progresso no histórico de restaurações abaixo.",
+    "openApp": "Abrir o app"
   }
 }

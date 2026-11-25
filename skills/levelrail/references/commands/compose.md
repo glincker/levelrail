@@ -15,7 +15,7 @@ Usage:
   levelrail-cli compose logs <app> [--service S] [--since 1h] [-f]         logs for one or every service
   levelrail-cli compose redeploy <app> [--service S]                       recreate every service, or one
   levelrail-cli compose rollback <app> [--revision N]                      re-apply an earlier compose file
-  levelrail-cli compose down <app> [--volumes]                             remove the stack (volumes kept by default)
+  levelrail-cli compose down <app> [--volumes] [--yes]                     remove the stack (volumes kept by default)
   levelrail-cli compose schedules <list|add|run|runs|pause|resume|rm> ...  cron commands inside one service
 
 Run "levelrail-cli compose <subcommand> -h" for a subcommand's own flags.

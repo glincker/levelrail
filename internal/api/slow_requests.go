@@ -50,7 +50,7 @@ func (r *slowRequestRing) snapshot() []slowRequestEntry {
 	return out
 }
 
-// routeStatBound caps distinct routes tracked; patterns are few, the bound guards against odd paths.
+// routeStatBound is the default cap on distinct routes tracked; the live runtime setting overrides it.
 const (
 	routeStatBound  = 1024
 	routeStatReport = 10
@@ -72,6 +72,8 @@ type routeStat struct {
 type routeStats struct {
 	mu sync.Mutex
 	m  map[string]*routeStat
+	// bound reads the live cap; nil means the default.
+	bound func() int
 }
 
 func (s *routeStats) observe(method, route string, status int, d time.Duration) {
@@ -84,7 +86,7 @@ func (s *routeStats) observe(method, route string, status int, d time.Duration) 
 	defer s.mu.Unlock()
 	e := s.m[key]
 	if e == nil {
-		if len(s.m) >= routeStatBound {
+		if len(s.m) >= s.limit() {
 			return
 		}
 		if s.m == nil {
@@ -99,6 +101,15 @@ func (s *routeStats) observe(method, route string, status int, d time.Duration) 
 	if status >= 500 {
 		e.Errors++
 	}
+}
+
+func (s *routeStats) limit() int {
+	if s.bound != nil {
+		if n := s.bound(); n > 0 {
+			return n
+		}
+	}
+	return routeStatBound
 }
 
 // top returns the routes with the most total time, ties broken by name.

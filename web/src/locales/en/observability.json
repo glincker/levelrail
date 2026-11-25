@@ -311,6 +311,8 @@
     "createAlert": "Create alert",
     "alertCreated": "Alert rule \"{{name}}\" created.",
     "wrap": "Wrap",
+    "collapse": "Collapse",
+    "collapseHint": "Fold repeated lines into one row with a count. Turn off to see every raw line.",
     "entryDetail": "Log line",
     "copyLine": "Copy line",
     "closeDetail": "Close detail",

@@ -265,6 +265,33 @@ func (c *Client) PutStatusPage(ctx context.Context, s StatusPageSettings) (Statu
 	return out, err
 }
 
+// StatusUptimeReport is the GET /api/v1/status-page/uptime-report body.
+type StatusUptimeReport struct {
+	Month string                  `json:"month"`
+	Rows  []StatusUptimeReportRow `json:"rows"`
+}
+
+// StatusUptimeReportRow is one component's monthly uptime line.
+type StatusUptimeReportRow struct {
+	Component string   `json:"component"`
+	Target    string   `json:"target"`
+	Kind      string   `json:"kind"`
+	Uptime    *float64 `json:"uptime_percent"`
+	Probes    int      `json:"probes"`
+	DownProbe int      `json:"down_probes"`
+	DaysSeen  int      `json:"days_with_data"`
+	Summary   string   `json:"summary"`
+}
+
+// StatusUptimeReport calls GET /api/v1/status-page/uptime-report; month is YYYY-MM or empty for the current one.
+func (c *Client) StatusUptimeReport(ctx context.Context, month string) (StatusUptimeReport, error) {
+	path := "/api/v1/status-page/uptime-report"
+	if month != "" {
+		path += "?month=" + url.QueryEscape(month)
+	}
+	return getJSON[StatusUptimeReport](ctx, c, path)
+}
+
 // StatusPagePreview calls GET /api/v1/status-page/preview.
 func (c *Client) StatusPagePreview(ctx context.Context) (StatusPageView, error) {
 	return getJSON[StatusPageView](ctx, c, "/api/v1/status-page/preview")

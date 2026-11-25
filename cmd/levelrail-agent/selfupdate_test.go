@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/agentupdate"
 )
 
 func noEnv(string) (string, bool) { return "", false }
@@ -50,5 +52,21 @@ func TestUsageDocumentsPackageManagedRefusal(t *testing.T) {
 	}
 	if exitPackageManaged != 3 {
 		t.Fatalf("exit code = %d", exitPackageManaged)
+	}
+}
+
+func TestUpdateStatusLine(t *testing.T) {
+	cases := map[string]struct {
+		res  agentupdate.Result
+		want string
+	}{
+		"held":      {agentupdate.Result{Action: agentupdate.ActionHold, Current: "v1", Target: "v2", Reason: "window"}, "agent update held: v1 (target v2, reason: window)"},
+		"installed": {agentupdate.Result{Action: agentupdate.ActionRestarted, Current: "v1", Target: "v2"}, "agent update installed: v1 -> v2"},
+		"checked":   {agentupdate.Result{Action: agentupdate.ActionNone, Current: "v1"}, "agent update checked: up to date at v1"},
+	}
+	for name, c := range cases {
+		if got := updateStatusLine(c.res); got != c.want {
+			t.Errorf("%s: got %q want %q", name, got, c.want)
+		}
 	}
 }

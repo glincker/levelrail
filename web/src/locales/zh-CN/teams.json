@@ -129,7 +129,10 @@
     "clear": "移除所有限制",
     "saved": "配额已保存",
     "cleared": "配额限制已移除",
-    "readOnly": "只有团队管理员和所有者可以更改这些限制。"
+    "readOnly": "只有团队管理员和所有者可以更改这些限制。",
+    "live": "当前使用: 已预留 {{reserved}} 中的 {{live}} ({{total}} 个应用中有 {{sampled}} 个在上报)",
+    "liveOfReserved": "占预留的 {{percent}}%",
+    "liveLabel": "{{resource}} 当前使用量"
   },
   "errors": {
     "generic": "请求失败：{{message}}"

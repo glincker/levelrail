@@ -56,7 +56,7 @@ func composeUsage(prog string) string {
   %[1]s compose logs <app> [--service S] [--since 1h] [-f]         logs for one or every service
   %[1]s compose redeploy <app> [--service S]                       recreate every service, or one
   %[1]s compose rollback <app> [--revision N]                      re-apply an earlier compose file
-  %[1]s compose down <app> [--volumes]                             remove the stack (volumes kept by default)
+  %[1]s compose down <app> [--volumes] [--yes]                     remove the stack (volumes kept by default)
   %[1]s compose schedules <list|add|run|runs|pause|resume|rm> ...  cron commands inside one service
 
 Run "%[1]s compose <subcommand> -h" for a subcommand's own flags.

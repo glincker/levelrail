@@ -149,6 +149,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsMaintenance(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "recently-deleted":
 		return runAppsRecentlyDeleted(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "restore":
+		return runAppsRestoreDeleted(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "keep":
 		return runAppsKeep(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "start":
@@ -388,6 +390,7 @@ func appsUsage(prog string) string {
   %[1]s apps upgrade-plan <name> [flags]   show what a template upgrade would change (read-only)
   %[1]s apps upgrade <name> --yes [flags]   apply a template upgrade, watch it and roll back on failure
   %[1]s apps settings predeploy-snapshot <name> [--mode off|on|require]   snapshot linked databases before each deploy; "apps rollback <name> --with-data" restores them
+  %[1]s apps restore <name> [flags]                              bring a deleted app back, stopped, within the undo window
   %[1]s apps recently-deleted list|restore [kind name] [flags]   restore a deleted app or database within the undo window
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
   %[1]s apps inspect <app> <view> [flags]                         read-only diagnostics: effective-config, pending-changes, failure-context, rollback-targets, image-status

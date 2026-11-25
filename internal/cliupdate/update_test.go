@@ -413,3 +413,20 @@ func TestUpdateRefusesManagedPathUnlessForced(t *testing.T) {
 		t.Fatalf("forced update: %v", err)
 	}
 }
+
+func TestNoticeIsCachedAndThrottled(t *testing.T) {
+	dir := t.TempDir()
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	writeState(filepath.Join(dir, stateFile), hintState{Latest: "v1.2.0"})
+	h := Hinter{Current: "v1.0.0", Dir: dir, Now: func() time.Time { return now }}
+	if h.Notice(24*time.Hour) == "" {
+		t.Fatal("expected a notice")
+	}
+	if h.Notice(24*time.Hour) != "" {
+		t.Fatal("expected throttle")
+	}
+	now = now.Add(25 * time.Hour)
+	if h.Notice(24*time.Hour) == "" {
+		t.Fatal("expected notice after window")
+	}
+}

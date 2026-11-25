@@ -260,6 +260,9 @@ func TestReconcile_EnabledWithToken_CreatesAndStartsContainer(t *testing.T) {
 	if rt.lastCreateSpec.Env[tunnelEnvKey] != "super-secret-token" {
 		t.Errorf("TUNNEL_TOKEN env = %q, want the resolved token", rt.lastCreateSpec.Env[tunnelEnvKey])
 	}
+	if rt.lastCreateSpec.RestartPolicy != "unless-stopped" {
+		t.Errorf("RestartPolicy = %q, want unless-stopped", rt.lastCreateSpec.RestartPolicy)
+	}
 	cond := conditionOf(t, result)
 	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Connected" {
 		t.Errorf("condition = %+v, want Status=True Reason=Connected", cond)

@@ -90,9 +90,11 @@ type recordedDecision struct {
 }
 
 type placementDecisionResource struct {
-	Kind     string            `json:"kind"`
-	Name     string            `json:"name"`
-	NodeID   string            `json:"node_id"`
+	Kind   string `json:"kind"`
+	Name   string `json:"name"`
+	NodeID string `json:"node_id"`
+	// Pool is the node pool an app targets, empty when none.
+	Pool     string            `json:"pool,omitempty"`
 	Recorded *recordedDecision `json:"recorded"`
 	// Preview re-evaluates every node now, as if the workload were being placed fresh.
 	Preview placement.Decision `json:"preview"`
@@ -138,6 +140,11 @@ func (rt *Router) placementDecisionView(ctx context.Context, kind, name string) 
 		return placementDecisionResource{}, err
 	}
 	out.Preview, _ = placement.Spread(cands, req)
+	if kind == store.NodeMoveKindApp && rt.multiNode != nil {
+		if ps, ok := rt.multiNode.store.(poolStore); ok {
+			out.Pool, _ = ps.GetAppPool(ctx, name)
+		}
+	}
 	if rt.decisions == nil {
 		return out, nil
 	}

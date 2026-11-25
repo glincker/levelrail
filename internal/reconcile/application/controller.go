@@ -863,6 +863,11 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 			allRunning = false
 			break
 		}
+		// Option drift is create-time only, so a drifted target is not converged.
+		if runtimeOptionsDrifted(state, desired) && c.imageLocal(ctx, desired.Image) {
+			allRunning = false
+			break
+		}
 	}
 	completed := !allRunning && c.oneShotsDone(ctx, targets, desired)
 
@@ -1022,7 +1027,11 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
-	if runtimeOptionsDrifted(state, desired) {
+	if runtimeOptionsDrifted(state, desired) && c.imageLocal(ctx, desired.Image) {
+		// Graceful stop first so a database flushes; a stop error still falls through to the forced remove.
+		if state.Running {
+			_ = c.stopContainer(ctx, state.ID)
+		}
 		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonRuntimeOptionsDriftRecreate}, fmt.Errorf("remove %q to apply its changed runtime options: %w", target, err)
 		}

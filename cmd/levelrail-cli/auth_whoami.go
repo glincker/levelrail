@@ -61,7 +61,7 @@ Flags:
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --access                  show tier, teams, attached policies and what you can and cannot manage
   --json                  print the identity as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

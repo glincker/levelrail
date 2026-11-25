@@ -27,6 +27,7 @@ import { RestoreDueCard } from './RestoreDueCard'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
 import { AppsPanel } from './AppsPanel'
+import { PhoneStatusList } from './PhoneStatusList'
 import { CopyRetryDialog } from './CopyRetryDialog'
 import { StatusStrip } from './StatusStrip'
 import { WidgetFrame } from './WidgetFrame'
@@ -99,7 +100,14 @@ function StartView({
 
   const widgets: Record<WidgetId, ReactNode> = {
     attention: <NextSteps summary={summary} sample={sample} />,
-    apps: <AppsPanel />,
+    apps: (
+      <>
+        <PhoneStatusList />
+        <div className="max-md:hidden">
+          <AppsPanel />
+        </div>
+      </>
+    ),
     activity: <RecentActivity sample={sample} />,
     fleet: <FleetTiles summary={summary} sample={sample} />,
     resources: <ResourcesSection />,

@@ -187,7 +187,15 @@
     "next": "Próximo",
     "addDomain": "Adicionar domínio",
     "editRoutes": "Editar rotas",
-    "viewDeploys": "Ver deploys"
+    "viewDeploys": "Ver deploys",
+    "copied": "Copiado",
+    "copiedAnnounce": "URL de {{domain}} copiada",
+    "took": "No ar em {{time}}",
+    "chip": {
+      "domain": "Adicionar um domínio",
+      "git": "Conectar git",
+      "password": "Definir uma senha"
+    }
   },
   "entry": {
     "drop": {
@@ -552,6 +560,15 @@
     "empty": "Nenhuma saída de log.",
     "error": "Não foi possível carregar o log.",
     "failedAt": "Falhou durante {{step}}",
+    "hint": {
+      "outOfMemory": "O build ficou sem memória. Reduza o uso de memória no script de build, por exemplo dividindo passos pesados.",
+      "timeout": "O build excedeu o tempo limite. Procure um passo que espere uma entrada ou nunca termine.",
+      "installFailed": "A instalação das dependências falhou. Confira se o lockfile bate com o package.json e se todos os pacotes estão acessíveis.",
+      "nodeVersion": "Uma dependência precisa de outra versão do Node. Defina engines.node no package.json ou adicione um arquivo .nvmrc.",
+      "missingBuildCommand": "Nenhum comando de build utilizável foi encontrado. Defina-o em Configurações ou adicione um script build no package.json.",
+      "outputDirEmpty": "O build terminou, mas o diretório de saída está vazio. Confira o diretório de saída em Configurações.",
+      "outputDirMissing": "O diretório de saída não foi encontrado após o build. Defina o diretório correto em Configurações."
+    },
     "step": {
       "cloning": "Clonando",
       "building": "Compilando",
@@ -647,5 +664,25 @@
       "title": "Previews recentes",
       "none": "Ainda não há previews de branches."
     }
+  },
+  "dashDrop": {
+    "prompt": "Solte uma pasta ou zip de um site compilado para publicá-lo"
+  },
+  "notify": {
+    "title": "Notificações de deploy",
+    "tip": "Envia uma mensagem a um canal quando um deploy deste site termina",
+    "failed": "Não foi possível carregar as configurações de notificação.",
+    "enabled": "Notificar",
+    "onFailure": "Em caso de falha",
+    "onSuccess": "Em caso de sucesso",
+    "channel": "Canal",
+    "pick": "Anexar canal",
+    "save": "Salvar",
+    "readOnly": "Você precisa de acesso de escrita para alterar isto.",
+    "needEvent": "Escolha pelo menos um evento.",
+    "channelsFailed": "Não foi possível carregar os canais.",
+    "sendingTo": "Enviando para {{channels}}",
+    "noneAttached": "Nenhum canal anexado ainda.",
+    "noChannels": "Ainda não há canais de notificação. Crie um em Alertas."
   }
 }

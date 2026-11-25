@@ -318,3 +318,33 @@ func TestEngine_ReconcileAll_SourceErrorSkipsDynamicPassButNotFixed(t *testing.T
 		t.Errorf("fixed controller: got %d calls, want 1: a Source error must not block the fixed set", got)
 	}
 }
+
+func TestEngine_Run_BurstOfEventsCoalescesPasses(t *testing.T) {
+	c := &countingController{name: "c"}
+	e := NewEngine(testLogger(), c)
+	e.SetGuard(NewGuard(GuardConfig{PassBurst: 100, PassesPerSec: 100}))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	const burst = 10
+	events := make(chan docker.Event, burst)
+	for i := 0; i < burst; i++ {
+		events <- docker.Event{Action: docker.EventDie, ContainerName: "c"}
+	}
+	done := make(chan error, 1)
+	go func() { done <- e.Run(ctx, events, time.Hour) }()
+
+	deadline := time.Now().Add(2 * time.Second)
+	for len(events) > 0 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+	if err := <-done; err != nil {
+		t.Logf("run returned: %v", err)
+	}
+
+	if got := c.calls.Load(); got > 2 {
+		t.Errorf("got %d passes for %d queued events, want at most 2 (initial plus one)", got, burst)
+	}
+}

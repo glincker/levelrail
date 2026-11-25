@@ -678,7 +678,47 @@
     "uploadLabel": "Envie um arquivo compose ou Dockerfile",
     "looksLike": "Parece ser: {{source}}",
     "tryLabel": "Experimente:",
-    "fileTooLarge": "Esse arquivo é maior que 512 KB."
+    "fileTooLarge": "Esse arquivo é maior que 512 KB.",
+    "goals": {
+      "title": "O que você quer executar?",
+      "advanced": "Opções avançadas",
+      "deploy": "Implantar",
+      "deploying": "Implantando...",
+      "healthOff": "Desativado",
+      "fields": {
+        "image": "Imagem",
+        "imagePlaceholder": "ghcr.io/you/app:latest",
+        "name": "Nome",
+        "port": "Porta",
+        "health": "Caminho de saúde"
+      },
+      "items": {
+        "website": {
+          "label": "Site",
+          "hint": "App web a partir de uma imagem, com porta e health check preenchidos."
+        },
+        "api": {
+          "label": "API",
+          "hint": "Serviço a partir de uma imagem com check /healthz preenchido."
+        },
+        "database": {
+          "label": "Banco de dados",
+          "hint": "Engine gerenciado com backups e credenciais."
+        },
+        "static-site": {
+          "label": "Site estático",
+          "hint": "Compile e sirva a partir de um repositório git."
+        },
+        "scheduled-job": {
+          "label": "Tarefa agendada",
+          "hint": "Executores de backup e cron do catálogo."
+        },
+        "self-hosted": {
+          "label": "App auto-hospedado",
+          "hint": "Apps selecionados do catálogo de modelos."
+        }
+      }
+    }
   },
   "noBackups": {
     "title": "Backups",

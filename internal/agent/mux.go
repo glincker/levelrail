@@ -66,7 +66,9 @@ type mux struct {
 	watchers map[string]chan *agentpb.ProxiedEvent  // nil once closed
 	execs    map[string]*execSub                    // nil once closed
 	builds   map[string]*buildSub                   // nil once closed
-	err      error                                  // set once, right before the maps above are nilled
+	// buildDone holds builds whose terminal frame was already accepted, so a replay is dropped.
+	buildDone map[string]bool
+	err       error // set once, right before the maps above are nilled
 
 	closed chan struct{}
 
@@ -133,12 +135,13 @@ type muxHandlers struct {
 // recvLoop starts, to avoid racing recvLoop reading them.
 func newMuxWithHandlers(stream sessionStream, h muxHandlers) *mux {
 	m := &mux{
-		stream:   stream,
-		pending:  make(map[string]chan *agentpb.AgentResponse),
-		watchers: make(map[string]chan *agentpb.ProxiedEvent),
-		execs:    make(map[string]*execSub),
-		builds:   make(map[string]*buildSub),
-		closed:   make(chan struct{}),
+		stream:    stream,
+		pending:   make(map[string]chan *agentpb.AgentResponse),
+		watchers:  make(map[string]chan *agentpb.ProxiedEvent),
+		execs:     make(map[string]*execSub),
+		builds:    make(map[string]*buildSub),
+		buildDone: make(map[string]bool),
+		closed:    make(chan struct{}),
 	}
 	m.onHeartbeat = h.heartbeat
 	m.onGPU = h.gpu
@@ -331,6 +334,7 @@ func (m *mux) subscribeBuild(buildID string) *buildSub {
 func (m *mux) unsubscribeBuild(buildID string) {
 	m.mu.Lock()
 	delete(m.builds, buildID)
+	delete(m.buildDone, buildID)
 	m.mu.Unlock()
 }
 
@@ -340,8 +344,25 @@ func (m *mux) buildSubscription(buildID string) *buildSub {
 	return m.builds[buildID]
 }
 
+// acceptBuildFrame admits a frame only for a build this session was asked to run, and
+// admits one terminal frame per build; anything else is handled like an unknown build.
+func (m *mux) acceptBuildFrame(out *agentpb.BuildOutput) *buildSub {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	id := out.GetBuildId()
+	sub := m.builds[id]
+	if sub == nil || m.buildDone[id] {
+		return nil
+	}
+	switch out.GetFrame().(type) {
+	case *agentpb.BuildOutput_Done, *agentpb.BuildOutput_Failure:
+		m.buildDone[id] = true
+	}
+	return sub
+}
+
 func (m *mux) deliverBuildOutput(out *agentpb.BuildOutput) {
-	sub := m.buildSubscription(out.GetBuildId())
+	sub := m.acceptBuildFrame(out)
 	if sub == nil {
 		return
 	}

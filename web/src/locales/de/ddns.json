@@ -16,12 +16,17 @@
     "label": "Anbieter",
     "generic": "Generische URL",
     "duckdns": "DuckDNS",
-    "godaddy": "GoDaddy"
+    "godaddy": "GoDaddy",
+    "porkbun": "Porkbun",
+    "desec": "deSEC"
   },
   "domains": {
     "label": "DuckDNS-Domains",
     "placeholder": "myhome,office",
-    "placeholderGodaddy": "home.example.com"
+    "placeholderGodaddy": "home.example.com",
+    "labelHosts": "Zu aktualisierende Hostnamen",
+    "placeholderPorkbun": "home.example.com",
+    "placeholderDesec": "home.example.dedyn.io"
   },
   "target": {
     "labelGeneric": "Update-URL",
@@ -32,7 +37,9 @@
     "notConfigured": "Nicht konfiguriert",
     "clear": "Entfernen",
     "cleared": "Zugangsdaten entfernt.",
-    "labelGodaddy": "GoDaddy Key:Secret"
+    "labelGodaddy": "GoDaddy Key:Secret",
+    "labelPorkbun": "Porkbun apikey:secretapikey",
+    "labelDesec": "deSEC-API-Token"
   },
   "advanced": {
     "toggle": "Erweitert",

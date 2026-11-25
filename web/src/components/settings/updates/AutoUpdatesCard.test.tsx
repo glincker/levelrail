@@ -34,6 +34,8 @@ const settings = {
   offered_channels: ['stable'],
 }
 
+let update: Record<string, unknown> = {}
+
 function mockFetch(initial: typeof policy) {
   const puts: unknown[] = []
   vi.stubGlobal(
@@ -46,6 +48,9 @@ function mockFetch(initial: typeof policy) {
           return Promise.resolve(Response.json({ ...initial, ...body }))
         }
         return Promise.resolve(Response.json(initial))
+      }
+      if (url.endsWith('/api/v1/updates')) {
+        return Promise.resolve(Response.json(update))
       }
       return Promise.resolve(Response.json(settings))
     }),
@@ -66,7 +71,10 @@ function renderCard() {
   )
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  update = {}
+})
 
 describe('AutoUpdatesCard', () => {
   it('states the night window in plain words and hides the schedule when off', async () => {
@@ -80,7 +88,7 @@ describe('AutoUpdatesCard', () => {
     const puts = mockFetch(policy)
     renderCard()
     expect(
-      await screen.findByText(/between 02:00 and 05:00, every night/),
+      await screen.findByText(/02:00 to 05:00 UTC, every night/),
     ).toBeTruthy()
     fireEvent.click(screen.getByRole('switch', { name: 'Automatic updates' }))
     await waitFor(() => expect(puts).toHaveLength(1))
@@ -133,5 +141,41 @@ describe('AutoUpdatesCard', () => {
     expect(screen.getByText(/dial tcp: timeout/)).toBeTruthy()
     expect(screen.getByText('3')).toBeTruthy()
     expect(screen.queryByText('levelrail-cli upgrade --apply')).toBeNull()
+  })
+
+  it('shows one line with the install time and the UTC time', async () => {
+    update = { update_available: true, latest_version: 'v1.5.9' }
+    const start = new Date(Date.now() + 5 * 3_600_000)
+    mockFetch({
+      ...policy,
+      next_window: {
+        start: start.toISOString(),
+        end: '',
+        source: '',
+        active: false,
+      },
+    } as unknown as typeof policy)
+    renderCard()
+    expect(
+      await screen.findByText(/v1\.5\.9 installs (tonight|\w+) at/),
+    ).toBeTruthy()
+    expect(screen.getByText(/in [45] h/)).toBeTruthy()
+    expect(screen.getByText(/UTC$/)).toBeTruthy()
+    expect(screen.queryByText(/Next windows/)).toBeNull()
+  })
+
+  it('names the hold reason and offers a review action', async () => {
+    update = { update_available: true, latest_version: 'v1.5.9' }
+    mockFetch({
+      ...policy,
+      decision_tag: 'v1.5.9',
+      decision:
+        'v1.5.9 has 2 breaking change(s) that need your acknowledgement',
+    } as unknown as typeof policy)
+    renderCard()
+    expect(
+      await screen.findByText(/v1\.5\.9 is held: v1\.5\.9 has 2 breaking/),
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Review changes' })).toBeTruthy()
   })
 })

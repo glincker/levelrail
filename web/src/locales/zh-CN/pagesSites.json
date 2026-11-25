@@ -183,7 +183,15 @@
     "next": "下一步",
     "addDomain": "添加域名",
     "editRoutes": "编辑路由",
-    "viewDeploys": "查看部署"
+    "viewDeploys": "查看部署",
+    "copied": "已复制",
+    "copiedAnnounce": "已复制 {{domain}} 的网址",
+    "took": "用时 {{time}} 上线",
+    "chip": {
+      "domain": "添加域名",
+      "git": "连接 git",
+      "password": "设置密码"
+    }
   },
   "entry": {
     "drop": {
@@ -544,6 +552,15 @@
     "empty": "没有日志输出。",
     "error": "无法加载日志。",
     "failedAt": "在{{step}}期间失败",
+    "hint": {
+      "outOfMemory": "构建内存不足。请降低构建脚本的内存占用,例如拆分耗内存的步骤。",
+      "timeout": "构建超时。请检查是否有等待输入或永不退出的步骤。",
+      "installFailed": "依赖安装失败。请确认锁文件与 package.json 一致,且所有包都可访问。",
+      "nodeVersion": "某个依赖需要不同的 Node 版本。请在 package.json 中设置 engines.node,或添加 .nvmrc 文件。",
+      "missingBuildCommand": "未找到可用的构建命令。请在设置中填写构建命令,或在 package.json 中添加 build 脚本。",
+      "outputDirEmpty": "构建已完成,但输出目录为空。请检查设置中的输出目录。",
+      "outputDirMissing": "构建后未找到输出目录。请在设置中填写正确的输出目录。"
+    },
     "step": {
       "cloning": "克隆",
       "building": "构建",
@@ -639,5 +656,25 @@
       "title": "最近的预览",
       "none": "还没有分支预览。"
     }
+  },
+  "dashDrop": {
+    "prompt": "拖入构建好的站点文件夹或 zip 即可发布"
+  },
+  "notify": {
+    "title": "部署通知",
+    "tip": "此站点部署结束时向频道发送消息",
+    "failed": "无法加载通知设置。",
+    "enabled": "通知",
+    "onFailure": "失败时",
+    "onSuccess": "成功时",
+    "channel": "频道",
+    "pick": "关联频道",
+    "save": "保存",
+    "readOnly": "需要写入权限才能修改。",
+    "needEvent": "至少选择一个事件。",
+    "channelsFailed": "无法加载频道。",
+    "sendingTo": "正在发送到 {{channels}}",
+    "noneAttached": "尚未关联频道。",
+    "noChannels": "还没有通知频道。请在告警中创建。"
   }
 }

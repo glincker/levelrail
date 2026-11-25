@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2399 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2404 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -281,6 +281,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/export", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportEnvRevealed", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListEnvHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/reveal", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevealEnv", Description: "Reveal and full export need read:sensitive plus a step-up (or the allow policy); the handlers enforce the rest and audit every value read."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/env/revisions", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListEnvRevisions", Description: "Revisions list variable names and diff them; a read token is refused because the names can themselves be sensitive."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/env/revisions/diff", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDiffEnvRevisions", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/env/revisions/{rev}/restore", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestoreEnvRevision", Description: "Restore needs the same ability as any env write."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleScanEnvValues", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/settings", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetEnvSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/env/settings", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutEnvSettings", Description: ""},
@@ -540,6 +543,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/watch", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppWatch", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/watch/stop", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStopAppWatch", Description: ""},
 	{Method: "GET", Path: "/api/v1/deploys/failed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListFailedDeploys", Description: ""},
+	{Method: "GET", Path: "/api/v1/deploys/{id}/why", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeployWhy", Description: "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison. Settled timelines are frozen for replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to the apps the caller can read. Why a deploy failed (deploy_why.go): exit, last probe and new log clusters; AbilityRead on the deploy's app."},
 	{Method: "POST", Path: "/api/v1/git/branches", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListGitBranches", Description: "Branch listing for an arbitrary public git remote (handleListGitBranches's own doc comment): not scoped to an existing app, since the create-app- from-git wizard needs this before an app exists to attach a build to. AbilityDeploy, the same tier the build trigger above requires: listing what a repo could be built from is a strict subset of actually triggering that build."},
 	{Method: "GET", Path: "/api/v1/git/repos", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListGitRepos", Description: "One searchable, filterable, paged repository listing for every provider (git_repo_list.go); the per-provider listings below share its cache."},
 	{Method: "POST", Path: "/api/v1/git/{repo}/git-receive-pack", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGitReceivePack", Description: ""},
@@ -1424,7 +1428,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deployments/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsTimeline", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/explain", Ability: "AbilityRead", Group: "Other", Handler: "handleExplainDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/phases", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployPhases", Description: "Deploy phases (deploy_phases.go): stages with status, timing and ETA, derived from stored trace rows and the build log. AbilityRead."},
-	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployTimeline", Description: "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison. Settled timelines are frozen for replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to the apps the caller can read."},
+	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployTimeline", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline/compare", Ability: "AbilityRead", Group: "Other", Handler: "handleCompareDeployTimelines", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeployTimelineStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/diagnose/{kind}/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleDiagnoseStuck", Description: "Deterministic \"why is this not running\" for any reconciled resource."},
@@ -2185,6 +2189,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/webhook/register", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRegisterGitSourceWebhook", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPreviewEnabled", Description: "Preview environments per pull request (preview_environments.go/ preview_environments_handlers.go): opt-in per app, off by default. AbilityWriteSensitive for the toggle, matching PUT .../git-source's own tier since it's the same connect-time-adjacent configuration surface; AbilityRead for the list, matching GET .../git-source; AbilityDeploy for the manual teardown, the same lifecycle-action tier POST .../restart and POST .../stop already use."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/previews", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPreviewEnvironments", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/previews", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleCreatePreviewFromImage", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/approve", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleApprovePreviewEnvironment", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/previews/{number}/env", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPRPreviewEnv", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/env", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPRPreviewEnv", Description: ""},
@@ -2400,10 +2405,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/updates/schedule", Ability: "AbilityRoot", Group: "System", Handler: "handleCreateUpgradeSchedule", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/self-upgrade", Ability: "AbilityRoot", Group: "System", Handler: "handleSelfUpgradeStart", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/attempts", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradeAttempts", Description: ""},
-	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/cancel", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptCancel", Description: ""},
-	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/fix", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptFix", Description: ""},
-	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/retry", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptRetry", Description: ""},
-	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/rollback", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptRollback", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/cancel", Ability: "AbilityRoot", Group: "System", Handler: "handleSelfUpgradeAttemptCancel", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/fix", Ability: "AbilityRoot", Group: "System", Handler: "handleSelfUpgradeAttemptFix", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/retry", Ability: "AbilityRoot", Group: "System", Handler: "handleSelfUpgradeAttemptRetry", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/rollback", Ability: "AbilityRoot", Group: "System", Handler: "handleSelfUpgradeAttemptRollback", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/plan", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradePlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/smoke", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradeSmoke", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/status", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradeStatus", Description: ""},

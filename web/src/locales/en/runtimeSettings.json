@@ -68,7 +68,7 @@
     },
     "logBudgetMb": {
       "title": "Default log budget per app",
-      "description": "Stored log size in MiB each app may use before the sweep trims its oldest lines; 0 means unlimited, otherwise 16 to 10485760. A per-app budget overrides it."
+      "description": "Stored log size in MiB each app may use before the sweep trims its oldest lines; the default is 1024, 0 means unlimited, otherwise 16 to 10485760. A per-app budget overrides it."
     },
     "rawRetention": {
       "title": "Monitor raw result retention",

@@ -43,11 +43,15 @@ func (rt *Router) eventWebhooksOrNotImplemented(w http.ResponseWriter) (EventWeb
 // emitAuditEvent hands a successful audited mutation to the webhook queue.
 // Emit never blocks, so a slow subscriber cannot slow a request.
 func (rt *Router) emitAuditEvent(e store.AuditEntry) {
-	if rt.eventWebhooks == nil || e.StatusCode >= http.StatusBadRequest {
+	if e.StatusCode >= http.StatusBadRequest {
 		return
 	}
 	typ := eventhook.TypeForRequest(e.Method, e.Path, e.Action)
 	if typ == "" {
+		return
+	}
+	rt.publishStreamEvent(typ, e)
+	if rt.eventWebhooks == nil {
 		return
 	}
 	rt.eventWebhooks.Emit(eventhook.Event{Type: typ, Data: map[string]any{
@@ -317,4 +321,19 @@ func (rt *Router) handleReplayEventWebhookDelivery(w http.ResponseWriter, r *htt
 
 func (rt *Router) handleListEventWebhookTypes(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, eventhook.EventTypes())
+}
+
+// publishStreamEvent feeds deploy and alert audit events to the change
+// stream, where each subscriber only receives apps its token may read.
+func (rt *Router) publishStreamEvent(typ string, e store.AuditEntry) {
+	segs := strings.Split(strings.Trim(e.Path, "/"), "/")
+	if len(segs) < 4 || segs[0] != "api" || segs[2] != "apps" {
+		return
+	}
+	switch {
+	case typ == "apps.deploy" || typ == "apps.rollback":
+		rt.changes.PublishDetail(changeApps, segs[3], typ, e.StatusCode)
+	case len(segs) > 4 && segs[4] == "alerts":
+		rt.changes.PublishDetail(changeAlerts, segs[3], typ, e.StatusCode)
+	}
 }

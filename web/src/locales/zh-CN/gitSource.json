@@ -146,7 +146,9 @@
     "healthCheck": "健康检查",
     "healthEnable": "启用健康检查",
     "healthPath": "路径",
-    "healthHint": "在将流量切换到新容器之前检查，并在之后用于检测容器是否崩溃。由 Railpack 检测到、但不提供此路径的应用应将其关闭。"
+    "healthHint": "在将流量切换到新容器之前检查，并在之后用于检测容器是否崩溃。由 Railpack 检测到、但不提供此路径的应用应将其关闭。",
+    "showMore": "更多选项",
+    "hideMore": "收起选项"
   },
   "sshKey": {
     "title": "SSH 部署密钥",

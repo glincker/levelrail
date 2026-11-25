@@ -33,8 +33,9 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps logs", "print entries as a JSON array to stdout and nothing else", stderr)
 	var since, from, to, until, outFile, query, service string
 	var tail int
-	var follow, noFollow bool
+	var follow, noFollow, collapse bool
 	fs.StringVar(&service, "service", "", "only this service of a multi-service app (reads <app>-<service>)")
+	fs.BoolVar(&collapse, "collapse", false, "fold runs of identical consecutive lines into one entry with a count and first and last time (stored lines are untouched)")
 	fs.BoolVar(&noFollow, "no-follow", false, "print stored entries and exit even on a terminal (a terminal otherwise follows live)")
 	fs.StringVar(&since, "since", "", "how far back to search, e.g. \"1h\", \"30m\" (default: 1h, the server's own default window; mutually exclusive with --from and --follow)")
 	fs.StringVar(&from, "from", "", "RFC3339 start of the search window (overrides --since; mutually exclusive with --follow)")
@@ -66,7 +67,7 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	name := serviceAppName(appArg, service)
 
 	// A terminal with no search flags wants the live tail; pipes and --json keep the stored-entries output.
-	searching := since != "" || from != "" || to != "" || until != "" || outFile != "" || query != "" || tail != 0 || of.Query != ""
+	searching := since != "" || from != "" || to != "" || until != "" || outFile != "" || query != "" || tail != 0 || collapse || of.Query != ""
 	if !follow && !noFollow && !searching && !jsonOut && of.Format != outputJSON && stdoutIsTerminal(stdout) {
 		follow = true
 	}
@@ -75,8 +76,8 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 
 	if follow {
-		if since != "" || from != "" || to != "" || query != "" || tail != 0 || of.Query != "" {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--follow is a live tail and cannot be combined with --since/--from/--to/--q/--tail/--query"))
+		if since != "" || from != "" || to != "" || query != "" || tail != 0 || collapse || of.Query != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--follow is a live tail and cannot be combined with --since/--from/--to/--q/--tail/--collapse/--query"))
 		}
 		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 		return runAppsLogsFollow(client, name, stdout, stderr, of.Format)
@@ -93,7 +94,7 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	entries, err := client.QueryLogs(context.Background(), name, fromTime, toTime, query)
+	entries, err := client.QueryLogsCollapsed(context.Background(), name, fromTime, toTime, query, collapse)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("query logs for app %q: %w", name, err))
 	}
@@ -162,13 +163,14 @@ Flags:
   --q string                  full-text search phrase (default: every line in range)
   --tail, -n int         only show the last N entries (client-side)
   --service string       only this service of a multi-service app
+  --collapse               fold runs of identical lines into one entry with a count and time span
   --no-follow            stored entries even on a terminal
   --follow, -f              stream new log lines live until Ctrl+C, instead of a historical search
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print entries as a JSON array to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --output string          output format: json, ndjson, yaml, table, wide, text or name (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

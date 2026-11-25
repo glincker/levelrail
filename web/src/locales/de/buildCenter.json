@@ -117,5 +117,18 @@
       "bounded": "Eintragslimit erreicht, der Rest folgt beim nächsten Build",
       "partial": "Vorzeitig gestoppt, das Freigegebene bleibt erhalten"
     }
+  },
+  "farm": {
+    "title": "Build-Farm, letzte {{hours}} Stunden",
+    "builds": "{{count}} Builds, {{perHour}} pro Stunde",
+    "waitP50": "Wartezeit in Warteschlange p50",
+    "waitP95": "Wartezeit in Warteschlange p95",
+    "cache": "Cache-Trefferquote",
+    "cacheUnknown": "Keine Daten",
+    "peak": "Spitze belegter Slots",
+    "slotsOf": "{{peak}} von {{total}} pro Node",
+    "chart": "Belegte Slots pro Stunde, {{peak}} an der Spitze",
+    "seconds": "{{value}} s",
+    "sizeHint": "Liegt die Spitze nahe am Slot-Limit oder die p95-Wartezeit hoch, braucht die Farm einen weiteren Node oder mehr Slots."
   }
 }

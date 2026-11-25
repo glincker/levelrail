@@ -111,3 +111,25 @@ func TestAppsScale_SwapCpusetValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestAppsScale_IOLimitsNoteRecreate(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPut {
+			body, _ := io.ReadAll(r.Body)
+			_, _ = w.Write(body)
+			return
+		}
+		_, _ = w.Write([]byte(`{"name":"web","image":"x:1","port":80,"replicas":1}`))
+	}))
+	defer srv.Close()
+
+	_, stderr := runCLIExpectOK(t, []string{"apps", "scale", "web", "--io-read", "50Mi", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "container is recreated") {
+		t.Errorf("stderr = %q, want the recreate note", stderr)
+	}
+	_, stderr = runCLIExpectOK(t, []string{"apps", "scale", "web", "--replicas", "2", "--api-url", srv.URL})
+	if strings.Contains(stderr, "recreated") {
+		t.Errorf("stderr = %q, want no recreate note without a create-time limit", stderr)
+	}
+}

@@ -717,63 +717,71 @@
     }
   },
   "quick": {
-    "channel": "Release channel",
+    "channel": "发布通道",
     "dayOption": {
-      "custom": "Custom (keep current)",
-      "daily": "Every day",
-      "weekdays": "Weekdays",
-      "weekends": "Weekends"
+      "custom": "自定义 (保持当前)",
+      "daily": "每天",
+      "weekdays": "工作日",
+      "weekends": "周末"
     },
     "days": {
-      "custom": "on your custom schedule",
-      "daily": "every night",
-      "weekdays": "on weekdays",
-      "weekends": "on weekends"
+      "custom": "按你的自定义计划",
+      "daily": "每晚",
+      "weekdays": "在工作日",
+      "weekends": "在周末"
     },
-    "daysLabel": "Days",
-    "error": "Could not save: {{message}}",
-    "hours": "{{hours}} h",
-    "length": "Length",
+    "daysLabel": "日期",
+    "error": "无法保存: {{message}}",
+    "hours": "{{hours}} 小时",
+    "length": "时长",
     "level": {
-      "any": "Minor and patch",
-      "label": "What to install",
-      "patch": "Patch releases"
+      "any": "次版本和补丁",
+      "label": "安装内容",
+      "patch": "补丁版本"
     },
-    "loadError": "Could not load automatic update settings.",
+    "loadError": "无法加载自动更新设置。",
     "more": {
-      "checks": "Safety checks",
-      "history": "Update history",
-      "restore": "Restore points"
+      "checks": "安全检查",
+      "history": "更新历史",
+      "restore": "还原点"
     },
-    "next": "Next window starts {{time}}.",
-    "off": "Updates are never installed on their own. You choose when to update.",
-    "onAny": "New releases, including minor ones, install automatically between {{start}} and {{end}}, {{days}}.",
-    "onPatch": "Patch releases install automatically between {{start}} and {{end}}, {{days}}.",
-    "paused": "Automatic updates are paused until {{date}}.",
-    "released": "Released {{date}}",
+    "off": "更新不会自动安装，由你决定何时更新。",
+    "paused": "自动更新已暂停，直到 {{date}}。",
+    "released": "发布于 {{date}}",
     "rows": {
-      "migrations": "Database changes",
-      "notes": "Release notes",
-      "plan": "Backup and scheduling"
+      "migrations": "数据库变更",
+      "notes": "发布说明",
+      "plan": "备份与计划"
     },
-    "save": "Save schedule",
-    "savedOff": "Automatic updates turned off.",
-    "savedOn": "Automatic updates turned on.",
-    "scheduleSaved": "Schedule saved.",
-    "scheduleSummary": "{{start}} to {{end}}, {{days}}",
-    "scheduleToggle": "Schedule",
-    "start": "Start",
+    "save": "保存计划",
+    "savedOff": "自动更新已关闭。",
+    "savedOn": "自动更新已开启。",
+    "scheduleSaved": "计划已保存。",
+    "scheduleSummary": "{{start}} 至 {{end}} {{zone}},{{days}}",
+    "scheduleToggle": "计划",
+    "start": "开始",
     "title": "Automatic updates",
-    "undo": "Undo",
-    "zone": "Time zone",
-    "zoneHelp": "Server time zone is {{zone}}. Backups and safety checks still run first.",
-    "zoneInvalid": "Enter a valid time zone, for example Europe/Berlin.",
+    "undo": "撤销",
+    "zone": "时区",
+    "zoneHelp": "服务器时区为 {{zone}}。备份和安全检查仍会先运行。",
+    "zoneInvalid": "请输入有效的时区，例如 Europe/Berlin。",
     "checkOn": "后台检查新版本已开启。它只负责查找,安装由上方开关控制。",
     "checkOff": "后台检查新版本已关闭。开启自动更新也会开启它。",
-    "installSteps": "更新将在 {{start}} 至 {{end}} ({{zone}}) 之间安装;先备份,再做健康检查,失败则自动回滚。",
-    "nextWindows": "接下来的窗口:{{list}}",
     "onBlocked": "自动更新已开启,但无法在此服务器上运行。请查看下方状态。",
-    "checkOffActive": "新版本的后台检查已关闭,开启之前不会发现任何更新。"
+    "checkOffActive": "新版本的后台检查已关闭,开启之前不会发现任何更新。",
+    "headline": {
+      "held": "{{tag}} 已暂缓:{{reason}}",
+      "review": "查看变更",
+      "installNow": "立即安装",
+      "idle": "已是最新。更新将在夜间窗口安装,下一次窗口在 {{day}} {{time}} 开启。",
+      "now": "{{tag}} 正在安装(窗口保持开启直到完成)。",
+      "tonight": "{{tag}} 将于今晚 {{time}} 安装({{eta}})",
+      "later": "{{tag}} 将于 {{day}} {{time}} 安装({{eta}})",
+      "inMinutes": "{{count}} 分钟后",
+      "inHours": "{{count}} 小时后"
+    },
+    "age": "发布后等待",
+    "ageDays_other": "{{count}} 天"
   },
   "autoStatus": {
     "state": {
@@ -823,5 +831,23 @@
     "month": "月份",
     "loading": "正在加载可用率...",
     "none": "本月没有可用率数据。将应用添加到状态页即可开始记录。"
+  },
+  "smoke": {
+    "title": "升级后冒烟检查",
+    "run": "运行冒烟检查",
+    "running": "检查中...",
+    "error": "无法运行冒烟检查: {{message}}",
+    "item": {
+      "apps": "应用正在运行",
+      "domains": "域名可解析",
+      "certificates": "证书有效",
+      "backups": "备份是最新的"
+    },
+    "status": {
+      "pass": "通过",
+      "warn": "警告",
+      "fail": "失败",
+      "skipped": "已跳过"
+    }
   }
 }

@@ -16,6 +16,8 @@ import (
 // names only, so a client refetches through its own authorized reads.
 type changeMessage struct {
 	Topics []string `json:"topics"`
+	// Events carries deploy and alert payloads the caller may read, when any.
+	Events []changeDetail `json:"events,omitempty"`
 }
 
 func changesStreamResource(*http.Request) string { return "events" }
@@ -150,11 +152,11 @@ func (rt *Router) handleChangesStream(w http.ResponseWriter, r *http.Request) {
 		data, _ := json.Marshal(changePing{HeartbeatMS: beat.Milliseconds()})
 		return send("event: ping\ndata: " + string(data) + "\n\n")
 	}
-	emit := func(mask uint32) bool {
+	emit := func(mask uint32, details []changeDetail) bool {
 		if mask == 0 {
 			return true
 		}
-		msg := changeMessage{}
+		msg := changeMessage{Events: details}
 		for t := changeTopic(0); t < changeTopicCount; t++ {
 			if mask&(1<<t) != 0 {
 				msg.Topics = append(msg.Topics, changeTopicNames[t])
@@ -190,11 +192,11 @@ func (rt *Router) handleChangesStream(w http.ResponseWriter, r *http.Request) {
 				beat = next
 				ticker.Reset(beat)
 			}
-			ok = emit(coalesceChanges(sub, filter, nil, refresh)) && ping()
+			ok = emit(coalesceDetails(sub, filter, nil, refresh)) && ping()
 		case <-sub.wake:
-			ok = emit(coalesceChanges(sub, filter, nil, refresh))
+			ok = emit(coalesceDetails(sub, filter, nil, refresh))
 		case ev := <-sub.ch:
-			ok = emit(coalesceChanges(sub, filter, &ev, refresh))
+			ok = emit(coalesceDetails(sub, filter, &ev, refresh))
 		}
 		if !ok {
 			return
@@ -206,7 +208,15 @@ func (rt *Router) handleChangesStream(w http.ResponseWriter, r *http.Request) {
 // buffer size) and any overflow into one topic bitmask. The filter is
 // refreshed at most once when an app has no owner row yet.
 func coalesceChanges(sub *changeSub, f changeFilter, first *changeEvent, refresh func() changeFilter) uint32 {
+	mask, _ := coalesceDetails(sub, f, first, refresh)
+	return mask
+}
+
+// coalesceDetails is coalesceChanges that also returns the payloads of the
+// events the filter allowed; a denied event contributes neither.
+func coalesceDetails(sub *changeSub, f changeFilter, first *changeEvent, refresh func() changeFilter) (uint32, []changeDetail) {
 	var mask uint32
+	var details []changeDetail
 	refreshed := false
 	take := func(ev changeEvent) {
 		if f.ownerUnknown(ev) && !refreshed && refresh != nil {
@@ -214,6 +224,9 @@ func coalesceChanges(sub *changeSub, f changeFilter, first *changeEvent, refresh
 		}
 		if f.allows(ev) {
 			mask |= 1 << ev.topic
+			if ev.detail != nil {
+				details = append(details, *ev.detail)
+			}
 		}
 	}
 	if first != nil {
@@ -235,5 +248,5 @@ func coalesceChanges(sub *changeSub, f changeFilter, first *changeEvent, refresh
 			}
 		}
 	}
-	return mask
+	return mask, details
 }

@@ -233,5 +233,23 @@
       "githubNoApp": "un dépôt GitHub sans la GitHub App installée",
       "fix": "Connectez le dépôt via une GitHub App ou une connexion GitLab, puis réactivez la barrière."
     }
+  },
+  "why": {
+    "title": "Pourquoi ce déploiement a échoué",
+    "loading": "Chargement",
+    "failed": "Impossible de charger le verdict",
+    "rawLogs": "Voir les logs bruts",
+    "exit": "Code de sortie {{code}}",
+    "healthOk": "Dernier contrôle de santé réussi : {{target}}",
+    "healthFailed": "Dernier contrôle de santé échoué : {{target}}",
+    "template": "{{count}}x {{sample}}",
+    "verdict": {
+      "oom_killed": "Le conteneur a manqué de mémoire",
+      "exit_nonzero": "Le conteneur s'est arrêté avec une erreur",
+      "health_failing": "Le contrôle de santé a continué d'échouer",
+      "new_log_patterns": "Nouveaux motifs de logs depuis le dernier bon déploiement",
+      "no_signal": "Aucune cause claire enregistrée",
+      "ok": "Aucun problème trouvé"
+    }
   }
 }

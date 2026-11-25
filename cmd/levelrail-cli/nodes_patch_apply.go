@@ -221,7 +221,7 @@ Flags:
   --api-url string         control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string         named credentials profile to read
   --json                   print the result as JSON
-  --output string          output format: json, table, or text
+  --output string          output format: json, ndjson, yaml, table, wide, text or name
   --query string           JMESPath expression to filter the result
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)

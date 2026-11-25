@@ -39,6 +39,16 @@ func TestLiveSlowThresholdRecordsRequest(t *testing.T) {
 	}
 }
 
+func TestRouteStatsHonorLiveBound(t *testing.T) {
+	s := routeStats{bound: func() int { return 2 }}
+	s.observe("GET", "/a", 200, time.Millisecond)
+	s.observe("GET", "/b", 200, time.Millisecond)
+	s.observe("GET", "/c", 200, time.Millisecond)
+	if n := len(s.top(10)); n != 2 {
+		t.Fatalf("tracked %d routes, want 2", n)
+	}
+}
+
 func TestRouteStatsAggregateByPatternAndRank(t *testing.T) {
 	var s routeStats
 	s.observe("GET", "/api/v1/apps/{id}", 200, 10*time.Millisecond)

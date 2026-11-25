@@ -8,6 +8,7 @@ package build
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -50,6 +51,9 @@ type NodeInfo struct {
 	Trust string
 	// DiskFreeBytes is the free disk the node last reported, zero when unknown.
 	DiskFreeBytes int64
+	// OwnerID is the user a personal builder belongs to, TeamID the team it serves; empty when unrecorded.
+	OwnerID string
+	TeamID  string
 }
 
 // Pressure levels a NodeInfo reports.
@@ -91,7 +95,16 @@ type Policy struct {
 	Now              time.Time
 	// PersonalInProduction lets personal builders build production environments that have no explicit allow-list.
 	PersonalInProduction bool
+	// PersonalScope is ScopeOwner, ScopeTeam or ScopeAll; empty means owner.
+	PersonalScope string
 }
+
+// Personal builder scopes: whose apps a personal builder may receive.
+const (
+	ScopeOwner = "owner"
+	ScopeTeam  = "team"
+	ScopeAll   = "all"
+)
 
 // Build placement modes an app can choose.
 const (
@@ -119,6 +132,9 @@ type Query struct {
 	EnvKind string
 	// AllowedBuilders is the environment's explicit allow-list of tiers or node IDs; it beats the default.
 	AllowedBuilders []string
+	// AppTeamID and AppTeamMembers say who the app belongs to, for the personal builder scope.
+	AppTeamID      string
+	AppTeamMembers []string
 }
 
 // Builder trust tiers, mirroring the store values.
@@ -140,8 +156,12 @@ func (n NodeInfo) tier() string {
 func (q Query) trustAllows(n NodeInfo, p Policy) bool {
 	if len(q.AllowedBuilders) > 0 {
 		for _, a := range q.AllowedBuilders {
-			if a == n.ID || a == n.tier() {
+			if a == n.ID {
 				return true
+			}
+			// A tier word admits the tier, but a personal builder still keeps to its scope.
+			if a == n.tier() {
+				return n.tier() != TrustPersonal || q.personalScopeAllows(n, p.PersonalScope)
 			}
 		}
 		return false
@@ -150,10 +170,24 @@ func (q Query) trustAllows(n NodeInfo, p Policy) bool {
 		// No known environment (unknown app): only server builders qualify.
 		return n.tier() == TrustServer
 	}
-	if n.tier() == TrustPersonal && q.EnvKind == "production" && !p.PersonalInProduction {
-		return false
+	if n.tier() == TrustPersonal {
+		if q.EnvKind == "production" && !p.PersonalInProduction {
+			return false
+		}
+		return q.personalScopeAllows(n, p.PersonalScope)
 	}
 	return true
+}
+
+// personalScopeAllows keeps a personal builder to its owner's or team's apps; an unrecorded owner fails closed.
+func (q Query) personalScopeAllows(n NodeInfo, scope string) bool {
+	if scope == ScopeAll {
+		return true
+	}
+	if n.OwnerID != "" && slices.Contains(q.AppTeamMembers, n.OwnerID) {
+		return true
+	}
+	return scope == ScopeTeam && n.TeamID != "" && n.TeamID == q.AppTeamID
 }
 
 // Decision is where a build runs and why.
@@ -289,6 +323,11 @@ func ChooseBuildNode(nodes []NodeInfo, q Query, p Policy) Decision {
 		}
 	}
 	if len(live) == 0 {
+		for _, n := range all {
+			if n.tier() == TrustPersonal && n.OwnerID == "" && n.usable(p) {
+				return Decision{Reason: "control plane: personal builder " + n.label() + " has no builder.owner label"}
+			}
+		}
 		return Decision{Reason: "control plane: no build node is online and accepting work"}
 	}
 	if p.Strategy == StrategyFirst || p.Strategy == "" {

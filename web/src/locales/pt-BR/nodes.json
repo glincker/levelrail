@@ -163,7 +163,8 @@
         "succeeded": "Drenado",
         "partial": "Parcialmente drenado",
         "failed": "Falhou"
-      }
+      },
+      "back": "Voltar ao drain do nó"
     }
   },
   "drains": {

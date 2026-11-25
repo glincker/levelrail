@@ -27,7 +27,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateApp))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteApp))
 	mux.HandleFunc("GET /api/v1/recently-deleted", rt.requireAbility(AbilityRead, rt.handleListRecentlyDeleted))
-	mux.HandleFunc("POST /api/v1/recently-deleted/{kind}/{name}/restore", rt.requireAbilityForResource(AbilityWrite, recentlyDeletedResourceFromPath, rt.handleRestoreRecentlyDeleted))
+	mux.HandleFunc("POST /api/v1/recently-deleted/{kind}/{name}/restore", rt.requireAbility(AbilityWrite, rt.handleRestoreRecentlyDeleted))
 
 	// Stage 1 of multi-service apps (migrations/0039_apps.sql,
 	// apps_group.go): a service plus its siblings under the same
@@ -249,6 +249,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// settles, and a two-deploy comparison. Settled timelines are frozen for
 	// replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to
 	// the apps the caller can read.
+	// Why a deploy failed (deploy_why.go): exit, last probe and new log clusters; AbilityRead on the deploy's app.
+	mux.HandleFunc("GET /api/v1/deploys/{id}/why", rt.requireAbility(AbilityRead, rt.handleGetDeployWhy))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline", rt.requireAbility(AbilityRead, rt.handleGetDeployTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(timelineStreamResource, rt.handleDeployTimelineStream)))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeployTimelines))

@@ -648,3 +648,14 @@ func TestConfigFromEnv(t *testing.T) {
 		t.Fatalf("config = %+v", c)
 	}
 }
+
+func TestAutoRecordsDecisionWhenPlanFails(t *testing.T) {
+	h := newHarness(t)
+	h.setPolicy(autoPolicy("any"))
+	h.host.planErr = errors.New("notes fetch failed")
+	_ = h.sched().Tick(context.Background())
+	row, _ := h.db.GetUpgradePolicy(context.Background())
+	if !strings.Contains(row.Decision, "could not be built") {
+		t.Fatalf("decision = %q", row.Decision)
+	}
+}

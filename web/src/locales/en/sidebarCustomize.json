@@ -9,6 +9,8 @@
   "moved": "{{label}} moved to position {{position}} of {{total}}",
   "currentPage": "Current page",
   "currentGroup": "Has current page",
+  "compact": "Compact sidebar",
+  "compactDone": "Sidebar set to compact",
   "reset": "Reset to default",
   "resetDone": "Sidebar reset to default",
   "done": "Done",

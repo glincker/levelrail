@@ -678,7 +678,47 @@
     "uploadLabel": "Téléverser un fichier Compose ou un Dockerfile",
     "looksLike": "Ressemble à : {{source}}",
     "tryLabel": "Essayer :",
-    "fileTooLarge": "Ce fichier dépasse 512 Ko."
+    "fileTooLarge": "Ce fichier dépasse 512 Ko.",
+    "goals": {
+      "title": "Que voulez-vous exécuter ?",
+      "advanced": "Options avancées",
+      "deploy": "Déployer",
+      "deploying": "Déploiement...",
+      "healthOff": "Désactivé",
+      "fields": {
+        "image": "Image",
+        "imagePlaceholder": "ghcr.io/you/app:latest",
+        "name": "Nom",
+        "port": "Port",
+        "health": "Chemin de santé"
+      },
+      "items": {
+        "website": {
+          "label": "Site web",
+          "hint": "Application web depuis une image, port et health check préremplis."
+        },
+        "api": {
+          "label": "API",
+          "hint": "Service depuis une image avec un check /healthz prérempli."
+        },
+        "database": {
+          "label": "Base de données",
+          "hint": "Moteur géré avec sauvegardes et identifiants."
+        },
+        "static-site": {
+          "label": "Site statique",
+          "hint": "Construire et servir depuis un dépôt git."
+        },
+        "scheduled-job": {
+          "label": "Tâche planifiée",
+          "hint": "Exécuteurs de sauvegarde et cron du catalogue."
+        },
+        "self-hosted": {
+          "label": "App auto-hébergée",
+          "hint": "Apps sélectionnées du catalogue de modèles."
+        }
+      }
+    }
   },
   "noBackups": {
     "title": "Sauvegardes",

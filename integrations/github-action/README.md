@@ -30,8 +30,13 @@ See `example-workflow.yml` for push, `workflow_dispatch` and `repository_dispatc
 | `github-token` | `github.token` | Posts the reports; empty turns reporting off |
 | `environment-url` | empty | App URL shown on the GitHub deployment |
 | `sha` | PR head or pushed commit | Commit the reports attach to |
+| `preview` | `false` | Deploy `image` as the pull request preview instead of the app, then comment the URL on the PR |
+| `pr-number` | event PR number | Positive integer; rejected otherwise |
+| `preview-teardown` | `false` | Remove the PR preview. Run it on `pull_request: closed` |
 
-Outputs: `status` (`succeeded`, `failed`, `timeout`, `accepted`) and `report-warnings`.
+Preview mode needs `pull-requests: write` to comment; without it the URL goes to the job summary and the `preview-url` output.
+
+Outputs: `preview-url`, `status` (`succeeded`, `failed`, `timeout`, `accepted`) and `report-warnings`.
 
 A failed report call never changes the deploy result: the deploy stays green, the failure is
 printed as a workflow warning and counted in `report-warnings`.

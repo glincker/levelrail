@@ -60,6 +60,8 @@ export interface LogQueryState {
   signature?: string
   /** Best text matches first; only meaningful with q. */
   order?: 'relevance'
+  /** Fold runs of identical consecutive lines (read time only). */
+  collapse?: boolean
   from?: Date
   to?: Date
   limit?: number
@@ -92,6 +94,9 @@ export function buildLogQuery(state: LogQueryState): URLSearchParams {
   }
   if (state.signature) {
     params.set('signature', state.signature)
+  }
+  if (state.collapse) {
+    params.set('collapse', '1')
   }
   if (state.order && state.q) {
     params.set('order', state.order)

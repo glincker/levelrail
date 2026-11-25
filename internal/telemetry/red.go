@@ -40,11 +40,6 @@ var LatencyBucketsMS = []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000,
 // LatencyBucketCount is the number of histogram slots including overflow.
 const LatencyBucketCount = 12
 
-// IsSumMetric reports whether rollups must add the metric's values.
-func IsSumMetric(metric string) bool {
-	return len(metric) >= len(metricHTTPPrefix) && metric[:len(metricHTTPPrefix)] == metricHTTPPrefix
-}
-
 // LatencyBucketMetric is the metric name for histogram slot i.
 func LatencyBucketMetric(i int) string {
 	if i >= len(LatencyBucketsMS) {

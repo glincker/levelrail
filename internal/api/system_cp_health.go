@@ -45,6 +45,7 @@ type ControlPlaneProbe struct {
 	DB             ControlPlaneDB
 	Reconcile      func() reconcile.Stats
 	ResyncInterval time.Duration
+	Lag            func() map[string]time.Duration // per reconciler kind, from the engine
 	Telemetry      TelemetryStore
 	MemoryLimit    footprint.MemoryLimit
 	Integrity      IntegrityProbe
@@ -275,6 +276,11 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 	if p.Guard != nil {
 		res.Reconcile.Guard = p.Guard.Status()
 	}
+	var lag map[string]time.Duration
+	if p.Lag != nil {
+		lag = p.Lag()
+	}
+	lagWarn := time.Duration(rt.changesSettings().Int(context.Background(), runtimesettings.KeyReconcileLagWarnSeconds)) * time.Second
 	res.Thresholds = cphealth.DefaultThresholds(os.Getenv)
 	res.Findings = cphealth.Evaluate(cphealth.Inputs{
 		OpenBreakers: res.Reconcile.Guard.OpenBreakers, RecentLimited: res.Reconcile.Guard.RecentLimited, IntegrityFailed: integrityFailed,
@@ -284,6 +290,7 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		ReconcilePass: rs.LastPass, LastPassAt: rs.LastPassAt, ResyncInterval: p.ResyncInterval,
 		RSSBytes: proc.RSSBytes, Threads: proc.Threads, TelemetryBytes: res.Footprint.TelemetryBytes,
 		Streams: int(res.Streams.Active), StreamCap: int(res.Streams.Cap), Now: now,
+		ReconcilerLag: lag, LagWarn: lagWarn,
 	}, res.Thresholds)
 	sort.SliceStable(res.Findings, func(i, j int) bool {
 		return res.Findings[i].Severity == cphealth.SeverityCrit && res.Findings[j].Severity != cphealth.SeverityCrit

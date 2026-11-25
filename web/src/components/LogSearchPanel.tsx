@@ -124,6 +124,8 @@ export function LogSearchPanel({
   const [levels, setLevels] = useState<ReadonlySet<LevelBucket>>(new Set())
   const [copied, setCopied] = useState(false)
   const [wrap, setWrap] = useState(false)
+  // Off by default; the stored lines are never changed, only the view.
+  const [collapse, setCollapse] = useState(false)
   const [selected, setSelected] = useState<number | null>(null)
   const [alertOpen, setAlertOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -171,6 +173,7 @@ export function LogSearchPanel({
     fields: fieldFilters,
     signature: filters.signature,
     order: trimmedQuery ? filters.order : undefined,
+    collapse,
   }
 
   const { data, isLoading, error } = useLogSearch(appName, {
@@ -342,6 +345,19 @@ export function LogSearchPanel({
           >
             <ListGlassIcon className="size-5.5" aria-hidden="true" />
             {t('explorer.wrap')}
+          </Button>
+          <Button
+            type="button"
+            variant={collapse ? 'secondary' : 'outline'}
+            size="sm"
+            aria-pressed={collapse}
+            title={t('explorer.collapseHint')}
+            onClick={() => {
+              setCollapse((c) => !c)
+            }}
+          >
+            <ListGlassIcon className="size-5.5" aria-hidden="true" />
+            {t('explorer.collapse')}
           </Button>
           <a
             href={logDownloadURL(appName, queryState)}
