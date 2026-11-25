@@ -655,5 +655,22 @@
   },
   "dashDrop": {
     "prompt": "Suelta una carpeta o zip de un sitio compilado para publicarlo"
+  },
+  "notify": {
+    "title": "Notificaciones de despliegue",
+    "tip": "Envía un mensaje a un canal cuando termina un despliegue de este sitio",
+    "failed": "No se pudo cargar la configuración de notificaciones.",
+    "enabled": "Notificar",
+    "onFailure": "Al fallar",
+    "onSuccess": "Al completar",
+    "channel": "Canal",
+    "pick": "Adjuntar canal",
+    "save": "Guardar",
+    "readOnly": "Necesitas permiso de escritura para cambiar esto.",
+    "needEvent": "Elige al menos un evento.",
+    "channelsFailed": "No se pudieron cargar los canales.",
+    "sendingTo": "Enviando a {{channels}}",
+    "noneAttached": "Aún no hay canal adjunto.",
+    "noChannels": "Aún no hay canales de notificación. Crea uno en Alertas."
   }
 }

@@ -655,5 +655,22 @@
   },
   "dashDrop": {
     "prompt": "Ordner oder Zip einer gebauten Site hierher ziehen, um sie zu veröffentlichen"
+  },
+  "notify": {
+    "title": "Deploy-Benachrichtigungen",
+    "tip": "Sendet eine Nachricht an einen Kanal, wenn ein Deploy dieser Seite endet",
+    "failed": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
+    "enabled": "Benachrichtigen",
+    "onFailure": "Bei Fehler",
+    "onSuccess": "Bei Erfolg",
+    "channel": "Kanal",
+    "pick": "Kanal anhängen",
+    "save": "Speichern",
+    "readOnly": "Zum Ändern ist Schreibzugriff nötig.",
+    "needEvent": "Mindestens ein Ereignis wählen.",
+    "channelsFailed": "Kanäle konnten nicht geladen werden.",
+    "sendingTo": "Sendet an {{channels}}",
+    "noneAttached": "Noch kein Kanal angehängt.",
+    "noChannels": "Es gibt noch keine Benachrichtigungskanäle. Lege einen unter Alerts an."
   }
 }

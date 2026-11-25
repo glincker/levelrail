@@ -655,5 +655,22 @@
       "title": "Recent previews",
       "none": "No branch previews yet."
     }
+  },
+  "notify": {
+    "title": "Deploy notifications",
+    "tip": "Send a message to a channel when a deploy of this site finishes",
+    "failed": "Could not load notification settings.",
+    "enabled": "Notify",
+    "onFailure": "On failure",
+    "onSuccess": "On success",
+    "channel": "Channel",
+    "pick": "Attach channel",
+    "save": "Save",
+    "readOnly": "You need write access to change this.",
+    "needEvent": "Pick at least one event.",
+    "channelsFailed": "Could not load channels.",
+    "sendingTo": "Sending to {{channels}}",
+    "noneAttached": "No channel attached yet.",
+    "noChannels": "No notification channels exist yet. Create one under Alerts."
   }
 }

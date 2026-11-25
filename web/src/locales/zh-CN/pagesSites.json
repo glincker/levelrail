@@ -651,5 +651,22 @@
   },
   "dashDrop": {
     "prompt": "拖入构建好的站点文件夹或 zip 即可发布"
+  },
+  "notify": {
+    "title": "部署通知",
+    "tip": "此站点部署结束时向频道发送消息",
+    "failed": "无法加载通知设置。",
+    "enabled": "通知",
+    "onFailure": "失败时",
+    "onSuccess": "成功时",
+    "channel": "频道",
+    "pick": "关联频道",
+    "save": "保存",
+    "readOnly": "需要写入权限才能修改。",
+    "needEvent": "至少选择一个事件。",
+    "channelsFailed": "无法加载频道。",
+    "sendingTo": "正在发送到 {{channels}}",
+    "noneAttached": "尚未关联频道。",
+    "noChannels": "还没有通知频道。请在告警中创建。"
   }
 }

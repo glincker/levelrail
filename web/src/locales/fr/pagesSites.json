@@ -655,5 +655,22 @@
   },
   "dashDrop": {
     "prompt": "Déposez un dossier ou un zip de site compilé pour le publier"
+  },
+  "notify": {
+    "title": "Notifications de déploiement",
+    "tip": "Envoie un message à un canal quand un déploiement de ce site se termine",
+    "failed": "Impossible de charger les réglages de notification.",
+    "enabled": "Notifier",
+    "onFailure": "En cas d'échec",
+    "onSuccess": "En cas de succès",
+    "channel": "Canal",
+    "pick": "Attacher un canal",
+    "save": "Enregistrer",
+    "readOnly": "Il faut un accès en écriture pour modifier ceci.",
+    "needEvent": "Choisissez au moins un événement.",
+    "channelsFailed": "Impossible de charger les canaux.",
+    "sendingTo": "Envoi vers {{channels}}",
+    "noneAttached": "Aucun canal attaché pour l'instant.",
+    "noChannels": "Aucun canal de notification pour l'instant. Créez-en un dans Alertes."
   }
 }
