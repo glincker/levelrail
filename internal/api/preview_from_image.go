@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -68,9 +67,8 @@ func (rt *Router) handleCreatePreviewFromImage(w http.ResponseWriter, r *http.Re
 	name := r.PathValue("name")
 	ctx := r.Context()
 
-	var req createPreviewRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	req, ok := decodeJSON[createPreviewRequest](w, r, 1<<16)
+	if !ok {
 		return
 	}
 	req.Image = strings.TrimSpace(req.Image)
