@@ -121,6 +121,7 @@ var capabilityRegistry = map[string]EngineCapabilities{
 	"typesense":   {Engine: "typesense", Kind: KindSearch, Capabilities: statsCaps()},
 	"memcached":   {Engine: "memcached", Kind: KindStats, Capabilities: statsCaps()},
 	"mongodb":     {Engine: "mongodb", Kind: KindDocument, Planned: true, Capabilities: documentCaps()},
+	"documentdb":  {Engine: "documentdb", Kind: KindDocument, Planned: true, Capabilities: documentCaps()},
 	"clickhouse":  {Engine: "clickhouse", Kind: KindSQL, Planned: true, Capabilities: noneCaps()},
 }
 
