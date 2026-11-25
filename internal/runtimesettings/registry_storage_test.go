@@ -43,7 +43,7 @@ func TestStorageSettings_RejectUnsafeValues(t *testing.T) {
 			t.Errorf("%s accepted %s", key, val)
 		}
 	}
-	for key, val := range map[string]string{KeyLogBudgetMB: `0`, KeyDiskReserveMB: `0`, KeyMetricsRetention: `"1h"`} {
+	for key, val := range map[string]string{KeyLogBudgetMB: `0`, KeyDiskReserveMB: `0`, KeyMetricsRetention: `"7h"`} {
 		if _, err := svc.Set(ctx, key, raw(val), "tester"); err != nil {
 			t.Errorf("%s rejected %s: %v", key, val, err)
 		}

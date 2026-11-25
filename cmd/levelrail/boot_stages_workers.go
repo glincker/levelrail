@@ -70,7 +70,11 @@ func (s *bootState) startTelemetry() {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
-	startTelemetryMaintenance(ctx, telemetryDB, metricsCollectionInterval, logger)
+	var tiers runtimesettings.MetricsTiers
+	if s.apiRouter != nil {
+		tiers = s.apiRouter.RuntimeSettings().MetricsTiers(ctx)
+	}
+	startTelemetryMaintenance(ctx, telemetryDB, metricsCollectionInterval, tiers.RollupEvery, tiers.PruneEvery, logger)
 
 	// Needs the local node row from setupMesh; with mesh off there is no node to attribute samples to.
 	if meshCfg != nil {

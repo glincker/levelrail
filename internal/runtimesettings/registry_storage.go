@@ -69,7 +69,7 @@ func init() {
 		Key: KeyMetricsRetention, Category: CategoryObservability, Kind: KindDuration, Default: "360h",
 		Env: "APP_METRICS_RETENTION", Apply: ApplyLive, CheckValue: durationRangeCheck(minTelemetryRetention, maxTelemetryRetention),
 		Title:       "Raw metrics retention",
-		Description: "How long raw container metric samples are kept before the prune job deletes them, from 1h to 8760h; older data stays available in the coarser rollup tiers.",
+		Description: "How long raw container metric samples are kept before the prune job deletes them, from 1h to 8760h; older data stays available in the coarser rollup tiers. It must exceed the raw query range plus one minute and stay shorter than the 1 minute tier retention.",
 	})
 	Register(Definition{
 		Key: KeyLogsRetention, Category: CategoryObservability, Kind: KindDuration, Default: "360h",

@@ -331,6 +331,9 @@ func (s *Service) ValidateForWrite(ctx context.Context, key string, raw json.Raw
 	if err != nil {
 		return "", err
 	}
+	if err := s.checkTierSet(ctx, key, c); err != nil {
+		return "", err
+	}
 	if !opts.ConfirmWeakening && s.WeakensTo(ctx, key, raw) {
 		return "", ErrWeakeningNotConfirmed
 	}
@@ -348,6 +351,9 @@ func (s *Service) Set(ctx context.Context, key string, raw json.RawMessage, acto
 	}
 	c, err := ParseJSON(d, raw)
 	if err != nil {
+		return Setting{}, err
+	}
+	if err := s.checkTierSet(ctx, key, c); err != nil {
 		return Setting{}, err
 	}
 	if err := s.store.SetRuntimeSetting(ctx, key, c, actor, time.Now()); err != nil {

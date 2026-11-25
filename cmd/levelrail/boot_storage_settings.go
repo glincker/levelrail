@@ -90,12 +90,33 @@ func (s *bootState) wireStorageSettings() {
 		c := context.Background()
 		return telemetry.CumulativeLookback(rs().Duration(c, runtimesettings.KeyMetricsIdleInterval), rs().Duration(c, runtimesettings.KeyMetricsSampleInterval))
 	})
+	telemetry.SetTierConfigSource(func(base telemetry.TierConfig) telemetry.TierConfig {
+		return tierConfigFromSettings(base, rs().MetricsTiers(context.Background()))
+	})
 	telemetry.SetCapTargetPercentSource(func() int {
 		return rs().Int(context.Background(), runtimesettings.KeyMetricsCapTarget)
 	})
 	telemetry.SetLogBudgetSource(func() int64 {
 		return int64(rs().Int(context.Background(), runtimesettings.KeyLogBudgetMB)) * mibBytes
 	})
+}
+
+// tierConfigFromSettings overlays the live tier settings on the booted config; a zero duration keeps the booted value.
+func tierConfigFromSettings(base telemetry.TierConfig, t runtimesettings.MetricsTiers) telemetry.TierConfig {
+	keep := func(dst *time.Duration, v time.Duration) {
+		if v > 0 {
+			*dst = v
+		}
+	}
+	keep(&base.MinuteRetention, t.Retention1m)
+	keep(&base.HourRetention, t.Retention1h)
+	keep(&base.RawMaxRange, t.RawRange)
+	keep(&base.MinuteMaxRange, t.Range1m)
+	keep(&base.Lag, t.Lag)
+	if t.MaxDBBytes >= 0 {
+		base.MaxBytes = t.MaxDBBytes
+	}
+	return base
 }
 
 // dbTuningName maps the "default" setting value to empty, meaning leave SQLite alone.

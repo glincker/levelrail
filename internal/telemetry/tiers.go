@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -78,10 +79,26 @@ func (db *DB) SetClock(now func() time.Time) { db.clock = now }
 // SetRawRetentionSource makes the raw sample retention follow fn on every prune and query. Call before the DB is shared.
 func (db *DB) SetRawRetentionSource(fn func() time.Duration) { db.rawRetentionFn = fn }
 
+var tierSource atomic.Pointer[func(TierConfig) TierConfig]
+
+// SetTierConfigSource makes every prune, rollup and query take its tier
+// settings from fn, which receives the booted config and returns the live one.
+// A nil fn restores the booted config.
+func SetTierConfigSource(fn func(TierConfig) TierConfig) {
+	if fn == nil {
+		tierSource.Store(nil)
+		return
+	}
+	tierSource.Store(&fn)
+}
+
 func (db *DB) tierConfig() TierConfig {
 	cfg := DefaultTierConfig()
 	if db.tiers != nil {
 		cfg = *db.tiers
+	}
+	if fn := tierSource.Load(); fn != nil {
+		cfg = (*fn)(cfg)
 	}
 	if db.rawRetentionFn != nil {
 		if d := db.rawRetentionFn(); d > 0 {
