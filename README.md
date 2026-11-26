@@ -9,6 +9,7 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <a href="https://demo.levelrail.com"><img src="https://img.shields.io/badge/demo-demo.levelrail.com-2f6feb" alt="Live demo"></a>
+  <a href="https://www.reddit.com/r/levelrail/"><img src="https://img.shields.io/badge/reddit-r%2Flevelrail-FF4500?logo=reddit&logoColor=white" alt="Levelrail on Reddit"></a>
 </p>
 <p>
   <a href="https://levelrail.com?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=nav">Website</a> &middot;
