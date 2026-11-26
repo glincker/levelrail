@@ -1,7 +1,6 @@
 <!-- translated-from: README.md blob:b3c2e12bc506fb9fd5a89df18863898321998952 lang:ja -->
 <div align="center">
-<img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail ロゴ" width="56" height="56">
-<h1>Levelrail</h1>
+<p><a href="https://levelrail.com"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/levelrail-lockup-dark.svg"><img src="../../docs/assets/brand/levelrail-lockup.svg" alt="Levelrail ロゴ" height="72"></picture></a></p>
 <p><strong>自分のサーバーへ、git push で本番デプロイ。</strong><br>
 Go 製の単一バイナリで動くセルフホスト型デプロイプラットフォームです。コントロールプレーンはアイドル時に約 200 MB の RAM を使い（<a href="../../docs/performance.md">計測値</a>）、570+ のワンクリックアプリ、ロールバック、プレビュー、HTTPS、データベースを標準で備えています。</p>
 <p><code>sudo sh install.sh</code> (<a href="https://github.com/glincker/levelrail/releases/latest">GitHub release</a>) &middot; <a href="https://demo.levelrail.com"><b>ライブデモを試す</b></a></p>

@@ -16,8 +16,8 @@
   },
   "favicon": "/public/favicon.svg",
   "logo": {
-    "light": "/assets/brand/wordmark-light.svg",
-    "dark": "/assets/brand/wordmark-dark.svg",
+    "light": "/assets/brand/levelrail-nav-light.svg",
+    "dark": "/assets/brand/levelrail-nav-dark.svg",
     "href": "https://levelrail.com"
   },
   "appearance": {

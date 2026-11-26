@@ -1,7 +1,6 @@
 <!-- translated-from: README.md blob:9dd067f925253779cbff6f7fd0aa64784a5e9ec3 lang:ru -->
 <div align="center">
-<img src="../../docs/assets/brand/levelrail-default.svg" alt="Логотип Levelrail" width="56" height="56">
-<h1>Levelrail</h1>
+<p><a href="https://levelrail.com"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/levelrail-lockup-dark.svg"><img src="../../docs/assets/brand/levelrail-lockup.svg" alt="Логотип Levelrail" height="72"></picture></a></p>
 
 > Этот перевод выполнен с помощью ИИ и может содержать ошибки. Исправления приветствуются: см. [docs/i18n/README.md](README.md).
 <p><strong>Git push в продакшен на ваших серверах.</strong><br>

@@ -1,7 +1,6 @@
 <!-- translated-from: README.md blob:b3c2e12bc506fb9fd5a89df18863898321998952 lang:zh-Hans -->
 <div align="center">
-<img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail 标志" width="56" height="56">
-<h1>Levelrail</h1>
+<p><a href="https://levelrail.com"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/levelrail-lockup-dark.svg"><img src="../../docs/assets/brand/levelrail-lockup.svg" alt="Levelrail 标志" height="72"></picture></a></p>
 <p><strong>在你自己的服务器上，通过 git push 直达生产环境。</strong><br>
 单个 Go 二进制文件的自托管部署平台。控制平面空闲时约占用 200 MB 内存（<a href="../../docs/performance.md">实测</a>），内置 570+ 个一键应用、回滚、预览、HTTPS 和数据库。</p>
 <p><code>sudo sh install.sh</code> (<a href="https://github.com/glincker/levelrail/releases/latest">GitHub release</a>) &middot; <a href="https://demo.levelrail.com"><b>试用在线演示</b></a></p>
