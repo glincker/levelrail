@@ -53,7 +53,7 @@ func seqAlter(s Sequence) string {
 // renderSQL orders the statements so drops come first and foreign keys last, which keeps the script valid
 // without knowing the dependency graph. Matching names sort so the text is stable.
 func renderSQL(d differ) string {
-	var drops, creates, alters, indexes, cons, fks, tail []string
+	var drops, schemas, creates, alters, indexes, cons, fks, tail []string
 
 	for _, v := range d.removedViews {
 		drops = append(drops, "DROP "+viewKind(v)+" "+qual(v.Schema, v.Name)+";")
@@ -76,6 +76,12 @@ func renderSQL(d differ) string {
 		drops = append(drops, "DROP TABLE "+qual(t.Schema, t.Name)+";")
 	}
 
+	for _, n := range d.addedSchemas {
+		schemas = append(schemas, "CREATE SCHEMA "+quoteIdent(n)+";")
+	}
+	for _, n := range d.removedSchemas {
+		tail = append(tail, "DROP SCHEMA "+quoteIdent(n)+";")
+	}
 	for _, s := range d.addedSeqs {
 		creates = append(creates, seqCreate(s))
 	}
@@ -128,10 +134,10 @@ func renderSQL(d differ) string {
 		tail = append(tail, createView(v, !v.Materialized))
 	}
 	for _, s := range d.removedSeqs {
-		tail = append(tail, "DROP SEQUENCE "+qual(s.Schema, s.Name)+";")
+		tail = append(tail, "DROP SEQUENCE IF EXISTS "+qual(s.Schema, s.Name)+";")
 	}
 
-	groups := [][]string{drops, creates, alters, indexes, cons, fks, tail}
+	groups := [][]string{drops, schemas, creates, alters, indexes, cons, fks, tail}
 	var out []string
 	for _, g := range groups {
 		sort.Strings(g)

@@ -20,7 +20,8 @@ const chunk = 25
 
 // Both queries are fixed text over the catalogs; only integer caps are interpolated.
 func relationsSQL(limit int) string {
-	return `SELECT json_agg(t ORDER BY t.schema, t.name) FROM (
+	return `WITH sp AS MATERIALIZED (SELECT set_config('search_path', 'pg_catalog', true))
+SELECT json_agg(t ORDER BY t.schema, t.name) FROM (
 SELECT (row_number() OVER (ORDER BY n.nspname, c.relname) - 1) / ` + strconv.Itoa(chunk) + ` AS chunk,
   n.nspname AS schema, c.relname AS name, c.relkind::text AS kind,
   CASE WHEN c.relkind IN ('r','p') THEN (SELECT COALESCE(json_agg(json_build_object('name', a.attname, 'type', format_type(a.atttypid, a.atttypmod),
@@ -35,7 +36,7 @@ SELECT (row_number() OVER (ORDER BY n.nspname, c.relname) - 1) / ` + strconv.Ito
     FROM pg_constraint con WHERE con.conrelid = c.oid AND con.contype IN ('p','u','c','f')) ELSE '[]'::json END AS constraints,
   CASE WHEN c.relkind IN ('v','m') THEN pg_get_viewdef(c.oid, true) ELSE '' END AS view_definition
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE c.relkind IN ('r','p','v','m') AND ` + systemFilter + `
+WHERE EXISTS (SELECT 1 FROM sp) AND c.relkind IN ('r','p','v','m') AND ` + systemFilter + `
 ORDER BY n.nspname, c.relname LIMIT ` + strconv.Itoa(limit) + `) t GROUP BY t.chunk ORDER BY t.chunk`
 }
 
@@ -43,7 +44,11 @@ func sequencesSQL(limit int) string {
 	return `SELECT COALESCE(json_agg(json_build_object('schema', n.nspname, 'name', c.relname, 'type', s.seqtypid::regtype::text,
   'start', s.seqstart, 'increment', s.seqincrement, 'min', s.seqmin, 'max', s.seqmax, 'cycle', s.seqcycle) ORDER BY n.nspname, c.relname), '[]'::json)
 FROM (SELECT * FROM pg_sequence LIMIT ` + strconv.Itoa(limit) + `) s JOIN pg_class c ON c.oid = s.seqrelid JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE ` + systemFilter + ` AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = c.oid AND d.deptype IN ('a','i'))`
+WHERE ` + systemFilter + ` AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = c.oid AND d.deptype = 'i')`
+}
+
+func schemasSQL(limit int) string {
+	return `SELECT COALESCE(json_agg(n.nspname ORDER BY n.nspname), '[]'::json) FROM (SELECT * FROM pg_namespace n WHERE ` + systemFilter + ` ORDER BY n.nspname LIMIT ` + strconv.Itoa(limit) + `) n`
 }
 
 type relationRow struct {
@@ -99,6 +104,16 @@ func Read(ctx context.Context, t dbviewer.Target, maxObjects int) (Snapshot, err
 	if len(seq.Rows) > 0 && len(seq.Rows[0]) > 0 && seq.Rows[0][0] != nil {
 		if err := json.Unmarshal([]byte(*seq.Rows[0][0]), &snap.Sequences); err != nil {
 			return Snapshot{}, fmt.Errorf("dbschema: decode sequences: %w", err)
+		}
+	}
+	sch, err := t.RunTrusted(ctx, schemasSQL(maxObjects))
+	if err != nil {
+		return Snapshot{}, err
+	}
+	snap.Schemas = []string{}
+	if len(sch.Rows) > 0 && len(sch.Rows[0]) > 0 && sch.Rows[0][0] != nil {
+		if err := json.Unmarshal([]byte(*sch.Rows[0][0]), &snap.Schemas); err != nil {
+			return Snapshot{}, fmt.Errorf("dbschema: decode schemas: %w", err)
 		}
 	}
 	return snap, nil

@@ -111,3 +111,10 @@ func TestDiffTruncatedCarries(t *testing.T) {
 		t.Fatal("truncated flag lost")
 	}
 }
+
+func TestDiffCreatesAndDropsSchemas(t *testing.T) {
+	r := Diff(Snapshot{Schemas: []string{"public", "old"}}, Snapshot{Schemas: []string{"public", "New Schema"}})
+	if !strings.Contains(r.SQL, `CREATE SCHEMA "New Schema";`) || !strings.Contains(r.SQL, `DROP SCHEMA "old";`) || r.Summary.Added != 1 || r.Summary.Removed != 1 {
+		t.Fatalf("schema diff wrong: %+v\n%s", r.Summary, r.SQL)
+	}
+}

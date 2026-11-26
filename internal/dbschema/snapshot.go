@@ -54,6 +54,7 @@ type Sequence struct {
 
 // Snapshot is the schema of one database at one moment.
 type Snapshot struct {
+	Schemas   []string   `json:"schemas"`
 	Tables    []Table    `json:"tables"`
 	Views     []View     `json:"views"`
 	Sequences []Sequence `json:"sequences"`

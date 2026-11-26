@@ -8,6 +8,7 @@ const (
 	ChangeRemoved = "removed"
 	ChangeChanged = "changed"
 
+	ObjectSchema     = "schema"
 	ObjectTable      = "table"
 	ObjectColumn     = "column"
 	ObjectIndex      = "index"
@@ -45,6 +46,7 @@ type Result struct {
 // Diff compares base with head: added means head has it and base does not.
 func Diff(base, head Snapshot) Result {
 	d := differ{}
+	d.schemas(base.Schemas, head.Schemas)
 	d.tables(base.Tables, head.Tables)
 	d.views(base.Views, head.Views)
 	d.sequences(base.Sequences, head.Sequences)
@@ -80,7 +82,8 @@ func Diff(base, head Snapshot) Result {
 }
 
 type differ struct {
-	changes []Change
+	changes                      []Change
+	addedSchemas, removedSchemas []string
 	// Objects the SQL needs beyond the change list.
 	addedTables, removedTables []Table
 	addedViews, removedViews   []View
@@ -287,6 +290,28 @@ func (d *differ) sequences(base, head []Sequence) {
 		if _, ok := hm[key(s.Schema, s.Name)]; !ok {
 			d.removedSeqs = append(d.removedSeqs, s)
 			d.add(Change{Object: ObjectSequence, Kind: ChangeRemoved, Schema: s.Schema, Name: s.Name, Before: seqSummary(s)})
+		}
+	}
+}
+
+func (d *differ) schemas(base, head []string) {
+	bm, hm := map[string]bool{}, map[string]bool{}
+	for _, n := range base {
+		bm[n] = true
+	}
+	for _, n := range head {
+		hm[n] = true
+	}
+	for _, n := range head {
+		if !bm[n] {
+			d.addedSchemas = append(d.addedSchemas, n)
+			d.add(Change{Object: ObjectSchema, Kind: ChangeAdded, Schema: n, Name: n})
+		}
+	}
+	for _, n := range base {
+		if !hm[n] {
+			d.removedSchemas = append(d.removedSchemas, n)
+			d.add(Change{Object: ObjectSchema, Kind: ChangeRemoved, Schema: n, Name: n})
 		}
 	}
 }
