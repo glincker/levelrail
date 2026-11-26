@@ -232,7 +232,7 @@ type Resolver interface {
 }
 
 // CheckResolved rejects a hostname that resolves to a forbidden address.
-// A host that does not exist is not an error here, but a failed lookup is.
+// A host that does not exist is not an error here, and neither is a failed lookup of a single-label name; any other failed lookup is.
 func (c Conn) CheckResolved(ctx context.Context, p Policy, r Resolver) error {
 	if _, err := netip.ParseAddr(strings.Trim(c.Host, "[]")); err == nil {
 		return nil
@@ -248,6 +248,11 @@ func (c Conn) CheckResolved(ctx context.Context, p Policy, r Resolver) error {
 		// names only resolve inside Docker networks); any other failure stops here.
 		var dnsErr *net.DNSError
 		if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
+			return nil
+		}
+		// A single-label name is a container or network alias the probe resolves inside Docker, and
+		// some resolvers answer SERVFAIL for it; dotted public names still fail closed.
+		if !strings.Contains(strings.TrimSuffix(c.Host, "."), ".") {
 			return nil
 		}
 		return fmt.Errorf("host %s could not be checked: %w", c.Host, err)

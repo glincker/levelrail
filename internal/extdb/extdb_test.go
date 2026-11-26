@@ -334,3 +334,23 @@ type execInputRuntime struct{ *fakeRuntime }
 func (e *execInputRuntime) ExecWithInput(context.Context, string, []string, io.Reader) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader("x")), nil
 }
+
+func TestCheckResolvedLookupFailurePolicy(t *testing.T) {
+	servfail := fakeResolver{err: errors.New("server misbehaving")}
+	for _, tc := range []struct {
+		host    string
+		wantErr bool
+	}{
+		{"coolify-pg", false},
+		{"db.example.com", true},
+		{"db.internal.", true},
+	} {
+		err := Conn{Engine: "postgres", Host: tc.host}.CheckResolved(t.Context(), Policy{}, servfail)
+		if (err != nil) != tc.wantErr {
+			t.Errorf("host %q: err = %v, wantErr %v", tc.host, err, tc.wantErr)
+		}
+	}
+	if err := (Conn{Engine: "postgres", Host: "coolify-pg"}).CheckResolved(t.Context(), Policy{}, fakeResolver{addrs: []string{"169.254.169.254"}}); err == nil {
+		t.Error("single-label name resolving to a metadata address was accepted")
+	}
+}
