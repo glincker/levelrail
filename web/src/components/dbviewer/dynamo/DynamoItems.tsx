@@ -55,11 +55,13 @@ export function DynamoItems({
 
   const schema: DynamoKeyPart[] =
     index === ''
-      ? table.KeySchema
+      ? (table.KeySchema ?? [])
       : ([
           ...(table.GlobalSecondaryIndexes ?? []),
           ...(table.LocalSecondaryIndexes ?? []),
-        ].find((i) => i.IndexName === index)?.KeySchema ?? table.KeySchema)
+        ].find((i) => i.IndexName === index)?.KeySchema ??
+        table.KeySchema ??
+        [])
   const hash = schema.find((k) => k.KeyType === 'HASH')
   const range = schema.find((k) => k.KeyType === 'RANGE')
   const indexNames = [
@@ -103,7 +105,7 @@ export function DynamoItems({
   }
 
   const data = read.data
-  const keyNames = table.KeySchema.map((k) => k.AttributeName)
+  const keyNames = (table.KeySchema ?? []).map((k) => k.AttributeName)
   const columns = data ? gridColumns(data.items, keyNames) : []
 
   return (

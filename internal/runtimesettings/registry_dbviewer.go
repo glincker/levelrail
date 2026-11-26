@@ -78,7 +78,7 @@ func init() {
 	registerLimitInt(KeyDeploySummaryCacheSeconds, "APP_DEPLOY_SUMMARY_CACHE_SECONDS", "3", "Deployments: summary cache seconds", "How long the deployments summary reuses its 30 day scan before reading again, 0 turns the cache off.", 0, 3600)
 	registerLimitInt(KeyDynamoPageItems, "APP_DYNAMODB_PAGE_ITEMS", "50", "DynamoDB explorer: default page items", "Items one DynamoDB explorer read returns when the request names no limit.", 1, 10000)
 	registerLimitInt(KeyDynamoPageItemsMax, "APP_DYNAMODB_PAGE_ITEMS_MAX", "500", "DynamoDB explorer: max page items", "Most items one DynamoDB explorer read may return.", 1, 10000)
-	registerLimitInt(KeyDynamoDescribeMax, "APP_DYNAMODB_DESCRIBE_TABLES_MAX", "25", "DynamoDB explorer: tables described per list", "Tables whose schema the explorer describes on one list request.", 1, 200)
+	registerLimitInt(KeyDynamoDescribeMax, "APP_DYNAMODB_DESCRIBE_TABLES_MAX", "25", "DynamoDB explorer: tables described per list", "Tables whose schema the explorer describes on one list request, at most 50.", 1, 50)
 	registerLimitInt(KeyDBViewerQueueWaitMs, "APP_DB_VIEWER_QUEUE_WAIT_MS", "2000", "Database browser: queue wait (ms)", "How long a document read waits for a free slot before it is refused as too busy, 0 refuses at once.", 0, 30000)
 
 	Register(Definition{

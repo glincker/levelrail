@@ -18,7 +18,8 @@ export interface DynamoTable {
   TableStatus?: string
   ItemCount?: number
   TableSizeBytes?: number
-  KeySchema: DynamoKeyPart[]
+  // Missing on a name-only entry, when the table vanished during the listing.
+  KeySchema?: DynamoKeyPart[]
   AttributeDefinitions?: { AttributeName: string; AttributeType: string }[]
   GlobalSecondaryIndexes?: DynamoIndexInfo[]
   LocalSecondaryIndexes?: DynamoIndexInfo[]

@@ -61,10 +61,14 @@ func (rt *Router) dynamoLimits(r *http.Request) dbviewer.DynamoLimits {
 }
 
 // runDynamo guards, runs and logs one typed request. History names the shape only, never key values.
-func (rt *Router) runDynamo(w http.ResponseWriter, r *http.Request, target dbviewer.Target, desired *store.DesiredDatabase, req dbviewer.DynamoRequest) (dbviewer.DynamoResult, dbviewer.DynamoPrepared, bool) {
+// A soft call is a sub-read of one listing: failures are not written to the response and no history row is recorded.
+func (rt *Router) runDynamo(w http.ResponseWriter, r *http.Request, target dbviewer.Target, desired *store.DesiredDatabase, req dbviewer.DynamoRequest, soft ...bool) (dbviewer.DynamoResult, dbviewer.DynamoPrepared, bool) {
+	quiet := len(soft) > 0 && soft[0]
 	q, err := dbviewer.CheckDynamo(req, target.Limits, rt.dynamoLimits(r))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		if !quiet {
+			writeError(w, http.StatusBadRequest, err.Error())
+		}
 		return dbviewer.DynamoResult{}, q, false
 	}
 	principal := "anonymous"
@@ -75,7 +79,7 @@ func (rt *Router) runDynamo(w http.ResponseWriter, r *http.Request, target dbvie
 	wait := time.Duration(max(0, rt.runtimeSettings.Int(r.Context(), runtimesettings.KeyDBViewerQueueWaitMs))) * time.Millisecond
 	release, ok := mongoReads.acquire(r.Context(), "db:"+desired.Name, principal, limit, wait)
 	if !ok {
-		if r.Context().Err() != nil {
+		if r.Context().Err() != nil || quiet {
 			return dbviewer.DynamoResult{}, q, false
 		}
 		w.Header().Set("Retry-After", "1")
@@ -92,12 +96,17 @@ func (rt *Router) runDynamo(w http.ResponseWriter, r *http.Request, target dbvie
 	attrs := []any{slog.String("database", desired.Name), slog.String("op", string(q.Op)), slog.String("fingerprint", q.Fingerprint)}
 	if err != nil {
 		rt.logger.Info("api: dynamo viewer read failed", attrs...)
+		if quiet {
+			return dbviewer.DynamoResult{}, q, false
+		}
 		rt.recordQuery(r, desired.Name, "dynamodb", label, q.Fingerprint, false, mongoHistoryError(err), 0, 0)
 		rt.writeViewerError(w, "api: dynamo viewer read failed", desired.Name, err)
 		return dbviewer.DynamoResult{}, q, false
 	}
 	rt.logger.Info("api: dynamo viewer read", append(attrs, slog.Int("items", len(res.Items)), slog.Int64("duration_ms", res.DurationMs))...)
-	rt.recordQuery(r, desired.Name, "dynamodb", label, q.Fingerprint, true, "", res.DurationMs, len(res.Items))
+	if !quiet {
+		rt.recordQuery(r, desired.Name, "dynamodb", label, q.Fingerprint, true, "", res.DurationMs, len(res.Items))
+	}
 	return res, q, true
 }
 
@@ -107,39 +116,61 @@ type dynamoTablesResponse struct {
 	Truncated bool              `json:"truncated"`
 	// Note is an i18n key: counts and sizes are estimates the engine refreshes lazily.
 	Note string `json:"note"`
+	// Cached is true when the listing was reused from a recent read.
+	Cached bool `json:"cached,omitempty"`
 }
 
+// dynamoDescribeCeiling bounds the per-listing describe fan-out whatever the setting says.
+const dynamoDescribeCeiling = 50
+
 // handleGetDynamoTables handles GET /api/v1/databases/{name}/dynamo/tables: names plus a describe of the first few.
+// The listing is one history row and is reused briefly; a table that vanishes mid-listing stays as a name-only entry.
 func (rt *Router) handleGetDynamoTables(w http.ResponseWriter, r *http.Request) {
 	target, desired, ok := rt.dynamoViewerTarget(w, r)
 	if !ok {
 		return
 	}
-	list, _, ok := rt.runDynamo(w, r, target, desired, dbviewer.DynamoRequest{Op: dbviewer.DynamoListTables, StartTable: r.URL.Query().Get("after")})
-	if !ok {
+	after := r.URL.Query().Get("after")
+	v, _, hit, err := viewerOverviews.do(rt.viewerCacheTTL(r.Context()), desired.Name,
+		desired.Name+"|"+target.ContainerID+"|dynamo|"+after, func() (any, error) {
+			list, _, ok := rt.runDynamo(w, r, target, desired, dbviewer.DynamoRequest{Op: dbviewer.DynamoListTables, StartTable: after})
+			if !ok {
+				return nil, errViewerLoadFailed
+			}
+			resp := dynamoTablesResponse{Tables: []json.RawMessage{}, Names: list.Tables, Truncated: list.LastTable != "", Note: "estimate"}
+			if resp.Names == nil {
+				resp.Names = []string{}
+			}
+			describeMax := min(rt.dynamoLimits(r).DescribeMax, dynamoDescribeCeiling)
+			for i, tn := range resp.Names {
+				if i >= describeMax {
+					resp.Truncated = true
+					break
+				}
+				resp.Tables = append(resp.Tables, rt.describeDynamoTable(w, r, target, desired, tn))
+			}
+			return resp, nil
+		})
+	if err != nil {
 		return
 	}
-	resp := dynamoTablesResponse{Tables: []json.RawMessage{}, Names: list.Tables, Truncated: list.LastTable != "", Note: "estimate"}
-	if resp.Names == nil {
-		resp.Names = []string{}
-	}
-	describeMax := rt.dynamoLimits(r).DescribeMax
-	for i, tn := range resp.Names {
-		if i >= describeMax {
-			resp.Truncated = true
-			break
-		}
-		d, _, ok := rt.runDynamo(w, r, target, desired, dbviewer.DynamoRequest{Op: dbviewer.DynamoDescribeTable, Table: tn})
-		if !ok {
-			return
-		}
-		ttl, _, ok := rt.runDynamo(w, r, target, desired, dbviewer.DynamoRequest{Op: dbviewer.DynamoDescribeTTL, Table: tn})
-		if !ok {
-			return
-		}
-		resp.Tables = append(resp.Tables, mergeDynamoTable(d.Table, ttl.TTL))
-	}
+	resp, _ := v.(dynamoTablesResponse)
+	resp.Cached = hit
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// describeDynamoTable returns the merged description, or a name-only entry when the table cannot be read.
+func (rt *Router) describeDynamoTable(w http.ResponseWriter, r *http.Request, target dbviewer.Target, desired *store.DesiredDatabase, name string) json.RawMessage {
+	nameOnly, _ := json.Marshal(map[string]string{"TableName": name})
+	d, _, ok := rt.runDynamo(w, r, target, desired, dbviewer.DynamoRequest{Op: dbviewer.DynamoDescribeTable, Table: name}, true)
+	if !ok {
+		return nameOnly
+	}
+	ttl, _, ok := rt.runDynamo(w, r, target, desired, dbviewer.DynamoRequest{Op: dbviewer.DynamoDescribeTTL, Table: name}, true)
+	if !ok {
+		return mergeDynamoTable(d.Table, nil)
+	}
+	return mergeDynamoTable(d.Table, ttl.TTL)
 }
 
 // mergeDynamoTable folds the TTL description into the table description under one key.
