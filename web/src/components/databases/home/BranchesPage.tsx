@@ -18,6 +18,8 @@ import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '@/lib/apiError'
 import { orderTree } from './branchTree'
+import { ACTION_STATES, expiryAllowed, parseGoDuration } from './branchTtl'
+import { useRuntimeSettings } from '../../../queries/runtimeSettings'
 import { formatBytes } from '../../../lib/format'
 import {
   useBranchAction,
@@ -47,6 +49,11 @@ export function CreateBranchDialog({
   const { t } = useTranslation('dbBranches')
   const caps = useBranchCapabilities(database).data
   const create = useCreateBranch(database)
+  const minTtlMs = parseGoDuration(
+    useRuntimeSettings().data?.settings.find(
+      (x) => x.key === 'branches.min_ttl',
+    )?.value,
+  )
   const [name, setName] = useState('')
   const [mode, setMode] = useState<string>('full')
   const [ttl, setTtl] = useState<string>('7d')
@@ -146,7 +153,11 @@ export function CreateBranchDialog({
               }}
             >
               {EXPIRIES.map((x) => (
-                <option key={x} value={x}>
+                <option
+                  key={x}
+                  value={x}
+                  disabled={!expiryAllowed(x, minTtlMs)}
+                >
                   {t(`expiry.${x}`)}
                 </option>
               ))}
@@ -348,8 +359,7 @@ export function BranchesPage({ name }: Readonly<{ name: string }>) {
                       date: new Date(b.expires_at).toLocaleString(),
                     })
                   : t('expiry.never')}
-                {' · '}
-                {formatBytes(b.size_bytes)}
+                {b.size_bytes > 0 ? ` · ${formatBytes(b.size_bytes)}` : ''}
               </span>
               <span className="ml-auto flex flex-wrap items-center gap-1">
                 <label className="flex items-center gap-1 text-xs">
@@ -367,6 +377,7 @@ export function BranchesPage({ name }: Readonly<{ name: string }>) {
                     key={a}
                     size="sm"
                     variant="outline"
+                    disabled={!ACTION_STATES[a].includes(b.state)}
                     onClick={() => {
                       setTarget({ branch: b.name, action: a })
                     }}

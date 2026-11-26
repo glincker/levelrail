@@ -6,6 +6,7 @@ import dbBranches from '../../../locales/en/dbBranches.json'
 import type { BranchResource } from '../../../queries/databaseBranches'
 import { BranchesPage, CreateBranchDialog } from './BranchesPage'
 import { orderTree } from './branchTree'
+import { expiryAllowed, parseGoDuration } from './branchTtl'
 
 const branch = (name: string, parent: string): BranchResource => ({
   name,
@@ -42,6 +43,12 @@ vi.mock('../../../queries/databaseBranches', async (orig) => {
   }
 })
 
+vi.mock('../../../queries/runtimeSettings', () => ({
+  useRuntimeSettings: () => ({
+    data: { settings: [{ key: 'branches.min_ttl', value: '2h' }] },
+  }),
+}))
+
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
   lng: 'en',
@@ -58,6 +65,11 @@ describe('BranchesPage', () => {
     const rows = orderTree([branch('b', 'a'), branch('a', ''), branch('c', '')])
     expect(rows.map((r) => r.branch.name)).toEqual(['a', 'b', 'c'])
     expect(rows[1]?.depth).toBe(1)
+  })
+
+  it('lists children of the database once each', () => {
+    const rows = orderTree([branch('a', 'main'), branch('b', 'main')])
+    expect(rows.map((r) => r.branch.name)).toEqual(['a', 'b'])
   })
 
   it('shows the empty state with a create button', () => {
@@ -85,5 +97,11 @@ describe('BranchesPage', () => {
     expect(screen.getAllByText('feature').length).toBeGreaterThan(0)
     expect(screen.getByLabelText('Name')).toBeInTheDocument()
     expect(screen.getByLabelText('Mode')).toBeInTheDocument()
+  })
+
+  it('disables expiry choices shorter than branches.min_ttl', () => {
+    expect(parseGoDuration('1h30m')).toBe(5_400_000)
+    expect(expiryAllowed('1d', parseGoDuration('48h'))).toBe(false)
+    expect(expiryAllowed('never', parseGoDuration('48h'))).toBe(true)
   })
 })

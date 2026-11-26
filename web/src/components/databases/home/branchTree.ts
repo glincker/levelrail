@@ -16,8 +16,12 @@ export function orderTree(branches: BranchResource[]): TreeRow[] {
     }
   }
   walk('', 0)
-  for (const b of branches) {
-    if (b.parent !== '' && !names.has(b.parent)) walk(b.parent, 0)
-  }
+  // A parent outside the list (the database itself) is walked once, not per child.
+  const missing = new Set(
+    branches
+      .filter((b) => b.parent !== '' && !names.has(b.parent))
+      .map((b) => b.parent),
+  )
+  for (const parent of missing) walk(parent, 0)
   return out
 }
