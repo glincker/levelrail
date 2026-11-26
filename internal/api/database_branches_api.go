@@ -162,12 +162,20 @@ func (rt *Router) dbActionVerdict(r *http.Request, action dbauthz.Action, databa
 		return false, true
 	}
 	resolver := &dbauthz.Resolver{Engine: &dbPolicyEngine{rt: rt}}
-	d, err := resolver.Resolve(r.Context(), dbauthz.Caller{PrincipalType: pt, PrincipalID: pid, Abilities: abilities}, dbauthz.ResourcePrefix+database, action)
-	if err != nil {
-		// Fail closed: an engine error must never make a database look visible.
-		return false, true
+	for _, a := range impliedActions(action) {
+		d, err := resolver.Resolve(r.Context(), dbauthz.Caller{PrincipalType: pt, PrincipalID: pid, Abilities: abilities}, dbauthz.ResourcePrefix+database, a)
+		if err != nil {
+			// Fail closed: an engine error must never make a database look visible.
+			return false, true
+		}
+		if d.Hidden {
+			return false, true
+		}
+		if d.Allowed {
+			return true, false
+		}
 	}
-	return d.Allowed, d.Hidden
+	return false, false
 }
 
 // requireDBAction answers 404 for a hidden database and 403 for a denied action, and reports whether the caller may go on.

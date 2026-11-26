@@ -183,12 +183,12 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/branches", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionWrite, rt.handleCreateDatabaseBranch))
 	mux.HandleFunc("GET /api/v1/databases/{name}/branches", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleListDatabaseBranches))
 	mux.HandleFunc("GET /api/v1/databases/{name}/branch-capabilities", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleBranchCapabilities))
-	mux.HandleFunc("GET /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseBranch))
-	mux.HandleFunc("GET /api/v1/databases/{name}/branches/{branch}/schema-diff", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetBranchSchemaDiff))
-	mux.HandleFunc("PATCH /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionWrite, rt.handlePatchDatabaseBranch))
-	mux.HandleFunc("DELETE /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handleDeleteDatabaseBranch))
-	mux.HandleFunc("POST /api/v1/databases/{name}/branches/{branch}/reset", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handleResetDatabaseBranch))
-	mux.HandleFunc("POST /api/v1/databases/{name}/branches/{branch}/promote", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handlePromoteDatabaseBranch))
+	mux.HandleFunc("GET /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForBranch(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseBranch))
+	mux.HandleFunc("GET /api/v1/databases/{name}/branches/{branch}/schema-diff", rt.requireAbilityForBranch(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetBranchSchemaDiff))
+	mux.HandleFunc("PATCH /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForBranch(AbilityRoot, dbauthz.ActionWrite, rt.handlePatchDatabaseBranch))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForBranch(AbilityRoot, dbauthz.ActionAdmin, rt.handleDeleteDatabaseBranch))
+	mux.HandleFunc("POST /api/v1/databases/{name}/branches/{branch}/reset", rt.requireAbilityForBranch(AbilityRoot, dbauthz.ActionAdmin, rt.handleResetDatabaseBranch))
+	mux.HandleFunc("POST /api/v1/databases/{name}/branches/{branch}/promote", rt.requireAbilityForBranch(AbilityRoot, dbauthz.ActionAdmin, rt.handlePromoteDatabaseBranch))
 
 	// Object-storage attachment per app: AbilityWriteSensitive, it decides which bucket credentials
 	// the container receives. No GET: handleGetApp already returns storage_target_id.

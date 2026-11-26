@@ -111,3 +111,53 @@ func (rt *Router) requireAbilityForDatabase(ability string, action dbauthz.Actio
 		rt.withDatabaseAudit(ability, action, rt.requireAbilityDecided(ability, decision, gated))(w, r)
 	}
 }
+
+// impliedActions lists the action and the stronger ones that also grant it on one database:
+// admin covers write, and write covers read, so a branch-only admin grant can read and wait.
+func impliedActions(a dbauthz.Action) []dbauthz.Action {
+	switch a {
+	case dbauthz.ActionRead:
+		return []dbauthz.Action{dbauthz.ActionRead, dbauthz.ActionWrite, dbauthz.ActionAdmin}
+	case dbauthz.ActionWrite:
+		return []dbauthz.Action{dbauthz.ActionWrite, dbauthz.ActionAdmin}
+	}
+	return []dbauthz.Action{a}
+}
+
+// requireAbilityForBranch gates a branch route on the branch itself, not on the parent, so a token
+// limited to branch databases can manage them without any right on the parent beyond creating them.
+func (rt *Router) requireAbilityForBranch(ability string, action dbauthz.Action, next http.HandlerFunc) http.HandlerFunc {
+	if dbauthz.EffectiveAbility(action) != ability {
+		panic(fmt.Sprintf("api: database route ability %q does not match action %q", ability, action))
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		resolver := &dbauthz.Resolver{Engine: &dbPolicyEngine{rt: rt}}
+		resource := dbauthz.ResourcePrefix + r.PathValue("branch")
+		var hidden bool
+		decision := func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error) {
+			caller := dbauthz.Caller{PrincipalType: principalType, PrincipalID: principalID, Abilities: abilities}
+			allowed := false
+			for _, a := range impliedActions(action) {
+				d, err := resolver.Resolve(ctx, caller, resource, a)
+				if err != nil {
+					return false, err
+				}
+				if d.Hidden {
+					hidden = true
+					return true, nil
+				}
+				allowed = allowed || d.Allowed
+			}
+			return allowed, nil
+		}
+		gated := func(w http.ResponseWriter, r *http.Request) {
+			if hidden {
+				noteDenied(r)
+				writeError(w, http.StatusNotFound, "database not found")
+				return
+			}
+			next(w, r)
+		}
+		rt.withDatabaseAudit(ability, action, rt.requireAbilityDecided(ability, decision, gated))(w, r)
+	}
+}
