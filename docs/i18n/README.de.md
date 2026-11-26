@@ -1,7 +1,6 @@
 <!-- translated-from: README.md blob:b3c2e12bc506fb9fd5a89df18863898321998952 lang:de -->
 <div align="center">
-<img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail-Logo" width="56" height="56">
-<h1>Levelrail</h1>
+<p><a href="https://levelrail.com"><picture><source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/levelrail-lockup-dark.svg"><img src="../../docs/assets/brand/levelrail-lockup.svg" alt="Levelrail-Logo" height="72"></picture></a></p>
 
 > This translation was generated with AI and may contain mistakes. Corrections are welcome: see [docs/i18n/README.md](README.md).
 
