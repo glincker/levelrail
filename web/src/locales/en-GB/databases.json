@@ -6,6 +6,29 @@
       "evidence": {
         "unavailable": "The catalogue counts could not be read, so this emptiness is not verified."
       }
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "List",
+        "diagram": "Diagram"
+      },
+      "viewMode": "Schema map view",
+      "search": "Filter tables",
+      "zoomGroup": "Zoom",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "fit": "Fit to screen",
+      "export": "Export SVG",
+      "label": "Schema map diagram",
+      "noTables": "No tables to draw yet.",
+      "noMatch": "No tables match the filter.",
+      "openTable": "Open {{table}}",
+      "more": "+{{count}} more",
+      "count": "{{count}} tables",
+      "capped": "Showing {{shown}} of {{total}} tables",
+      "loadingKeys": "Loading keys",
+      "noKeys": "No foreign keys found, showing tables only",
+      "keysError": "Some foreign keys could not be loaded"
     }
   },
   "createFlavor": {

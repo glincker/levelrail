@@ -758,6 +758,29 @@
       "next": "Weiter",
       "item": "Element",
       "close": "Schließen"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "Liste",
+        "diagram": "Diagramm"
+      },
+      "viewMode": "Ansicht der Schemakarte",
+      "search": "Tabellen filtern",
+      "zoomGroup": "Zoom",
+      "zoomOut": "Verkleinern",
+      "zoomIn": "Vergrößern",
+      "fit": "An Bildschirm anpassen",
+      "export": "SVG exportieren",
+      "label": "Schemakarten-Diagramm",
+      "noTables": "Noch keine Tabellen zum Zeichnen.",
+      "noMatch": "Keine Tabelle passt zum Filter.",
+      "openTable": "{{table}} öffnen",
+      "more": "+{{count}} weitere",
+      "count": "{{count}} Tabellen",
+      "capped": "{{shown}} von {{total}} Tabellen werden angezeigt",
+      "loadingKeys": "Schlüssel werden geladen",
+      "noKeys": "Keine Fremdschlüssel gefunden, nur Tabellen werden angezeigt",
+      "keysError": "Einige Fremdschlüssel konnten nicht geladen werden"
     }
   },
   "createFlavor": {

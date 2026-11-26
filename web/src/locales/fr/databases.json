@@ -765,6 +765,29 @@
       "next": "Suivant",
       "item": "Élément",
       "close": "Fermer"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "Liste",
+        "diagram": "Diagramme"
+      },
+      "viewMode": "Vue de la carte du schéma",
+      "search": "Filtrer les tables",
+      "zoomGroup": "Zoom",
+      "zoomOut": "Dézoomer",
+      "zoomIn": "Zoomer",
+      "fit": "Ajuster à l'écran",
+      "export": "Exporter en SVG",
+      "label": "Diagramme de la carte du schéma",
+      "noTables": "Aucune table à dessiner pour le moment.",
+      "noMatch": "Aucune table ne correspond au filtre.",
+      "openTable": "Ouvrir {{table}}",
+      "more": "+{{count}} de plus",
+      "count": "{{count}} tables",
+      "capped": "{{shown}} tables affichées sur {{total}}",
+      "loadingKeys": "Chargement des clés",
+      "noKeys": "Aucune clé étrangère trouvée, seules les tables sont affichées",
+      "keysError": "Certaines clés étrangères n'ont pas pu être chargées"
     }
   },
   "createFlavor": {

@@ -107,13 +107,13 @@ export function useDatabaseFullSchema(name: string, enabled: boolean) {
 
 // Columns, indexes, keys and DDL of one table, fetched when it is opened
 // so a large schema never travels as one document.
-export function useDatabaseTableStructure(
+export function tableStructureQuery(
   name: string,
   schema: string,
   table: string,
   enabled: boolean,
 ) {
-  return useQuery({
+  return queryOptions({
     queryKey: databaseViewerKeys.structure(name, schema, table),
     queryFn: () =>
       request<DbStructure>(
@@ -124,6 +124,15 @@ export function useDatabaseTableStructure(
     enabled,
     staleTime: 0,
   })
+}
+
+export function useDatabaseTableStructure(
+  name: string,
+  schema: string,
+  table: string,
+  enabled: boolean,
+) {
+  return useQuery(tableStructureQuery(name, schema, table, enabled))
 }
 
 export function useDatabaseTablePage(name: string, p: DbPageParams) {

@@ -765,6 +765,29 @@
       "next": "Próximo",
       "item": "Item",
       "close": "Fechar"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "Lista",
+        "diagram": "Diagrama"
+      },
+      "viewMode": "Visualização do mapa do esquema",
+      "search": "Filtrar tabelas",
+      "zoomGroup": "Zoom",
+      "zoomOut": "Reduzir",
+      "zoomIn": "Ampliar",
+      "fit": "Ajustar à tela",
+      "export": "Exportar SVG",
+      "label": "Diagrama do mapa do esquema",
+      "noTables": "Ainda não há tabelas para desenhar.",
+      "noMatch": "Nenhuma tabela corresponde ao filtro.",
+      "openTable": "Abrir {{table}}",
+      "more": "+{{count}} mais",
+      "count": "{{count}} tabelas",
+      "capped": "Mostrando {{shown}} de {{total}} tabelas",
+      "loadingKeys": "Carregando chaves",
+      "noKeys": "Nenhuma chave estrangeira encontrada, mostrando apenas as tabelas",
+      "keysError": "Algumas chaves estrangeiras não puderam ser carregadas"
     }
   },
   "createFlavor": {

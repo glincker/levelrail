@@ -751,6 +751,29 @@
       "next": "次へ",
       "item": "項目",
       "close": "閉じる"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "リスト",
+        "diagram": "ダイアグラム"
+      },
+      "viewMode": "スキーママップの表示",
+      "search": "テーブルを絞り込む",
+      "zoomGroup": "ズーム",
+      "zoomOut": "縮小",
+      "zoomIn": "拡大",
+      "fit": "画面に合わせる",
+      "export": "SVGを書き出す",
+      "label": "スキーママップの図",
+      "noTables": "描画できるテーブルがまだありません。",
+      "noMatch": "フィルターに一致するテーブルがありません。",
+      "openTable": "{{table}}を開く",
+      "more": "他{{count}}件",
+      "count": "{{count}}テーブル",
+      "capped": "{{total}}テーブル中{{shown}}を表示",
+      "loadingKeys": "キーを読み込み中",
+      "noKeys": "外部キーが見つかりません。テーブルのみ表示しています",
+      "keysError": "一部の外部キーを読み込めませんでした"
     }
   },
   "createFlavor": {

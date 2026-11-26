@@ -758,6 +758,29 @@
       "next": "Siguiente",
       "item": "Elemento",
       "close": "Cerrar"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "Lista",
+        "diagram": "Diagrama"
+      },
+      "viewMode": "Vista del mapa del esquema",
+      "search": "Filtrar tablas",
+      "zoomGroup": "Zoom",
+      "zoomOut": "Alejar",
+      "zoomIn": "Acercar",
+      "fit": "Ajustar a la pantalla",
+      "export": "Exportar SVG",
+      "label": "Diagrama del mapa del esquema",
+      "noTables": "Aún no hay tablas que dibujar.",
+      "noMatch": "Ninguna tabla coincide con el filtro.",
+      "openTable": "Abrir {{table}}",
+      "more": "+{{count}} más",
+      "count": "{{count}} tablas",
+      "capped": "Mostrando {{shown}} de {{total}} tablas",
+      "loadingKeys": "Cargando claves",
+      "noKeys": "No se encontraron claves foráneas, solo se muestran las tablas",
+      "keysError": "No se pudieron cargar algunas claves foráneas"
     }
   },
   "createFlavor": {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -25,6 +25,9 @@ import {
 import { StructureView } from './explorer/StructureView'
 import { TableTree } from './explorer/TableTree'
 import { TableDataView } from './TableDataView'
+import { Button } from '@/components/ui/button'
+
+const SchemaMap = lazy(() => import('./explorer/SchemaMap'))
 
 const CONSOLE_PREVIEW_LIMIT = 100
 
@@ -71,6 +74,7 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
   const copy = useDatabaseDataCopy(databaseName)
   const [picked, setPicked] = useState<Selected | null>(null)
   const [tab, setTab] = useState('data')
+  const [mode, setMode] = useState<'list' | 'diagram'>('list')
 
   const selected = useMemo((): Selected | null => {
     if (picked) return picked
@@ -97,6 +101,7 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
 
   function open(schema: string, name: string) {
     setPicked({ schema, table: name })
+    setMode('list')
     writeLastTable(databaseName, tableKey(schema, name))
   }
 
@@ -147,77 +152,112 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
     )
   }
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
-      <TableTree
-        schemas={data.schemas}
-        selectedKey={
-          selected ? tableKey(selected.schema, selected.table) : null
-        }
-        onSelect={open}
-        onRefresh={() => {
-          void refetch()
-        }}
-        refreshing={isFetching}
-        truncatedAt={data.truncated ? data.table_limit : undefined}
-      />
+  const modeToggle = (
+    <div
+      role="group"
+      aria-label={t('viewer.schemaMap.viewMode')}
+      className="flex w-fit gap-1"
+    >
+      {(['list', 'diagram'] as const).map((m) => (
+        <Button
+          key={m}
+          type="button"
+          size="sm"
+          variant={mode === m ? 'default' : 'outline'}
+          aria-pressed={mode === m}
+          onClick={() => setMode(m)}
+        >
+          {t(`viewer.schemaMap.mode.${m}`)}
+        </Button>
+      ))}
+    </div>
+  )
 
-      <section className="min-w-0">
-        {selected && table ? (
-          <div className="space-y-3">
-            <div>
-              <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
-                {selected.schema}.{table.name}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {table.kind}
-                {table.kind === 'table'
-                  ? ` | ${t('viewer.explorer.estimate', {
-                      count: table.row_estimate,
-                      short: formatRowEstimate(table.row_estimate),
-                    })} | ${formatSize(table.size_bytes)}`
-                  : ''}
-              </p>
+  if (mode === 'diagram') {
+    return (
+      <div className="space-y-3">
+        {modeToggle}
+        <Suspense fallback={<ExplorerLoading />}>
+          <SchemaMap databaseName={databaseName} onOpen={open} />
+        </Suspense>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {modeToggle}
+      <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        <TableTree
+          schemas={data.schemas}
+          selectedKey={
+            selected ? tableKey(selected.schema, selected.table) : null
+          }
+          onSelect={open}
+          onRefresh={() => {
+            void refetch()
+          }}
+          refreshing={isFetching}
+          truncatedAt={data.truncated ? data.table_limit : undefined}
+        />
+
+        <section className="min-w-0">
+          {selected && table ? (
+            <div className="space-y-3">
+              <div>
+                <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+                  {selected.schema}.{table.name}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {table.kind}
+                  {table.kind === 'table'
+                    ? ` | ${t('viewer.explorer.estimate', {
+                        count: table.row_estimate,
+                        short: formatRowEstimate(table.row_estimate),
+                      })} | ${formatSize(table.size_bytes)}`
+                    : ''}
+                </p>
+              </div>
+              <Tabs value={tab} onValueChange={setTab}>
+                <TabsList>
+                  <TabsTrigger value="data">
+                    {t('viewer.explorer.tabData')}
+                  </TabsTrigger>
+                  <TabsTrigger value="structure">
+                    {t('viewer.explorer.tabStructure')}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="data">
+                  <TableDataView
+                    key={tableKey(selected.schema, table.name)}
+                    databaseName={databaseName}
+                    engine={data.engine}
+                    schema={selected.schema}
+                    table={table.name}
+                    columns={structure.data?.columns}
+                    limits={data.limits}
+                  />
+                </TabsContent>
+                <TabsContent value="structure">
+                  <StructureView
+                    structure={structure.data}
+                    loading={structure.isLoading}
+                    error={structure.error}
+                    onOpenTable={(schema, name) => {
+                      open(schema, name)
+                    }}
+                    onOpenConsole={openConsole}
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
-            <Tabs value={tab} onValueChange={setTab}>
-              <TabsList>
-                <TabsTrigger value="data">
-                  {t('viewer.explorer.tabData')}
-                </TabsTrigger>
-                <TabsTrigger value="structure">
-                  {t('viewer.explorer.tabStructure')}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="data">
-                <TableDataView
-                  key={tableKey(selected.schema, table.name)}
-                  databaseName={databaseName}
-                  engine={data.engine}
-                  schema={selected.schema}
-                  table={table.name}
-                  columns={structure.data?.columns}
-                  limits={data.limits}
-                />
-              </TabsContent>
-              <TabsContent value="structure">
-                <StructureView
-                  structure={structure.data}
-                  loading={structure.isLoading}
-                  error={structure.error}
-                  onOpenTable={(schema, name) => {
-                    open(schema, name)
-                  }}
-                  onOpenConsole={openConsole}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
-        ) : (
-          <p className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center text-sm text-muted-foreground">
-            {t('viewer.explorer.selectTable')}
-          </p>
-        )}
-      </section>
+          ) : (
+            <p className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center text-sm text-muted-foreground">
+              {t('viewer.explorer.selectTable')}
+            </p>
+          )}
+        </section>
+      </div>
     </div>
   )
 }
