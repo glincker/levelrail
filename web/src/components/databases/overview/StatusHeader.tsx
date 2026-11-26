@@ -14,6 +14,7 @@ import { useStartDatabase } from '../../../queries/databases'
 import type { DatabaseResource } from '../../../types/databaseDetail'
 import type { ReconcileCondition } from '../../../types/deploy'
 import { ConnectDrawer } from '../ConnectDrawer'
+import { DatabaseAlertsChip } from '../monitoring/DatabaseAlertsChip'
 
 const TONE_BY_STATE: Record<HealthState, Tone> = {
   healthy: 'success',
@@ -88,11 +89,14 @@ export function StatusHeader({
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <StatusPill
-              tone={TONE_BY_STATE[health.state]}
-              label={t(`status.${health.state}`)}
-              live={health.state === 'settingUp'}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill
+                tone={TONE_BY_STATE[health.state]}
+                label={t(`status.${health.state}`)}
+                live={health.state === 'settingUp'}
+              />
+              <DatabaseAlertsChip databaseName={database.name} />
+            </div>
             <p className="text-sm text-muted-foreground">
               {t(`status.${health.state}Hint`)}
             </p>

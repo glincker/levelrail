@@ -99,5 +99,32 @@
     "start": "启动数据库",
     "starting": "正在启动",
     "viewProgress": "查看进度"
+  },
+  "alerts": {
+    "title": "告警",
+    "editThresholds": "编辑阈值",
+    "allRules": "告警规则",
+    "empty": "尚未设置数据库健康规则。",
+    "scopeNote": "这些规则监控每个数据库。触发的规则会根据其最新告警中的名称匹配到此数据库。",
+    "since": "自",
+    "unattributed": "(适用于此服务器上的某个数据库)",
+    "firingChip_other": "{{count}} 条告警触发中",
+    "state": {
+      "ok": "正常",
+      "firing": "触发中",
+      "off": "已关闭"
+    },
+    "severity": {
+      "warning": "警告",
+      "critical": "严重"
+    },
+    "chips": {
+      "diskWarn": "剩余 {{value}} 天时警告",
+      "diskCritical": "剩余 {{value}} 天时严重",
+      "holdFor": "持续 {{value}}",
+      "connections": "超过 {{value}}% 的连接",
+      "backupWindow": "{{value}}内无备份",
+      "unprotected": "超过 {{value}} MB 未保护"
+    }
   }
 }

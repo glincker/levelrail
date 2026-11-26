@@ -99,5 +99,32 @@
     "start": "データベースを起動",
     "starting": "起動中",
     "viewProgress": "進行状況を見る"
+  },
+  "alerts": {
+    "title": "アラート",
+    "editThresholds": "しきい値を編集",
+    "allRules": "アラートルール",
+    "empty": "データベースの状態ルールはまだ設定されていません。",
+    "scopeNote": "これらのルールはすべてのデータベースを監視します。発生中のルールは、最新のアラートに含まれる名前でこのデータベースに対応付けられます。",
+    "since": "開始",
+    "unattributed": "(このサーバー上のいずれかのデータベースが対象)",
+    "firingChip_other": "{{count}} 件のアラートが発生中",
+    "state": {
+      "ok": "正常",
+      "firing": "発生中",
+      "off": "オフ"
+    },
+    "severity": {
+      "warning": "警告",
+      "critical": "重大"
+    },
+    "chips": {
+      "diskWarn": "残り{{value}}日で警告",
+      "diskCritical": "残り{{value}}日で重大",
+      "holdFor": "{{value}}継続",
+      "connections": "接続の{{value}}%超",
+      "backupWindow": "{{value}}バックアップなし",
+      "unprotected": "{{value}} MB超で未保護"
+    }
   }
 }

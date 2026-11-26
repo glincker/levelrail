@@ -99,5 +99,33 @@
     "start": "Iniciar banco de dados",
     "starting": "Iniciando",
     "viewProgress": "Ver progresso"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "editThresholds": "Editar limites",
+    "allRules": "Regras de alerta",
+    "empty": "Ainda não há regras de saúde de banco de dados configuradas.",
+    "scopeNote": "Estas regras vigiam todos os bancos. Uma regra disparada é associada a este pelo nome em seu último alerta.",
+    "since": "desde",
+    "unattributed": "(afeta um banco de dados deste servidor)",
+    "firingChip_one": "{{count}} alerta ativo",
+    "firingChip_other": "{{count}} alertas ativos",
+    "state": {
+      "ok": "OK",
+      "firing": "Disparado",
+      "off": "Desativado"
+    },
+    "severity": {
+      "warning": "Aviso",
+      "critical": "Crítico"
+    },
+    "chips": {
+      "diskWarn": "Aviso com {{value}} dias restantes",
+      "diskCritical": "Crítico com {{value}} dias restantes",
+      "holdFor": "Mantido por {{value}}",
+      "connections": "Acima de {{value}}% das conexões",
+      "backupWindow": "Sem backup há {{value}}",
+      "unprotected": "Sem proteção acima de {{value}} MB"
+    }
   }
 }

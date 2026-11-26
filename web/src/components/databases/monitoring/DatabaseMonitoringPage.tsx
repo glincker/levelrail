@@ -32,6 +32,7 @@ import {
   restartedRecently,
   restartWindowMs,
 } from './monitoringState'
+import { DatabaseAlertsCard } from './DatabaseAlertsCard'
 import { StatCards } from './StatCards'
 import { useMonitoringSeries } from './useMonitoringSeries'
 import type { ResolvedTimeRange } from '../../../lib/timeRange'
@@ -294,6 +295,8 @@ export function DatabaseMonitoringPage({
         data={series.data}
         loading={series.isLoading}
       />
+
+      <DatabaseAlertsCard databaseName={databaseName} />
 
       <Suspense fallback={<Skeleton className="h-64 w-full" />}>
         <MonitoringCharts

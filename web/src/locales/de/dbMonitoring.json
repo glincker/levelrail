@@ -99,5 +99,33 @@
     "start": "Datenbank starten",
     "starting": "Wird gestartet",
     "viewProgress": "Fortschritt ansehen"
+  },
+  "alerts": {
+    "title": "Warnungen",
+    "editThresholds": "Schwellenwerte bearbeiten",
+    "allRules": "Warnregeln",
+    "empty": "Noch keine Regeln für die Datenbankgesundheit eingerichtet.",
+    "scopeNote": "Diese Regeln überwachen jede Datenbank. Eine ausgelöste Regel wird anhand des Namens in der letzten Warnung dieser Datenbank zugeordnet.",
+    "since": "seit",
+    "unattributed": "(betrifft eine Datenbank auf diesem Server)",
+    "firingChip_one": "{{count}} Warnung aktiv",
+    "firingChip_other": "{{count}} Warnungen aktiv",
+    "state": {
+      "ok": "OK",
+      "firing": "Ausgelöst",
+      "off": "Aus"
+    },
+    "severity": {
+      "warning": "Warnung",
+      "critical": "Kritisch"
+    },
+    "chips": {
+      "diskWarn": "Warnung bei {{value}} Tagen Rest",
+      "diskCritical": "Kritisch bei {{value}} Tagen Rest",
+      "holdFor": "Dauer {{value}}",
+      "connections": "Über {{value}} % der Verbindungen",
+      "backupWindow": "Kein Backup seit {{value}}",
+      "unprotected": "Ungesichert über {{value}} MB"
+    }
   }
 }

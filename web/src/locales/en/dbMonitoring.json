@@ -99,5 +99,33 @@
     "start": "Start database",
     "starting": "Starting",
     "viewProgress": "View progress"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "editThresholds": "Edit thresholds",
+    "allRules": "Alert rules",
+    "empty": "No database health rules are set up yet.",
+    "scopeNote": "These rules watch every database. A firing rule is matched to this one by the name in its latest alert.",
+    "since": "since",
+    "unattributed": "(applies to a database on this server)",
+    "firingChip_one": "{{count}} alert firing",
+    "firingChip_other": "{{count}} alerts firing",
+    "state": {
+      "ok": "OK",
+      "firing": "Firing",
+      "off": "Off"
+    },
+    "severity": {
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "chips": {
+      "diskWarn": "Warn at {{value}} days left",
+      "diskCritical": "Critical at {{value}} days left",
+      "holdFor": "Held for {{value}}",
+      "connections": "Over {{value}}% of connections",
+      "backupWindow": "No backup for {{value}}",
+      "unprotected": "Unprotected over {{value}} MB"
+    }
   }
 }

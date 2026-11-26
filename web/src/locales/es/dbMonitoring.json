@@ -99,5 +99,33 @@
     "start": "Iniciar base de datos",
     "starting": "Iniciando",
     "viewProgress": "Ver progreso"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "editThresholds": "Editar umbrales",
+    "allRules": "Reglas de alerta",
+    "empty": "Aún no hay reglas de salud de base de datos configuradas.",
+    "scopeNote": "Estas reglas vigilan todas las bases de datos. Una regla activa se asocia a esta por el nombre de su última alerta.",
+    "since": "desde",
+    "unattributed": "(afecta a una base de datos de este servidor)",
+    "firingChip_one": "{{count}} alerta activa",
+    "firingChip_other": "{{count}} alertas activas",
+    "state": {
+      "ok": "OK",
+      "firing": "Activa",
+      "off": "Desactivada"
+    },
+    "severity": {
+      "warning": "Aviso",
+      "critical": "Crítica"
+    },
+    "chips": {
+      "diskWarn": "Aviso con {{value}} días restantes",
+      "diskCritical": "Crítica con {{value}} días restantes",
+      "holdFor": "Mantenida {{value}}",
+      "connections": "Más del {{value}} % de conexiones",
+      "backupWindow": "Sin copia desde hace {{value}}",
+      "unprotected": "Sin proteger por encima de {{value}} MB"
+    }
   }
 }
