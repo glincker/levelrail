@@ -14,8 +14,8 @@ export interface PlanNode {
   children: PlanNode[]
 }
 
-const COST = /\(cost=([\d.]+)(?:\.\.([\d.]+))?\s+rows=(\d+)/
-const ACTUAL = /actual time=[\d.]+\.\.([\d.]+)/
+const COST = /\(cost=(\d+(?:\.\d+)?)(?:\.\.(\d+(?:\.\d+)?))?\s+rows=(\d+)/
+const ACTUAL = /actual time=(\d+(?:\.\d+)?)\.\.(\d+(?:\.\d+)?)/
 
 interface Draft {
   indent: number
@@ -31,7 +31,7 @@ function makeNode(line: string): PlanNode {
     details: [],
     totalCost: total !== null && Number.isFinite(total) ? total : null,
     rows: cost ? Number(cost[3]) : null,
-    actualMs: actual ? Number(actual[1]) : null,
+    actualMs: actual ? Number(actual[2]) : null,
     selfCost: 0,
     hottest: false,
     children: [],
