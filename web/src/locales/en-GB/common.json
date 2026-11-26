@@ -1,0 +1,33 @@
+{
+  "deployNote": {
+    "queueBody": "Deploys of one app run one at a time. This one starts on its own when the deploy ahead of it finishes or is cancelled."
+  },
+  "shell": {
+    "navTabs": {
+      "tab": {
+        "security": "Security centre"
+      }
+    },
+    "customize": {
+      "open": "Customise sidebar"
+    }
+  },
+  "dock": {
+    "minimize": "Minimise to launcher",
+    "maximize": "Maximise dock",
+    "sheetHandle": "Drag down to minimise"
+  },
+  "foundation": {
+    "signIn": {
+      "ssoRouted": "Your organisation signs in through {{provider}}."
+    }
+  },
+  "cancelSuperseded": {
+    "infoBody": "Only deploys still waiting in the queue are replaced, and only by a newer one for the same branch. A deploy that already started building is never cancelled automatically."
+  },
+  "reportIssue": {
+    "fields": {
+      "solution": "Proposed behaviour"
+    }
+  }
+}

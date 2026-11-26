@@ -79,3 +79,18 @@ func TestTierInactiveDefaultsDoNotBlockActiveSaves(t *testing.T) {
 		t.Errorf("raw retention save blocked by an unset 5m default: %v", err)
 	}
 }
+
+func TestDatabaseStatsIntervalRange(t *testing.T) {
+	if ClampLimit(KeyDatabaseStatsInterval, 0) != 30 || ClampLimit(KeyDatabaseStatsInterval, 5) != 10 || ClampLimit(KeyDatabaseStatsInterval, 99999) != 3600 {
+		t.Fatal("stats interval not clamped to 10..3600 with default 30")
+	}
+}
+
+func TestDatabaseStatsLimits(t *testing.T) {
+	if ClampLimit(KeyDatabaseStatsMaxDatabases, 0) != 20 || ClampLimit(KeyDatabaseStatsMaxDatabases, 999) != 200 {
+		t.Fatal("max databases not clamped to 1..200 with default 20")
+	}
+	if ClampLimit(KeyDatabaseStatsTimeout, 0) != 10 || ClampLimit(KeyDatabaseStatsTimeout, 999) != 120 {
+		t.Fatal("timeout not clamped to 1..120 with default 10")
+	}
+}

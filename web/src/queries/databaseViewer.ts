@@ -19,15 +19,21 @@ import type {
   DbQueryHistoryEntry,
   DbQueryResponse,
   DbSavedQuery,
+  DbStatementAuditList,
   DbSchemaResponse,
   DbStructure,
+  ExplorerCapabilities,
+  RedisInfo,
   RedisScan,
+  RedisSlowlog,
   RedisValue,
 } from '../types/databaseViewer'
 
 const base = (name: string) => `/api/v1/databases/${encodeURIComponent(name)}`
 
 export const databaseViewerKeys = {
+  capabilities: (name: string) =>
+    [...databaseKeys.detail(name), 'viewer', 'capabilities'] as const,
   all: (name: string) => [...databaseKeys.detail(name), 'viewer'] as const,
   schema: (name: string) =>
     [...databaseViewerKeys.all(name), 'schema'] as const,
@@ -42,6 +48,8 @@ export const databaseViewerKeys = {
   history: (name: string) =>
     [...databaseViewerKeys.all(name), 'history'] as const,
   saved: (name: string) => [...databaseViewerKeys.all(name), 'saved'] as const,
+  audit: (name: string, limit: number) =>
+    [...databaseViewerKeys.all(name), 'audit', limit] as const,
 }
 
 async function request<T>(
@@ -83,15 +91,29 @@ export function useDatabaseSchema(name: string, enabled: boolean) {
   )
 }
 
+// Full schema (columns included) for editor autocomplete; only fetched
+// once the editor is first focused.
+export function useDatabaseFullSchema(name: string, enabled: boolean) {
+  return useQuery(
+    queryOptions({
+      queryKey: [...databaseViewerKeys.schema(name), 'full'] as const,
+      queryFn: () =>
+        request<DbSchemaResponse>(`${base(name)}/schema`, undefined, 'schema'),
+      enabled,
+      staleTime: 60_000,
+    }),
+  )
+}
+
 // Columns, indexes, keys and DDL of one table, fetched when it is opened
 // so a large schema never travels as one document.
-export function useDatabaseTableStructure(
+export function tableStructureQuery(
   name: string,
   schema: string,
   table: string,
   enabled: boolean,
 ) {
-  return useQuery({
+  return queryOptions({
     queryKey: databaseViewerKeys.structure(name, schema, table),
     queryFn: () =>
       request<DbStructure>(
@@ -102,6 +124,15 @@ export function useDatabaseTableStructure(
     enabled,
     staleTime: 0,
   })
+}
+
+export function useDatabaseTableStructure(
+  name: string,
+  schema: string,
+  table: string,
+  enabled: boolean,
+) {
+  return useQuery(tableStructureQuery(name, schema, table, enabled))
 }
 
 export function useDatabaseTablePage(name: string, p: DbPageParams) {
@@ -252,5 +283,57 @@ export function useRedisKey(name: string, key: string | null) {
       ),
     enabled: key !== null,
     staleTime: 0,
+  })
+}
+
+export function useRedisInfo(name: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...databaseViewerKeys.keys(name, ''), 'info'],
+    queryFn: () =>
+      request<RedisInfo>(`${base(name)}/redis/info`, undefined, 'info'),
+    enabled,
+    staleTime: 0,
+  })
+}
+
+export function useRedisSlowlog(name: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...databaseViewerKeys.keys(name, ''), 'slowlog'],
+    queryFn: () =>
+      request<RedisSlowlog>(
+        `${base(name)}/redis/slowlog`,
+        undefined,
+        'slowlog',
+      ),
+    enabled,
+    staleTime: 0,
+  })
+}
+
+export function useExplorerCapabilities(name: string) {
+  return useQuery({
+    queryKey: databaseViewerKeys.capabilities(name),
+    queryFn: () =>
+      request<ExplorerCapabilities>(
+        `${base(name)}/explorer/capabilities`,
+        undefined,
+        'capabilities',
+      ),
+    staleTime: 5 * 60_000,
+  })
+}
+
+/** Statement audit trail. Root and database admins only, so a 403 or 404 means the caller cannot see it. */
+export function useStatementAudit(name: string, limit: number, enabled = true) {
+  return useQuery({
+    queryKey: databaseViewerKeys.audit(name, limit),
+    enabled,
+    retry: false,
+    queryFn: () =>
+      request<DbStatementAuditList>(
+        `${base(name)}/audit?limit=${String(limit)}`,
+        undefined,
+        'statement audit',
+      ),
   })
 }

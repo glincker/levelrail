@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { DatabaseGlassIcon } from '@thesvg/ui-react'
+import { EXPLORER_UNAVAILABLE_ENGINES } from './engines'
 import { EmptyState } from '@/components/ui/empty-state'
 
 export function UnsupportedEngine({ engine }: { engine: string }) {
@@ -8,7 +9,11 @@ export function UnsupportedEngine({ engine }: { engine: string }) {
     <EmptyState
       icon={<DatabaseGlassIcon className="size-6" />}
       title={t('viewer.explorer.emptyTitle')}
-      description={t('viewer.unsupported', { engine })}
+      description={
+        EXPLORER_UNAVAILABLE_ENGINES.has(engine)
+          ? t('viewer.unsupportedDocumentdb')
+          : t('viewer.unsupported', { engine })
+      }
     />
   )
 }

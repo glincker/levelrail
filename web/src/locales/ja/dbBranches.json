@@ -1,0 +1,96 @@
+{
+  "title": "ブランチ",
+  "description": "テストやプレビュー用の、独自の認証情報を持つこのデータベースのコピー。",
+  "empty": "このデータベースにはまだブランチがありません。変更を安全に試すには作成してください。",
+  "unavailable": "このサーバーではまだブランチを利用できません。次のアップデートで利用可能になります。",
+  "loadFailed": "ブランチを読み込めませんでした: {{error}}",
+  "created": "ブランチを要求しました",
+  "cancel": "キャンセル",
+  "notReady": "このブランチはまだ準備できていません。コピー完了後にもう一度お試しください。",
+  "protected": "保護中",
+  "protectLabel": "保護",
+  "protectAria": "{{name}}を保護",
+  "expires": "{{date}}に期限切れ",
+  "create": {
+    "open": "ブランチを作成",
+    "title": "ブランチを作成",
+    "description": "選んだデータを新しいデータベースにコピーします。",
+    "name": "名前",
+    "mode": "モード",
+    "parent": "親",
+    "parentRoot": "このデータベース",
+    "expiry": "有効期限",
+    "protect": "削除から保護",
+    "submit": "ブランチを作成"
+  },
+  "mode": {
+    "full": "フルコピー",
+    "schema": "スキーマのみ",
+    "anonymized": "匿名化"
+  },
+  "state": {
+    "cloning": "複製中",
+    "ready": "準備完了",
+    "failed": "失敗",
+    "expiring": "まもなく期限",
+    "working": "処理中"
+  },
+  "expiry": {
+    "1d": "1日",
+    "7d": "7日",
+    "30d": "30日",
+    "never": "無期限"
+  },
+  "actions": {
+    "reset": "リセット",
+    "promote": "昇格",
+    "delete": "削除"
+  },
+  "confirm": {
+    "typeName": "確認のため{{name}}と入力してください",
+    "reset": {
+      "title": "このブランチをリセット",
+      "body": "{{name}}を親の新しいコピーで置き換えます。データと認証情報が変わります。"
+    },
+    "promote": {
+      "title": "このブランチを昇格",
+      "body": "{{name}}をメインのデータベースにします。元に戻せません。"
+    },
+    "delete": {
+      "title": "このブランチを削除",
+      "body": "{{name}}とそのデータを完全に削除します。"
+    }
+  },
+  "schemaDiff": {
+    "open": "スキーマ差分",
+    "title": "スキーマ差分",
+    "description": "{{branch}} の {{against}} に対する変更です。",
+    "against": "比較対象",
+    "parent": "親",
+    "added_one": "{{count}} 件追加",
+    "added_other": "{{count}} 件追加",
+    "removed_one": "{{count}} 件削除",
+    "removed_other": "{{count}} 件削除",
+    "changed_one": "{{count}} 件変更",
+    "changed_other": "{{count}} 件変更",
+    "none": "スキーマの差分はありません",
+    "loadFailed": "スキーマ差分を読み込めませんでした: {{error}}",
+    "truncated": "オブジェクト数の上限でスキーマが途中までのため、この差分は一部です。実行時設定で上限を上げてください。",
+    "copySql": "マイグレーション SQL をコピー",
+    "copied": "マイグレーション SQL をコピーしました",
+    "review": "実行前に必ず確認してください。Levelrail がこの SQL を実行することはありません。",
+    "group": {
+      "added": "追加",
+      "removed": "削除",
+      "changed": "変更"
+    },
+    "object": {
+      "table": "テーブル",
+      "column": "カラム",
+      "index": "インデックス",
+      "constraint": "制約",
+      "view": "ビュー",
+      "sequence": "シーケンス"
+    }
+  }
+}

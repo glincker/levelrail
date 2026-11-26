@@ -1,0 +1,96 @@
+ 1) 1) (integer) 14
+    2) (integer) 1795626977
+    3) (integer) 4
+    4) 1) "SET"
+       2) "k10"
+       3) "line1\nline2"
+    5) "127.0.0.1:33358"
+    6) ""
+ 2) 1) (integer) 13
+    2) (integer) 1795626977
+    3) (integer) 4
+    4) 1) "SET"
+       2) "k9"
+       3) "line1\nline2"
+    5) "127.0.0.1:33356"
+    6) ""
+ 3) 1) (integer) 12
+    2) (integer) 1795626977
+    3) (integer) 4
+    4) 1) "SET"
+       2) "k8"
+       3) "line1\nline2"
+    5) "127.0.0.1:33346"
+    6) ""
+ 4) 1) (integer) 11
+    2) (integer) 1795626976
+    3) (integer) 11
+    4) 1) "SET"
+       2) "k7"
+       3) "line1\nline2"
+    5) "127.0.0.1:33338"
+    6) ""
+ 5) 1) (integer) 10
+    2) (integer) 1795626976
+    3) (integer) 5
+    4) 1) "SET"
+       2) "k6"
+       3) "line1\nline2"
+    5) "127.0.0.1:33332"
+    6) ""
+ 6) 1) (integer) 9
+    2) (integer) 1795626976
+    3) (integer) 6
+    4) 1) "SET"
+       2) "k5"
+       3) "line1\nline2"
+    5) "127.0.0.1:33326"
+    6) ""
+ 7) 1) (integer) 8
+    2) (integer) 1795626976
+    3) (integer) 6
+    4) 1) "SET"
+       2) "k4"
+       3) "line1\nline2"
+    5) "127.0.0.1:33310"
+    6) ""
+ 8) 1) (integer) 7
+    2) (integer) 1795626976
+    3) (integer) 6
+    4) 1) "SET"
+       2) "k3"
+       3) "line1\nline2"
+    5) "127.0.0.1:33300"
+    6) ""
+ 9) 1) (integer) 6
+    2) (integer) 1795626976
+    3) (integer) 108
+    4) 1) "SET"
+       2) "k2"
+       3) "line1\nline2"
+    5) "127.0.0.1:33294"
+    6) ""
+10) 1) (integer) 5
+    2) (integer) 1795626976
+    3) (integer) 38
+    4) 1) "SET"
+       2) "k1"
+       3) "line1\nline2"
+    5) "127.0.0.1:33290"
+    6) ""
+11) 1) (integer) 4
+    2) (integer) 1795626958
+    3) (integer) 7
+    4) 1) "SLOWLOG"
+       2) "GET"
+       3) "3"
+    5) "127.0.0.1:55160"
+    6) ""
+12) 1) (integer) 3
+    2) (integer) 1795626949
+    3) (integer) 16
+    4) 1) "SLOWLOG"
+       2) "GET"
+       3) "3"
+    5) "127.0.0.1:43640"
+    6) ""

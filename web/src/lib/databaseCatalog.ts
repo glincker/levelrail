@@ -90,6 +90,7 @@ const ENGINE_TRAITS: Record<string, EngineTraits> = {
   keydb: { family: 'keyvalue', port: 6379, compat: 'redis' },
   dragonfly: { family: 'keyvalue', port: 6379, compat: 'redis' },
   mongodb: { family: 'document', port: 27017, compat: null },
+  documentdb: { family: 'document', port: 10260, compat: null, backup: 'none' },
   clickhouse: { family: 'analytics', port: 8123, compat: null },
   memcached: { family: 'keyvalue', port: 11211, compat: null, backup: 'none' },
   meilisearch: {

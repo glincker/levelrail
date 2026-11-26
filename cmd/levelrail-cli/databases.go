@@ -89,6 +89,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesImport(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
 	case "clone":
 		return runDatabasesClone(prog, rest, stdout, stderr, lookupEnv)
+	case "integrations":
+		return runDatabasesIntegrations(prog, rest, stdout, stderr, lookupEnv)
 	case "branch":
 		return runDatabasesBranch(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-password":
@@ -105,6 +107,18 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesNetwork(prog, rest, stdout, stderr, lookupEnv)
 	case "engine-stats":
 		return runDatabasesEngineStats(prog, rest, stdout, stderr, lookupEnv)
+	case "advisor":
+		return runDatabasesAdvisor(prog, rest, stdout, stderr, lookupEnv)
+	case "explorer":
+		return runDatabasesExplorer(prog, rest, stdout, stderr, lookupEnv)
+	case "dynamo":
+		return runDatabasesDynamo(prog, rest, stdout, stderr, lookupEnv)
+	case "mongo":
+		return runDatabasesMongo(prog, rest, stdout, stderr, lookupEnv)
+	case "redis":
+		return runDatabasesRedis(prog, rest, stdout, stderr, lookupEnv)
+	case "audit":
+		return runDatabasesAudit(prog, rest, stdout, stderr, lookupEnv)
 	case "query-history":
 		return runDatabasesQueryHistory(prog, rest, stdout, stderr, lookupEnv)
 	case "saved-queries":
@@ -147,10 +161,12 @@ func databasesUsage(prog string) string {
   %[1]s databases create [flags]     create a managed database
   %[1]s databases create --interactive  guided, step-by-step creation
   %[1]s databases connect --name N --engine E --host H [flags]  connect an existing database where it is, no data moved (--password-stdin, --test)
+  %[1]s databases connect --url-stdin | --url CONNECTION_STRING [--name N] [--save-anyway] [--test]  connect a hosted database (Neon, RDS, Supabase, Atlas, ...) from its connection string; tested before it is saved
   %[1]s databases connect <name> [--user U] [--launch] [flags]  tunnel to a managed database, print a connection string, optionally start psql, mysql or redis-cli
   %[1]s databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   %[1]s databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
-  %[1]s databases branch create <source> <new-name> [--from-backup ID | --at TIME] [flags]  new independent database from a backup or point in time
+  %[1]s databases integrations list <database> [flags]  integration catalog with per card status
+  %[1]s databases branch create|ls|show|reset|promote|protect|rm ...  copy a database into a branch, or from a backup or point in time
   %[1]s databases export <name> [--out FILE|-] [--fresh | --latest] [--wait DURATION] [flags]  write a dump of a database to a file or stdout
   %[1]s databases import <name> --in FILE|- [--force] [--yes] [flags]  restore a dump into a database
   %[1]s databases clone <source> <new-name> [--backup ID] [flags]  new database from a fresh or chosen backup
@@ -185,6 +201,12 @@ func databasesUsage(prog string) string {
   %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access
   %[1]s databases network show|allow|deny|make-private|scope|tls <name> ...  reachability, allowed sources, scope, TLS
   %[1]s databases engine-stats <name> [flags]  live counts for a search engine or Memcached database
+  %[1]s databases advisor <name> [--severity warn] [flags]  read-only Postgres performance findings with suggested fixes as text (needs query access)
+  %[1]s databases explorer capabilities <name> [flags]  which explorer features the engine supports and the viewer limits
+  %[1]s databases dynamo tables|query|scan <name> ...  read-only DynamoDB local tables and items
+  %[1]s databases mongo collections|find <name> ...  read-only MongoDB collections and documents
+  %[1]s databases redis info|slowlog|clients <name> [flags]  INFO sections, slow commands and connected clients of a Redis-family database
+  %[1]s databases audit <name> [--principal ID] [--action A] [--since 24h] [flags]  explorer statement audit (root)
   %[1]s databases query-history list|clear <name> ...  your recent statements (clear needs --yes)
   %[1]s databases saved-queries list|add|delete <name> ...  your saved statements (delete needs --yes)
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits

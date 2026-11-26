@@ -17,7 +17,7 @@ func TestPlanDatabaseCreate(t *testing.T) {
 		{
 			name:    "missing everything",
 			flags:   createDatabaseFlags{},
-			wantErr: "--name, --engine, --version",
+			wantErr: "--name, --engine",
 		},
 		{
 			name:    "missing name",
@@ -30,9 +30,14 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			wantErr: "--engine",
 		},
 		{
-			name:    "missing version",
-			flags:   createDatabaseFlags{name: "main", engine: "postgres"},
-			wantErr: "--version",
+			name:  "version omitted is resolved by the control plane",
+			flags: createDatabaseFlags{name: "main", engine: "postgres"},
+			want:  databaseResource{Name: "main", Engine: "postgres"},
+		},
+		{
+			name:  "search engine accepts latest for server side resolution",
+			flags: createDatabaseFlags{name: "search", engine: "meilisearch", version: "latest"},
+			want:  databaseResource{Name: "search", Engine: "meilisearch", Version: "latest"},
 		},
 		{
 			name:    "unsupported engine",
@@ -40,18 +45,8 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			wantErr: "--engine must be one of",
 		},
 		{
-			name:    "search engine refuses latest",
-			flags:   createDatabaseFlags{name: "search", engine: "meilisearch", version: "latest"},
-			wantErr: "pinned release tag",
-		},
-		{
 			name:    "qdrant tag needs its v prefix",
 			flags:   createDatabaseFlags{name: "vec", engine: "qdrant", version: "1.19"},
-			wantErr: "pinned release tag",
-		},
-		{
-			name:    "memcached refuses latest",
-			flags:   createDatabaseFlags{name: "cache", engine: "memcached", version: "latest"},
 			wantErr: "pinned release tag",
 		},
 		{

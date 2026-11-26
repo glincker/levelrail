@@ -243,7 +243,9 @@
     "confirm": "Ich verstehe, was verworfen wird",
     "driftMissing": "In der Firewall fehlen: {{sources}}. Wenden Sie die Regeln erneut an, um sie wiederherzustellen.",
     "driftExtra": "Die Firewall erlaubt zusätzlich: {{sources}}. Diese wurden hier nicht gesetzt.",
-    "cannot": "Die Regeln können nicht angewendet werden: {{reason}}"
+    "cannot": "Die Regeln können nicht angewendet werden: {{reason}}",
+    "sourceInvalid": "Keine gültige IP oder CIDR",
+    "sourcePrivate": "Privater Bereich"
   },
   "scope": {
     "title": "Netzwerk-Geltungsbereich",

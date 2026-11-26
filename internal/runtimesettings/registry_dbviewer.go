@@ -13,7 +13,16 @@ const (
 	KeyDBViewerMaxCell    = "database_viewer.max_cell_bytes"
 	KeyDBViewerSchemaRows = "database_viewer.schema_max_rows"
 	KeyDBViewerMaxSQL     = "database_viewer.max_sql_bytes"
+	KeyDBViewerMaxConc    = "database_viewer.max_concurrent"
+	// KeyDBViewerCacheSeconds is how long overviews and schema outlines are reused, 0 disables.
+	KeyDBViewerCacheSeconds = "databases.viewer_cache_seconds"
+	KeyDBViewerQueueWaitMs  = "database_viewer.queue_wait_ms"
+	// KeyDeploySummaryCacheSeconds is how long the deployments summary scan is reused, 0 disables.
+	KeyDeploySummaryCacheSeconds = "deployments.summary_cache_seconds"
 
+	KeyDynamoPageItems     = "databases.dynamodb.page_items"
+	KeyDynamoPageItemsMax  = "databases.dynamodb.page_items_max"
+	KeyDynamoDescribeMax   = "databases.dynamodb.describe_tables_max"
 	KeyLogRuleEvalInterval = "log_rules.eval_interval"
 	KeyLogRuleMaxWindow    = "log_rules.max_window"
 	KeyLogRuleMaxRows      = "log_rules.max_rows"
@@ -33,6 +42,8 @@ type DBViewerLimits struct {
 	MaxCellBytes int
 	SchemaRows   int
 	SQLBytes     int
+	// MaxConcurrent bounds in-flight document browser reads per database and per principal.
+	MaxConcurrent int
 }
 
 // LogRuleLimits bounds one log rule evaluation.
@@ -62,6 +73,13 @@ func init() {
 	registerLimitInt(KeyDBViewerMaxCell, "APP_DB_QUERY_MAX_CELL_BYTES", "65536", "Database console: max cell bytes", "Largest single cell shown before it is cut off.", 64, 1<<24)
 	registerLimitInt(KeyDBViewerSchemaRows, "APP_DB_SCHEMA_MAX_ROWS", "5000", "Database console: schema table limit", "Tables listed by the schema browser.", 1, dbViewerMaxCount)
 	registerLimitInt(KeyDBViewerMaxSQL, "APP_DB_QUERY_MAX_SQL_BYTES", "65536", "Database console: max SQL bytes", "Largest SQL text the console and saved queries accept.", 256, 1<<24)
+	registerLimitInt(KeyDBViewerMaxConc, "APP_DB_VIEWER_MAX_CONCURRENT", "4", "Database browser: concurrent reads", "Document browser reads in flight at once, per database and per user.", 1, 64)
+	registerLimitInt(KeyDBViewerCacheSeconds, "APP_DB_VIEWER_CACHE_SECONDS", "5", "Database browser: overview cache seconds", "How long the collection overview and schema outline are reused before the database is asked again, 0 turns the cache off.", 0, 3600)
+	registerLimitInt(KeyDeploySummaryCacheSeconds, "APP_DEPLOY_SUMMARY_CACHE_SECONDS", "3", "Deployments: summary cache seconds", "How long the deployments summary reuses its 30 day scan before reading again, 0 turns the cache off.", 0, 3600)
+	registerLimitInt(KeyDynamoPageItems, "APP_DYNAMODB_PAGE_ITEMS", "50", "DynamoDB explorer: default page items", "Items one DynamoDB explorer read returns when the request names no limit.", 1, 10000)
+	registerLimitInt(KeyDynamoPageItemsMax, "APP_DYNAMODB_PAGE_ITEMS_MAX", "500", "DynamoDB explorer: max page items", "Most items one DynamoDB explorer read may return.", 1, 10000)
+	registerLimitInt(KeyDynamoDescribeMax, "APP_DYNAMODB_DESCRIBE_TABLES_MAX", "25", "DynamoDB explorer: tables described per list", "Tables whose schema the explorer describes on one list request, at most 50.", 1, 50)
+	registerLimitInt(KeyDBViewerQueueWaitMs, "APP_DB_VIEWER_QUEUE_WAIT_MS", "2000", "Database browser: queue wait (ms)", "How long a document read waits for a free slot before it is refused as too busy, 0 refuses at once.", 0, 30000)
 
 	Register(Definition{
 		Key: KeyLogRuleEvalInterval, Category: cat, Kind: KindDuration, Default: "1m", Env: "APP_LOG_RULE_EVAL_INTERVAL", Apply: ApplyLive,
@@ -86,6 +104,8 @@ func (s *Service) DatabaseViewerLimits(ctx context.Context) DBViewerLimits {
 		MaxCellBytes: s.Int(ctx, KeyDBViewerMaxCell),
 		SchemaRows:   s.Int(ctx, KeyDBViewerSchemaRows),
 		SQLBytes:     s.Int(ctx, KeyDBViewerMaxSQL),
+
+		MaxConcurrent: s.Int(ctx, KeyDBViewerMaxConc),
 	}
 }
 

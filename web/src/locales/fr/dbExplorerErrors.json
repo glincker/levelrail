@@ -1,0 +1,9 @@
+{
+  "stuck": {
+    "title": "Toujours en attente de la base de données",
+    "body": "La base de données n'est peut-être pas démarrée ou redémarre en boucle. Consultez ses journaux pour la dernière erreur, puis réessayez."
+  },
+  "retry": "Réessayer",
+  "logs": "Ouvrir les journaux",
+  "overview": "Ouvrir l'aperçu"
+}

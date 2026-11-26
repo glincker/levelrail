@@ -1,0 +1,47 @@
+{
+  "label": "接続",
+  "mode": {
+    "readOnly": "読み取り専用",
+    "writesOn": "書き込みロック解除中",
+    "writesUntil": "{{time}}まで書き込みロック解除中",
+    "writesLeft": "書き込み解除中、残り {{time}}",
+    "relocked": "書き込みを再びロックしました"
+  },
+  "login": "ログイン",
+  "superuser": "スーパーユーザー(プラットフォーム)",
+  "path": "経路",
+  "direct": "直接",
+  "viaNode": "ノード{{node}}経由",
+  "external": "外部 {{target}}",
+  "credentials": "認証情報",
+  "managed": "Levelrail管理",
+  "stored": "保存済みの認証情報",
+  "networking": "ネットワーク",
+  "access": "アクセス",
+  "notRunning": "データベースが実行されていません。エクスプローラーを使うには起動してください。",
+  "unreachable": "このデータベースの状態を読み取れませんでした。",
+  "retry": "再試行",
+  "lockNow": "今すぐロック",
+  "unlock": {
+    "open": "書き込みを解除",
+    "title": "書き込みを解除",
+    "description": "文はプラットフォームのスーパーユーザーとして実行され、\"{{name}}\" のデータをすぐに変更します。すべての文が監査ログに記録されます。",
+    "confirmLabel": "確認のため {{name}} を入力",
+    "duration": "解除する時間",
+    "minutes": "{{count}} 分",
+    "cancel": "キャンセル",
+    "confirm": "書き込みを解除"
+  },
+  "activity": {
+    "open": "アクティビティ",
+    "title": "文のアクティビティ",
+    "description": "このデータベースで実行された直近 {{count}} 件の文です。",
+    "time": "時刻",
+    "principal": "プリンシパル",
+    "action": "操作",
+    "outcome": "結果",
+    "fingerprint": "フィンガープリント",
+    "empty": "記録された文はまだありません。",
+    "error": "アクティビティを読み込めませんでした。"
+  }
+}

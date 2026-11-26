@@ -79,6 +79,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/cloudconn"
 	"github.com/GLINCKER/levelrail/internal/compliance"
+	"github.com/GLINCKER/levelrail/internal/dbaudit"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/hostpressure"
@@ -123,6 +124,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/datamigrate"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/dbrotate"
+	"github.com/GLINCKER/levelrail/internal/dbupgrade"
 	"github.com/GLINCKER/levelrail/internal/ddns"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
@@ -304,14 +306,15 @@ type Router struct {
 	registryAuthTester      RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	teardownOpts            []application.Option
 	deleteTimeout           time.Duration
-	execRuntime             NodeRuntimeResolver   // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	models                  ModelService          // nil is valid: /api/v1/models routes return 501, see WithModels
-	gpuHostDiagnoser        GPUHostDiagnoser      // nil is valid: doctor skips the detailed host GPU checks
-	publishLocks            PublishLockStore      // nil disables publish locks, see WithPublishLocks
-	deploySafety            DeploySafetyStore     // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
-	imageTagLister          imageupdate.TagLister // nil reads tags straight from the registry over HTTP
-	imageResolver           docker.ImageResolver  // nil deploys image tags unresolved, see WithDeploySafety
-	deployGate              DeployGateStore       // nil disables the gate timeline and rollback pins, see WithDeployGate
+	execRuntime             NodeRuntimeResolver      // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	models                  ModelService             // nil is valid: /api/v1/models routes return 501, see WithModels
+	gpuHostDiagnoser        GPUHostDiagnoser         // nil is valid: doctor skips the detailed host GPU checks
+	publishLocks            PublishLockStore         // nil disables publish locks, see WithPublishLocks
+	deploySafety            DeploySafetyStore        // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageTagLister          imageupdate.TagLister    // nil reads tags straight from the registry over HTTP
+	databaseLatest          dbupgrade.LatestResolver // caches the newest stable version per database engine
+	imageResolver           docker.ImageResolver     // nil deploys image tags unresolved, see WithDeploySafety
+	deployGate              DeployGateStore          // nil disables the gate timeline and rollback pins, see WithDeployGate
 	deployGateDefaults      deploysafety.Effective
 	reconcileNudger         ReconcileNudger      // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
 	certs                   CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
@@ -620,6 +623,7 @@ type Router struct {
 	restoreHistory               RestoreHistoryStore                                                                 // always set, same "core Store interface" shape as backupHistory above
 	restoreRunner                RestoreRunner                                                                       // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
 	cloneRestoreHistory          CloneRestoreHistoryStore                                                            // always set, same "core Store interface" shape as restoreHistory above
+	branchCloner                 BranchCloner                                                                        // nil is valid: creating or resetting a branch returns 501
 	cloneRestoreRunner           CloneRestoreRunner                                                                  // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
 	baseBackupHistory            BaseBackupHistoryStore                                                              // always set, same "core Store interface" shape as backupHistory above
 	baseBackupRunner             BaseBackupRunner                                                                    // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
@@ -700,6 +704,8 @@ type Router struct {
 	scheduleScan                 schedulescan.Source                                   // nil is valid: the schedule never runs doctor check then reports unknown
 	canaryProgress               CanaryProgress                                        // nil is valid: GET canary then omits the live stage comparison
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries
+	dbAudit                      *dbaudit.Writer                                       // nil until WithDatabaseAudit; explorer audit stays off then
+	dbAuditStore                 DatabaseStatementAuditStore                           // always set, GET /databases/{name}/audit
 	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings
 	ciTrusts                     CIOIDCTrustStore                                      // always set, CI OIDC trusts
 	ciVerifier                   CIIDTokenVerifier                                     // nil uses the GitHub Actions OIDC verifier
@@ -1091,6 +1097,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		externalDatabases:           s,
 		canaries:                    s,
 		dbQueries:                   s,
+		dbAuditStore:                s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		gitCommits:                  newGitCommitsCache(),
 		previewEnvironments:         s,

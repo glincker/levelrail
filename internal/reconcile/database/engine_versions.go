@@ -15,7 +15,15 @@ var pinnedVersionPatterns = map[string]*regexp.Regexp{
 	store.EngineQdrant:      regexp.MustCompile(`^v1\.(\d+)(\.\d+)?$`),
 	store.EngineTypesense:   regexp.MustCompile(`^(\d+)\.(\d+)(\.\d+)?$`),
 	store.EngineMemcached:   regexp.MustCompile(`^1\.(\d+)(\.\d+)?$`),
+	store.EngineDocumentDB:  documentDBVersionPattern,
+	store.EngineDynamoDB:    dynamoDBVersionPattern,
 }
+
+// dynamoDBVersionPattern accepts the plain release tags of the 2 and 3 lines; the old 1.x line is not offered.
+var dynamoDBVersionPattern = regexp.MustCompile(`^([23])\.(\d+)\.(\d+)$`)
+
+// documentDBVersionPattern is the registry tag shape: Postgres major, then the extension release.
+var documentDBVersionPattern = regexp.MustCompile(`^pg(\d+)-\d+\.\d+\.\d+$`)
 
 func validatePinnedVersion(engine, version string) error {
 	pat, ok := pinnedVersionPatterns[engine]
@@ -33,6 +41,8 @@ var exampleVersion = map[string]string{
 	store.EngineQdrant:      "v1.19",
 	store.EngineTypesense:   "30.2",
 	store.EngineMemcached:   "1.6",
+	store.EngineDocumentDB:  "pg17-1.2.0",
+	store.EngineDynamoDB:    "3.3.2",
 }
 
 var majorMinorPattern = regexp.MustCompile(`^v?(\d+)\.(\d+)`)
@@ -54,6 +64,27 @@ func majorMinor(v string) (int, int, bool) {
 func checkSearchVersionChange(engine, from, to string) (handled bool, err error) {
 	if _, ok := pinnedVersionPatterns[engine]; !ok {
 		return false, nil
+	}
+	if engine == store.EngineDocumentDB {
+		fm, tm := documentDBVersionPattern.FindStringSubmatch(from), documentDBVersionPattern.FindStringSubmatch(to)
+		if fm == nil || tm == nil {
+			return true, fmt.Errorf("cannot compare %q with %q: use pinned documentdb tags such as pg17-1.2.0", from, to)
+		}
+		if fm[1] != tm[1] {
+			return true, fmt.Errorf("changing the documentdb Postgres major from pg%s to pg%s in place would corrupt the data directory: restore into a new database on the new version", fm[1], tm[1])
+		}
+		return true, nil
+	}
+	if engine == store.EngineDynamoDB {
+		// The data file is SQLite with no documented cross version guarantee, so only the same major moves in place.
+		fm, tm := dynamoDBVersionPattern.FindStringSubmatch(from), dynamoDBVersionPattern.FindStringSubmatch(to)
+		if fm == nil || tm == nil {
+			return true, fmt.Errorf("cannot compare %q with %q: use pinned dynamodb tags such as 3.3.2", from, to)
+		}
+		if fm[1] != tm[1] {
+			return true, fmt.Errorf("changing dynamodb from major %s to %s in place is not supported: export the tables and import them into a new database", fm[1], tm[1])
+		}
+		return true, nil
 	}
 	if engine == store.EngineMemcached {
 		// Nothing on disk to be incompatible with: any pinned version works.

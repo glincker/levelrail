@@ -1,7 +1,9 @@
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InfoGlassIcon, ShieldAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -9,12 +11,34 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useDatabase } from '../../queries/databases'
 import type { DatabaseUpgrades } from '../../types/databaseUpgrades'
 import { supportVariant } from './upgradeHelpers'
 
+const BackupSetupDialog = lazy(() =>
+  import('../databases/backupSetup/BackupSetupDialog').then((m) => ({
+    default: m.BackupSetupDialog,
+  })),
+)
+
+// The server words this blocker; matching its prefix turns it into a call to action.
+const NO_TARGET_PREFIX = 'no backup target is configured'
+
 /** CurrentVersionCard states what the database runs, how long it is supported and what blocks an upgrade. */
-export function CurrentVersionCard({ data }: { data: DatabaseUpgrades }) {
+export function CurrentVersionCard({
+  data,
+  databaseName,
+}: {
+  data: DatabaseUpgrades
+  databaseName: string
+}) {
   const { t } = useTranslation('databaseUpgrades')
+  const { data: database } = useDatabase(databaseName)
+  const [setupOpen, setSetupOpen] = useState(false)
+  const needsTarget = data.blockers.some((b) => b.startsWith(NO_TARGET_PREFIX))
+  const otherBlockers = data.blockers.filter(
+    (b) => !b.startsWith(NO_TARGET_PREFIX),
+  )
   const { advice } = data
   const supportLabel =
     advice.support === 'eol_soon'
@@ -91,12 +115,31 @@ export function CurrentVersionCard({ data }: { data: DatabaseUpgrades }) {
           </p>
         ) : null}
 
-        {data.blockers.length > 0 ? (
+        {needsTarget ? (
+          <Alert>
+            <AlertTitle>{t('current.backupCtaTitle')}</AlertTitle>
+            <AlertDescription>
+              <Button size="sm" onClick={() => setSetupOpen(true)}>
+                {t('current.backupCtaButton')}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        {setupOpen ? (
+          <Suspense fallback={null}>
+            <BackupSetupDialog
+              database={database}
+              open={setupOpen}
+              onOpenChange={setSetupOpen}
+            />
+          </Suspense>
+        ) : null}
+        {otherBlockers.length > 0 ? (
           <Alert variant="destructive">
             <AlertTitle>{t('current.blockersTitle')}</AlertTitle>
             <AlertDescription>
               <ul className="list-disc space-y-0.5 pl-4">
-                {data.blockers.map((b) => (
+                {otherBlockers.map((b) => (
                   <li key={b}>{b}</li>
                 ))}
               </ul>

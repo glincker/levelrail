@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -28,7 +29,9 @@ type databaseResource struct {
 	Name           string `json:"name"`
 	Engine         string `json:"engine"`
 	Version        string `json:"version"`
-	NodeID         string `json:"node_id,omitempty"`
+	// VersionResolution is response-only: set when the request omitted the version or sent "latest".
+	VersionResolution *versionResolution `json:"version_resolution,omitempty"`
+	NodeID            string             `json:"node_id,omitempty"`
 	// NodeName and NodeIsLocal are response-only display fields, see
 	// appResource.
 	NodeName    string `json:"node_name,omitempty"`
@@ -164,6 +167,17 @@ func validDatabaseName(name string) bool {
 }
 
 func validateDatabaseResource(d databaseResource) error {
+	if err := validateDatabaseIdentity(d); err != nil {
+		return err
+	}
+	if d.Version == "" {
+		return errors.New("version is required")
+	}
+	return database.ValidateEngineVersion(d.Engine, d.Version)
+}
+
+// validateDatabaseIdentity is the cheap name and engine check that runs before any registry lookup.
+func validateDatabaseIdentity(d databaseResource) error {
 	if d.Name == "" {
 		return errors.New("name is required")
 	}
@@ -175,13 +189,10 @@ func validateDatabaseResource(d databaseResource) error {
 		// A registry parse failure is a build-time invariant, so it is an error rather than treating every engine as valid.
 		return fmt.Errorf("check supported database engines: %w", err)
 	}
-	if !supported {
+	if !supported || (d.Engine == store.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB)) || (d.Engine == store.EngineDynamoDB && !experimental.Enabled(experimental.DynamoDB)) {
 		return errors.New("unsupported engine")
 	}
-	if d.Version == "" {
-		return errors.New("version is required")
-	}
-	return database.ValidateEngineVersion(d.Engine, d.Version)
+	return nil
 }
 
 // handleListDatabases batches status and TLS lookups, avoiding a query per database.
@@ -269,7 +280,7 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 		out = append(out, databaseListResource{
 			databaseResource: res,
-			Status:           summarizeAppConditions(conditionsByController[databaseControllerName(d.Name)]),
+			Status:           summarizeDatabaseConditions(conditionsByController[databaseControllerName(d.Name)]),
 		})
 	}
 	out = rt.appendExternalDatabases(r, canSee, out)
@@ -323,6 +334,10 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	if !errors.Is(err, store.ErrDatabaseNotFound) {
 		rt.logger.Error("api: create database: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+
+	if rt.refuseIncompatibleLeftover(w, r, req) {
 		return false
 	}
 
@@ -429,7 +444,17 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The registry lookup runs before the name lock so a slow registry never blocks other creates.
+	if (req.Version == "" || req.Version == latestVersionKeyword) && validateDatabaseIdentity(req) == nil {
+		if !rt.applyLatestDatabaseVersion(w, r, &req) {
+			return
+		}
+	}
 	defer lockAppName("database:" + req.Name)()
+	if base, reserved := rt.reservedBranchName(r.Context(), req.Name); reserved {
+		writeError(w, http.StatusConflict, "name is reserved for pull request branches of database "+base+", choose another name")
+		return
+	}
 	// Databases carry no domains, so placement never prefers the local
 	// node for ingress reasons here.
 	cp := &createPlacement{Kind: store.NodeMoveKindDatabase, Name: req.Name}
@@ -502,6 +527,9 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if err := rt.checkDatabaseDeletable(r.Context(), name); writeBranchBlock(w, err) {
+		return
+	}
 	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID, true)
 	if !ok {
 		return
@@ -517,6 +545,9 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	err = rt.databases.DeleteDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
+		return
+	}
+	if writeBranchBlock(w, err) {
 		return
 	}
 	if err != nil {

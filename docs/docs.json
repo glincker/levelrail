@@ -284,6 +284,7 @@
             "group": "Databases and storage",
             "pages": [
               "managing-databases",
+              "database-branch-per-pull-request",
               "managed-databases",
               "postgres-pooler",
               "database-upgrades",

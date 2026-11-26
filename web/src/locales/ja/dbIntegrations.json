@@ -1,0 +1,26 @@
+{
+  "title": "連携",
+  "description": "このデータベースを監視、開発、データツールに接続します。",
+  "search": "連携を検索",
+  "featured": "注目",
+  "empty": "検索に一致する連携はありません。",
+  "loadFailed": "連携を読み込めませんでした: {{error}}",
+  "configure": "設定",
+  "docs": "ドキュメント",
+  "docsPlanned": "ドキュメント準備中",
+  "categories": {
+    "monitor": "監視",
+    "develop": "開発",
+    "deploy": "デプロイ",
+    "query": "クエリとBI",
+    "replicate": "レプリケーション"
+  },
+  "state": {
+    "connected": "接続済み",
+    "available": "利用可能",
+    "needs_setup": "設定が必要",
+    "docs_only": "ガイド",
+    "unavailable": "利用不可",
+    "planned": "計画中"
+  }
+}

@@ -162,7 +162,18 @@ func (c *Controller) requireVolume(ctx context.Context, volName string, spec doc
 			return nil
 		}
 	}
+	// The list only shows this instance's volumes, so a volume left by another
+	// instance still counts as present when asked by name.
+	if ex, ok := c.runtime.(volumeExistsChecker); ok {
+		if found, exErr := ex.VolumeExists(ctx, volName); exErr == nil && found {
+			return nil
+		}
+	}
 	return &dataVolumeMissingError{name: volName}
+}
+
+type volumeExistsChecker interface {
+	VolumeExists(ctx context.Context, name string) (bool, error)
 }
 
 type dataVolumeMissingError struct{ name string }

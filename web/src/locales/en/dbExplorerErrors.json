@@ -1,0 +1,9 @@
+{
+  "stuck": {
+    "title": "Still waiting for the database",
+    "body": "The database may not be running, or it keeps restarting. Check its logs for the last error, then try again."
+  },
+  "retry": "Retry",
+  "logs": "Open logs",
+  "overview": "Open overview"
+}

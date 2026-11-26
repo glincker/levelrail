@@ -1,0 +1,27 @@
+{
+  "gallery": {
+    "title": "バックアップの保存先を選んでください"
+  },
+  "local": "ローカルディスク",
+  "cancel": "キャンセル",
+  "continue": "続行",
+  "testing": "接続をテストしています",
+  "testOk": "接続できました。この認証情報でバケットにアクセスできます。",
+  "testFailed": "接続テストに失敗しました: {{error}}",
+  "testAgain": "再テスト",
+  "removeAndEdit": "削除して編集",
+  "fields": {
+    "name": "名前",
+    "accountId": "アカウントID",
+    "region": "リージョン",
+    "endpoint": "エンドポイント",
+    "bucket": "バケット",
+    "path": "パス",
+    "accessKey": "アクセスキーID",
+    "secret": "シークレットアクセスキー"
+  },
+  "secretNote": "暗号化して保存され、表示は一度だけです。このバケットに限定したキーを使ってください。",
+  "back": "戻る",
+  "creating": "作成中",
+  "createAndTest": "作成してテスト"
+}

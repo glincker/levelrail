@@ -1,0 +1,47 @@
+{
+  "label": "Conexión",
+  "mode": {
+    "readOnly": "Solo lectura",
+    "writesOn": "Escritura desbloqueada",
+    "writesUntil": "Escritura desbloqueada hasta las {{time}}",
+    "writesLeft": "Escritura desbloqueada, quedan {{time}}",
+    "relocked": "Escritura bloqueada de nuevo"
+  },
+  "login": "Acceso",
+  "superuser": "superusuario (plataforma)",
+  "path": "Ruta",
+  "direct": "Directa",
+  "viaNode": "vía nodo {{node}}",
+  "external": "Externa {{target}}",
+  "credentials": "Credenciales",
+  "managed": "Gestionadas por Levelrail",
+  "stored": "Credencial guardada",
+  "networking": "Red",
+  "access": "Acceso",
+  "notRunning": "La base de datos no está en ejecución. Inícialo para usar el explorador.",
+  "unreachable": "No se pudo leer el estado de esta base de datos.",
+  "retry": "Reintentar",
+  "lockNow": "Bloquear ahora",
+  "unlock": {
+    "open": "Desbloquear escritura",
+    "title": "Desbloquear escritura",
+    "description": "Las sentencias se ejecutan como superusuario de la plataforma y cambian los datos de \"{{name}}\" al instante. Cada sentencia queda en el registro de auditoría.",
+    "confirmLabel": "Escribe {{name}} para confirmar",
+    "duration": "Desbloquear durante",
+    "minutes": "{{count}} min",
+    "cancel": "Cancelar",
+    "confirm": "Desbloquear escritura"
+  },
+  "activity": {
+    "open": "Actividad",
+    "title": "Actividad de sentencias",
+    "description": "Las últimas {{count}} sentencias ejecutadas en esta base de datos.",
+    "time": "Hora",
+    "principal": "Principal",
+    "action": "Acción",
+    "outcome": "Resultado",
+    "fingerprint": "Huella",
+    "empty": "Aún no hay sentencias registradas.",
+    "error": "No se pudo cargar la actividad."
+  }
+}

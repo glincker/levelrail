@@ -12,6 +12,65 @@
     "tunnelBody": "Die CLI öffnet einen lokalen Port, der über die Control Plane an diese Datenbank weiterleitet. Nichts wird zum Internet hin offengelegt.",
     "tunnelAfter": "Der Befehl gibt eine Verbindungszeichenfolge für den lokalen Port aus. Fügen Sie --launch hinzu, um psql, mysql oder redis-cli automatisch zu starten (setzen Sie zuvor LEVELRAIL_DB_PASSWORD)."
   },
+  "connect": {
+    "title": "Mit {{name}} verbinden",
+    "description": "Details, ein Framework-Snippet oder eine Konfigurationsdatei kopieren. Passwörter bleiben verborgen, bis Sie sie anzeigen.",
+    "targetLabel": "Verbindungsziel",
+    "target": {
+      "machine": "Von meinem Rechner",
+      "apps": "Von Apps auf diesem Server"
+    },
+    "published": "Veröffentlicht auf {{address}}",
+    "publish": "Von meinem Rechner nutzen",
+    "publishing": "Wird veröffentlicht...",
+    "publishHint": "Veröffentlicht einen nur an 127.0.0.1 gebundenen Port, den nur dieser Rechner erreicht.",
+    "host": "Host",
+    "port": "Port",
+    "database": "Datenbank",
+    "user": "Benutzer",
+    "password": "Passwort",
+    "reveal": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen",
+    "autoHide": "Wird nach 30 Sekunden wieder verborgen.",
+    "placeholderNote": "Snippets enthalten <password>, bis Sie es anzeigen.",
+    "noPassword": "Kein Passwort: Diese Engine läuft ohne Authentifizierung im privaten Netzwerk.",
+    "revealFailed": "Passwort konnte nicht angezeigt werden",
+    "url": "Verbindungs-URL",
+    "download": "Herunterladen",
+    "unavailable": "Verbindungsdetails sind noch nicht verfügbar.",
+    "tab": {
+      "springProperties": "Spring Properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env",
+      "jdbc": "JDBC",
+      "prisma": "Prisma",
+      "drizzle": "Drizzle",
+      "sqlalchemy": "SQLAlchemy",
+      "django": "Django",
+      "rails": "Rails",
+      "compose": "Compose",
+      "cli": "CLI"
+    },
+    "where": "Wo läuft Ihre App?",
+    "stackLabel": "Stack",
+    "localPort": "Lokaler Port",
+    "tunnelCommand": "Tunnel-Befehl",
+    "tunnelNote": "Führen Sie dies einmal auf Ihrem Rechner aus und lassen Sie es offen: Der Tunnel besteht nur, solange der Befehl läuft. Ihre App verbindet sich dann mit 127.0.0.1.",
+    "internalNote": "Apps auf diesem Server erreichen sie über den internen Hostnamen. Verknüpfen Sie die Datenbank mit der App, dann wird {{var}} automatisch gesetzt.",
+    "remoteUnavailable": "Diese Datenbank ist nicht öffentlich erreichbar. Öffnen Sie Netzwerk, um sie zu veröffentlichen, oder nutzen Sie einen Tunnel.",
+    "openNetworking": "Netzwerk öffnen",
+    "downloadLocked": "Zeigen Sie das Passwort an, um Dateien herunterzuladen.",
+    "mode": {
+      "host": "Auf diesem Rechner",
+      "internal": "Andere Levelrail-App",
+      "remote": "Entfernter Rechner"
+    }
+  },
   "upgrades": {
     "nav": "Upgrades"
   },
@@ -51,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "Aus",
         "tlsPrefer": "Falls verfügbar",
-        "tlsRequire": "Erforderlich"
+        "tlsRequire": "Erforderlich",
+        "tlsVerifyCa": "Zertifikat prüfen",
+        "tlsVerifyFull": "Zertifikat und Hostnamen prüfen"
       },
       "test": {
         "button": "Verbindung testen",
@@ -109,6 +170,55 @@
       "confirmAnyway": "Trotzdem entfernen",
       "removing": "Wird entfernt...",
       "toast": "\"{{name}}\" entfernt. Die Datenbank selbst wurde nicht angetastet."
+    },
+    "hosted": {
+      "trigger": "Gehostete verbinden",
+      "title": "Gehostete Datenbank verbinden",
+      "description": "Binden Sie eine Datenbank bei einem Cloud-Anbieter ein. Anbieter wählen, Verbindungs-String einfügen und vor dem Speichern testen.",
+      "pickProvider": "Wo läuft sie?",
+      "providerOther": "Andere oder selbst verwaltet",
+      "paste": "Verbindungs-String",
+      "pasteHint": "postgres://, mysql://, mongodb+srv:// oder rediss://. Das Passwort wird verschlüsselt gespeichert und nie wieder angezeigt.",
+      "pasteParsed": "Angaben aus dem Verbindungs-String übernommen. Das Passwort stammt aus dem String.",
+      "orFields": "Oder Angaben selbst eintragen",
+      "hostLooksLike": "Sieht so aus: {{hint}}",
+      "docs": "Verbindungs-Doku von {{provider}}",
+      "caLink": "CA-Bundle von {{provider}} herunterladen",
+      "verifyNote": "Zertifikate werden gegen die Systemwurzeln geprüft.",
+      "detected": "Erkannt: {{provider}}",
+      "back": "Zurück",
+      "cancel": "Abbrechen",
+      "next": "Weiter",
+      "test": "Verbindung testen",
+      "testing": "Teste...",
+      "retest": "Erneut testen",
+      "reachable": "Erreichbar",
+      "tlsVerified": "TLS-Zertifikat geprüft",
+      "tlsNotVerified": "TLS ist aktiv, das Zertifikat wurde nicht geprüft",
+      "tlsOff": "TLS ist aus",
+      "latency": "{{ms}} ms",
+      "server": "Server: {{version}}",
+      "saveAnyway": "Trotz fehlgeschlagenem Test speichern",
+      "save": "Gehostete Datenbank speichern",
+      "saving": "Speichere...",
+      "readOnlyNote": "Standardmäßig nur lesend. Nutzen Sie einen Login mit reinen Leserechten. Der Explorer kann nicht schreiben, solange Sie Schreiben für diese Datenbank nicht aktivieren.",
+      "toast": "\"{{name}}\" verbunden.",
+      "step": "Schritt {{current}} von {{total}}",
+      "providersError": "Die Anbieterliste konnte nicht geladen werden. Sie können weiterhin Andere oder selbst verwaltet wählen.",
+      "parseError": "Das sieht nicht wie eine Verbindungszeichenfolge aus: {{reason}}",
+      "tlsNotChecked": "TLS-Zertifikat wird in diesem Modus nicht geprüft",
+      "tlsExplain": {
+        "disable": "Keine Verschlüsselung. Nur für ein privates Netzwerk.",
+        "prefer": "Verschlüsselt, wenn der Server es anbietet. Das Zertifikat wird nicht geprüft.",
+        "require": "Verschlüsselt immer. Das Zertifikat wird nicht geprüft.",
+        "verify-ca": "Verschlüsselt immer und prüft die Zertifikatskette.",
+        "verify-full": "Verschlüsselt immer, prüft Kette und Hostnamen. Die sicherste Wahl."
+      },
+      "saveAnywayWarn": "Der Test ist fehlgeschlagen, daher ist nicht bestätigt, dass die Verbindung funktioniert. Beim Speichern trotzdem werden Eintrag und Passwort wie eingegeben gespeichert, und Apps können sich eventuell nicht verbinden.",
+      "busy": "Es laufen zu viele Verbindungstests. Warten Sie einige Sekunden und versuchen Sie es erneut.",
+      "forbidden": "Nur das Root-Konto kann gehostete Datenbanken verbinden.",
+      "testIdle": "Starten Sie den Test, um die Erreichbarkeit vor dem Speichern zu prüfen.",
+      "summary": "{{engine}} unter {{host}}:{{port}}"
     }
   },
   "delete": {
@@ -212,6 +322,7 @@
       "console": "SQL-Konsole"
     },
     "unsupported": "Der Viewer unterstützt Postgres, MySQL, MariaDB und Redis-kompatible Engines. Diese Datenbank ist {{engine}}.",
+    "unsupportedDocumentdb": "Der Explorer für DocumentDB ist noch nicht verfügbar. Verbinde dich mit den Snippets im Verbinden-Dialog.",
     "notRunning": "Der Viewer benötigt eine laufende Datenbank. Starten Sie die Datenbank und versuchen Sie es erneut.",
     "beta": {
       "label": "Beta",
@@ -352,7 +463,81 @@
         "delete": "Gespeicherte Anweisung löschen",
         "load": "In den Editor laden"
       },
-      "plan": "Abfrageplan"
+      "plan": "Abfrageplan",
+      "runWrite": "Ausführen (Schreiben)",
+      "writeDone": "Übernommen. {{count}} Zeilen zurückgegeben.",
+      "destructive": {
+        "title": "{{kind}} bestätigen",
+        "run": "Trotzdem ausführen",
+        "typeLabel": "{{name}} eingeben, um auszuführen",
+        "unknownObject": "das Ziel",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "DELETE ohne WHERE",
+          "updateAll": "UPDATE ohne WHERE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "Dies entfernt {{object}} und seine Daten dauerhaft.",
+          "truncate": "Dies leert {{object}}: alle Zeilen werden entfernt.",
+          "deleteAll": "Ohne WHERE werden alle Zeilen in {{object}} gelöscht.",
+          "updateAll": "Ohne WHERE werden alle Zeilen in {{object}} aktualisiert.",
+          "alterDrop": "Dies entfernt einen Teil von {{object}} samt Daten.",
+          "grant": "Dies erweitert den Zugriff auf {{object}}.",
+          "revoke": "Dies entzieht Zugriff auf {{object}}."
+        }
+      },
+      "shortcutsHint": "Strg oder Cmd + Eingabe führt aus, S speichert, T öffnet einen neuen Tab.",
+      "tabs": {
+        "listLabel": "Abfrage-Tabs",
+        "untitled": "Abfrage {{n}}",
+        "new": "Neuer Tab",
+        "close": "{{title}} schließen",
+        "unsaved": "Ungespeicherte Änderungen"
+      },
+      "editor": {
+        "format": "Formatieren",
+        "formatHint": "Schlüsselwörter großschreiben und jede Klausel in eine eigene Zeile setzen",
+        "suggestions": "Vorschläge"
+      },
+      "results": {
+        "exportCsv": "CSV exportieren",
+        "exportJson": "JSON exportieren",
+        "exportHint": "Exportiert die {{count}} in diesem Ergebnis geladenen Zeilen",
+        "exported": "{{count}} Zeilen exportiert.",
+        "copyCell": "Zelle kopieren",
+        "copied": "Kopiert.",
+        "copyFailed": "Kopieren nicht möglich.",
+        "resizeColumn": "Breite der Spalte {{column}} ändern",
+        "typeInferred": "Typ aus den Werten dieser Seite abgeleitet",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "Dieser Plan enthält keine Kostenwerte, daher wird der Rohtext angezeigt.",
+        "showTree": "Baum anzeigen",
+        "showRaw": "Rohtext anzeigen",
+        "hottest": "Teuerster Knoten",
+        "cost": "Kosten {{value}}",
+        "rows": "{{count}} Zeilen",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "Gespeicherte und letzte Anweisungen",
+        "searchLabel": "Anweisungen durchsuchen",
+        "searchPlaceholder": "Gespeicherte und Verlauf durchsuchen",
+        "noMatch": "Keine Treffer für deine Suche.",
+        "openInTab": "In neuem Tab öffnen"
+      }
     },
     "keys": {
       "title": "Schlüssel-Browser",
@@ -368,7 +553,32 @@
       "noTtl": "Kein Ablauf",
       "ttlSeconds": "{{count}} s",
       "truncated": "Wert am Serverlimit abgeschnitten.",
-      "readOnlyNote": "Schreibgeschützt. Werte werden mit SCAN, TYPE, TTL und einem typspezifischen Lesezugriff abgerufen."
+      "readOnlyNote": "Schreibgeschützt. Werte werden mit SCAN, TYPE, TTL und einem typspezifischen Lesezugriff abgerufen.",
+      "tab_keys": "Schlüssel",
+      "tab_info": "Info",
+      "typeFilter": "Typfilter",
+      "allTypes": "Alle Typen",
+      "encoding": "Kodierung",
+      "memory": "Speicher",
+      "size": "Elemente",
+      "bits": "{{set}} von {{total}} Bits gesetzt",
+      "view": "Wertansicht",
+      "view_text": "Text",
+      "view_json": "JSON",
+      "view_hex": "Hex",
+      "notJson": "Dieser Wert ist kein gültiges JSON.",
+      "jsonUnsupported": "Das JSON-Modul ist auf diesem Server nicht verfügbar.",
+      "hyperloglog": "HyperLogLog-Sketch. Der Binärwert wird nicht angezeigt.",
+      "infoTitle": "Serverinfo",
+      "slowlogTitle": "Langsame Befehle",
+      "slowlogNote": "Nur Befehlsname und Argumentgrößen werden angezeigt, nie die Argumente.",
+      "slowlogEmpty": "Keine langsamen Befehle erfasst.",
+      "slowId": "ID",
+      "slowTime": "Zeit",
+      "slowDuration": "Mikrosekunden",
+      "slowCommand": "Befehl",
+      "slowArgs": "Argumente / Größe",
+      "slowClient": "Client"
     },
     "structure": {
       "openConsole": "In der Konsole öffnen",
@@ -453,6 +663,125 @@
       "noLookups": "Noch keine Abfragen",
       "evictions": "Verdrängungen",
       "connections": "Verbindungen"
+    },
+    "mongo": {
+      "tree": {
+        "label": "Datenbanken und Sammlungen",
+        "search": "Sammlungen suchen",
+        "truncated": "Es wird nur ein Teil der Liste angezeigt.",
+        "noCollections": "Keine Sammlungen",
+        "meta": "{{size}}, Indizes: {{count}}",
+        "items": "Länge {{count}}",
+        "fields": "Felder {{count}}",
+        "root": "Dokument"
+      },
+      "readOnly": "Nur Lesen",
+      "readOnlyReason": "Beim Durchsuchen werden keine Daten geändert: erlaubt sind nur find, Zählungen und das Lesen von Indizes.",
+      "noCollections": "In dieser Datenbank gibt es noch keine Sammlungen.",
+      "tabs": {
+        "documents": "Dokumente",
+        "indexes": "Indizes",
+        "stats": "Statistik"
+      },
+      "docs": {
+        "filter": "Filter",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "Limit",
+        "run": "Ausführen",
+        "options": "Optionen",
+        "sort": "Sortierung",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "Projektion",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "Beispiele",
+        "status": "Dokumente: {{count}}, {{ms}} ms, Seite {{page}}",
+        "truncated": "Ergebnis an der Größengrenze gekürzt.",
+        "expandAll": "Alle aufklappen",
+        "collapseAll": "Alle zuklappen",
+        "rejected": "Der Server hat diese Abfrage abgelehnt",
+        "failed": "Die Abfrage ist fehlgeschlagen",
+        "noMatches": "Kein Dokument passt zu diesem Filter.",
+        "empty": "Diese Sammlung enthält keine Dokumente.",
+        "details": "Details",
+        "copyDoc": "Als JSON kopieren",
+        "prev": "Vorherige Seite",
+        "next": "Nächste Seite",
+        "invalid": {
+          "syntax": "{{kind}} ist kein gültiges JSON.",
+          "notObject": "{{kind}} muss ein JSON-Objekt sein.",
+          "sortDirection": "Sortierwerte müssen 1 oder -1 sein.",
+          "projectionValue": "Projektionswerte müssen Zahlen, Booleans oder Objekte sein."
+        },
+        "kind": {
+          "filter": "Filter",
+          "sort": "Sortierung",
+          "projection": "Projektion"
+        }
+      },
+      "indexes": {
+        "empty": "Keine Indizes gemeldet.",
+        "label": "Indizes",
+        "name": "Name",
+        "keys": "Schlüssel",
+        "unique": "Eindeutig",
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "stats": {
+        "documents": "Dokumente",
+        "dataSize": "Datengröße",
+        "storageSize": "Speichergröße",
+        "indexes": "Indizes",
+        "type": "Typ"
+      }
+    },
+    "dynamo": {
+      "tables": "Tabellen",
+      "truncated": "Nur ein Teil der Liste wird angezeigt.",
+      "meta": "{{count}} Elemente, {{size}}",
+      "estimate": "Anzahl und Größe sind Schätzwerte, die die Engine verzögert aktualisiert.",
+      "noTables": "Diese Datenbank hat noch keine Tabellen.",
+      "readOnly": "Nur lesen",
+      "ttl": "TTL auf {{attr}}",
+      "mode": "Modus",
+      "query": "Abfrage",
+      "scan": "Scan",
+      "index": "Index",
+      "tableKey": "Tabellenschlüssel",
+      "partitionKey": "Partitionsschlüssel",
+      "scanConfirm": "Ich weiß, dass ein Scan jedes durchlaufene Element liest",
+      "limit": "Limit",
+      "run": "Ausführen",
+      "failed": "Lesen fehlgeschlagen",
+      "summary": "{{count}} Elemente, {{scanned}} durchsucht, {{ms}} ms",
+      "noItems": "Keine passenden Elemente.",
+      "prev": "Zurück",
+      "next": "Weiter",
+      "item": "Element",
+      "close": "Schließen"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "Liste",
+        "diagram": "Diagramm"
+      },
+      "viewMode": "Ansicht der Schemakarte",
+      "search": "Tabellen filtern",
+      "zoomGroup": "Zoom",
+      "zoomOut": "Verkleinern",
+      "zoomIn": "Vergrößern",
+      "fit": "An Bildschirm anpassen",
+      "export": "SVG exportieren",
+      "label": "Schemakarten-Diagramm",
+      "noTables": "Noch keine Tabellen zum Zeichnen.",
+      "noMatch": "Keine Tabelle passt zum Filter.",
+      "openTable": "{{table}} öffnen",
+      "more": "+{{count}} weitere",
+      "count": "{{count}} Tabellen",
+      "capped": "{{shown}} von {{total}} Tabellen werden angezeigt",
+      "loadingKeys": "Schlüssel werden geladen",
+      "noKeys": "Keine Fremdschlüssel gefunden, nur Tabellen werden angezeigt",
+      "keysError": "Einige Fremdschlüssel konnten nicht geladen werden"
     }
   },
   "createFlavor": {
@@ -495,6 +824,7 @@
       "keydb": "Multithreaded Redis-kompatibler Speicher für höheren Durchsatz auf einem Node.",
       "dragonfly": "Moderner Redis-kompatibler Speicher für sehr hohen Durchsatz.",
       "mongodb": "Dokumentdatenbank für flexible Daten in JSON-Form.",
+      "documentdb": "Quelloffene Dokumentendatenbank auf PostgreSQL, kompatibel mit dem MongoDB-Protokoll.",
       "clickhouse": "Spaltenspeicher für schnelle analytische Abfragen über große Ereignisdaten.",
       "meilisearch": "Tippfehlertolerante Volltextsuche mit sofortigen Ergebnissen über eine HTTP-API.",
       "qdrant": "Vektordatenbank für Embeddings, semantische Suche und RAG-Abruf.",
@@ -545,7 +875,14 @@
     "loading": "Datenbanken werden geladen",
     "notCreated": "Noch nicht erstellt",
     "failedToCreate": "Die Datenbank konnte nicht erstellt werden",
-    "pendingActionHint": "Verfügbar, sobald die Datenbank erstellt ist"
+    "pendingActionHint": "Verfügbar, sobald die Datenbank erstellt ist",
+    "colLocation": "Wo es läuft",
+    "summary": "{{total}} Datenbanken: {{local}} auf diesem Server, {{node}} auf Knoten, {{hosted}} extern gehostet",
+    "viewGroup": "Listenansicht",
+    "viewTable": "Tabelle",
+    "viewCards": "Karten",
+    "connect": "Verbinden",
+    "explorer": "Explorer"
   },
   "detail": {
     "backupNow": "Jetzt sichern",
@@ -778,8 +1115,6 @@
     },
     "advanced": {
       "title": "Erweiterte Optionen",
-      "node": "Node",
-      "autoNode": "Automatisch wählen",
       "project": "Projekt",
       "noProject": "Kein Projekt"
     },
@@ -820,7 +1155,78 @@
     "submitting": "Wird erstellt...",
     "created": "Datenbank \"{{name}}\" wird erstellt.",
     "createdPartial": "Datenbank \"{{name}}\" erstellt, aber Größe oder Backups konnten nicht angewendet werden. Prüfen Sie ihre Einstellungen.",
-    "dockerDown": "Docker antwortet auf diesem Server nicht. Datenbanken können nicht erstellt werden, bis es zurück ist."
+    "dockerDown": "Docker antwortet auf diesem Server nicht. Datenbanken können nicht erstellt werden, bis es zurück ist.",
+    "placement": {
+      "title": "Wo es läuft",
+      "kinds": {
+        "local": {
+          "title": "Dieser Server",
+          "note": "Neben Levelrail"
+        },
+        "node": {
+          "title": "Vorhandener Node",
+          "note": "Bereits verbunden"
+        },
+        "cloud": {
+          "title": "Neuer Cloud-Node",
+          "note": "Server in einer Cloud erstellen"
+        },
+        "host": {
+          "title": "Beliebiger Linux-Host",
+          "note": "Rechenzentrum oder eigener Rechner"
+        }
+      },
+      "local": "Läuft auf {{name}}, {{free}} freier Speicher.",
+      "localNoDisk": "Läuft auf {{name}}. Freier Speicher wird nicht gemeldet.",
+      "auto": "Automatisch wählen",
+      "autoPick": "Würde {{name}} nutzen",
+      "autoNone": "Gerade kein geeigneter Node.",
+      "diskFree": "{{free}} frei",
+      "diskUnknown": "Speicher nicht gemeldet",
+      "load": "{{percent}}% Last",
+      "workloads": "Workloads {{count}}",
+      "noNodes": "Noch kein weiterer Node verbunden.",
+      "addNode": "Node hinzufügen",
+      "noCloud": "Kein Cloud-Konto verbunden.",
+      "connectCloud": "Cloud-Konto verbinden",
+      "comingSoon": "Demnächst",
+      "connected": "Verbunden",
+      "notConnected": "Verbinden",
+      "region": "Region",
+      "size": "Größe",
+      "pick": "Auswählen",
+      "estimate": "Etwa {{price}} {{currency}} pro Monat",
+      "noEstimate": "Für diese Größe wird kein Preis gemeldet.",
+      "spendNote": "Ein Cloud-Node verursacht Kosten. Sie bestätigen Größe und Monatsschätzung, bevor etwas erstellt wird.",
+      "combinedPending": "Node und Datenbank in einem Ablauf zu erstellen kommt im nächsten Update. Fügen Sie den Node jetzt hinzu und erstellen Sie danach die Datenbank darauf.",
+      "addCloudNode": "Cloud-Node hinzufügen",
+      "hostNote": "Führen Sie den Installationsbefehl auf einem Linux-Host mit Docker aus. Sobald der Node erscheint, erstellen Sie die Datenbank darauf.",
+      "hostCommand": "Installationsbefehl anzeigen",
+      "reasons": {
+        "offline": "Offline",
+        "cordoned": "Gesperrt, nimmt keine neue Arbeit an",
+        "outdated": "Agent ist veraltet",
+        "failing": "Node ist gestört",
+        "noDocker": "Docker nicht verfügbar",
+        "lowDisk": "Wenig freier Speicher"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "Läuft auf diesem Server ({{name}}).",
+        "node": "Läuft auf {{name}}.",
+        "auto": "Automatisch: läuft auf {{name}}.",
+        "cloud": "Zuerst wird ein neuer Cloud-Node benötigt. Fügen Sie ihn hinzu und erstellen Sie dann die Datenbank darauf.",
+        "host": "Zuerst wird ein Node auf Ihrem Host benötigt. Fügen Sie ihn hinzu und erstellen Sie dann die Datenbank darauf."
+      }
+    }
   },
   "provision": {
     "title": "Ihre Datenbank wird eingerichtet",
@@ -1150,6 +1556,10 @@
     "note": "Leeren Sie ein Feld, um zum Engine-Standard zurückzukehren.",
     "pendingNote": "Das Anwenden startet die Datenbank neu. Ein Start nach einem Stopp wendet es ebenfalls an."
   },
+  "latestVersion": {
+    "resolved": "Neueste (aufgelöst: {{version}})",
+    "pending": "Neueste: Beim Anlegen der Datenbank wird die neueste stabile Version gewählt."
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "Passwort",
@@ -1192,5 +1602,115 @@
     "noProject": "Kein Projekt",
     "on": "Aktiv",
     "none": "Keine"
+  },
+  "home": {
+    "nav": {
+      "back": "Zurück zu Datenbanken",
+      "overview": "Übersicht",
+      "branches": "Branches",
+      "monitoring": "Überwachung",
+      "integrations": "Integrationen",
+      "settings": "Einstellungen",
+      "tables": "Tabellen",
+      "collections": "Collections",
+      "keys": "Schlüssel",
+      "explorer": "Explorer",
+      "query": "Abfrage-Editor",
+      "backups": "Backups und Wiederherstellung",
+      "users": "Benutzer und Rollen",
+      "data": "Daten"
+    },
+    "monitoring": {
+      "metrics": "Metriken",
+      "logs": "Logs",
+      "slow": "Langsame Abfragen"
+    },
+    "branches": {
+      "title": "Branches",
+      "body": "Branches kommen in diesem Release.",
+      "planned": "Geplante Aktionen",
+      "actions": {
+        "create": "Einen Child-Branch dieser Datenbank erstellen",
+        "reset": "Einen Branch auf seinen Parent zurücksetzen",
+        "restore": "Einen Branch zu einem Zeitpunkt wiederherstellen",
+        "expire": "Ablauf für einen Branch festlegen"
+      }
+    },
+    "integrations": {
+      "title": "Integrationen",
+      "body": "Verbinde Dienste mit dieser Datenbank. Noch sind keine verfügbar.",
+      "categories": {
+        "auth": "Authentifizierung",
+        "storage": "Objektspeicher",
+        "functions": "Funktionen",
+        "realtime": "Echtzeit",
+        "ai": "KI-Gateway",
+        "observability": "Observability"
+      },
+      "soon": "Demnächst"
+    },
+    "settings": {
+      "sections": {
+        "general": "Allgemein",
+        "networking": "Netzwerk",
+        "credentials": "Zugangsdaten",
+        "backups": "Backups und Upgrades",
+        "danger": "Gefahrenzone"
+      },
+      "general": {
+        "title": "Allgemein",
+        "name": "Name",
+        "engine": "Engine",
+        "copyName": "Datenbanknamen kopieren",
+        "immutable": "Der Name identifiziert diese Datenbank und kann nicht geändert werden."
+      },
+      "danger": {
+        "title": "Gefahrenzone",
+        "body": "Beim Löschen wird der Container entfernt. Du entscheidest, ob die Daten mitgelöscht werden."
+      }
+    },
+    "overview": {
+      "services": "Dienste",
+      "facts": "Eckdaten",
+      "manage": "Verwalten",
+      "rows": {
+        "engine": "Engine und Version",
+        "backups": "Backups",
+        "network": "Netzwerkfreigabe",
+        "access": "Zugriff",
+        "upgrades": "Upgrades"
+      },
+      "backupsOn": "Aktiv, Zeitplan {{schedule}}",
+      "backupsOff": "Kein Zeitplan gesetzt",
+      "backupsNone": "Von dieser Engine nicht unterstützt",
+      "networkPublic": "Veröffentlicht auf Port {{port}}",
+      "networkPrivate": "Privat auf diesem Server",
+      "accessHint": "Benutzer, Rollen und Plattformzugriff",
+      "upgradesHint": "Versionswechsel und Major-Upgrades"
+    }
+  },
+  "location": {
+    "local": "Dieser Server",
+    "node": "Knoten {{name}}",
+    "hosted": "Extern gehostet: {{host}}",
+    "filterGroup": "Nach Ort filtern",
+    "short": {
+      "local": "Dieser Server",
+      "node": "Knoten",
+      "hosted": "Extern gehostet"
+    }
+  },
+  "where": {
+    "title": "Wo soll sie laufen?",
+    "local": "Dieser Server",
+    "localHint": "Läuft neben Levelrail",
+    "node": "Ein Knoten",
+    "nodeHint": "Einer von {{count}} Knoten",
+    "nodeNone": "Braucht einen zweiten Knoten",
+    "nodeNext": "Den Knoten wählst du im nächsten Schritt.",
+    "cloud": "Cloud-Konto",
+    "cloudSoon": "Demnächst",
+    "hosted": "Vorhandene gehostete Datenbank",
+    "hostedAction": "Verbinden"
   }
 }

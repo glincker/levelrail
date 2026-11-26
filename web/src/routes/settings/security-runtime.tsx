@@ -37,9 +37,10 @@ const SEARCH_DEBOUNCE_MS = 200
 export const Route = createFileRoute('/settings/security-runtime')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { category?: RuntimeSettingCategory } => {
+  ): { category?: RuntimeSettingCategory; q?: string } => {
     const category = parseCategory(search.category)
-    return category ? { category } : {}
+    const q = typeof search.q === 'string' && search.q ? search.q : undefined
+    return { ...(category ? { category } : {}), ...(q ? { q } : {}) }
   },
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(runtimeSettingsQueryOptions()),
@@ -58,9 +59,10 @@ function SecurityRuntimePage() {
   const { data, error, refetch } = useRuntimeSettings()
   const settings = useMemo(() => data?.settings ?? [], [data])
   const pending = settings.filter((s) => s.pending_restart).length
-  const { category } = Route.useSearch()
+  const { category, q } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
-  const [query, setQuery] = useState('')
+  // q prefills the search so other pages can deep link to a group of keys.
+  const [query, setQuery] = useState(q ?? '')
   const [changedOnly, setChangedOnly] = useState(false)
   const needle = useDebouncedValue(query, SEARCH_DEBOUNCE_MS)
   const textOf = useMemo(

@@ -12,6 +12,65 @@
     "tunnelBody": "CLIがローカルポートを開き、コントロールプレーン経由でこのデータベースに中継します。インターネットには何も公開されません。",
     "tunnelAfter": "このコマンドは、ローカルポート用の接続文字列を出力します。--launchを付けると、psql、mysql、redis-cliが自動的に起動します(先にLEVELRAIL_DB_PASSWORDを設定してください)。"
   },
+  "connect": {
+    "title": "{{name}} に接続",
+    "description": "詳細、フレームワーク別のスニペット、設定ファイルをコピーできます。パスワードは表示するまで隠れたままです。",
+    "targetLabel": "接続先",
+    "target": {
+      "machine": "自分のマシンから",
+      "apps": "このサーバー上のアプリから"
+    },
+    "published": "{{address}} で公開中",
+    "publish": "自分のマシンから使う",
+    "publishing": "公開中...",
+    "publishHint": "127.0.0.1 のみにバインドしたポートを公開します。このコンピューターからだけ接続できます。",
+    "host": "ホスト",
+    "port": "ポート",
+    "database": "データベース",
+    "user": "ユーザー",
+    "password": "パスワード",
+    "reveal": "パスワードを表示",
+    "hidePassword": "パスワードを隠す",
+    "autoHide": "30 秒後に再び隠れます。",
+    "placeholderNote": "表示するまでスニペットでは <password> を使います。",
+    "noPassword": "パスワードなし: このエンジンはプライベートネットワーク上で認証なしで動作します。",
+    "revealFailed": "パスワードを表示できませんでした",
+    "url": "接続 URL",
+    "download": "ダウンロード",
+    "unavailable": "接続情報はまだ利用できません。",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env",
+      "jdbc": "JDBC",
+      "prisma": "Prisma",
+      "drizzle": "Drizzle",
+      "sqlalchemy": "SQLAlchemy",
+      "django": "Django",
+      "rails": "Rails",
+      "compose": "Compose",
+      "cli": "CLI"
+    },
+    "where": "アプリはどこで動いていますか?",
+    "stackLabel": "スタック",
+    "localPort": "ローカルポート",
+    "tunnelCommand": "トンネルコマンド",
+    "tunnelNote": "自分のPCで一度実行し、開いたままにしてください。トンネルはコマンドの実行中のみ有効です。アプリは127.0.0.1に接続します。",
+    "internalNote": "このサーバー上のアプリは内部ホスト名で接続します。データベースをアプリにリンクすると{{var}}が自動で設定されます。",
+    "remoteUnavailable": "このデータベースは公開されていません。ネットワークで公開するか、トンネルを使用してください。",
+    "openNetworking": "ネットワークを開く",
+    "downloadLocked": "ファイルをダウンロードするにはパスワードを表示してください。",
+    "mode": {
+      "host": "このマシン",
+      "internal": "別のLevelrailアプリ",
+      "remote": "リモートマシン"
+    }
+  },
   "upgrades": {
     "nav": "アップグレード"
   },
@@ -51,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "オフ",
         "tlsPrefer": "利用可能なら使用",
-        "tlsRequire": "必須"
+        "tlsRequire": "必須",
+        "tlsVerifyCa": "証明書を検証",
+        "tlsVerifyFull": "証明書とホスト名を検証"
       },
       "test": {
         "button": "接続をテスト",
@@ -109,6 +170,55 @@
       "confirmAnyway": "それでも削除",
       "removing": "削除中...",
       "toast": "「{{name}}」を削除しました。データベース自体には影響していません。"
+    },
+    "hosted": {
+      "trigger": "ホスト型を接続",
+      "title": "ホスト型データベースを接続",
+      "description": "クラウドプロバイダーで稼働しているデータベースを取り込みます。プロバイダーを選び、接続文字列を貼り付け、保存前にテストします。",
+      "pickProvider": "どこで動いていますか?",
+      "providerOther": "その他、または自己管理",
+      "paste": "接続文字列",
+      "pasteHint": "postgres://、mysql://、mongodb+srv://、rediss:// に対応します。パスワードは暗号化して保存され、再表示されません。",
+      "pasteParsed": "接続文字列から詳細を入力しました。パスワードは文字列から取得します。",
+      "orFields": "または詳細を自分で入力",
+      "hostLooksLike": "例: {{hint}}",
+      "docs": "{{provider}} の接続ドキュメント",
+      "caLink": "{{provider}} の CA バンドルをダウンロード",
+      "verifyNote": "証明書はシステムのルート証明書で検証されます。",
+      "detected": "検出: {{provider}}",
+      "back": "戻る",
+      "cancel": "キャンセル",
+      "next": "続行",
+      "test": "接続をテスト",
+      "testing": "テスト中...",
+      "retest": "もう一度テスト",
+      "reachable": "接続できます",
+      "tlsVerified": "TLS 証明書を検証済み",
+      "tlsNotVerified": "TLS は有効ですが、証明書は検証されていません",
+      "tlsOff": "TLS は無効",
+      "latency": "{{ms}} ms",
+      "server": "サーバー: {{version}}",
+      "saveAnyway": "テストに失敗しても保存する",
+      "save": "ホスト型データベースを保存",
+      "saving": "保存中...",
+      "readOnlyNote": "既定では読み取り専用です。読み取り権限のみのログインを使ってください。このデータベースの書き込みを有効にしない限り、エクスプローラーは書き込めません。",
+      "toast": "「{{name}}」を接続しました。",
+      "step": "ステップ {{current}} / {{total}}",
+      "providersError": "プロバイダー一覧を読み込めませんでした。「その他、または自己管理」は引き続き使えます。",
+      "parseError": "接続文字列として読み取れません: {{reason}}",
+      "tlsNotChecked": "このモードでは TLS 証明書を検証しません",
+      "tlsExplain": {
+        "disable": "暗号化なし。プライベートネットワーク専用です。",
+        "prefer": "サーバーが対応していれば暗号化します。証明書は検証しません。",
+        "require": "常に暗号化します。証明書は検証しません。",
+        "verify-ca": "常に暗号化し、証明書チェーンを検証します。",
+        "verify-full": "常に暗号化し、チェーンとホスト名を検証します。最も安全です。"
+      },
+      "saveAnywayWarn": "テストに失敗したため、接続できる保証はありません。このまま保存すると、入力どおりにレコードとパスワードが保存され、利用するアプリが接続できない場合があります。",
+      "busy": "実行中の接続テストが多すぎます。数秒待ってからもう一度お試しください。",
+      "forbidden": "ホスト型データベースを接続できるのは root アカウントのみです。",
+      "testIdle": "保存する前にテストを実行して、データベースに到達できるか確認します。",
+      "summary": "{{engine}} ({{host}}:{{port}})"
     }
   },
   "delete": {
@@ -212,6 +322,7 @@
       "console": "SQLコンソール"
     },
     "unsupported": "ビューアーはPostgres、MySQL、MariaDB、Redis互換エンジンに対応しています。このデータベースは{{engine}}です。",
+    "unsupportedDocumentdb": "DocumentDB のエクスプローラーはまだ利用できません。接続ダイアログのスニペットを使って接続してください。",
     "notRunning": "ビューアーには実行中のデータベースが必要です。データベースを起動して、もう一度お試しください。",
     "beta": {
       "label": "ベータ",
@@ -348,7 +459,81 @@
         "delete": "保存済みの文を削除",
         "load": "エディターに読み込む"
       },
-      "plan": "クエリプラン"
+      "plan": "クエリプラン",
+      "runWrite": "実行 (書き込み)",
+      "writeDone": "コミットしました。{{count}} 行が返されました。",
+      "destructive": {
+        "title": "{{kind}} の確認",
+        "run": "それでも実行",
+        "typeLabel": "実行するには {{name}} を入力",
+        "unknownObject": "対象",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "WHERE なしの DELETE",
+          "updateAll": "WHERE なしの UPDATE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "{{object}} とそのデータを完全に削除します。",
+          "truncate": "{{object}} を空にします。すべての行が削除されます。",
+          "deleteAll": "WHERE がないため {{object}} の全行が削除されます。",
+          "updateAll": "WHERE がないため {{object}} の全行が更新されます。",
+          "alterDrop": "{{object}} の一部とそのデータを削除します。",
+          "grant": "{{object}} へのアクセスを広げます。",
+          "revoke": "{{object}} へのアクセスを取り消します。"
+        }
+      },
+      "shortcutsHint": "Ctrl または Cmd + Enter で実行、S で保存、T で新しいタブを開きます。",
+      "tabs": {
+        "listLabel": "クエリタブ",
+        "untitled": "クエリ {{n}}",
+        "new": "新しいタブ",
+        "close": "{{title}} を閉じる",
+        "unsaved": "未保存の変更"
+      },
+      "editor": {
+        "format": "整形",
+        "formatHint": "キーワードを大文字にし、各句を別の行に置きます",
+        "suggestions": "候補"
+      },
+      "results": {
+        "exportCsv": "CSV を書き出す",
+        "exportJson": "JSON を書き出す",
+        "exportHint": "この結果に読み込まれた {{count}} 行を書き出します",
+        "exported": "{{count}} 行を書き出しました。",
+        "copyCell": "セルをコピー",
+        "copied": "コピーしました。",
+        "copyFailed": "コピーできませんでした。",
+        "resizeColumn": "列 {{column}} の幅を変更",
+        "typeInferred": "このページの値から推測した型",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "このプランにはコストの数値がないため、生のテキストを表示しています。",
+        "showTree": "ツリーを表示",
+        "showRaw": "生のテキストを表示",
+        "hottest": "最もコストが高い",
+        "cost": "コスト {{value}}",
+        "rows": "{{count}}行",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "保存済みと最近のステートメント",
+        "searchLabel": "ステートメントを検索",
+        "searchPlaceholder": "保存済みと履歴を検索",
+        "noMatch": "検索に一致するものはありません。",
+        "openInTab": "新しいタブで開く"
+      }
     },
     "keys": {
       "title": "キーブラウザー",
@@ -364,7 +549,32 @@
       "noTtl": "有効期限なし",
       "ttlSeconds": "{{count}}秒",
       "truncated": "値はサーバーの上限で切り詰められました。",
-      "readOnlyNote": "読み取り専用です。値はSCAN、TYPE、TTL、および型ごとの読み取りで取得されます。"
+      "readOnlyNote": "読み取り専用です。値はSCAN、TYPE、TTL、および型ごとの読み取りで取得されます。",
+      "tab_keys": "キー",
+      "tab_info": "情報",
+      "typeFilter": "タイプで絞り込み",
+      "allTypes": "すべてのタイプ",
+      "encoding": "エンコーディング",
+      "memory": "メモリ",
+      "size": "要素数",
+      "bits": "{{total}} ビット中 {{set}} ビットが設定済み",
+      "view": "値の表示",
+      "view_text": "テキスト",
+      "view_json": "JSON",
+      "view_hex": "16進",
+      "notJson": "この値は有効な JSON ではありません。",
+      "jsonUnsupported": "このサーバーでは JSON モジュールを利用できません。",
+      "hyperloglog": "HyperLogLog スケッチです。バイナリ値は表示されません。",
+      "infoTitle": "サーバー情報",
+      "slowlogTitle": "遅いコマンド",
+      "slowlogNote": "表示されるのはコマンド名と引数のサイズのみで、引数は表示されません。",
+      "slowlogEmpty": "遅いコマンドは記録されていません。",
+      "slowId": "ID",
+      "slowTime": "時刻",
+      "slowDuration": "マイクロ秒",
+      "slowCommand": "コマンド",
+      "slowArgs": "引数 / サイズ",
+      "slowClient": "クライアント"
     },
     "structure": {
       "openConsole": "コンソールで開く",
@@ -446,6 +656,125 @@
       "noLookups": "まだ参照がありません",
       "evictions": "エビクション",
       "connections": "接続数"
+    },
+    "mongo": {
+      "tree": {
+        "label": "データベースとコレクション",
+        "search": "コレクションを検索",
+        "truncated": "リストの一部のみ表示しています。",
+        "noCollections": "コレクションなし",
+        "meta": "{{size}}、インデックス: {{count}}",
+        "items": "長さ {{count}}",
+        "fields": "フィールド {{count}}",
+        "root": "ドキュメント"
+      },
+      "readOnly": "読み取り専用",
+      "readOnlyReason": "閲覧ではデータは変更されません。find、件数取得、インデックスの読み取りのみ可能です。",
+      "noCollections": "このデータベースにはまだコレクションがありません。",
+      "tabs": {
+        "documents": "ドキュメント",
+        "indexes": "インデックス",
+        "stats": "統計"
+      },
+      "docs": {
+        "filter": "フィルター",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "上限",
+        "run": "実行",
+        "options": "オプション",
+        "sort": "ソート",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "プロジェクション",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "例",
+        "status": "ドキュメント: {{count}} 件、{{ms}} ms、{{page}} ページ",
+        "truncated": "サイズ上限で結果を切り詰めました。",
+        "expandAll": "すべて展開",
+        "collapseAll": "すべて折りたたむ",
+        "rejected": "サーバーがこのクエリを拒否しました",
+        "failed": "クエリに失敗しました",
+        "noMatches": "このフィルターに一致するドキュメントはありません。",
+        "empty": "このコレクションにドキュメントはありません。",
+        "details": "詳細",
+        "copyDoc": "JSON としてコピー",
+        "prev": "前のページ",
+        "next": "次のページ",
+        "invalid": {
+          "syntax": "{{kind}}が有効な JSON ではありません。",
+          "notObject": "{{kind}}は JSON オブジェクトである必要があります。",
+          "sortDirection": "ソート値は 1 または -1 にしてください。",
+          "projectionValue": "プロジェクション値は数値、真偽値、オブジェクトのいずれかにしてください。"
+        },
+        "kind": {
+          "filter": "フィルター",
+          "sort": "ソート",
+          "projection": "プロジェクション"
+        }
+      },
+      "indexes": {
+        "empty": "インデックスは報告されていません。",
+        "label": "インデックス",
+        "name": "名前",
+        "keys": "キー",
+        "unique": "一意",
+        "yes": "はい",
+        "no": "いいえ"
+      },
+      "stats": {
+        "documents": "ドキュメント",
+        "dataSize": "データサイズ",
+        "storageSize": "ストレージサイズ",
+        "indexes": "インデックス",
+        "type": "種類"
+      }
+    },
+    "dynamo": {
+      "tables": "テーブル",
+      "truncated": "一覧の一部のみ表示しています。",
+      "meta": "{{count}} 件、{{size}}",
+      "estimate": "件数とサイズは推定値で、エンジンが遅延して更新します。",
+      "noTables": "このデータベースにはまだテーブルがありません。",
+      "readOnly": "読み取り専用",
+      "ttl": "{{attr}} に TTL",
+      "mode": "モード",
+      "query": "クエリ",
+      "scan": "スキャン",
+      "index": "インデックス",
+      "tableKey": "テーブルキー",
+      "partitionKey": "パーティションキー",
+      "scanConfirm": "スキャンは通過した全項目を読み取ることを理解しました",
+      "limit": "上限",
+      "run": "実行",
+      "failed": "読み取りに失敗しました",
+      "summary": "{{count}} 件、{{scanned}} 件走査、{{ms}} ms",
+      "noItems": "一致する項目はありません。",
+      "prev": "前へ",
+      "next": "次へ",
+      "item": "項目",
+      "close": "閉じる"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "リスト",
+        "diagram": "ダイアグラム"
+      },
+      "viewMode": "スキーママップの表示",
+      "search": "テーブルを絞り込む",
+      "zoomGroup": "ズーム",
+      "zoomOut": "縮小",
+      "zoomIn": "拡大",
+      "fit": "画面に合わせる",
+      "export": "SVGを書き出す",
+      "label": "スキーママップの図",
+      "noTables": "描画できるテーブルがまだありません。",
+      "noMatch": "フィルターに一致するテーブルがありません。",
+      "openTable": "{{table}}を開く",
+      "more": "他{{count}}件",
+      "count": "{{count}}テーブル",
+      "capped": "{{total}}テーブル中{{shown}}を表示",
+      "loadingKeys": "キーを読み込み中",
+      "noKeys": "外部キーが見つかりません。テーブルのみ表示しています",
+      "keysError": "一部の外部キーを読み込めませんでした"
     }
   },
   "createFlavor": {
@@ -488,6 +817,7 @@
       "keydb": "1ノードでより高いスループットを出せる、マルチスレッドのRedis互換ストアです。",
       "dragonfly": "非常に高いスループット向けに作られた、モダンなRedis互換ストアです。",
       "mongodb": "柔軟なJSON形式のデータ向けのドキュメントデータベースです。",
+      "documentdb": "PostgreSQL 上で動くオープンソースのドキュメントデータベースで、MongoDB プロトコルと互換です。",
       "clickhouse": "大量のイベントデータに対する高速な分析クエリ向けのカラムストアです。",
       "meilisearch": "タイプミスに強く、HTTP APIで即座に結果を返す全文検索です。",
       "qdrant": "埋め込み、セマンティック検索、RAG検索向けのベクトルデータベースです。",
@@ -537,7 +867,14 @@
     "loading": "データベースを読み込み中",
     "notCreated": "まだ作成されていません",
     "failedToCreate": "データベースを作成できませんでした",
-    "pendingActionHint": "データベースの作成後に利用できます"
+    "pendingActionHint": "データベースの作成後に利用できます",
+    "colLocation": "実行場所",
+    "summary": "データベース {{total}} 件: このサーバー {{local}}、ノード {{node}}、外部ホスト {{hosted}}",
+    "viewGroup": "一覧表示",
+    "viewTable": "表",
+    "viewCards": "カード",
+    "connect": "接続",
+    "explorer": "エクスプローラー"
   },
   "detail": {
     "backupNow": "今すぐバックアップ",
@@ -770,8 +1107,6 @@
     },
     "advanced": {
       "title": "詳細オプション",
-      "node": "ノード",
-      "autoNode": "自動で選択",
       "project": "プロジェクト",
       "noProject": "プロジェクトなし"
     },
@@ -812,7 +1147,78 @@
     "submitting": "作成中...",
     "created": "データベース「{{name}}」を作成しています。",
     "createdPartial": "データベース「{{name}}」を作成しましたが、サイズまたはバックアップを適用できませんでした。設定を確認してください。",
-    "dockerDown": "このサーバーでDockerが応答していません。復旧するまでデータベースを作成できません。"
+    "dockerDown": "このサーバーでDockerが応答していません。復旧するまでデータベースを作成できません。",
+    "placement": {
+      "title": "実行場所",
+      "kinds": {
+        "local": {
+          "title": "このサーバー",
+          "note": "Levelrail と同じ場所"
+        },
+        "node": {
+          "title": "既存のノード",
+          "note": "接続済み"
+        },
+        "cloud": {
+          "title": "新しいクラウドノード",
+          "note": "クラウド上にサーバーを作成"
+        },
+        "host": {
+          "title": "任意の Linux ホスト",
+          "note": "データセンターまたは自分のマシン"
+        }
+      },
+      "local": "{{name}} で実行します。空きディスク {{free}}。",
+      "localNoDisk": "{{name}} で実行します。空きディスクは報告されていません。",
+      "auto": "自動選択",
+      "autoPick": "{{name}} を使用します",
+      "autoNone": "現在、利用できるノードがありません。",
+      "diskFree": "空き {{free}}",
+      "diskUnknown": "ディスク未報告",
+      "load": "負荷 {{percent}}%",
+      "workloads": "ワークロード {{count}}",
+      "noNodes": "接続されている他のノードはまだありません。",
+      "addNode": "ノードを追加",
+      "noCloud": "クラウドアカウントが接続されていません。",
+      "connectCloud": "クラウドアカウントを接続",
+      "comingSoon": "近日対応",
+      "connected": "接続済み",
+      "notConnected": "接続",
+      "region": "リージョン",
+      "size": "サイズ",
+      "pick": "選択",
+      "estimate": "月額およそ {{price}} {{currency}}",
+      "noEstimate": "このサイズの価格は報告されていません。",
+      "spendNote": "クラウドノードの作成には費用がかかります。作成前にサイズと月額の見積もりを確認していただきます。",
+      "combinedPending": "ノードとデータベースを一度に作成する機能は次回のアップデートで提供します。先にノードを追加し、その上でデータベースを作成してください。",
+      "addCloudNode": "クラウドノードを追加",
+      "hostNote": "Docker のある Linux ホストでインストールコマンドを実行してください。ノードが表示されたら、その上でデータベースを作成します。",
+      "hostCommand": "インストールコマンドを表示",
+      "reasons": {
+        "offline": "オフライン",
+        "cordoned": "隔離中のため新しい作業を受け付けません",
+        "outdated": "エージェントが古くなっています",
+        "failing": "ノードに障害があります",
+        "noDocker": "Docker を利用できません",
+        "lowDisk": "空きディスクが少ない"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "このサーバー ({{name}}) で実行します。",
+        "node": "{{name}} で実行します。",
+        "auto": "自動選択: {{name}} で実行します。",
+        "cloud": "先に新しいクラウドノードが必要です。追加してから、その上でデータベースを作成してください。",
+        "host": "先にホスト上のノードが必要です。追加してから、その上でデータベースを作成してください。"
+      }
+    }
   },
   "provision": {
     "title": "データベースをセットアップ中",
@@ -1136,6 +1542,10 @@
     "note": "フィールドをクリアすると、エンジンの既定値に戻ります。",
     "pendingNote": "適用するとデータベースが再起動します。停止後の起動でも適用されます。"
   },
+  "latestVersion": {
+    "resolved": "最新（解決済み: {{version}}）",
+    "pending": "最新: データベース作成時に最新の安定版が選ばれます。"
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "パスワード",
@@ -1178,5 +1588,115 @@
     "noProject": "プロジェクトなし",
     "on": "有効",
     "none": "なし"
+  },
+  "home": {
+    "nav": {
+      "back": "データベースに戻る",
+      "overview": "概要",
+      "branches": "ブランチ",
+      "monitoring": "モニタリング",
+      "integrations": "連携",
+      "settings": "設定",
+      "tables": "テーブル",
+      "collections": "コレクション",
+      "keys": "キー",
+      "explorer": "エクスプローラー",
+      "query": "クエリエディタ",
+      "backups": "バックアップと復元",
+      "users": "ユーザーとロール",
+      "data": "データ"
+    },
+    "monitoring": {
+      "metrics": "メトリクス",
+      "logs": "ログ",
+      "slow": "スロークエリ"
+    },
+    "branches": {
+      "title": "ブランチ",
+      "body": "ブランチはこのリリースで提供されます。",
+      "planned": "予定されている操作",
+      "actions": {
+        "create": "このデータベースの子ブランチを作成",
+        "reset": "ブランチを親にリセット",
+        "restore": "ブランチを特定時点に復元",
+        "expire": "ブランチの有効期限を設定"
+      }
+    },
+    "integrations": {
+      "title": "連携",
+      "body": "このデータベースにサービスを接続します。現在利用できるものはありません。",
+      "categories": {
+        "auth": "認証",
+        "storage": "オブジェクトストレージ",
+        "functions": "関数",
+        "realtime": "リアルタイム",
+        "ai": "AIゲートウェイ",
+        "observability": "オブザーバビリティ"
+      },
+      "soon": "近日公開"
+    },
+    "settings": {
+      "sections": {
+        "general": "一般",
+        "networking": "ネットワーク",
+        "credentials": "認証情報",
+        "backups": "バックアップとアップグレード",
+        "danger": "危険ゾーン"
+      },
+      "general": {
+        "title": "一般",
+        "name": "名前",
+        "engine": "エンジン",
+        "copyName": "データベース名をコピー",
+        "immutable": "名前はこのデータベースを識別するもので、変更できません。"
+      },
+      "danger": {
+        "title": "危険ゾーン",
+        "body": "データベースを削除するとコンテナが削除されます。データも削除するかは選択できます。"
+      }
+    },
+    "overview": {
+      "services": "サービス",
+      "facts": "主要情報",
+      "manage": "管理",
+      "rows": {
+        "engine": "エンジンとバージョン",
+        "backups": "バックアップ",
+        "network": "ネットワーク公開",
+        "access": "アクセス",
+        "upgrades": "アップグレード"
+      },
+      "backupsOn": "有効、スケジュール {{schedule}}",
+      "backupsOff": "スケジュール未設定",
+      "backupsNone": "このエンジンでは未対応",
+      "networkPublic": "ポート {{port}} で公開",
+      "networkPrivate": "このサーバー内のみ",
+      "accessHint": "ユーザー、ロール、プラットフォームアクセス",
+      "upgradesHint": "バージョン変更とメジャーアップグレード"
+    }
+  },
+  "location": {
+    "local": "このサーバー",
+    "node": "ノード {{name}}",
+    "hosted": "外部ホスト: {{host}}",
+    "filterGroup": "場所で絞り込み",
+    "short": {
+      "local": "このサーバー",
+      "node": "ノード",
+      "hosted": "外部ホスト"
+    }
+  },
+  "where": {
+    "title": "どこで実行しますか？",
+    "local": "このサーバー",
+    "localHint": "Levelrail と同じ場所で実行",
+    "node": "ノード",
+    "nodeHint": "{{count}} 台のノードから選択",
+    "nodeNone": "2 台目のノードが必要です",
+    "nodeNext": "ノードは次のステップで選びます。",
+    "cloud": "クラウドアカウント",
+    "cloudSoon": "近日対応",
+    "hosted": "既存のホスト型データベース",
+    "hostedAction": "接続"
   }
 }

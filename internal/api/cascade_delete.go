@@ -142,13 +142,17 @@ func (rt *Router) tearDownScope(ctx context.Context, scope cascadeScope) cascade
 			resp.TeardownPending = append(resp.TeardownPending, svc.Name)
 		}
 	}
-	for _, d := range scope.databases {
+	for _, d := range rt.childrenFirst(ctx, scope.databases) {
 		if outside := rt.databaseUsersOutside(ctx, d.Name, inScope); len(outside) > 0 {
 			resp.Failed = append(resp.Failed, cascadeFailure{Kind: "database", Name: d.Name, Error: "still used by apps outside this scope: " + strings.Join(outside, ", ")})
 			continue
 		}
 		if err := rt.databases.DeleteDesiredDatabase(ctx, d.Name); err != nil && !errors.Is(err, store.ErrDatabaseNotFound) {
-			resp.Failed = append(resp.Failed, cascadeFailure{Kind: "database", Name: d.Name, Error: err.Error()})
+			msg := err.Error()
+			if isBranchBlock(err) {
+				msg = branchBlockMessage(err)
+			}
+			resp.Failed = append(resp.Failed, cascadeFailure{Kind: "database", Name: d.Name, Error: msg})
 			continue
 		}
 		rt.teardownDatabaseContainer(d.Name, d.NodeID)

@@ -1020,7 +1020,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/pooler | AbilityRead | handleGetDatabasePooler |
 | POST | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleEnableDatabasePooler |
 | DELETE | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleDisableDatabasePooler |
-| POST | /api/v1/databases/{name}/branches | AbilityWriteSensitive | handleBranchDatabase |
+| POST | /api/v1/databases/{name}/branches | AbilityRoot | handleCreateDatabaseBranch |
 | GET | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImportCheck |
 | POST | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImport |
 | POST | /api/v1/databases/bulk | AbilityWriteSensitive | handleBulkDatabases |
@@ -1036,6 +1036,27 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/restore-test | AbilityRead | handleGetDatabaseRestoreTest |
 | GET | /api/v1/databases/{name}/restore-preview | AbilityRead | handleDatabaseRestorePreview |
 | GET | /api/v1/databases/{name}/major-upgrade/check | AbilityRead | handleMajorUpgradeCheck |
+| GET | /api/v1/database-engines/{id}/latest | AbilityRead | handleLatestDatabaseVersion |
+| GET | /api/v1/databases/{name}/explorer/capabilities | AbilityReadSensitive | handleGetDatabaseExplorerCapabilities |
+| GET | /api/v1/databases/{name}/mongo/collections | AbilityReadSensitive | handleGetMongoCollections |
+| POST | /api/v1/databases/{name}/mongo/find | AbilityReadSensitive | handleMongoFind |
+| GET | /api/v1/databases/{name}/integrations | AbilityRead | handleListDatabaseIntegrations |
+| GET | /api/v1/databases/{name}/redis/info | AbilityReadSensitive | handleGetRedisInfo |
+| GET | /api/v1/databases/{name}/redis/slowlog | AbilityReadSensitive | handleGetRedisSlowlog |
+| GET | /api/v1/databases/{name}/redis/clients | AbilityReadSensitive | handleGetRedisClients |
+| GET | /api/v1/databases/{name}/branches | AbilityReadSensitive | handleListDatabaseBranches |
+| GET | /api/v1/databases/{name}/branch-capabilities | AbilityReadSensitive | handleBranchCapabilities |
+| GET | /api/v1/databases/{name}/branches/{branch} | AbilityReadSensitive | handleGetDatabaseBranch |
+| PATCH | /api/v1/databases/{name}/branches/{branch} | AbilityRoot | handlePatchDatabaseBranch |
+| DELETE | /api/v1/databases/{name}/branches/{branch} | AbilityRoot | handleDeleteDatabaseBranch |
+| POST | /api/v1/databases/{name}/branches/{branch}/reset | AbilityRoot | handleResetDatabaseBranch |
+| POST | /api/v1/databases/{name}/branches/{branch}/promote | AbilityRoot | handlePromoteDatabaseBranch |
+| GET | /api/v1/databases/{name}/audit | AbilityRoot | handleListDatabaseStatementAudit |
+| GET | /api/v1/databases/{name}/dynamo/tables | AbilityReadSensitive | handleGetDynamoTables |
+| POST | /api/v1/databases/{name}/dynamo/query | AbilityReadSensitive | handleDynamoQuery |
+| POST | /api/v1/databases/{name}/dynamo/scan | AbilityReadSensitive | handleDynamoScan |
+| GET | /api/v1/databases/{name}/branches/{branch}/schema-diff | AbilityReadSensitive | handleGetBranchSchemaDiff |
+| GET | /api/v1/databases/{name}/advisor | AbilityReadSensitive | handleGetDatabaseAdvisor |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 
@@ -2635,6 +2656,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/node-pools | AbilityRoot | handleListNodePools |
 | PUT | /api/v1/node-pools/{name} | AbilityRoot | handleSetNodePool |
 | DELETE | /api/v1/node-pools/{name} | AbilityRoot | handleDeleteNodePool |
+| GET | /api/v1/external-databases/providers | AbilityRoot | handleListExternalDatabaseProviders |
+| POST | /api/v1/external-databases/parse | AbilityRoot | handleParseExternalDatabaseURL |
 | POST | /mcp | Public |  |
 
 ## See also

@@ -1,17 +1,12 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  ChevronRightGlassIcon,
-  DatabaseGlassIcon,
-  UploadGlassIcon,
-} from '@thesvg/ui-react'
+import { ChevronRightGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { DatabaseListEntry } from '../types/databaseDetail'
-import { logoIdForImage } from '../lib/imageLogo'
 import { StatusLabel } from './AppRow'
 import { ManagedByStackTag } from './stacks/ManagedByStackNotice'
 import { PlacementLabel } from './PlacementLabel'
-import { TemplateLogo } from './TemplateLogo'
+import { EngineMark } from './EngineMark'
 
 // Same anatomy as APP_LIST_GRID: avatar, name with status beneath, then
 // lg-only columns, trailing chevron. Shared by the sticky header and rows.
@@ -21,11 +16,7 @@ export const DATABASE_LIST_GRID =
 function EngineLogo({ engine }: { engine: string }) {
   return (
     <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-muted-foreground">
-      <TemplateLogo
-        id={logoIdForImage(engine) ?? ''}
-        className="size-4"
-        fallback={<DatabaseGlassIcon className="size-5" aria-hidden="true" />}
-      />
+      <EngineMark engine={engine} className="size-5" />
     </span>
   )
 }

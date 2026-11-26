@@ -46,3 +46,33 @@ func TestConnectSnippetsPostgresURL(t *testing.T) {
 		t.Errorf("got %q want %q", got, want)
 	}
 }
+
+func TestConnectSnippetsDocumentDBUsesMongoScheme(t *testing.T) {
+	tgt := ConnectSnippetTarget{Engine: "documentdb", Host: "db.internal", Port: 10260, User: "app", Database: "main"}
+	for _, s := range BuildConnectSnippets(tgt, "pw", true) {
+		if s.ID != "url" {
+			continue
+		}
+		if !strings.HasPrefix(s.Code, "mongodb://") || !strings.Contains(s.Code, "tls=true") || !strings.Contains(s.Code, "tlsAllowInvalidCertificates=true") {
+			t.Errorf("url = %s", s.Code)
+		}
+		return
+	}
+	t.Fatal("no url snippet")
+}
+
+func TestConnectSnippetsDynamoDBHasEndpointAndDummyKeys(t *testing.T) {
+	tgt := ConnectSnippetTarget{Engine: "dynamodb", Host: "db-kv", Port: 8000}
+	got := map[string]string{}
+	for _, s := range BuildConnectSnippets(tgt, "", true) {
+		got[s.ID] = s.Code
+	}
+	if got["url"] != "http://db-kv:8000" {
+		t.Errorf("url = %q", got["url"])
+	}
+	for _, id := range []string{"spring", "spring-cloud", "node", "python", "go"} {
+		if !strings.Contains(got[id], "http://db-kv:8000") {
+			t.Errorf("%s snippet missing endpoint: %q", id, got[id])
+		}
+	}
+}

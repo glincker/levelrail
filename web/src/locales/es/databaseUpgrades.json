@@ -13,7 +13,9 @@
     "advisories": "Avisos de seguridad conocidos que afectan a esta versión",
     "catalogUpdated": "Catálogo actualizado {{date}}",
     "blockersTitle": "Las actualizaciones están bloqueadas",
-    "manualReason": "Se requiere una actualización manual"
+    "manualReason": "Se requiere una actualización manual",
+    "backupCtaTitle": "Configura un destino de copias de seguridad para habilitar actualizaciones seguras",
+    "backupCtaButton": "Configurar almacenamiento de copias"
   },
   "support": {
     "supported": "Con soporte",

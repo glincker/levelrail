@@ -8,7 +8,18 @@ export const DB_STATUS_BUCKETS = [
 ] as const
 export type DbStatusBucket = (typeof DB_STATUS_BUCKETS)[number]
 
+export const DB_LOCATIONS = ['local', 'node', 'hosted'] as const
+export type DbLocation = (typeof DB_LOCATIONS)[number]
+
+// Where a database runs, from fields the list already sends: external rows
+// are hosted elsewhere, a non-local node id is a remote node.
+export function databaseLocation(db: DatabaseListEntry): DbLocation {
+  if (db.external) return 'hosted'
+  return db.node_id && !db.node_is_local ? 'node' : 'local'
+}
+
 export interface DatabaseListFilters {
+  location: DbLocation | null
   q: string
   engines: string[]
   status: DbStatusBucket | null
@@ -16,6 +27,7 @@ export interface DatabaseListFilters {
 }
 
 export const EMPTY_DB_FILTERS: DatabaseListFilters = {
+  location: null,
   q: '',
   engines: [],
   status: null,
@@ -27,6 +39,7 @@ export interface DatabasesSearch {
   create?: string
   q?: string
   engine?: string
+  loc?: DbLocation
   status?: DbStatusBucket
   tag?: string
 }
@@ -40,6 +53,14 @@ export function databaseStatusBucket(db: DatabaseListEntry): DbStatusBucket {
   }
   if (db.status.variant === 'success') return 'healthy'
   return 'reconciling'
+}
+
+export function countByLocation(
+  dbs: readonly DatabaseListEntry[],
+): Record<DbLocation, number> {
+  const out: Record<DbLocation, number> = { local: 0, node: 0, hosted: 0 }
+  for (const db of dbs) out[databaseLocation(db)] += 1
+  return out
 }
 
 export function countByStatus(
@@ -87,6 +108,7 @@ export function filterDatabases(
         db.name.toLowerCase().includes(q) ||
         db.engine.toLowerCase().includes(q)) &&
       (f.engines.length === 0 || f.engines.includes(db.engine)) &&
+      (f.location === null || databaseLocation(db) === f.location) &&
       (f.status === null || databaseStatusBucket(db) === f.status) &&
       hasTags(db, f.tags),
   )
@@ -94,7 +116,11 @@ export function filterDatabases(
 
 export function dbFiltersActive(f: DatabaseListFilters): boolean {
   return (
-    f.q !== '' || f.engines.length > 0 || f.status !== null || f.tags.length > 0
+    f.q !== '' ||
+    f.engines.length > 0 ||
+    f.location !== null ||
+    f.status !== null ||
+    f.tags.length > 0
   )
 }
 
@@ -119,6 +145,8 @@ export function parseDatabasesSearch(
     if (engines.length > 0) out.engine = engines.join(',')
   }
   if (isBucket(search.status)) out.status = search.status
+  const loc = DB_LOCATIONS.find((l) => l === search.loc)
+  if (loc) out.loc = loc
   if (typeof search.tag === 'string') {
     const tags = splitList(search.tag.toLowerCase())
     if (tags.length > 0) out.tag = tags.join(',')
@@ -131,6 +159,7 @@ export function filtersFromSearch(s: DatabasesSearch): DatabaseListFilters {
     q: s.q ?? '',
     engines: s.engine ? s.engine.split(',') : [],
     status: s.status ?? null,
+    location: s.loc ?? null,
     tags: s.tag ? s.tag.split(',') : [],
   }
 }
@@ -143,6 +172,7 @@ export function databaseViewFilter(
   return {
     q: f.q,
     status: f.status ?? '',
+    loc: f.location ?? '',
     engine: f.engines.join(','),
     tag: f.tags.join(','),
     labels,
@@ -154,6 +184,7 @@ export function searchFromFilters(f: DatabaseListFilters): DatabasesSearch {
   if (f.q !== '') out.q = f.q
   if (f.engines.length > 0) out.engine = f.engines.join(',')
   if (f.status) out.status = f.status
+  if (f.location) out.loc = f.location
   if (f.tags.length > 0) out.tag = f.tags.join(',')
   return out
 }

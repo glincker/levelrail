@@ -1,0 +1,9 @@
+{
+  "abuse": {
+    "title": "Abuse defence",
+    "loadError": "Could not load the abuse defence: {{message}}",
+    "failOpen_one": "{{count}} request was served unchecked because the defence failed.",
+    "failOpen_other": "{{count}} requests were served unchecked because the defence failed.",
+    "saved": "Abuse defence saved ({{mode}})."
+  }
+}

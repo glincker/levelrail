@@ -68,6 +68,8 @@ func buildExplainTable() map[string]Explanation {
 			nextFixButton+"It removes only networks no container uses. "+nextCLIFix, "docker.network_pool.prune", KindAuto),
 		ex("docker_orphans", "There are containers, images or volumes no app owns.", "They use disk and can hold old data.",
 			nextFixButton+"It shows what would go before anything is removed. "+nextCLIFix, "docker.orphans.prune", KindAuto),
+		ex("database_crash_loop", "A database container keeps exiting right after it starts.", "Apps that use it cannot connect, and it was never really running.",
+			"Open the database logs. If the data directory was written by another major version, change the version in Settings to match the data, then press Re-check.", "", KindManual),
 
 		// Host
 		ex("disk_space", "The disk that holds your data is nearly full.", "A full disk stops deploys, builds and databases.",
@@ -88,6 +90,10 @@ func buildExplainTable() map[string]Explanation {
 			"Add a 1 to 2 GB swap file, then press Re-check.", "", KindManual),
 		ex("build_memory", "The host has less memory than a typical web build needs.", "Builds may fail with out-of-memory errors.",
 			"Add swap or memory, or build on a bigger node. Open Settings, then Builds, to pick the build node.", "", KindGuided),
+		ex("database_audit_health", "Some database explorer audit events were dropped or failed to write.", "The audit trail has gaps for that period.",
+			"Raise the audit queue size in Settings, check the control plane disk, then press Re-check.", "", KindManual),
+		ex("database_alerts", "One or more databases are crash looping, running out of connections, filling their disk or missing a backup.", "The affected database may stop accepting work or lose its recovery point.",
+			"Open the named database's monitoring page, or its backup settings for a missing backup, then press Re-check.", "", KindManual),
 		ex("personal_builder_owner", "A personal builder has no owner label.", "Under the default scope it receives no builds, so they run elsewhere.",
 			"Add the builder.owner node label with a user id, or set build.personal_builder_scope to all in Settings.", "", KindManual),
 		ex("build_queue", "The build queue has been paused or draining for a long time.", "New builds and webhook deploys wait in the queue until someone resumes it.",

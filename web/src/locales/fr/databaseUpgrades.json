@@ -13,7 +13,9 @@
     "advisories": "Avis de sécurité connus affectant cette version",
     "catalogUpdated": "Catalogue mis à jour {{date}}",
     "blockersTitle": "Les mises à niveau sont bloquées",
-    "manualReason": "Mise à niveau manuelle requise"
+    "manualReason": "Mise à niveau manuelle requise",
+    "backupCtaTitle": "Configurez une destination de sauvegarde pour activer des mises à niveau sûres",
+    "backupCtaButton": "Configurer le stockage des sauvegardes"
   },
   "support": {
     "supported": "Pris en charge",

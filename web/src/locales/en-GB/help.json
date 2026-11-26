@@ -1,0 +1,8 @@
+{
+  "pin": {
+    "tooltip": "Pin this page to your favourites"
+  },
+  "unpin": {
+    "tooltip": "Remove this page from your favourites"
+  }
+}

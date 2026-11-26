@@ -76,10 +76,12 @@
       "auto_max": "patch",
       "image_revert": true,
       "notes": "ClickHouse releases (24.8, 25.3) are majors; stay inside one LTS series for automatic patches.",
-      "versions": ["24.8", "25.3", "25.8"],
+      "versions": ["24.8", "25.3", "25.8", "26.3", "26.8"],
       "lines": [
         {"line": "25.3", "eol": "2026-03-20"},
-        {"line": "25.8", "eol": "2026-08-29"}
+        {"line": "25.8", "eol": "2026-08-29"},
+        {"line": "26.3", "eol": "2027-03-31"},
+        {"line": "26.8", "eol": "2027-08-31"}
       ],
       "advisories": []
     },

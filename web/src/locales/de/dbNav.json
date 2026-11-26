@@ -1,0 +1,57 @@
+{
+  "nav": {
+    "access": "Zugriff",
+    "networking": "Netzwerk",
+    "credentials": "Zugangsdaten"
+  },
+  "networking": {
+    "exposureTitle": "So ist diese Datenbank erreichbar",
+    "levelLabel": "Erreichbarkeitsstufe",
+    "current": "Aktuell",
+    "private": "Privat",
+    "privateHint": "Nur Apps auf diesem Server können sich verbinden.",
+    "tunnel": "Tunnel",
+    "tunnelHint": "Von Ihrem Rechner über die CLI erreichbar. Nichts wird veröffentlicht.",
+    "public": "Öffentlich",
+    "publicHint": "Ein Host-Port wird auf einer Bind-Adresse veröffentlicht.",
+    "endpoint": "Endpunkt",
+    "autoPort": "automatischer Port",
+    "tunnelRun": "Führen Sie das auf Ihrem Rechner aus und lassen Sie es offen:",
+    "bindLabel": "Bind-Adresse",
+    "bindLoopback": "Nur Loopback (127.0.0.1)",
+    "bindAll": "Alle Schnittstellen (0.0.0.0)",
+    "bindAllWarning": "Jeder, der diesen Server erreicht, kann den Port erreichen. Schränken Sie die erlaubten Quellen ein und verlangen Sie TLS.",
+    "publicDisabled": "Veröffentlichen ist auf diesem Host nicht möglich: Er kann keine Quellregeln durchsetzen. {{reason}}",
+    "makePrivate": "Privat machen",
+    "publish": "Veröffentlichen",
+    "makePrivateTitle": "{{name}} privat machen?",
+    "makePrivateBody": "Der Host-Port wird geschlossen. Verknüpfte Apps auf diesem Server funktionieren weiter; Verbindungen von außen enden.",
+    "publishTitle": "{{name}} veröffentlichen?",
+    "publishBodyAll": "Das öffnet einen Host-Port auf allen Schnittstellen. Jeder, der diesen Server erreicht, kann sich verbinden.",
+    "publishBodyLoopback": "Das öffnet einen Host-Port nur auf 127.0.0.1, für diesen Server und SSH-Tunnel.",
+    "privateToast": "Datenbank ist privat",
+    "publishedToast": "Datenbank veröffentlicht",
+    "failedToast": "Erreichbarkeit konnte nicht geändert werden",
+    "linkedTitle": "Wer sich verbindet",
+    "linkApp": "App verknüpfen"
+  },
+  "credentials": {
+    "title": "Zugangsdaten",
+    "description": "Die Plattform-Anmeldung dieser Datenbank: anzeigen oder rotieren.",
+    "sourceTitle": "Quelle der Zugangsdaten",
+    "managed": "Von Levelrail verwaltet",
+    "managedHint": "Levelrail erzeugt und speichert das Passwort."
+  },
+  "access": {
+    "title": "Zugriff",
+    "description": "Wer sich mit dieser Datenbank verbinden darf und was erlaubt ist.",
+    "credentialsChip": "Quelle der Zugangsdaten: von Levelrail verwaltet",
+    "keyvalueTitle": "Diese Engine hat in Levelrail noch keine Benutzeranmeldungen",
+    "keyvalueBody": "Der Standardbenutzer hat kein Passwort, daher sind Netzwerkregeln die Grenze. Öffnen Sie Netzwerk, um den Zugriff zu steuern.",
+    "memcachedTitle": "Memcached hat keine Authentifizierung",
+    "memcachedBody": "Halten Sie es privat oder auf Loopback. Öffnen Sie Netzwerk, um den Zugriff zu steuern.",
+    "otherTitle": "Datenbankbenutzer dieser Engine werden hier noch nicht verwaltet",
+    "otherBody": "Der Explorer nutzt die Plattform-Anmeldung, Schreibzugriff erfordert eine Freigabe. Öffnen Sie Netzwerk, um den Zugriff zu steuern.",
+    "openNetworking": "Netzwerk öffnen"
+  }
+}

@@ -12,9 +12,9 @@
 -- removing it.
 --
 -- SQLite has no ALTER TABLE ... DROP CONSTRAINT, so this is the standard
--- recreate-and-copy pattern: no other table has a foreign key into
--- desired_databases (confirmed via grep across every migration file), so
--- this is a straight copy, not a multi-table rebuild. Column set mirrors
+-- recreate-and-copy pattern: at the time no other table had a foreign key into
+-- desired_databases, so this was a straight copy. Since 3330 database_branches
+-- and database_masking_rulesets reference it: any later rebuild must carry them. Column set mirrors
 -- the table's full current shape, not just 0003's original one:
 -- 0009_node_placement.sql later added node_id via ALTER TABLE ADD
 -- COLUMN, which a recreate must carry forward or silently drop it.

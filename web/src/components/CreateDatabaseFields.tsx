@@ -28,7 +28,10 @@ import { ExistingVolumeError } from '../lib/apiError'
 import { useCreateDatabase } from '../queries/databases'
 import { ExistingVolumePrompt } from './ExistingVolumePrompt'
 import { DatabaseVersionPicker } from './databaseVersions/DatabaseVersionPicker'
-import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
+import {
+  useDatabaseEnginesOptional,
+  useLatestDatabaseVersion,
+} from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useSystemStatusOptional } from '../queries/systemStatus'
@@ -229,6 +232,7 @@ export function CreateDatabaseFields({
     getValues,
   } = form
   const watchedEngine = watch('engine')
+  const latest = useLatestDatabaseVersion(watchedEngine)
   const watchedVersion = watch('version')
 
   useEffect(() => {
@@ -254,13 +258,18 @@ export function CreateDatabaseFields({
     const fallback = engines.find(
       (e) => e.id === watchedEngine,
     )?.default_version
-    if (fallback) {
-      setValue('version', flavor ? withFlavor(fallback, flavor) : fallback)
+    if (!fallback) return
+    if (flavor) {
+      setValue('version', withFlavor(fallback, flavor))
+      return
     }
+    // Wait for the latest lookup: pre-fill "latest" only when the control plane has it on.
+    if (latest.isPending) return
+    setValue('version', latest.data?.enabled ? 'latest' : fallback)
     // Only reacting to the engine changing or the engine registry
     // arriving, not to formState/getValues/setValue identity churn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedEngine, engines])
+  }, [watchedEngine, engines, latest.isPending, latest.data?.enabled])
 
   // Same pre-fill treatment for name: the engine's own id ("postgres",
   // "redis") is a real, renamable suggestion, not a fixed value.
@@ -434,6 +443,15 @@ export function CreateDatabaseFields({
             >
               A major version like &quot;16&quot;, matching an image tag that
               actually exists.
+            </FieldHint>
+          ) : null}
+          {watchedVersion.trim() === 'latest' ? (
+            <FieldHint>
+              {latest.data?.resolution
+                ? td('latestVersion.resolved', {
+                    version: latest.data.resolution.version,
+                  })
+                : td('latestVersion.pending')}
             </FieldHint>
           ) : null}
           <FieldError errors={[formState.errors.version]} />

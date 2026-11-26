@@ -1,0 +1,24 @@
+{
+  "ciDeploy": {
+    "orgIdLabel": "CircleCI organisation ID",
+    "orgIdPlaceholder": "Organisation Settings > Overview"
+  },
+  "supersededPopover": {
+    "description": "A newer queued deploy of a branch replaces older queued ones. Builds already running are never cancelled. Set per app."
+  },
+  "deployList": {
+    "status": {
+      "canceled": "Cancelled"
+    }
+  },
+  "interruption": {
+    "orphaned": "Orphaned: no build was running for this deploy, so it was cancelled"
+  },
+  "buildQueue": {
+    "kill": {
+      "done_one": "Cancelled {{count}} build.",
+      "done_other": "Cancelled {{count}} builds.",
+      "someFailed": "{{count}} could not be cancelled: {{apps}}"
+    }
+  }
+}

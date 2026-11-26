@@ -1,0 +1,47 @@
+{
+  "label": "连接",
+  "mode": {
+    "readOnly": "只读",
+    "writesOn": "写入已解锁",
+    "writesUntil": "写入已解锁至 {{time}}",
+    "writesLeft": "写入已解锁，剩余 {{time}}",
+    "relocked": "写入已重新锁定"
+  },
+  "login": "登录",
+  "superuser": "超级用户（平台）",
+  "path": "路径",
+  "direct": "直连",
+  "viaNode": "经由节点 {{node}}",
+  "external": "外部 {{target}}",
+  "credentials": "凭据",
+  "managed": "由 Levelrail 管理",
+  "stored": "已保存的凭据",
+  "networking": "网络",
+  "access": "访问",
+  "notRunning": "数据库未运行。请先启动它再使用浏览器。",
+  "unreachable": "无法读取此数据库的状态。",
+  "retry": "重试",
+  "lockNow": "立即锁定",
+  "unlock": {
+    "open": "解锁写入",
+    "title": "解锁写入",
+    "description": "语句以平台超级用户身份运行，并立即修改 \"{{name}}\" 中的数据。每条语句都会记录到审计日志。",
+    "confirmLabel": "输入 {{name}} 以确认",
+    "duration": "解锁时长",
+    "minutes": "{{count}} 分钟",
+    "cancel": "取消",
+    "confirm": "解锁写入"
+  },
+  "activity": {
+    "open": "活动",
+    "title": "语句活动",
+    "description": "此数据库最近执行的 {{count}} 条语句。",
+    "time": "时间",
+    "principal": "主体",
+    "action": "操作",
+    "outcome": "结果",
+    "fingerprint": "指纹",
+    "empty": "尚无语句记录。",
+    "error": "无法加载语句活动。"
+  }
+}

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { NativeSelect } from '@/components/ui/native-select'
 import {
   Select,
   SelectContent,
@@ -9,6 +10,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { DataExportKind } from '../../types/dataExport'
+
+const DATADOG_SITES = [
+  'datadoghq.com',
+  'datadoghq.eu',
+  'us3.datadoghq.com',
+  'us5.datadoghq.com',
+  'ap1.datadoghq.com',
+  'ddog-gov.com',
+]
 
 export interface VendorValues {
   apiKey: string
@@ -65,14 +75,19 @@ export function VendorFields({
       {kind === 'logs_datadog' ? (
         <Field>
           <FieldLabel htmlFor="export-site">{t('form.site')}</FieldLabel>
-          <Input
+          <NativeSelect
             id="export-site"
             value={values.site}
-            placeholder="datadoghq.com"
             onChange={(e) => {
               onChange({ site: e.target.value })
             }}
-          />
+          >
+            {DATADOG_SITES.map((d) => (
+              <option key={d} value={d === DATADOG_SITES[0] ? '' : d}>
+                {d}
+              </option>
+            ))}
+          </NativeSelect>
         </Field>
       ) : null}
       {kind === 'logs_axiom' ? (

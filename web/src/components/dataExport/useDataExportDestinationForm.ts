@@ -20,11 +20,14 @@ import type {
   DataExportKind,
 } from '../../types/dataExport'
 
-export function useDataExportDestinationForm(onCreated: () => void) {
+export function useDataExportDestinationForm(
+  onCreated: () => void,
+  initialKind?: DataExportKind,
+) {
   const { t } = useTranslation('dataExport')
   const create = useCreateDataExportDestination()
-  const [name, setName] = useState('')
-  const [kind, setKind] = useState<DataExportKind>('logs_loki')
+  const [name, setName] = useState(initialKind?.replace('_', '-') ?? '')
+  const [kind, setKind] = useState<DataExportKind>(initialKind ?? 'logs_loki')
   const [endpoint, setEndpoint] = useState('')
   const [apps, setApps] = useState('')
   const [level, setLevel] = useState<(typeof LEVELS)[number]>('any')
@@ -39,6 +42,7 @@ export function useDataExportDestinationForm(onCreated: () => void) {
   const [site, setSite] = useState('')
   const [dataset, setDataset] = useState('')
   const [username, setUsername] = useState('')
+  const [tenant, setTenant] = useState('')
   const [sink, setSink] = useState<AuditSinkValues>(EMPTY_AUDIT_SINK)
 
   function reset() {
@@ -55,6 +59,7 @@ export function useDataExportDestinationForm(onCreated: () => void) {
     setBackfill(false)
     setApiKey('')
     setUsername('')
+    setTenant('')
     setRegion('us')
     setSite('')
     setDataset('')
@@ -85,6 +90,9 @@ export function useDataExportDestinationForm(onCreated: () => void) {
     }
     if (isLogKind(kind) && level !== 'any') req.min_level = level
     const parsed = parseHeaders(headers)
+    if (kind === 'logs_loki' && tenant.trim()) {
+      parsed['X-Scope-OrgID'] = tenant.trim()
+    }
     if (
       Object.keys(parsed).length > 0 &&
       kind !== 'logs_syslog' &&
@@ -190,6 +198,8 @@ export function useDataExportDestinationForm(onCreated: () => void) {
     setDataset,
     username,
     setUsername,
+    tenant,
+    setTenant,
     sink,
     setSink,
     reset,

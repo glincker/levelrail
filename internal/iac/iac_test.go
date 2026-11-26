@@ -1114,3 +1114,15 @@ func TestNameValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestDatabaseDeclaredLatestMatchesAnyLiveVersion(t *testing.T) {
+	f := newFake()
+	applyAll(t, f, fixture, Options{Secrets: map[string]string{"API_KEY": "k", "DB_PASSWORD": "p"}})
+	latest := strings.Replace(fixture, `version: "16"`, `version: "latest"`, 1)
+	if latest == fixture {
+		t.Fatal("fixture has no pinned database version to replace")
+	}
+	if p := planFor(t, f, latest, Options{}); p.Summary.Error != 0 {
+		t.Fatalf("declared latest must not be an immutable-field error: %+v", p.Summary)
+	}
+}

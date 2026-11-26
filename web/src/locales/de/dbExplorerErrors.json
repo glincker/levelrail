@@ -1,0 +1,9 @@
+{
+  "stuck": {
+    "title": "Die Datenbank antwortet noch nicht",
+    "body": "Die Datenbank läuft möglicherweise nicht oder startet ständig neu. Prüfe die Logs auf den letzten Fehler und versuche es erneut."
+  },
+  "retry": "Erneut versuchen",
+  "logs": "Logs öffnen",
+  "overview": "Übersicht öffnen"
+}

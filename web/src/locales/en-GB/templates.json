@@ -1,0 +1,16 @@
+{
+  "prefill": {
+    "notFoundDescription": "This instance has no template named \"{{slug}}\". It may be misspelled or missing from this version's catalogue."
+  },
+  "marketplace": {
+    "empty": {
+      "catalogTitle": "The catalogue is empty"
+    }
+  },
+  "banner": {
+    "description": "Pick from the catalogue, set a few values and the app runs on your own server.",
+    "diagram": {
+      "catalog": "catalogue"
+    }
+  }
+}

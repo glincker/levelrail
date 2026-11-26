@@ -1,0 +1,131 @@
+{
+  "title": "Monitoramento",
+  "asOf": "Atualizado às {{time}}",
+  "refresh": "Atualizar",
+  "autoRefresh": "Atualização automática",
+  "chartLabel": "Gráfico de {{title}} com {{count}} pontos de dados",
+  "tabs": {
+    "aria": "Seções de monitoramento",
+    "metrics": "Métricas",
+    "slow": "Consultas lentas",
+    "logs": "Logs",
+    "active": "Consultas ativas",
+    "perf": "Desempenho de consultas",
+    "soon": "Ainda não coletado",
+    "soonBadge": "Em breve"
+  },
+  "instance": {
+    "label": "Instância",
+    "active": "Ativa",
+    "stopped": "Parada",
+    "provisioning": "Provisionando"
+  },
+  "range": {
+    "label": "Intervalo de tempo",
+    "custom": "Personalizado",
+    "from": "De",
+    "to": "Até",
+    "apply": "Aplicar",
+    "errors": {
+      "invalid": "Informe um início e um fim válidos.",
+      "order": "O início deve ser anterior ao fim.",
+      "future": "O fim não pode estar no futuro.",
+      "tooLong": "O intervalo excede o limite de retenção."
+    }
+  },
+  "export": {
+    "label": "Exportar métricas",
+    "csv": "Exportar CSV",
+    "json": "JSON"
+  },
+  "stats": {
+    "label": "Resumo",
+    "none": "Sem dados",
+    "ofLimit": "de {{limit}}",
+    "delta": "{{sign}}{{value}}% em relação ao período anterior",
+    "noPrevious": "Sem período anterior"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "Memória",
+    "network": "E/S de rede",
+    "disk": "E/S de disco",
+    "connections": "Conexões",
+    "dbSize": "Tamanho do banco de dados",
+    "cacheHit": "Taxa de acerto do cache",
+    "deadlocks": "Deadlocks",
+    "rows": "Linhas inseridas, atualizadas e excluídas"
+  },
+  "series": {
+    "cpu": "CPU",
+    "usage": "Uso",
+    "limit": "Limite",
+    "received": "Recebido",
+    "sent": "Enviado",
+    "read": "Leitura",
+    "write": "Gravação"
+  },
+  "states": {
+    "stopped": {
+      "title": "O banco de dados está parado",
+      "body": "As métricas não são coletadas enquanto ele está parado. Inicie-o para retomar.",
+      "chart": "Endpoint inativo: parado"
+    },
+    "provisioning": {
+      "title": "O banco de dados está sendo provisionado",
+      "body": "As métricas começam quando o contêiner estiver em execução.",
+      "chart": "Endpoint inativo: provisionando"
+    },
+    "failed": {
+      "title": "Falha no provisionamento",
+      "body": "O contêiner nunca iniciou, então não há nada a medir.",
+      "chart": "Endpoint inativo: falha no provisionamento"
+    },
+    "restarting": {
+      "title": "Reiniciado recentemente",
+      "body": "As leituras podem mostrar uma lacuna até ele voltar."
+    },
+    "noData": {
+      "title": "Ainda sem dados",
+      "body": "Nenhuma amostra neste intervalo. Elas chegam a cada poucos segundos quando o banco está em execução.",
+      "chart": "Nenhuma amostra neste intervalo"
+    },
+    "notCollected": {
+      "title": "Não coletado",
+      "body": "Este mecanismo ainda não informa esta série."
+    }
+  },
+  "actions": {
+    "start": "Iniciar banco de dados",
+    "starting": "Iniciando",
+    "viewProgress": "Ver progresso"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "editThresholds": "Editar limites",
+    "allRules": "Regras de alerta",
+    "empty": "Ainda não há regras de saúde de banco de dados configuradas.",
+    "scopeNote": "Estas regras vigiam todos os bancos. Uma regra disparada é associada a este pelo nome em seu último alerta.",
+    "since": "desde",
+    "unattributed": "(afeta um banco de dados deste servidor)",
+    "firingChip_one": "{{count}} alerta ativo",
+    "firingChip_other": "{{count}} alertas ativos",
+    "state": {
+      "ok": "OK",
+      "firing": "Disparado",
+      "off": "Desativado"
+    },
+    "severity": {
+      "warning": "Aviso",
+      "critical": "Crítico"
+    },
+    "chips": {
+      "diskWarn": "Aviso com {{value}} dias restantes",
+      "diskCritical": "Crítico com {{value}} dias restantes",
+      "holdFor": "Mantido por {{value}}",
+      "connections": "Acima de {{value}}% das conexões",
+      "backupWindow": "Sem backup há {{value}}",
+      "unprotected": "Sem proteção acima de {{value}} MB"
+    }
+  }
+}

@@ -2,10 +2,11 @@ import { useTranslation } from 'react-i18next'
 import {
   ArchiveGlassIcon,
   ClockGlassIcon,
-  DatabaseGlassIcon,
   KeyGlassIcon,
 } from '@thesvg/ui-react'
-import { BRAND_ICON_NAMES, BrandIcon } from '@/components/BrandIcon'
+import { BRAND_ICON_NAMES } from '@/components/BrandIcon'
+import { DatabaseWhereItRuns } from './DatabaseWhereItRuns'
+import { EngineMark } from '@/components/EngineMark'
 import { buildPickerEntries, type PickerEntry } from '@/lib/databaseCatalog'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { FALLBACK_ENGINES } from './databaseFlow/logic'
@@ -20,6 +21,7 @@ const TAGLINE_KEYS = {
   keydb: 'picker.taglines.keydb',
   dragonfly: 'picker.taglines.dragonfly',
   mongodb: 'picker.taglines.mongodb',
+  documentdb: 'picker.taglines.documentdb',
   clickhouse: 'picker.taglines.clickhouse',
   meilisearch: 'picker.taglines.meilisearch',
   qdrant: 'picker.taglines.qdrant',
@@ -65,6 +67,7 @@ export function DatabasesEnginePicker({
           {t('banner.whatFor')}
         </p>
       </div>
+      <DatabaseWhereItRuns />
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {entries.map((entry) => (
           <li key={entry.key} className="flex">
@@ -76,14 +79,10 @@ export function DatabasesEnginePicker({
               className="flex min-h-20 w-full items-center gap-3 rounded-container border border-border bg-card p-3 text-left shadow-card transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
             >
               <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background">
-                {entry.brand ? (
-                  <BrandIcon name={entry.brand} className="size-6" />
-                ) : (
-                  <DatabaseGlassIcon
-                    className="size-6 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                )}
+                <EngineMark
+                  engine={entry.brand ?? entry.engineId}
+                  className="size-6"
+                />
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="text-sm font-medium">{entry.label}</span>

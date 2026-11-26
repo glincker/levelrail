@@ -27,7 +27,7 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
   <a href="https://github.com/glincker/levelrail/blob/HEAD/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-58b1ce?labelColor=06232c" alt="License"></a>
   <a href="https://demo.levelrail.com"><img src="https://img.shields.io/badge/live%20demo-open-58b1ce?labelColor=06232c" alt="Live demo"></a>
 </p>
-<img src="docs/assets/demos/tour-hero.gif" alt="Animated tour of Levelrail: deploy history, the apps list and per-app metrics" width="880" height="480">
+<a href="https://demo.levelrail.com"><img src="docs/assets/brand/social/hero-2560x1280-light.jpg" alt="Levelrail: a lightweight, self-hosted deployment platform. Try the live demo." width="880"></a>
 </div>
 
 v1.x. Single-server is production ready, multi-node is beta. Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).

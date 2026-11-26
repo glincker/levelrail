@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/dbbranch"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -113,6 +114,9 @@ func (rt *Router) handleBranchDatabase(w http.ResponseWriter, r *http.Request) {
 	if !rt.finishBranchSetup(w, r, sourceDB, req.Name) {
 		return
 	}
+	if !rt.recordLegacyBranch(w, r, sourceDB, req) {
+		return
+	}
 	rt.nudgeReconciler()
 	start(historyID)
 
@@ -122,9 +126,11 @@ func (rt *Router) handleBranchDatabase(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Router) runBranchRestore(run func(ctx context.Context) error, historyID, source, name string) {
 	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled when the handler returns, which would abort the restore at once
-		if err := run(context.Background()); err != nil {
+		err := run(context.Background())
+		if err != nil {
 			rt.logger.Error("api: database branch run failed", slog.String("error", err.Error()), slog.String("id", historyID), slog.String("source_database", source), slog.String("new_database", name))
 		}
+		rt.settleLegacyBranch(name, err)
 	}()
 }
 
@@ -226,4 +232,72 @@ func copyResources(r *store.ServiceResources) *store.ServiceResources {
 	}
 	c := *r
 	return &c
+}
+
+// recordLegacyBranch gives a restore based branch its lineage row, so it counts against quotas and shows in the tree.
+// A store without branch support skips it, which keeps the old behavior.
+func (rt *Router) recordLegacyBranch(w http.ResponseWriter, r *http.Request, sourceDB *store.DesiredDatabase, req databaseBranchRequest) bool {
+	bs, ok := rt.databases.(branchAPIStore)
+	if !ok {
+		return true
+	}
+	ctx := r.Context()
+	root, _, err := branchTreeRoot(ctx, bs, sourceDB.Name)
+	if err != nil {
+		rt.internalError(w, "api: branch database: resolve tree failed", err)
+		return false
+	}
+	id, err := newBranchID()
+	if err != nil {
+		rt.internalError(w, "api: branch database: id failed", err)
+		return false
+	}
+	mode, source, ref := dbbranch.ModeFull, "backup", req.BackupID
+	if req.At != "" {
+		mode, source, ref = dbbranch.ModePITR, "pitr", req.At
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	row := store.DatabaseBranch{ID: id, DatabaseName: req.Name, ParentName: sourceDB.Name, RootName: root, Mode: mode, Source: source, SourceRef: ref,
+		ClonePath: "dump", State: dbbranch.StateCloning, BranchedAt: now, CreatedBy: rt.accessActor(r).id, CreatedAt: now, UpdatedAt: now}
+	limits := rt.branchLimits(ctx)
+	err = bs.CreateDatabaseBranchWithinQuota(ctx, row, store.BranchQuota{MaxPerRoot: limits.MaxPerRoot, MaxTotal: limits.MaxTotal, MaxTotalBytes: limits.MaxTotalBytes})
+	if errors.Is(err, store.ErrDatabaseBranchQuota) {
+		rt.discardBranchDatabase(ctx, req.Name, rt.databaseNodeOf(ctx, req.Name))
+		writeError(w, http.StatusConflict, "branch quota reached")
+		return false
+	}
+	if err != nil {
+		rt.discardBranchDatabase(ctx, req.Name, rt.databaseNodeOf(ctx, req.Name))
+		rt.internalError(w, "api: branch database: save row failed", err, slog.String("name", req.Name))
+		return false
+	}
+	rt.auditBranch(ctx, r, AuditActionDatabaseBranchCreate, map[string]any{"parent": sourceDB.Name, "branch": req.Name, "mode": mode, "source": source})
+	return true
+}
+
+// settleLegacyBranch moves a restore based branch row to ready or failed once its restore returns.
+func (rt *Router) settleLegacyBranch(name string, runErr error) {
+	bs, ok := rt.databases.(branchAPIStore)
+	if !ok {
+		return
+	}
+	ctx := context.Background()
+	b, err := bs.GetDatabaseBranch(ctx, name)
+	if err != nil || b.State != dbbranch.StateCloning {
+		return
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	steps := []string{dbbranch.StateCredentials, dbbranch.StateVerifying, dbbranch.StateReady}
+	reason := ""
+	if runErr != nil {
+		steps, reason = []string{dbbranch.StateFailed}, "restore failed, see the control plane log"
+	}
+	from := b.State
+	for _, to := range steps {
+		if err := dbbranch.Move(ctx, bs, b.ID, from, to, reason, now); err != nil {
+			rt.logger.Warn("api: settle branch state failed", slog.String("name", name), slog.String("error", err.Error()))
+			return
+		}
+		from = to
+	}
 }

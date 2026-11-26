@@ -103,8 +103,10 @@ type databaseSchemaResponse struct {
 	Limits databaseViewerLimits `json:"limits"`
 	// CheckedAt is when this listing was read; Evidence is only set when
 	// the listing is empty, so an empty result can be verified.
-	CheckedAt string             `json:"checked_at"`
-	Evidence  *dbviewer.Evidence `json:"evidence,omitempty"`
+	CheckedAt string `json:"checked_at"`
+	// Cached is true when the listing was reused from a recent read.
+	Cached   bool               `json:"cached,omitempty"`
+	Evidence *dbviewer.Evidence `json:"evidence,omitempty"`
 }
 
 type databaseViewerLimits struct {
@@ -127,18 +129,28 @@ func (rt *Router) handleGetDatabaseSchema(w http.ResponseWriter, r *http.Request
 	if r.URL.Query().Get("detail") == schemaDetailOutline {
 		load = target.SchemaOutline
 	}
-	nodes, err := load(r.Context())
+	detail := r.URL.Query().Get("detail")
+	v, age, hit, err := viewerOverviews.do(rt.viewerCacheTTL(r.Context()), desired.Name,
+		desired.Name+"|"+target.ContainerID+"|schema|"+detail, func() (any, error) {
+			nodes, err := load(r.Context())
+			if err != nil {
+				rt.writeViewerError(w, "api: database schema failed", desired.Name, err)
+				return nil, errViewerLoadFailed
+			}
+			return nodes, nil
+		})
 	if err != nil {
-		rt.writeViewerError(w, "api: database schema failed", desired.Name, err)
 		return
 	}
+	nodes, _ := v.([]dbviewer.SchemaNode)
 	total := 0
 	for _, n := range nodes {
 		total += len(n.Tables)
 	}
 	resp := databaseSchemaResponse{
 		Engine: desired.Engine, Schemas: nodes,
-		CheckedAt:  time.Now().UTC().Format(time.RFC3339),
+		CheckedAt:  time.Now().Add(-age).UTC().Format(time.RFC3339),
+		Cached:     hit,
 		TableLimit: target.Limits.SchemaRows, Truncated: total >= target.Limits.SchemaRows,
 		Limits: databaseViewerLimits{
 			MaxRows:      target.Limits.MaxRows,

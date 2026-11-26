@@ -13,6 +13,11 @@ const RTL_LANGUAGES = new Set([
   'dv',
 ])
 
+// The base `en` locale is US English, so <html lang> says so.
+export function htmlLang(code: string): string {
+  return code === 'en' ? 'en-US' : code
+}
+
 export type TextDirection = 'ltr' | 'rtl'
 
 export function isRtlLanguage(code: string | undefined): boolean {
@@ -32,7 +37,7 @@ export function syncDocumentLanguage(
   const apply = (lng?: string) => {
     const code = lng ?? i18n.language
     if (!code) return
-    doc.documentElement.lang = code
+    doc.documentElement.lang = htmlLang(code)
     doc.documentElement.dir = i18n.dir(code)
   }
   i18n.on('initialized', () => apply())

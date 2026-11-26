@@ -59,3 +59,34 @@ export function databaseEnginesQueryOptions() {
 export function useDatabaseEnginesOptional() {
   return useQuery({ ...databaseEnginesQueryOptions(), retry: false })
 }
+
+// Mirrors internal/api/database_latest.go's latestVersionResponse.
+export interface LatestDatabaseVersion {
+  enabled: boolean
+  resolution?: { version: string; source: string; resolved_at: string }
+}
+
+// The registry lookup is cached server side, so a long staleTime is safe.
+export function useLatestDatabaseVersion(engine: string) {
+  return useQuery({
+    queryKey: [...databaseEnginesKeys.all, engine, 'latest'] as const,
+    queryFn: async (): Promise<LatestDatabaseVersion> => {
+      const res = await fetch(
+        `/api/v1/database-engines/${encodeURIComponent(engine)}/latest`,
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(
+            res,
+            `fetch latest version failed: ${res.status}`,
+          ),
+        )
+      }
+      return (await res.json()) as LatestDatabaseVersion
+    },
+    enabled: engine !== '',
+    staleTime: 300_000,
+    retry: false,
+  })
+}

@@ -15,7 +15,7 @@ A rule has a kind, and the kind decides what it watches. The kinds in `internal/
 - Jobs: `scheduled_task_failure`, `scheduled_task_missed`, `scheduled_task_running_long`, `job_failing`. See [Scheduled jobs](/scheduled-jobs).
 - Certificates and domains: `cert_expiry`, `cert_expiring`, `cert_renewal_stalled`, `parked_domain_cert_expiry`, `domain_health`, `domain_not_resolving`, `domain_registration_expiry`, `domain_traffic_drop`.
 - Nodes and resource pressure: `node_offline`, `node_disk_space`, `node_host_guardrail`, `node_resource_usage`, `node_cpu`, `node_memory`, `node_cert_expiring`, `volume_usage`, `patch_status`, `version_skew`. See [Host pressure](/host-pressure).
-- Databases: `database_down`, `database_connections_high`, `database_disk_high`, `database_backup_failing`, `database_backup_stale`, `pooler_saturated`.
+- Databases: `database_down`, `database_connections_high`, `database_disk_high`, `database_backup_failing`, `database_backup_stale`, `pooler_saturated`, `database_crash_loop`, `database_disk_growth`, `database_connections_saturated`, `database_backup_missing`.
 - Backups and exports: `backup_failed`, `backup_missing`, `backup_copy_behind`, `control_plane_backup_stale`, `restore_drill_failed`, `log_archive_stale`, `export_behind`.
 - Apps: `app_unhealthy` reports a container failing its liveness probe past the failure threshold and resolves when the probe passes; scope it to one app with a `service:<app>` resource. `advisory_match` reports running images matching a feed advisory and stays quiet until you turn on the `alerts.advisory_notify` setting; `alerts.advisory_min_severity` (default `high`) sets the floor.
 - Platform: `registry_refresh_failing`, `dns_credential_failing`, `email_delivery_failing`, `cleanup_failing`, `budget_threshold`.
@@ -75,6 +75,19 @@ levelrail-cli alerts defaults reset
 API: `GET /api/v1/alert-defaults`, `PUT /api/v1/alert-defaults/{id}`, `POST /api/v1/alert-defaults/reset`, `GET` and `PUT /api/v1/alert-defaults/settings`.
 
 Default alerts always reach the in-app inbox, and the admin email only when email is set up. The master switch is the `alerts.defaults_enabled` runtime setting, and the crash loop and 5xx thresholds are `alerts.default_crashloop_restarts`, `alerts.default_5xx_percent` and `alerts.default_5xx_min_requests`.
+
+## Which database health alerts are on by default?
+
+Four rules watch every managed database from metrics Levelrail already collects. They are seeded on and send through your existing channels. Each message names the database, the value and the next step, and links to the metrics page (`/databases/{name}/metrics`) or to `/databases/{name}/settings?section=backups`.
+
+| Rule | Fires when | Settings (all live) |
+| --- | --- | --- |
+| `database_crash_loop` | The container keeps restarting while it starts. Critical. | `alerts.database.crash_loop_enabled` |
+| `database_disk_growth` | The 7 day growth trend fills the data volume within the warning days (warning) or the critical days (critical). | `alerts.database.disk_growth_enabled`, `disk_growth_warn_days`, `disk_growth_critical_days`, `disk_growth_for` |
+| `database_connections_saturated` | Connections in use stay over the percent of max connections. | `alerts.database.connections_enabled`, `connections_percent`, `connections_for` |
+| `database_backup_missing` | A database with a backup schedule has no successful backup inside the window, or a database with real data has no backup storage at all. | `alerts.database.backup_missing_enabled`, `backup_missing_window`, `backup_unprotected_mb` |
+
+A rule stays firing until the value is clearly back inside its limit, so a reading on the line does not flap. Slow query and replication lag rules are not included because those figures are not collected yet. The Doctor page shows one `database_alerts` row listing every database breaching a rule right now.
 
 ## Weekly digest
 

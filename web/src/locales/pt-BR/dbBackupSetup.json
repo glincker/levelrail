@@ -1,0 +1,27 @@
+{
+  "gallery": {
+    "title": "Onde guardar os backups?"
+  },
+  "local": "Disco local",
+  "cancel": "Cancelar",
+  "continue": "Continuar",
+  "testing": "Testando a conexão",
+  "testOk": "Conectado. O bucket está acessível com estas credenciais.",
+  "testFailed": "O teste de conexão falhou: {{error}}",
+  "testAgain": "Testar novamente",
+  "removeAndEdit": "Remover e editar",
+  "fields": {
+    "name": "Nome",
+    "accountId": "ID da conta",
+    "region": "Região",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "path": "Caminho",
+    "accessKey": "ID da chave de acesso",
+    "secret": "Chave de acesso secreta"
+  },
+  "secretNote": "Guardada criptografada e exibida uma vez. Use uma chave limitada a este bucket.",
+  "back": "Voltar",
+  "creating": "Criando",
+  "createAndTest": "Criar e testar"
+}

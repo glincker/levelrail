@@ -1,5 +1,6 @@
 // Circle SVGs are loaded as URLs, not React components: the Spanish component alone is about 90 kB
 // because it embeds every shape, while its circle file is 2 kB.
+import us from '@thesvg/flags/svg/circle/us.svg?url'
 import gb from '@thesvg/flags/svg/circle/gb.svg?url'
 import de from '@thesvg/flags/svg/circle/de.svg?url'
 import es from '@thesvg/flags/svg/circle/es.svg?url'
@@ -18,10 +19,15 @@ export interface LanguageFlag {
   english: string
 }
 
-// English uses the GB flag: the app copy is British-neutral and GB is the origin of the language.
+// `en` is US English (the default) and en-GB the British overlay, each with its own flag.
 // A new language is one line here plus its code in i18n/supported.ts.
 export const LANGUAGE_FLAGS: Record<string, LanguageFlag> = {
-  en: { flag: gb, native: 'English', english: 'English' },
+  en: { flag: us, native: 'English (US)', english: 'English (United States)' },
+  'en-GB': {
+    flag: gb,
+    native: 'English (UK)',
+    english: 'English (United Kingdom)',
+  },
   es: { flag: es, native: 'Español', english: 'Spanish' },
   de: { flag: de, native: 'Deutsch', english: 'German' },
   fr: { flag: fr, native: 'Français', english: 'French' },

@@ -2,7 +2,7 @@ import { SelectedMark, selectableCardClass } from './ui/selectable-card'
 import { SectionTitle } from '@/components/ui/typography'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DatabaseGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
+import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,7 @@ import {
   type PickerEntry,
 } from '@/lib/databaseCatalog'
 import { BrandIcon } from './BrandIcon'
+import { EngineMark } from './EngineMark'
 
 type FamilyFilter = 'all' | DatabaseFamily
 
@@ -28,6 +29,7 @@ const TAGLINE_KEYS = {
   keydb: 'picker.taglines.keydb',
   dragonfly: 'picker.taglines.dragonfly',
   mongodb: 'picker.taglines.mongodb',
+  documentdb: 'picker.taglines.documentdb',
   clickhouse: 'picker.taglines.clickhouse',
   meilisearch: 'picker.taglines.meilisearch',
   qdrant: 'picker.taglines.qdrant',
@@ -71,10 +73,7 @@ function EngineTile({ entry }: { entry: PickerEntry }) {
           {entry.label.slice(0, 2)}
         </span>
       ) : (
-        <DatabaseGlassIcon
-          className="size-8 text-muted-foreground"
-          aria-hidden="true"
-        />
+        <EngineMark engine={entry.engineId} className="size-6" />
       )}
     </span>
   )

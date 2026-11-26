@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { TONE } from '@/components/kit/tone'
 import {
+  DB_LOCATIONS,
   DB_STATUS_BUCKETS,
   EMPTY_DB_FILTERS,
   dbFiltersActive,
@@ -152,6 +153,29 @@ export function DatabasesFilterBar({
           </div>
         </>
       ) : null}
+      <div
+        role="group"
+        aria-label={t('location.filterGroup')}
+        className="flex flex-wrap items-center gap-2"
+      >
+        {DB_LOCATIONS.map((loc) => {
+          const on = filters.location === loc
+          return (
+            <Button
+              key={loc}
+              type="button"
+              size="sm"
+              variant={on ? 'default' : 'outline'}
+              aria-pressed={on}
+              onClick={() => {
+                onChange({ ...filters, location: on ? null : loc })
+              }}
+            >
+              {t(`location.short.${loc}`)}
+            </Button>
+          )
+        })}
+      </div>
       {tags.length > 0 ? (
         <div
           role="group"

@@ -1,0 +1,6 @@
+{
+  "cliModal": {
+    "badgeLabelConnected_one": "Open the CLI command centre. {{count}} CLI is connected.",
+    "badgeLabelConnected_other": "Open the CLI command centre. {{count}} CLIs are connected."
+  }
+}

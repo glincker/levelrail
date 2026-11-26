@@ -54,7 +54,9 @@ function renderCard(dest: DataExportDestination) {
   return render(
     <QueryClientProvider client={client}>
       <I18nextProvider i18n={testI18n}>
-        <DataExportDestinationCard destination={dest} />
+        <ul>
+          <DataExportDestinationCard destination={dest} />
+        </ul>
       </I18nextProvider>
     </QueryClientProvider>,
   )
@@ -71,8 +73,7 @@ describe('DataExportDestinationCard', () => {
     expect(screen.getByText('prod loki')).toBeInTheDocument()
     expect(screen.getByText('Circuit open, retrying later')).toBeInTheDocument()
     expect(screen.getByText(/loki returned status 503/)).toBeInTheDocument()
-    expect(screen.getByText('7')).toBeInTheDocument()
-    expect(screen.getByText('Never')).toBeInTheDocument()
+    expect(screen.getByText(/Never/)).toBeInTheDocument()
   })
 
   it('posts the test probe and reports a failure', async () => {
@@ -87,7 +88,12 @@ describe('DataExportDestinationCard', () => {
     vi.stubGlobal('fetch', fetchMock)
     renderCard(base)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Send test' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Actions for prod loki' }),
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Send test' }),
+    )
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled()
@@ -125,7 +131,12 @@ describe('DataExportDestinationCard', () => {
       status: { ...base.status, circuit_open: false },
     })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Send test' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Actions for prod loki' }),
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Send test' }),
+    )
     await userEvent.click(
       await screen.findByRole('button', {
         name: 'Accept this certificate and test again',

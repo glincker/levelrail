@@ -1,0 +1,18 @@
+{
+  "git": {
+    "status": {
+      "canceled": "Cancelled"
+    }
+  },
+  "schedule": {
+    "toast": {
+      "canceled": "Scheduled deploy cancelled."
+    },
+    "list": {
+      "canceling": "Cancelling",
+      "status": {
+        "canceled": "Cancelled"
+      }
+    }
+  }
+}

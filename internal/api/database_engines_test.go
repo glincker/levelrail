@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
 func TestHandleListDatabaseEngines(t *testing.T) {
@@ -52,5 +54,28 @@ func TestDatabaseEnginesRoute_RequireAuth(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d for an unauthenticated request", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+// Not parallel: the experimental gate is process global.
+func TestDocumentDBHiddenWhileFlagOff(t *testing.T) {
+	experimental.Reset()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/database-engines", ""))
+	var got []databaseEngineResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for _, e := range got {
+		if e.ID == "documentdb" {
+			t.Fatal("documentdb listed while the beta feature is off")
+		}
+	}
+	err := validateDatabaseResource(databaseResource{Name: "docs", Engine: "documentdb", Version: "pg17-1.2.0"})
+	if err == nil {
+		t.Fatal("create must be rejected while the beta feature is off")
 	}
 }

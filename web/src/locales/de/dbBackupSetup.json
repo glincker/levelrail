@@ -1,0 +1,27 @@
+{
+  "gallery": {
+    "title": "Wo sollen Backups gespeichert werden?"
+  },
+  "local": "Lokaler Datenträger",
+  "cancel": "Abbrechen",
+  "continue": "Weiter",
+  "testing": "Verbindung wird getestet",
+  "testOk": "Verbunden. Der Bucket ist mit diesen Zugangsdaten erreichbar.",
+  "testFailed": "Der Verbindungstest ist fehlgeschlagen: {{error}}",
+  "testAgain": "Erneut testen",
+  "removeAndEdit": "Entfernen und bearbeiten",
+  "fields": {
+    "name": "Name",
+    "accountId": "Konto-ID",
+    "region": "Region",
+    "endpoint": "Endpunkt",
+    "bucket": "Bucket",
+    "path": "Pfad",
+    "accessKey": "Zugriffsschlüssel-ID",
+    "secret": "Geheimer Zugriffsschlüssel"
+  },
+  "secretNote": "Verschlüsselt gespeichert, nur einmal sichtbar. Nutzen Sie einen auf diesen Bucket beschränkten Schlüssel.",
+  "back": "Zurück",
+  "creating": "Wird erstellt",
+  "createAndTest": "Erstellen und testen"
+}

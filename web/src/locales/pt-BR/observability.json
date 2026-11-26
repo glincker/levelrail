@@ -253,6 +253,26 @@
       "label": "Job falhando",
       "description": "Dispara uma vez por job com falha neste app que tem o alerta em caso de falha ativado, com limite de taxa por job.",
       "action": "Abra o histórico de execuções do job para ler os logs da execução com falha, corrija a causa e execute-o agora para confirmar."
+    },
+    "database_crash_loop": {
+      "label": "Banco de dados em loop de falhas",
+      "description": "Dispara enquanto um contêiner de banco de dados reinicia sem parar.",
+      "action": "Abra os logs do banco, corrija o erro que impede a inicialização e reinicie."
+    },
+    "database_disk_growth": {
+      "label": "Disco do banco de dados enchendo",
+      "description": "Dispara quando o crescimento dos últimos 7 dias indica que o volume de dados vai encher dentro dos dias de aviso ou crítico.",
+      "action": "Apague dados que não precisa mais ou aumente o volume antes que encha."
+    },
+    "database_connections_saturated": {
+      "label": "Banco de dados sem conexões livres",
+      "description": "Dispara enquanto as conexões em uso ficam acima do percentual de saturação do limite.",
+      "action": "Feche conexões ociosas ou vazando, adicione um pooler ou aumente o limite."
+    },
+    "database_backup_missing": {
+      "label": "Backup do banco de dados ausente",
+      "description": "Dispara quando um banco não tem backup recente bem-sucedido, ou guarda dados reais sem armazenamento de backup.",
+      "action": "Configure o armazenamento de backup do banco e execute um backup agora."
     }
   },
   "budgetThreshold": {

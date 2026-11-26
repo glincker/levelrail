@@ -1,0 +1,131 @@
+{
+  "title": "Supervision",
+  "asOf": "Mis à jour à {{time}}",
+  "refresh": "Actualiser",
+  "autoRefresh": "Actualisation automatique",
+  "chartLabel": "Graphique {{title}} avec {{count}} points de données",
+  "tabs": {
+    "aria": "Sections de supervision",
+    "metrics": "Métriques",
+    "slow": "Requêtes lentes",
+    "logs": "Journaux",
+    "active": "Requêtes actives",
+    "perf": "Performance des requêtes",
+    "soon": "Pas encore collecté",
+    "soonBadge": "Bientôt"
+  },
+  "instance": {
+    "label": "Instance",
+    "active": "Active",
+    "stopped": "Arrêtée",
+    "provisioning": "Provisionnement"
+  },
+  "range": {
+    "label": "Période",
+    "custom": "Personnalisée",
+    "from": "Du",
+    "to": "Au",
+    "apply": "Appliquer",
+    "errors": {
+      "invalid": "Saisissez un début et une fin valides.",
+      "order": "Le début doit précéder la fin.",
+      "future": "La fin ne peut pas être dans le futur.",
+      "tooLong": "Cette période dépasse la limite de rétention."
+    }
+  },
+  "export": {
+    "label": "Exporter les métriques",
+    "csv": "Exporter en CSV",
+    "json": "JSON"
+  },
+  "stats": {
+    "label": "Résumé",
+    "none": "Aucune donnée",
+    "ofLimit": "sur {{limit}}",
+    "delta": "{{sign}}{{value}} % par rapport à la période précédente",
+    "noPrevious": "Pas de période précédente"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "Mémoire",
+    "network": "E/S réseau",
+    "disk": "E/S disque",
+    "connections": "Connexions",
+    "dbSize": "Taille de la base",
+    "cacheHit": "Taux de succès du cache",
+    "deadlocks": "Interblocages",
+    "rows": "Lignes insérées, mises à jour et supprimées"
+  },
+  "series": {
+    "cpu": "CPU",
+    "usage": "Utilisation",
+    "limit": "Limite",
+    "received": "Reçu",
+    "sent": "Envoyé",
+    "read": "Lecture",
+    "write": "Écriture"
+  },
+  "states": {
+    "stopped": {
+      "title": "La base de données est arrêtée",
+      "body": "Aucune métrique n’est collectée tant qu’elle est arrêtée. Démarrez-la pour reprendre.",
+      "chart": "Point de terminaison inactif : arrêtée"
+    },
+    "provisioning": {
+      "title": "Provisionnement de la base de données",
+      "body": "Les métriques démarrent dès que le conteneur tourne.",
+      "chart": "Point de terminaison inactif : provisionnement"
+    },
+    "failed": {
+      "title": "Échec du provisionnement",
+      "body": "Le conteneur n’a jamais démarré, il n’y a donc rien à mesurer.",
+      "chart": "Point de terminaison inactif : échec du provisionnement"
+    },
+    "restarting": {
+      "title": "Redémarrage récent",
+      "body": "Les mesures peuvent présenter un trou le temps du retour."
+    },
+    "noData": {
+      "title": "Pas encore de données",
+      "body": "Aucun échantillon sur cette période. Ils arrivent toutes les quelques secondes une fois la base démarrée.",
+      "chart": "Aucun échantillon sur cette période"
+    },
+    "notCollected": {
+      "title": "Non collecté",
+      "body": "Ce moteur ne fournit pas encore cette série."
+    }
+  },
+  "actions": {
+    "start": "Démarrer la base de données",
+    "starting": "Démarrage",
+    "viewProgress": "Voir la progression"
+  },
+  "alerts": {
+    "title": "Alertes",
+    "editThresholds": "Modifier les seuils",
+    "allRules": "Règles d'alerte",
+    "empty": "Aucune règle de santé de base de données n'est encore configurée.",
+    "scopeNote": "Ces règles surveillent chaque base. Une règle déclenchée est associée à celle-ci par le nom présent dans sa dernière alerte.",
+    "since": "depuis",
+    "unattributed": "(concerne une base de ce serveur)",
+    "firingChip_one": "{{count}} alerte active",
+    "firingChip_other": "{{count}} alertes actives",
+    "state": {
+      "ok": "OK",
+      "firing": "Déclenchée",
+      "off": "Désactivée"
+    },
+    "severity": {
+      "warning": "Avertissement",
+      "critical": "Critique"
+    },
+    "chips": {
+      "diskWarn": "Alerte à {{value}} jours restants",
+      "diskCritical": "Critique à {{value}} jours restants",
+      "holdFor": "Maintenu {{value}}",
+      "connections": "Plus de {{value}} % des connexions",
+      "backupWindow": "Aucune sauvegarde depuis {{value}}",
+      "unprotected": "Non protégé au-delà de {{value}} Mo"
+    }
+  }
+}

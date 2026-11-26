@@ -1,0 +1,131 @@
+{
+  "title": "Monitorización",
+  "asOf": "Actualizado {{time}}",
+  "refresh": "Actualizar",
+  "autoRefresh": "Actualización automática",
+  "chartLabel": "Gráfico de {{title}} con {{count}} puntos de datos",
+  "tabs": {
+    "aria": "Secciones de monitorización",
+    "metrics": "Métricas",
+    "slow": "Consultas lentas",
+    "logs": "Registros",
+    "active": "Consultas activas",
+    "perf": "Rendimiento de consultas",
+    "soon": "Aún no se recopila",
+    "soonBadge": "Pronto"
+  },
+  "instance": {
+    "label": "Instancia",
+    "active": "Activa",
+    "stopped": "Detenida",
+    "provisioning": "Aprovisionando"
+  },
+  "range": {
+    "label": "Intervalo de tiempo",
+    "custom": "Personalizado",
+    "from": "Desde",
+    "to": "Hasta",
+    "apply": "Aplicar",
+    "errors": {
+      "invalid": "Introduce un inicio y un fin válidos.",
+      "order": "El inicio debe ser anterior al fin.",
+      "future": "El fin no puede estar en el futuro.",
+      "tooLong": "El intervalo supera el límite de retención."
+    }
+  },
+  "export": {
+    "label": "Exportar métricas",
+    "csv": "Exportar CSV",
+    "json": "JSON"
+  },
+  "stats": {
+    "label": "Resumen",
+    "none": "Sin datos",
+    "ofLimit": "de {{limit}}",
+    "delta": "{{sign}}{{value}} % frente al periodo anterior",
+    "noPrevious": "Sin periodo anterior"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "Memoria",
+    "network": "E/S de red",
+    "disk": "E/S de disco",
+    "connections": "Conexiones",
+    "dbSize": "Tamaño de la base de datos",
+    "cacheHit": "Tasa de aciertos de caché",
+    "deadlocks": "Interbloqueos",
+    "rows": "Filas insertadas, actualizadas y eliminadas"
+  },
+  "series": {
+    "cpu": "CPU",
+    "usage": "Uso",
+    "limit": "Límite",
+    "received": "Recibido",
+    "sent": "Enviado",
+    "read": "Lectura",
+    "write": "Escritura"
+  },
+  "states": {
+    "stopped": {
+      "title": "La base de datos está detenida",
+      "body": "No se recopilan métricas mientras está detenida. Inicia la base de datos para reanudar.",
+      "chart": "Endpoint inactivo: detenida"
+    },
+    "provisioning": {
+      "title": "La base de datos se está aprovisionando",
+      "body": "Las métricas empiezan cuando el contenedor esté en marcha.",
+      "chart": "Endpoint inactivo: aprovisionando"
+    },
+    "failed": {
+      "title": "Falló el aprovisionamiento",
+      "body": "El contenedor nunca arrancó, así que no hay nada que medir.",
+      "chart": "Endpoint inactivo: falló el aprovisionamiento"
+    },
+    "restarting": {
+      "title": "Reinicio reciente",
+      "body": "Las lecturas pueden mostrar un hueco mientras se recupera."
+    },
+    "noData": {
+      "title": "Aún no hay datos",
+      "body": "No hay muestras en este intervalo. Llegan cada pocos segundos cuando la base de datos funciona.",
+      "chart": "Sin muestras en este intervalo"
+    },
+    "notCollected": {
+      "title": "No se recopila",
+      "body": "Este motor aún no informa esta serie."
+    }
+  },
+  "actions": {
+    "start": "Iniciar base de datos",
+    "starting": "Iniciando",
+    "viewProgress": "Ver progreso"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "editThresholds": "Editar umbrales",
+    "allRules": "Reglas de alerta",
+    "empty": "Aún no hay reglas de salud de base de datos configuradas.",
+    "scopeNote": "Estas reglas vigilan todas las bases de datos. Una regla activa se asocia a esta por el nombre de su última alerta.",
+    "since": "desde",
+    "unattributed": "(afecta a una base de datos de este servidor)",
+    "firingChip_one": "{{count}} alerta activa",
+    "firingChip_other": "{{count}} alertas activas",
+    "state": {
+      "ok": "OK",
+      "firing": "Activa",
+      "off": "Desactivada"
+    },
+    "severity": {
+      "warning": "Aviso",
+      "critical": "Crítica"
+    },
+    "chips": {
+      "diskWarn": "Aviso con {{value}} días restantes",
+      "diskCritical": "Crítica con {{value}} días restantes",
+      "holdFor": "Mantenida {{value}}",
+      "connections": "Más del {{value}} % de conexiones",
+      "backupWindow": "Sin copia desde hace {{value}}",
+      "unprotected": "Sin proteger por encima de {{value}} MB"
+    }
+  }
+}

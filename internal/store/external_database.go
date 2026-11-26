@@ -39,6 +39,8 @@ type ExternalDatabase struct {
 	NodeID          string
 	ProjectID       string
 	SourceContainer string
+	// Provider is the hosting service preset, empty outside the hosted flow.
+	Provider        string
 	HealthStatus    string
 	HealthReason    string
 	HealthLatencyMs int
@@ -56,13 +58,13 @@ func ExternalDatabaseSecretsKey(name string) string {
 const ExternalDatabasePasswordKey = "password"
 
 const externalDatabaseColumns = `name, engine, host, port, username, database_name, tls_mode, network, node_id,
-	COALESCE(project_id, ''), source_container, health_status, health_reason, health_latency_ms,
+	COALESCE(project_id, ''), source_container, provider, health_status, health_reason, health_latency_ms,
 	health_checked_at, created_at, updated_at`
 
 func scanExternalDatabase(row interface{ Scan(...any) error }) (ExternalDatabase, error) {
 	var d ExternalDatabase
 	err := row.Scan(&d.Name, &d.Engine, &d.Host, &d.Port, &d.Username, &d.DatabaseName, &d.TLSMode, &d.Network,
-		&d.NodeID, &d.ProjectID, &d.SourceContainer, &d.HealthStatus, &d.HealthReason, &d.HealthLatencyMs,
+		&d.NodeID, &d.ProjectID, &d.SourceContainer, &d.Provider, &d.HealthStatus, &d.HealthReason, &d.HealthLatencyMs,
 		&d.HealthCheckedAt, &d.CreatedAt, &d.UpdatedAt)
 	return d, err
 }
@@ -74,10 +76,10 @@ func (db *DB) CreateExternalDatabase(ctx context.Context, d ExternalDatabase) er
 	now := nowRFC3339()
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO external_databases (name, engine, host, port, username, database_name, tls_mode, network,
-			node_id, project_id, source_container, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			node_id, project_id, source_container, provider, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, d.Name, d.Engine, d.Host, d.Port, d.Username, d.DatabaseName, d.TLSMode, d.Network, d.NodeID,
-		sql.NullString{String: d.ProjectID, Valid: d.ProjectID != ""}, d.SourceContainer, now, now)
+		sql.NullString{String: d.ProjectID, Valid: d.ProjectID != ""}, d.SourceContainer, d.Provider, now, now)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") || strings.Contains(err.Error(), "PRIMARY KEY") {
 			return ErrExternalDatabaseExists
@@ -91,9 +93,9 @@ func (db *DB) CreateExternalDatabase(ctx context.Context, d ExternalDatabase) er
 func (db *DB) UpdateExternalDatabase(ctx context.Context, d ExternalDatabase) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE external_databases SET host = ?, port = ?, username = ?, database_name = ?, tls_mode = ?,
-			network = ?, node_id = ?, updated_at = ?
+			network = ?, node_id = ?, provider = ?, updated_at = ?
 		WHERE name = ?
-	`, d.Host, d.Port, d.Username, d.DatabaseName, d.TLSMode, d.Network, d.NodeID, nowRFC3339(), d.Name)
+	`, d.Host, d.Port, d.Username, d.DatabaseName, d.TLSMode, d.Network, d.NodeID, d.Provider, nowRFC3339(), d.Name)
 	if err != nil {
 		return fmt.Errorf("store: update external database %q: %w", d.Name, err)
 	}

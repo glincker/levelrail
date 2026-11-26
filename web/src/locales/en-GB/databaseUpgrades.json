@@ -1,0 +1,9 @@
+{
+  "current": {
+    "notComparable": "This version could not be compared with the catalogue, so no upgrade targets are offered.",
+    "catalogUpdated": "Catalogue updated {{date}}"
+  },
+  "targets": {
+    "empty": "You are on the newest version the catalogue knows about."
+  }
+}

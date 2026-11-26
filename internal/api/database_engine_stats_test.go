@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -62,5 +63,56 @@ func TestHandleCreateAppConnection_SearchEngineUsesConventionalNames(t *testing.
 	_ = json.Unmarshal(rec.Body.Bytes(), &second)
 	if second.EnvVar == "MEILISEARCH_URL" {
 		t.Fatal("a second connection must not overwrite the conventional name")
+	}
+}
+
+func TestHandleGetDatabaseExplorerCapabilities(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/explorer/capabilities", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got struct {
+		Engine       string                           `json:"engine"`
+		Kind         string                           `json:"kind"`
+		Capabilities map[string]map[string]string     `json:"capabilities"`
+		Limits       struct{ MaxRows, TimeoutMs int } `json:"limits"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Engine != "postgres" || got.Kind != "sql" || got.Capabilities["query"]["status"] != "available" {
+		t.Errorf("shape = %+v", got)
+	}
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/missing/explorer/capabilities", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("missing status = %d", rec.Code)
+	}
+}
+
+func TestHandleGetDatabaseExplorerCapabilities_ShowsLiveLimits(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rt.runtimeSettings.Set(context.Background(), runtimesettings.KeyDBViewerMaxRows, json.RawMessage(`123`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/explorer/capabilities", ""))
+	var got struct {
+		Limits struct {
+			MaxRows int `json:"max_rows"`
+		} `json:"limits"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got.Limits.MaxRows != 123 {
+		t.Fatalf("limits = %+v err=%v body=%s", got, err, rec.Body.String())
 	}
 }

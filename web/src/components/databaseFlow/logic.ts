@@ -1,3 +1,4 @@
+import type { PlacementKind } from './placementPick'
 import type { ServiceResources } from '../../types/appDetail'
 import type { DatabaseEngineInfo } from '../../queries/databaseEngines'
 
@@ -12,6 +13,7 @@ export interface DbValues {
   backups: boolean
   schedule: ScheduleId
   preset: PresetId
+  placement: PlacementKind
   nodeId: string
   projectId: string
 }

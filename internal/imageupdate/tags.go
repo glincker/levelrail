@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -31,6 +32,9 @@ const maxRegistryRedirects = 3
 type TagLister interface {
 	ListTags(ctx context.Context, ref string, auth *docker.RegistryAuth) ([]string, error)
 }
+
+// maxTagBody bounds one tag list response so a hostile registry cannot exhaust memory.
+const maxTagBody = 8 << 20
 
 // maxTagPages bounds pagination so a misbehaving registry cannot loop forever.
 const maxTagPages = 50
@@ -89,6 +93,9 @@ func (l HTTPTagLister) ListTags(ctx context.Context, ref string, auth *docker.Re
 			}
 		}
 	}
+	if next != "" {
+		return nil, ErrRegistryRequest // page cap hit: a partial list could hide the newest tag
+	}
 	return tags, nil
 }
 
@@ -112,7 +119,7 @@ func (l HTTPTagLister) get(ctx context.Context, c *http.Client, u, token string,
 	defer func() { _ = resp.Body.Close() }()
 	var raw json.RawMessage
 	if resp.StatusCode == http.StatusOK {
-		if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		if err := json.NewDecoder(io.LimitReader(resp.Body, maxTagBody)).Decode(&raw); err != nil {
 			return nil, "", 0, nil, ErrRegistryRequest
 		}
 	}

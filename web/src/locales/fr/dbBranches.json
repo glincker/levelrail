@@ -1,0 +1,96 @@
+{
+  "title": "Branches",
+  "description": "Copies de cette base de données pour les tests et les aperçus, avec leurs propres identifiants.",
+  "empty": "Cette base de données n’a pas encore de branche. Créez-en une pour essayer des changements en sécurité.",
+  "unavailable": "Les branches ne sont pas encore disponibles sur ce serveur. Elles arrivent avec la prochaine mise à jour.",
+  "loadFailed": "Impossible de charger les branches : {{error}}",
+  "created": "Branche demandée",
+  "cancel": "Annuler",
+  "notReady": "Cette branche n’est pas encore prête. Réessayez quand la copie est terminée.",
+  "protected": "Protégée",
+  "protectLabel": "Protéger",
+  "protectAria": "Protéger {{name}}",
+  "expires": "Expire le {{date}}",
+  "create": {
+    "open": "Créer une branche",
+    "title": "Créer une branche",
+    "description": "Copie les données choisies dans une nouvelle base de données.",
+    "name": "Nom",
+    "mode": "Mode",
+    "parent": "Parent",
+    "parentRoot": "Cette base de données",
+    "expiry": "Expiration",
+    "protect": "Protéger de la suppression",
+    "submit": "Créer la branche"
+  },
+  "mode": {
+    "full": "Copie complète",
+    "schema": "Schéma seul",
+    "anonymized": "Anonymisée"
+  },
+  "state": {
+    "cloning": "Clonage",
+    "ready": "Prête",
+    "failed": "Échec",
+    "expiring": "Expire bientôt",
+    "working": "En cours"
+  },
+  "expiry": {
+    "1d": "1 jour",
+    "7d": "7 jours",
+    "30d": "30 jours",
+    "never": "Jamais"
+  },
+  "actions": {
+    "reset": "Réinitialiser",
+    "promote": "Promouvoir",
+    "delete": "Supprimer"
+  },
+  "confirm": {
+    "typeName": "Saisissez {{name}} pour confirmer",
+    "reset": {
+      "title": "Réinitialiser cette branche",
+      "body": "Remplace {{name}} par une copie fraîche de son parent. Ses données et identifiants changent."
+    },
+    "promote": {
+      "title": "Promouvoir cette branche",
+      "body": "Fait de {{name}} la base de données principale. Cette action est irréversible."
+    },
+    "delete": {
+      "title": "Supprimer cette branche",
+      "body": "Supprime définitivement {{name}} et ses données."
+    }
+  },
+  "schemaDiff": {
+    "open": "Diff de schéma",
+    "title": "Diff de schéma",
+    "description": "Ce que {{branch}} change par rapport à {{against}}.",
+    "against": "Comparer avec",
+    "parent": "Parent",
+    "added_one": "{{count}} ajouté",
+    "added_other": "{{count}} ajoutés",
+    "removed_one": "{{count}} supprimé",
+    "removed_other": "{{count}} supprimés",
+    "changed_one": "{{count}} modifié",
+    "changed_other": "{{count}} modifiés",
+    "none": "Aucune différence de schéma",
+    "loadFailed": "Impossible de charger le diff de schéma : {{error}}",
+    "truncated": "Le schéma a été coupé à la limite d'objets, ce diff est donc partiel. Augmentez la limite dans les réglages d'exécution.",
+    "copySql": "Copier le SQL de migration",
+    "copied": "SQL de migration copié",
+    "review": "À relire avant exécution. Levelrail n'exécute jamais ce SQL.",
+    "group": {
+      "added": "Ajoutés",
+      "removed": "Supprimés",
+      "changed": "Modifiés"
+    },
+    "object": {
+      "table": "table",
+      "column": "colonne",
+      "index": "index",
+      "constraint": "contrainte",
+      "view": "vue",
+      "sequence": "séquence"
+    }
+  }
+}

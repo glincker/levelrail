@@ -245,7 +245,9 @@
     "confirm": "Entendo o que é descartado",
     "driftMissing": "Ausente do firewall: {{sources}}. Aplique as regras novamente para restaurá-las.",
     "driftExtra": "O firewall também permite: {{sources}}. Estas não foram definidas aqui.",
-    "cannot": "Não é possível aplicar as regras: {{reason}}"
+    "cannot": "Não é possível aplicar as regras: {{reason}}",
+    "sourceInvalid": "IP ou CIDR inválido",
+    "sourcePrivate": "Faixa privada"
   },
   "scope": {
     "title": "Escopo de rede",

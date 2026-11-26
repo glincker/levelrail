@@ -8,11 +8,12 @@ type SharedState struct {
 	mu      sync.Mutex
 	watches map[string]paramsWatch
 	guards  map[string]*recreateGuard
+	crashes map[string]*crashRecord
 }
 
 // NewSharedState returns an empty registry.
 func NewSharedState() *SharedState {
-	return &SharedState{watches: map[string]paramsWatch{}, guards: map[string]*recreateGuard{}}
+	return &SharedState{watches: map[string]paramsWatch{}, guards: map[string]*recreateGuard{}, crashes: map[string]*crashRecord{}}
 }
 
 // WithSharedState makes the controller keep its params watch and recreate

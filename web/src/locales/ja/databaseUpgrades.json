@@ -13,7 +13,9 @@
     "advisories": "このバージョンに影響する既知のセキュリティアドバイザリ",
     "catalogUpdated": "カタログの更新日 {{date}}",
     "blockersTitle": "アップグレードがブロックされています",
-    "manualReason": "手動でのアップグレードが必要です"
+    "manualReason": "手動でのアップグレードが必要です",
+    "backupCtaTitle": "安全にアップグレードするために、バックアップ先を設定してください",
+    "backupCtaButton": "バックアップ先を設定"
   },
   "support": {
     "supported": "サポート対象",

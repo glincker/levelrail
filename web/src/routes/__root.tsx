@@ -24,21 +24,15 @@ import { AppearanceSyncApplier } from '../components/account/AppearanceSyncAppli
 import { BottomTabBar } from '../components/shell/BottomTabBar'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
-import { VacationBanner } from '../components/shell/VacationBanner'
 import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
-import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
-import { InstallCard } from '../components/InstallCard'
-import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
-import { UpgradeOutcomeToast } from '../components/settings/updates/UpgradeOutcomeToast'
-import { UpgradeGlobalBar } from '../components/settings/updates/UpgradeGlobalBar'
-import { LocalModeBanner } from '../components/LocalModeBanner'
-import { RestartBanner } from '../components/RestartBanner'
-import { MaintenanceBanner } from '../components/maintenance/MaintenanceBanner'
-import { DomainMaintenanceBanner } from '../components/maintenance/DomainMaintenanceBanner'
 import { Toaster } from '../components/ui/toast'
 
 // The shortcuts overlay is only needed once someone opens it.
+// Conditional banners render nothing until data says otherwise, so they stay off the first load.
+const ShellBanners = React.lazy(
+  () => import('../components/shell/ShellBanners'),
+)
 const StageOverlay = React.lazy(() =>
   import('../components/StageOverlay').then((m) => ({
     default: m.StageOverlay,
@@ -236,16 +230,9 @@ function AppShell() {
         <LazyDemoChrome />
         <AppHeader onSearch={openPalette} />
         <ShellBanner />
-        <VacationBanner />
-        <RestartBanner />
-        <LocalModeBanner />
-        <UpgradeGlobalBar />
-        <UpgradeOutcomeToast />
-        <MaintenanceBanner />
-        <DomainMaintenanceBanner />
-        <DeviceLoginBanner />
-        <SignInRequestsBanner />
-        <InstallCard />
+        <React.Suspense fallback={null}>
+          <ShellBanners />
+        </React.Suspense>
         <main
           id={MAIN_CONTENT_ID}
           tabIndex={-1}

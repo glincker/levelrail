@@ -21,6 +21,12 @@ engines:
   - id: mongodb
     label: MongoDB
     default_version: "7"
+  - id: documentdb
+    label: DocumentDB
+    default_version: "pg17-1.2.0"
+  - id: dynamodb
+    label: DynamoDB (local)
+    default_version: "3.3.2"
   - id: mariadb
     label: MariaDB
     default_version: "11"

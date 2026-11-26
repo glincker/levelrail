@@ -1,0 +1,47 @@
+{
+  "label": "Verbindung",
+  "mode": {
+    "readOnly": "Nur Lesen",
+    "writesOn": "Schreiben freigegeben",
+    "writesUntil": "Schreiben freigegeben bis {{time}}",
+    "writesLeft": "Schreiben freigegeben, noch {{time}}",
+    "relocked": "Schreiben wieder gesperrt"
+  },
+  "login": "Anmeldung",
+  "superuser": "Superuser (Plattform)",
+  "path": "Pfad",
+  "direct": "Direkt",
+  "viaNode": "über Knoten {{node}}",
+  "external": "Extern {{target}}",
+  "credentials": "Zugangsdaten",
+  "managed": "Von Levelrail verwaltet",
+  "stored": "Gespeicherte Zugangsdaten",
+  "networking": "Netzwerk",
+  "access": "Zugriff",
+  "notRunning": "Die Datenbank läuft nicht. Starten Sie sie, um den Explorer zu nutzen.",
+  "unreachable": "Der Status dieser Datenbank konnte nicht gelesen werden.",
+  "retry": "Erneut versuchen",
+  "lockNow": "Jetzt sperren",
+  "unlock": {
+    "open": "Schreiben freigeben",
+    "title": "Schreiben freigeben",
+    "description": "Anweisungen laufen als Plattform-Superuser und ändern Daten in \"{{name}}\" sofort. Jede Anweisung wird im Audit-Log erfasst.",
+    "confirmLabel": "{{name}} zur Bestätigung eingeben",
+    "duration": "Freigeben für",
+    "minutes": "{{count}} Min.",
+    "cancel": "Abbrechen",
+    "confirm": "Schreiben freigeben"
+  },
+  "activity": {
+    "open": "Aktivität",
+    "title": "Anweisungsaktivität",
+    "description": "Die letzten {{count}} Anweisungen auf dieser Datenbank.",
+    "time": "Zeit",
+    "principal": "Principal",
+    "action": "Aktion",
+    "outcome": "Ergebnis",
+    "fingerprint": "Fingerabdruck",
+    "empty": "Noch keine Anweisungen erfasst.",
+    "error": "Aktivität konnte nicht geladen werden."
+  }
+}

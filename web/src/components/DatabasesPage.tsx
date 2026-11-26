@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { DatabaseListEntry } from '../types/databaseDetail'
 import { ConnectDatabaseDialog } from './ConnectDatabaseDialog'
+import { ConnectHostedDialog } from './ConnectHostedDialog'
 import { CreateDatabaseDialog } from './CreateDatabaseDialog'
 import { DatabasesEnginePicker } from './DatabasesEnginePicker'
 import { DatabasesTable } from './DatabasesTable'
@@ -42,6 +43,7 @@ export function DatabasesShell({
         action={
           <>
             <ConnectDatabaseDialog />
+            <ConnectHostedDialog />
             <CreateDatabaseDialog />
           </>
         }

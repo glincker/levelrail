@@ -1,0 +1,5 @@
+{
+  "stageHelp": {
+    "deploy_attempts": "Failed, superseded and cancelled attempts past retention. Succeeded attempts and rollback pins stay."
+  }
+}

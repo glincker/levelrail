@@ -725,7 +725,7 @@ levelrail-cli preview prune <app> [--all] [flags]
 ## Databases
 
 ```
-levelrail-cli databases create --name NAME --engine ENGINE --version VERSION [flags]
+levelrail-cli databases create --name NAME --engine ENGINE [--version VERSION] [flags]
 levelrail-cli databases create --interactive
 levelrail-cli databases list [flags]
 levelrail-cli databases get <name> [flags]
@@ -744,6 +744,10 @@ levelrail-cli databases slow-queries <name> [flags]
 levelrail-cli databases schema <name> [--columns] [flags]
 levelrail-cli databases query <name> --sql "select ..." [--explain] [--write --confirm <name>] [flags]
 levelrail-cli databases engine-stats <name> [flags]
+levelrail-cli databases explorer capabilities <name> [flags]
+levelrail-cli databases mongo collections <name> [--database D] [flags]
+levelrail-cli databases mongo find <name> --database D --collection C [--filter JSON] [--sort JSON] [--projection JSON] [--limit N] [--after ID] [flags]
+levelrail-cli databases redis info|slowlog|clients <name> [flags]
 levelrail-cli databases query-history list <name> [--limit N] [--width N] [flags]
 levelrail-cli databases query-history clear <name> --yes [flags]
 levelrail-cli databases saved-queries list <name> [--width N] [flags]

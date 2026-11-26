@@ -12,6 +12,65 @@
     "tunnelBody": "CLI 会打开一个本地端口，通过控制平面转发到此数据库。不会向互联网暴露任何内容。",
     "tunnelAfter": "该命令会打印本地端口的连接字符串。添加 --launch 可自动启动 psql、mysql 或 redis-cli（请先设置 LEVELRAIL_DB_PASSWORD）。"
   },
+  "connect": {
+    "title": "连接到 {{name}}",
+    "description": "复制连接信息、框架代码片段或配置文件。密码在你显示之前保持隐藏。",
+    "targetLabel": "连接来源",
+    "target": {
+      "machine": "从我的电脑",
+      "apps": "从此服务器上的应用"
+    },
+    "published": "已发布在 {{address}}",
+    "publish": "在我的电脑上使用",
+    "publishing": "正在发布...",
+    "publishHint": "发布一个仅绑定到 127.0.0.1 的端口，只有这台电脑可以访问。",
+    "host": "主机",
+    "port": "端口",
+    "database": "数据库",
+    "user": "用户",
+    "password": "密码",
+    "reveal": "显示密码",
+    "hidePassword": "隐藏密码",
+    "autoHide": "30 秒后再次隐藏。",
+    "placeholderNote": "显示密码之前，代码片段使用 <password>。",
+    "noPassword": "无密码：此引擎在私有网络中无需认证运行。",
+    "revealFailed": "无法显示密码",
+    "url": "连接 URL",
+    "download": "下载",
+    "unavailable": "连接信息暂不可用。",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env",
+      "jdbc": "JDBC",
+      "prisma": "Prisma",
+      "drizzle": "Drizzle",
+      "sqlalchemy": "SQLAlchemy",
+      "django": "Django",
+      "rails": "Rails",
+      "compose": "Compose",
+      "cli": "CLI"
+    },
+    "where": "你的应用运行在哪里?",
+    "stackLabel": "技术栈",
+    "localPort": "本地端口",
+    "tunnelCommand": "隧道命令",
+    "tunnelNote": "在你的电脑上运行一次并保持打开:隧道仅在命令运行期间有效。之后应用连接 127.0.0.1。",
+    "internalNote": "此服务器上的应用通过内部主机名访问。将数据库关联到应用后,{{var}} 会自动设置。",
+    "remoteUnavailable": "此数据库无法从公网访问。打开网络页面发布它,或使用隧道。",
+    "openNetworking": "打开网络",
+    "downloadLocked": "显示密码后才能下载文件。",
+    "mode": {
+      "host": "本机",
+      "internal": "另一个 Levelrail 应用",
+      "remote": "远程机器"
+    }
+  },
   "upgrades": {
     "nav": "升级"
   },
@@ -51,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "关闭",
         "tlsPrefer": "可用时启用",
-        "tlsRequire": "必需"
+        "tlsRequire": "必需",
+        "tlsVerifyCa": "校验证书",
+        "tlsVerifyFull": "校验证书和主机名"
       },
       "test": {
         "button": "测试连接",
@@ -109,6 +170,55 @@
       "confirmAnyway": "仍然移除",
       "removing": "移除中...",
       "toast": "已移除“{{name}}”。数据库本身未受影响。"
+    },
+    "hosted": {
+      "trigger": "连接托管库",
+      "title": "连接托管数据库",
+      "description": "接入运行在云服务商的数据库。选择服务商,粘贴连接字符串,保存前先测试。",
+      "pickProvider": "它运行在哪里?",
+      "providerOther": "其他或自行管理",
+      "paste": "连接字符串",
+      "pasteHint": "支持 postgres://、mysql://、mongodb+srv:// 或 rediss://。密码加密保存,之后不会再显示。",
+      "pasteParsed": "已根据连接字符串填入详情,密码取自该字符串。",
+      "orFields": "或者自己填写详情",
+      "hostLooksLike": "类似:{{hint}}",
+      "docs": "{{provider}} 连接文档",
+      "caLink": "下载 {{provider}} 的 CA 证书包",
+      "verifyNote": "证书将按系统根证书校验。",
+      "detected": "已识别:{{provider}}",
+      "back": "返回",
+      "cancel": "取消",
+      "next": "继续",
+      "test": "测试连接",
+      "testing": "测试中...",
+      "retest": "重新测试",
+      "reachable": "可连通",
+      "tlsVerified": "TLS 证书已验证",
+      "tlsNotVerified": "TLS 已开启,证书未验证",
+      "tlsOff": "TLS 已关闭",
+      "latency": "{{ms}} 毫秒",
+      "server": "服务器:{{version}}",
+      "saveAnyway": "即使测试失败也保存",
+      "save": "保存托管数据库",
+      "saving": "保存中...",
+      "readOnlyNote": "默认只读。请使用仅有读权限的登录。除非为该数据库开启写入,否则浏览器不能写入。",
+      "toast": "已连接“{{name}}”。",
+      "step": "第 {{current}} 步，共 {{total}} 步",
+      "providersError": "无法加载提供商列表。你仍可选择“其他或自行管理”。",
+      "parseError": "这看起来不是连接字符串：{{reason}}",
+      "tlsNotChecked": "此模式下不验证 TLS 证书",
+      "tlsExplain": {
+        "disable": "不加密。仅适用于私有网络。",
+        "prefer": "服务器支持时加密。不检查证书。",
+        "require": "始终加密。不检查证书。",
+        "verify-ca": "始终加密并检查证书链。",
+        "verify-full": "始终加密，检查证书链和主机名。最安全的选择。"
+      },
+      "saveAnywayWarn": "测试失败，无法确认连接可用。仍然保存会按输入原样存储记录和密码，使用它的应用可能无法连接。",
+      "busy": "正在运行的连接测试过多。请等待几秒后重试。",
+      "forbidden": "只有 root 账户可以连接托管数据库。",
+      "testIdle": "保存前先运行测试，确认数据库可达。",
+      "summary": "{{engine}}，地址 {{host}}:{{port}}"
     }
   },
   "delete": {
@@ -212,6 +322,7 @@
       "console": "SQL 控制台"
     },
     "unsupported": "查看器支持 Postgres、MySQL、MariaDB 以及兼容 Redis 的引擎。此数据库是 {{engine}}。",
+    "unsupportedDocumentdb": "DocumentDB 的资源管理器暂不可用。请使用“连接”对话框中的代码片段进行连接。",
     "notRunning": "查看器需要数据库处于运行状态。请启动数据库后重试。",
     "beta": {
       "label": "Beta",
@@ -348,7 +459,81 @@
         "delete": "删除已保存的语句",
         "load": "载入编辑器"
       },
-      "plan": "查询计划"
+      "plan": "查询计划",
+      "runWrite": "运行（写入）",
+      "writeDone": "已提交。返回 {{count}} 行。",
+      "destructive": {
+        "title": "确认 {{kind}}",
+        "run": "仍然运行",
+        "typeLabel": "输入 {{name}} 以运行",
+        "unknownObject": "目标",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "不带 WHERE 的 DELETE",
+          "updateAll": "不带 WHERE 的 UPDATE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "这将永久删除 {{object}} 及其数据。",
+          "truncate": "这将清空 {{object}}：所有行都会被删除。",
+          "deleteAll": "没有 WHERE，{{object}} 的所有行都会被删除。",
+          "updateAll": "没有 WHERE，{{object}} 的所有行都会被更新。",
+          "alterDrop": "这将删除 {{object}} 的一部分及其数据。",
+          "grant": "这将扩大对 {{object}} 的访问。",
+          "revoke": "这将撤销对 {{object}} 的访问。"
+        }
+      },
+      "shortcutsHint": "Ctrl 或 Cmd + Enter 运行，S 保存，T 打开新标签页。",
+      "tabs": {
+        "listLabel": "查询标签页",
+        "untitled": "查询 {{n}}",
+        "new": "新标签页",
+        "close": "关闭 {{title}}",
+        "unsaved": "有未保存的更改"
+      },
+      "editor": {
+        "format": "格式化",
+        "formatHint": "关键字转为大写，每个子句另起一行",
+        "suggestions": "建议"
+      },
+      "results": {
+        "exportCsv": "导出 CSV",
+        "exportJson": "导出 JSON",
+        "exportHint": "导出此结果中已加载的 {{count}} 行",
+        "exported": "已导出 {{count}} 行。",
+        "copyCell": "复制单元格",
+        "copied": "已复制。",
+        "copyFailed": "无法复制。",
+        "resizeColumn": "调整列 {{column}} 的宽度",
+        "typeInferred": "类型由本页的值推断",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "此计划没有成本数值，因此显示原始文本。",
+        "showTree": "显示树",
+        "showRaw": "显示原始文本",
+        "hottest": "成本最高",
+        "cost": "成本 {{value}}",
+        "rows": "{{count}} 行",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "已保存和最近的语句",
+        "searchLabel": "搜索语句",
+        "searchPlaceholder": "搜索已保存和历史",
+        "noMatch": "没有匹配的内容。",
+        "openInTab": "在新标签页中打开"
+      }
     },
     "keys": {
       "title": "键浏览器",
@@ -364,7 +549,32 @@
       "noTtl": "无过期时间",
       "ttlSeconds": "{{count}} 秒",
       "truncated": "值已按服务器限制被截断。",
-      "readOnlyNote": "只读。值通过 SCAN、TYPE、TTL 以及按类型的读取来获取。"
+      "readOnlyNote": "只读。值通过 SCAN、TYPE、TTL 以及按类型的读取来获取。",
+      "tab_keys": "键",
+      "tab_info": "信息",
+      "typeFilter": "类型筛选",
+      "allTypes": "所有类型",
+      "encoding": "编码",
+      "memory": "内存",
+      "size": "元素数",
+      "bits": "共 {{total}} 位，已设置 {{set}} 位",
+      "view": "值视图",
+      "view_text": "文本",
+      "view_json": "JSON",
+      "view_hex": "十六进制",
+      "notJson": "该值不是有效的 JSON。",
+      "jsonUnsupported": "此服务器不可用 JSON 模块。",
+      "hyperloglog": "HyperLogLog 草图，不显示二进制值。",
+      "infoTitle": "服务器信息",
+      "slowlogTitle": "慢命令",
+      "slowlogNote": "仅显示命令名和参数大小，从不显示参数。",
+      "slowlogEmpty": "没有记录到慢命令。",
+      "slowId": "ID",
+      "slowTime": "时间",
+      "slowDuration": "微秒",
+      "slowCommand": "命令",
+      "slowArgs": "参数 / 大小",
+      "slowClient": "客户端"
     },
     "structure": {
       "openConsole": "在控制台中打开",
@@ -446,6 +656,125 @@
       "noLookups": "还没有查询",
       "evictions": "驱逐",
       "connections": "连接"
+    },
+    "mongo": {
+      "tree": {
+        "label": "数据库和集合",
+        "search": "搜索集合",
+        "truncated": "仅显示部分列表。",
+        "noCollections": "没有集合",
+        "meta": "{{size}}，索引：{{count}}",
+        "items": "长度 {{count}}",
+        "fields": "字段 {{count}}",
+        "root": "文档"
+      },
+      "readOnly": "只读",
+      "readOnlyReason": "浏览不会更改数据：只允许 find、计数和读取索引。",
+      "noCollections": "此数据库中还没有集合。",
+      "tabs": {
+        "documents": "文档",
+        "indexes": "索引",
+        "stats": "统计"
+      },
+      "docs": {
+        "filter": "筛选",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "限制",
+        "run": "运行",
+        "options": "选项",
+        "sort": "排序",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "投影",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "示例",
+        "status": "文档：{{count}}，{{ms}} 毫秒，第 {{page}} 页",
+        "truncated": "结果已按大小上限截断。",
+        "expandAll": "全部展开",
+        "collapseAll": "全部折叠",
+        "rejected": "服务器拒绝了此查询",
+        "failed": "查询失败",
+        "noMatches": "没有文档匹配此筛选条件。",
+        "empty": "此集合中没有文档。",
+        "details": "详情",
+        "copyDoc": "复制为 JSON",
+        "prev": "上一页",
+        "next": "下一页",
+        "invalid": {
+          "syntax": "{{kind}}不是有效的 JSON。",
+          "notObject": "{{kind}}必须是 JSON 对象。",
+          "sortDirection": "排序值必须为 1 或 -1。",
+          "projectionValue": "投影值必须是数字、布尔值或对象。"
+        },
+        "kind": {
+          "filter": "筛选条件",
+          "sort": "排序",
+          "projection": "投影"
+        }
+      },
+      "indexes": {
+        "empty": "未报告索引。",
+        "label": "索引",
+        "name": "名称",
+        "keys": "键",
+        "unique": "唯一",
+        "yes": "是",
+        "no": "否"
+      },
+      "stats": {
+        "documents": "文档",
+        "dataSize": "数据大小",
+        "storageSize": "存储大小",
+        "indexes": "索引",
+        "type": "类型"
+      }
+    },
+    "dynamo": {
+      "tables": "表",
+      "truncated": "仅显示部分列表。",
+      "meta": "{{count}} 项，{{size}}",
+      "estimate": "数量和大小为估算值，引擎会延迟刷新。",
+      "noTables": "此数据库中还没有表。",
+      "readOnly": "只读",
+      "ttl": "{{attr}} 启用 TTL",
+      "mode": "模式",
+      "query": "查询",
+      "scan": "扫描",
+      "index": "索引",
+      "tableKey": "表主键",
+      "partitionKey": "分区键",
+      "scanConfirm": "我了解扫描会读取其经过的每一项",
+      "limit": "上限",
+      "run": "运行",
+      "failed": "读取失败",
+      "summary": "{{count}} 项，扫描 {{scanned}} 项，{{ms}} 毫秒",
+      "noItems": "没有匹配的项。",
+      "prev": "上一页",
+      "next": "下一页",
+      "item": "项",
+      "close": "关闭"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "列表",
+        "diagram": "图表"
+      },
+      "viewMode": "架构图视图",
+      "search": "筛选表",
+      "zoomGroup": "缩放",
+      "zoomOut": "缩小",
+      "zoomIn": "放大",
+      "fit": "适应屏幕",
+      "export": "导出 SVG",
+      "label": "架构图",
+      "noTables": "暂无可绘制的表。",
+      "noMatch": "没有符合筛选条件的表。",
+      "openTable": "打开 {{table}}",
+      "more": "另有 {{count}} 个",
+      "count": "{{count}} 个表",
+      "capped": "显示 {{total}} 个表中的 {{shown}} 个",
+      "loadingKeys": "正在加载键",
+      "noKeys": "未找到外键，仅显示表",
+      "keysError": "部分外键无法加载"
     }
   },
   "createFlavor": {
@@ -488,6 +817,7 @@
       "keydb": "多线程的 Redis 兼容存储，可在单节点上获得更高吞吐。",
       "dragonfly": "为超高吞吐而生的现代 Redis 兼容存储。",
       "mongodb": "文档数据库，适用于灵活的 JSON 形态数据。",
+      "documentdb": "基于 PostgreSQL 的开源文档数据库，兼容 MongoDB 协议。",
       "clickhouse": "列式存储，用于对大量事件数据进行快速分析查询。",
       "meilisearch": "容错拼写的全文搜索，通过 HTTP API 即时返回结果。",
       "qdrant": "向量数据库，用于嵌入、语义搜索和 RAG 检索。",
@@ -537,7 +867,14 @@
     "loading": "正在加载数据库",
     "notCreated": "尚未创建",
     "failedToCreate": "无法创建数据库",
-    "pendingActionHint": "数据库创建后可用"
+    "pendingActionHint": "数据库创建后可用",
+    "colLocation": "运行位置",
+    "summary": "共 {{total}} 个数据库：此服务器 {{local}}，节点 {{node}}，托管在别处 {{hosted}}",
+    "viewGroup": "列表视图",
+    "viewTable": "表格",
+    "viewCards": "卡片",
+    "connect": "连接",
+    "explorer": "浏览器"
   },
   "detail": {
     "backupNow": "立即备份",
@@ -770,8 +1107,6 @@
     },
     "advanced": {
       "title": "高级选项",
-      "node": "节点",
-      "autoNode": "自动选择",
       "project": "项目",
       "noProject": "无项目"
     },
@@ -812,7 +1147,78 @@
     "submitting": "创建中...",
     "created": "正在创建数据库“{{name}}”。",
     "createdPartial": "数据库“{{name}}”已创建，但无法应用规格或备份。请检查其设置。",
-    "dockerDown": "此服务器上的 Docker 没有响应。在其恢复之前无法创建数据库。"
+    "dockerDown": "此服务器上的 Docker 没有响应。在其恢复之前无法创建数据库。",
+    "placement": {
+      "title": "运行位置",
+      "kinds": {
+        "local": {
+          "title": "此服务器",
+          "note": "与 Levelrail 同机"
+        },
+        "node": {
+          "title": "现有节点",
+          "note": "已连接"
+        },
+        "cloud": {
+          "title": "新的云节点",
+          "note": "在云上创建服务器"
+        },
+        "host": {
+          "title": "任意 Linux 主机",
+          "note": "数据中心或你自己的机器"
+        }
+      },
+      "local": "在 {{name}} 上运行，可用磁盘 {{free}}。",
+      "localNoDisk": "在 {{name}} 上运行。未上报可用磁盘。",
+      "auto": "自动选择",
+      "autoPick": "将使用 {{name}}",
+      "autoNone": "当前没有符合条件的节点。",
+      "diskFree": "可用 {{free}}",
+      "diskUnknown": "磁盘未上报",
+      "load": "负载 {{percent}}%",
+      "workloads": "工作负载 {{count}}",
+      "noNodes": "尚未连接其他节点。",
+      "addNode": "添加节点",
+      "noCloud": "尚未连接云账户。",
+      "connectCloud": "连接云账户",
+      "comingSoon": "即将推出",
+      "connected": "已连接",
+      "notConnected": "连接",
+      "region": "区域",
+      "size": "规格",
+      "pick": "选择",
+      "estimate": "约 {{price}} {{currency}} 每月",
+      "noEstimate": "此规格未上报价格。",
+      "spendNote": "创建云节点会产生费用。创建任何内容之前，你需要先确认规格和月度估算。",
+      "combinedPending": "在一个流程中同时创建节点和数据库将在下次更新中提供。请先添加节点，再在其上创建数据库。",
+      "addCloudNode": "添加云节点",
+      "hostNote": "在装有 Docker 的任意 Linux 主机上运行安装命令。节点出现后，再在其上创建数据库。",
+      "hostCommand": "显示安装命令",
+      "reasons": {
+        "offline": "离线",
+        "cordoned": "已隔离，不接受新任务",
+        "outdated": "代理版本过旧",
+        "failing": "节点故障",
+        "noDocker": "Docker 不可用",
+        "lowDisk": "可用磁盘不足"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "将在此服务器 ({{name}}) 上运行。",
+        "node": "将在 {{name}} 上运行。",
+        "auto": "自动选择：将在 {{name}} 上运行。",
+        "cloud": "需要先有一个新的云节点。请先添加，再在其上创建数据库。",
+        "host": "需要先在你的主机上有一个节点。请先添加，再在其上创建数据库。"
+      }
+    }
   },
   "provision": {
     "title": "正在设置你的数据库",
@@ -1136,6 +1542,10 @@
     "note": "清空字段即可恢复为引擎默认值。",
     "pendingNote": "应用会重启数据库。停止后再启动也会应用它。"
   },
+  "latestVersion": {
+    "resolved": "最新（已解析：{{version}}）",
+    "pending": "最新：创建数据库时会选择最新的稳定版本。"
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "密码",
@@ -1178,5 +1588,115 @@
     "noProject": "无项目",
     "on": "开启",
     "none": "无"
+  },
+  "home": {
+    "nav": {
+      "back": "返回数据库",
+      "overview": "概览",
+      "branches": "分支",
+      "monitoring": "监控",
+      "integrations": "集成",
+      "settings": "设置",
+      "tables": "表",
+      "collections": "集合",
+      "keys": "键",
+      "explorer": "浏览器",
+      "query": "查询编辑器",
+      "backups": "备份与恢复",
+      "users": "用户与角色",
+      "data": "数据"
+    },
+    "monitoring": {
+      "metrics": "指标",
+      "logs": "日志",
+      "slow": "慢查询"
+    },
+    "branches": {
+      "title": "分支",
+      "body": "分支将在此版本中推出。",
+      "planned": "计划中的操作",
+      "actions": {
+        "create": "从此数据库创建子分支",
+        "reset": "将分支重置为其父分支",
+        "restore": "将分支恢复到某个时间点",
+        "expire": "设置分支过期时间"
+      }
+    },
+    "integrations": {
+      "title": "集成",
+      "body": "将服务连接到此数据库。目前暂无可用项。",
+      "categories": {
+        "auth": "身份验证",
+        "storage": "对象存储",
+        "functions": "函数",
+        "realtime": "实时",
+        "ai": "AI 网关",
+        "observability": "可观测性"
+      },
+      "soon": "即将推出"
+    },
+    "settings": {
+      "sections": {
+        "general": "常规",
+        "networking": "网络",
+        "credentials": "凭据",
+        "backups": "备份与升级",
+        "danger": "危险区域"
+      },
+      "general": {
+        "title": "常规",
+        "name": "名称",
+        "engine": "引擎",
+        "copyName": "复制数据库名称",
+        "immutable": "名称用于标识此数据库,无法更改。"
+      },
+      "danger": {
+        "title": "危险区域",
+        "body": "删除数据库会移除其容器。是否同时删除数据由你选择。"
+      }
+    },
+    "overview": {
+      "services": "服务",
+      "facts": "关键信息",
+      "manage": "管理",
+      "rows": {
+        "engine": "引擎与版本",
+        "backups": "备份",
+        "network": "网络暴露",
+        "access": "访问",
+        "upgrades": "升级"
+      },
+      "backupsOn": "已启用,计划 {{schedule}}",
+      "backupsOff": "未设置计划",
+      "backupsNone": "此引擎不支持",
+      "networkPublic": "已发布在端口 {{port}}",
+      "networkPrivate": "仅限此服务器",
+      "accessHint": "用户、角色与平台访问",
+      "upgradesHint": "版本变更与大版本升级"
+    }
+  },
+  "location": {
+    "local": "此服务器",
+    "node": "节点 {{name}}",
+    "hosted": "托管在别处：{{host}}",
+    "filterGroup": "按位置筛选",
+    "short": {
+      "local": "此服务器",
+      "node": "节点",
+      "hosted": "托管在别处"
+    }
+  },
+  "where": {
+    "title": "在哪里运行？",
+    "local": "此服务器",
+    "localHint": "与 Levelrail 一起运行",
+    "node": "某个节点",
+    "nodeHint": "{{count}} 个节点之一",
+    "nodeNone": "需要第二个节点",
+    "nodeNext": "下一步中选择节点。",
+    "cloud": "云账户",
+    "cloudSoon": "即将推出",
+    "hosted": "已有的托管数据库",
+    "hostedAction": "连接"
   }
 }

@@ -28,6 +28,15 @@ type RedisValue struct {
 	TTL       int64    `json:"ttl"`
 	Lines     []string `json:"lines"`
 	Truncated bool     `json:"truncated"`
+	// Typed detail (redis_typed.go). Size and MemoryBytes are -1 when unknown.
+	Encoding    string       `json:"encoding"`
+	Size        int64        `json:"size"`
+	MemoryBytes int64        `json:"memoryBytes"`
+	Subtype     string       `json:"subtype,omitempty"`
+	BitLength   int64        `json:"bitLength,omitempty"`
+	BitCount    int64        `json:"bitCount,omitempty"`
+	Unsupported bool         `json:"unsupported,omitempty"`
+	Entries     []RedisEntry `json:"entries"`
 }
 
 // redisCmdScript mirrors the dump path's TLS probe so a TLS-only Redis works.
@@ -102,7 +111,7 @@ func (t Target) ScanKeys(ctx context.Context, cursor, pattern string, count int)
 	if count <= 0 || count > t.Limits.MaxRows {
 		count = min(100, t.Limits.MaxRows)
 	}
-	lines, _, err := t.redisRun(ctx, "", "SCAN", cursor, "MATCH", pattern, "COUNT", strconv.Itoa(count))
+	lines, _, err := t.redisLeaves(ctx, "SCAN "+cursor+" MATCH "+redisQuote(pattern)+" COUNT "+strconv.Itoa(count)+"\n")
 	if err != nil {
 		return RedisScan{}, err
 	}
@@ -119,7 +128,7 @@ func (t Target) ScanKeys(ctx context.Context, cursor, pattern string, count int)
 	for _, k := range keys {
 		fmt.Fprintf(&script, "TYPE %s\nTTL %s\n", redisQuote(k), redisQuote(k))
 	}
-	meta, _, err := t.redisRun(ctx, script.String())
+	meta, _, err := t.redisLeaves(ctx, script.String())
 	if err != nil {
 		return RedisScan{}, err
 	}
@@ -132,45 +141,4 @@ func (t Target) ScanKeys(ctx context.Context, cursor, pattern string, count int)
 		out.Keys = append(out.Keys, rk)
 	}
 	return out, nil
-}
-
-// GetKey reads one key's value with a read-only command chosen by type.
-func (t Target) GetKey(ctx context.Context, key string) (RedisValue, error) {
-	meta, _, err := t.redisRun(ctx, "TYPE "+redisQuote(key)+"\nTTL "+redisQuote(key)+"\n")
-	if err != nil {
-		return RedisValue{}, err
-	}
-	if len(meta) < 2 || strings.TrimSpace(meta[0]) == "none" {
-		return RedisValue{}, ErrNotFound
-	}
-	v := RedisValue{Type: strings.TrimSpace(meta[0]), Lines: []string{}}
-	v.TTL, _ = strconv.ParseInt(strings.TrimSpace(meta[1]), 10, 64)
-
-	n := strconv.Itoa(t.Limits.MaxRows - 1)
-	q := redisQuote(key)
-	var cmd string
-	switch v.Type {
-	case "string":
-		cmd = "GET " + q
-	case "list":
-		cmd = "LRANGE " + q + " 0 " + n
-	case "set":
-		cmd = "SSCAN " + q + " 0 COUNT " + n
-	case "hash":
-		cmd = "HSCAN " + q + " 0 COUNT " + n
-	case "zset":
-		cmd = "ZRANGE " + q + " 0 " + n + " WITHSCORES"
-	default:
-		v.Lines = []string{"(" + v.Type + " values are not shown)"}
-		return v, nil
-	}
-	lines, trunc, err := t.redisRun(ctx, cmd+"\n")
-	if err != nil {
-		return RedisValue{}, err
-	}
-	if (v.Type == "set" || v.Type == "hash") && len(lines) > 0 {
-		lines = lines[1:]
-	}
-	v.Lines, v.Truncated = lines, trunc
-	return v, nil
 }

@@ -69,7 +69,7 @@ func connectionURL(ep Endpoint, password string) string {
 	switch ep.Engine {
 	case EngineRedis:
 		u.Scheme = "redis"
-		if ep.TLSMode == TLSRequire {
+		if TLSOn(ep.TLSMode) {
 			u.Scheme = "rediss"
 		}
 		if password != "" {
@@ -81,7 +81,7 @@ func connectionURL(ep Endpoint, password string) string {
 			q.Set("sslmode", ep.TLSMode)
 		}
 	case EngineMongoDB:
-		if ep.TLSMode == TLSRequire {
+		if TLSOn(ep.TLSMode) {
 			q.Set("tls", "true")
 		}
 	}

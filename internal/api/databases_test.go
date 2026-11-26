@@ -216,8 +216,8 @@ func TestHandleListDatabases_Status(t *testing.T) {
 	if s := byName["healthy-db"].Status; s.Label != "Healthy" || s.Variant != "success" {
 		t.Errorf("healthy-db status = %+v, want Healthy/success", s)
 	}
-	if s := byName["broken-db"].Status; s.Label != "Attention needed" || s.Variant != "destructive" {
-		t.Errorf("broken-db status = %+v, want Attention needed/destructive", s)
+	if s := byName["broken-db"].Status; s.Label != "Crash looping" || s.Variant != "destructive" {
+		t.Errorf("broken-db status = %+v, want Crash looping/destructive", s)
 	}
 	if s := byName["pending-db"].Status; s.Label != "No status yet" || s.Variant != "muted" {
 		t.Errorf("pending-db status = %+v, want No status yet/muted", s)
@@ -1010,5 +1010,43 @@ func TestCreateDatabaseBodyLimit(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
 	if rec.Code != http.StatusRequestEntityTooLarge {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusRequestEntityTooLarge)
+	}
+}
+
+func TestHandleDeleteDatabase_ProtectedBranchIs409(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	mustCreateDatabase(t, rt, cookie, `{"name":"main","engine":"redis","version":"7"}`)
+	if err := db.CreateDatabaseBranch(context.Background(), store.DatabaseBranch{ID: "b", DatabaseName: "main", ParentName: "root", RootName: "root", Mode: "full", Source: "live", State: "ready", Protected: true, CreatedAt: "t", UpdatedAt: "t"}); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/databases/main", ""))
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "protected") {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetDesiredDatabase(context.Background(), "main"); err != nil {
+		t.Fatalf("database lost: %v", err)
+	}
+}
+
+func TestChildrenFirstOrdersByDepth(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+	for _, n := range []string{"root", "kid", "grandkid"} {
+		if err := db.CreateDesiredDatabase(ctx, store.DesiredDatabase{Name: n, Engine: store.EnginePostgres, Version: "16"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mk := func(id, name, parent string) {
+		if err := db.CreateDatabaseBranch(ctx, store.DatabaseBranch{ID: id, DatabaseName: name, ParentName: parent, RootName: "root", Mode: "full", Source: "live", State: "ready", CreatedAt: "t", UpdatedAt: "t"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mk("1", "kid", "root")
+	mk("2", "grandkid", "kid")
+	got := rt.childrenFirst(ctx, []store.DesiredDatabase{{Name: "root"}, {Name: "kid"}, {Name: "grandkid"}})
+	if got[0].Name != "grandkid" || got[1].Name != "kid" || got[2].Name != "root" {
+		t.Fatalf("order = %+v", got)
 	}
 }

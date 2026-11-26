@@ -55,6 +55,11 @@ export const NAMESPACES = [
   'appExposure',
   'appAccess',
   'databaseAccess',
+  'dbNav',
+  'dbIntegrations',
+  'dbBranches',
+  'dbBackupSetup',
+  'dbExplorerStrip',
   'databaseUpgrades',
   'databaseVersions',
   'iam',
@@ -139,6 +144,8 @@ export const NAMESPACES = [
   'appExpiry',
   'tokenExpiry',
   'appRestartSchedule',
+  'dbExplorerErrors',
+  'dbMonitoring',
   'appFiles',
   'appContainers',
   'maintenance',
@@ -205,6 +212,7 @@ export const NAMESPACES = [
   'storageParts',
   'installCard',
   'restorePreview',
+  'dbOverview',
 ] as const
 
 void i18n

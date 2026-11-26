@@ -6,12 +6,13 @@
   "notConfigured": "このコントロールプレーンでは、データエクスポートを利用できません。",
   "empty": {
     "title": "エクスポート先はありません",
-    "description": "ログ用のLoki、syslog、HTTPエンドポイント、監査ログ用のWebhookやバケット、メトリクス用のOTLPコレクターを追加してください。"
+    "description": "ログ、監査イベント、メトリクスの送信先を選んでください。すべて任意です。"
   },
   "scrape": {
     "title": "Prometheusスクレイプエンドポイント",
-    "description": "PrometheusまたはGrafana Agentを、このパスに向けてください。ベアラー認証情報には、読み取りトークンを使います。ラベルは、アプリ、データベース、ノードに限られます。",
-    "path": "GET /metrics"
+    "description": "読み取りトークンをBearer認証情報として、PrometheusまたはGrafana Agentをこのパスに向けてください。",
+    "path": "GET /metrics",
+    "copy": "スクレイプパスをコピー"
   },
   "kinds": {
     "logs_http": "HTTPでログを送信(JSON Lines)",
@@ -60,7 +61,8 @@
     "deleteConfirm": "送信先を削除",
     "deleting": "削除中",
     "secretsSet": "認証情報を保存済み(書き込み専用)",
-    "behind": "遅延中: 配信が失敗しています。監査行はログ内で安全に待機しています"
+    "behind": "遅延中: 配信が失敗しています。監査行はログ内で安全に待機しています",
+    "actions": "{{name}}の操作"
   },
   "fix": {
     "title": "テストに失敗しました",
@@ -127,6 +129,15 @@
     "gzip": "リクエスト本文を圧縮(gzip)",
     "insecure": "TLS証明書の検証をスキップ",
     "insecureWarning": "危険: 送信中に監査ログを読まれたり改ざんされたりする可能性があります。自分で管理しているコレクターにのみ使ってください。",
-    "auditStreamHint": "配信は少なくとも1回行われ、止まった地点から再開されます。各イベントには監査ハッシュチェーンのフィールドが含まれ、受信側でログを検証できます。"
+    "auditStreamHint": "配信は少なくとも1回行われ、止まった地点から再開されます。各イベントには監査ハッシュチェーンのフィールドが含まれ、受信側でログを検証できます。",
+    "advanced": "詳細設定",
+    "back": "戻る",
+    "tenant": "テナントID(任意)"
+  },
+  "gallery": {
+    "hint": "データの送信先を選択します。",
+    "logs": "ログ",
+    "audit": "監査ログ",
+    "metrics": "メトリクス"
   }
 }

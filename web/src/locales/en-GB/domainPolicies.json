@@ -1,0 +1,5 @@
+{
+  "danger": {
+    "help": "Reset a section to the default behaviour. This takes effect on the next ingress pass."
+  }
+}

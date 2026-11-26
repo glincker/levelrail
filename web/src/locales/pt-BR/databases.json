@@ -12,6 +12,65 @@
     "tunnelBody": "A CLI abre uma porta local que repassa para este banco de dados pelo control plane. Nada é exposto à internet.",
     "tunnelAfter": "O comando imprime uma string de conexão para a porta local. Adicione --launch para iniciar psql, mysql ou redis-cli automaticamente (defina LEVELRAIL_DB_PASSWORD primeiro)."
   },
+  "connect": {
+    "title": "Conectar a {{name}}",
+    "description": "Copie os dados, um trecho por framework ou um arquivo de configuração. As senhas ficam ocultas até você revelá-las.",
+    "targetLabel": "Destino da conexão",
+    "target": {
+      "machine": "Da minha máquina",
+      "apps": "De apps neste servidor"
+    },
+    "published": "Publicado em {{address}}",
+    "publish": "Usar da minha máquina",
+    "publishing": "Publicando...",
+    "publishHint": "Publica uma porta ligada apenas a 127.0.0.1, acessível só por este computador.",
+    "host": "Host",
+    "port": "Porta",
+    "database": "Banco de dados",
+    "user": "Usuário",
+    "password": "Senha",
+    "reveal": "Revelar senha",
+    "hidePassword": "Ocultar senha",
+    "autoHide": "Oculta novamente após 30 segundos.",
+    "placeholderNote": "Os trechos usam <password> até você revelá-la.",
+    "noPassword": "Sem senha: este mecanismo funciona sem autenticação na rede privada.",
+    "revealFailed": "Não foi possível revelar a senha",
+    "url": "URL de conexão",
+    "download": "Baixar",
+    "unavailable": "Os dados de conexão ainda não estão disponíveis.",
+    "tab": {
+      "springProperties": "Spring properties",
+      "springYaml": "Spring YAML",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "dotnet": ".NET",
+      "url": "URL",
+      "env": ".env",
+      "jdbc": "JDBC",
+      "prisma": "Prisma",
+      "drizzle": "Drizzle",
+      "sqlalchemy": "SQLAlchemy",
+      "django": "Django",
+      "rails": "Rails",
+      "compose": "Compose",
+      "cli": "CLI"
+    },
+    "where": "Onde seu app roda?",
+    "stackLabel": "Stack",
+    "localPort": "Porta local",
+    "tunnelCommand": "Comando do túnel",
+    "tunnelNote": "Execute uma vez no seu computador e deixe aberto: o túnel só existe enquanto o comando roda. Seu app então se conecta a 127.0.0.1.",
+    "internalNote": "Apps neste servidor o acessam pelo hostname interno. Vincule o banco ao app e {{var}} é definida automaticamente.",
+    "remoteUnavailable": "Este banco não é acessível publicamente. Abra Rede para publicá-lo ou use um túnel.",
+    "openNetworking": "Abrir Rede",
+    "downloadLocked": "Revele a senha para baixar arquivos.",
+    "mode": {
+      "host": "Nesta máquina",
+      "internal": "Outro app do Levelrail",
+      "remote": "Máquina remota"
+    }
+  },
   "upgrades": {
     "nav": "Atualizações"
   },
@@ -51,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "Desativado",
         "tlsPrefer": "Se disponível",
-        "tlsRequire": "Obrigatório"
+        "tlsRequire": "Obrigatório",
+        "tlsVerifyCa": "Verificar certificado",
+        "tlsVerifyFull": "Verificar certificado e nome do host"
       },
       "test": {
         "button": "Testar conexão",
@@ -109,6 +170,55 @@
       "confirmAnyway": "Remover mesmo assim",
       "removing": "Removendo...",
       "toast": "\"{{name}}\" removido. O próprio banco de dados não foi tocado."
+    },
+    "hosted": {
+      "trigger": "Conectar hospedado",
+      "title": "Conectar um banco de dados hospedado",
+      "description": "Traga um banco que roda em um provedor de nuvem. Escolha o provedor, cole a string de conexão e teste antes de salvar.",
+      "pickProvider": "Onde ele roda?",
+      "providerOther": "Outro ou autogerenciado",
+      "paste": "String de conexão",
+      "pasteHint": "postgres://, mysql://, mongodb+srv:// ou rediss://. A senha é guardada criptografada e nunca mais é exibida.",
+      "pasteParsed": "Detalhes preenchidos pela string de conexão. A senha vem da string.",
+      "orFields": "Ou preencha os detalhes você mesmo",
+      "hostLooksLike": "Parece com: {{hint}}",
+      "docs": "Documentação de conexão do {{provider}}",
+      "caLink": "Baixar o pacote de CA do {{provider}}",
+      "verifyNote": "Os certificados são verificados com as raízes do sistema.",
+      "detected": "Detectado: {{provider}}",
+      "back": "Voltar",
+      "cancel": "Cancelar",
+      "next": "Continuar",
+      "test": "Testar conexão",
+      "testing": "Testando...",
+      "retest": "Testar de novo",
+      "reachable": "Acessível",
+      "tlsVerified": "Certificado TLS verificado",
+      "tlsNotVerified": "TLS ativo, certificado não verificado",
+      "tlsOff": "TLS desligado",
+      "latency": "{{ms}} ms",
+      "server": "Servidor: {{version}}",
+      "saveAnyway": "Salvar mesmo com o teste falhando",
+      "save": "Salvar banco hospedado",
+      "saving": "Salvando...",
+      "readOnlyNote": "Somente leitura por padrão. Use um login só com permissão de leitura. O explorador não grava a menos que você ative a escrita neste banco.",
+      "toast": "\"{{name}}\" conectado.",
+      "step": "Etapa {{current}} de {{total}}",
+      "providersError": "Não foi possível carregar a lista de provedores. Você ainda pode usar Outro ou autogerenciado.",
+      "parseError": "Isso não parece uma string de conexão: {{reason}}",
+      "tlsNotChecked": "O certificado TLS não é verificado neste modo",
+      "tlsExplain": {
+        "disable": "Sem criptografia. Somente para uma rede privada.",
+        "prefer": "Criptografa se o servidor oferecer. O certificado não é verificado.",
+        "require": "Sempre criptografa. O certificado não é verificado.",
+        "verify-ca": "Sempre criptografa e verifica a cadeia do certificado.",
+        "verify-full": "Sempre criptografa, verifica a cadeia e o nome do host. A opção mais segura."
+      },
+      "saveAnywayWarn": "O teste falhou, então não há confirmação de que funciona. Salvar mesmo assim guarda o registro e a senha como informados, e os apps que o usam podem não conectar.",
+      "busy": "Há testes de conexão demais em andamento. Aguarde alguns segundos e tente de novo.",
+      "forbidden": "Somente a conta root pode conectar bancos de dados hospedados.",
+      "testIdle": "Execute o teste para verificar se o banco responde antes de salvar.",
+      "summary": "{{engine}} em {{host}}:{{port}}"
     }
   },
   "delete": {
@@ -212,6 +322,7 @@
       "console": "Console SQL"
     },
     "unsupported": "O visualizador suporta Postgres, MySQL, MariaDB e mecanismos compatíveis com Redis. Este banco de dados é {{engine}}.",
+    "unsupportedDocumentdb": "O explorador do DocumentDB ainda não está disponível. Conecte-se com os snippets da caixa de diálogo Conectar.",
     "notRunning": "O visualizador precisa de um banco de dados em execução. Inicie o banco de dados e tente novamente.",
     "beta": {
       "label": "Beta",
@@ -356,7 +467,81 @@
         "delete": "Excluir instrução salva",
         "load": "Carregar no editor"
       },
-      "plan": "Plano da consulta"
+      "plan": "Plano da consulta",
+      "runWrite": "Executar (escrita)",
+      "writeDone": "Confirmado. {{count}} linhas retornadas.",
+      "destructive": {
+        "title": "Confirmar {{kind}}",
+        "run": "Executar mesmo assim",
+        "typeLabel": "Digite {{name}} para executar",
+        "unknownObject": "o alvo",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "DELETE sem WHERE",
+          "updateAll": "UPDATE sem WHERE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "Isso remove {{object}} e seus dados de forma permanente.",
+          "truncate": "Isso esvazia {{object}}: todas as linhas são removidas.",
+          "deleteAll": "Sem WHERE, todas as linhas de {{object}} são apagadas.",
+          "updateAll": "Sem WHERE, todas as linhas de {{object}} são atualizadas.",
+          "alterDrop": "Isso remove parte de {{object}} e seus dados.",
+          "grant": "Isso amplia o acesso a {{object}}.",
+          "revoke": "Isso remove o acesso a {{object}}."
+        }
+      },
+      "shortcutsHint": "Ctrl ou Cmd + Enter executa, S salva, T abre uma nova aba.",
+      "tabs": {
+        "listLabel": "Abas de consulta",
+        "untitled": "Consulta {{n}}",
+        "new": "Nova aba",
+        "close": "Fechar {{title}}",
+        "unsaved": "Alterações não salvas"
+      },
+      "editor": {
+        "format": "Formatar",
+        "formatHint": "Coloca as palavras-chave em maiúsculas e cada cláusula em sua própria linha",
+        "suggestions": "Sugestões"
+      },
+      "results": {
+        "exportCsv": "Exportar CSV",
+        "exportJson": "Exportar JSON",
+        "exportHint": "Exporta as {{count}} linhas carregadas neste resultado",
+        "exported": "{{count}} linhas exportadas.",
+        "copyCell": "Copiar célula",
+        "copied": "Copiado.",
+        "copyFailed": "Não foi possível copiar.",
+        "resizeColumn": "Redimensionar a coluna {{column}}",
+        "typeInferred": "Tipo deduzido dos valores desta página",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "Este plano não tem valores de custo, então o texto bruto é exibido.",
+        "showTree": "Mostrar árvore",
+        "showRaw": "Mostrar texto bruto",
+        "hottest": "Nó mais caro",
+        "cost": "custo {{value}}",
+        "rows": "{{count}} linhas",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "Instruções salvas e recentes",
+        "searchLabel": "Buscar instruções",
+        "searchPlaceholder": "Buscar nas salvas e no histórico",
+        "noMatch": "Nada corresponde à sua busca.",
+        "openInTab": "Abrir em uma nova aba"
+      }
     },
     "keys": {
       "title": "Navegador de chaves",
@@ -372,7 +557,32 @@
       "noTtl": "Sem expiração",
       "ttlSeconds": "{{count}} s",
       "truncated": "Valor cortado no limite do servidor.",
-      "readOnlyNote": "Somente leitura. Os valores são obtidos com SCAN, TYPE, TTL e uma leitura específica do tipo."
+      "readOnlyNote": "Somente leitura. Os valores são obtidos com SCAN, TYPE, TTL e uma leitura específica do tipo.",
+      "tab_keys": "Chaves",
+      "tab_info": "Info",
+      "typeFilter": "Filtro de tipo",
+      "allTypes": "Todos os tipos",
+      "encoding": "Codificação",
+      "memory": "Memória",
+      "size": "Itens",
+      "bits": "{{set}} de {{total}} bits definidos",
+      "view": "Visualização do valor",
+      "view_text": "Texto",
+      "view_json": "JSON",
+      "view_hex": "Hex",
+      "notJson": "Este valor não é um JSON válido.",
+      "jsonUnsupported": "O módulo JSON não está disponível neste servidor.",
+      "hyperloglog": "Sketch HyperLogLog. O valor binário não é exibido.",
+      "infoTitle": "Informações do servidor",
+      "slowlogTitle": "Comandos lentos",
+      "slowlogNote": "Apenas o nome do comando e o tamanho dos argumentos são exibidos, nunca os argumentos.",
+      "slowlogEmpty": "Nenhum comando lento registrado.",
+      "slowId": "ID",
+      "slowTime": "Hora",
+      "slowDuration": "Microssegundos",
+      "slowCommand": "Comando",
+      "slowArgs": "Args / tamanho",
+      "slowClient": "Cliente"
     },
     "structure": {
       "openConsole": "Abrir no console",
@@ -460,6 +670,125 @@
       "noLookups": "Nenhuma consulta ainda",
       "evictions": "Remoções",
       "connections": "Conexões"
+    },
+    "mongo": {
+      "tree": {
+        "label": "Bancos de dados e coleções",
+        "search": "Buscar coleções",
+        "truncated": "Apenas parte da lista é exibida.",
+        "noCollections": "Nenhuma coleção",
+        "meta": "{{size}}, índices: {{count}}",
+        "items": "tamanho {{count}}",
+        "fields": "campos {{count}}",
+        "root": "documento"
+      },
+      "readOnly": "Somente leitura",
+      "readOnlyReason": "Navegar nunca altera os dados: só são permitidos find, contagens e leitura de índices.",
+      "noCollections": "Este banco de dados ainda não tem coleções.",
+      "tabs": {
+        "documents": "Documentos",
+        "indexes": "Índices",
+        "stats": "Estatísticas"
+      },
+      "docs": {
+        "filter": "Filtro",
+        "filterPlaceholder": "{\"field\": \"value\"}",
+        "limit": "Limite",
+        "run": "Executar",
+        "options": "Opções",
+        "sort": "Ordenação",
+        "sortPlaceholder": "{\"createdAt\": -1}",
+        "projection": "Projeção",
+        "projectionPlaceholder": "{\"name\": 1}",
+        "examples": "Exemplos",
+        "status": "Documentos: {{count}}, {{ms}} ms, página {{page}}",
+        "truncated": "Resultado cortado no limite de tamanho.",
+        "expandAll": "Expandir tudo",
+        "collapseAll": "Recolher tudo",
+        "rejected": "O servidor rejeitou esta consulta",
+        "failed": "A consulta falhou",
+        "noMatches": "Nenhum documento corresponde a este filtro.",
+        "empty": "Esta coleção não tem documentos.",
+        "details": "Detalhes",
+        "copyDoc": "Copiar como JSON",
+        "prev": "Página anterior",
+        "next": "Próxima página",
+        "invalid": {
+          "syntax": "O {{kind}} não é um JSON válido.",
+          "notObject": "O {{kind}} deve ser um objeto JSON.",
+          "sortDirection": "Os valores de ordenação devem ser 1 ou -1.",
+          "projectionValue": "Os valores de projeção devem ser números, booleanos ou objetos."
+        },
+        "kind": {
+          "filter": "filtro",
+          "sort": "ordenação",
+          "projection": "projeção"
+        }
+      },
+      "indexes": {
+        "empty": "Nenhum índice informado.",
+        "label": "Índices",
+        "name": "Nome",
+        "keys": "Chaves",
+        "unique": "Único",
+        "yes": "Sim",
+        "no": "Não"
+      },
+      "stats": {
+        "documents": "Documentos",
+        "dataSize": "Tamanho dos dados",
+        "storageSize": "Tamanho de armazenamento",
+        "indexes": "Índices",
+        "type": "Tipo"
+      }
+    },
+    "dynamo": {
+      "tables": "Tabelas",
+      "truncated": "Apenas parte da lista é exibida.",
+      "meta": "{{count}} itens, {{size}}",
+      "estimate": "Contagens e tamanhos são estimativas que o motor atualiza de forma tardia.",
+      "noTables": "Este banco de dados ainda não tem tabelas.",
+      "readOnly": "Somente leitura",
+      "ttl": "TTL em {{attr}}",
+      "mode": "Modo",
+      "query": "Consulta",
+      "scan": "Varredura",
+      "index": "Índice",
+      "tableKey": "Chave da tabela",
+      "partitionKey": "Chave de partição",
+      "scanConfirm": "Entendo que uma varredura lê cada item que percorre",
+      "limit": "Limite",
+      "run": "Executar",
+      "failed": "Falha na leitura",
+      "summary": "{{count}} itens, {{scanned}} verificados, {{ms}} ms",
+      "noItems": "Nenhum item corresponde.",
+      "prev": "Anterior",
+      "next": "Próximo",
+      "item": "Item",
+      "close": "Fechar"
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "Lista",
+        "diagram": "Diagrama"
+      },
+      "viewMode": "Visualização do mapa do esquema",
+      "search": "Filtrar tabelas",
+      "zoomGroup": "Zoom",
+      "zoomOut": "Reduzir",
+      "zoomIn": "Ampliar",
+      "fit": "Ajustar à tela",
+      "export": "Exportar SVG",
+      "label": "Diagrama do mapa do esquema",
+      "noTables": "Ainda não há tabelas para desenhar.",
+      "noMatch": "Nenhuma tabela corresponde ao filtro.",
+      "openTable": "Abrir {{table}}",
+      "more": "+{{count}} mais",
+      "count": "{{count}} tabelas",
+      "capped": "Mostrando {{shown}} de {{total}} tabelas",
+      "loadingKeys": "Carregando chaves",
+      "noKeys": "Nenhuma chave estrangeira encontrada, mostrando apenas as tabelas",
+      "keysError": "Algumas chaves estrangeiras não puderam ser carregadas"
     }
   },
   "createFlavor": {
@@ -502,6 +831,7 @@
       "keydb": "Armazenamento multithread compatível com Redis para maior vazão em um único node.",
       "dragonfly": "Armazenamento moderno compatível com Redis, criado para vazão muito alta.",
       "mongodb": "Banco de dados de documentos para dados flexíveis em formato JSON.",
+      "documentdb": "Banco de documentos de código aberto sobre PostgreSQL, compatível com o protocolo do MongoDB.",
       "clickhouse": "Armazenamento colunar para consultas analíticas rápidas sobre grandes volumes de eventos.",
       "meilisearch": "Busca de texto completo tolerante a erros de digitação com resultados instantâneos por uma API HTTP.",
       "qdrant": "Banco de dados de vetores para embeddings, busca semântica e recuperação para RAG.",
@@ -553,7 +883,14 @@
     "loading": "Carregando bancos de dados",
     "notCreated": "Ainda não criado",
     "failedToCreate": "Não foi possível criar o banco de dados",
-    "pendingActionHint": "Disponível quando o banco de dados for criado"
+    "pendingActionHint": "Disponível quando o banco de dados for criado",
+    "colLocation": "Onde executa",
+    "summary": "{{total}} bancos de dados: {{local}} neste servidor, {{node}} em nós, {{hosted}} hospedados fora",
+    "viewGroup": "Visualização da lista",
+    "viewTable": "Tabela",
+    "viewCards": "Cartões",
+    "connect": "Conectar",
+    "explorer": "Explorador"
   },
   "detail": {
     "backupNow": "Fazer backup agora",
@@ -786,8 +1123,6 @@
     },
     "advanced": {
       "title": "Opções avançadas",
-      "node": "Node",
-      "autoNode": "Escolher automaticamente",
       "project": "Projeto",
       "noProject": "Sem projeto"
     },
@@ -828,7 +1163,78 @@
     "submitting": "Criando...",
     "created": "O banco de dados \"{{name}}\" está sendo criado.",
     "createdPartial": "Banco de dados \"{{name}}\" criado, mas o tamanho ou os backups não puderam ser aplicados. Verifique as configurações dele.",
-    "dockerDown": "O Docker não está respondendo neste servidor. Não é possível criar bancos de dados até ele voltar."
+    "dockerDown": "O Docker não está respondendo neste servidor. Não é possível criar bancos de dados até ele voltar.",
+    "placement": {
+      "title": "Onde executa",
+      "kinds": {
+        "local": {
+          "title": "Este servidor",
+          "note": "Junto do Levelrail"
+        },
+        "node": {
+          "title": "Nó existente",
+          "note": "Já conectado"
+        },
+        "cloud": {
+          "title": "Novo nó na nuvem",
+          "note": "Criar um servidor em uma nuvem"
+        },
+        "host": {
+          "title": "Qualquer host Linux",
+          "note": "Datacenter ou sua própria máquina"
+        }
+      },
+      "local": "Executa em {{name}}, {{free}} de disco livre.",
+      "localNoDisk": "Executa em {{name}}. O disco livre não é informado.",
+      "auto": "Escolha automática",
+      "autoPick": "Usaria {{name}}",
+      "autoNone": "Nenhum nó elegível no momento.",
+      "diskFree": "{{free}} livres",
+      "diskUnknown": "disco não informado",
+      "load": "{{percent}}% de carga",
+      "workloads": "Cargas {{count}}",
+      "noNodes": "Ainda não há outro nó conectado.",
+      "addNode": "Adicionar um nó",
+      "noCloud": "Nenhuma conta de nuvem conectada.",
+      "connectCloud": "Conectar uma conta de nuvem",
+      "comingSoon": "Em breve",
+      "connected": "Conectado",
+      "notConnected": "Conectar",
+      "region": "Região",
+      "size": "Tamanho",
+      "pick": "Escolher",
+      "estimate": "Cerca de {{price}} {{currency}} por mês",
+      "noEstimate": "Nenhum preço informado para este tamanho.",
+      "spendNote": "Criar um nó na nuvem custa dinheiro. Você confirma o tamanho e a estimativa mensal antes de criar qualquer coisa.",
+      "combinedPending": "Criar o nó e o banco de dados em um único fluxo chega na próxima atualização. Adicione o nó agora e depois crie o banco de dados nele.",
+      "addCloudNode": "Adicionar um nó na nuvem",
+      "hostNote": "Execute o comando de instalação em qualquer host Linux com Docker. Quando o nó aparecer, crie o banco de dados nele.",
+      "hostCommand": "Mostrar comando de instalação",
+      "reasons": {
+        "offline": "Offline",
+        "cordoned": "Isolado, não aceita novo trabalho",
+        "outdated": "O agente está desatualizado",
+        "failing": "O nó está com falha",
+        "noDocker": "Docker indisponível",
+        "lowDisk": "Pouco disco livre"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "Será executado neste servidor ({{name}}).",
+        "node": "Será executado em {{name}}.",
+        "auto": "Automático: será executado em {{name}}.",
+        "cloud": "Primeiro é preciso um novo nó na nuvem. Adicione-o e depois crie o banco de dados nele.",
+        "host": "Primeiro é preciso um nó no seu host. Adicione-o e depois crie o banco de dados nele."
+      }
+    }
   },
   "provision": {
     "title": "Configurando seu banco de dados",
@@ -1164,6 +1570,10 @@
     "note": "Limpe um campo para voltar ao padrão do mecanismo.",
     "pendingNote": "Aplicar reinicia o banco de dados. Uma inicialização após uma parada também o aplica."
   },
+  "latestVersion": {
+    "resolved": "Mais recente (resolvida: {{version}})",
+    "pending": "Mais recente: a versão estável mais nova é escolhida ao criar o banco."
+  },
   "cacheCreate": {
     "tls": "TLS",
     "auth": "Senha",
@@ -1206,5 +1616,115 @@
     "noProject": "Sem projeto",
     "on": "Ativo",
     "none": "Nenhum"
+  },
+  "home": {
+    "nav": {
+      "back": "Voltar para Bancos de dados",
+      "overview": "Visão geral",
+      "branches": "Branches",
+      "monitoring": "Monitoramento",
+      "integrations": "Integrações",
+      "settings": "Configurações",
+      "tables": "Tabelas",
+      "collections": "Coleções",
+      "keys": "Chaves",
+      "explorer": "Explorador",
+      "query": "Editor de consultas",
+      "backups": "Backups e restauração",
+      "users": "Usuários e papéis",
+      "data": "Dados"
+    },
+    "monitoring": {
+      "metrics": "Métricas",
+      "logs": "Logs",
+      "slow": "Consultas lentas"
+    },
+    "branches": {
+      "title": "Branches",
+      "body": "Os branches chegam nesta versão.",
+      "planned": "Ações planejadas",
+      "actions": {
+        "create": "Criar um branch filho deste banco",
+        "reset": "Redefinir um branch para o pai",
+        "restore": "Restaurar um branch para um ponto no tempo",
+        "expire": "Definir a expiração de um branch"
+      }
+    },
+    "integrations": {
+      "title": "Integrações",
+      "body": "Conecte serviços a este banco de dados. Nenhum está disponível ainda.",
+      "categories": {
+        "auth": "Autenticação",
+        "storage": "Armazenamento de objetos",
+        "functions": "Funções",
+        "realtime": "Tempo real",
+        "ai": "Gateway de IA",
+        "observability": "Observabilidade"
+      },
+      "soon": "Em breve"
+    },
+    "settings": {
+      "sections": {
+        "general": "Geral",
+        "networking": "Rede",
+        "credentials": "Credenciais",
+        "backups": "Backups e atualizações",
+        "danger": "Zona de perigo"
+      },
+      "general": {
+        "title": "Geral",
+        "name": "Nome",
+        "engine": "Motor",
+        "copyName": "Copiar nome do banco de dados",
+        "immutable": "O nome identifica este banco de dados e não pode ser alterado."
+      },
+      "danger": {
+        "title": "Zona de perigo",
+        "body": "Excluir um banco remove seu contêiner. Você escolhe se os dados também serão apagados."
+      }
+    },
+    "overview": {
+      "services": "Serviços",
+      "facts": "Dados principais",
+      "manage": "Gerenciar",
+      "rows": {
+        "engine": "Motor e versão",
+        "backups": "Backups",
+        "network": "Exposição de rede",
+        "access": "Acesso",
+        "upgrades": "Atualizações"
+      },
+      "backupsOn": "Ativos, agenda {{schedule}}",
+      "backupsOff": "Sem agenda definida",
+      "backupsNone": "Não suportado por este motor",
+      "networkPublic": "Publicado na porta {{port}}",
+      "networkPrivate": "Privado neste servidor",
+      "accessHint": "Usuários, papéis e acesso à plataforma",
+      "upgradesHint": "Mudanças de versão e atualizações maiores"
+    }
+  },
+  "location": {
+    "local": "Este servidor",
+    "node": "Nó {{name}}",
+    "hosted": "Hospedado fora: {{host}}",
+    "filterGroup": "Filtrar por local",
+    "short": {
+      "local": "Este servidor",
+      "node": "Nós",
+      "hosted": "Hospedado fora"
+    }
+  },
+  "where": {
+    "title": "Onde deve rodar?",
+    "local": "Este servidor",
+    "localHint": "Roda junto do Levelrail",
+    "node": "Um nó",
+    "nodeHint": "Um dos {{count}} nós",
+    "nodeNone": "Precisa de um segundo nó",
+    "nodeNext": "Você escolhe o nó na próxima etapa.",
+    "cloud": "Conta de nuvem",
+    "cloudSoon": "Em breve",
+    "hosted": "Banco hospedado existente",
+    "hostedAction": "Conectar"
   }
 }

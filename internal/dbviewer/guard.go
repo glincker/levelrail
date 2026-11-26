@@ -270,6 +270,14 @@ func lex(d Dialect, s string) ([]token, error) {
 			}
 			toks = append(toks, token{tokString, s[i:end], i})
 			i = end
+		case c == '"' && !pg:
+			// Without ANSI_QUOTES (never set by the explorer) MySQL and MariaDB read double quotes as strings.
+			end, err := skipQuoted(s, i, '"')
+			if err != nil {
+				return nil, err
+			}
+			toks = append(toks, token{tokString, s[i:end], i})
+			i = end
 		case c == '"' || c == '`' && !pg:
 			end, err := skipQuoted(s, i, c)
 			if err != nil {

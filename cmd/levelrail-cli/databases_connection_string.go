@@ -37,6 +37,10 @@ func defaultEnginePort(engine string) int {
 		return 6379
 	case "mongodb":
 		return 27017
+	case "documentdb":
+		return 10260
+	case "dynamodb":
+		return 8000
 	}
 	return 0
 }
@@ -64,6 +68,10 @@ func buildConnectionURL(t connStringTarget) (string, bool) {
 	case "mongodb":
 		u.Scheme = "mongodb"
 		u.Path = "/" + t.database
+	case "documentdb":
+		u.Scheme = "mongodb"
+		u.Path = "/" + t.database
+		u.RawQuery = "tls=true&tlsAllowInvalidCertificates=true"
 	default:
 		return "", false
 	}

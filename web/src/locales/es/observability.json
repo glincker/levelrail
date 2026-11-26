@@ -82,6 +82,26 @@
       "label": "Tarea fallando",
       "description": "Se activa una vez por cada tarea fallida de esta aplicación que tenga activada la alerta si falla, con límite de frecuencia por tarea.",
       "action": "Abre el historial de la tarea para leer los registros de la ejecución fallida, corrige la causa y ejecútala ahora para confirmarlo."
+    },
+    "database_crash_loop": {
+      "label": "Base de datos en bucle de fallos",
+      "description": "Se activa mientras un contenedor de base de datos se reinicia sin parar.",
+      "action": "Abra los registros de la base de datos, corrija el error que impide arrancar y reiníciela."
+    },
+    "database_disk_growth": {
+      "label": "Disco de base de datos llenándose",
+      "description": "Se activa cuando el crecimiento de los últimos 7 días indica que el volumen de datos se llenará dentro de los días de aviso o crítico.",
+      "action": "Elimine datos que ya no necesite o amplíe el volumen antes de que se llene."
+    },
+    "database_connections_saturated": {
+      "label": "Base de datos sin conexiones libres",
+      "description": "Se activa mientras las conexiones en uso superan el porcentaje de saturación del límite.",
+      "action": "Cierre conexiones inactivas o con fugas, añada un pooler o suba el límite."
+    },
+    "database_backup_missing": {
+      "label": "Falta copia de seguridad de la base de datos",
+      "description": "Se activa cuando una base no tiene una copia reciente correcta, o guarda datos reales sin almacenamiento de copias.",
+      "action": "Configure almacenamiento de copias para la base de datos y ejecute una copia ahora."
     }
   },
   "budgetThreshold": {

@@ -26,6 +26,7 @@ const (
 	postgresDataPath   = "/var/lib/postgresql/data"
 	mysqlDataPath      = "/var/lib/mysql"
 	mongoDataPath      = "/data/db"
+	documentdbDataPath = "/data"
 	clickhouseDataPath = "/var/lib/clickhouse"
 )
 
@@ -36,10 +37,12 @@ const (
 // than in database_engines.yaml, the same "identity/display metadata
 // only" boundary that registry's own doc comment already draws.
 const (
-	redisContainerPort      = 6379
-	postgresContainerPort   = 5432
-	mysqlContainerPort      = 3306
-	mongoContainerPort      = 27017
+	redisContainerPort    = 6379
+	postgresContainerPort = 5432
+	mysqlContainerPort    = 3306
+	mongoContainerPort    = 27017
+	// documentdbContainerPort is the image gateway port, kept off 27017 by upstream default.
+	documentdbContainerPort = 10260
 	clickhouseContainerPort = 8123
 	// redisTLSContainerPort is Redis's own --tls-port value this
 	// controller sets when TLS is enabled (WithTLS): --port 0 disables
@@ -235,6 +238,7 @@ type Controller struct {
 	// effectiveSlowQueryThresholdMs.
 	slowQueryThresholdMs int
 	paramsMaxMemoryMB    func() int
+	crashLoopLive        func() (int, time.Duration)
 	provRec              *dbprovision.Recorder
 	prov                 *dbprovision.Tracker
 	probe                func(ctx context.Context, addr string) error
@@ -516,6 +520,23 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 		}
 		return c.reconcileEngine(ctx, desired, env, mongoCommand(c.tls), mongoDataPath, mongoContainerPort, c.tls, c.engineParamsSpec(desired))
 
+	case store.EngineDocumentDB:
+		if c.mongoCreds == nil {
+			return credentialsBlockedResult(), nil
+		}
+		// The image reads USERNAME and PASSWORD and serves SCRAM auth plus a self-signed TLS gateway.
+		env := map[string]string{
+			"USERNAME": c.mongoCreds.Username,
+			"PASSWORD": c.mongoCreds.Password,
+			// Both telemetry switches off: a self-hosted platform sends nothing upstream.
+			"ENABLE_TELEMETRY":           "false",
+			"DOCUMENTDB_USAGE_TELEMETRY": "false",
+		}
+		if desired.PubliclyAccessible {
+			env["TLS_MODE"] = "requireTLS"
+		}
+		return c.reconcileEngine(ctx, desired, env, nil, documentdbDataPath, documentdbContainerPort, nil)
+
 	case store.EngineMariaDB:
 		if c.mariadbCreds == nil {
 			// Same reasoning as the Postgres/MySQL/MongoDB branches above:
@@ -572,6 +593,16 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 
 	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
 		return c.reconcileSearchEngine(ctx, desired)
+
+	case store.EngineDynamoDB:
+		if desired.PubliclyAccessible && desired.PublicBindAddress != "" && desired.PublicBindAddress != bindaddr.Private {
+			err := errors.New("dynamodb has no authentication, so it is only published on the host's loopback address")
+			return notReady("UnauthenticatedExposureRefused", err), nil
+		}
+		if res, stop := c.prepareDynamoDBVolume(ctx); stop {
+			return res, nil
+		}
+		return c.reconcileEngine(ctx, desired, nil, dynamoDBCommand(desired.Resources), dynamoDBDataPath, dynamoDBContainerPort, nil, dynamoDBSpec())
 
 	case store.EngineMemcached:
 		if desired.PubliclyAccessible && desired.PublicBindAddress != "" && desired.PublicBindAddress != bindaddr.Private {
@@ -904,6 +935,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		justDeployed = true
 
 	case !state.Running:
+		if res, stop := c.crashGate(ctx, target); stop {
+			return res, nil
+		}
 		if err := c.runtime.Start(ctx, state.ID); err != nil {
 			return notReady("StartFailed", err), fmt.Errorf("database/%s: restart %q: %w", c.dbName, target, err)
 		}
@@ -1049,7 +1083,10 @@ func normalizedPortSet(ports []docker.PortBinding) map[docker.PortBinding]bool {
 // database_engines.yaml) doesn't match its Docker image name; any id
 // absent here is used as its own image name.
 var dockerImageMapping = map[string]string{
-	store.EngineMongoDB:     "mongo",
+	store.EngineMongoDB: "mongo",
+	// Taken unmodified from the project registry, never rebuilt here.
+	store.EngineDocumentDB:  "ghcr.io/documentdb/documentdb/documentdb-local",
+	store.EngineDynamoDB:    "amazon/dynamodb-local",
 	store.EngineKeyDB:       "eqalpha/keydb",
 	store.EngineDragonfly:   "docker.dragonflydb.io/dragonflydb/dragonfly",
 	store.EngineValkey:      "valkey/valkey",

@@ -109,8 +109,8 @@ func (rt *Router) handleSetDatabasePublicAccess(w http.ResponseWriter, r *http.R
 	if bindAddress == "" {
 		bindAddress = bindaddr.Default
 	}
-	if desired.Engine == store.EngineMemcached && bindAddress != bindaddr.Default {
-		writeError(w, http.StatusBadRequest, "memcached has no authentication: it can only be exposed on the host's loopback address")
+	if (desired.Engine == store.EngineMemcached || desired.Engine == store.EngineDynamoDB) && bindAddress != bindaddr.Default {
+		writeError(w, http.StatusBadRequest, desired.Engine+" has no authentication: it can only be exposed on the host's loopback address")
 		return
 	}
 

@@ -13,9 +13,15 @@ const (
 	KeyApproveDigestCheckTimeoutSec  = "deploy.approve_digest_check_timeout_seconds"
 	KeyGitAccessCacheTTL             = "git.access_cache_ttl_seconds"
 	KeyGitAccessNamesMax             = "git.access_names_max"
+	KeyExternalProbeConcurrency      = "databases.external_probe_concurrency"
 )
 
 func init() {
+	registerLimit(Definition{
+		Key: KeyExternalProbeConcurrency, Category: CategorySecurity, Default: "2", Env: "APP_EXTERNAL_DB_PROBE_CONCURRENCY", Apply: ApplyLive,
+		Title:       "Database connection tests at once",
+		Description: "Most connection tests one user or token may run at the same time when testing or saving an external database; one more gets a 429. From 1 to 20. The next test uses a changed value.",
+	}, 1, 20)
 	registerLimit(Definition{
 		Key: KeyAppsMetricsMax, Category: CategoryObservability, Default: "200", Env: "APP_APPS_METRICS_MAX", Apply: ApplyLive,
 		Title:       "Apps metrics batch size",

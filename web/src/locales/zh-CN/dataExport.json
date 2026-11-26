@@ -6,12 +6,13 @@
   "notConfigured": "此控制平面不提供数据导出。",
   "empty": {
     "title": "没有导出目标",
-    "description": "为日志添加 Loki、syslog 或 HTTP 端点，为审计日志添加 Webhook 或存储桶，为指标添加 OTLP 收集器。"
+    "description": "选择一个目标，开始发送日志、审计事件或指标。一切均为可选。"
   },
   "scrape": {
     "title": "Prometheus 抓取端点",
-    "description": "让 Prometheus 或 Grafana Agent 访问此路径，并使用读取令牌作为 bearer 凭据。标签仅限于应用、数据库和节点。",
-    "path": "GET /metrics"
+    "description": "使用读取令牌作为 Bearer 凭据，将 Prometheus 或 Grafana Agent 指向此路径。",
+    "path": "GET /metrics",
+    "copy": "复制抓取路径"
   },
   "kinds": {
     "logs_http": "通过 HTTP 发送日志（JSON 行）",
@@ -60,7 +61,8 @@
     "deleteConfirm": "删除目标",
     "deleting": "删除中",
     "secretsSet": "凭据已存储（只写）",
-    "behind": "落后：投递正在失败，审计行会安全地保留在日志中等待"
+    "behind": "落后：投递正在失败，审计行会安全地保留在日志中等待",
+    "actions": "{{name}} 的操作"
   },
   "fix": {
     "title": "测试失败",
@@ -127,6 +129,15 @@
     "gzip": "压缩请求体（gzip）",
     "insecure": "跳过 TLS 证书验证",
     "insecureWarning": "不安全：审计日志可能在传输过程中被读取或篡改。仅用于你自己控制的收集器。",
-    "auditStreamHint": "投递至少一次，并从中断处继续。每个事件都带有审计哈希链字段，便于接收方验证日志。"
+    "auditStreamHint": "投递至少一次，并从中断处继续。每个事件都带有审计哈希链字段，便于接收方验证日志。",
+    "advanced": "高级",
+    "back": "返回",
+    "tenant": "租户 ID（可选）"
+  },
+  "gallery": {
+    "hint": "选择数据发送的目标。",
+    "logs": "日志",
+    "audit": "审计日志",
+    "metrics": "指标"
   }
 }

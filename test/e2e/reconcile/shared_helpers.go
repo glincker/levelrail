@@ -34,7 +34,7 @@ func skipIfRegistryThrottled(t *testing.T, err error) {
 		return
 	}
 	msg := err.Error()
-	for _, marker := range []string{"toomanyrequests", "429 Too Many Requests", "rate limit"} {
+	for _, marker := range []string{"toomanyrequests", "429 Too Many Requests", "rate limit", "Data limit exceeded"} {
 		if strings.Contains(msg, marker) {
 			t.Skipf("registry throttled the image pull, not a product failure: %v", err)
 		}

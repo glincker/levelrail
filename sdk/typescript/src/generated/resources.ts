@@ -83,8 +83,10 @@ export function createResources(op: Bind) {
       getDeployReceipt: op("handleGetDeployReceipt"),
       /** Deploy-attempt readiness-probe attempts (deploy_probes.go): plain polling JSON, not SSE, the individual pro... Requires `read`. GET /api/v1/apps/{name}/deploys/{deployId}/stages */
       getDeployStages: op("handleGetDeployStages"),
-      /** Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE... Requires `read`. GET /api/v1/deployments/{id}/timeline */
+      /** Get Deploy Timeline Requires `read`. GET /api/v1/deployments/{id}/timeline */
       getDeployTimeline: op("handleGetDeployTimeline"),
+      /** Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE... Requires `read`. GET /api/v1/deploys/{id}/why */
+      getDeployWhy: op("handleGetDeployWhy"),
       /** Get Deployment Secret Scan Requires `read`. GET /api/v1/apps/{name}/deployments/{id}/secret-scan */
       getDeploymentSecretScan: op("handleGetDeploymentSecretScan"),
       /** Get Preview Image Requires `read`. GET /api/v1/apps/{name}/deployments/{id}/preview */
@@ -97,6 +99,8 @@ export function createResources(op: Bind) {
       listDeployApprovals: op("handleListDeployApprovals"),
       /** List Deploy Policies Requires `read`. GET /api/v1/deploy-policies */
       listDeployPolicies: op("handleListDeployPolicies"),
+      /** List Deploy Targets Requires `root`. GET /api/v1/deploy-targets */
+      listDeployTargets: op("handleListDeployTargets"),
       /** List Deployments Requires `read`. GET /api/v1/deployments */
       listDeployments: op("handleListDeployments"),
       /** List Failed Deploys Requires `read`. GET /api/v1/deploys/failed */
@@ -129,6 +133,8 @@ export function createResources(op: Bind) {
     apps: {
       /** Abort Canary Requires `deploy`. DELETE /api/v1/apps/{name}/canary */
       abortCanary: op("handleAbortCanary"),
+      /** Abort Rollout Requires `deploy`. POST /api/v1/apps/{name}/rollout/abort */
+      abortRollout: op("handleAbortRollout"),
       /** Replays the recent access log against a draft policy and counts what it would have blocked. Requires `read:sensitive`. POST /api/v1/apps/{name}/abuse/dry-run */
       abuseDryRun: op("handleAbuseDryRun"),
       /** Advisory Refresh Requires `deploy`. POST /api/v1/apps/{name}/advisory-refresh */
@@ -151,6 +157,8 @@ export function createResources(op: Bind) {
       appResourceRecommendation: op("handleAppResourceRecommendation"),
       /** App Resource Usage Requires `read`. GET /api/v1/apps/resource-usage */
       appResourceUsage: op("handleAppResourceUsage"),
+      /** App Restore To Node Requires `write:sensitive`. POST /api/v1/apps/{name}/restore-to-node */
+      appRestoreToNode: op("handleAppRestoreToNode"),
       /** App Sleep History Requires `read`. GET /api/v1/apps/{name}/sleep/history */
       appSleepHistory: op("handleAppSleepHistory"),
       /** App Spend Dry Run Requires `read`. POST /api/v1/apps/{name}/budget/dry-run */
@@ -293,6 +301,8 @@ export function createResources(op: Bind) {
       createForm: op("handleCreateForm"),
       /** Create Pipeline Requires `write`. POST /api/v1/apps/{name}/pipelines */
       createPipeline: op("handleCreatePipeline"),
+      /** Create Preview From Image Requires `deploy`. POST /api/v1/apps/{name}/previews */
+      createPreviewFromImage: op("handleCreatePreviewFromImage"),
       /** One-shot scheduled deploys by id (scheduled_deploys.go): create and cancel need the deploy ability, reads n... Requires `deploy`. POST /api/v1/apps/{name}/scheduled-deploys */
       createScheduledDeploy: op("handleCreateScheduledDeploy"),
       /** Create Scheduled Task Requires `root`. POST /api/v1/apps/{name}/jobs */
@@ -403,6 +413,8 @@ export function createResources(op: Bind) {
       detectGitSourceBuild: op("handleDetectGitSourceBuild"),
       /** Read-only failure diagnosis (diagnose.go): synthesizes the app's newest (or ?deploy_id=-pinned) deploy atte... Requires `read`. GET /api/v1/apps/{name}/diagnose */
       diagnoseApp: op("handleDiagnoseApp"),
+      /** Diff Env Revisions Requires `read:sensitive`. GET /api/v1/apps/{name}/env/revisions/diff */
+      diffEnvRevisions: op("handleDiffEnvRevisions"),
       /** Disable Error Tracking Requires `write:sensitive`. DELETE /api/v1/apps/{name}/error-tracking */
       disableErrorTracking: op("handleDisableErrorTracking"),
       /** Disable Tracing Requires `write:sensitive`. DELETE /api/v1/apps/{name}/tracing */
@@ -425,6 +437,8 @@ export function createResources(op: Bind) {
       enableErrorTracking: op("handleEnableErrorTracking"),
       /** Enable Tracing Requires `write:sensitive`. POST /api/v1/apps/{name}/tracing */
       enableTracing: op("handleEnableTracing"),
+      /** Env Diff Requires `read`. GET /api/v1/apps/{name}/env-diff */
+      envDiff: op("handleEnvDiff"),
       /** One-off exec: AbilityRoot, not AbilityDeploy, because it can read the plaintext env secrets that no other r... Requires `root`. POST /api/v1/apps/{name}/exec */
       execApp: op("handleExecApp"),
       /** Compose export (leave-anytime): AbilityRead like the app view itself, since it carries only non-secret env;... Requires `read`. GET /api/v1/apps/{name}/export */
@@ -485,6 +499,8 @@ export function createResources(op: Bind) {
       getAppGroup: op("handleGetAppGroup"),
       /** Get App Health Requires `read`. GET /api/v1/apps/{name}/health */
       getAppHealth: op("handleGetAppHealth"),
+      /** Get App Health Explain Requires `read`. GET /api/v1/apps/{name}/health-explain */
+      getAppHealthExplain: op("handleGetAppHealthExplain"),
       /** Get App Health Score Requires `read`. GET /api/v1/apps/{name}/health-score */
       getAppHealthScore: op("handleGetAppHealthScore"),
       /** Latest pre/post-deploy hook outcome (apps_hooks.go, internal/reconcile/application's own HookRunRecorder). Requires `read`. GET /api/v1/apps/{name}/hook-runs */
@@ -509,6 +525,8 @@ export function createResources(op: Bind) {
       getAppURLs: op("handleGetAppURLs"),
       /** Get App Volume Move Requires `read`. GET /api/v1/apps/{name}/moves/{id} */
       getAppVolumeMove: op("handleGetAppVolumeMove"),
+      /** Get App Warm Requires `read`. GET /api/v1/apps/{name}/warm */
+      getAppWarm: op("handleGetAppWarm"),
       /** Get App Watch Requires `read`. GET /api/v1/apps/{name}/watch */
       getAppWatch: op("handleGetAppWatch"),
       /** Get Auto Rollback Requires `read`. GET /api/v1/apps/{name}/auto-rollback */
@@ -759,6 +777,8 @@ export function createResources(op: Bind) {
       listDeployNotifyTargets: op("handleListDeployNotifyTargets"),
       /** List Env History Requires `read`. GET /api/v1/apps/{name}/env/history */
       listEnvHistory: op("handleListEnvHistory"),
+      /** Revisions list variable names and diff them; a read token is refused because the names can themselves be se... Requires `read:sensitive`. GET /api/v1/apps/{name}/env/revisions */
+      listEnvRevisions: op("handleListEnvRevisions"),
       /** List Errors Requires `read`. GET /api/v1/apps/{name}/errors */
       listErrors: op("handleListErrors"),
       /** List Feature Flags Requires `read`. GET /api/v1/apps/{name}/flags */
@@ -845,10 +865,14 @@ export function createResources(op: Bind) {
       patchError: op("handlePatchError"),
       /** Pause Compose DB Backup Schedule Requires `write:sensitive`. POST /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/pause */
       pauseComposeDBBackupSchedule: op("handlePauseComposeDBBackupSchedule"),
+      /** Pause Rollout Requires `deploy`. POST /api/v1/apps/{name}/rollout/pause */
+      pauseRollout: op("handlePauseRollout"),
       /** Pause Volume Backup Schedule Requires `write:sensitive`. POST /api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause */
       pauseVolumeBackupSchedule: op("handlePauseVolumeBackupSchedule"),
       /** Pending Changes Requires `read`. GET /api/v1/apps/{name}/pending-changes */
       pendingChanges: op("handlePendingChanges"),
+      /** Pin Volume Backup Requires `write:sensitive`. PUT /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin */
+      pinVolumeBackup: op("handlePinVolumeBackup"),
       /** Pipeline Insights Requires `read`. GET /api/v1/apps/{name}/pipelines/{pname}/insights */
       pipelineInsights: op("handlePipelineInsights"),
       /** Preflight checks (preflight.go): read-only probes of an existing app's stored config (AbilityRead, resource... Requires `read`. POST /api/v1/apps/{name}/preflight */
@@ -945,6 +969,8 @@ export function createResources(op: Bind) {
       restartAppPostapiv1appsnamerestart: op("RestartAppPostapiv1appsnamerestart"),
       /** AbilityRoot like the volume restore: it replaces the live database in place. Requires `root`. POST /api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore */
       restoreComposeDBBackup: op("handleRestoreComposeDBBackup"),
+      /** Restore needs the same ability as any env write. Requires `write`. POST /api/v1/apps/{name}/env/revisions/{rev}/restore */
+      restoreEnvRevision: op("handleRestoreEnvRevision"),
       /** Restore Volume File Requires `write`. POST /api/v1/apps/{name}/volumes/{volume}/files/restore */
       restoreVolumeFile: op("handleRestoreVolumeFile"),
       /** Restrict Domain Port Requires `write:sensitive`. PUT /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict */
@@ -953,6 +979,8 @@ export function createResources(op: Bind) {
       resumeApp: op("handleResumeApp"),
       /** Resume Compose DB Backup Schedule Requires `write:sensitive`. POST /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/resume */
       resumeComposeDBBackupSchedule: op("handleResumeComposeDBBackupSchedule"),
+      /** Resume Rollout Requires `deploy`. POST /api/v1/apps/{name}/rollout/resume */
+      resumeRollout: op("handleResumeRollout"),
       /** Resume Volume Backup Schedule Requires `write:sensitive`. POST /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume */
       resumeVolumeBackupSchedule: op("handleResumeVolumeBackupSchedule"),
       /** Resync App CDN Requires `write:sensitive`. POST /api/v1/apps/{name}/cdn/resync */
@@ -963,6 +991,8 @@ export function createResources(op: Bind) {
       revealEnv: op("handleRevealEnv"),
       /** Reveal Secret Requires `read:sensitive`. POST /api/v1/apps/{name}/secrets/{key}/reveal */
       revealSecret: op("handleRevealSecret"),
+      /** Revert App Requires `write`. POST /api/v1/apps/{name}/revert */
+      revertApp: op("handleRevertApp"),
       /** Revoke Auth Gate Sessions Requires `root`. DELETE /api/v1/apps/{name}/domains/{domain}/auth-gate/sessions */
       revokeAuthGateSessions: op("handleRevokeAuthGateSessions"),
       /** Revoke Build Hook Requires `write:sensitive`. DELETE /api/v1/apps/{name}/build-hooks/{id} */
@@ -1039,6 +1069,8 @@ export function createResources(op: Bind) {
       setAppMaintenance: op("handleSetAppMaintenance"),
       /** Placement: AbilityRoot, not AbilityWrite, matching the sensitivity of the standalone node routes above: mov... Requires `root`. PUT /api/v1/apps/{name}/node */
       setAppNode: op("handleSetAppNode"),
+      /** Set App Pool Requires `root`. PUT /api/v1/apps/{name}/pool */
+      setAppPool: op("handleSetAppPool"),
       /** Set App Preview Env Exclude Requires `write`. DELETE /api/v1/apps/{name}/preview-env-exclude/{key} */
       setAppPreviewEnvExclude: op("handleSetAppPreviewEnvExclude"),
       /** Set App Preview Env Exclude Requires `write`. PUT /api/v1/apps/{name}/preview-env-exclude/{key} */
@@ -1059,6 +1091,8 @@ export function createResources(op: Bind) {
       setAppVaultEnv: op("handleSetAppVaultEnv"),
       /** Attach/detach a named Docker volume outside a redeploy (apps_volumes_attach.go): AbilityWrite, the same tie... Requires `write`. PUT /api/v1/apps/{name}/volumes */
       setAppVolumes: op("handleSetAppVolumes"),
+      /** Set App Warm Requires `root`. PUT /api/v1/apps/{name}/warm */
+      setAppWarm: op("handleSetAppWarm"),
       /** Set Auto Rollback Requires `deploy`. PUT /api/v1/apps/{name}/auto-rollback */
       setAutoRollback: op("handleSetAutoRollback"),
       /** Set Auto Rollback SLO Burn Requires `deploy`. PUT /api/v1/apps/{name}/auto-rollback-slo-burn */
@@ -1233,6 +1267,8 @@ export function createResources(op: Bind) {
       unallowSecretScan: op("handleUnallowSecretScan"),
       /** Unbind App Bucket Requires `write:sensitive`. DELETE /api/v1/apps/{name}/buckets/{id} */
       unbindAppBucket: op("handleUnbindAppBucket"),
+      /** Unpin Volume Backup Requires `write:sensitive`. DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/pin */
+      unpinVolumeBackup: op("handleUnpinVolumeBackup"),
       /** Unrestrict Domain Port Requires `write:sensitive`. DELETE /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict */
       unrestrictDomainPort: op("handleUnrestrictDomainPort"),
       /** Update Alert Rule Requires `write`. PUT /api/v1/apps/{name}/alerts/{id} */
@@ -1393,6 +1429,14 @@ export function createResources(op: Bind) {
       listZones: op("handleListZones"),
       /** Mark Node Lost Requires `root`. POST /api/v1/nodes/{id}/failure/lost */
       markNodeLost: op("handleMarkNodeLost"),
+      /** Node Agent Update Requires `root`. GET /api/v1/nodes/{id}/agent-update */
+      nodeAgentUpdate: op("handleNodeAgentUpdate"),
+      /** Node Agent Update Control Requires `root`. DELETE /api/v1/nodes/{id}/agent-update/hold */
+      nodeAgentUpdateControl: op("handleNodeAgentUpdateControl"),
+      /** Node Agent Update Control Requires `root`. POST /api/v1/nodes/{id}/agent-update/hold */
+      nodeAgentUpdateControlPostapiv1nodesidagentupdatehold: op("NodeAgentUpdateControlPostapiv1nodesidagentupdatehold"),
+      /** Node Agent Update Control Requires `root`. POST /api/v1/nodes/{id}/agent-update/override */
+      nodeAgentUpdateControlPostapiv1nodesidagentupdateoverride: op("NodeAgentUpdateControlPostapiv1nodesidagentupdateoverride"),
       /** Node Allocations Requires `root`. GET /api/v1/nodes/allocations */
       nodeAllocations: op("handleNodeAllocations"),
       /** Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same... Requires `root`. GET /api/v1/nodes/{id}/capacity-forecast */
@@ -1401,12 +1445,18 @@ export function createResources(op: Bind) {
       nodeCertDrill: op("handleNodeCertDrill"),
       /** Node Cleanup Requires `root`. POST /api/v1/nodes/{id}/cleanup */
       nodeCleanup: op("handleNodeCleanup"),
+      /** Node Doctor Requires `root`. GET /api/v1/nodes/{id}/doctor */
+      nodeDoctor: op("handleNodeDoctor"),
       /** Node Domains Requires `root`. GET /api/v1/nodes/domains */
       nodeDomains: op("handleNodeDomains"),
       /** Node Patch Apply Requires `root`. POST /api/v1/nodes/{id}/patch/apply */
       nodePatchApply: op("handleNodePatchApply"),
       /** Node Patch Preview Requires `root`. POST /api/v1/nodes/{id}/patch/preview */
       nodePatchPreview: op("handleNodePatchPreview"),
+      /** Health timeline, doctor checks and fleet version skew (node_insight.go). Requires `root`. GET /api/v1/nodes/{id}/timeline */
+      nodeTimeline: op("handleNodeTimeline"),
+      /** Node Version Skew Requires `root`. GET /api/v1/nodes/version-skew */
+      nodeVersionSkew: op("handleNodeVersionSkew"),
       /** Placement Simulation Requires `root`. GET /api/v1/nodes/placement-simulation */
       placementSimulation: op("handlePlacementSimulation"),
       /** Put Node Guardrails Requires `root`. PUT /api/v1/nodes/{id}/guardrails */
@@ -1483,11 +1533,15 @@ export function createResources(op: Bind) {
       domainCutover: op("handleDomainCutover"),
       /** Read-only verifier for a domain that already moved: DNS, proxy, redirect, certificate, HSTS, response, www/... Requires `read`. GET /api/v1/domains/{domain}/verify */
       domainCutoverVerify: op("handleDomainCutoverVerify"),
+      /** Same doctor addressed by domain alone, as one JSON report or a stream of checks; the owning app is looked u... Requires `read`. GET /api/v1/domains/{domain}/dns-check */
+      domainDNSCheck: op("handleDomainDNSCheck"),
+      /** Domain DNS Check Requires `read`. POST /api/v1/domains/{domain}/dns-check */
+      domainDNSCheckPostapiv1domainsdomaindnscheck: op("DomainDNSCheckPostapiv1domainsdomaindnscheck"),
       /** Not under /mail/, so the mail flag does not gate it: the Domains page uses it too. Requires `read`. GET /api/v1/domains/dns-provider */
       domainDNSProvider: op("handleDomainDNSProvider"),
       /** Domain DNS Status Requires `read`. GET /api/v1/domains/dns-status */
       domainDNSStatus: op("handleDomainDNSStatus"),
-      /** Same doctor addressed by domain alone, as one JSON report or a stream of checks; the owning app is looked u... Requires `read`. POST /api/v1/domains/{domain}/diagnose */
+      /** Domain Diagnose Requires `read`. POST /api/v1/domains/{domain}/diagnose */
       domainDiagnose: op("handleDomainDiagnose"),
       /** Domain Diagnose Stream Requires `read`. GET /api/v1/domains/{domain}/diagnose/stream */
       domainDiagnoseStream: op("handleDomainDiagnoseStream"),

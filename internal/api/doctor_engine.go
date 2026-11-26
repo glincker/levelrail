@@ -73,6 +73,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("container_hardening", doctorGroupRuntime, rt.doctorCheckHardeningNow),
 		one("network_pool", doctorGroupRuntime, rt.doctorCheckNetworkPool),
 		one("docker_orphans", doctorGroupRuntime, rt.doctorCheckOrphans),
+		one("database_crash_loop", doctorGroupRuntime, rt.doctorCheckDatabaseCrashLoop),
 		one("container_log_rotation", doctorGroupRuntime, rt.doctorCheckLogRotation),
 
 		one("disk_space", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskSpace() }),
@@ -91,6 +92,8 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("cpu", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckCPU() }),
 		one("disk_io_latency", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskIOLatency() }),
 		one("database", doctorGroupHost, rt.doctorCheckDatabase),
+		one("database_alerts", doctorGroupHost, rt.doctorCheckDatabaseAlerts),
+		one("database_audit_health", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDatabaseAudit() }),
 		one("idle_footprint", doctorGroupHost, rt.doctorCheckIdleFootprint),
 
 		one("port_http", doctorGroupNetwork, func(ctx context.Context) doctorCheckResource { return rt.doctorCheckPortCtx(ctx, httpPort) }),

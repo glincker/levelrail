@@ -241,7 +241,9 @@
     "confirm": "我明白哪些内容会被丢弃",
     "driftMissing": "防火墙中缺失:{{sources}}。再次应用规则以恢复它们。",
     "driftExtra": "防火墙还允许:{{sources}}。这些不是在此处设置的。",
-    "cannot": "无法应用规则:{{reason}}"
+    "cannot": "无法应用规则:{{reason}}",
+    "sourceInvalid": "不是有效的 IP 或 CIDR",
+    "sourcePrivate": "私有范围"
   },
   "scope": {
     "title": "网络范围",

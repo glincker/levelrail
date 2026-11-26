@@ -39,6 +39,7 @@ var bodyRefAuthzAllowlist = map[string]string{ //nolint:gosec // reasons, not cr
 	"handleListBuilds":          "rows come from buildCenterRows, already limited to visibleAppNames; the app query only narrows them",
 	"handleDeployK8sApp":        "route is AbilityRoot only; app is a workload name on an external cluster, not a Levelrail app, and pull_secret is resolved inside the named cluster",
 	"bulkRollback":              "applyBulkOne authorizes each app with the deploy ability (p.allowed) before runBulkAction, and the single-app rollback handler it calls reads no body refs",
+	"handleGetMongoCollections": "the database query value names a logical Mongo database inside the instance, not a Levelrail resource; the route is gated by requireAbilityForDatabase on {name}",
 	"writeAlertHistory":         "every row is filtered through scopedAppVisibility; the app query only narrows the list",
 }
 

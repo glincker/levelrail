@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useDatabase } from '../../queries/databases'
 import { BetaBadge } from '../BetaBadge'
+import { ExplorerStatusStrip } from './ExplorerStatusStrip'
 import { SqlConsole } from './SqlConsole'
 import { SQL_ENGINES } from './engines'
 import { UnsupportedEngine } from './UnsupportedEngine'
@@ -21,6 +22,7 @@ export function DatabaseConsolePanel({
         {t('viewer.console.title')}
         <BetaBadge />
       </h1>
+      <ExplorerStatusStrip databaseName={databaseName} />
       {SQL_ENGINES.has(database.engine) ? (
         <SqlConsole databaseName={databaseName} initialSql={initialSql} />
       ) : (

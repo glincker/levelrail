@@ -1,0 +1,26 @@
+{
+  "title": "Integraciones",
+  "description": "Conecta esta base de datos con herramientas de monitorización, desarrollo y datos.",
+  "search": "Buscar integraciones",
+  "featured": "Destacadas",
+  "empty": "Ninguna integración coincide con tu búsqueda.",
+  "loadFailed": "No se pudieron cargar las integraciones: {{error}}",
+  "configure": "Configurar",
+  "docs": "Docs",
+  "docsPlanned": "Docs previstas",
+  "categories": {
+    "monitor": "Monitorización",
+    "develop": "Desarrollo",
+    "deploy": "Despliegue",
+    "query": "Consultas y BI",
+    "replicate": "Replicación"
+  },
+  "state": {
+    "connected": "Conectada",
+    "available": "Disponible",
+    "needs_setup": "Requiere configuración",
+    "docs_only": "Guía",
+    "unavailable": "No disponible",
+    "planned": "Prevista"
+  }
+}

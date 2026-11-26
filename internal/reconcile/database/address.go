@@ -42,6 +42,8 @@ func ContainerPort(engine string) (int, bool) {
 		return mysqlContainerPort, true
 	case store.EngineMongoDB:
 		return mongoContainerPort, true
+	case store.EngineDocumentDB:
+		return documentdbContainerPort, true
 	case store.EngineMariaDB:
 		// MariaDB reuses the mysql image's port, same reason
 		// controller.go's own MariaDB case reuses mysqlContainerPort.
@@ -62,6 +64,8 @@ func ContainerPort(engine string) (int, bool) {
 		return searchLayouts[engine].Port, true
 	case store.EngineMemcached:
 		return memcachedContainerPort, true
+	case store.EngineDynamoDB:
+		return dynamoDBContainerPort, true
 	default:
 		return 0, false
 	}
@@ -77,7 +81,7 @@ func PasswordSecretKey(engine string) (key string, ok bool) {
 		return PostgresPasswordEnvKey, true
 	case store.EngineMySQL:
 		return MySQLPasswordEnvKey, true
-	case store.EngineMongoDB:
+	case store.EngineMongoDB, store.EngineDocumentDB:
 		return MongoPasswordEnvKey, true
 	case store.EngineMariaDB:
 		return MariaDBPasswordEnvKey, true
@@ -154,7 +158,7 @@ func SupportsField(engine, field string) bool {
 		_, ok := ContainerPort(engine)
 		return ok
 	case "username", "database":
-		if store.IsRedisFamily(engine) || store.IsSearchEngine(engine) || engine == store.EngineMemcached {
+		if store.IsRedisFamily(engine) || store.IsSearchEngine(engine) || engine == store.EngineMemcached || engine == store.EngineDynamoDB {
 			return false
 		}
 		_, ok := ContainerPort(engine)
@@ -177,3 +181,14 @@ func SupportsField(engine, field string) bool {
 		return false
 	}
 }
+
+// ClientScheme is the URL scheme drivers expect for engine: DocumentDB speaks the MongoDB wire protocol.
+func ClientScheme(engine string) string {
+	if engine == store.EngineDocumentDB {
+		return "mongodb"
+	}
+	return engine
+}
+
+// DocumentDBClientQuery is the URI query the gateway needs while its certificate is self signed.
+const DocumentDBClientQuery = "tls=true&tlsAllowInvalidCertificates=true"

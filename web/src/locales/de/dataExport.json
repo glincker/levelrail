@@ -6,12 +6,13 @@
   "notConfigured": "Der Datenexport ist auf dieser Control Plane nicht verfügbar.",
   "empty": {
     "title": "Keine Exportziele",
-    "description": "Fügen Sie einen Loki-, Syslog- oder HTTP-Endpunkt für Logs, einen Webhook oder Bucket für das Audit-Log oder einen OTLP-Collector für Metriken hinzu."
+    "description": "Wählen Sie ein Ziel, um Logs, Audit-Ereignisse oder Metriken zu senden. Alles ist optional."
   },
   "scrape": {
     "title": "Prometheus-Scrape-Endpunkt",
-    "description": "Richten Sie Prometheus oder Grafana Agent auf diesen Pfad, mit einem Lese-Token als Bearer-Zugangsdaten. Labels sind auf App, Datenbank und Node beschränkt.",
-    "path": "GET /metrics"
+    "description": "Richten Sie Prometheus oder Grafana Agent mit einem Lese-Token als Bearer-Zugang auf diesen Pfad.",
+    "path": "GET /metrics",
+    "copy": "Scrape-Pfad kopieren"
   },
   "kinds": {
     "logs_http": "Logs über HTTP (JSON-Zeilen)",
@@ -60,7 +61,8 @@
     "deleteConfirm": "Ziel löschen",
     "deleting": "Wird gelöscht",
     "secretsSet": "Zugangsdaten gespeichert (nur schreibbar)",
-    "behind": "Im Rückstand: Zustellungen schlagen fehl, Audit-Zeilen warten sicher im Log"
+    "behind": "Im Rückstand: Zustellungen schlagen fehl, Audit-Zeilen warten sicher im Log",
+    "actions": "Aktionen für {{name}}"
   },
   "fix": {
     "title": "Test fehlgeschlagen",
@@ -127,6 +129,15 @@
     "gzip": "Anfragekörper komprimieren (gzip)",
     "insecure": "TLS-Zertifikatsprüfung überspringen",
     "insecureWarning": "Unsicher: Das Audit-Log kann auf dem Übertragungsweg gelesen oder verändert werden. Nur für einen Collector verwenden, den Sie kontrollieren.",
-    "auditStreamHint": "Die Zustellung erfolgt mindestens einmal und setzt dort fort, wo sie gestoppt hat. Jedes Ereignis trägt die Felder der Audit-Hashkette, damit der Empfänger das Log verifizieren kann."
+    "auditStreamHint": "Die Zustellung erfolgt mindestens einmal und setzt dort fort, wo sie gestoppt hat. Jedes Ereignis trägt die Felder der Audit-Hashkette, damit der Empfänger das Log verifizieren kann.",
+    "advanced": "Erweitert",
+    "back": "Zurück",
+    "tenant": "Mandanten-ID (optional)"
+  },
+  "gallery": {
+    "hint": "Wählen Sie, wohin Daten gesendet werden.",
+    "logs": "Logs",
+    "audit": "Audit-Log",
+    "metrics": "Metriken"
   }
 }

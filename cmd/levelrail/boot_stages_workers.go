@@ -71,6 +71,7 @@ func (s *bootState) startTelemetry() {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
+	s.startDBStats(telemetryDB)
 	var tiers runtimesettings.MetricsTiers
 	if s.apiRouter != nil {
 		tiers = s.apiRouter.RuntimeSettings().MetricsTiers(ctx)
@@ -234,6 +235,7 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetCleanup(apiRouter)
 	alertingEngine.SetDatabaseHealth(apiRouter)
+	alertingEngine.SetDatabaseAlerts(apiRouter, apiRouter.DatabaseAlertPolicy)
 	if src := s.deployDispatcher.Outcomes(); src != nil {
 		alertingEngine.SetDeployFailures(src)
 	}

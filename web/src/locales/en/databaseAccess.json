@@ -243,7 +243,9 @@
     "confirm": "I understand what is dropped",
     "driftMissing": "Missing from the firewall: {{sources}}. Apply the rules again to restore them.",
     "driftExtra": "The firewall also allows: {{sources}}. These were not set here.",
-    "cannot": "Rules cannot be applied: {{reason}}"
+    "cannot": "Rules cannot be applied: {{reason}}",
+    "sourceInvalid": "Not a valid IP or CIDR",
+    "sourcePrivate": "Private range"
   },
   "scope": {
     "title": "Network scope",

@@ -3,6 +3,7 @@ package diskguard
 import (
 	"context"
 	"errors"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -132,5 +133,42 @@ func TestThresholdSourceAppliesWithoutRestart(t *testing.T) {
 	cur = Thresholds{LowFree: 500 * mib, CriticalFree: 460 * mib}
 	if g.Status().Worst != LevelCritical {
 		t.Fatalf("worst = %s, want critical after a live change", g.Status().Worst)
+	}
+}
+
+func TestRefuseBranchSizing(t *testing.T) {
+	stat := func(string) (int64, int64, error) { return 10 * 1024 * mib, 100 * 1024 * mib, nil }
+	g := New("", "/docker", Thresholds{LowFree: 1024 * mib, CriticalFree: 512 * mib, Reserve: 16 * mib}, stat, nil)
+	if err := g.RefuseBranch(4*1024*mib, 1.5, true); err != nil {
+		t.Fatalf("fits, got %v", err)
+	}
+	err := g.RefuseBranch(8*1024*mib, 1.5, true)
+	var low *LowDiskError
+	if !errors.As(err, &low) || low.Op != OpBranch {
+		t.Fatalf("want branch refusal, got %v", err)
+	}
+	if err := g.RefuseBranch(8*1024*mib, 1.5, false); err != nil {
+		t.Fatalf("fast path needs only the reserve, got %v", err)
+	}
+}
+
+func TestRefuseBranchBadFactors(t *testing.T) {
+	stat := func(string) (int64, int64, error) { return 10 * 1024 * mib, 100 * 1024 * mib, nil }
+	g := New("", "/docker", Thresholds{LowFree: 1024 * mib, CriticalFree: 512 * mib, Reserve: 16 * mib}, stat, nil)
+	nan, inf := math.NaN(), math.Inf(1)
+	var low *LowDiskError
+	if err := g.RefuseBranch(1024*mib, nan, true); err != nil {
+		t.Errorf("NaN clamps to 1 and fits, got %v", err)
+	}
+	if err := g.RefuseBranch(20*1024*mib, nan, true); !errors.As(err, &low) {
+		t.Errorf("NaN must not shrink the check, got %v", err)
+	}
+	for name, f := range map[string]float64{"inf": inf, "huge": 1e300} {
+		if err := g.RefuseBranch(1024*mib, f, true); !errors.As(err, &low) {
+			t.Errorf("%s = %v", name, err)
+		}
+	}
+	if err := g.RefuseBranch(math.MaxInt64, 10, true); !errors.As(err, &low) {
+		t.Errorf("max bytes = %v", err)
 	}
 }

@@ -5,7 +5,8 @@
 export type ExternalEngine =
   'postgres' | 'mysql' | 'mariadb' | 'mongodb' | 'redis'
 
-export type ExternalTlsMode = 'disable' | 'prefer' | 'require'
+export type ExternalTlsMode =
+  'disable' | 'prefer' | 'require' | 'verify-ca' | 'verify-full'
 
 export type ExternalHealthStatus =
   'reachable' | 'slow' | 'auth_failed' | 'tls_error' | 'unreachable' | 'unknown'
@@ -46,6 +47,10 @@ export interface ExternalDatabaseRequest {
   network?: string
   node_id?: string
   container?: string
+  auth_database?: string
+  url?: string
+  provider?: string
+  save_anyway?: boolean
 }
 
 export interface ExternalProbeResult {
@@ -70,4 +75,31 @@ export interface ExternalCandidate {
   published_port?: number
   suggested_user?: string
   note?: string
+}
+
+// One hosted provider preset from GET /external-databases/providers.
+export interface ExternalProvider {
+  id: string
+  label: string
+  brand: string
+  engines: ExternalEngine[]
+  port?: number
+  tls_mode: ExternalTlsMode
+  host_hint: string
+  docs_url: string
+  ca_url?: string
+}
+
+// POST /external-databases/parse: the string split into fields, no password.
+export interface ExternalParsedConnection {
+  engine: ExternalEngine
+  host: string
+  port?: number
+  username?: string
+  database?: string
+  auth_database?: string
+  tls_mode: ExternalTlsMode
+  provider: string
+  has_password: boolean
+  suggested_name: string
 }

@@ -1,6 +1,10 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import i18n from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import en from '../locales/en/databases.json'
+import nav from '../locales/en/dbNav.json'
 import { DatabaseScopedSidebar } from './DatabaseScopedSidebar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 
@@ -33,13 +37,22 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
+vi.mock('../queries/databaseViewer', () => ({
+  useExplorerCapabilities: () => ({ data: undefined }),
+}))
+
 vi.mock('../queries/databases', () => ({
-  useDatabase: () => ({ data: { name: 'main' } }),
+  useDatabase: () => ({ data: { name: 'main', engine: 'postgres' } }),
   useDatabaseStatus: () => ({ data: [] }),
 }))
 
 describe('DatabaseScopedSidebar active nav state', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.use(initReactI18next).init({
+      lng: 'en',
+      resources: { en: { databases: en, dbNav: nav } },
+      defaultNS: 'databases',
+    })
     // SidebarProvider's mobile-breakpoint detection (hooks/use-mobile.ts)
     // needs window.matchMedia, which jsdom does not implement.
     vi.stubGlobal(
@@ -58,13 +71,15 @@ describe('DatabaseScopedSidebar active nav state', () => {
 
   it('marks the current section with aria-current, not just a visual highlight', () => {
     render(
-      <SidebarProvider>
-        <DatabaseScopedSidebar name="main" />
-      </SidebarProvider>,
+      <I18nextProvider i18n={i18n}>
+        <SidebarProvider>
+          <DatabaseScopedSidebar name="main" />
+        </SidebarProvider>
+      </I18nextProvider>,
     )
 
     expect(
-      screen.getByRole('link', { name: /Metrics/, current: 'page' }),
+      screen.getByRole('link', { name: /Monitoring/, current: 'page' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Overview/ })).not.toHaveAttribute(
       'aria-current',

@@ -6,9 +6,31 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// orphanVolumeEngines are the engines whose data directory records the writing major.
+var orphanVolumeEngines = []string{store.EnginePostgres, store.EngineMySQL, store.EngineMariaDB}
+
+// orphanVolumeEngineMajor reads the on-disk engine and major of a leftover database data volume, empty when unreadable.
+func (rt *Router) orphanVolumeEngineMajor(ctx context.Context, volume string) (engine, major string) {
+	rd, ok := rt.orphanedVolumes.(database.VolumeFileReader)
+	if !ok || !strings.HasPrefix(volume, "db-") || !strings.HasSuffix(volume, "-data") {
+		return "", ""
+	}
+	ctx, cancel := context.WithTimeout(ctx, leftoverVolumeTimeout())
+	defer cancel()
+	for _, e := range orphanVolumeEngines {
+		if m := database.DetectVolumeMajor(ctx, rd, e, volume); m != "" {
+			return e, m
+		}
+	}
+	return "", ""
+}
 
 // orphanedVolumeResource is one Docker volume GET
 // /api/v1/system/volumes/orphaned reports as no longer referenced by
@@ -20,6 +42,9 @@ type orphanedVolumeResource struct {
 	Name      string `json:"name"`
 	SizeBytes *int64 `json:"size_bytes,omitempty"`
 	CreatedAt string `json:"created_at,omitempty"`
+	// Engine and Version are the database engine and major the volume's data directory was written by, when readable.
+	Engine  string `json:"engine,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 func toOrphanedVolumeResource(v docker.NamedVolume) orphanedVolumeResource {
@@ -52,7 +77,9 @@ func (rt *Router) handleListOrphanedVolumes(w http.ResponseWriter, r *http.Reque
 
 	out := make([]orphanedVolumeResource, 0, len(orphans))
 	for _, v := range orphans {
-		out = append(out, toOrphanedVolumeResource(v))
+		res := toOrphanedVolumeResource(v)
+		res.Engine, res.Version = rt.orphanVolumeEngineMajor(r.Context(), v.Name)
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }

@@ -2151,6 +2151,9 @@ func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, hos
 		}
 		return u.String(), nil
 	}
+	if engine == store.EngineDynamoDB {
+		return fmt.Sprintf("http://%s:%d", host, port), nil
+	}
 	if engine == store.EngineMemcached {
 		// Memcached clients take a host:port server list, no scheme.
 		return fmt.Sprintf("%s:%d", host, port), nil
@@ -2164,12 +2167,14 @@ func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, hos
 		return "", err
 	}
 	u := url.URL{
-		Scheme: engine,
+		Scheme: database.ClientScheme(engine),
 		User:   url.UserPassword(dbName, password),
 		Host:   fmt.Sprintf("%s:%d", host, port),
 		Path:   "/" + dbName,
 	}
-	if tlsEnabled {
+	if engine == store.EngineDocumentDB {
+		u.RawQuery = database.DocumentDBClientQuery
+	} else if tlsEnabled {
 		q := url.Values{}
 		q.Set("sslmode", "require")
 		u.RawQuery = q.Encode()

@@ -1,0 +1,27 @@
+{
+  "gallery": {
+    "title": "¿Dónde se guardarán las copias de seguridad?"
+  },
+  "local": "Disco local",
+  "cancel": "Cancelar",
+  "continue": "Continuar",
+  "testing": "Probando la conexión",
+  "testOk": "Conectado. El bucket es accesible con estas credenciales.",
+  "testFailed": "La prueba de conexión falló: {{error}}",
+  "testAgain": "Probar de nuevo",
+  "removeAndEdit": "Quitar y editar",
+  "fields": {
+    "name": "Nombre",
+    "accountId": "ID de cuenta",
+    "region": "Región",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "path": "Ruta",
+    "accessKey": "ID de clave de acceso",
+    "secret": "Clave de acceso secreta"
+  },
+  "secretNote": "Se guarda cifrada y se muestra una vez. Usa una clave limitada a este bucket.",
+  "back": "Atrás",
+  "creating": "Creando",
+  "createAndTest": "Crear y probar"
+}

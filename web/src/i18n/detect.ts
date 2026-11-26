@@ -1,8 +1,13 @@
 import { SUPPORTED_LANGUAGES } from './supported'
 
-// Browser tags that name a supported language under another code. Regional Portuguese
+// Browser tags that name a supported language under another code. Commonwealth English maps to en-GB. Regional Portuguese
 // maps to the Brazilian files and any Simplified Chinese tag to zh-CN.
 const ALIASES: Record<string, string> = {
+  'en-au': 'en-GB',
+  'en-nz': 'en-GB',
+  'en-ie': 'en-GB',
+  'en-za': 'en-GB',
+  'en-in': 'en-GB',
   pt: 'pt-BR',
   'pt-pt': 'pt-BR',
   zh: 'zh-CN',

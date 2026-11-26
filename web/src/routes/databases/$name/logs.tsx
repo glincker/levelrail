@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { MonitoringTabs } from '../../../components/databases/home/MonitoringTabs'
 import { SearchGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
 import { useDatabaseStatus } from '../../../queries/databases'
 import { DatabaseLogSearchPanel } from '../../../components/DatabaseLogSearchPanel'
@@ -26,24 +27,27 @@ function LogsSection() {
   const { data: conditions } = useDatabaseStatus(name)
 
   return (
-    <Tabs defaultValue="live" className="flex h-full flex-col gap-3">
-      <TabsList className="w-fit">
-        <TabsTrigger value="live" className="gap-1.5">
-          <TerminalGlassIcon className="size-5" aria-hidden="true" />
-          Live
-        </TabsTrigger>
-        <TabsTrigger value="search" className="gap-1.5">
-          <SearchGlassIcon className="size-5" aria-hidden="true" />
-          Search
-        </TabsTrigger>
-      </TabsList>
+    <>
+      <MonitoringTabs name={name} />
+      <Tabs defaultValue="live" className="flex h-full flex-col gap-3">
+        <TabsList className="w-fit">
+          <TabsTrigger value="live" className="gap-1.5">
+            <TerminalGlassIcon className="size-5" aria-hidden="true" />
+            Live
+          </TabsTrigger>
+          <TabsTrigger value="search" className="gap-1.5">
+            <SearchGlassIcon className="size-5" aria-hidden="true" />
+            Search
+          </TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="live" className="flex-1">
-        <LiveDatabaseLogViewer databaseName={name} conditions={conditions} />
-      </TabsContent>
-      <TabsContent value="search" className="flex-1">
-        <DatabaseLogSearchPanel databaseName={name} />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="live" className="flex-1">
+          <LiveDatabaseLogViewer databaseName={name} conditions={conditions} />
+        </TabsContent>
+        <TabsContent value="search" className="flex-1">
+          <DatabaseLogSearchPanel databaseName={name} />
+        </TabsContent>
+      </Tabs>
+    </>
   )
 }

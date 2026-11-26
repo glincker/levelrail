@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { MonitoringTabs } from '../../../components/databases/home/MonitoringTabs'
 import { DatabaseSlowQueriesPanel } from '../../../components/DatabaseSlowQueriesPanel'
 
 // Database-scoped slow query log section, the counterpart to logs.tsx/
@@ -11,5 +12,10 @@ export const Route = createFileRoute('/databases/$name/slow-queries')({
 
 function SlowQueriesSection() {
   const { name } = Route.useParams()
-  return <DatabaseSlowQueriesPanel databaseName={name} />
+  return (
+    <>
+      <MonitoringTabs name={name} />
+      <DatabaseSlowQueriesPanel databaseName={name} />
+    </>
+  )
 }

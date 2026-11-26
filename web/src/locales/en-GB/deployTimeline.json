@@ -1,0 +1,13 @@
+{
+  "status": {
+    "canceled": "Cancelled"
+  },
+  "legend": {
+    "canceled": "Cancelled"
+  },
+  "appHistory": {
+    "status": {
+      "canceled": "Cancelled"
+    }
+  }
+}

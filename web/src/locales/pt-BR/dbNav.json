@@ -1,0 +1,57 @@
+{
+  "nav": {
+    "access": "Acesso",
+    "networking": "Rede",
+    "credentials": "Credenciais"
+  },
+  "networking": {
+    "exposureTitle": "Como este banco de dados pode ser acessado",
+    "levelLabel": "Nível de exposição",
+    "current": "Atual",
+    "private": "Privado",
+    "privateHint": "Somente apps deste servidor podem se conectar.",
+    "tunnel": "Túnel",
+    "tunnelHint": "Acesse do seu computador pela CLI. Nada é publicado.",
+    "public": "Público",
+    "publicHint": "Uma porta do host é publicada em um endereço de bind.",
+    "endpoint": "Endpoint",
+    "autoPort": "porta automática",
+    "tunnelRun": "Execute isto no seu computador e deixe aberto:",
+    "bindLabel": "Endereço de bind",
+    "bindLoopback": "Somente loopback (127.0.0.1)",
+    "bindAll": "Todas as interfaces (0.0.0.0)",
+    "bindAllWarning": "Qualquer pessoa que alcance este servidor pode acessar a porta. Restrinja as origens permitidas e exija TLS.",
+    "publicDisabled": "Publicar não está disponível neste host: ele não consegue aplicar regras de origem. {{reason}}",
+    "makePrivate": "Tornar privado",
+    "publish": "Publicar",
+    "makePrivateTitle": "Tornar {{name}} privado?",
+    "makePrivateBody": "A porta do host é fechada. Apps vinculados neste servidor continuam funcionando; conexões externas param.",
+    "publishTitle": "Publicar {{name}}?",
+    "publishBodyAll": "Isso abre uma porta do host em todas as interfaces. Qualquer pessoa que alcance este servidor pode tentar se conectar.",
+    "publishBodyLoopback": "Isso abre uma porta do host somente em 127.0.0.1, para este servidor e túneis SSH.",
+    "privateToast": "O banco de dados está privado",
+    "publishedToast": "Banco de dados publicado",
+    "failedToast": "Não foi possível alterar a exposição",
+    "linkedTitle": "Quem se conecta",
+    "linkApp": "Vincular app"
+  },
+  "credentials": {
+    "title": "Credenciais",
+    "description": "O login da plataforma neste banco de dados: revelar ou rotacionar.",
+    "sourceTitle": "Origem das credenciais",
+    "managed": "Gerenciadas pela Levelrail",
+    "managedHint": "A Levelrail gera e guarda a senha."
+  },
+  "access": {
+    "title": "Acesso",
+    "description": "Quem pode se conectar a este banco de dados e o que pode fazer.",
+    "credentialsChip": "Origem das credenciais: gerenciadas pela Levelrail",
+    "keyvalueTitle": "Este mecanismo ainda não tem logins por usuário na Levelrail",
+    "keyvalueBody": "O usuário padrão não tem senha, então as regras de rede são o limite. Abra Rede para controlar quem pode alcançá-lo.",
+    "memcachedTitle": "O Memcached não tem autenticação",
+    "memcachedBody": "Mantenha privado ou em loopback. Abra Rede para controlar quem pode alcançá-lo.",
+    "otherTitle": "Usuários deste mecanismo ainda não são gerenciados aqui",
+    "otherBody": "O explorador conecta com o login da plataforma e gravações exigem desbloqueio. Abra Rede para controlar quem pode alcançá-lo.",
+    "openNetworking": "Abrir Rede"
+  }
+}

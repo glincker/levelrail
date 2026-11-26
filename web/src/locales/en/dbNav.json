@@ -1,0 +1,57 @@
+{
+  "nav": {
+    "access": "Access",
+    "networking": "Networking",
+    "credentials": "Credentials"
+  },
+  "networking": {
+    "exposureTitle": "How this database is reachable",
+    "levelLabel": "Exposure level",
+    "current": "Current",
+    "private": "Private",
+    "privateHint": "Only apps on this server can connect.",
+    "tunnel": "Tunnel",
+    "tunnelHint": "Reach it from your computer through the CLI. Nothing is published.",
+    "public": "Public",
+    "publicHint": "A host port is published on a bind address.",
+    "endpoint": "Endpoint",
+    "autoPort": "auto port",
+    "tunnelRun": "Run this on your computer and keep it open:",
+    "bindLabel": "Bind address",
+    "bindLoopback": "Loopback only (127.0.0.1)",
+    "bindAll": "All interfaces (0.0.0.0)",
+    "bindAllWarning": "Anyone who can route to this server can reach the port. Restrict the allowed sources and require TLS.",
+    "publicDisabled": "Publishing is not available on this host: it cannot enforce source rules. {{reason}}",
+    "makePrivate": "Make private",
+    "publish": "Publish",
+    "makePrivateTitle": "Make {{name}} private?",
+    "makePrivateBody": "The host port is closed. Linked apps on this server keep working; connections from outside stop.",
+    "publishTitle": "Publish {{name}}?",
+    "publishBodyAll": "This opens a host port on every interface. Anyone who can reach this server can try to connect.",
+    "publishBodyLoopback": "This opens a host port on 127.0.0.1 only, for this server and SSH tunnels.",
+    "privateToast": "Database is private",
+    "publishedToast": "Database published",
+    "failedToast": "Could not change exposure",
+    "linkedTitle": "Who connects",
+    "linkApp": "Link app"
+  },
+  "credentials": {
+    "title": "Credentials",
+    "description": "The platform login for this database: reveal it or rotate it.",
+    "sourceTitle": "Credentials source",
+    "managed": "Levelrail managed",
+    "managedHint": "Levelrail generates and stores the password."
+  },
+  "access": {
+    "title": "Access",
+    "description": "Who can connect to this database and what they can do.",
+    "credentialsChip": "Credentials source: Levelrail managed",
+    "keyvalueTitle": "This engine has no per user logins in Levelrail yet",
+    "keyvalueBody": "The default user has no password, so network rules are the boundary. Open Networking to control who can reach it.",
+    "memcachedTitle": "Memcached has no authentication",
+    "memcachedBody": "Keep it private or on loopback. Open Networking to control who can reach it.",
+    "otherTitle": "Database users for this engine are not managed here yet",
+    "otherBody": "The explorer connects with the platform login and writes need an unlock. Open Networking to control who can reach it.",
+    "openNetworking": "Open Networking"
+  }
+}

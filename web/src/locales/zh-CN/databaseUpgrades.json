@@ -13,7 +13,9 @@
     "advisories": "影响此版本的已知安全公告",
     "catalogUpdated": "目录更新于 {{date}}",
     "blockersTitle": "升级已被阻止",
-    "manualReason": "需要手动升级"
+    "manualReason": "需要手动升级",
+    "backupCtaTitle": "设置备份目标以启用安全升级",
+    "backupCtaButton": "设置备份存储"
   },
   "support": {
     "supported": "受支持",

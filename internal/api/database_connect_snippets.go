@@ -68,13 +68,28 @@ func BuildConnectSnippets(t ConnectSnippetTarget, password string, reveal bool) 
 			{"node", "Node.js (ioredis)", fmt.Sprintf("const redis = new Redis(%q);", u)},
 			{"python", "Python (redis-py)", fmt.Sprintf("r = redis.Redis.from_url(%q)", u)},
 		}
-	case "mongodb":
-		u := snippetURL("mongodb", t, pw, addr, t.Database, nil)
+	case "mongodb", "documentdb":
+		var q map[string]string
+		if t.Engine == "documentdb" {
+			q = map[string]string{"tls": "true", "tlsAllowInvalidCertificates": "true"}
+		}
+		u := snippetURL("mongodb", t, pw, addr, t.Database, q)
 		return []ConnectSnippet{
 			{"url", "Connection URL", u},
 			{"cli", "mongosh", fmt.Sprintf("mongosh %q", u)},
 			{"node", "Node.js (mongodb)", fmt.Sprintf("const client = new MongoClient(%q);", u)},
 			{"python", "Python (pymongo)", fmt.Sprintf("client = MongoClient(%q)", u)},
+		}
+	case "dynamodb":
+		// No authentication exists in the engine: the keys are dummy values the SDKs insist on.
+		ep := "http://" + addr
+		return []ConnectSnippet{
+			{"url", "Endpoint URL", ep},
+			{"spring", "Spring Boot (AWS SDK v2)", fmt.Sprintf("DynamoDbClient.builder()\n    .endpointOverride(URI.create(%q))\n    .region(Region.US_EAST_1)\n    .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(\"local\", \"local\")))\n    .build();", ep)},
+			{"spring-cloud", "Spring Cloud AWS", fmt.Sprintf("spring.cloud.aws.dynamodb.endpoint=%s\nspring.cloud.aws.region.static=us-east-1\nspring.cloud.aws.credentials.access-key=local\nspring.cloud.aws.credentials.secret-key=local", ep)},
+			{"node", "Node.js (AWS SDK v3)", fmt.Sprintf("const client = new DynamoDBClient({ region: \"us-east-1\", endpoint: %q, credentials: { accessKeyId: \"local\", secretAccessKey: \"local\" } });", ep)},
+			{"python", "Python (boto3)", fmt.Sprintf("client = boto3.client(\"dynamodb\", endpoint_url=%q, region_name=\"us-east-1\", aws_access_key_id=\"local\", aws_secret_access_key=\"local\")", ep)},
+			{"go", "Go (AWS SDK v2)", fmt.Sprintf("cfg, _ := config.LoadDefaultConfig(ctx, config.WithRegion(\"us-east-1\"),\n    config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(\"local\", \"local\", \"\")))\nclient := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) { o.BaseEndpoint = aws.String(%q) })", ep)},
 		}
 	}
 	return nil

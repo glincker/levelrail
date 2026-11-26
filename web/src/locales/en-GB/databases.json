@@ -1,0 +1,49 @@
+{
+  "viewer": {
+    "states": {
+      "contradiction_one": "The catalogue reports {{count}} table but the listing returned none. Retry. If it keeps happening, check the helper logs.",
+      "contradiction_other": "The catalogue reports {{count}} tables but the listing returned none. Retry. If it keeps happening, check the helper logs.",
+      "evidence": {
+        "unavailable": "The catalogue counts could not be read, so this emptiness is not verified."
+      }
+    },
+    "schemaMap": {
+      "mode": {
+        "list": "List",
+        "diagram": "Diagram"
+      },
+      "viewMode": "Schema map view",
+      "search": "Filter tables",
+      "zoomGroup": "Zoom",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "fit": "Fit to screen",
+      "export": "Export SVG",
+      "label": "Schema map diagram",
+      "noTables": "No tables to draw yet.",
+      "noMatch": "No tables match the filter.",
+      "openTable": "Open {{table}}",
+      "more": "+{{count}} more",
+      "count": "{{count}} tables",
+      "capped": "Showing {{shown}} of {{total}} tables",
+      "loadingKeys": "Loading keys",
+      "noKeys": "No foreign keys found, showing tables only",
+      "keysError": "Some foreign keys could not be loaded"
+    }
+  },
+  "createFlavor": {
+    "hint": "Runs {{image}} so its extensions are available with CREATE EXTENSION. The version is stored as {{version}}. Changing flavour later is a guarded dump and restore, not an in-place switch."
+  },
+  "wizard": {
+    "goals": {
+      "items": {
+        "scheduled-job": {
+          "hint": "Backup and cron-style runners from the catalogue."
+        },
+        "self-hosted": {
+          "hint": "Curated apps from the template catalogue."
+        }
+      }
+    }
+  }
+}

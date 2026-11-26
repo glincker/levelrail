@@ -18,6 +18,8 @@ vi.mock('../../queries/databaseAccess', () => ({
 }))
 vi.mock('./ReachabilityCard', () => ({ ReachabilityCard: () => null }))
 vi.mock('./AllowedSourcesCard', () => ({ AllowedSourcesCard: () => null }))
+vi.mock('./LinkedAppsCard', () => ({ LinkedAppsCard: () => null }))
+vi.mock('./ExposureCard', () => ({ ExposureCard: () => null }))
 vi.mock('./TlsCard', () => ({ TlsCard: () => null }))
 vi.mock('./ScopeCard', () => ({
   ScopeCard: () => <button type="button">Save scope</button>,

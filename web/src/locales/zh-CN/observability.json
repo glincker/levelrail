@@ -253,6 +253,26 @@
       "label": "作业失败",
       "description": "对此应用上开启了失败时告警的失败作业,每个作业触发一次,并按作业限速。",
       "action": "打开作业的运行历史查看失败运行的日志,修复原因,然后立即运行以确认。"
+    },
+    "database_crash_loop": {
+      "label": "数据库崩溃循环",
+      "description": "数据库容器反复重启时触发。",
+      "action": "打开数据库日志，修复导致无法启动的错误，然后重启。"
+    },
+    "database_disk_growth": {
+      "label": "数据库磁盘即将写满",
+      "description": "根据最近 7 天的增长，数据卷将在警告或严重天数内写满时触发。",
+      "action": "删除不再需要的数据，或在写满前扩容数据卷。"
+    },
+    "database_connections_saturated": {
+      "label": "数据库连接数耗尽",
+      "description": "已用连接持续高于上限的饱和百分比时触发。",
+      "action": "关闭空闲或泄漏的连接，添加连接池或提高连接上限。"
+    },
+    "database_backup_missing": {
+      "label": "数据库缺少备份",
+      "description": "数据库没有近期成功的备份，或保存了真实数据却没有备份存储时触发。",
+      "action": "为数据库设置备份存储，然后立即运行一次备份。"
     }
   },
   "budgetThreshold": {

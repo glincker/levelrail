@@ -1,0 +1,9 @@
+{
+  "preview": {
+    "page": {
+      "nav-templates": "Catalogue of ready-made services you can deploy in a few clicks.",
+      "nav-variables": "Where shared variables live: organisations, projects and apps, with counts.",
+      "action-templates": "Browse the template catalogue."
+    }
+  }
+}

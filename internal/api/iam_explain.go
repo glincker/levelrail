@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/dbauthz"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -65,7 +66,7 @@ func matchingStatements(policies []store.Policy, ability, resource string, extra
 // simulateAccess answers "can this principal do ability on resource" with the
 // real decision path (authorizeResourceInEnvironment) and then explains it.
 func (rt *Router) simulateAccess(ctx context.Context, p iamPrincipal, policies []store.Policy, ability, resource string) (simulation, error) {
-	allowed, hidden, err := rt.authorizeResourceInEnvironment(ctx, p.Type, p.ID, p.Abilities, policies, ability, resource)
+	allowed, hidden, err := rt.simulateDecision(ctx, p, policies, ability, resource)
 	if err != nil {
 		return simulation{}, fmt.Errorf("simulate: %w", err)
 	}
@@ -75,8 +76,14 @@ func (rt *Router) simulateAccess(ctx context.Context, p iamPrincipal, policies [
 	}
 	sim := simulation{
 		PrincipalType: p.Type, PrincipalID: p.ID, PrincipalName: p.Name, Action: ability, Resource: resource,
-		Allowed: allowed && !hidden, BaseGrants: hasAbility(p.Abilities, ability), EnvironmentResources: extra,
+		Allowed: allowed && !hidden, BaseGrants: hasAbility(p.Abilities, effectiveAbilityName(ability)), EnvironmentResources: extra,
 		Matched: matchingStatements(policies, ability, resource, extra),
+	}
+	if eff := effectiveAbilityName(ability); eff != ability {
+		sim.Matched = append(sim.Matched, matchingStatements(policies, eff, resource, extra)...)
+		for _, implied := range dbauthz.DenyNames(dbauthz.Action(ability))[1:] {
+			sim.Matched = append(sim.Matched, matchingStatements(policies, implied, resource, extra)...)
+		}
 	}
 	if sim.EnvironmentResources == nil {
 		sim.EnvironmentResources = []string{}
@@ -86,6 +93,26 @@ func (rt *Router) simulateAccess(ctx context.Context, p iamPrincipal, policies [
 		sim.Allowed, sim.DecidedBy = false, decidedInactive
 	}
 	return sim, nil
+}
+
+// effectiveAbilityName maps a db action to the ability it needs today and
+// leaves every other ability unchanged.
+func effectiveAbilityName(ability string) string {
+	if dbauthz.Known(ability) {
+		return dbauthz.EffectiveAbility(dbauthz.Action(ability))
+	}
+	return ability
+}
+
+// simulateDecision sends db actions on database resources through the same
+// path the explorer routes use, and everything else through the usual gate.
+func (rt *Router) simulateDecision(ctx context.Context, p iamPrincipal, policies []store.Policy, ability, resource string) (allowed, hidden bool, err error) {
+	if dbauthz.Known(ability) && strings.HasPrefix(resource, dbauthz.ResourcePrefix) {
+		a := dbauthz.Action(ability)
+		v, err := rt.dbEvaluate(ctx, p.Type, p.ID, p.Abilities, policies, dbauthz.EffectiveAbility(a), a, resource)
+		return v.Allowed, v.Hidden, err
+	}
+	return rt.authorizeResourceInEnvironment(ctx, p.Type, p.ID, p.Abilities, policies, ability, resource)
 }
 
 func classifyDecision(sim simulation, hidden bool) (string, *statementRef) {
@@ -228,7 +255,11 @@ func (rt *Router) effectiveFor(ctx context.Context, p iamPrincipal, policies []s
 		e.All = e.Total > 0 && e.Allowed == e.Total
 		out = append(out, e)
 	}
-	return out, scope.restricted(), nil
+	dbOut, err := rt.effectiveDBActions(ctx, p, policies, inv)
+	if err != nil {
+		return nil, false, err
+	}
+	return append(out, dbOut...), scope.restricted(), nil
 }
 
 // handleIAMEffective handles GET /api/v1/iam/principals/{type}/{id}/effective.
@@ -266,4 +297,42 @@ func (rt *Router) handleIAMEffective(w http.ResponseWriter, r *http.Request) {
 		resp.Principal.Policies = append(resp.Principal.Policies, pol.ID)
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// effectiveDBActions lists, per db action, the databases the principal may use,
+// decided by the same dbEvaluate the explorer routes use.
+func (rt *Router) effectiveDBActions(ctx context.Context, p iamPrincipal, policies []store.Policy, inv *iamInventory) ([]effectiveAbility, error) {
+	out := make([]effectiveAbility, 0, len(dbauthz.Actions))
+	extras := map[string][]string{}
+	for _, n := range inv.databases {
+		x, err := rt.dbEnvironmentResources(ctx, policies, resourcePrefixDatabase+n)
+		if err != nil {
+			return nil, fmt.Errorf("effective: %w", err)
+		}
+		extras[n] = x
+	}
+	for _, a := range dbauthz.Actions {
+		eff := dbauthz.EffectiveAbility(a)
+		e := effectiveAbility{Ability: string(a), Risk: abilityRisk(string(a)), Flat: hasAbility(p.Abilities, eff), Apps: []string{}, Databases: []string{}}
+		for _, n := range inv.databases {
+			e.Total++
+			v, err := rt.dbEvaluateWith(ctx, p.Type, p.ID, p.Abilities, policies, eff, a, resourcePrefixDatabase+n, extras[n])
+			if err != nil {
+				return nil, fmt.Errorf("effective: %w", err)
+			}
+			switch {
+			case v.Allowed:
+				e.Allowed++
+				e.Databases = append(e.Databases, n)
+				if !e.Flat {
+					e.GrantedByPolicy++
+				}
+			case e.Flat && !v.Hidden:
+				e.DeniedByPolicy++
+			}
+		}
+		e.All = e.Total > 0 && e.Allowed == e.Total
+		out = append(out, e)
+	}
+	return out, nil
 }

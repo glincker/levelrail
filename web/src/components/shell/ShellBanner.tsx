@@ -15,7 +15,7 @@ import {
 } from '../../lib/connectionStore'
 import { DockerDegradedBanner } from './DockerDegradedBanner'
 import { useDockerDegraded } from './useDockerDegraded'
-import { CleanUpDockerDialog } from '../CleanUpDockerDialog'
+import { LazyCleanUpDockerDialog } from '../LazyCleanUpDockerDialog'
 import { pickBanner, type PlatformIssue } from './platformIssues'
 import { snoozeNow, useSnoozed } from './snoozeStore'
 import { usePlatformIssues } from './usePlatformIssues'
@@ -128,7 +128,7 @@ export function ShellBanner() {
           <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         }
         onDismiss={() => snoozeNow('banner:disk', '1d')}
-        action={<CleanUpDockerDialog />}
+        action={<LazyCleanUpDockerDialog />}
       >
         {detail
           ? t('shell.banner.diskFullDetail', { detail })

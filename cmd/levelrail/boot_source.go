@@ -486,6 +486,15 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 			}
 			return 0
 		}))
+		dbOpts = append(dbOpts, database.WithCrashLoopSettings(func() (int, time.Duration) {
+			svc := deps.settingsService()
+			if svc == nil {
+				return 0, 0
+			}
+			ctx := context.Background()
+			return svc.Limit(ctx, runtimesettings.KeyDBCrashLoopRestarts),
+				time.Duration(svc.Limit(ctx, runtimesettings.KeyDBCrashLoopWindowSeconds)) * time.Second
+		}))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers
@@ -559,7 +568,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		}
 		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
-	case store.EngineMongoDB:
+	case store.EngineMongoDB, store.EngineDocumentDB:
 		creds, err := mongoCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {
 			deps.logger.Warn("skipping mongodb credentials for this reconcile pass",

@@ -1,6 +1,10 @@
 package dbviewer
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/mysqlssl"
+)
 
 // External targets run the engine's client in a helper container that carries
 // the connection in its environment (EXT_* and the standard client variables),
@@ -17,13 +21,9 @@ func postgresExternalCmd(lim Limits, write bool) []string {
 }
 
 func mysqlExternalCmd(mariadb bool) []string {
-	ssl := `case "$EXT_TLS" in disable) SSL="--ssl-mode=DISABLED";; require) SSL="--ssl-mode=REQUIRED";; *) SSL="";; esac`
-	if mariadb {
-		ssl = `case "$EXT_TLS" in disable) SSL="--skip-ssl";; require) SSL="--ssl --skip-ssl-verify-server-cert";; *) SSL="";; esac`
-	}
-	return []string{"sh", "-c", ssl + `
+	return []string{"sh", "-c", mysqlssl.Case(mariadb) + `
 BIN=$(command -v mysql || command -v mariadb)
-set --
-if [ -n "$EXT_DB" ]; then set -- "$EXT_DB"; fi
-exec "$BIN" --protocol=tcp -h"$EXT_HOST" -P"$EXT_PORT" -u"$EXT_USER" $SSL --connect-timeout=10 --xml --skip-pager --default-character-set=utf8mb4 "$@"`}
+DBOPT=""
+if [ -n "$EXT_DB" ]; then DBOPT="--database=$EXT_DB"; fi
+exec "$BIN" --protocol=tcp -h"$EXT_HOST" -P"$EXT_PORT" -u"$EXT_USER" $SSL $DBOPT --connect-timeout=10 --xml --skip-pager --default-character-set=utf8mb4`}
 }

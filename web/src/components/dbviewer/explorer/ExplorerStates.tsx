@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -56,8 +57,67 @@ function Panel({
   )
 }
 
-export function ExplorerLoading() {
+const LOADING_TIMEOUT_MS =
+  Number(import.meta.env.VITE_EXPLORER_LOADING_TIMEOUT_MS) || 20000
+
+function StuckLinks({ databaseName }: { databaseName: string }) {
+  const { t } = useTranslation('dbExplorerErrors')
+  return (
+    <div className="flex flex-wrap gap-3 text-sm">
+      <Link
+        to="/databases/$name/logs"
+        params={{ name: databaseName }}
+        className="text-primary hover:underline"
+      >
+        {t('logs')}
+      </Link>
+      <Link
+        to="/databases/$name/overview"
+        params={{ name: databaseName }}
+        className="text-primary hover:underline"
+      >
+        {t('overview')}
+      </Link>
+    </div>
+  )
+}
+
+// After the timeout the skeleton gives way to an honest stuck state, so a
+// database that is not running never leaves the page loading forever.
+export function ExplorerLoading({
+  databaseName,
+  onRetry,
+}: {
+  databaseName?: string
+  onRetry?: () => void
+}) {
   const { t } = useTranslation('databases')
+  const { t: te } = useTranslation('dbExplorerErrors')
+  const [stuck, setStuck] = useState(false)
+  useEffect(() => {
+    const id = window.setTimeout(() => setStuck(true), LOADING_TIMEOUT_MS)
+    return () => window.clearTimeout(id)
+  }, [])
+  if (stuck && databaseName) {
+    return (
+      <div role="alert">
+        <Panel
+          icon={<PlugGlassIcon size="1.4em" />}
+          title={te('stuck.title')}
+          tone="warning"
+        >
+          <p className="text-sm">{te('stuck.body')}</p>
+          {onRetry ? (
+            <Button type="button" size="sm" onClick={onRetry}>
+              <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
+              {te('retry')}
+            </Button>
+          ) : null}
+          <StuckLinks databaseName={databaseName} />
+        </Panel>
+      </div>
+    )
+  }
   return (
     <div className="space-y-2" role="status" aria-live="polite">
       <Skeleton className="h-64 w-full" />
@@ -72,7 +132,9 @@ export function ExplorerReadError({
   info,
   onRetry,
   retrying,
+  databaseName,
 }: {
+  databaseName?: string
   info: ExplorerErrorInfo
   onRetry: () => void
   retrying: boolean
@@ -95,6 +157,7 @@ export function ExplorerReadError({
             {t('viewer.states.retry')}
           </Button>
         </div>
+        {databaseName ? <StuckLinks databaseName={databaseName} /> : null}
         <details className="text-xs">
           <summary className="cursor-pointer text-muted-foreground">
             {t('viewer.states.details')}

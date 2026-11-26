@@ -88,7 +88,8 @@ func (s *bootState) wireStorageSettings() {
 	})
 	telemetry.SetCumulativeLookbackSource(func() time.Duration {
 		c := context.Background()
-		return telemetry.CumulativeLookback(rs().Duration(c, runtimesettings.KeyMetricsIdleInterval), rs().Duration(c, runtimesettings.KeyMetricsSampleInterval))
+		base := telemetry.CumulativeLookback(rs().Duration(c, runtimesettings.KeyMetricsIdleInterval), rs().Duration(c, runtimesettings.KeyMetricsSampleInterval))
+		return lookbackWithDBInterval(base, time.Duration(rs().Limit(c, runtimesettings.KeyDatabaseStatsInterval))*time.Second)
 	})
 	telemetry.SetTierConfigSource(func(base telemetry.TierConfig) telemetry.TierConfig {
 		return tierConfigFromSettings(base, rs().MetricsTiers(context.Background()))
@@ -125,4 +126,9 @@ func dbTuningName(v string) string {
 		return ""
 	}
 	return v
+}
+
+// lookbackWithDBInterval widens the cumulative scan to two database sample gaps, which can exceed the metric ones.
+func lookbackWithDBInterval(base, dbInterval time.Duration) time.Duration {
+	return max(base, 2*dbInterval)
 }

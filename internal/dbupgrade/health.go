@@ -44,6 +44,8 @@ printf '%s\n' "$out" | sed -n 1p`
 		script = `exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -B -e 'SELECT VERSION(); SELECT 1'`
 	case store.EngineMongoDB:
 		script = `exec mongosh --quiet --host 127.0.0.1 --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'if (db.adminCommand({ping: 1}).ok !== 1) { quit(1) }; print(db.version())'`
+	case store.EngineDocumentDB:
+		script = `exec mongosh --quiet "mongodb://$USERNAME:$PASSWORD@127.0.0.1:10260/?tls=true&tlsAllowInvalidCertificates=true" --eval 'if (db.adminCommand({ping: 1}).ok !== 1) { quit(1) }; print("documentdb")'`
 	case store.EngineDragonfly:
 		return []string{"bash", "-c", dragonflyHealthScript}, nil
 	case store.EngineRedis, store.EngineKeyDB, store.EngineValkey:
@@ -57,6 +59,10 @@ echo "$v"`
 		script = `exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query 'SELECT version()'`
 	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
 		return searchHealthCommand(engine), nil
+	case store.EngineDynamoDB:
+		return []string{"sh", "-c", `code=$(curl -s -m 5 -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/) || exit 1
+[ "$code" = "400" ] || { echo "unexpected status $code"; exit 1; }
+echo dynamodb-local`}, nil
 	case store.EngineMemcached:
 		return []string{"bash", "-c", `exec 3<>/dev/tcp/127.0.0.1/11211 || exit 1
 printf 'stats\r\nquit\r\n' >&3

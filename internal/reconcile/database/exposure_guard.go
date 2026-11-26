@@ -11,7 +11,7 @@ import (
 // Dragonfly has no password mode; the other Redis-family engines depend on hasPassword.
 func Unauthenticated(engine string, hasPassword bool) bool {
 	switch {
-	case engine == store.EngineDragonfly:
+	case engine == store.EngineDragonfly, engine == store.EngineDynamoDB:
 		return true
 	case SupportsRedisPassword(engine):
 		return !hasPassword

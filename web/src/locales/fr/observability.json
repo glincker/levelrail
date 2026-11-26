@@ -253,6 +253,26 @@
       "label": "Job en échec",
       "description": "Se déclenche une fois par job en échec de cette app pour lequel l'alerte en cas d'échec est activée, avec limitation de débit par job.",
       "action": "Ouvrez l'historique d'exécution du job pour lire les logs de l'exécution échouée, corrigez la cause, puis exécutez-le maintenant pour confirmer."
+    },
+    "database_crash_loop": {
+      "label": "Base de données en boucle de plantage",
+      "description": "Se déclenche tant qu'un conteneur de base de données redémarre sans cesse.",
+      "action": "Ouvrez les journaux de la base, corrigez l'erreur qui l'empêche de démarrer, puis redémarrez-la."
+    },
+    "database_disk_growth": {
+      "label": "Disque de base de données bientôt plein",
+      "description": "Se déclenche quand la croissance des 7 derniers jours indique que le volume de données sera plein dans le délai d'alerte ou critique.",
+      "action": "Supprimez les données inutiles ou agrandissez le volume avant qu'il ne soit plein."
+    },
+    "database_connections_saturated": {
+      "label": "Base de données sans connexions libres",
+      "description": "Se déclenche tant que les connexions utilisées restent au-dessus du pourcentage de saturation de la limite.",
+      "action": "Fermez les connexions inactives ou fuyantes, ajoutez un pooler ou relevez la limite."
+    },
+    "database_backup_missing": {
+      "label": "Sauvegarde de base de données manquante",
+      "description": "Se déclenche quand une base n'a pas de sauvegarde récente réussie, ou contient de vraies données sans stockage de sauvegarde.",
+      "action": "Configurez un stockage de sauvegarde pour la base, puis lancez une sauvegarde."
     }
   },
   "budgetThreshold": {

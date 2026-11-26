@@ -1,0 +1,27 @@
+{
+  "gallery": {
+    "title": "Où stocker les sauvegardes ?"
+  },
+  "local": "Disque local",
+  "cancel": "Annuler",
+  "continue": "Continuer",
+  "testing": "Test de la connexion",
+  "testOk": "Connecté. Le bucket est accessible avec ces identifiants.",
+  "testFailed": "Le test de connexion a échoué : {{error}}",
+  "testAgain": "Tester à nouveau",
+  "removeAndEdit": "Supprimer et modifier",
+  "fields": {
+    "name": "Nom",
+    "accountId": "ID de compte",
+    "region": "Région",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "path": "Chemin",
+    "accessKey": "ID de clé d’accès",
+    "secret": "Clé d’accès secrète"
+  },
+  "secretNote": "Stockée chiffrée, affichée une seule fois. Utilisez une clé limitée à ce bucket.",
+  "back": "Retour",
+  "creating": "Création",
+  "createAndTest": "Créer et tester"
+}

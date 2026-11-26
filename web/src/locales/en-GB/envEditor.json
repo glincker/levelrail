@@ -1,0 +1,10 @@
+{
+  "scope": {
+    "tiers": {
+      "organization": "organisation"
+    }
+  },
+  "inherited": {
+    "description": "Set on the organisation, project or environment. Override one to give this app its own value."
+  }
+}

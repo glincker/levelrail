@@ -1,0 +1,26 @@
+{
+  "source": {
+    "analyze": "Analyse repository",
+    "templates": {
+      "browse": "Browse the template catalogue",
+      "unavailable": "The template list is not available right now. The full catalogue is one click away.",
+      "noMatch": "No template matches \"{{query}}\". Try another word or browse the full catalogue."
+    }
+  },
+  "detection": {
+    "warnings": {
+      "no_lockfile": {
+        "fix": "Commit your lockfile and analyse again."
+      },
+      "malformed_manifest": {
+        "fix": "Fix the JSON or TOML syntax and analyse again."
+      },
+      "railpack_unsupported": {
+        "fix": "Add a Dockerfile to the repository and analyse again."
+      }
+    }
+  },
+  "deployPage": {
+    "reviewRepo": "Analyse and review"
+  }
+}

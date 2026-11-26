@@ -159,3 +159,83 @@ func (c *Client) SaveDatabaseQuery(ctx context.Context, name, title, sql string)
 func (c *Client) DeleteDatabaseSavedQuery(ctx context.Context, name, id string) error {
 	return c.del(ctx, "/api/v1/databases/"+PathEscape(name)+"/saved-queries/"+PathEscape(id))
 }
+
+// ExplorerCapability is one feature switch of GET .../explorer/capabilities.
+type ExplorerCapability struct {
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// DatabaseExplorerCapabilities is GET /api/v1/databases/{name}/explorer/capabilities.
+type DatabaseExplorerCapabilities struct {
+	Engine       string                        `json:"engine"`
+	Kind         string                        `json:"kind"`
+	Planned      bool                          `json:"planned"`
+	External     bool                          `json:"external"`
+	Capabilities map[string]ExplorerCapability `json:"capabilities"`
+	Limits       struct {
+		MaxRows      int `json:"max_rows"`
+		MaxBytes     int `json:"max_bytes"`
+		MaxCellBytes int `json:"max_cell_bytes"`
+		TimeoutMs    int `json:"timeout_ms"`
+	} `json:"limits"`
+}
+
+// GetDatabaseExplorerCapabilities calls GET /api/v1/databases/{name}/explorer/capabilities.
+func (c *Client) GetDatabaseExplorerCapabilities(ctx context.Context, name string) (DatabaseExplorerCapabilities, error) {
+	return getJSON[DatabaseExplorerCapabilities](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/explorer/capabilities")
+}
+
+// RedisInfo is the allow listed INFO panel.
+type RedisInfo struct {
+	Sections []struct {
+		Name   string `json:"name"`
+		Fields []struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"fields"`
+	} `json:"sections"`
+}
+
+// RedisSlowlog is the capped slowlog; arguments are reduced to sizes.
+type RedisSlowlog struct {
+	Entries []struct {
+		ID         int64  `json:"id"`
+		Time       int64  `json:"time"`
+		DurationUS int64  `json:"durationUs"`
+		Command    string `json:"command"`
+		ArgCount   int    `json:"argCount"`
+		Client     string `json:"client"`
+	} `json:"entries"`
+	Truncated bool `json:"truncated"`
+}
+
+// RedisClients is the capped client list.
+type RedisClients struct {
+	Clients []struct {
+		ID    string `json:"id"`
+		Addr  string `json:"addr"`
+		Age   int64  `json:"age"`
+		Idle  int64  `json:"idle"`
+		Flags string `json:"flags"`
+		DB    string `json:"db"`
+		Cmd   string `json:"cmd"`
+		User  string `json:"user"`
+	} `json:"clients"`
+	Truncated bool `json:"truncated"`
+}
+
+// GetRedisInfo calls GET /api/v1/databases/{name}/redis/info.
+func (c *Client) GetRedisInfo(ctx context.Context, name string) (RedisInfo, error) {
+	return getJSON[RedisInfo](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/redis/info")
+}
+
+// GetRedisSlowlog calls GET /api/v1/databases/{name}/redis/slowlog.
+func (c *Client) GetRedisSlowlog(ctx context.Context, name string) (RedisSlowlog, error) {
+	return getJSON[RedisSlowlog](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/redis/slowlog")
+}
+
+// GetRedisClients calls GET /api/v1/databases/{name}/redis/clients.
+func (c *Client) GetRedisClients(ctx context.Context, name string) (RedisClients, error) {
+	return getJSON[RedisClients](ctx, c, "/api/v1/databases/"+PathEscape(name)+"/redis/clients")
+}

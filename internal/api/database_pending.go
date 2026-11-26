@@ -205,6 +205,9 @@ func (rt *Router) handleDiscardPendingDatabase(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := rt.databases.DeleteDesiredDatabase(r.Context(), name); err != nil && !errors.Is(err, store.ErrDatabaseNotFound) {
+		if writeBranchBlock(w, err) {
+			return
+		}
 		rt.internalError(w, "api: discard pending database failed", err, slog.String("name", name))
 		return
 	}

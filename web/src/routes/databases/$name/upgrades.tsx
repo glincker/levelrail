@@ -1,11 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { UpgradesPanel } from '../../../components/databaseUpgrades/UpgradesPanel'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
+// Old tab URL: the content now lives in the Settings shell.
 export const Route = createFileRoute('/databases/$name/upgrades')({
-  component: UpgradesSection,
+  beforeLoad: ({ params }) => {
+    redirect({
+      to: '/databases/$name/settings',
+      params,
+      search: { section: 'backups' },
+      throw: true,
+    })
+  },
 })
-
-function UpgradesSection() {
-  const { name } = Route.useParams()
-  return <UpgradesPanel databaseName={name} />
-}

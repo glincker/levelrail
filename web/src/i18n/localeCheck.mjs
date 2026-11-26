@@ -9,6 +9,8 @@ const BASELINE_DIR = join(here, 'missingBaseline')
 const glossary = JSON.parse(readFileSync(join(here, 'glossary.json'), 'utf8'))
 const PLURAL = /_(zero|one|two|few|many|other)$/
 const DASH = new RegExp('[\\u2013\\u2014]')
+// Overlay locales ship only the strings that differ from en, so missing keys are allowed.
+export const OVERLAY_LANGUAGES = new Set(['en-GB'])
 // Integers up to this count decide which plural forms a language needs.
 const PLURAL_PROBE_MAX = 1000
 
@@ -62,6 +64,7 @@ export function checkLanguage(lang, opts = {}) {
   const known = new Set(base.knownIssues)
   const dir = join(localesDir, lang)
   const categories = requiredPluralCategories(lang)
+  const overlay = OVERLAY_LANGUAGES.has(lang)
   const raw = []
   const missing = []
   let files = 0
@@ -108,8 +111,8 @@ export function checkLanguage(lang, opts = {}) {
     for (const k of Object.keys(en)) {
       const base = pluralBase(k)
       if (base === null) {
-        if (!(k in tgt)) missing.push(`${ns}:${k}`)
-      } else if (families.has(base)) {
+        if (!overlay && !(k in tgt)) missing.push(`${ns}:${k}`)
+      } else if (!overlay && families.has(base)) {
         families.delete(base)
         for (const c of categories)
           if (!(`${base}_${c}` in tgt)) missing.push(`${ns}:${base}_${c}`)

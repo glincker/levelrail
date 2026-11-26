@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbprovision"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -25,7 +27,18 @@ type logTailer interface {
 	TailLogs(ctx context.Context, name string, lines int) (string, error)
 }
 
-func crashLoopThreshold() int {
+// WithCrashLoopSettings supplies the live crash loop threshold and window, so a
+// settings change applies on the next pass. Without it the env seeds are read.
+func WithCrashLoopSettings(fn func() (restarts int, window time.Duration)) Option {
+	return func(c *Controller) { c.crashLoopLive = fn }
+}
+
+func (c *Controller) crashLoopThreshold() int {
+	if c.crashLoopLive != nil {
+		if n, _ := c.crashLoopLive(); n > 0 {
+			return n
+		}
+	}
 	if n, err := strconv.Atoi(os.Getenv(EnvCrashLoopRestarts)); err == nil && n > 0 {
 		return n
 	}
@@ -79,8 +92,90 @@ func (c *Controller) captureCrash(ctx context.Context) {
 // crashLoopResult stops the wait early when the container keeps restarting; ok is false when it does not.
 func (c *Controller) crashLoopResult(ctx context.Context, target string) (reconcile.Result, bool) {
 	n := c.restartsOf(ctx, target)
-	if n < crashLoopThreshold() {
+	if n < c.crashLoopThreshold() {
 		return reconcile.Result{}, false
 	}
 	return notReady(dbprovision.ReasonCrashLoop, fmt.Errorf("the database container restarted %d times while starting", n)), true
+}
+
+// EnvCrashLoopWindow is how long quick crashes are counted, in seconds.
+const EnvCrashLoopWindow = "APP_DB_CRASH_LOOP_WINDOW_SECONDS" //nolint:gosec // env var name
+
+const (
+	defaultCrashLoopWindow = 60 * time.Second
+	crashBackoffBase       = 10 * time.Second
+	crashBackoffMax        = 5 * time.Minute
+)
+
+// crashRecord counts restarts of a stopped container inside the window and
+// holds the exponential back-off that keeps the reconciler from redeploying every pass.
+type crashRecord struct {
+	times []time.Time
+	until time.Time
+}
+
+// crashGate runs before the reconciler restarts a stopped container. Past the
+// threshold it reports CrashLoop with the last log line and waits longer each time.
+func (c *Controller) crashGate(ctx context.Context, target string) (reconcile.Result, bool) {
+	now := c.clock()
+	window := c.crashLoopWindow()
+	n, wait := c.shared.noteCrash(c.dbName, now, window, c.crashLoopThreshold())
+	if n < c.crashLoopThreshold() {
+		return reconcile.Result{}, false
+	}
+	if wait <= 0 {
+		return reconcile.Result{}, false
+	}
+	line := ""
+	if lt, ok := c.runtime.(logTailer); ok {
+		tail, _ := lt.TailLogs(ctx, target, 5)
+		line = lastLine(tail)
+	}
+	res := notReady(dbprovision.ReasonCrashLoop, fmt.Errorf("the database container exited %d times within %s; retrying in %s. Last output: %s", n, window, wait.Round(time.Second), line))
+	res.RequeueAfter = wait
+	return res, true
+}
+
+func (c *Controller) crashLoopWindow() time.Duration {
+	if c.crashLoopLive != nil {
+		if _, w := c.crashLoopLive(); w > 0 {
+			return w
+		}
+	}
+	return durationFromEnv(EnvCrashLoopWindow, defaultCrashLoopWindow)
+}
+
+func lastLine(s string) string {
+	lines := strings.Split(strings.TrimSpace(s), "\n")
+	return strings.TrimSpace(lines[len(lines)-1])
+}
+
+// noteCrash records one restart and returns the count in the window plus how
+// long to hold off. A zero wait means the next restart may go ahead now.
+func (s *SharedState) noteCrash(name string, now time.Time, window time.Duration, threshold int) (int, time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r := s.crashes[name]
+	if r == nil {
+		r = &crashRecord{}
+		s.crashes[name] = r
+	}
+	if now.Before(r.until) {
+		return len(r.times), r.until.Sub(now)
+	}
+	kept := r.times[:0]
+	for _, t := range r.times {
+		if now.Sub(t) < window {
+			kept = append(kept, t)
+		}
+	}
+	r.times = append(kept, now)
+	over := len(r.times) - threshold
+	if over < 0 {
+		return len(r.times), 0
+	}
+	wait := crashBackoffBase << min(over, 6)
+	wait = min(wait, crashBackoffMax)
+	r.until = now.Add(wait)
+	return len(r.times), wait
 }

@@ -1,0 +1,27 @@
+{
+  "gallery": {
+    "title": "Where should backups be stored?"
+  },
+  "local": "Local disk",
+  "cancel": "Cancel",
+  "continue": "Continue",
+  "testing": "Testing the connection",
+  "testOk": "Connected. The bucket is reachable with these credentials.",
+  "testFailed": "The connection test failed: {{error}}",
+  "testAgain": "Test again",
+  "removeAndEdit": "Remove and edit",
+  "fields": {
+    "name": "Name",
+    "accountId": "Account ID",
+    "region": "Region",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "path": "Path",
+    "accessKey": "Access key ID",
+    "secret": "Secret access key"
+  },
+  "secretNote": "Stored encrypted, shown once. Use a key limited to this bucket.",
+  "back": "Back",
+  "creating": "Creating",
+  "createAndTest": "Create and test"
+}

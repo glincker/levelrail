@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { DatabaseMetricsDashboard } from '../../../components/DatabaseMetricsDashboard'
+import { MonitoringTabs } from '../../../components/databases/home/MonitoringTabs'
+import { DatabaseMonitoringPage } from '../../../components/databases/monitoring/DatabaseMonitoringPage'
 
 // Database-scoped metrics section, the database-kind counterpart to
 // routes/apps/$name/metrics.tsx. No loader needed: unlike the app route
@@ -12,5 +13,10 @@ export const Route = createFileRoute('/databases/$name/metrics')({
 
 function MetricsSection() {
   const { name } = Route.useParams()
-  return <DatabaseMetricsDashboard databaseName={name} />
+  return (
+    <>
+      <MonitoringTabs name={name} />
+      <DatabaseMonitoringPage databaseName={name} />
+    </>
+  )
 }

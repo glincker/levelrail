@@ -1,0 +1,13 @@
+{
+  "state": {
+    "label": {
+      "canceled": "Cancelled"
+    },
+    "headline": {
+      "canceled": "This deploy was cancelled before it changed anything."
+    }
+  },
+  "runActions": {
+    "cancelOff": "Only a running or queued deploy can be cancelled."
+  }
+}

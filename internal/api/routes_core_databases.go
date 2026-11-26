@@ -1,12 +1,17 @@
 package api
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/dbauthz"
+)
 
 // registerDatabaseRoutes registers the database engines, databases and external databases routes.
 func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	// Databases CRUD. No PUT: engine, version and name never change in place (that is a migration).
 	// The engine registry list sits first since it is not scoped to one database.
 	mux.HandleFunc("GET /api/v1/database-engines", rt.requireAbility(AbilityRead, rt.handleListDatabaseEngines))
+	mux.HandleFunc("GET /api/v1/database-engines/{id}/latest", rt.requireAbility(AbilityRead, rt.handleLatestDatabaseVersion))
 
 	mux.HandleFunc("GET /api/v1/databases", rt.requireAbility(AbilityRead, rt.handleListDatabases))
 	mux.HandleFunc("POST /api/v1/databases", rt.requireAbility(AbilityWrite, rt.handleCreateDatabase))
@@ -42,22 +47,35 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	// rather than a new telemetry source.
 	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseSlowQueries))
 	// Live counts for engines with no data browser; index names can name tenants.
-	mux.HandleFunc("GET /api/v1/databases/{name}/engine-stats", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseEngineStats))
+	mux.HandleFunc("GET /api/v1/databases/{name}/engine-stats", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseEngineStats))
+	// Read-only performance findings; they carry other sessions' statement text, so they need query access.
+	mux.HandleFunc("GET /api/v1/databases/{name}/advisor", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionQuery, rt.handleGetDatabaseAdvisor))
 	// Database viewer: row data and SQL are sensitive, so reads are
 	// AbilityReadSensitive; the write console is AbilityRoot (admin only).
-	mux.HandleFunc("GET /api/v1/databases/{name}/schema", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseSchema))
-	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/rows", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseTableRows))
-	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/structure", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseTableStructure))
-	mux.HandleFunc("POST /api/v1/databases/{name}/query", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseQuery))
-	mux.HandleFunc("POST /api/v1/databases/{name}/query/write", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseQueryWrite))
-	mux.HandleFunc("POST /api/v1/databases/{name}/explain", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseExplain))
-	mux.HandleFunc("GET /api/v1/databases/{name}/keys", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleScanDatabaseKeys))
-	mux.HandleFunc("GET /api/v1/databases/{name}/key", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseKey))
-	mux.HandleFunc("GET /api/v1/databases/{name}/query-history", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseQueryHistory))
-	mux.HandleFunc("DELETE /api/v1/databases/{name}/query-history", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleClearDatabaseQueryHistory))
-	mux.HandleFunc("GET /api/v1/databases/{name}/saved-queries", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseSavedQueries))
-	mux.HandleFunc("POST /api/v1/databases/{name}/saved-queries", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleSaveDatabaseQuery))
-	mux.HandleFunc("DELETE /api/v1/databases/{name}/saved-queries/{id}", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDeleteDatabaseSavedQuery))
+	mux.HandleFunc("GET /api/v1/databases/{name}/schema", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseSchema))
+	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/rows", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseTableRows))
+	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/structure", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseTableStructure))
+	mux.HandleFunc("POST /api/v1/databases/{name}/query", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionQuery, rt.handleDatabaseQuery))
+	mux.HandleFunc("POST /api/v1/databases/{name}/query/write", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionWrite, rt.handleDatabaseQueryWrite))
+	mux.HandleFunc("POST /api/v1/databases/{name}/explain", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionQuery, rt.handleDatabaseExplain))
+	// Static per engine capability model plus viewer limits; drives the explorer UI.
+	mux.HandleFunc("GET /api/v1/databases/{name}/explorer/capabilities", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseExplorerCapabilities))
+	mux.HandleFunc("GET /api/v1/databases/{name}/keys", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleScanDatabaseKeys))
+	mux.HandleFunc("GET /api/v1/databases/{name}/key", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseKey))
+	mux.HandleFunc("GET /api/v1/databases/{name}/redis/info", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetRedisInfo))
+	mux.HandleFunc("GET /api/v1/databases/{name}/redis/slowlog", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetRedisSlowlog))
+	mux.HandleFunc("GET /api/v1/databases/{name}/redis/clients", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetRedisClients))
+	mux.HandleFunc("GET /api/v1/databases/{name}/mongo/collections", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetMongoCollections))
+	mux.HandleFunc("POST /api/v1/databases/{name}/mongo/find", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionQuery, rt.handleMongoFind))
+	mux.HandleFunc("GET /api/v1/databases/{name}/audit", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handleListDatabaseStatementAudit))
+	mux.HandleFunc("GET /api/v1/databases/{name}/dynamo/tables", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDynamoTables))
+	mux.HandleFunc("POST /api/v1/databases/{name}/dynamo/query", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionQuery, rt.handleDynamoQuery))
+	mux.HandleFunc("POST /api/v1/databases/{name}/dynamo/scan", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionQuery, rt.handleDynamoScan))
+	mux.HandleFunc("GET /api/v1/databases/{name}/query-history", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleListDatabaseQueryHistory))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/query-history", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleClearDatabaseQueryHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/saved-queries", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleListDatabaseSavedQueries))
+	mux.HandleFunc("POST /api/v1/databases/{name}/saved-queries", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleSaveDatabaseQuery))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/saved-queries/{id}", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleDeleteDatabaseSavedQuery))
 
 	// Resource right-sizing, the database counterpart to
 	// GET /apps/{name}/resource-recommendation above
@@ -74,6 +92,8 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/external-databases", rt.requireAbility(AbilityRoot, rt.handleCreateExternalDatabase))
 	mux.HandleFunc("POST /api/v1/external-databases/test", rt.requireAbility(AbilityRoot, rt.handleTestExternalDatabase))
 	mux.HandleFunc("GET /api/v1/external-databases/candidates", rt.requireAbility(AbilityRoot, rt.handleListExternalDatabaseCandidates))
+	mux.HandleFunc("GET /api/v1/external-databases/providers", rt.requireAbility(AbilityRoot, rt.handleListExternalDatabaseProviders))
+	mux.HandleFunc("POST /api/v1/external-databases/parse", rt.requireAbility(AbilityRoot, rt.handleParseExternalDatabaseURL))
 	mux.HandleFunc("POST /api/v1/external-databases/adopt", rt.requireAbility(AbilityRoot, rt.handleAdoptExternalDatabase))
 	mux.HandleFunc("GET /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetExternalDatabase))
 	mux.HandleFunc("PUT /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleUpdateExternalDatabase))

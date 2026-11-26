@@ -1,0 +1,131 @@
+{
+  "title": "Monitoring",
+  "asOf": "Updated {{time}}",
+  "refresh": "Refresh",
+  "autoRefresh": "Auto refresh",
+  "chartLabel": "{{title}} chart with {{count}} data points",
+  "tabs": {
+    "aria": "Monitoring sections",
+    "metrics": "Metrics",
+    "slow": "Slow queries",
+    "logs": "Logs",
+    "active": "Active queries",
+    "perf": "Query performance",
+    "soon": "Not collected yet",
+    "soonBadge": "Soon"
+  },
+  "instance": {
+    "label": "Instance",
+    "active": "Active",
+    "stopped": "Stopped",
+    "provisioning": "Provisioning"
+  },
+  "range": {
+    "label": "Time range",
+    "custom": "Custom",
+    "from": "From",
+    "to": "To",
+    "apply": "Apply",
+    "errors": {
+      "invalid": "Enter a valid start and end.",
+      "order": "The start must be before the end.",
+      "future": "The end cannot be in the future.",
+      "tooLong": "That range is longer than the retention limit."
+    }
+  },
+  "export": {
+    "label": "Export metrics",
+    "csv": "Export CSV",
+    "json": "JSON"
+  },
+  "stats": {
+    "label": "Summary",
+    "none": "No data",
+    "ofLimit": "of {{limit}}",
+    "delta": "{{sign}}{{value}}% vs previous",
+    "noPrevious": "No previous period"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "Memory",
+    "network": "Network I/O",
+    "disk": "Disk I/O",
+    "connections": "Connections",
+    "dbSize": "Database size",
+    "cacheHit": "Cache hit rate",
+    "deadlocks": "Deadlocks",
+    "rows": "Rows inserted, updated, deleted"
+  },
+  "series": {
+    "cpu": "CPU",
+    "usage": "Usage",
+    "limit": "Limit",
+    "received": "Received",
+    "sent": "Sent",
+    "read": "Read",
+    "write": "Write"
+  },
+  "states": {
+    "stopped": {
+      "title": "Database is stopped",
+      "body": "Metrics are not collected while the database is stopped. Start it to resume.",
+      "chart": "Endpoint inactive: stopped"
+    },
+    "provisioning": {
+      "title": "Database is provisioning",
+      "body": "Metrics begin once the container is running.",
+      "chart": "Endpoint inactive: provisioning"
+    },
+    "failed": {
+      "title": "Provisioning failed",
+      "body": "The container never started, so there is nothing to measure.",
+      "chart": "Endpoint inactive: provisioning failed"
+    },
+    "restarting": {
+      "title": "Database restarted recently",
+      "body": "Readings may show a gap while it comes back."
+    },
+    "noData": {
+      "title": "No data yet",
+      "body": "No samples in this range. Samples arrive every few seconds once the database runs.",
+      "chart": "No samples in this range"
+    },
+    "notCollected": {
+      "title": "Not collected",
+      "body": "This engine does not report this series yet."
+    }
+  },
+  "actions": {
+    "start": "Start database",
+    "starting": "Starting",
+    "viewProgress": "View progress"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "editThresholds": "Edit thresholds",
+    "allRules": "Alert rules",
+    "empty": "No database health rules are set up yet.",
+    "scopeNote": "These rules watch every database. A firing rule is matched to this one by the name in its latest alert.",
+    "since": "since",
+    "unattributed": "(applies to a database on this server)",
+    "firingChip_one": "{{count}} alert firing",
+    "firingChip_other": "{{count}} alerts firing",
+    "state": {
+      "ok": "OK",
+      "firing": "Firing",
+      "off": "Off"
+    },
+    "severity": {
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "chips": {
+      "diskWarn": "Warn at {{value}} days left",
+      "diskCritical": "Critical at {{value}} days left",
+      "holdFor": "Held for {{value}}",
+      "connections": "Over {{value}}% of connections",
+      "backupWindow": "No backup for {{value}}",
+      "unprotected": "Unprotected over {{value}} MB"
+    }
+  }
+}

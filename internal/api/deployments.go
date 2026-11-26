@@ -339,7 +339,7 @@ func (rt *Router) handleDeploymentsSummary(w http.ResponseWriter, r *http.Reques
 	if first := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -(store.DeploymentSummaryDays - 1)); first.Before(since) {
 		since = first
 	}
-	briefs, err := ds.ListDeploymentBriefsScoped(r.Context(), since, visible, r.URL.Query().Get("environment"), r.URL.Query().Get("project"))
+	briefs, err := cachedDeploymentBriefs(r.Context(), ds, since, visible, r.URL.Query().Get("environment"), r.URL.Query().Get("project"), rt.deploySummaryTTL(r.Context()))
 	if err != nil {
 		rt.internalError(w, "api: deployments summary failed", err)
 		return

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"strings"
 	"sync"
 	"testing"
@@ -95,8 +96,14 @@ func TestCheckResolved(t *testing.T) {
 	if err := c.CheckResolved(t.Context(), Policy{AllowLinkLocal: true}, fakeResolver{addrs: []string{"169.254.169.254"}}); err != nil {
 		t.Fatalf("opt in: %v", err)
 	}
-	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{err: errors.New("no such host")}); err != nil {
+	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{err: &net.DNSError{Err: "no such host", IsNotFound: true}}); err != nil {
 		t.Fatalf("docker-only name must pass: %v", err)
+	}
+	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{err: errors.New("server misbehaving")}); err == nil {
+		t.Fatal("a failed lookup must stop the connection")
+	}
+	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{addrs: []string{"64:ff9b::a9fe:a9fe"}}); err == nil {
+		t.Fatal("a translated address must be rejected")
 	}
 	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{addrs: []string{"10.1.2.3"}}); err != nil {
 		t.Fatalf("private ok: %v", err)
@@ -326,4 +333,24 @@ type execInputRuntime struct{ *fakeRuntime }
 
 func (e *execInputRuntime) ExecWithInput(context.Context, string, []string, io.Reader) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader("x")), nil
+}
+
+func TestCheckResolvedLookupFailurePolicy(t *testing.T) {
+	servfail := fakeResolver{err: errors.New("server misbehaving")}
+	for _, tc := range []struct {
+		host    string
+		wantErr bool
+	}{
+		{"coolify-pg", false},
+		{"db.example.com", true},
+		{"db.internal.", true},
+	} {
+		err := Conn{Engine: "postgres", Host: tc.host}.CheckResolved(t.Context(), Policy{}, servfail)
+		if (err != nil) != tc.wantErr {
+			t.Errorf("host %q: err = %v, wantErr %v", tc.host, err, tc.wantErr)
+		}
+	}
+	if err := (Conn{Engine: "postgres", Host: "coolify-pg"}).CheckResolved(t.Context(), Policy{}, fakeResolver{addrs: []string{"169.254.169.254"}}); err == nil {
+		t.Error("single-label name resolving to a metadata address was accepted")
+	}
 }

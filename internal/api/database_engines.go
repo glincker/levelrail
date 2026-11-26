@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -38,6 +39,9 @@ func (rt *Router) handleListDatabaseEngines(w http.ResponseWriter, _ *http.Reque
 	}
 	out := make([]databaseEngineResource, 0, len(engines))
 	for _, e := range engines {
+		if (e.ID == store.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB)) || (e.ID == store.EngineDynamoDB && !experimental.Enabled(experimental.DynamoDB)) {
+			continue
+		}
 		out = append(out, databaseEngineResource{
 			ID:               e.ID,
 			Label:            e.Label,

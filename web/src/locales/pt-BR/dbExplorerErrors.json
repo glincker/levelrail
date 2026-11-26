@@ -1,0 +1,9 @@
+{
+  "stuck": {
+    "title": "Ainda aguardando o banco de dados",
+    "body": "O banco de dados pode não estar em execução ou está reiniciando sem parar. Veja os logs para o último erro e tente de novo."
+  },
+  "retry": "Tentar de novo",
+  "logs": "Abrir logs",
+  "overview": "Abrir visão geral"
+}

@@ -11,11 +11,19 @@ export const ENGINES: ExternalEngine[] = [
   'mongodb',
   'redis',
 ]
-export const TLS_MODES: ExternalTlsMode[] = ['disable', 'prefer', 'require']
+export const TLS_MODES: ExternalTlsMode[] = [
+  'disable',
+  'prefer',
+  'require',
+  'verify-ca',
+  'verify-full',
+]
 export const TLS_LABEL = {
   disable: 'external.connect.fields.tlsDisable',
   prefer: 'external.connect.fields.tlsPrefer',
   require: 'external.connect.fields.tlsRequire',
+  'verify-ca': 'external.connect.fields.tlsVerifyCa',
+  'verify-full': 'external.connect.fields.tlsVerifyFull',
 } as const
 
 export const DEFAULT_PORT: Record<ExternalEngine, number> = {

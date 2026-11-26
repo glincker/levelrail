@@ -16,7 +16,7 @@ var restMutatingDeclRe = regexp.MustCompile(`mux\.Handle(?:Func)?\("(?:POST|PUT|
 var restRouteDeclRe = regexp.MustCompile(`mux\.Handle(?:Func)?\("(POST|PUT|PATCH|DELETE)\s*([^"]*)"(?:\s*\+\s*(\w+)(?:\s*\+\s*"([^"]*)")?)?,\s*(.*)$`)
 
 var (
-	restAbilityRe     = regexp.MustCompile(`require(?:AbilityForResource|AbilityDecided|Ability|AssetBucket)\((\w+)`)
+	restAbilityRe     = regexp.MustCompile(`require(?:AbilityForResource|AbilityForDatabase|AbilityForBranch|AbilityDecided|Ability|AssetBucket)\((\w+)`)
 	restLokiWrapRe    = regexp.MustCompile(`\bwrap\(`)
 	restDynamicPathes = map[string]string{
 		"POST <base>/query":       "/api/v1/loki/query",

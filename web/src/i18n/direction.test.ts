@@ -26,7 +26,7 @@ describe('syncDocumentLanguage', () => {
       resources: { en: { translation: {} } },
     })
     syncDocumentLanguage(i)
-    expect(document.documentElement.lang).toBe('en')
+    expect(document.documentElement.lang).toBe('en-US')
     expect(document.documentElement.dir).toBe('ltr')
     await i.changeLanguage('ar')
     expect(document.documentElement.lang).toBe('ar')

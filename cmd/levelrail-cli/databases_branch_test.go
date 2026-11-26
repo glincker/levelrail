@@ -33,14 +33,14 @@ func TestRun_DatabasesBranchCreate_CallsAPI(t *testing.T) {
 	}
 }
 
-func TestRun_DatabasesBranchCreate_NeedsExactlyOneSource(t *testing.T) {
-	for _, extra := range [][]string{nil, {"--from-backup", "b", "--at", "2026-01-01T00:00:00Z"}} {
+func TestRun_DatabasesBranchCreate_RefusesTwoSources(t *testing.T) {
+	for _, extra := range [][]string{{"--from-backup", "b", "--at", "2026-01-01T00:00:00Z"}} {
 		var stdout, stderr bytes.Buffer
 		args := append([]string{"databases", "branch", "create", "main", "x", "--api-url", "http://127.0.0.1:1"}, extra...)
 		if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got == exitOK {
 			t.Fatalf("args %v: exit = ok, want failure", extra)
 		}
-		if !strings.Contains(stderr.String()+stdout.String(), "exactly one") {
+		if !strings.Contains(stderr.String()+stdout.String(), "only one") {
 			t.Errorf("args %v: output = %q", extra, stderr.String()+stdout.String())
 		}
 	}

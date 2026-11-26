@@ -1,6 +1,8 @@
+// `en` is US English (stored preferences and the API keep using it); `en-GB` is an overlay that falls back to it.
 // New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.
 export const SUPPORTED_LANGUAGES = [
   'en',
+  'en-GB',
   'es',
   'de',
   'fr',
