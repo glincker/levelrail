@@ -43,11 +43,21 @@ function rank(label: string, needle: string): number {
   return -1
 }
 
+const TABLE_CONTEXT = new Set(['from', 'join', 'into', 'update', 'table'])
+
+// Last keyword-ish word before the token, to tell table slots from column slots.
+export function previousWord(text: string, tokenStart: number): string {
+  const m = /([A-Za-z_]+)\s+$/.exec(text.slice(0, tokenStart))
+  return m ? (m[1] ?? '').toLowerCase() : ''
+}
+
 export function suggest(
   token: string,
   schemas: DbSchemaNode[],
   forced = false,
+  prev = '',
 ): Suggestion[] {
+  const tableSlot = TABLE_CONTEXT.has(prev)
   if (token === '' && !forced) return []
   const dot = token.lastIndexOf('.')
   const qualifier = dot >= 0 ? token.slice(0, dot).toLowerCase() : ''
@@ -79,9 +89,10 @@ export function suggest(
         })
       }
       if (
-        qualifier === '' ||
-        qualifier === t.name.toLowerCase() ||
-        qualifier === `${s.name}.${t.name}`.toLowerCase()
+        !tableSlot &&
+        (qualifier === '' ||
+          qualifier === t.name.toLowerCase() ||
+          qualifier === `${s.name}.${t.name}`.toLowerCase())
       ) {
         for (const c of t.columns) {
           pool.push({
@@ -97,7 +108,7 @@ export function suggest(
       }
     }
   }
-  if (qualifier === '') {
+  if (qualifier === '' && !tableSlot) {
     for (const k of KEYWORDS)
       pool.push({ label: k, insert: k, kind: 'keyword' })
   }

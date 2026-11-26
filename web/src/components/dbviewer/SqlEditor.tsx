@@ -1,13 +1,28 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { caretPosition } from '../../lib/sqlConsole/caret'
+import { editorKeyAction } from '../../lib/sqlConsole/keys'
 import {
+  previousWord,
   suggest,
   tokenAt,
   type Suggestion,
 } from '../../lib/sqlConsole/complete'
 import type { DbSchemaNode } from '../../types/databaseViewer'
+
+const LIST_ROW_PX = 28
+const LIST_PAD_PX = 8
+const LIST_MAX_PX = 224
+const LIST_WIDTH_PX = 320
 
 // Plain textarea with a schema-aware suggestion list. Suggestions open
 // while typing and with Ctrl+Space; Up/Down move, Enter or Tab accept,
@@ -35,8 +50,9 @@ export function SqlEditor({
 
   const { start, token } = useMemo(() => tokenAt(value, caret), [value, caret])
   const items = useMemo(
-    () => (closed ? [] : suggest(token, schemas, forced)),
-    [closed, token, schemas, forced],
+    () =>
+      closed ? [] : suggest(token, schemas, forced, previousWord(value, start)),
+    [closed, token, schemas, forced, value, start],
   )
   const open = items.length > 0
   const active = Math.min(index, Math.max(0, items.length - 1))
@@ -58,36 +74,53 @@ export function SqlEditor({
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.ctrlKey && e.key === ' ') {
+    const action = editorKeyAction({
+      key: e.key,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      shiftKey: e.shiftKey,
+      altKey: e.altKey,
+      popupOpen: open,
+    })
+    if (action === 'run') {
+      // The console handles the shortcut; just make sure the list goes away.
+      setClosed(true)
+    } else if (action === 'open') {
       e.preventDefault()
       setForced(true)
       setClosed(false)
       setIndex(0)
-      return
-    }
-    if (!open) {
-      return
-    }
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    } else if (action === 'next' || action === 'prev') {
       e.preventDefault()
-      const step = e.key === 'ArrowDown' ? 1 : -1
-      setIndex((active + step + items.length) % items.length)
-    } else if (
-      (e.key === 'Enter' || e.key === 'Tab') &&
-      !e.metaKey &&
-      !e.ctrlKey &&
-      !e.shiftKey
-    ) {
+      setIndex(
+        (active + (action === 'next' ? 1 : -1) + items.length) % items.length,
+      )
+    } else if (action === 'accept') {
       e.preventDefault()
       const pick = items[active]
       if (pick) {
         accept(pick)
       }
-    } else if (e.key === 'Escape') {
+    } else if (action === 'close') {
       e.preventDefault()
       setClosed(true)
     }
   }
+
+  // Anchor at the caret; flip above the line when the list would overflow.
+  const [place, setPlace] = useState({ top: 0, left: 0 })
+  const count = items.length
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (count === 0 || !el) return
+    const c = caretPosition(el, caret)
+    const listH = Math.min(count * LIST_ROW_PX + LIST_PAD_PX, LIST_MAX_PX)
+    const below = c.top + c.height + listH <= el.clientHeight
+    setPlace({
+      top: below ? c.top + c.height : Math.max(0, c.top - listH),
+      left: Math.max(0, Math.min(c.left, el.clientWidth - LIST_WIDTH_PX)),
+    })
+  }, [count, caret, value])
 
   return (
     <div className="relative">
@@ -130,7 +163,8 @@ export function SqlEditor({
           id={listId}
           role="listbox"
           aria-label={t('viewer.console.editor.suggestions')}
-          className="absolute bottom-2 left-2 z-20 max-h-56 w-80 max-w-[calc(100%-1rem)] overflow-auto rounded-md border border-border bg-popover p-1 text-sm shadow-md"
+          style={{ top: place.top, left: place.left }}
+          className="absolute z-20 max-h-56 w-80 max-w-full overflow-auto rounded-md border border-border bg-popover p-1 text-sm shadow-md"
         >
           {items.map((s, i) => (
             <li
