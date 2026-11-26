@@ -32,6 +32,14 @@ export interface DatabaseAlertRow {
   unattributed?: boolean
 }
 
+// Whole-token match so "orders" does not hit "orders-replica" or "my_orders".
+function mentionsDatabase(detail: string, database: string): boolean {
+  const escaped = database.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')
+  return new RegExp(
+    `(?<![A-Za-z0-9_.-])${escaped}(?![A-Za-z0-9_-]|\\.[A-Za-z0-9_-])`,
+  ).test(detail)
+}
+
 // The alert API reports health rules platform wide, so a firing rule is tied
 // to one database by the name in its newest fired event, client side.
 export function deriveDatabaseAlerts(
@@ -55,7 +63,7 @@ export function deriveDatabaseAlerts(
       if (!d.enabled) return { ...base, state: 'off' }
       if (!d.firing) return { ...base, state: 'ok' }
       const fired = newest(d.id)
-      if (fired?.detail && !fired.detail.includes(database)) {
+      if (fired?.detail && !mentionsDatabase(fired.detail, database)) {
         return { ...base, state: 'ok' }
       }
       return {
