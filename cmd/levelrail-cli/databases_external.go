@@ -16,6 +16,7 @@ type externalFlags struct {
 	req           apiclient.ExternalDatabaseRequest
 	passwordStdin bool
 	testOnly      bool
+	urlFlag       string
 }
 
 func (e *externalFlags) register(fs *flag.FlagSet) {
@@ -31,7 +32,18 @@ func (e *externalFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&e.req.Network, "network", "", "Docker network the database is reachable on")
 	fs.StringVar(&e.req.NodeID, "node", "", "node that runs the connection helper (default: local)")
 	fs.StringVar(&e.req.ProjectID, "project", "", "project to place the record in")
+	fs.StringVar(&e.req.Provider, "provider", "", "hosting service preset (neon, aws-rds, supabase, ...), detected from the host when empty")
+	fs.StringVar(&e.urlFlag, "url", "", "connection string (postgres://, mysql://, mongodb://, rediss://); prefer APP_EXTERNAL_DB_URL so the password stays out of the process list")
+	fs.BoolVar(&e.req.SaveAnyway, "save-anyway", false, "with --url or --provider: save even when the connection test fails")
 	fs.BoolVar(&e.passwordStdin, "password-stdin", false, "read the password from the first line of stdin")
+}
+
+// readURL takes the connection string from the flag or the environment.
+func (e *externalFlags) readURL(lookupEnv func(string) (string, bool)) {
+	e.req.URL = strings.TrimSpace(e.urlFlag)
+	if v, ok := lookupEnv("APP_EXTERNAL_DB_URL"); ok && e.req.URL == "" {
+		e.req.URL = strings.TrimSpace(v)
+	}
 }
 
 func (e *externalFlags) readPassword(stdin io.Reader, lookupEnv func(string) (string, bool)) {
@@ -45,7 +57,10 @@ func (e *externalFlags) readPassword(stdin io.Reader, lookupEnv func(string) (st
 }
 
 func printExternalDatabase(w io.Writer, d apiclient.ExternalDatabase) {
-	_, _ = fmt.Fprintf(w, "%s  %s  %s:%d  user=%s db=%s tls=%s", d.Name, d.Engine, d.Host, d.Port, d.Username, d.Database, d.TLSMode)
+	_, _ = fmt.Fprintf(w, "%s  %s  %s:%d  user=%s db=%s tls=%s", safeTerminalText(d.Name), d.Engine, safeTerminalText(d.Host), d.Port, safeTerminalText(d.Username), safeTerminalText(d.Database), d.TLSMode)
+	if d.Provider != "" {
+		_, _ = fmt.Fprintf(w, " provider=%s", safeTerminalText(d.Provider))
+	}
 	if d.Network != "" {
 		_, _ = fmt.Fprintf(w, " network=%s", d.Network)
 	}
@@ -58,10 +73,10 @@ func printExternalDatabase(w io.Writer, d apiclient.ExternalDatabase) {
 func printProbe(w io.Writer, p apiclient.ExternalDatabaseProbe) {
 	_, _ = fmt.Fprintf(w, "status: %s (%d ms)\n", p.Status, p.LatencyMs)
 	if p.Reason != "" {
-		_, _ = fmt.Fprintf(w, "detail: %s\n", p.Reason)
+		_, _ = fmt.Fprintf(w, "detail: %s\n", safeTerminalText(p.Reason))
 	}
 	if p.Version != "" {
-		_, _ = fmt.Fprintf(w, "server: %s\n", p.Version)
+		_, _ = fmt.Fprintf(w, "server: %s\n", safeTerminalText(p.Version))
 	}
 	if len(p.Databases) > 0 {
 		_, _ = fmt.Fprintf(w, "databases: %s\n", strings.Join(p.Databases, ", "))
@@ -79,8 +94,9 @@ func runDatabasesConnect(prog string, args []string, stdin io.Reader, stdout, st
 	if _, code, ok := parseInterspersed(fs, args); !ok {
 		return code
 	}
-	if f.req.Engine == "" || f.req.Host == "" || (f.req.Name == "" && !f.testOnly) {
-		_, _ = fmt.Fprintf(stderr, "usage: %s databases connect --name NAME --engine ENGINE --host HOST [--port N] [--user U] [--database DB] [--tls-mode M] [--network N] [--password-stdin] [--test] [--json]\n", prog)
+	f.readURL(lookupEnv)
+	if f.req.URL == "" && (f.req.Engine == "" || f.req.Host == "" || (f.req.Name == "" && !f.testOnly)) {
+		_, _ = fmt.Fprintf(stderr, "usage: %s databases connect --name NAME --engine ENGINE --host HOST [--port N] [--user U] [--database DB] [--tls-mode M] [--network N] [--password-stdin] [--test] [--json]\n       %s databases connect --url CONNECTION_STRING [--name NAME] [--provider P] [--save-anyway] [--test] [--json]\n", prog, prog)
 		return exitUsage
 	}
 	f.readPassword(stdin, lookupEnv)
