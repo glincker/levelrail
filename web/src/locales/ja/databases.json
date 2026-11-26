@@ -110,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "オフ",
         "tlsPrefer": "利用可能なら使用",
-        "tlsRequire": "必須"
+        "tlsRequire": "必須",
+        "tlsVerifyCa": "証明書を検証",
+        "tlsVerifyFull": "証明書とホスト名を検証"
       },
       "test": {
         "button": "接続をテスト",
@@ -168,6 +170,39 @@
       "confirmAnyway": "それでも削除",
       "removing": "削除中...",
       "toast": "「{{name}}」を削除しました。データベース自体には影響していません。"
+    },
+    "hosted": {
+      "trigger": "ホスト型を接続",
+      "title": "ホスト型データベースを接続",
+      "description": "クラウドプロバイダーで稼働しているデータベースを取り込みます。プロバイダーを選び、接続文字列を貼り付け、保存前にテストします。",
+      "pickProvider": "どこで動いていますか?",
+      "providerOther": "その他、または自己管理",
+      "paste": "接続文字列",
+      "pasteHint": "postgres://、mysql://、mongodb+srv://、rediss:// に対応します。パスワードは暗号化して保存され、再表示されません。",
+      "pasteParsed": "接続文字列から詳細を入力しました。パスワードは文字列から取得します。",
+      "orFields": "または詳細を自分で入力",
+      "hostLooksLike": "例: {{hint}}",
+      "docs": "{{provider}} の接続ドキュメント",
+      "caLink": "{{provider}} の CA バンドルをダウンロード",
+      "verifyNote": "証明書はシステムのルート証明書で検証されます。",
+      "detected": "検出: {{provider}}",
+      "back": "戻る",
+      "cancel": "キャンセル",
+      "next": "続行",
+      "test": "接続をテスト",
+      "testing": "テスト中...",
+      "retest": "もう一度テスト",
+      "reachable": "接続できます",
+      "tlsVerified": "TLS 証明書を検証済み",
+      "tlsNotVerified": "TLS は有効ですが、証明書は検証されていません",
+      "tlsOff": "TLS は無効",
+      "latency": "{{ms}} ms",
+      "server": "サーバー: {{version}}",
+      "saveAnyway": "テストに失敗しても保存する",
+      "save": "ホスト型データベースを保存",
+      "saving": "保存中...",
+      "readOnlyNote": "既定では読み取り専用です。読み取り権限のみのログインを使ってください。このデータベースの書き込みを有効にしない限り、エクスプローラーは書き込めません。",
+      "toast": "「{{name}}」を接続しました。"
     }
   },
   "delete": {

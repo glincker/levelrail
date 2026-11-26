@@ -110,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "Désactivé",
         "tlsPrefer": "Si disponible",
-        "tlsRequire": "Obligatoire"
+        "tlsRequire": "Obligatoire",
+        "tlsVerifyCa": "Vérifier le certificat",
+        "tlsVerifyFull": "Vérifier le certificat et le nom d'hôte"
       },
       "test": {
         "button": "Tester la connexion",
@@ -168,6 +170,39 @@
       "confirmAnyway": "Retirer quand même",
       "removing": "Suppression...",
       "toast": "\"{{name}}\" retirée. La base de données elle-même n'a pas été touchée."
+    },
+    "hosted": {
+      "trigger": "Connecter hébergée",
+      "title": "Connecter une base de données hébergée",
+      "description": "Importez une base qui tourne chez un fournisseur cloud. Choisissez le fournisseur, collez la chaîne de connexion et testez-la avant d'enregistrer.",
+      "pickProvider": "Où tourne-t-elle ?",
+      "providerOther": "Autre ou auto-gérée",
+      "paste": "Chaîne de connexion",
+      "pasteHint": "postgres://, mysql://, mongodb+srv:// ou rediss://. Le mot de passe est stocké chiffré et n'est plus jamais affiché.",
+      "pasteParsed": "Champs remplis depuis la chaîne de connexion. Le mot de passe provient de la chaîne.",
+      "orFields": "Ou renseignez les champs vous-même",
+      "hostLooksLike": "Ressemble à : {{hint}}",
+      "docs": "Documentation de connexion {{provider}}",
+      "caLink": "Télécharger le bundle CA de {{provider}}",
+      "verifyNote": "Les certificats sont vérifiés avec les racines du système.",
+      "detected": "Détecté : {{provider}}",
+      "back": "Retour",
+      "cancel": "Annuler",
+      "next": "Continuer",
+      "test": "Tester la connexion",
+      "testing": "Test en cours...",
+      "retest": "Tester à nouveau",
+      "reachable": "Joignable",
+      "tlsVerified": "Certificat TLS vérifié",
+      "tlsNotVerified": "TLS actif, certificat non vérifié",
+      "tlsOff": "TLS désactivé",
+      "latency": "{{ms}} ms",
+      "server": "Serveur : {{version}}",
+      "saveAnyway": "Enregistrer malgré l'échec du test",
+      "save": "Enregistrer la base hébergée",
+      "saving": "Enregistrement...",
+      "readOnlyNote": "Lecture seule par défaut. Utilisez un identifiant avec des droits de lecture uniquement. L'explorateur ne peut pas écrire tant que vous n'activez pas l'écriture pour cette base.",
+      "toast": "\"{{name}}\" connectée."
     }
   },
   "delete": {

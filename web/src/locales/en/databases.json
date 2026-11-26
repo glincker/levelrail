@@ -110,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "Off",
         "tlsPrefer": "If available",
-        "tlsRequire": "Required"
+        "tlsRequire": "Required",
+        "tlsVerifyCa": "Verify certificate",
+        "tlsVerifyFull": "Verify certificate and host name"
       },
       "test": {
         "button": "Test connection",
@@ -168,6 +170,39 @@
       "confirmAnyway": "Remove anyway",
       "removing": "Removing...",
       "toast": "Removed \"{{name}}\". The database itself was not touched."
+    },
+    "hosted": {
+      "trigger": "Connect hosted",
+      "title": "Connect a hosted database",
+      "description": "Bring a database that runs at a cloud provider. Pick the provider, paste the connection string, and test it before it is saved.",
+      "pickProvider": "Where does it run?",
+      "providerOther": "Other or self-managed",
+      "paste": "Connection string",
+      "pasteHint": "postgres://, mysql://, mongodb+srv:// or rediss://. The password is stored encrypted and never shown again.",
+      "pasteParsed": "Details filled in from the connection string. The password is taken from the string.",
+      "orFields": "Or fill in the details yourself",
+      "hostLooksLike": "Looks like: {{hint}}",
+      "docs": "{{provider}} connection docs",
+      "caLink": "Download the {{provider}} CA bundle",
+      "verifyNote": "Certificates are checked against the system roots.",
+      "detected": "Detected: {{provider}}",
+      "back": "Back",
+      "cancel": "Cancel",
+      "next": "Continue",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "retest": "Test again",
+      "reachable": "Reachable",
+      "tlsVerified": "TLS certificate verified",
+      "tlsNotVerified": "TLS is on, the certificate was not verified",
+      "tlsOff": "TLS is off",
+      "latency": "{{ms}} ms",
+      "server": "Server: {{version}}",
+      "saveAnyway": "Save even though the test failed",
+      "save": "Save hosted database",
+      "saving": "Saving...",
+      "readOnlyNote": "Read only by default. Use a login with read permissions only. The explorer cannot write unless you turn writes on for this database.",
+      "toast": "Connected \"{{name}}\"."
     }
   },
   "delete": {

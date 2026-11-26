@@ -110,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "关闭",
         "tlsPrefer": "可用时启用",
-        "tlsRequire": "必需"
+        "tlsRequire": "必需",
+        "tlsVerifyCa": "校验证书",
+        "tlsVerifyFull": "校验证书和主机名"
       },
       "test": {
         "button": "测试连接",
@@ -168,6 +170,39 @@
       "confirmAnyway": "仍然移除",
       "removing": "移除中...",
       "toast": "已移除“{{name}}”。数据库本身未受影响。"
+    },
+    "hosted": {
+      "trigger": "连接托管库",
+      "title": "连接托管数据库",
+      "description": "接入运行在云服务商的数据库。选择服务商,粘贴连接字符串,保存前先测试。",
+      "pickProvider": "它运行在哪里?",
+      "providerOther": "其他或自行管理",
+      "paste": "连接字符串",
+      "pasteHint": "支持 postgres://、mysql://、mongodb+srv:// 或 rediss://。密码加密保存,之后不会再显示。",
+      "pasteParsed": "已根据连接字符串填入详情,密码取自该字符串。",
+      "orFields": "或者自己填写详情",
+      "hostLooksLike": "类似:{{hint}}",
+      "docs": "{{provider}} 连接文档",
+      "caLink": "下载 {{provider}} 的 CA 证书包",
+      "verifyNote": "证书将按系统根证书校验。",
+      "detected": "已识别:{{provider}}",
+      "back": "返回",
+      "cancel": "取消",
+      "next": "继续",
+      "test": "测试连接",
+      "testing": "测试中...",
+      "retest": "重新测试",
+      "reachable": "可连通",
+      "tlsVerified": "TLS 证书已验证",
+      "tlsNotVerified": "TLS 已开启,证书未验证",
+      "tlsOff": "TLS 已关闭",
+      "latency": "{{ms}} 毫秒",
+      "server": "服务器:{{version}}",
+      "saveAnyway": "即使测试失败也保存",
+      "save": "保存托管数据库",
+      "saving": "保存中...",
+      "readOnlyNote": "默认只读。请使用仅有读权限的登录。除非为该数据库开启写入,否则浏览器不能写入。",
+      "toast": "已连接“{{name}}”。"
     }
   },
   "delete": {

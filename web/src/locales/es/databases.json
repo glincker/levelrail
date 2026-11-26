@@ -110,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "Desactivado",
         "tlsPrefer": "Si está disponible",
-        "tlsRequire": "Obligatorio"
+        "tlsRequire": "Obligatorio",
+        "tlsVerifyCa": "Verificar certificado",
+        "tlsVerifyFull": "Verificar certificado y nombre de host"
       },
       "test": {
         "button": "Probar conexión",
@@ -168,6 +170,39 @@
       "confirmAnyway": "Quitar de todos modos",
       "removing": "Quitando...",
       "toast": "Se quitó \"{{name}}\". La base de datos en sí no se tocó."
+    },
+    "hosted": {
+      "trigger": "Conectar alojada",
+      "title": "Conectar una base de datos alojada",
+      "description": "Trae una base de datos que corre en un proveedor de nube. Elige el proveedor, pega la cadena de conexión y pruébala antes de guardar.",
+      "pickProvider": "¿Dónde se ejecuta?",
+      "providerOther": "Otro o autogestionado",
+      "paste": "Cadena de conexión",
+      "pasteHint": "postgres://, mysql://, mongodb+srv:// o rediss://. La contraseña se guarda cifrada y no se vuelve a mostrar.",
+      "pasteParsed": "Datos completados desde la cadena de conexión. La contraseña se toma de la cadena.",
+      "orFields": "O completa los datos tú mismo",
+      "hostLooksLike": "Se parece a: {{hint}}",
+      "docs": "Documentación de conexión de {{provider}}",
+      "caLink": "Descargar el paquete de CA de {{provider}}",
+      "verifyNote": "Los certificados se comprueban con las raíces del sistema.",
+      "detected": "Detectado: {{provider}}",
+      "back": "Atrás",
+      "cancel": "Cancelar",
+      "next": "Continuar",
+      "test": "Probar conexión",
+      "testing": "Probando...",
+      "retest": "Probar de nuevo",
+      "reachable": "Accesible",
+      "tlsVerified": "Certificado TLS verificado",
+      "tlsNotVerified": "TLS activo, el certificado no se verificó",
+      "tlsOff": "TLS desactivado",
+      "latency": "{{ms}} ms",
+      "server": "Servidor: {{version}}",
+      "saveAnyway": "Guardar aunque la prueba haya fallado",
+      "save": "Guardar base de datos alojada",
+      "saving": "Guardando...",
+      "readOnlyNote": "Solo lectura por defecto. Usa un acceso con permisos de solo lectura. El explorador no puede escribir salvo que actives la escritura para esta base de datos.",
+      "toast": "\"{{name}}\" conectada."
     }
   },
   "delete": {

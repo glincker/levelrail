@@ -110,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "Aus",
         "tlsPrefer": "Falls verfügbar",
-        "tlsRequire": "Erforderlich"
+        "tlsRequire": "Erforderlich",
+        "tlsVerifyCa": "Zertifikat prüfen",
+        "tlsVerifyFull": "Zertifikat und Hostnamen prüfen"
       },
       "test": {
         "button": "Verbindung testen",
@@ -168,6 +170,39 @@
       "confirmAnyway": "Trotzdem entfernen",
       "removing": "Wird entfernt...",
       "toast": "\"{{name}}\" entfernt. Die Datenbank selbst wurde nicht angetastet."
+    },
+    "hosted": {
+      "trigger": "Gehostete verbinden",
+      "title": "Gehostete Datenbank verbinden",
+      "description": "Binden Sie eine Datenbank bei einem Cloud-Anbieter ein. Anbieter wählen, Verbindungs-String einfügen und vor dem Speichern testen.",
+      "pickProvider": "Wo läuft sie?",
+      "providerOther": "Andere oder selbst verwaltet",
+      "paste": "Verbindungs-String",
+      "pasteHint": "postgres://, mysql://, mongodb+srv:// oder rediss://. Das Passwort wird verschlüsselt gespeichert und nie wieder angezeigt.",
+      "pasteParsed": "Angaben aus dem Verbindungs-String übernommen. Das Passwort stammt aus dem String.",
+      "orFields": "Oder Angaben selbst eintragen",
+      "hostLooksLike": "Sieht so aus: {{hint}}",
+      "docs": "Verbindungs-Doku von {{provider}}",
+      "caLink": "CA-Bundle von {{provider}} herunterladen",
+      "verifyNote": "Zertifikate werden gegen die Systemwurzeln geprüft.",
+      "detected": "Erkannt: {{provider}}",
+      "back": "Zurück",
+      "cancel": "Abbrechen",
+      "next": "Weiter",
+      "test": "Verbindung testen",
+      "testing": "Teste...",
+      "retest": "Erneut testen",
+      "reachable": "Erreichbar",
+      "tlsVerified": "TLS-Zertifikat geprüft",
+      "tlsNotVerified": "TLS ist aktiv, das Zertifikat wurde nicht geprüft",
+      "tlsOff": "TLS ist aus",
+      "latency": "{{ms}} ms",
+      "server": "Server: {{version}}",
+      "saveAnyway": "Trotz fehlgeschlagenem Test speichern",
+      "save": "Gehostete Datenbank speichern",
+      "saving": "Speichere...",
+      "readOnlyNote": "Standardmäßig nur lesend. Nutzen Sie einen Login mit reinen Leserechten. Der Explorer kann nicht schreiben, solange Sie Schreiben für diese Datenbank nicht aktivieren.",
+      "toast": "\"{{name}}\" verbunden."
     }
   },
   "delete": {

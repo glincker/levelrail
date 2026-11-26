@@ -110,7 +110,9 @@
         "tls": "TLS",
         "tlsDisable": "Desativado",
         "tlsPrefer": "Se disponível",
-        "tlsRequire": "Obrigatório"
+        "tlsRequire": "Obrigatório",
+        "tlsVerifyCa": "Verificar certificado",
+        "tlsVerifyFull": "Verificar certificado e nome do host"
       },
       "test": {
         "button": "Testar conexão",
@@ -168,6 +170,39 @@
       "confirmAnyway": "Remover mesmo assim",
       "removing": "Removendo...",
       "toast": "\"{{name}}\" removido. O próprio banco de dados não foi tocado."
+    },
+    "hosted": {
+      "trigger": "Conectar hospedado",
+      "title": "Conectar um banco de dados hospedado",
+      "description": "Traga um banco que roda em um provedor de nuvem. Escolha o provedor, cole a string de conexão e teste antes de salvar.",
+      "pickProvider": "Onde ele roda?",
+      "providerOther": "Outro ou autogerenciado",
+      "paste": "String de conexão",
+      "pasteHint": "postgres://, mysql://, mongodb+srv:// ou rediss://. A senha é guardada criptografada e nunca mais é exibida.",
+      "pasteParsed": "Detalhes preenchidos pela string de conexão. A senha vem da string.",
+      "orFields": "Ou preencha os detalhes você mesmo",
+      "hostLooksLike": "Parece com: {{hint}}",
+      "docs": "Documentação de conexão do {{provider}}",
+      "caLink": "Baixar o pacote de CA do {{provider}}",
+      "verifyNote": "Os certificados são verificados com as raízes do sistema.",
+      "detected": "Detectado: {{provider}}",
+      "back": "Voltar",
+      "cancel": "Cancelar",
+      "next": "Continuar",
+      "test": "Testar conexão",
+      "testing": "Testando...",
+      "retest": "Testar de novo",
+      "reachable": "Acessível",
+      "tlsVerified": "Certificado TLS verificado",
+      "tlsNotVerified": "TLS ativo, certificado não verificado",
+      "tlsOff": "TLS desligado",
+      "latency": "{{ms}} ms",
+      "server": "Servidor: {{version}}",
+      "saveAnyway": "Salvar mesmo com o teste falhando",
+      "save": "Salvar banco hospedado",
+      "saving": "Salvando...",
+      "readOnlyNote": "Somente leitura por padrão. Use um login só com permissão de leitura. O explorador não grava a menos que você ative a escrita neste banco.",
+      "toast": "\"{{name}}\" conectado."
     }
   },
   "delete": {
