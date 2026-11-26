@@ -108,3 +108,10 @@
   height: 900
   wait: 3000
   javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/app-metrics.png
+  url: __BASE_URL__/apps/marketing-site/metrics
+  width: 1440
+  height: 900
+  wait: 6000
+  javascript: "__CHROME_JS__; new Promise((done) => { const b = [...document.querySelectorAll('button,[role=tab],[role=radio]')].find(e => /^(7d|7 days|last 7 days)$/i.test((e.textContent || '').trim())); if (b) b.click(); setTimeout(done, 3500); })"
