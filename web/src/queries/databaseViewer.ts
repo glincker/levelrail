@@ -19,6 +19,7 @@ import type {
   DbQueryHistoryEntry,
   DbQueryResponse,
   DbSavedQuery,
+  DbStatementAuditList,
   DbSchemaResponse,
   DbStructure,
   ExplorerCapabilities,
@@ -47,6 +48,8 @@ export const databaseViewerKeys = {
   history: (name: string) =>
     [...databaseViewerKeys.all(name), 'history'] as const,
   saved: (name: string) => [...databaseViewerKeys.all(name), 'saved'] as const,
+  audit: (name: string, limit: number) =>
+    [...databaseViewerKeys.all(name), 'audit', limit] as const,
 }
 
 async function request<T>(
@@ -294,5 +297,20 @@ export function useExplorerCapabilities(name: string) {
         'capabilities',
       ),
     staleTime: 5 * 60_000,
+  })
+}
+
+/** Statement audit trail. Root and database admins only, so a 403 or 404 means the caller cannot see it. */
+export function useStatementAudit(name: string, limit: number, enabled = true) {
+  return useQuery({
+    queryKey: databaseViewerKeys.audit(name, limit),
+    enabled,
+    retry: false,
+    queryFn: () =>
+      request<DbStatementAuditList>(
+        `${base(name)}/audit?limit=${String(limit)}`,
+        undefined,
+        'statement audit',
+      ),
   })
 }

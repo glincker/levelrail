@@ -233,3 +233,22 @@ export interface ExplorerCapabilities {
     timeout_ms: number
   }
 }
+
+/** One row of GET /databases/{name}/audit. */
+export interface DbStatementAudit {
+  id: string
+  at: string
+  principal_name: string
+  principal_id: string
+  action: string
+  op_kind: string
+  fingerprint: string
+  outcome: string
+  error_class?: string
+  duration_ms: number
+}
+
+export interface DbStatementAuditList {
+  items: DbStatementAudit[]
+  next_cursor?: string
+}
