@@ -90,12 +90,14 @@ Run "levelrail-cli databases access <subcommand> -h" for a subcommand's own flag
 
 ## levelrail-cli databases branch
 
-Subcommands: create, diff
+Subcommands: create, diff, pr, pr-close
 
 ```
 Usage:
   levelrail-cli databases branch create <parent> <new-name> [--mode data|schema] [--ttl 1d|7d|never] [--protected] [flags]
   levelrail-cli databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
+  levelrail-cli databases branch pr <database> --pr N [--mode schema|full] [--ttl 7d] [--protect] [--timeout 5m] [--print-url] [--json]
+  levelrail-cli databases branch pr-close <database> --pr N --yes
   levelrail-cli databases branch ls <database>
   levelrail-cli databases branch show <database> <branch>
   levelrail-cli databases branch diff <database> <branch> [--against NAME] [--sql]
@@ -103,6 +105,10 @@ Usage:
   levelrail-cli databases branch promote <database> <branch>
   levelrail-cli databases branch protect <database> <branch> [--off]
   levelrail-cli databases branch rm <database> <branch> --confirm <branch>
+
+"pr" creates or reuses the branch pr-<N> and waits until it is ready. It prints
+host, port and name, and how to get credentials; --print-url reveals the password
+(owner only, step-up, audited). "pr-close" deletes the branch; a missing branch is success.
 
 Without --from-backup or --at, create copies the live parent in the background
 (--mode data copies rows, schema copies tables only). --ttl sets auto delete.

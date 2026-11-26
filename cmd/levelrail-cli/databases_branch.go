@@ -20,6 +20,10 @@ func runDatabasesBranch(prog string, args []string, stdout, stderr io.Writer, lo
 		return exitOK
 	case "create":
 		return runDatabasesBranchCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pr":
+		return runDatabasesBranchPR(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pr-close":
+		return runDatabasesBranchPRClose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diff":
 		return runDatabasesBranchDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ls", "show", "reset", "promote", "rm", "protect":
@@ -35,6 +39,8 @@ func databasesBranchUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s databases branch create <parent> <new-name> [--mode data|schema] [--ttl 1d|7d|never] [--protected] [flags]
   %[1]s databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
+  %[1]s databases branch pr <database> --pr N [--mode schema|full] [--ttl 7d] [--protect] [--timeout 5m] [--print-url] [--json]
+  %[1]s databases branch pr-close <database> --pr N --yes
   %[1]s databases branch ls <database>
   %[1]s databases branch show <database> <branch>
   %[1]s databases branch diff <database> <branch> [--against NAME] [--sql]
@@ -42,6 +48,10 @@ func databasesBranchUsage(prog string) string {
   %[1]s databases branch promote <database> <branch>
   %[1]s databases branch protect <database> <branch> [--off]
   %[1]s databases branch rm <database> <branch> --confirm <branch>
+
+"pr" creates or reuses the branch pr-<N> and waits until it is ready. It prints
+host, port and name, and how to get credentials; --print-url reveals the password
+(owner only, step-up, audited). "pr-close" deletes the branch; a missing branch is success.
 
 Without --from-backup or --at, create copies the live parent in the background
 (--mode data copies rows, schema copies tables only). --ttl sets auto delete.
