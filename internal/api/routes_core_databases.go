@@ -48,8 +48,8 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseSlowQueries))
 	// Live counts for engines with no data browser; index names can name tenants.
 	mux.HandleFunc("GET /api/v1/databases/{name}/engine-stats", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseEngineStats))
-	// Read-only performance findings; statement text and object names are sensitive like the explorer.
-	mux.HandleFunc("GET /api/v1/databases/{name}/advisor", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseAdvisor))
+	// Read-only performance findings; they carry other sessions' statement text, so they need query access.
+	mux.HandleFunc("GET /api/v1/databases/{name}/advisor", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionQuery, rt.handleGetDatabaseAdvisor))
 	// Database viewer: row data and SQL are sensitive, so reads are
 	// AbilityReadSensitive; the write console is AbilityRoot (admin only).
 	mux.HandleFunc("GET /api/v1/databases/{name}/schema", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseSchema))

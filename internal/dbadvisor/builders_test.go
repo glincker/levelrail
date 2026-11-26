@@ -161,3 +161,31 @@ func TestStatementsSQLSkipsOwnCursor(t *testing.T) {
 		t.Fatal("own statements are not excluded")
 	}
 }
+
+func TestCleanTextMasksLiteralForms(t *testing.T) {
+	cases := map[string]string{
+		"plain":      "SELECT 1 WHERE a = 'topsecret'",
+		"escaped":    `SELECT 1 WHERE a = 'it''s topsecret'`,
+		"backslash":  `SELECT E'a\'topsecret' FROM t`,
+		"cut":        "SELECT 1 WHERE k = '-----BEGIN KEY topsecret",
+		"dollar":     "SELECT $$topsecret 'x'$$, $tag$topsecret$tag$",
+		"dollar cut": "SELECT $body$topsecret and more",
+		"digits":     "SELECT 1 WHERE card = 4111111111111111 AND topsecret",
+		"role ddl":   "ALTER ROLE r WITH LOGIN PASSWORD topsecret",
+	}
+	for name, in := range cases {
+		out := CleanText(in)
+		if name == "digits" {
+			if strings.Contains(out, "4111") {
+				t.Errorf("%s: %q", name, out)
+			}
+			continue
+		}
+		if strings.Contains(out, "topsecret") || strings.Contains(out, "BEGIN KEY") {
+			t.Errorf("%s leaked: %q", name, out)
+		}
+	}
+	if got := CleanText("SELECT * FROM t WHERE id = $1 LIMIT 10"); got != "SELECT * FROM t WHERE id = $1 LIMIT 10" {
+		t.Errorf("parameters and short numbers must survive: %q", got)
+	}
+}

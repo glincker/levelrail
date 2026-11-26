@@ -107,12 +107,46 @@ func quoteList(cols []string) string {
 	return strings.Join(q, ", ")
 }
 
-// literalRe matches single quoted SQL literals, which can carry secrets or personal data.
-var literalRe = regexp.MustCompile(`'(?:[^']|'')*'`)
+var (
+	// quotedRe matches single quoted and E'' literals; an unterminated one (a cut statement) runs to the end.
+	quotedRe   = regexp.MustCompile(`(?s)'(?:[^'\\]|''|\\.)*(?:'|$)`)
+	dollarOpen = regexp.MustCompile(`\$[A-Za-z_][A-Za-z_0-9]*\$|\$\$`)
+	passwordRe = regexp.MustCompile(`(?is)\bpassword\b.*`)
+	digitsRe   = regexp.MustCompile(`\b\d{4,}\b`)
+)
+
+// maskDollarQuoted hides dollar quoted bodies; an unterminated one runs to the end.
+func maskDollarQuoted(s string) string {
+	var b strings.Builder
+	for {
+		loc := dollarOpen.FindStringIndex(s)
+		if loc == nil {
+			b.WriteString(s)
+			return b.String()
+		}
+		tag := s[loc[0]:loc[1]]
+		b.WriteString(s[:loc[0]])
+		b.WriteString("$?$")
+		rest := s[loc[1]:]
+		end := strings.Index(rest, tag)
+		if end < 0 {
+			return b.String()
+		}
+		s = rest[end+len(tag):]
+	}
+}
+
+// maskLiterals hides everything that can carry a secret or personal data.
+func maskLiterals(s string) string {
+	s = passwordRe.ReplaceAllString(s, "password ?")
+	s = maskDollarQuoted(s)
+	s = quotedRe.ReplaceAllString(s, "'?'")
+	return digitsRe.ReplaceAllString(s, "?")
+}
 
 // CleanText masks secrets, hides string literals, collapses whitespace, drops control characters and cuts to textMax runes.
 func CleanText(s string) string {
-	s = literalRe.ReplaceAllString(secretmask.Mask(s), "'?'")
+	s = maskLiterals(secretmask.Mask(s))
 	s = strings.Join(strings.Fields(strings.Map(func(r rune) rune {
 		if unicode.IsSpace(r) {
 			return ' '

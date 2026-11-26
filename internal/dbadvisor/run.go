@@ -64,7 +64,7 @@ const statementsStateSQL = `SELECT json_build_object(
 
 func statementsSQL(th Thresholds) string {
 	return `SELECT COALESCE(json_agg(t), '[]'::json) FROM (
-SELECT queryid::text AS queryid, calls, mean_exec_time, total_exec_time, rows, left(query, 2000) AS query
+SELECT queryid::text AS queryid, calls, mean_exec_time, total_exec_time, rows, left(query, 1024) AS query
 FROM pg_stat_statements
 WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND mean_exec_time >= ` + itoa(int64(th.SlowStatementMs)) + ` AND query NOT LIKE '%pg_stat_statements%' AND query NOT LIKE 'DECLARE lr_cursor%'
@@ -75,7 +75,7 @@ func sessionsSQL(th Thresholds) string {
 	return `SELECT COALESCE(json_agg(t), '[]'::json) FROM (
 SELECT pid, usename::text AS usename, application_name, state,
   EXTRACT(EPOCH FROM now() - xact_start)::bigint AS xact_age_s, EXTRACT(EPOCH FROM now() - state_change)::bigint AS state_age_s,
-  wait_event_type, wait_event, left(query, 2000) AS query
+  wait_event_type, wait_event, left(query, 1024) AS query
 FROM pg_stat_activity
 WHERE datname = current_database() AND pid <> pg_backend_pid() AND backend_type = 'client backend'
   AND xact_start IS NOT NULL AND state IN ('active', 'idle in transaction', 'idle in transaction (aborted)')

@@ -60,3 +60,16 @@ func TestDatabaseAdvisor_PartialResultAndCache(t *testing.T) {
 		t.Errorf("second call was not served from the cache: calls %d -> %d, body = %s", calls, fake.calls, rec.Body.String())
 	}
 }
+
+// The advisor returns other sessions' statement text, so db:read alone is not enough.
+func TestDatabaseAdvisor_NeedsQueryAccess(t *testing.T) {
+	t.Parallel()
+	rt, db, _ := newPipelineRouter(t)
+	bootstrapTestAdmin(t, db)
+	user := storeUserWithAbilitiesForTest(t, db, "advisor-query@example.com", []string{AbilityRoot})
+	cookie := sessionCookieForTest(t, rt, user.ID)
+	attachTestPolicy(t, db, "advisor-query-deny", "Deny", "db:query", "database:victim", store.PrincipalTypeUser, user.ID)
+	if got := matrixDo(rt, http.MethodGet, "/api/v1/databases/victim/advisor", func(req *http.Request) { req.AddCookie(cookie) }); got != http.StatusForbidden {
+		t.Errorf("status = %d, want 403", got)
+	}
+}
