@@ -122,7 +122,13 @@ export function StatusLabel({ status }: { status: AppStatusSummary }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 text-xs"
-      title={status.variant === 'muted' ? status.message : undefined}
+      title={
+        status.hint
+          ? [status.message, status.hint].filter(Boolean).join(' ')
+          : status.variant === 'muted'
+            ? status.message
+            : undefined
+      }
     >
       <StatusDot status={status} />
       <span

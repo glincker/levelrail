@@ -359,4 +359,6 @@ export interface AppStatusSummary {
   // First failing condition, set only when the app needs attention.
   reason?: string
   message?: string
+  // Next step for a database that crash loops.
+  hint?: string
 }
