@@ -18,6 +18,17 @@ alerting.self_heartbeat_interval
 alerting.self_heartbeat_url
 alerts.advisory_min_severity
 alerts.advisory_notify
+alerts.database.backup_missing_enabled
+alerts.database.backup_missing_window
+alerts.database.backup_unprotected_mb
+alerts.database.connections_enabled
+alerts.database.connections_for
+alerts.database.connections_percent
+alerts.database.crash_loop_enabled
+alerts.database.disk_growth_critical_days
+alerts.database.disk_growth_enabled
+alerts.database.disk_growth_for
+alerts.database.disk_growth_warn_days
 alerts.default_5xx_min_requests
 alerts.default_5xx_percent
 alerts.default_crashloop_restarts

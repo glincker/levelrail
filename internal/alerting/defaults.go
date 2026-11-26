@@ -113,6 +113,11 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"app-unhealthy", "An app is failing its health check", KindAppUnhealthy, SeverityWarning},
 		{"database-down", "A database is down", KindDatabaseDown, SeverityCritical},
 		{"database-backup-stale", "A database backup is stale", KindDatabaseBackupStale, SeverityWarning},
+		{"database-crash-loop", "A database is crash looping", KindDatabaseCrashLoop, SeverityCritical},
+		{"database-disk-growth", "A database disk will fill soon", KindDatabaseDiskGrowth, SeverityWarning},
+		{"database-disk-growth-critical", "A database disk is about to fill", KindDatabaseDiskGrowth, SeverityCritical},
+		{"database-connections-saturated", "A database is running out of connections", KindDatabaseConnectionsSaturated, SeverityWarning},
+		{"database-backup-missing", "A database has no recent backup", KindDatabaseBackupMissing, SeverityWarning},
 	}
 	if cfg.MonitorsEnabled {
 		platform = append(platform, struct {

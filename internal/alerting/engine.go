@@ -119,8 +119,10 @@ type Engine struct {
 	registryRefresh RegistryRefreshSource
 	dnsCredentials  DNSCredentialSource
 
-	restoreDrills RestoreDrillSource
-	reconcilerLag ReconcilerLagSource
+	restoreDrills        RestoreDrillSource
+	reconcilerLag        ReconcilerLagSource
+	databaseAlerts       DatabaseAlertSource
+	databaseAlertsPolicy DatabaseAlertPolicySource
 
 	nodeCertWarning, nodeCertCritical time.Duration
 
@@ -256,6 +258,11 @@ func (e *Engine) SetBackupSizeAnomaly(src BackupSizeSource, policy func(context.
 // SetDurationRegression enables kind=deploy_duration_regression rules; policy is read on every tick so settings apply live.
 func (e *Engine) SetDurationRegression(src DurationSource, policy func(context.Context) DurationRegressionPolicy) {
 	e.durations, e.durationsPolicy = src, policy
+}
+
+// SetDatabaseAlerts enables the database health rule kinds; policy is read on every tick so settings apply live.
+func (e *Engine) SetDatabaseAlerts(src DatabaseAlertSource, policy DatabaseAlertPolicySource) {
+	e.databaseAlerts, e.databaseAlertsPolicy = src, policy
 }
 
 // SetReconcilerLag enables kind=reconciler_lagging rules.
@@ -740,6 +747,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindDatabaseCrashLoop, KindDatabaseDiskGrowth, KindDatabaseConnectionsSaturated, KindDatabaseBackupMissing:
+			if e.databaseAlerts == nil || e.databaseAlertsPolicy == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateDatabaseAlert(ctx, e.databaseAlerts, e.databaseAlertsPolicy(ctx), r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindReconcilerLagging:
 			if e.reconcilerLag == nil {
 				continue
@@ -958,7 +974,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindBackupSizeAnomaly || r.Kind == KindDeployDurationRegression || r.Kind == KindRegistryRefreshFailing || r.Kind == KindDNSCredentialFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindReconcilerLagging || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || IsDatabaseHealthKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindBackupSizeAnomaly || r.Kind == KindDeployDurationRegression || r.Kind == KindRegistryRefreshFailing || r.Kind == KindDNSCredentialFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindReconcilerLagging || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown || r.Kind == KindVolumeUsage || r.Kind == KindAppUnhealthy || r.Kind == KindAdvisoryMatch || IsDefaultRule(r)) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

@@ -113,6 +113,23 @@ func ReadDiskUsedPercent(ctx context.Context, ex Exec, containerID, engine strin
 	return v, nil
 }
 
+// ReadDiskBytes returns used and total bytes of the filesystem under the database's data directory.
+func ReadDiskBytes(ctx context.Context, ex Exec, containerID, engine string) (used, total int64, err error) {
+	path, ok := dataPath(engine)
+	if !ok {
+		return 0, 0, ErrHealthUnsupported
+	}
+	out, err := runHealthScript(ctx, ex, containerID, `df -Pk "`+path+`" | awk 'NR==2{print $3*1024, $2*1024}'`)
+	if err != nil {
+		return 0, 0, err
+	}
+	u, t, perr := parseTwoInts(out)
+	if perr != nil {
+		return 0, 0, perr
+	}
+	return int64(u), int64(t), nil
+}
+
 func parseTwoInts(out string) (int, int, error) {
 	fields := strings.Fields(out)
 	if len(fields) != 2 {

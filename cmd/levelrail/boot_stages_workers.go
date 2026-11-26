@@ -235,6 +235,7 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetCleanup(apiRouter)
 	alertingEngine.SetDatabaseHealth(apiRouter)
+	alertingEngine.SetDatabaseAlerts(apiRouter, apiRouter.DatabaseAlertPolicy)
 	if src := s.deployDispatcher.Outcomes(); src != nil {
 		alertingEngine.SetDeployFailures(src)
 	}
