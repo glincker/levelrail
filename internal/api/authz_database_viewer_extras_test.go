@@ -18,27 +18,32 @@ func TestAuthzDatabaseViewerExtrasDenyRows(t *testing.T) {
 	attachTestPolicy(t, db, "viewer-extras-u", "Deny", "*", "database:victim", store.PrincipalTypeUser, user.ID)
 	attachTestPolicy(t, db, "viewer-extras-t", "Deny", "*", "database:victim", store.PrincipalTypeToken, "viewer-extras-tok")
 
-	rows := []struct{ method, path string }{
-		{http.MethodGet, "/api/v1/databases/victim/engine-stats"},
-		{http.MethodGet, "/api/v1/databases/victim/advisor"},
-		{http.MethodGet, "/api/v1/databases/victim/explorer/capabilities"},
-		{http.MethodGet, "/api/v1/databases/victim/branches/b1/schema-diff"},
-		{http.MethodGet, "/api/v1/databases/victim/redis/info"},
-		{http.MethodGet, "/api/v1/databases/victim/redis/slowlog"},
-		{http.MethodGet, "/api/v1/databases/victim/redis/clients"},
-		{http.MethodGet, "/api/v1/databases/victim/query-history"},
-		{http.MethodDelete, "/api/v1/databases/victim/query-history"},
-		{http.MethodGet, "/api/v1/databases/victim/saved-queries"},
-		{http.MethodPost, "/api/v1/databases/victim/saved-queries"},
-		{http.MethodDelete, "/api/v1/databases/victim/saved-queries/q1"},
+	// Branch routes resolve the branch first, so a missing branch answers 404 exactly like a hidden one;
+	// a Deny on an existing branch's root is covered by TestBranchAPI_ExplicitDenyBeatsBranchAdmin.
+	rows := []struct {
+		method, path string
+		want         int
+	}{
+		{http.MethodGet, "/api/v1/databases/victim/engine-stats", http.StatusForbidden},
+		{http.MethodGet, "/api/v1/databases/victim/advisor", http.StatusForbidden},
+		{http.MethodGet, "/api/v1/databases/victim/explorer/capabilities", http.StatusForbidden},
+		{http.MethodGet, "/api/v1/databases/victim/branches/b1/schema-diff", http.StatusNotFound},
+		{http.MethodGet, "/api/v1/databases/victim/redis/info", http.StatusForbidden},
+		{http.MethodGet, "/api/v1/databases/victim/redis/slowlog", http.StatusForbidden},
+		{http.MethodGet, "/api/v1/databases/victim/redis/clients", http.StatusForbidden},
+		{http.MethodGet, "/api/v1/databases/victim/query-history", http.StatusForbidden},
+		{http.MethodDelete, "/api/v1/databases/victim/query-history", http.StatusForbidden},
+		{http.MethodGet, "/api/v1/databases/victim/saved-queries", http.StatusForbidden},
+		{http.MethodPost, "/api/v1/databases/victim/saved-queries", http.StatusForbidden},
+		{http.MethodDelete, "/api/v1/databases/victim/saved-queries/q1", http.StatusForbidden},
 	}
 	for _, row := range rows {
 		t.Run(row.method+" "+row.path, func(t *testing.T) {
-			if got := matrixDo(rt, row.method, row.path, func(req *http.Request) { req.AddCookie(cookie) }); got != http.StatusForbidden {
-				t.Errorf("session status = %d, want 403", got)
+			if got := matrixDo(rt, row.method, row.path, func(req *http.Request) { req.AddCookie(cookie) }); got != row.want {
+				t.Errorf("session status = %d, want %d", got, row.want)
 			}
-			if got := matrixDo(rt, row.method, row.path, bearer(tok)); got != http.StatusForbidden {
-				t.Errorf("token status = %d, want 403", got)
+			if got := matrixDo(rt, row.method, row.path, bearer(tok)); got != row.want {
+				t.Errorf("token status = %d, want %d", got, row.want)
 			}
 		})
 	}
