@@ -127,6 +127,7 @@ branches.max_depth
 branches.max_per_root
 branches.max_total
 branches.max_total_bytes
+branches.min_ttl
 branches.preview_default_ttl
 branches.size_interval
 branches.slow_path_headroom_factor
