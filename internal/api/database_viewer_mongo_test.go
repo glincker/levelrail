@@ -26,6 +26,9 @@ func TestAuthzMongoViewerDenyRows(t *testing.T) {
 	rows := []struct{ method, path string }{
 		{http.MethodGet, "/api/v1/databases/victim/mongo/collections"},
 		{http.MethodPost, "/api/v1/databases/victim/mongo/find"},
+		{http.MethodGet, "/api/v1/databases/victim/dynamo/tables"},
+		{http.MethodPost, "/api/v1/databases/victim/dynamo/query"},
+		{http.MethodPost, "/api/v1/databases/victim/dynamo/scan"},
 	}
 	for _, row := range rows {
 		t.Run(row.method+" "+row.path, func(t *testing.T) {
