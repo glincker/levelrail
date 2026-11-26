@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbviewer"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/mysqlssl"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -143,7 +143,7 @@ redis-cli "$@" PING 2>&1`
 }
 
 func mysqlProbe(engine string) string {
-	return dbviewer.MySQLSSLCase(engine == EngineMariaDB) + `
+	return mysqlssl.Case(engine == EngineMariaDB) + `
 BIN=$(command -v mysql || command -v mariadb)
 DBOPT=""
 if [ -n "$EXT_DB" ]; then DBOPT="--database=$EXT_DB"; fi

@@ -39,6 +39,7 @@ internal/loadbalancer 201
 internal/mailtemplates 21
 internal/meshpath 46
 internal/monitor 190
+internal/mysqlssl 40
 internal/network 54
 internal/pages 29
 internal/pkgregistry 29

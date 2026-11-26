@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dbviewer"
+	"github.com/GLINCKER/levelrail/internal/mysqlssl"
 )
 
 func TestParseURL_Providers(t *testing.T) {
@@ -165,13 +165,13 @@ func TestParseURL_TLSExplicitOffAndPresets(t *testing.T) {
 }
 
 func TestClientTLSScripts(t *testing.T) {
-	my := dbviewer.MySQLSSLCase(false)
+	my := mysqlssl.Case(false)
 	for _, want := range []string{"VERIFY_IDENTITY --ssl-ca=$CA", "VERIFY_CA --ssl-ca=$CA", "/etc/pki/tls/certs/ca-bundle.crt"} {
 		if !strings.Contains(my, want) {
 			t.Errorf("mysql case missing %q", want)
 		}
 	}
-	if maria := dbviewer.MySQLSSLCase(true); !strings.Contains(maria, "--ssl-verify-server-cert --ssl-ca=$CA") {
+	if maria := mysqlssl.Case(true); !strings.Contains(maria, "--ssl-verify-server-cert --ssl-ca=$CA") {
 		t.Error("mariadb verify mode lacks the CA file")
 	}
 	mongo, _ := ProbeScript(EngineMongoDB)
