@@ -23,7 +23,7 @@ func explorerRoutes(n string) []dbRoute {
 		{"GET", b + "/dynamo/tables"}, {"POST", b + "/dynamo/query"}, {"POST", b + "/dynamo/scan"},
 		{"GET", b + "/query-history"}, {"DELETE", b + "/query-history"},
 		{"GET", b + "/saved-queries"}, {"POST", b + "/saved-queries"}, {"DELETE", b + "/saved-queries/q1"},
-		{"GET", b + "/engine-stats"}, {"GET", b + "/branches/x/schema-diff"},
+		{"GET", b + "/engine-stats"}, {"GET", b + "/advisor"}, {"GET", b + "/branches/x/schema-diff"},
 	}
 }
 

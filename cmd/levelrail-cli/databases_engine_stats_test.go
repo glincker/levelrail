@@ -78,3 +78,19 @@ func TestRun_DatabasesSavedQueries_AddAndDelete(t *testing.T) {
 		t.Errorf("last = %+v", last)
 	}
 }
+
+func TestRun_DatabasesAdvisor_FiltersAndSanitizes(t *testing.T) {
+	srv, got := newRecordingServer(t, `{"engine":"postgres","checked_at":"2026-11-25T10:00:00Z","truncated":false,"findings":[`+
+		`{"id":"a","kind":"unused_index","severity":"warn","title":"Index has never been used","object":"public.i\u001b[2Jx","evidence":{"size_bytes":9000},"suggestion":"DROP INDEX CONCURRENTLY \"public\".\"i\";\u001b[31m"},`+
+		`{"id":"b","kind":"missing_fk_index","severity":"info","title":"Foreign key columns have no leading index"}]}`)
+	stdout, _ := runCLIExpectOK(t, []string{"databases", "advisor", "main", "--severity", "warn", "--api-url", srv.URL})
+	if (*got)[0].method != "GET" || (*got)[0].path != "/api/v1/databases/main/advisor" {
+		t.Errorf("request = %+v", (*got)[0])
+	}
+	if strings.ContainsRune(stdout, 0x1b) || !strings.Contains(stdout, "public.i?[2Jx") || !strings.Contains(stdout, "findings: 1") || strings.Contains(stdout, "Foreign key") {
+		t.Errorf("stdout = %q", stdout)
+	}
+	if !strings.Contains(stdout, "size_bytes: 9000") || !strings.Contains(stdout, "suggestion: DROP INDEX CONCURRENTLY") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}

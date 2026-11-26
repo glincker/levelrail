@@ -107,6 +107,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesNetwork(prog, rest, stdout, stderr, lookupEnv)
 	case "engine-stats":
 		return runDatabasesEngineStats(prog, rest, stdout, stderr, lookupEnv)
+	case "advisor":
+		return runDatabasesAdvisor(prog, rest, stdout, stderr, lookupEnv)
 	case "explorer":
 		return runDatabasesExplorer(prog, rest, stdout, stderr, lookupEnv)
 	case "dynamo":
@@ -199,6 +201,7 @@ func databasesUsage(prog string) string {
   %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access
   %[1]s databases network show|allow|deny|make-private|scope|tls <name> ...  reachability, allowed sources, scope, TLS
   %[1]s databases engine-stats <name> [flags]  live counts for a search engine or Memcached database
+  %[1]s databases advisor <name> [--severity warn] [flags]  read-only Postgres performance findings with suggested fixes as text
   %[1]s databases explorer capabilities <name> [flags]  which explorer features the engine supports and the viewer limits
   %[1]s databases dynamo tables|query|scan <name> ...  read-only DynamoDB local tables and items
   %[1]s databases mongo collections|find <name> ...  read-only MongoDB collections and documents

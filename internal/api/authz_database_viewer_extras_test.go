@@ -20,6 +20,7 @@ func TestAuthzDatabaseViewerExtrasDenyRows(t *testing.T) {
 
 	rows := []struct{ method, path string }{
 		{http.MethodGet, "/api/v1/databases/victim/engine-stats"},
+		{http.MethodGet, "/api/v1/databases/victim/advisor"},
 		{http.MethodGet, "/api/v1/databases/victim/explorer/capabilities"},
 		{http.MethodGet, "/api/v1/databases/victim/branches/b1/schema-diff"},
 		{http.MethodGet, "/api/v1/databases/victim/redis/info"},

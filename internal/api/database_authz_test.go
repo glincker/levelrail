@@ -34,6 +34,7 @@ var explorerHandlers = []string{
 	"handleDeleteDatabaseSavedQuery", "handleGetDatabaseEngineStats",
 	"handleGetDynamoTables", "handleDynamoQuery", "handleDynamoScan",
 	"handleGetRedisInfo", "handleGetRedisSlowlog", "handleGetRedisClients",
+	"handleGetDatabaseAdvisor",
 }
 
 // TestDatabaseExplorerRoutesUseResolve fails when an explorer route loses the
