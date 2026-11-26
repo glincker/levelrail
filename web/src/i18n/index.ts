@@ -58,6 +58,7 @@ export const NAMESPACES = [
   'dbNav',
   'dbIntegrations',
   'dbBranches',
+  'dbBackupSetup',
   'dbExplorerStrip',
   'databaseUpgrades',
   'databaseVersions',

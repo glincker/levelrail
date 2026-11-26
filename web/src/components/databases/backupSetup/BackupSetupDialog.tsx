@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   CircleAlertGlassIcon,
   CircleCheckGlassIcon,
   LoaderCircleGlassIcon,
   ShieldCheckGlassIcon,
-  UploadGlassIcon,
 } from '@thesvg/ui-react'
 import {
   Dialog,
@@ -16,10 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { formatBytes } from '../../../lib/format'
+import { useQueryClient } from '@tanstack/react-query'
+import { databaseUpgradeKeys } from '../../../queries/databaseUpgrades'
+import { BackupTargetSetup } from './BackupTargetSetup'
 import { useBackupTargetsOptional } from '../../../queries/backupTargets'
 import {
   useBackupHistory,
@@ -126,6 +127,8 @@ export function BackupSetupDialog({
 }) {
   const { t } = useTranslation('databases')
   const targets = useBackupTargetsOptional().data ?? []
+  const queryClient = useQueryClient()
+  const [adding, setAdding] = useState(false)
   const setSchedule = useSetDatabaseBackupSchedule()
   const trigger = useTriggerBackup(database.name)
   const history = useBackupHistory(database.name)
@@ -177,7 +180,18 @@ export function BackupSetupDialog({
   const runError = setSchedule.error ?? trigger.error
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          // A new target clears the blocked state on the upgrades card.
+          void queryClient.invalidateQueries({
+            queryKey: databaseUpgradeKeys.detail(database.name),
+          })
+        }
+        onOpenChange(next)
+      }}
+    >
       <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
@@ -195,22 +209,21 @@ export function BackupSetupDialog({
           <DrillStatus database={database.name} />
 
           {step === 'target' ? (
-            targets.length === 0 ? (
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4 text-center">
-                <UploadGlassIcon
-                  className="mx-auto size-6 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <p className="text-sm text-muted-foreground">
-                  {t('backupSetup.target.none')}
-                </p>
-                <Link
-                  to="/settings/backup-targets"
-                  className={buttonVariants({ size: 'sm' })}
-                >
-                  {t('backupSetup.target.connect')}
-                </Link>
-              </div>
+            targets.length === 0 || adding ? (
+              <BackupTargetSetup
+                onCancel={
+                  targets.length > 0
+                    ? () => {
+                        setAdding(false)
+                      }
+                    : undefined
+                }
+                onCreated={(created) => {
+                  setTargetId(created.id)
+                  setAdding(false)
+                  setStep('schedule')
+                }}
+              />
             ) : (
               <fieldset className="space-y-2">
                 <legend className="text-sm font-medium">
@@ -235,6 +248,16 @@ export function BackupSetupDialog({
                     </span>
                   </label>
                 ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAdding(true)
+                  }}
+                >
+                  {t('backupSetup.target.connect')}
+                </Button>
               </fieldset>
             )
           ) : null}

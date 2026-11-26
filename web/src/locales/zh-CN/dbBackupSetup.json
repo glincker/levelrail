@@ -1,0 +1,27 @@
+{
+  "gallery": {
+    "title": "备份存储在哪里？"
+  },
+  "local": "本地磁盘",
+  "cancel": "取消",
+  "continue": "继续",
+  "testing": "正在测试连接",
+  "testOk": "已连接。可使用这些凭据访问该存储桶。",
+  "testFailed": "连接测试失败：{{error}}",
+  "testAgain": "重新测试",
+  "removeAndEdit": "移除并编辑",
+  "fields": {
+    "name": "名称",
+    "accountId": "账户 ID",
+    "region": "区域",
+    "endpoint": "端点",
+    "bucket": "存储桶",
+    "path": "路径",
+    "accessKey": "访问密钥 ID",
+    "secret": "秘密访问密钥"
+  },
+  "secretNote": "加密存储，仅显示一次。请使用仅限此存储桶的密钥。",
+  "back": "返回",
+  "creating": "创建中",
+  "createAndTest": "创建并测试"
+}

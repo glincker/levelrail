@@ -84,6 +84,7 @@ import type databaseAccess from '../locales/en/databaseAccess.json'
 import type dbNav from '../locales/en/dbNav.json'
 import type dbIntegrations from '../locales/en/dbIntegrations.json'
 import type dbBranches from '../locales/en/dbBranches.json'
+import type dbBackupSetup from '../locales/en/dbBackupSetup.json'
 import type dbExplorerStrip from '../locales/en/dbExplorerStrip.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type databaseVersions from '../locales/en/databaseVersions.json'
@@ -270,6 +271,7 @@ declare module 'i18next' {
       dbNav: typeof dbNav
       dbIntegrations: typeof dbIntegrations
       dbBranches: typeof dbBranches
+      dbBackupSetup: typeof dbBackupSetup
       dbExplorerStrip: typeof dbExplorerStrip
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions
