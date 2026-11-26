@@ -904,6 +904,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handleGetDashboard": Operation("GET", "/api/v1/dashboards/{id}", False, False),
     "handleGetDashboardURL": Operation("GET", "/api/v1/settings/dashboard-url", False, False),
     "handleGetDatabase": Operation("GET", "/api/v1/databases/{name}", False, False),
+    "handleGetDatabaseAdvisor": Operation("GET", "/api/v1/databases/{name}/advisor", False, False),
     "handleGetDatabaseBranch": Operation("GET", "/api/v1/databases/{name}/branches/{branch}", False, False),
     "handleGetDatabaseCatalogStatus": Operation("GET", "/api/v1/database-catalog", False, False),
     "handleGetDatabaseDataCopy": Operation("GET", "/api/v1/imports/platform/databases/{name}", False, False),

@@ -1000,6 +1000,7 @@ export const operations = {
   handleListDatabaseTempCredentials: ["GET","/api/v1/databases/{name}/access/temp",0,0],
   handleIssueDatabaseTempCredential: ["POST","/api/v1/databases/{name}/access/temp",1,0],
   handleRevokeDatabaseTempCredential: ["DELETE","/api/v1/databases/{name}/access/temp/{id}",0,0],
+  handleGetDatabaseAdvisor: ["GET","/api/v1/databases/{name}/advisor",0,0],
   handleListDatabaseStatementAudit: ["GET","/api/v1/databases/{name}/audit",0,0],
   handleSetBackupSchedule: ["PUT","/api/v1/databases/{name}/backup-schedule",1,0],
   handleClearBackupSchedule: ["DELETE","/api/v1/databases/{name}/backup-schedule",0,0],
