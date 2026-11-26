@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.5.12](https://github.com/glincker/levelrail/compare/v1.5.11...v1.5.12) (2026-11-26)
+
+
+### Features
+
+* new Levelrail wordmark and by GLINR Studios lockup ([#1760](https://github.com/glincker/levelrail/issues/1760)) ([a7b27db](https://github.com/glincker/levelrail/commit/a7b27dbab69df87a68867685f35c94f5f2ba67c8))
+
+
+### Documentation
+
+* add the app metrics screenshot ([#1750](https://github.com/glincker/levelrail/issues/1750)) ([b8c0fa0](https://github.com/glincker/levelrail/commit/b8c0fa0218ba50e2cf80faa1d8150b6a46d8c5c2))
+* add the Reddit community badge to the README ([#1757](https://github.com/glincker/levelrail/issues/1757)) ([75d8dc1](https://github.com/glincker/levelrail/commit/75d8dc14e6849d30c86ebe1c55f61e896d851332))
+* fresh dashboard screenshots, README carousel and thumbnails ([#1744](https://github.com/glincker/levelrail/issues/1744)) ([75f1e22](https://github.com/glincker/levelrail/commit/75f1e22d0eea6cdc7ec9414d5ba712a884b4b8ac))
+* match the subreddit name casing in the README badge ([#1758](https://github.com/glincker/levelrail/issues/1758)) ([a686a43](https://github.com/glincker/levelrail/commit/a686a434aa626dad1843e1f4d0dbad83cf32722b))
+* new Levelrail wordmark and by GLINR Studios lockups in the READ… ([#1759](https://github.com/glincker/levelrail/issues/1759)) ([4fd72ea](https://github.com/glincker/levelrail/commit/4fd72ea6811018f67c3526168aee90e14a0318a4))
+* new Levelrail wordmark and by GLINR Studios lockups in the READMEs and docs nav ([#1756](https://github.com/glincker/levelrail/issues/1756)) ([346a499](https://github.com/glincker/levelrail/commit/346a49987119262f9d8b54a534920168991692cd))
+* README header lockup, language row under the nav and no outdated screenshots ([#1742](https://github.com/glincker/levelrail/issues/1742)) ([3c86e88](https://github.com/glincker/levelrail/commit/3c86e8856de3b1ea9c02c64f674618f298964820))
+* refresh all dashboard screenshots, remove outdated ones and keep one source ([#1748](https://github.com/glincker/levelrail/issues/1748)) ([1c3e199](https://github.com/glincker/levelrail/commit/1c3e199a7800c364378c7ce3b736d331ba2ed2b3))
+* regenerate the product tour after the screenshot refresh ([#1755](https://github.com/glincker/levelrail/issues/1755)) ([a1e3c36](https://github.com/glincker/levelrail/commit/a1e3c3638c7c942a7957db8e313f7b0a0d5f3586))
+* restore the screenshots the website needs, freshly captured ([#1749](https://github.com/glincker/levelrail/issues/1749)) ([cb338b6](https://github.com/glincker/levelrail/commit/cb338b66862baba5fc75d53079beec9bc9fd518e))
+
 ## [1.5.11](https://github.com/glincker/levelrail/compare/v1.5.10...v1.5.11) (2026-11-26)
 
 
