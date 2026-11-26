@@ -4,6 +4,9 @@
 // endpoints, never a second deploy path.
 
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { getDemoInfo } from '../lib/demoStore'
+import { buildDemoRepoPlan } from '../lib/demoImportSample'
+import { guessImportSource } from '../lib/importInput'
 import { createApp } from './apps'
 import { deployCompose } from './compose'
 import { triggerBuild } from './builds'
@@ -87,6 +90,8 @@ export interface ImportPlan {
   secret_refs?: string[]
   unsupported?: ImportUnsupported[]
   conflicts?: ImportConflict[]
+  /** Set only by the demo canned plan, never by the server. */
+  sample?: { buildLog: string[] }
 }
 
 export interface ImportPlanRequest {
@@ -99,6 +104,12 @@ export interface ImportPlanRequest {
 }
 
 export async function planImport(req: ImportPlanRequest): Promise<ImportPlan> {
+  if (
+    getDemoInfo().enabled &&
+    (req.kind ?? guessImportSource(req.text)) === 'repo'
+  ) {
+    return buildDemoRepoPlan(req.text, req.ref)
+  }
   const res = await fetch('/api/v1/imports/plan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

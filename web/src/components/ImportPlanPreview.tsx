@@ -135,6 +135,21 @@ export function ImportPlanPreview({
         </Alert>
       ) : null}
 
+      {plan.sample ? (
+        <div className="space-y-1" data-testid="import-sample">
+          <Badge variant="muted">{t('importPlan.sampleBadge')}</Badge>
+          <p className="text-xs text-muted-foreground">
+            {t('importPlan.sampleHint')}
+          </p>
+          <pre
+            className="max-h-48 overflow-auto rounded-md border border-border bg-muted/40 p-2 font-mono text-xs"
+            aria-label={t('importPlan.sampleLogLabel')}
+          >
+            {plan.sample.buildLog.join('\n')}
+          </pre>
+        </div>
+      ) : null}
+
       {(plan.resources ?? []).length > 0 ? (
         <div className="space-y-1 text-sm" data-testid="import-resources">
           <p className="font-medium">{t('importPlan.willCreate')}</p>
