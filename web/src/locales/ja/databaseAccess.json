@@ -241,7 +241,9 @@
     "confirm": "破棄される通信を理解しました",
     "driftMissing": "ファイアウォールにありません: {{sources}}。ルールを再適用して復元してください。",
     "driftExtra": "ファイアウォールでは次も許可されています: {{sources}}。これらはここで設定されたものではありません。",
-    "cannot": "ルールを適用できません: {{reason}}"
+    "cannot": "ルールを適用できません: {{reason}}",
+    "sourceInvalid": "有効なIPまたはCIDRではありません",
+    "sourcePrivate": "プライベート範囲"
   },
   "scope": {
     "title": "ネットワークスコープ",

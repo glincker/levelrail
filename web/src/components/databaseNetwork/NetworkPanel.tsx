@@ -3,6 +3,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDatabaseNetwork } from '../../queries/databaseAccess'
 import { ExposureCard } from './ExposureCard'
+import { LinkedAppsCard } from './LinkedAppsCard'
 import { AllowedSourcesCard } from './AllowedSourcesCard'
 import { ReachabilityCard } from './ReachabilityCard'
 import { ScopeCard } from './ScopeCard'
@@ -44,15 +45,25 @@ export function NetworkPanel({ databaseName }: { databaseName: string }) {
             disabled={!canEdit}
             className="m-0 min-w-0 space-y-4 border-0 p-0"
           >
-            <ExposureCard network={data} />
-            <ReachabilityCard databaseName={databaseName} network={data} />
-            <AllowedSourcesCard databaseName={databaseName} network={data} />
-            <ScopeCard
-              key={data.scope.current}
-              databaseName={databaseName}
-              network={data}
-            />
-            <TlsCard databaseName={databaseName} network={data} />
+            <ExposureCard databaseName={databaseName} network={data} />
+            <div className="grid items-start gap-4 xl:grid-cols-2">
+              <div className="min-w-0 space-y-4">
+                <ReachabilityCard databaseName={databaseName} network={data} />
+                <LinkedAppsCard databaseName={databaseName} />
+              </div>
+              <div className="min-w-0 space-y-4">
+                <AllowedSourcesCard
+                  databaseName={databaseName}
+                  network={data}
+                />
+                <ScopeCard
+                  key={data.scope.current}
+                  databaseName={databaseName}
+                  network={data}
+                />
+                <TlsCard databaseName={databaseName} network={data} />
+              </div>
+            </div>
           </fieldset>
         </>
       )}

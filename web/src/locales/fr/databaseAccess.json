@@ -245,7 +245,9 @@
     "confirm": "Je comprends ce qui est rejeté",
     "driftMissing": "Absent du pare-feu : {{sources}}. Appliquez à nouveau les règles pour les rétablir.",
     "driftExtra": "Le pare-feu autorise aussi : {{sources}}. Ces sources n'ont pas été définies ici.",
-    "cannot": "Les règles ne peuvent pas être appliquées : {{reason}}"
+    "cannot": "Les règles ne peuvent pas être appliquées : {{reason}}",
+    "sourceInvalid": "IP ou CIDR invalide",
+    "sourcePrivate": "Plage privée"
   },
   "scope": {
     "title": "Portée réseau",

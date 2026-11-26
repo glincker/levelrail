@@ -243,7 +243,9 @@
     "confirm": "Entiendo lo que se bloquea",
     "driftMissing": "Faltan en el firewall: {{sources}}. Vuelve a aplicar las reglas para restaurarlas.",
     "driftExtra": "El firewall también permite: {{sources}}. No se definieron aquí.",
-    "cannot": "No se pueden aplicar las reglas: {{reason}}"
+    "cannot": "No se pueden aplicar las reglas: {{reason}}",
+    "sourceInvalid": "IP o CIDR no válido",
+    "sourcePrivate": "Rango privado"
   },
   "scope": {
     "title": "Alcance de red",

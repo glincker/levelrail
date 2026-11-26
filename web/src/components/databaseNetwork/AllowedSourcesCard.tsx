@@ -8,6 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
+import { Badge } from '@/components/ui/badge'
+import { checkSource } from '@/lib/cidr'
 import type {
   DatabaseNetwork,
   DatabaseRule,
@@ -56,7 +58,8 @@ function RulesEditor({
     })),
     local_containers: local,
   }
-  const canPreview = filled.length > 0 || local
+  const allValid = filled.every((r) => checkSource(r.source).valid)
+  const canPreview = (filled.length > 0 || local) && allValid
 
   function edit(key: number, patch: Partial<DatabaseRule>) {
     setPlan(null)
@@ -95,11 +98,23 @@ function RulesEditor({
           <div key={r.key} className="flex flex-wrap items-center gap-2">
             <Input
               aria-label={t('rules.source')}
+              aria-invalid={
+                r.source.trim() !== '' && !checkSource(r.source).valid
+                  ? true
+                  : undefined
+              }
               placeholder="203.0.113.7 or 10.0.0.0/8"
               className="w-56 font-mono"
               value={r.source}
               onChange={(e) => edit(r.key, { source: e.target.value })}
             />
+            {r.source.trim() !== '' && !checkSource(r.source).valid ? (
+              <span role="alert" className="text-xs text-destructive">
+                {t('rules.sourceInvalid')}
+              </span>
+            ) : checkSource(r.source).rfc1918 ? (
+              <Badge variant="muted">{t('rules.sourcePrivate')}</Badge>
+            ) : null}
             <Input
               aria-label={t('rules.description_')}
               placeholder={t('rules.descriptionPlaceholder')}
