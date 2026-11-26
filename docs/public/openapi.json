@@ -78735,7 +78735,7 @@
     },
     "/api/v1/databases/{name}/advisor": {
       "get": {
-        "description": "Read-only performance findings; statement text and object names are sensitive like the explorer.\n\nRequires the `read:sensitive` ability.",
+        "description": "Read-only performance findings; they carry other sessions' statement text, so they need query access.\n\nRequires the `read:sensitive` ability.",
         "operationId": "handleGetDatabaseAdvisor",
         "parameters": [
           {
@@ -78804,7 +78804,7 @@
             ]
           }
         ],
-        "summary": "Read-only performance findings; statement text and object names are sensitive like the explorer.",
+        "summary": "Read-only performance findings; they carry other sessions' statement text, so they need query access.",
         "tags": [
           "Databases CRUD / Engines / Resources"
         ],
