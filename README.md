@@ -30,20 +30,33 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
 <a href="https://demo.levelrail.com"><img src="docs/assets/brand/social/hero-2560x1280-light.jpg" alt="Levelrail: a lightweight, self-hosted deployment platform. Try the live demo." width="880"></a>
 </div>
 
+**Levelrail is a lightweight, open source, self-hosted platform as a service (PaaS) that turns your own servers into a deployment platform.** Running apps on a VPS, a homelab box or a rack usually means stitching together Docker, a reverse proxy, TLS certificates, a CI pipeline, backups, databases, monitoring and alerts, and then keeping all of it patched. Levelrail replaces that pile of glue with one Go binary and one dashboard, so shipping software to servers you own feels like using a managed platform such as Heroku, Vercel, Netlify or Railway, without a managed platform's bill or lock-in.
+
+**How it works:** push to git, and Levelrail builds your app, serves it over automatic HTTPS and rolls back if the deploy goes wrong. Add a database with backups, branches and a built-in explorer, pick from 570+ one-click apps, open a preview environment, and watch it all with monitoring and alerts. The control plane idles at about 200 MB of RAM ([measured](docs/performance.md)), runs on a small VPS and grows to more servers through a node agent (beta). If you are looking for a lightweight alternative to Coolify, Dokku, Dokploy, CapRover or Kamal, this is the one-binary option.
+
+**Who it makes life easier for:** solo developers and small teams get a Heroku, Vercel or Railway style workflow on cheap hardware they own. Homelabbers get one place to deploy, update and back up everything. Agencies and platform teams get an audit log, roles and backups that are verified with restore drills. Coding agents can operate it safely through an MCP server with scoped tools and confirm-gated writes.
+
+**Coming from another platform?** Side by side pages: [Coolify](docs/coolify-alternative.md), [Dokku](docs/dokku-alternative.md), [Dokploy](docs/dokploy-alternative.md), [CapRover](docs/caprover-alternative.md), [Kamal](docs/kamal-alternative.md), [Heroku](docs/heroku-alternative.md), [Railway](docs/railway-alternative.md), [Netlify](docs/netlify-alternative.md), [Vercel](docs/vercel-alternative.md) and [Cloud Run](docs/cloud-run-alternative.md), or the [overall comparison](docs/comparison.md).
+
+**Get started:** [install on a Linux server in one line](#install), [try the live demo](https://demo.levelrail.com) first, or follow [First 15 minutes](docs/first-15-minutes.md).
+
 v1.x. Single-server is production ready, multi-node is beta. Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).
 
 ## Install
 
-Pick one. Release assets on GitHub are the primary source: every binary, `install.sh`, `install-cli.sh` and `checksums.txt` ship with each [release](https://github.com/glincker/levelrail/releases/latest).
+**On a Linux server (amd64 or arm64, systemd), run this as a user that can use `sudo`:**
+
+```bash
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh && sudo sh install.sh
+```
+
+That downloads the installer from the latest GitHub release, saves it to disk (so you can read it first) and runs it. It runs preflight checks, installs the control plane binary and a systemd unit, and prints a setup link for the admin account. It uses the Docker or Podman already on the host and installs Docker (through `get.docker.com`) only when neither is found. It is safe to re-run. To see what it would do without changing anything, run `sudo sh install.sh check` first.
+
+Other ways to install. Release assets on GitHub are the primary source: every binary, `install.sh`, `install-cli.sh` and `checksums.txt` ship with each [release](https://github.com/glincker/levelrail/releases/latest).
 
 - **Homebrew (CLI):** `brew install glincker/tap/levelrail-cli`
 - **Docker (server):** `docker pull ghcr.io/glincker/levelrail:latest` (see [Installing](docs/installing.md) for the full run command with volumes and ports)
-- **GitHub release download:** get `install.sh` from the [latest release](https://github.com/glincker/levelrail/releases/latest), then run it as root on a Linux server (amd64 or arm64, systemd). The installer adds Docker.
-
-```bash
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
-sudo sh install.sh
-```
+- **Verified install:** check the installer against the signed `checksums.txt` before running it, see the next section.
 
 <details>
 <summary>Advanced: verify the installer against checksums.txt first</summary>
@@ -63,7 +76,7 @@ On macOS use `shasum -a 256 -c -` instead of `sha256sum -c -`. `checksums.txt` i
 
 ## Quickstart
 
-You need a Linux server (amd64 or arm64) with systemd and root. The installer adds Docker. Open ports 80 and 443. Install first with one of the options in [Install](#install).
+You need a Linux server (amd64 or arm64) with systemd and root. Levelrail runs apps in containers: the installer uses the Docker or Podman already on the host and installs Docker only if neither is found. Open ports 80 and 443. Install first with one of the options in [Install](#install).
 
 1. Open the setup link the installer prints and choose a password. That creates the admin account.
 2. In the dashboard, copy the login line from the **Connect your CLI** card and run it (it looks like `levelrail-cli login --api-url http://127.0.0.1:8080 --code ABCD-EF23`).
@@ -221,6 +234,18 @@ Each claim links to the page that backs it. The status column follows [Feature s
 | An MCP server with ability-scoped tools and confirm-gated writes, never in the reconcile path | beta | [MCP](docs/mcp.md), [Tool surface](docs/mcp-tool-surface.md) |
 
 Moving from another platform: [Migrate to Levelrail](docs/migrate-to-levelrail.md). Architecture notes: [Comparison](docs/comparison.md).
+
+## Common questions
+
+**What is Levelrail?** A lightweight, open source (Apache 2.0), self-hosted PaaS in one Go binary. You push to git, and it builds, deploys, serves HTTPS, rolls back and runs your databases on servers you own.
+
+**Is Levelrail an alternative to Coolify, Dokku or Dokploy?** They solve the same problem: deploying apps to your own servers without a managed platform. Levelrail is one Go binary with a control plane that idles at about 200 MB of RAM, and it adds built-in databases with backups and branches, preview environments, a node agent for multi-node setups (beta) and an MCP server. The [Coolify](docs/coolify-alternative.md), [Dokku](docs/dokku-alternative.md) and [Dokploy](docs/dokploy-alternative.md) pages compare feature by feature.
+
+**Can it replace Heroku, Vercel, Netlify or Railway?** For git push deploys, preview environments, HTTPS, rollbacks and databases on your own servers, yes. See the [Heroku](docs/heroku-alternative.md), [Vercel](docs/vercel-alternative.md), [Netlify](docs/netlify-alternative.md) and [Railway](docs/railway-alternative.md) pages, and [Migrate to Levelrail](docs/migrate-to-levelrail.md).
+
+**What does it run on?** A Linux server (amd64 or arm64, systemd). The installer adds Docker. A small VPS or a homelab machine is enough for a single server.
+
+**Does it work with Kubernetes and the cloud?** It can connect existing Kubernetes clusters as deploy targets (experimental) and provision nodes on cloud accounts you already have. Each feature's status is in [Feature status](docs/feature-status.md).
 
 ## Community
 
