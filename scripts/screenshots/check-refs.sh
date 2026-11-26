@@ -13,6 +13,10 @@ norm="$(printf '%s\n' "$refs" | sed 's/-light\.png$/.png/' | sort -u)"
 
 site="$(grep -v '^#' scripts/screenshots/site-names.txt 2>/dev/null | sed 's/$/.png/')"
 
+for n in $(grep -v '^#' scripts/screenshots/site-names.txt); do
+  [ -f "$dir/$n.png" ] || { echo "site name has no dark PNG: $n"; status=1; }
+done
+
 for f in $refs; do
   [ -f "$dir/$f" ] || { echo "missing file for reference: $dir/$f"; status=1; }
 done
