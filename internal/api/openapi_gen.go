@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2424 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2426 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1499,6 +1499,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/external-databases", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateExternalDatabase", Description: ""},
 	{Method: "POST", Path: "/api/v1/external-databases/adopt", Ability: "AbilityRoot", Group: "Other", Handler: "handleAdoptExternalDatabase", Description: ""},
 	{Method: "GET", Path: "/api/v1/external-databases/candidates", Ability: "AbilityRoot", Group: "Other", Handler: "handleListExternalDatabaseCandidates", Description: ""},
+	{Method: "POST", Path: "/api/v1/external-databases/parse", Ability: "AbilityRoot", Group: "Other", Handler: "handleParseExternalDatabaseURL", Description: ""},
+	{Method: "GET", Path: "/api/v1/external-databases/providers", Ability: "AbilityRoot", Group: "Other", Handler: "handleListExternalDatabaseProviders", Description: ""},
 	{Method: "POST", Path: "/api/v1/external-databases/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestExternalDatabase", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/external-databases/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteExternalDatabase", Description: ""},
 	{Method: "GET", Path: "/api/v1/external-databases/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetExternalDatabase", Description: ""},

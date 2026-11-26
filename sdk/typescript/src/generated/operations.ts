@@ -1252,6 +1252,8 @@ export const operations = {
   handleCreateExternalDatabase: ["POST","/api/v1/external-databases",1,0],
   handleAdoptExternalDatabase: ["POST","/api/v1/external-databases/adopt",1,0],
   handleListExternalDatabaseCandidates: ["GET","/api/v1/external-databases/candidates",0,0],
+  handleParseExternalDatabaseURL: ["POST","/api/v1/external-databases/parse",1,0],
+  handleListExternalDatabaseProviders: ["GET","/api/v1/external-databases/providers",0,0],
   handleTestExternalDatabase: ["POST","/api/v1/external-databases/test",1,0],
   handleGetExternalDatabase: ["GET","/api/v1/external-databases/{name}",0,0],
   handleUpdateExternalDatabase: ["PUT","/api/v1/external-databases/{name}",1,0],

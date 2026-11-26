@@ -2655,6 +2655,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/node-pools | AbilityRoot | handleListNodePools |
 | PUT | /api/v1/node-pools/{name} | AbilityRoot | handleSetNodePool |
 | DELETE | /api/v1/node-pools/{name} | AbilityRoot | handleDeleteNodePool |
+| GET | /api/v1/external-databases/providers | AbilityRoot | handleListExternalDatabaseProviders |
+| POST | /api/v1/external-databases/parse | AbilityRoot | handleParseExternalDatabaseURL |
 | POST | /mcp | Public |  |
 
 ## See also
