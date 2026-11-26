@@ -302,6 +302,16 @@ database_viewer.max_sql_bytes
 database_viewer.query_timeout
 database_viewer.queue_wait_ms
 database_viewer.schema_max_rows
+databases.advisor_cache_hit_min_ratio
+databases.advisor_cache_seconds
+databases.advisor_dead_tuple_ratio
+databases.advisor_idle_in_tx_minutes
+databases.advisor_max_findings
+databases.advisor_seq_scan_min_rows
+databases.advisor_seq_scan_ratio
+databases.advisor_slow_statement_ms
+databases.advisor_timeout_seconds
+databases.advisor_unused_index_min_bytes
 databases.audit_max_rows
 databases.audit_queue_size
 databases.audit_retention_days

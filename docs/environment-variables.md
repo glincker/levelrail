@@ -355,6 +355,16 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINER_LOG_MAX_FILES` | [`containers.log_max_files`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINER_LOG_MAX_SIZE_MB` | [`containers.log_max_size_mb`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
+| `APP_DATABASES_ADVISOR_CACHE_HIT_MIN_RATIO` | [`databases.advisor_cache_hit_min_ratio`](/runtime-settings#deploys) | `95` |
+| `APP_DATABASES_ADVISOR_CACHE_SECONDS` | [`databases.advisor_cache_seconds`](/runtime-settings#deploys) | `60` |
+| `APP_DATABASES_ADVISOR_DEAD_TUPLE_RATIO` | [`databases.advisor_dead_tuple_ratio`](/runtime-settings#deploys) | `20` |
+| `APP_DATABASES_ADVISOR_IDLE_IN_TX_MINUTES` | [`databases.advisor_idle_in_tx_minutes`](/runtime-settings#deploys) | `5` |
+| `APP_DATABASES_ADVISOR_MAX_FINDINGS` | [`databases.advisor_max_findings`](/runtime-settings#deploys) | `200` |
+| `APP_DATABASES_ADVISOR_SEQ_SCAN_MIN_ROWS` | [`databases.advisor_seq_scan_min_rows`](/runtime-settings#deploys) | `10000` |
+| `APP_DATABASES_ADVISOR_SEQ_SCAN_RATIO` | [`databases.advisor_seq_scan_ratio`](/runtime-settings#deploys) | `50` |
+| `APP_DATABASES_ADVISOR_SLOW_STATEMENT_MS` | [`databases.advisor_slow_statement_ms`](/runtime-settings#deploys) | `500` |
+| `APP_DATABASES_ADVISOR_TIMEOUT_SECONDS` | [`databases.advisor_timeout_seconds`](/runtime-settings#deploys) | `15` |
+| `APP_DATABASES_ADVISOR_UNUSED_INDEX_MIN_BYTES` | [`databases.advisor_unused_index_min_bytes`](/runtime-settings#deploys) | `8388608` |
 | `APP_DB_AUDIT_MAX_ROWS` | [`databases.audit_max_rows`](/runtime-settings#deploys) | `1000000` |
 | `APP_DB_AUDIT_QUEUE_SIZE` | [`databases.audit_queue_size`](/runtime-settings#deploys) | `4096` |
 | `APP_DB_AUDIT_RETENTION_DAYS` | [`databases.audit_retention_days`](/runtime-settings#deploys) | `90` |
