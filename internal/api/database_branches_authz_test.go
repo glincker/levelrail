@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dbaudit"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -188,5 +189,152 @@ func TestBranchAPI_HiddenRootLooksLikeMissing(t *testing.T) {
 	missingCode, missingBody := teamDo(t, f.rt, http.MethodGet, "/api/v1/databases/"+dbA+"/branches/zz-missing", "", func(req *http.Request) { req.AddCookie(cookie) })
 	if hiddenCode != http.StatusNotFound || missingCode != http.StatusNotFound || !strings.Contains(hiddenBody, `"branch not found"`) || !strings.Contains(missingBody, `"branch not found"`) {
 		t.Fatalf("hidden = %d %q, missing = %d %q", hiddenCode, hiddenBody, missingCode, missingBody)
+	}
+}
+
+func TestBranchAPI_WeakerDenyBlocksImpliedRead(t *testing.T) {
+	rt, db, cookie, _ := newLiveBranchRouter(t)
+	seedBranchPolicyDatabases(t, db)
+	branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/app-db/branches", `{"name":"app-db-pr-2","mode":"schema"}`)
+	readyBranch(t, db, "app-db-pr-2")
+	plain := newBranchTokenWith(t, db, "tok_weaker", []string{AbilityRead},
+		stmtDoc("Allow", `"db:write"`, `"database:app-db"`), stmtDoc("Allow", `"db:admin"`, `"database:app-db-pr-*"`),
+		stmtDoc("Deny", `"db:write"`, `"database:app-db-pr-*"`))
+	if code := branchTokenDo(rt, plain, http.MethodGet, "/api/v1/databases/app-db/branches/app-db-pr-2", ""); !denied(code) {
+		t.Fatalf("show with a Deny on db:write = %d, want 403 or 404", code)
+	}
+}
+
+func TestBranchAPI_RootDenyOnAdminHoldsForFlatRoot(t *testing.T) {
+	rt, db, cookie, _ := newLiveBranchRouter(t)
+	seedBranchPolicyDatabases(t, db)
+	branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/app-db/branches", `{"name":"app-db-pr-2","mode":"schema"}`)
+	readyBranch(t, db, "app-db-pr-2")
+	plain := newBranchTokenWith(t, db, "tok_rootdeny", []string{AbilityRoot}, stmtDoc("Deny", `"db:admin"`, `"database:app-db"`))
+	for _, c := range []struct{ method, path, body string }{
+		{http.MethodDelete, "/api/v1/databases/app-db/branches/app-db-pr-2?confirm=app-db-pr-2", ""},
+		{http.MethodPost, "/api/v1/databases/app-db/branches/app-db-pr-2/promote", `{"confirm":"app-db-pr-2"}`},
+		{http.MethodPost, "/api/v1/databases/app-db/branches/app-db-pr-2/reset", `{"confirm":"app-db-pr-2"}`},
+	} {
+		if code := branchTokenDo(rt, plain, c.method, c.path, c.body); !denied(code) {
+			t.Errorf("%s %s = %d, want 403 or 404", c.method, c.path, code)
+		}
+	}
+	if _, err := db.GetDatabaseBranch(context.Background(), "app-db-pr-2"); err != nil {
+		t.Fatalf("branch must survive: %v", err)
+	}
+}
+
+func TestBranchAPI_PolicyTokenPatchesAndPromotesOwnBranch(t *testing.T) {
+	rt, db, cookie, _ := newLiveBranchRouter(t)
+	seedBranchPolicyDatabases(t, db)
+	plain := newBranchPolicyToken(t, db)
+	branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/app-db/branches", `{"name":"app-db-pr-6","mode":"schema"}`)
+	readyBranch(t, db, "app-db-pr-6")
+	if code := branchTokenDo(rt, plain, http.MethodPatch, "/api/v1/databases/app-db/branches/app-db-pr-6", `{"protected":true}`); code != http.StatusOK {
+		t.Fatalf("patch = %d", code)
+	}
+	if code := branchTokenDo(rt, plain, http.MethodPatch, "/api/v1/databases/app-db/branches/app-db-pr-6", `{"protected":false}`); code != http.StatusOK {
+		t.Fatalf("unprotect = %d", code)
+	}
+	if code := branchTokenDo(rt, plain, http.MethodPost, "/api/v1/databases/app-db/branches/app-db-pr-6/promote", `{"confirm":"app-db-pr-6"}`); code != http.StatusOK {
+		t.Fatalf("promote = %d", code)
+	}
+}
+
+func TestBranchAPI_NestedBranchPathNameIsChecked(t *testing.T) {
+	rt, db, cookie, _ := newLiveBranchRouter(t)
+	seedBranchPolicyDatabases(t, db)
+	branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/app-db/branches", `{"name":"app-db-pr-5","mode":"schema"}`)
+	readyBranch(t, db, "app-db-pr-5")
+	if rec := branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/app-db/branches", `{"name":"app-db-pr-5-x","mode":"schema","parent":"app-db-pr-5"}`); rec.Code != http.StatusAccepted {
+		t.Fatalf("nested create = %d %s", rec.Code, rec.Body.String())
+	}
+	plain := newBranchPolicyToken(t, db)
+	if code := branchTokenDo(rt, plain, http.MethodGet, "/api/v1/databases/app-db-pr-5/branches/app-db-pr-5-x", ""); code != http.StatusOK {
+		t.Fatalf("nested show = %d", code)
+	}
+	denyMid := newBranchTokenWith(t, db, "tok_nested", []string{AbilityRead},
+		stmtDoc("Allow", `"db:write"`, `"database:app-db"`), stmtDoc("Allow", `"db:admin"`, `"database:app-db-pr-*"`),
+		stmtDoc("Deny", `"db:read"`, `"database:app-db-pr-5"`))
+	if code := branchTokenDo(rt, denyMid, http.MethodGet, "/api/v1/databases/app-db-pr-5/branches/app-db-pr-5-x", ""); code != http.StatusNotFound {
+		t.Fatalf("nested show with a denied path database = %d, want 404", code)
+	}
+}
+
+func TestBranchAPI_HiddenRootWithRealBranchLooksLikeMissing(t *testing.T) {
+	f := newTeamFixture(t)
+	now := time.Now().UTC().Format(time.RFC3339)
+	if err := f.db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "teamb-real", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.db.CreateDatabaseBranch(context.Background(), store.DatabaseBranch{ID: "bch_real", DatabaseName: "teamb-real", ParentName: dbB, RootName: dbB, Mode: "schema", Source: "live", State: "ready", CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	cookie := f.cookies[allTeamRoles[0]]
+	do := func(branch string) (int, string) {
+		return teamDo(t, f.rt, http.MethodGet, "/api/v1/databases/"+dbB+"/branches/"+branch, "", func(req *http.Request) { req.AddCookie(cookie) })
+	}
+	realCode, realBody := do("teamb-real")
+	missCode, missBody := do("zz-missing")
+	if realCode != http.StatusNotFound || missCode != http.StatusNotFound || !strings.Contains(realBody, `"branch not found"`) || !strings.Contains(missBody, `"branch not found"`) {
+		t.Fatalf("real = %d %q, missing = %d %q", realCode, realBody, missCode, missBody)
+	}
+}
+
+func TestBranchAPI_AuditRecordsResolvedRoot(t *testing.T) {
+	rt, db, cookie, _ := newLiveBranchRouter(t)
+	seedBranchPolicyDatabases(t, db)
+	w := dbaudit.New(db, auditTestSettings{}, dbaudit.Options{FlushInterval: time.Hour})
+	rt.WithDatabaseAudit(w)
+	branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/app-db/branches", `{"name":"app-db-pr-3","mode":"schema"}`)
+	okTok := newBranchPolicyToken(t, db)
+	if code := branchTokenDo(rt, okTok, http.MethodGet, "/api/v1/databases/app-db/branches/app-db-pr-3", ""); code != http.StatusOK {
+		t.Fatalf("show = %d", code)
+	}
+	w.Flush(context.Background())
+	denyTok := newBranchTokenWith(t, db, "tok_audit", []string{AbilityRoot}, stmtDoc("Deny", `"db:read"`, `"database:app-db"`))
+	if code := branchTokenDo(rt, denyTok, http.MethodGet, "/api/v1/databases/app-db/branches/app-db-pr-3", ""); !denied(code) {
+		t.Fatalf("denied show = %d", code)
+	}
+	w.Flush(context.Background())
+	if code := branchTokenDo(rt, denyTok, http.MethodGet, "/api/v1/databases/HOSTILE%20NAME/branches/zz", ""); !denied(code) && code != http.StatusBadRequest {
+		t.Fatalf("hostile show = %d", code)
+	}
+	w.Flush(context.Background())
+	rows, _, err := db.ListDatabaseStatementAudits(context.Background(), store.DatabaseStatementAuditFilter{DatabaseName: "app-db", Limit: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blank, _, err := db.ListDatabaseStatementAudits(context.Background(), store.DatabaseStatementAuditFilter{Limit: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows = append(rows, blank...)
+	sawOK, sawDenied := false, false
+	for _, row := range rows {
+		if strings.Contains(row.DatabaseName, "HOSTILE") || strings.Contains(row.BranchName, "HOSTILE") {
+			t.Errorf("raw caller value in audit row: %+v", row)
+		}
+		if row.BranchName == "app-db-pr-3" && row.DatabaseName == "app-db" {
+			if row.Outcome == "ok" {
+				sawOK = true
+			}
+			if row.Outcome == "denied" {
+				sawDenied = true
+			}
+		}
+	}
+	if !sawOK || !sawDenied {
+		t.Fatalf("want an ok and a denied row naming the root, got %+v", rows)
+	}
+}
+
+func TestBranchAPI_RootDatabaseNameLookingLikeBranchIsRefused(t *testing.T) {
+	rt, db, cookie, _ := newLiveBranchRouter(t)
+	seedBranchPolicyDatabases(t, db)
+	rec := branchDo(t, rt, cookie, http.MethodPost, "/api/v1/databases", `{"name":"app-db-pr-12","engine":"postgres","version":"16"}`)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("create = %d %s, want 409", rec.Code, rec.Body.String())
 	}
 }
