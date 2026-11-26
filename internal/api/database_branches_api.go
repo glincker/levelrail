@@ -162,20 +162,12 @@ func (rt *Router) dbActionVerdict(r *http.Request, action dbauthz.Action, databa
 		return false, true
 	}
 	resolver := &dbauthz.Resolver{Engine: &dbPolicyEngine{rt: rt}}
-	for _, a := range impliedActions(action) {
-		d, err := resolver.Resolve(r.Context(), dbauthz.Caller{PrincipalType: pt, PrincipalID: pid, Abilities: abilities}, dbauthz.ResourcePrefix+database, a)
-		if err != nil {
-			// Fail closed: an engine error must never make a database look visible.
-			return false, true
-		}
-		if d.Hidden {
-			return false, true
-		}
-		if d.Allowed {
-			return true, false
-		}
+	allowed, hidden, err = resolveImplied(r.Context(), resolver, dbauthz.Caller{PrincipalType: pt, PrincipalID: pid, Abilities: abilities}, dbauthz.ResourcePrefix+database, action)
+	if err != nil {
+		// Fail closed: an engine error must never make a database look visible.
+		return false, true
 	}
-	return false, false
+	return allowed, hidden
 }
 
 // requireDBAction answers 404 for a hidden database and 403 for a denied action, and reports whether the caller may go on.
@@ -225,8 +217,28 @@ func (rt *Router) loadPathBranch(w http.ResponseWriter, r *http.Request, action 
 		rt.internalError(w, "api: database branch: load failed", err)
 		return store.DatabaseBranch{}, nil, false
 	}
-	if !rt.requireDBAction(w, r, action, b.DatabaseName) {
-		return store.DatabaseBranch{}, nil, false
+	// The branch is checked first, then the tree it lives in: managing a branch also needs the
+	// matching right on the root database (read to look, write to change).
+	treeAction := dbauthz.ActionWrite
+	if action == dbauthz.ActionRead {
+		treeAction = dbauthz.ActionRead
+	}
+	for _, c := range []struct {
+		action dbauthz.Action
+		name   string
+	}{{action, b.DatabaseName}, {treeAction, b.RootName}} {
+		allowed, hidden := rt.dbActionVerdict(r, c.action, c.name)
+		if hidden {
+			writeError(w, http.StatusNotFound, "branch not found")
+			return store.DatabaseBranch{}, nil, false
+		}
+		if !allowed {
+			writeError(w, http.StatusForbidden, "this action needs "+string(c.action)+" on database "+c.name)
+			return store.DatabaseBranch{}, nil, false
+		}
+	}
+	if n, ok := r.Context().Value(auditNoteKey{}).(*auditNote); ok {
+		n.Database = b.RootName
 	}
 	return b, bs, true
 }
@@ -594,7 +606,16 @@ func (rt *Router) handleListDatabaseBranches(w http.ResponseWriter, r *http.Requ
 
 func (rt *Router) handleGetDatabaseBranch(w http.ResponseWriter, r *http.Request) {
 	if b, _, ok := rt.loadPathBranch(w, r, dbauthz.ActionRead); ok {
-		writeJSON(w, http.StatusOK, toBranchResource(b))
+		res := toBranchResource(b)
+		if res.ParentName != "" {
+			if _, hidden := rt.dbActionVerdict(r, dbauthz.ActionRead, res.ParentName); hidden {
+				res.ParentName = "hidden"
+			}
+		}
+		if _, hidden := rt.dbActionVerdict(r, dbauthz.ActionRead, res.RootName); hidden {
+			res.RootName = "hidden"
+		}
+		writeJSON(w, http.StatusOK, res)
 	}
 }
 

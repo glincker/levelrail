@@ -37,6 +37,8 @@ type auditNote struct {
 	Text        string
 	Rows        int64
 	Denied      bool
+	// Database overrides the path name when a handler resolved the real root.
+	Database string
 }
 
 // auditDatabaseNameRe mirrors the database name rule, so odd path values never reach a lookup.
@@ -119,6 +121,9 @@ func (rt *Router) recordExplorerAudit(r *http.Request, aw *auditWriter, n *audit
 		OpKind: auditOpKind(r.Pattern), Fingerprint: n.Fingerprint, StatementText: n.Text, RowsReturned: n.Rows,
 		Bytes: aw.bytes, DurationMs: d.Milliseconds(), Outcome: auditOutcome(r, status), ClientIP: clientIP(r), BranchName: r.PathValue("branch"),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")), RequestID: aw.Header().Get(requestIDHeader),
+	}
+	if n.Database != "" {
+		ev.DatabaseName = n.Database
 	}
 	if n.Denied {
 		ev.Outcome = dbaudit.OutcomeDenied

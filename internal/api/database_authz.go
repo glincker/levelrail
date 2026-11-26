@@ -124,6 +124,61 @@ func impliedActions(a dbauthz.Action) []dbauthz.Action {
 	return []dbauthz.Action{a}
 }
 
+// weakerActions lists the actions below a that an explicit Deny can still block.
+func weakerActions(a dbauthz.Action) []dbauthz.Action {
+	switch a {
+	case dbauthz.ActionAdmin:
+		return []dbauthz.Action{dbauthz.ActionRead, dbauthz.ActionWrite}
+	case dbauthz.ActionWrite:
+		return []dbauthz.Action{dbauthz.ActionRead}
+	}
+	return nil
+}
+
+// resolveImplied answers one action on one database. The requested action is resolved first and an
+// explicit Deny on it ends the question. A stronger grant is tried only when the first answer is a
+// plain lack of ability, and it never overrides a Deny on any weaker action.
+func resolveImplied(ctx context.Context, resolver *dbauthz.Resolver, caller dbauthz.Caller, resource string, action dbauthz.Action) (allowed, hidden bool, err error) {
+	first, err := resolver.Resolve(ctx, caller, resource, action)
+	if err != nil {
+		return false, false, err
+	}
+	switch {
+	case first.Hidden:
+		return false, true, nil
+	case first.Allowed:
+		return true, false, nil
+	case first.PolicyDecision == dbauthz.PolicyDenied:
+		return false, false, nil
+	}
+	for _, stronger := range impliedActions(action)[1:] {
+		d, err := resolver.Resolve(ctx, caller, resource, stronger)
+		if err != nil {
+			return false, false, err
+		}
+		if d.Hidden {
+			return false, true, nil
+		}
+		if !d.Allowed {
+			continue
+		}
+		for _, weaker := range weakerActions(stronger) {
+			w, err := resolver.Resolve(ctx, caller, resource, weaker)
+			if err != nil {
+				return false, false, err
+			}
+			if w.Hidden {
+				return false, true, nil
+			}
+			if w.PolicyDecision == dbauthz.PolicyDenied {
+				return false, false, nil
+			}
+		}
+		return true, false, nil
+	}
+	return false, false, nil
+}
+
 // requireAbilityForBranch gates a branch route on the branch itself, not on the parent, so a token
 // limited to branch databases can manage them without any right on the parent beyond creating them.
 func (rt *Router) requireAbilityForBranch(ability string, action dbauthz.Action, next http.HandlerFunc) http.HandlerFunc {
@@ -136,24 +191,14 @@ func (rt *Router) requireAbilityForBranch(ability string, action dbauthz.Action,
 		var hidden bool
 		decision := func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error) {
 			caller := dbauthz.Caller{PrincipalType: principalType, PrincipalID: principalID, Abilities: abilities}
-			allowed := false
-			for _, a := range impliedActions(action) {
-				d, err := resolver.Resolve(ctx, caller, resource, a)
-				if err != nil {
-					return false, err
-				}
-				if d.Hidden {
-					hidden = true
-					return true, nil
-				}
-				allowed = allowed || d.Allowed
-			}
-			return allowed, nil
+			allowed, h, err := resolveImplied(ctx, resolver, caller, resource, action)
+			hidden = h
+			return allowed || h, err
 		}
 		gated := func(w http.ResponseWriter, r *http.Request) {
 			if hidden {
 				noteDenied(r)
-				writeError(w, http.StatusNotFound, "database not found")
+				writeError(w, http.StatusNotFound, "branch not found")
 				return
 			}
 			next(w, r)
