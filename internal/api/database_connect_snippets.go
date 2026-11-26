@@ -89,7 +89,7 @@ func BuildConnectSnippets(t ConnectSnippetTarget, password string, reveal bool) 
 			{"spring-cloud", "Spring Cloud AWS", fmt.Sprintf("spring.cloud.aws.dynamodb.endpoint=%s\nspring.cloud.aws.region.static=us-east-1\nspring.cloud.aws.credentials.access-key=local\nspring.cloud.aws.credentials.secret-key=local", ep)},
 			{"node", "Node.js (AWS SDK v3)", fmt.Sprintf("const client = new DynamoDBClient({ region: \"us-east-1\", endpoint: %q, credentials: { accessKeyId: \"local\", secretAccessKey: \"local\" } });", ep)},
 			{"python", "Python (boto3)", fmt.Sprintf("client = boto3.client(\"dynamodb\", endpoint_url=%q, region_name=\"us-east-1\", aws_access_key_id=\"local\", aws_secret_access_key=\"local\")", ep)},
-			{"go", "Go (AWS SDK v2)", fmt.Sprintf("client := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) { o.BaseEndpoint = aws.String(%q) })", ep)},
+			{"go", "Go (AWS SDK v2)", fmt.Sprintf("cfg, _ := config.LoadDefaultConfig(ctx, config.WithRegion(\"us-east-1\"),\n    config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(\"local\", \"local\", \"\")))\nclient := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) { o.BaseEndpoint = aws.String(%q) })", ep)},
 		}
 	}
 	return nil
