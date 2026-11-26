@@ -46,7 +46,29 @@
       "go": "Go",
       "dotnet": ".NET",
       "url": "URL",
-      "env": ".env"
+      "env": ".env",
+      "jdbc": "JDBC",
+      "prisma": "Prisma",
+      "drizzle": "Drizzle",
+      "sqlalchemy": "SQLAlchemy",
+      "django": "Django",
+      "rails": "Rails",
+      "compose": "Compose",
+      "cli": "CLI"
+    },
+    "where": "アプリはどこで動いていますか?",
+    "stackLabel": "スタック",
+    "localPort": "ローカルポート",
+    "tunnelCommand": "トンネルコマンド",
+    "tunnelNote": "自分のPCで一度実行し、開いたままにしてください。トンネルはコマンドの実行中のみ有効です。アプリは127.0.0.1に接続します。",
+    "internalNote": "このサーバー上のアプリは内部ホスト名で接続します。データベースをアプリにリンクすると{{var}}が自動で設定されます。",
+    "remoteUnavailable": "このデータベースは公開されていません。ネットワークで公開するか、トンネルを使用してください。",
+    "openNetworking": "ネットワークを開く",
+    "downloadLocked": "ファイルをダウンロードするにはパスワードを表示してください。",
+    "mode": {
+      "host": "このマシン",
+      "internal": "別のLevelrailアプリ",
+      "remote": "リモートマシン"
     }
   },
   "upgrades": {

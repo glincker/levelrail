@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import {
   DownloadGlassIcon,
   EyeGlassIcon,
   EyeOffGlassIcon,
 } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -17,14 +17,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { EngineMark } from '@/components/EngineMark'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
 import {
   buildConnectSnippets,
   CONNECT_DOWNLOAD_FILES,
+  connectEndpoint,
+  tunnelCommand,
+  type ConnectMode,
   connectDatabase,
   connectHasPassword,
   connectUser,
+  envVarName,
+  LOOPBACK_HOST,
   connectFrameworks,
   downloadContent,
   type ConnectDownload,
@@ -32,24 +36,20 @@ import {
   type ConnectInput,
 } from '@/lib/connectSnippets'
 import { useStepUpGate } from '../../hooks/useStepUpGate'
-import {
-  databaseAccessKeys,
-  useDatabaseNetwork,
-} from '../../queries/databaseAccess'
+import { useDatabaseNetwork } from '../../queries/databaseAccess'
 import {
   credentialsStepUpScope,
   revealDatabasePassword,
 } from '../../queries/databaseCredentials'
-import { useSetDatabasePublicAccess } from '../../queries/databases'
 import type { DatabaseResource } from '../../types/databaseDetail'
 import { StepUpDialog } from '../env/StepUpDialog'
 import { CopyField } from '../traffic/CopyField'
 
 const HIDE_AFTER_MS = 30_000
-const LOOPBACK = '127.0.0.1'
 const DOWNLOADS: ConnectDownload[] = ['env', 'properties', 'yaml']
 
-type Target = 'machine' | 'apps'
+const MODES: ConnectMode[] = ['host', 'internal', 'remote']
+const MAX_PORT = 65535
 
 function saveFile(filename: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
@@ -81,10 +81,10 @@ export function ConnectDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('databases')
-  const queryClient = useQueryClient()
   const { data: network } = useDatabaseNetwork(database.name)
-  const publish = useSetDatabasePublicAccess()
-  const [target, setTarget] = useState<Target | null>(null)
+  const [mode, setMode] = useState<ConnectMode>('host')
+  const [stack, setStack] = useState<ConnectFramework | null>(null)
+  const [tunnelPort, setTunnelPort] = useState<number | null>(null)
   const [password, setPassword] = useState<string | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   const timer = useRef<number | null>(null)
@@ -120,23 +120,25 @@ export function ConnectDialog({
   const publishedPort = published?.host_port ?? database.public_port
   const isPublished =
     Boolean(published) || Boolean(database.publicly_accessible)
-  const active: Target = target ?? (isPublished ? 'machine' : 'apps')
   const tls = network?.tls.enabled ?? database.tls_enabled ?? false
   const loopbackOnly =
     database.public_bind_address === 'private' ||
     (published?.bind.length
-      ? published.bind.every((b) => b === LOOPBACK)
+      ? published.bind.every((b) => b === LOOPBACK_HOST)
       : false)
+  const internal = network
+    ? { host: network.internal.host, port: network.internal.port }
+    : null
+  const localPort = tunnelPort ?? internal?.port ?? null
+  const remote =
+    isPublished && publishedPort && !loopbackOnly
+      ? { host: window.location.hostname, port: publishedPort }
+      : null
 
   const endpoint =
-    active === 'machine' && publishedPort
-      ? {
-          host: loopbackOnly ? LOOPBACK : window.location.hostname,
-          port: publishedPort,
-        }
-      : network
-        ? { host: network.internal.host, port: network.internal.port }
-        : null
+    internal && localPort
+      ? connectEndpoint({ mode, internal, tunnelPort: localPort, remote })
+      : null
 
   const input: ConnectInput | null = endpoint
     ? {
@@ -151,23 +153,10 @@ export function ConnectDialog({
     : null
   const snippets = input ? buildConnectSnippets(input) : null
   const frameworks: ConnectFramework[] = connectFrameworks(engine)
-
-  const runPublish = () => {
-    publish.mutate(
-      { name: database.name },
-      {
-        onSuccess: () => {
-          setTarget('machine')
-          void queryClient.invalidateQueries({
-            queryKey: databaseAccessKeys.network(database.name),
-          })
-        },
-        onError: (e) => {
-          toast.add({ title: e.message, type: 'error' })
-        },
-      },
-    )
-  }
+  const activeStack =
+    stack && frameworks.includes(stack) ? stack : (frameworks[0] ?? 'url')
+  // Files carry the secret, so they unlock only after a reveal.
+  const canDownload = !hasPassword || password !== null
 
   const download = (kind: ConnectDownload) => {
     if (!input) return
@@ -191,47 +180,87 @@ export function ConnectDialog({
           <DialogDescription>{t('connect.description')}</DialogDescription>
         </DialogHeader>
 
-        <div
-          role="group"
-          aria-label={t('connect.targetLabel')}
-          className="flex flex-wrap items-center gap-2"
-        >
-          {(['machine', 'apps'] as const).map((id) => (
-            <Button
-              key={id}
-              size="sm"
-              variant={active === id ? 'tinted' : 'outline'}
-              aria-pressed={active === id}
-              onClick={() => setTarget(id)}
-            >
-              {t(`connect.target.${id}`)}
-            </Button>
-          ))}
-          {active === 'machine' ? (
-            isPublished && publishedPort ? (
-              <Badge variant="success">
-                {t('connect.published', {
-                  address: `${loopbackOnly ? LOOPBACK : window.location.hostname}:${publishedPort}`,
-                })}
-              </Badge>
-            ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <span id="connect-where" className="text-sm font-medium">
+            {t('connect.where')}
+          </span>
+          <div
+            role="group"
+            aria-labelledby="connect-where"
+            className="flex flex-wrap items-center gap-2"
+          >
+            {MODES.map((id) => (
               <Button
+                key={id}
                 size="sm"
-                disabled={publish.isPending}
-                aria-busy={publish.isPending}
-                onClick={runPublish}
+                variant={mode === id ? 'tinted' : 'outline'}
+                aria-pressed={mode === id}
+                onClick={() => {
+                  setMode(id)
+                }}
               >
-                {publish.isPending
-                  ? t('connect.publishing')
-                  : t('connect.publish')}
+                {t(`connect.mode.${id}`)}
               </Button>
-            )
-          ) : null}
+            ))}
+          </div>
         </div>
-        {active === 'machine' && !isPublished ? (
+        {mode === 'host' ? (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="connect-tunnel-port" className="text-sm">
+                {t('connect.localPort')}
+              </label>
+              <Input
+                id="connect-tunnel-port"
+                type="number"
+                min={1}
+                max={MAX_PORT}
+                className="w-24"
+                value={localPort ?? ''}
+                onChange={(e) => {
+                  const n = Number(e.target.value)
+                  setTunnelPort(
+                    Number.isInteger(n) && n > 0 && n <= MAX_PORT ? n : null,
+                  )
+                }}
+              />
+            </div>
+            {localPort ? (
+              <CopyField
+                value={tunnelCommand(database.name, localPort)}
+                label={t('connect.tunnelCommand')}
+                className="w-full"
+              />
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              {t('connect.tunnelNote')}
+            </p>
+          </div>
+        ) : null}
+        {mode === 'internal' ? (
           <p className="text-xs text-muted-foreground">
-            {t('connect.publishHint')}
+            {t('connect.internalNote', { var: envVarName(engine) })}
           </p>
+        ) : null}
+        {mode === 'remote' && !remote ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs text-muted-foreground">
+              {t('connect.remoteUnavailable')}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              nativeButton={false}
+              render={
+                <Link
+                  to="/databases/$name/networking"
+                  params={{ name: database.name }}
+                />
+              }
+            >
+              {t('connect.openNetworking')}
+            </Button>
+          </div>
         ) : null}
 
         {input && snippets ? (
@@ -290,30 +319,32 @@ export function ConnectDialog({
               </Alert>
             ) : null}
 
+            <div
+              role="radiogroup"
+              aria-label={t('connect.stackLabel')}
+              className="flex flex-wrap gap-1.5"
+            >
+              {frameworks.map((id) => (
+                <Button
+                  key={id}
+                  size="sm"
+                  role="radio"
+                  aria-checked={activeStack === id}
+                  variant={activeStack === id ? 'tinted' : 'outline'}
+                  onClick={() => {
+                    setStack(id)
+                  }}
+                >
+                  {t(`connect.tab.${id}`)}
+                </Button>
+              ))}
+            </div>
             <CopyField
-              value={snippets.url ?? ''}
-              label={t('connect.url')}
+              value={snippets[activeStack] ?? ''}
+              label={t(`connect.tab.${activeStack}`)}
+              multiline={activeStack !== 'url'}
               className="w-full"
             />
-
-            <Tabs defaultValue={frameworks[0]}>
-              <TabsList className="max-w-full">
-                {frameworks.map((id) => (
-                  <TabsTrigger key={id} value={id}>
-                    {t(`connect.tab.${id}`)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {frameworks.map((id) => (
-                <TabsContent key={id} value={id} className="pt-2">
-                  <CopyField
-                    value={snippets[id] ?? ''}
-                    label={t(`connect.tab.${id}`)}
-                    multiline={id !== 'url'}
-                  />
-                </TabsContent>
-              ))}
-            </Tabs>
 
             <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
               <span className="text-xs text-muted-foreground uppercase">
@@ -324,6 +355,7 @@ export function ConnectDialog({
                   key={k}
                   size="sm"
                   variant="outline"
+                  disabled={!canDownload}
                   onClick={() => {
                     download(k)
                   }}
@@ -332,6 +364,11 @@ export function ConnectDialog({
                   {CONNECT_DOWNLOAD_FILES[k]}
                 </Button>
               ))}
+              {canDownload ? null : (
+                <span className="text-xs text-muted-foreground">
+                  {t('connect.downloadLocked')}
+                </span>
+              )}
             </div>
           </>
         ) : (
@@ -340,20 +377,6 @@ export function ConnectDialog({
           </p>
         )}
 
-        <details className="rounded-md border border-border p-3">
-          <summary className="cursor-pointer text-sm font-medium">
-            {t('connectDrawer.tunnelTitle')}
-          </summary>
-          <div className="mt-3 space-y-2">
-            <p className="text-sm text-muted-foreground">
-              {t('connectDrawer.tunnelBody')}
-            </p>
-            <CopyField
-              value={`levelrail-cli databases connect ${database.name} --launch`}
-              label={t('connectDrawer.copyCommand')}
-            />
-          </div>
-        </details>
         <StepUpDialog
           scope={gate.pending?.scope ?? null}
           onVerified={() => {

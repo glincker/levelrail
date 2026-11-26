@@ -46,7 +46,29 @@
       "go": "Go",
       "dotnet": ".NET",
       "url": "URL",
-      "env": ".env"
+      "env": ".env",
+      "jdbc": "JDBC",
+      "prisma": "Prisma",
+      "drizzle": "Drizzle",
+      "sqlalchemy": "SQLAlchemy",
+      "django": "Django",
+      "rails": "Rails",
+      "compose": "Compose",
+      "cli": "CLI"
+    },
+    "where": "你的应用运行在哪里?",
+    "stackLabel": "技术栈",
+    "localPort": "本地端口",
+    "tunnelCommand": "隧道命令",
+    "tunnelNote": "在你的电脑上运行一次并保持打开:隧道仅在命令运行期间有效。之后应用连接 127.0.0.1。",
+    "internalNote": "此服务器上的应用通过内部主机名访问。将数据库关联到应用后,{{var}} 会自动设置。",
+    "remoteUnavailable": "此数据库无法从公网访问。打开网络页面发布它,或使用隧道。",
+    "openNetworking": "打开网络",
+    "downloadLocked": "显示密码后才能下载文件。",
+    "mode": {
+      "host": "本机",
+      "internal": "另一个 Levelrail 应用",
+      "remote": "远程机器"
     }
   },
   "upgrades": {

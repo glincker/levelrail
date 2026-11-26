@@ -46,7 +46,29 @@
       "go": "Go",
       "dotnet": ".NET",
       "url": "URL",
-      "env": ".env"
+      "env": ".env",
+      "jdbc": "JDBC",
+      "prisma": "Prisma",
+      "drizzle": "Drizzle",
+      "sqlalchemy": "SQLAlchemy",
+      "django": "Django",
+      "rails": "Rails",
+      "compose": "Compose",
+      "cli": "CLI"
+    },
+    "where": "Wo läuft Ihre App?",
+    "stackLabel": "Stack",
+    "localPort": "Lokaler Port",
+    "tunnelCommand": "Tunnel-Befehl",
+    "tunnelNote": "Führen Sie dies einmal auf Ihrem Rechner aus und lassen Sie es offen: Der Tunnel besteht nur, solange der Befehl läuft. Ihre App verbindet sich dann mit 127.0.0.1.",
+    "internalNote": "Apps auf diesem Server erreichen sie über den internen Hostnamen. Verknüpfen Sie die Datenbank mit der App, dann wird {{var}} automatisch gesetzt.",
+    "remoteUnavailable": "Diese Datenbank ist nicht öffentlich erreichbar. Öffnen Sie Netzwerk, um sie zu veröffentlichen, oder nutzen Sie einen Tunnel.",
+    "openNetworking": "Netzwerk öffnen",
+    "downloadLocked": "Zeigen Sie das Passwort an, um Dateien herunterzuladen.",
+    "mode": {
+      "host": "Auf diesem Rechner",
+      "internal": "Andere Levelrail-App",
+      "remote": "Entfernter Rechner"
     }
   },
   "upgrades": {

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DatabasesI18n } from '../../test/databasesI18n'
@@ -53,6 +53,7 @@ describe('ConnectDialog', () => {
     net.port = 6379
     show({ name: 'demo-valkey', engine: 'valkey', publicly_accessible: true })
     expect(screen.queryByLabelText(/reveal password/i)).toBeNull()
+    fireEvent.click(screen.getByRole('radio', { name: 'URL' }))
     expect(
       screen.getAllByText(/redis:\/\/127\.0\.0\.1:6379/).length,
     ).toBeGreaterThan(0)
