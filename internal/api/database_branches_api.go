@@ -379,6 +379,9 @@ func (rt *Router) createLiveBranch(w http.ResponseWriter, r *http.Request, req c
 	if !ok {
 		return
 	}
+	if rt.refuseRemoteBranchNode(w, parentDB.NodeID) {
+		return
+	}
 	if mode == dbbranch.ModeSchema && !schemaBranchEngine(parentDB.Engine) {
 		writeError(w, http.StatusConflict, "schema only branches are not available for "+parentDB.Engine+" yet")
 		return
@@ -393,7 +396,7 @@ func (rt *Router) createLiveBranch(w http.ResponseWriter, r *http.Request, req c
 			rt.internalError(w, "api: create branch: load parent branch failed", err)
 			return
 		}
-		if parentRow.State != dbbranch.StateReady {
+		if !dbbranch.Reachable(parentRow.State) {
 			writeError(w, http.StatusConflict, "parent branch is "+parentRow.State+", not ready")
 			return
 		}
@@ -602,6 +605,30 @@ func (rt *Router) TeardownBranchDatabase(ctx context.Context, name string) error
 	}
 	if err := rt.databases.DeleteDesiredDatabase(ctx, name); err != nil && !errors.Is(err, store.ErrDatabaseNotFound) {
 		return err
+	}
+	rt.changes.Publish(changeDatabases, name)
+	rt.nudgeReconciler()
+	return rt.runDatabaseTeardown(ctx, name, d.NodeID, true)
+}
+
+// CleanupFailedBranchDatabase removes the container and volume of a failed branch and suspends the
+// database so it is not recreated. Both rows stay until the branch is deleted or failed_retention ends.
+func (rt *Router) CleanupFailedBranchDatabase(ctx context.Context, name string) error {
+	defer lockAppName("database:" + name)()
+	d, err := rt.databases.GetDesiredDatabase(ctx, name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("api: cleanup failed branch %q: %w", name, err)
+	}
+	if err := rt.databases.UpdateDatabaseSuspended(ctx, name, true); err != nil && !errors.Is(err, store.ErrDatabaseNotFound) {
+		return err
+	}
+	if rt.execRuntime != nil {
+		if err := rt.recordDatabaseTeardown(ctx, name, d.NodeID, true); err != nil {
+			return err
+		}
 	}
 	rt.changes.Publish(changeDatabases, name)
 	rt.nudgeReconciler()
@@ -876,6 +903,13 @@ func (rt *Router) handleResetDatabaseBranch(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, "branch database not found")
 		return
 	}
+	nodes := []string{old.NodeID}
+	if parent, perr := rt.databases.GetDesiredDatabase(r.Context(), b.ParentName); perr == nil {
+		nodes = append(nodes, parent.NodeID)
+	}
+	if rt.refuseRemoteBranchNode(w, nodes...) {
+		return
+	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	if err := dbbranch.Move(r.Context(), bs, b.ID, b.State, dbbranch.StateResetting, "", now); err != nil {
 		if errors.Is(err, store.ErrDatabaseBranchProtected) {
@@ -959,4 +993,16 @@ func (rt *Router) reservedBranchName(ctx context.Context, name string) (string, 
 		i += 1 + next
 	}
 	return "", false
+}
+
+// refuseRemoteBranchNode answers 409 when any database involved lives on a remote node, because the
+// copy backends only reach the control plane's own container runtime.
+func (rt *Router) refuseRemoteBranchNode(w http.ResponseWriter, nodeIDs ...string) bool {
+	for _, n := range nodeIDs {
+		if n != "" && n != rt.localNodeID {
+			writeCodedError(w, http.StatusConflict, "branch_remote_node_unsupported", "branches of a database on a remote node are not supported yet; they are planned with the node data plane work")
+			return true
+		}
+	}
+	return false
 }

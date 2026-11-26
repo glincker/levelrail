@@ -183,3 +183,17 @@ func TestCloneEmptyBranchFailsVerify(t *testing.T) {
 		t.Fatalf("err=%v reason=%q", err, s.reason)
 	}
 }
+
+func TestCloneFailureUsesCleanupAndKeepsRows(t *testing.T) {
+	s := &fakeCloneStore{}
+	var torn, cleaned []string
+	c := newCloner(s, &fakeDumper{}, fakeRestorer{err: errors.New("boom")}, &torn)
+	c.Cleanup = func(_ context.Context, n string) error { cleaned = append(cleaned, n); return nil }
+	b := store.DatabaseBranch{ID: "b1", DatabaseName: "br", ParentName: "p", Mode: ModeSchema, State: StateRequested}
+	if err := c.Run(context.Background(), b, "postgres"); err == nil {
+		t.Fatal("expected a clone error")
+	}
+	if len(torn) != 0 || len(cleaned) != 1 || cleaned[0] != "br" || s.states[len(s.states)-1] != "cloning>failed" {
+		t.Fatalf("torn=%v cleaned=%v states=%v", torn, cleaned, s.states)
+	}
+}

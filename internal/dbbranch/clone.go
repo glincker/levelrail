@@ -77,6 +77,9 @@ type Cloner struct {
 	WaitReady func(ctx context.Context, databaseName string) error
 	// Teardown removes the branch container and volume after a failure.
 	Teardown func(ctx context.Context, databaseName string) error
+	// Cleanup, when set, runs instead of Teardown after a failure: it removes the container and volume
+	// but keeps the database and branch rows, so the reason stays visible until failed_retention.
+	Cleanup func(ctx context.Context, databaseName string) error
 	// Container maps a database name to its container name.
 	Container func(databaseName string) string
 	// Count returns the table or key count of a container, used to compare branch with parent before ready.
@@ -237,8 +240,12 @@ func (c *Cloner) fail(ctx context.Context, b store.DatabaseBranch, cur, engine, 
 		}
 		return
 	}
-	if c.Teardown != nil {
-		if terr := c.Teardown(ctx, b.DatabaseName); terr != nil && c.Log != nil {
+	cleanup := c.Teardown
+	if c.Cleanup != nil {
+		cleanup = c.Cleanup
+	}
+	if cleanup != nil {
+		if terr := cleanup(ctx, b.DatabaseName); terr != nil && c.Log != nil {
 			c.Log.Warn("dbbranch: failure cleanup", slog.String("branch", b.DatabaseName), slog.String("error", terr.Error()))
 		}
 	}

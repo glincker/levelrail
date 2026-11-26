@@ -305,3 +305,31 @@ func TestLaterMigrationsHandleBranchTables(t *testing.T) {
 		}
 	}
 }
+
+func TestPromoteReRootsTheSubtree(t *testing.T) {
+	ctx := context.Background()
+	db := openTestDB(t)
+	seedDatabases(t, db, "app", "app-p", "app-c", "app-gc", "app-other")
+	p := testBranch("p", "app-p", "app", "app")
+	p.State = "promoting"
+	c := testBranch("c", "app-c", "app-p", "app")
+	gc := testBranch("g", "app-gc", "app-c", "app")
+	other := testBranch("o", "app-other", "app", "app")
+	for _, b := range []DatabaseBranch{p, c, gc, other} {
+		if err := db.CreateDatabaseBranch(ctx, b); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.UpdateDatabaseBranchState(ctx, "p", "promoting", "promoted", "", "t"); err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]string{"app-p": "app-p", "app-c": "app-p", "app-gc": "app-p", "app-other": "app"} {
+		got, _ := db.GetDatabaseBranch(ctx, name)
+		if got.RootName != want {
+			t.Errorf("%s root = %q, want %q", name, got.RootName, want)
+		}
+	}
+	if kids, _ := db.ListDatabaseBranchesByRoot(ctx, "app"); len(kids) != 1 {
+		t.Errorf("old tree keeps %d rows, want 1", len(kids))
+	}
+}

@@ -36,6 +36,7 @@ func (c *routerBranchCloner) Run(ctx context.Context, b store.DatabaseBranch, en
 		Store: cs, Dumper: c.dumper, Restorer: c.restorer,
 		WaitReady: c.rt.waitDatabaseReady,
 		Teardown:  c.rt.TeardownBranchDatabase,
+		Cleanup:   c.rt.CleanupFailedBranchDatabase,
 		Container: databaseContainerName,
 		Timeout: func(ctx context.Context) time.Duration {
 			return c.rt.runtimeSettings.Duration(ctx, runtimesettings.KeyBranchesCloneTimeout)

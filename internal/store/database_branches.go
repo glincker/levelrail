@@ -203,13 +203,21 @@ func (db *DB) UpdateDatabaseBranchState(ctx context.Context, id, from, to, reaso
 	}
 	set := ""
 	if to == "promoted" {
-		set = ", parent_name = '', expires_at = '', expiry_preset = ''"
+		// The promoted database becomes the root of its own tree, with every descendant.
+		set = ", parent_name = '', root_name = database_name, expires_at = '', expiry_preset = ''"
 	}
-	res, err := db.ExecContext(ctx, `UPDATE database_branches SET state = ?, state_reason = ?, updated_at = ?`+set+` WHERE id = ? AND state = ?`+guard, to, reason, now, id, from)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: update database branch %q state: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `UPDATE database_branches SET state = ?, state_reason = ?, updated_at = ?`+set+` WHERE id = ? AND state = ?`+guard, to, reason, now, id, from)
 	if err != nil {
 		return fmt.Errorf("store: update database branch %q state: %w", id, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
+		// Release the single connection before reading the row again.
+		_ = tx.Rollback()
 		cur, gerr := db.getDatabaseBranchByID(ctx, id)
 		if gerr != nil {
 			return gerr
@@ -218,6 +226,18 @@ func (db *DB) UpdateDatabaseBranchState(ctx context.Context, id, from, to, reaso
 			return ErrDatabaseBranchProtected
 		}
 		return ErrDatabaseBranchStateRace
+	}
+	if to == "promoted" {
+		if _, err := tx.ExecContext(ctx, `WITH RECURSIVE d(n) AS (
+			SELECT database_name FROM database_branches WHERE parent_name = (SELECT database_name FROM database_branches WHERE id = ?)
+			UNION
+			SELECT b.database_name FROM database_branches b JOIN d ON b.parent_name = d.n
+		) UPDATE database_branches SET root_name = (SELECT database_name FROM database_branches WHERE id = ?) WHERE database_name IN (SELECT n FROM d)`, id, id); err != nil {
+			return fmt.Errorf("store: re-root branches of %q: %w", id, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: update database branch %q state: %w", id, err)
 	}
 	return nil
 }
