@@ -27,6 +27,8 @@ import { ApiErrorAlert } from '../ApiErrorAlert'
 import { useDockerDegradedPoll } from '../../queries/dockerIntegration'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import { useDatabaseEnginesOptional } from '../../queries/databaseEngines'
+import { useIsDemo } from '../../hooks/useDemo'
+import { DemoSampleDatabaseResult } from '../demo/DemoSampleResults'
 import { useCreateDatabase, useDatabases } from '../../queries/databases'
 import { useDatabaseVersions } from '../../queries/databaseVersions'
 import { useSystemStatusOptional } from '../../queries/systemStatus'
@@ -98,6 +100,10 @@ export function DatabaseFlow({
   const [userName, setUserName] = useState<string | null>(null)
   const [userVersion, setUserVersion] = useState<string | null>(null)
   const [attempted, setAttempted] = useState(false)
+  const isDemo = useIsDemo()
+  const [sample, setSample] = useState<{ name: string; engine: string } | null>(
+    null,
+  )
   const [nameBlurred, setNameBlurred] = useState(false)
 
   const engine = engines.find((e) => e.id === base.engine) ?? DEFAULT_ENGINE
@@ -130,6 +136,10 @@ export function DatabaseFlow({
 
   async function submit(volume?: 'reuse' | 'discard') {
     const name = values.name.trim()
+    if (isDemo) {
+      setSample({ name, engine: values.engine })
+      return
+    }
     try {
       await create.mutateAsync({
         name,
@@ -189,6 +199,16 @@ export function DatabaseFlow({
     memory: PRESETS.find((p) => p.id === values.preset)?.memoryMiB,
     schedule: t(SCHEDULE_LABEL[values.schedule]).toLowerCase(),
   })
+
+  if (sample) {
+    return (
+      <DemoSampleDatabaseResult
+        name={sample.name}
+        engine={sample.engine}
+        onClose={onClose}
+      />
+    )
+  }
 
   return (
     <form

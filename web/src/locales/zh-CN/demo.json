@@ -27,8 +27,6 @@
   },
   "unavailable": {
     "title": "演示中不可用",
-    "terminal": "终端和命令执行会在真实主机上运行命令,因此在演示中已关闭。",
-    "database": "数据库浏览器和 SQL 控制台会连接到真实数据库,因此在演示中已关闭。",
     "generic": "此功能需要真实主机,因此在演示中已关闭。",
     "installHint": "在你自己的服务器上安装 {{brand}} 即可使用。",
     "install": "查看安装方法"
@@ -79,5 +77,86 @@
     "description": "This feature needs a real server, so the demo shows it as a preview only. Install {{brand}} on your own host to use it with your apps.",
     "install": "Install {{brand}}",
     "title": "Available when you install"
+  },
+  "sample": {
+    "badge": "示例",
+    "back": "返回",
+    "close": "关闭",
+    "chat": {
+      "hint": "预设回复，用于展示助手如何作答。安装后可连接你自己的模型，并询问你的应用。",
+      "empty": "选择一个问题，查看示例回答。",
+      "prompts": {
+        "crashloop": "我的应用为什么一直重启？",
+        "slow": "为什么响应变慢了？",
+        "rollback": "回滚上一次部署"
+      },
+      "replies": {
+        "crashloop": "示例回复：我读取了最近 200 行日志和容器退出码。进程在启动后立即以退出码 1 结束，原因是缺少必需的变量。请在应用环境中设置该变量并重新部署。",
+        "slow": "示例回复：我对比了最近一小时的 CPU、内存和请求延迟。内存接近上限时延迟会升高。提高内存上限或增加一个副本应该会有帮助。",
+        "rollback": "示例回复：我会建议回滚到上一个正常的部署，并在更改任何内容之前等待你的批准。任何更改都需要你的确认。"
+      }
+    },
+    "terminal": {
+      "hint": "示例 Shell 会话。安装后可在你自己的容器内打开真实终端。",
+      "label": "示例终端记录"
+    },
+    "database": {
+      "hint": "示例查询和结果。安装后可在你自己的数据库上运行 SQL。",
+      "queryLabel": "示例 SQL 查询",
+      "resultLabel": "示例查询结果",
+      "rowCount_one": "{{count}} 行（示例）",
+      "rowCount_other": "{{count}} 行（示例）"
+    },
+    "app": {
+      "hint": "这是示例结果，并未创建任何内容。安装后即可真正部署此应用。",
+      "created": "示例：已创建并部署 {{name}}",
+      "url": "示例 URL：",
+      "logLabel": "示例构建日志"
+    },
+    "db": {
+      "hint": "这是示例结果，并未创建数据库。安装后可在你自己的服务器上创建。",
+      "created": "示例：已创建数据库 {{name}}",
+      "status": "状态",
+      "running": "运行中（示例）",
+      "connectionLabel": "示例连接字符串",
+      "masked": "密码已被遮蔽。真实数据库会显示它自己的连接字符串。"
+    },
+    "env": {
+      "hint": "这是示例预览，未保存任何内容。安装后可管理你自己应用的环境。",
+      "saved": "示例：变量已保存",
+      "added": "新增",
+      "changed": "修改",
+      "removed": "删除",
+      "noChanges": "没有键的变更。",
+      "redeploy": "此时会启动一次重新部署以应用新值（示例）。"
+    },
+    "scale": {
+      "hint": "这是示例预览，应用不会被更改。安装后可扩缩你自己的应用。",
+      "target": "调整后的副本数",
+      "preview": "预览扩缩变更",
+      "change": "副本数：{{from}} 变为 {{to}}（示例）",
+      "steps": {
+        "start": "启动新副本",
+        "health": "等待健康检查通过",
+        "route": "将流量切换到新副本",
+        "done": "停止多余副本并完成"
+      }
+    },
+    "dns": {
+      "hint": "这是示例结果，未执行任何 DNS 查询。安装后可检查你自己的域名。",
+      "domain": "域名",
+      "check": "检查 DNS",
+      "resultLabel": "示例 DNS 检查结果",
+      "type": "类型",
+      "host": "主机",
+      "value": "指向",
+      "state": "状态",
+      "verified": "已验证（示例）",
+      "pending": "等待 DNS 生效（示例）"
+    },
+    "logs": {
+      "hint": "此应用在演示中没有日志。以下几行示例展示了运行中的应用会输出的内容。",
+      "label": "示例应用日志"
+    }
   }
 }

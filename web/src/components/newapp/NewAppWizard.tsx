@@ -27,6 +27,8 @@ import {
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { failedOutcomes, type OptionOutcome } from '../../lib/deployOptions'
 import { clearDraftsByPrefix } from '../../hooks/useDraft'
+import { useIsDemo } from '../../hooks/useDemo'
+import { DemoSampleAppResult } from '../demo/DemoSampleResults'
 import { SourceStep } from './SourceStep'
 import { FindingsStep } from './FindingsStep'
 import { ReviewStep } from './ReviewStep'
@@ -87,6 +89,8 @@ export function NewAppWizard({
   const [analysis, setAnalysis] = useState<ImportAnalysis | null>(null)
   const [edits, setEdits] = useState<NewAppEdits | null>(null)
   const [failure, setFailure] = useState<Failure | null>(null)
+  const isDemo = useIsDemo()
+  const [sampleDone, setSampleDone] = useState(false)
   const resumeStep = useRef<StepId | null>(draft?.step ?? null)
 
   const analyze = useMutation({
@@ -304,7 +308,16 @@ export function NewAppWizard({
         )
       ) : null}
 
-      {step === 'review' && analysis && edits ? (
+      {step === 'review' && analysis && edits && sampleDone ? (
+        <DemoSampleAppResult
+          name={edits.name}
+          onBack={() => {
+            setSampleDone(false)
+          }}
+        />
+      ) : null}
+
+      {step === 'review' && analysis && edits && !sampleDone ? (
         <ReviewStep
           analysis={analysis}
           edits={edits}
@@ -315,6 +328,11 @@ export function NewAppWizard({
           }}
           onDeploy={() => {
             setFailure(null)
+            // The server refuses writes in demo, so show a sample result instead.
+            if (isDemo) {
+              setSampleDone(true)
+              return
+            }
             if (analysis && source && edits) {
               deploy.mutate({
                 analysis,

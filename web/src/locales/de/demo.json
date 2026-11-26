@@ -27,8 +27,6 @@
   },
   "unavailable": {
     "title": "In der Demo nicht verfügbar",
-    "terminal": "Terminal und Befehlsausführung führen Befehle auf einem echten Host aus und sind daher in der Demo deaktiviert.",
-    "database": "Der Datenbank-Explorer und die SQL-Konsole verbinden sich mit einer Live-Datenbank und sind daher in der Demo deaktiviert.",
     "generic": "Diese Funktion benötigt einen echten Host und ist daher in der Demo deaktiviert.",
     "installHint": "Installieren Sie {{brand}} auf Ihrem eigenen Server, um sie zu nutzen.",
     "install": "Installation ansehen"
@@ -79,5 +77,86 @@
     "description": "This feature needs a real server, so the demo shows it as a preview only. Install {{brand}} on your own host to use it with your apps.",
     "install": "Install {{brand}}",
     "title": "Available when you install"
+  },
+  "sample": {
+    "badge": "Beispiel",
+    "back": "Zurück",
+    "close": "Schließen",
+    "chat": {
+      "hint": "Vorgefertigte Antworten, die zeigen, wie der Assistent antwortet. Installieren Sie, um Ihr eigenes Modell anzubinden und nach Ihren Apps zu fragen.",
+      "empty": "Wählen Sie eine Frage, um eine Beispielantwort zu sehen.",
+      "prompts": {
+        "crashloop": "Warum startet meine App ständig neu?",
+        "slow": "Warum sind die Antworten langsam geworden?",
+        "rollback": "Letztes Deployment zurückrollen"
+      },
+      "replies": {
+        "crashloop": "Beispielantwort: Ich habe die letzten 200 Logzeilen und die Exit-Codes des Containers gelesen. Der Prozess beendet sich direkt nach dem Start mit Code 1, weil eine erforderliche Variable fehlt. Setzen Sie sie in der App-Umgebung und deployen Sie erneut.",
+        "slow": "Beispielantwort: Ich habe CPU, Speicher und Anfragelatenz der letzten Stunde verglichen. Die Latenz steigt, wenn der Speicher nahe am Limit liegt. Ein höheres Speicherlimit oder ein zusätzliches Replikat sollte helfen.",
+        "rollback": "Beispielantwort: Ich würde ein Rollback auf das vorherige gesunde Deployment vorschlagen und auf Ihre Freigabe warten, bevor ich etwas ändere. Änderungen brauchen immer Ihre Bestätigung."
+      }
+    },
+    "terminal": {
+      "hint": "Eine Beispielsitzung der Shell. Installieren Sie, um ein echtes Terminal in Ihren eigenen Containern zu öffnen.",
+      "label": "Beispiel-Terminalprotokoll"
+    },
+    "database": {
+      "hint": "Eine Beispielabfrage mit Ergebnis. Installieren Sie, um SQL auf Ihren eigenen Datenbanken auszuführen.",
+      "queryLabel": "Beispiel-SQL-Abfrage",
+      "resultLabel": "Beispiel-Abfrageergebnis",
+      "rowCount_one": "{{count}} Zeile (Beispiel)",
+      "rowCount_other": "{{count}} Zeilen (Beispiel)"
+    },
+    "app": {
+      "hint": "Ein Beispielergebnis. Es wurde nichts erstellt. Installieren Sie, um diese App wirklich zu deployen.",
+      "created": "Beispiel: {{name}} wurde erstellt und deployt",
+      "url": "Beispiel-URL:",
+      "logLabel": "Beispiel-Build-Log"
+    },
+    "db": {
+      "hint": "Ein Beispielergebnis. Es wurde keine Datenbank erstellt. Installieren Sie, um eine auf Ihrem eigenen Server anzulegen.",
+      "created": "Beispiel: Datenbank {{name}} wurde erstellt",
+      "status": "Status",
+      "running": "Läuft (Beispiel)",
+      "connectionLabel": "Beispiel-Verbindungszeichenfolge",
+      "masked": "Das Passwort ist maskiert. Eine echte Datenbank zeigt ihre eigene Verbindungszeichenfolge."
+    },
+    "env": {
+      "hint": "Eine Beispielvorschau. Nichts wurde gespeichert. Installieren Sie, um die Umgebung Ihrer eigenen Apps zu verwalten.",
+      "saved": "Beispiel: Variablen gespeichert",
+      "added": "Hinzugefügt",
+      "changed": "Geändert",
+      "removed": "Entfernt",
+      "noChanges": "Keine Schlüsseländerungen.",
+      "redeploy": "Ein Redeploy würde jetzt starten, um die neuen Werte zu übernehmen (Beispiel)."
+    },
+    "scale": {
+      "hint": "Eine Beispielvorschau. Die App wird nicht verändert. Installieren Sie, um Ihre eigenen Apps zu skalieren.",
+      "target": "Replikate danach",
+      "preview": "Skalierung ansehen",
+      "change": "Replikate: {{from}} auf {{to}} (Beispiel)",
+      "steps": {
+        "start": "Neue Replikate starten",
+        "health": "Auf bestandene Health-Checks warten",
+        "route": "Traffic auf die neuen Replikate leiten",
+        "done": "Überzählige Replikate beenden und abschließen"
+      }
+    },
+    "dns": {
+      "hint": "Ein Beispielergebnis. Es wurde keine DNS-Abfrage ausgeführt. Installieren Sie, um Ihre eigenen Domains zu prüfen.",
+      "domain": "Domain",
+      "check": "DNS prüfen",
+      "resultLabel": "Beispiel-DNS-Prüfergebnis",
+      "type": "Typ",
+      "host": "Host",
+      "value": "Zeigt auf",
+      "state": "Status",
+      "verified": "Verifiziert (Beispiel)",
+      "pending": "Wartet auf DNS (Beispiel)"
+    },
+    "logs": {
+      "hint": "Diese App hat in der Demo keine Logs. Diese Zeilen zeigen beispielhaft, was eine laufende App ausgibt.",
+      "label": "Beispiel-App-Logs"
+    }
   }
 }

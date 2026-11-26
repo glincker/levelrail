@@ -1,10 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useFieldArray, useWatch, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import { BracesGlassIcon, PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { useAppForm } from '../hooks/useAppForm'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
+import { useIsDemo } from '../hooks/useDemo'
+import { diffEnvKeys, type DemoEnvDiff } from '../lib/demoSamples'
+import { DemoSampleEnvSaved } from './demo/DemoSampleResults'
 import { EnvExportButton } from './EnvExportButton'
 import { EnvPasteDialog } from './EnvPasteDialog'
 import { EnvPendingDiff } from './EnvPendingDiff'
@@ -176,10 +179,16 @@ export function EnvVarsForm({
     ]),
   )
 
+  const isDemo = useIsDemo()
+  const [sampleDiff, setSampleDiff] = useState<DemoEnvDiff | null>(null)
   const onSubmit = handleSubmit((formValues) => {
     const vars: Record<string, string> = {}
     for (const v of formValues.vars) {
       vars[v.key.trim()] = v.value
+    }
+    if (isDemo) {
+      setSampleDiff(diffEnvKeys(values ?? {}, vars))
+      return
     }
     // Re-baseline on what was typed (secrets stay as entered), so isDirty is false until the next edit.
     onSave(vars, () => {
@@ -383,6 +392,7 @@ export function EnvVarsForm({
               {isPending ? 'Saving...' : 'Save variables'}
             </Button>
           </div>
+          {sampleDiff ? <DemoSampleEnvSaved diff={sampleDiff} /> : null}
           {errorMessage ? (
             <Alert variant="destructive">
               <AlertDescription>{errorMessage}</AlertDescription>
