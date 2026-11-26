@@ -57,6 +57,8 @@ func dataPath(engine string) (string, bool) {
 		return "/data/db", true
 	case store.EngineDocumentDB:
 		return "/data", true
+	case store.EngineDynamoDB:
+		return "/home/dynamodblocal/data", true
 	}
 	if store.IsRedisFamily(engine) {
 		return "/data", true

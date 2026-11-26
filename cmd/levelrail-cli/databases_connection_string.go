@@ -39,6 +39,8 @@ func defaultEnginePort(engine string) int {
 		return 27017
 	case "documentdb":
 		return 10260
+	case "dynamodb":
+		return 8000
 	}
 	return 0
 }

@@ -594,6 +594,16 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
 		return c.reconcileSearchEngine(ctx, desired)
 
+	case store.EngineDynamoDB:
+		if desired.PubliclyAccessible && desired.PublicBindAddress != "" && desired.PublicBindAddress != bindaddr.Private {
+			err := errors.New("dynamodb has no authentication, so it is only published on the host's loopback address")
+			return notReady("UnauthenticatedExposureRefused", err), nil
+		}
+		if res, stop := c.prepareDynamoDBVolume(ctx); stop {
+			return res, nil
+		}
+		return c.reconcileEngine(ctx, desired, nil, dynamoDBCommand(desired.Resources), dynamoDBDataPath, dynamoDBContainerPort, nil, dynamoDBSpec())
+
 	case store.EngineMemcached:
 		if desired.PubliclyAccessible && desired.PublicBindAddress != "" && desired.PublicBindAddress != bindaddr.Private {
 			err := errors.New("memcached has no authentication, so it is only published on the host's loopback address")
@@ -1076,6 +1086,7 @@ var dockerImageMapping = map[string]string{
 	store.EngineMongoDB: "mongo",
 	// Taken unmodified from the project registry, never rebuilt here.
 	store.EngineDocumentDB:  "ghcr.io/documentdb/documentdb/documentdb-local",
+	store.EngineDynamoDB:    "amazon/dynamodb-local",
 	store.EngineKeyDB:       "eqalpha/keydb",
 	store.EngineDragonfly:   "docker.dragonflydb.io/dragonflydb/dragonfly",
 	store.EngineValkey:      "valkey/valkey",

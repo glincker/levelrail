@@ -15,7 +15,7 @@ For backups, restores, access and logins, see [Managing databases](/managing-dat
 levelrail-cli databases create --name orders-db --engine postgres --version 16 --wait
 ```
 
-`--name`, `--engine` and `--version` are required. The engines accepted by `--engine` are `postgres`, `redis`, `mysql`, `mongodb`, `documentdb` (needs the `documentdb` beta feature), `mariadb`, `keydb`, `dragonfly`, `clickhouse`, `valkey`, `meilisearch`, `qdrant`, `typesense` and `memcached`.
+`--name`, `--engine` and `--version` are required. The engines accepted by `--engine` are `postgres`, `redis`, `mysql`, `mongodb`, `documentdb` (needs the `documentdb` beta feature), `dynamodb` (needs the `dynamodb` beta feature), `mariadb`, `keydb`, `dragonfly`, `clickhouse`, `valkey`, `meilisearch`, `qdrant`, `typesense` and `memcached`.
 
 Version tags depend on the engine. Postgres takes a major such as `16`, or a flavor tag such as `17-pgvector`, `17-timescaledb` or `17-postgis`. Meilisearch and Qdrant take `v`-prefixed tags such as `v1.55`, and Typesense takes tags such as `30.2`. The CLI rejects a version that is not a pinned release tag before it sends the request.
 
@@ -200,3 +200,7 @@ The scheduler runs at boot and then every `APP_DATABASE_PASSWORD_ROTATION_INTERV
 ## DocumentDB
 
 `documentdb` runs the open source DocumentDB gateway (MongoDB wire compatible, built on PostgreSQL) from its own project registry image, unmodified. Switch on the `documentdb` beta feature first. The gateway listens on port 10260 with SCRAM authentication and a self-signed certificate, so clients connect with `tls=true&tlsAllowInvalidCertificates=true`. Backups are not supported for this engine yet.
+
+## DynamoDB (local)
+
+`dynamodb` runs the public `amazon/dynamodb-local` image unmodified with `-sharedDb` and a data volume. Switch on the `dynamodb` beta feature first. The engine has no authentication: any client that reaches port 8000 can read and write, so it is never published on all interfaces (loopback only). Apps use the endpoint `http://db-<name>:8000`, region `us-east-1` and any dummy access key and secret (letters and digits). Backups are not supported yet. The explorer lists tables and runs Query and confirmed Scan reads only.

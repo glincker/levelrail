@@ -20,6 +20,8 @@ const (
 	KindKeyValue Kind = "keyvalue"
 	KindSearch   Kind = "search"
 	KindStats    Kind = "stats"
+	// KindTable is a key and attribute table store with typed items.
+	KindTable Kind = "table"
 )
 
 // Capability is one feature switch. Reason is an i18n key suffix the UI maps
@@ -102,6 +104,12 @@ func noneCaps() Capabilities {
 	}
 }
 
+func tableCaps() Capabilities {
+	c := noneCaps()
+	c.SchemaObjects, c.Documents = soon, soon
+	return c
+}
+
 func documentCaps() Capabilities {
 	c := noneCaps()
 	c.Documents, c.Aggregation, c.Indexes = soon, soon, soon
@@ -120,6 +128,7 @@ var capabilityRegistry = map[string]EngineCapabilities{
 	"qdrant":      {Engine: "qdrant", Kind: KindSearch, Capabilities: statsCaps()},
 	"typesense":   {Engine: "typesense", Kind: KindSearch, Capabilities: statsCaps()},
 	"memcached":   {Engine: "memcached", Kind: KindStats, Capabilities: statsCaps()},
+	"dynamodb":    {Engine: "dynamodb", Kind: KindTable, Planned: true, Capabilities: tableCaps()},
 	"mongodb":     {Engine: "mongodb", Kind: KindDocument, Planned: true, Capabilities: documentCaps()},
 	"documentdb":  {Engine: "documentdb", Kind: KindDocument, Planned: true, Capabilities: documentCaps()},
 	"clickhouse":  {Engine: "clickhouse", Kind: KindSQL, Planned: true, Capabilities: noneCaps()},

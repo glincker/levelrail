@@ -411,6 +411,7 @@ const (
 	EngineMySQL       = "mysql"
 	EngineMongoDB     = "mongodb"
 	EngineDocumentDB  = "documentdb"
+	EngineDynamoDB    = "dynamodb"
 	EngineMariaDB     = "mariadb"
 	EngineKeyDB       = "keydb"
 	EngineClickHouse  = "clickhouse"

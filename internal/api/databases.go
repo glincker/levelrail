@@ -189,7 +189,7 @@ func validateDatabaseIdentity(d databaseResource) error {
 		// A registry parse failure is a build-time invariant, so it is an error rather than treating every engine as valid.
 		return fmt.Errorf("check supported database engines: %w", err)
 	}
-	if !supported || (d.Engine == store.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB)) {
+	if !supported || (d.Engine == store.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB)) || (d.Engine == store.EngineDynamoDB && !experimental.Enabled(experimental.DynamoDB)) {
 		return errors.New("unsupported engine")
 	}
 	return nil

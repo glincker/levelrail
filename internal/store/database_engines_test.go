@@ -84,6 +84,7 @@ func TestSupportedEngines_MatchReconcilerCases(t *testing.T) {
 		EngineMySQL:       true,
 		EngineMongoDB:     true,
 		EngineDocumentDB:  true,
+		EngineDynamoDB:    true,
 		EngineMariaDB:     true,
 		EngineKeyDB:       true,
 		EngineDragonfly:   true,

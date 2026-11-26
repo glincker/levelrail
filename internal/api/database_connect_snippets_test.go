@@ -60,3 +60,19 @@ func TestConnectSnippetsDocumentDBUsesMongoScheme(t *testing.T) {
 	}
 	t.Fatal("no url snippet")
 }
+
+func TestConnectSnippetsDynamoDBHasEndpointAndDummyKeys(t *testing.T) {
+	tgt := ConnectSnippetTarget{Engine: "dynamodb", Host: "db-kv", Port: 8000}
+	got := map[string]string{}
+	for _, s := range BuildConnectSnippets(tgt, "", true) {
+		got[s.ID] = s.Code
+	}
+	if got["url"] != "http://db-kv:8000" {
+		t.Errorf("url = %q", got["url"])
+	}
+	for _, id := range []string{"spring", "spring-cloud", "node", "python", "go"} {
+		if !strings.Contains(got[id], "http://db-kv:8000") {
+			t.Errorf("%s snippet missing endpoint: %q", id, got[id])
+		}
+	}
+}

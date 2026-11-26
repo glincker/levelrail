@@ -2151,6 +2151,9 @@ func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, hos
 		}
 		return u.String(), nil
 	}
+	if engine == store.EngineDynamoDB {
+		return fmt.Sprintf("http://%s:%d", host, port), nil
+	}
 	if engine == store.EngineMemcached {
 		// Memcached clients take a host:port server list, no scheme.
 		return fmt.Sprintf("%s:%d", host, port), nil

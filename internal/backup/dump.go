@@ -28,8 +28,8 @@ func (d *ContainerDumper) Dump(ctx context.Context, engine, containerName string
 	if store.IsSearchEngine(engine) {
 		return d.dumpSearch(ctx, engine, containerName)
 	}
-	if engine == store.EngineDocumentDB {
-		return nil, fmt.Errorf("backup: dump: documentdb backups are not supported yet")
+	if engine == store.EngineDocumentDB || engine == store.EngineDynamoDB {
+		return nil, fmt.Errorf("backup: dump: %s backups are not supported yet", engine)
 	}
 	if !store.EngineSupportsBackups(engine) {
 		return nil, fmt.Errorf("backup: dump: %s keeps no data on disk, so it has no backups", engine)

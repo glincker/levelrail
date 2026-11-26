@@ -21,6 +21,7 @@ const (
 	EngineMySQL       = "mysql"
 	EngineMongoDB     = "mongodb"
 	EngineDocumentDB  = "documentdb"
+	EngineDynamoDB    = "dynamodb"
 	EngineMariaDB     = "mariadb"
 	EngineKeyDB       = "keydb"
 	EngineDragonfly   = "dragonfly"
@@ -36,8 +37,9 @@ const (
 // capture. Memcached holds only an in-memory cache. DocumentDB keeps its
 // data in PostgreSQL tables its image cannot yet dump and restore through a
 // path this control plane has proven, so it is unsupported until then.
+// DynamoDB local has no dump path until the JSON export lands.
 func EngineSupportsBackups(engine string) bool {
-	return engine != EngineMemcached && engine != EngineDocumentDB
+	return engine != EngineMemcached && engine != EngineDocumentDB && engine != EngineDynamoDB
 }
 
 // IsSearchEngine reports whether engine is an HTTP API search or vector

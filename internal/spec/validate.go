@@ -501,7 +501,7 @@ func detectDependsOnCycle(services map[string]Service) error {
 }
 
 var supportedSpecEngineOrder = []string{
-	EnginePostgres, EngineRedis, EngineMySQL, EngineMongoDB, EngineDocumentDB, EngineMariaDB,
+	EnginePostgres, EngineRedis, EngineMySQL, EngineMongoDB, EngineDocumentDB, EngineDynamoDB, EngineMariaDB,
 	EngineKeyDB, EngineClickHouse, EngineDragonfly, EngineValkey,
 	EngineMeilisearch, EngineQdrant, EngineTypesense, EngineMemcached,
 }

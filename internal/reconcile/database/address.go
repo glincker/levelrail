@@ -64,6 +64,8 @@ func ContainerPort(engine string) (int, bool) {
 		return searchLayouts[engine].Port, true
 	case store.EngineMemcached:
 		return memcachedContainerPort, true
+	case store.EngineDynamoDB:
+		return dynamoDBContainerPort, true
 	default:
 		return 0, false
 	}
@@ -156,7 +158,7 @@ func SupportsField(engine, field string) bool {
 		_, ok := ContainerPort(engine)
 		return ok
 	case "username", "database":
-		if store.IsRedisFamily(engine) || store.IsSearchEngine(engine) || engine == store.EngineMemcached {
+		if store.IsRedisFamily(engine) || store.IsSearchEngine(engine) || engine == store.EngineMemcached || engine == store.EngineDynamoDB {
 			return false
 		}
 		_, ok := ContainerPort(engine)

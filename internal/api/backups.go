@@ -42,8 +42,8 @@ func refuseNoBackups(w http.ResponseWriter, engine string) bool {
 	if store.EngineSupportsBackups(engine) {
 		return false
 	}
-	if engine == store.EngineDocumentDB {
-		writeError(w, http.StatusBadRequest, "backups are not supported for documentdb databases yet")
+	if engine == store.EngineDocumentDB || engine == store.EngineDynamoDB {
+		writeError(w, http.StatusBadRequest, "backups are not supported for "+engine+" databases yet")
 		return true
 	}
 	writeError(w, http.StatusBadRequest, "backups are not available for "+engine+" databases: it keeps no data on disk")

@@ -107,7 +107,7 @@ func (rt *Router) boundDatabaseURL(ctx context.Context, d *store.DesiredDatabase
 	}
 	key, ok := database.PasswordSecretKey(d.Engine)
 	port, okPort := database.ContainerPort(d.Engine)
-	if !ok || !okPort || store.IsRedisFamily(d.Engine) || d.Engine == store.EngineMemcached || store.IsSearchEngine(d.Engine) {
+	if !ok || !okPort || store.IsRedisFamily(d.Engine) || d.Engine == store.EngineMemcached || d.Engine == store.EngineDynamoDB || store.IsSearchEngine(d.Engine) {
 		return "", false
 	}
 	pw, err := rt.secrets.Resolve(ctx, d.Name, key)

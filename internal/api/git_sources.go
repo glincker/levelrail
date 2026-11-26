@@ -314,12 +314,12 @@ func validateGitSourceDatabases(databases map[string]spec.Database) error {
 			return fmt.Errorf("databases[%q]: name must be lowercase alphanumeric and hyphens, starting with a letter", name)
 		}
 		switch d.Engine {
-		case spec.EnginePostgres, spec.EngineRedis, spec.EngineMySQL, spec.EngineMongoDB, spec.EngineDocumentDB, spec.EngineMariaDB, spec.EngineKeyDB, spec.EngineClickHouse, spec.EngineDragonfly, spec.EngineValkey,
+		case spec.EnginePostgres, spec.EngineRedis, spec.EngineMySQL, spec.EngineMongoDB, spec.EngineDocumentDB, spec.EngineDynamoDB, spec.EngineMariaDB, spec.EngineKeyDB, spec.EngineClickHouse, spec.EngineDragonfly, spec.EngineValkey,
 			spec.EngineMeilisearch, spec.EngineQdrant, spec.EngineTypesense, spec.EngineMemcached:
 		default:
 			return fmt.Errorf("databases[%q]: engine %q is not supported", name, d.Engine)
 		}
-		if d.Engine == spec.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB) {
+		if (d.Engine == spec.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB)) || (d.Engine == spec.EngineDynamoDB && !experimental.Enabled(experimental.DynamoDB)) {
 			return fmt.Errorf("databases[%q]: engine %q is not supported", name, d.Engine)
 		}
 	}

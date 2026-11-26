@@ -104,7 +104,7 @@ func (rt *Router) provisionOneEphemeralDatabase(ctx context.Context, previewEnvi
 		return store.PreviewEphemeralDatabase{}, false, fmt.Errorf("check existing ephemeral database: %w", err)
 	}
 
-	if d.Engine == spec.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB) {
+	if (d.Engine == spec.EngineDocumentDB && !experimental.Enabled(experimental.DocumentDB)) || (d.Engine == spec.EngineDynamoDB && !experimental.Enabled(experimental.DynamoDB)) {
 		return store.PreviewEphemeralDatabase{}, false, fmt.Errorf("engine %q is not supported", d.Engine)
 	}
 	version := d.Version
@@ -112,6 +112,9 @@ func (rt *Router) provisionOneEphemeralDatabase(ctx context.Context, previewEnvi
 		version = "latest"
 		if d.Engine == spec.EngineDocumentDB {
 			version = documentDBDefaultVersion
+		}
+		if d.Engine == spec.EngineDynamoDB {
+			version = dynamoDBDefaultVersion
 		}
 	}
 
@@ -269,6 +272,9 @@ func (rt *Router) teardownOneEphemeralDatabase(ctx context.Context, d store.Prev
 
 // documentDBDefaultVersion is pinned because the registry's moving tags change the on-disk format.
 const documentDBDefaultVersion = "pg17-1.2.0"
+
+// dynamoDBDefaultVersion is pinned: the image publishes no major tag line.
+const dynamoDBDefaultVersion = "3.3.2"
 
 // errEphemeralDatabaseRefused marks a teardown refused before any container or volume was touched.
 var errEphemeralDatabaseRefused = errors.New("refused")

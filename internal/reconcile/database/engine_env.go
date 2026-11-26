@@ -9,6 +9,7 @@ var conventionalEnvPrefix = map[string]string{
 	store.EngineQdrant:      "QDRANT",
 	store.EngineTypesense:   "TYPESENSE",
 	store.EngineMemcached:   "MEMCACHED",
+	store.EngineDynamoDB:    "DYNAMODB",
 }
 
 // ConventionalEnvVar is the env var name an app conventionally reads field
@@ -30,6 +31,10 @@ func ConventionalEnvVar(engine, field string) string {
 		if engine == store.EngineMemcached {
 			// Memcached clients read a host:port server list, not a URL.
 			return prefix + "_SERVERS"
+		}
+		if engine == store.EngineDynamoDB {
+			// SDK endpoint override variable, not a connection URL.
+			return prefix + "_ENDPOINT"
 		}
 		return prefix + "_URL"
 	case "password":

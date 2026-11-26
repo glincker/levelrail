@@ -3,7 +3,7 @@ package experimental
 // Toggleable reports whether f applies the moment it is switched, with no
 // restart (the mcp-http gate is checked per request). Every other feature is saved at once but wired at startup.
 func Toggleable(f Feature) bool {
-	return f == ResourceAdvisor || f == AIChat || f == CLIConsole || f == MobileAPI || f == SAMLSCIM || f == GitPush || f == Canvas || f == CloudflareTunnel || f == TrafficAnalytics || f == MacOSAgent || f == MCPHTTP || f == DocumentDB
+	return f == ResourceAdvisor || f == AIChat || f == CLIConsole || f == MobileAPI || f == SAMLSCIM || f == GitPush || f == Canvas || f == CloudflareTunnel || f == TrafficAnalytics || f == MacOSAgent || f == MCPHTTP || f == DocumentDB || f == DynamoDB
 }
 
 // ToggleableList returns every feature Settings may switch, sorted.
