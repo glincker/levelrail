@@ -1,8 +1,5 @@
 <div align="center">
-<sub>English &middot; <a href="docs/i18n/README.de.md">Deutsch</a> &middot; <a href="docs/i18n/README.es.md">Espa&ntilde;ol</a> &middot; <a href="docs/i18n/README.fr.md">Fran&ccedil;ais</a> &middot; <a href="docs/i18n/README.ja.md">日本語</a> &middot; <a href="docs/i18n/README.pt-BR.md">Portugu&ecirc;s (BR)</a> &middot; <a href="docs/i18n/README.ru.md">Русский</a> &middot; <a href="docs/i18n/README.zh-Hans.md">简体中文</a></sub>
-<br><br>
-<img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
-<h1>Levelrail</h1>
+<p><a href="https://levelrail.com"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/levelrail-lockup-dark.svg"><img src="docs/assets/brand/levelrail-lockup.svg" alt="Levelrail by GLINR Studios" height="72"></picture></a></p>
 <p><strong>Git push to production on your own servers.</strong><br>
 A self-hosted deployment platform in one Go binary. The control plane idles at about 200 MB of RAM (<a href="docs/performance.md">measured</a>), with 570+ one-click apps, rollbacks, previews, HTTPS and databases built in.</p>
 <p><code>brew install glincker/tap/levelrail-cli</code> &middot; <a href="#install"><b>Install</b></a> &middot; <a href="https://demo.levelrail.com"><b>Try the live demo</b></a></p>
@@ -23,6 +20,9 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
   <a href="docs/roadmap.md">Roadmap</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a>
 </p>
+<!-- i18n-nav:start -->
+<sub>English &middot; <a href="docs/i18n/README.zh-Hans.md">简体中文</a> &middot; <a href="docs/i18n/README.es.md">Español</a> &middot; <a href="docs/i18n/README.pt-BR.md">Português (BR)</a> &middot; <a href="docs/i18n/README.de.md">Deutsch</a> &middot; <a href="docs/i18n/README.fr.md">Français</a> &middot; <a href="docs/i18n/README.ja.md">日本語</a> &middot; <a href="docs/i18n/README.ru.md">Русский</a></sub>
+<!-- i18n-nav:end -->
 <a href="https://demo.levelrail.com"><img src="docs/assets/brand/social/hero-2560x1280-light.jpg" alt="Levelrail: a lightweight, self-hosted deployment platform. Try the live demo." width="880"></a>
 </div>
 
@@ -36,24 +36,11 @@ flowchart LR
   deploy -. "fails its health check" .-> back["Rolled back"]
 ```
 
-<table>
-<tr>
-<td width="33%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/deploy-live-log.png"><img src="docs/assets/screenshots/deploy-live-log-light.png" alt="Deploying an app with live build logs" width="100%"></picture></td>
-<td width="33%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/database-overview.png"><img src="docs/assets/screenshots/database-overview-light.png" alt="A managed database with backups and branches" width="100%"></picture></td>
-<td width="33%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/templates-catalog.png"><img src="docs/assets/screenshots/templates-catalog-light.png" alt="The one-click app catalog" width="100%"></picture></td>
-</tr>
-<tr>
-<td align="center"><sub>Deploy with live logs</sub></td>
-<td align="center"><sub>Databases with backups and branches</sub></td>
-<td align="center"><sub>570+ one-click apps</sub></td>
-</tr>
-</table>
-
 **Get started:** [install on a Linux server in one line](#install), [try the live demo](https://demo.levelrail.com) first, or follow [First 15 minutes](docs/first-15-minutes.md). Coming from Coolify, Dokku, Dokploy, CapRover, Kamal, Heroku, Railway, Netlify, Vercel or Cloud Run? The [side by side pages](docs/comparison.md) cover each: [Coolify](docs/coolify-alternative.md), [Dokku](docs/dokku-alternative.md), [Dokploy](docs/dokploy-alternative.md), [CapRover](docs/caprover-alternative.md), [Kamal](docs/kamal-alternative.md), [Heroku](docs/heroku-alternative.md), [Railway](docs/railway-alternative.md), [Netlify](docs/netlify-alternative.md), [Vercel](docs/vercel-alternative.md), [Cloud Run](docs/cloud-run-alternative.md).
 
 v1.x. Single-server is production ready, multi-node is beta. Levelrail works with the Kubernetes clusters and cloud accounts you already have, and every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/glincker/light.svg"><img alt="GLINR Studios" src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/glincker/default.svg" width="32" height="32"></picture><br><sub>Levelrail is an actively maintained product of <a href="https://glinr.com">GLINR Studios</a>, with frequent releases. See the <a href="https://github.com/glincker/levelrail/releases">releases</a> and the <a href="CHANGELOG.md">changelog</a>.</sub></p>
+<p align="center"><sub>Levelrail is an actively maintained product of <a href="https://glinr.com">GLINR Studios</a>, with frequent releases. See the <a href="https://github.com/glincker/levelrail/releases">releases</a> and the <a href="CHANGELOG.md">changelog</a>.</sub></p>
 
 ## Install
 
@@ -288,10 +275,3 @@ If Levelrail saves you a weekend, a [star](https://github.com/glincker/levelrail
 
 Apache 2.0, see [LICENSE](LICENSE). Levelrail is built and maintained by [GLINR Studios](https://glinr.com) (Gagan Singh, aka GDS K S), who also make [theSVG](https://thesvg.org).
 
-<div align="center">
-
-<!-- i18n-nav:start -->
-<p>English &middot; <a href="docs/i18n/README.zh-Hans.md">简体中文</a> &middot; <a href="docs/i18n/README.es.md">Español</a> &middot; <a href="docs/i18n/README.pt-BR.md">Português (BR)</a> &middot; <a href="docs/i18n/README.de.md">Deutsch</a> &middot; <a href="docs/i18n/README.fr.md">Français</a> &middot; <a href="docs/i18n/README.ja.md">日本語</a> &middot; <a href="docs/i18n/README.ru.md">Русский</a></p>
-<!-- i18n-nav:end -->
-
-</div>
