@@ -1023,6 +1023,7 @@ export const operations = {
   handleDeleteDatabaseBranch: ["DELETE","/api/v1/databases/{name}/branches/{branch}",0,0],
   handlePromoteDatabaseBranch: ["POST","/api/v1/databases/{name}/branches/{branch}/promote",1,0],
   handleResetDatabaseBranch: ["POST","/api/v1/databases/{name}/branches/{branch}/reset",1,0],
+  handleGetBranchSchemaDiff: ["GET","/api/v1/databases/{name}/branches/{branch}/schema-diff",0,0],
   handleListCloneRestores: ["GET","/api/v1/databases/{name}/clone-restores",0,0],
   handleRevealDatabaseCredentials: ["POST","/api/v1/databases/{name}/credentials/reveal",1,0],
   handleDynamoQuery: ["POST","/api/v1/databases/{name}/dynamo/query",1,0],

@@ -1055,6 +1055,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/dynamo/tables | AbilityReadSensitive | handleGetDynamoTables |
 | POST | /api/v1/databases/{name}/dynamo/query | AbilityReadSensitive | handleDynamoQuery |
 | POST | /api/v1/databases/{name}/dynamo/scan | AbilityReadSensitive | handleDynamoScan |
+| GET | /api/v1/databases/{name}/branches/{branch}/schema-diff | AbilityReadSensitive | handleGetBranchSchemaDiff |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

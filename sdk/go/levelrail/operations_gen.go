@@ -857,6 +857,7 @@ var Operations = map[string]Operation{
 	"handleGetBackupTargetFields":              {Method: "GET", Path: "/api/v1/backup-targets/field-descriptors", HasBody: false, Stream: false},
 	"handleGetBadgeSettings":                   {Method: "GET", Path: "/api/v1/apps/{name}/badge", HasBody: false, Stream: false},
 	"handleGetBenchmark":                       {Method: "GET", Path: "/api/v1/benchmarks/{id}", HasBody: false, Stream: false},
+	"handleGetBranchSchemaDiff":                {Method: "GET", Path: "/api/v1/databases/{name}/branches/{branch}/schema-diff", HasBody: false, Stream: false},
 	"handleGetBuild":                           {Method: "GET", Path: "/api/v1/builds/{id}", HasBody: false, Stream: false},
 	"handleGetBuildLimits":                     {Method: "GET", Path: "/api/v1/build-limits", HasBody: false, Stream: false},
 	"handleGetBuildQueue":                      {Method: "GET", Path: "/api/v1/builds/queue", HasBody: false, Stream: false},

@@ -865,6 +865,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handleGetBackupTargetFields": Operation("GET", "/api/v1/backup-targets/field-descriptors", False, False),
     "handleGetBadgeSettings": Operation("GET", "/api/v1/apps/{name}/badge", False, False),
     "handleGetBenchmark": Operation("GET", "/api/v1/benchmarks/{id}", False, False),
+    "handleGetBranchSchemaDiff": Operation("GET", "/api/v1/databases/{name}/branches/{branch}/schema-diff", False, False),
     "handleGetBuild": Operation("GET", "/api/v1/builds/{id}", False, False),
     "handleGetBuildLimits": Operation("GET", "/api/v1/build-limits", False, False),
     "handleGetBuildQueue": Operation("GET", "/api/v1/builds/queue", False, False),

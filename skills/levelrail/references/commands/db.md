@@ -89,7 +89,7 @@ Run "levelrail-cli databases access <subcommand> -h" for a subcommand's own flag
 
 ## levelrail-cli db branch
 
-Subcommands: create
+Subcommands: create, diff
 
 ```
 Usage:
@@ -97,6 +97,7 @@ Usage:
   levelrail-cli databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
   levelrail-cli databases branch ls <database>
   levelrail-cli databases branch show <database> <branch>
+  levelrail-cli databases branch diff <database> <branch> [--against NAME] [--sql]
   levelrail-cli databases branch reset <database> <branch>
   levelrail-cli databases branch promote <database> <branch>
   levelrail-cli databases branch protect <database> <branch> [--off]
