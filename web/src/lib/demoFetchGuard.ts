@@ -1,4 +1,5 @@
-import { DEMO_ERROR_PREFIX } from './demoStore'
+import { DEMO_ERROR_PREFIX, getDemoInfo } from './demoStore'
+import { noteDemoRefusal } from './demoToast'
 
 export interface DemoBlock {
   code: string
@@ -22,6 +23,8 @@ export function installDemoFetchGuard(onBlocked: (b: DemoBlock) => void): void {
     ).toUpperCase()
     const rawUrl = req instanceof Request ? req.url : String(req)
     if (res.status === 403) {
+      // Sync mark: the body check below is async, so a custom onError toast would win the race.
+      if (getDemoInfo().enabled && method !== 'GET') noteDemoRefusal()
       void res
         .clone()
         .json()
