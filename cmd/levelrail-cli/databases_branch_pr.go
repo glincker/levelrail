@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"regexp"
@@ -11,14 +13,32 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
+const prBranchNameMax = 63
+
+var prDBNamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
+
 var prTTLPattern = regexp.MustCompile(`^(never|[1-9][0-9]{0,3}[dh])$`)
 
-// prBranchName is the fixed branch name for a pull request, so reruns find the same branch.
-func prBranchName(pr int) (string, error) {
+// prBranchName is the branch database name for a pull request. Database names are global per
+// server, so it includes the database; long names keep a hash of the full name to stay unique.
+func prBranchName(db string, pr int) (string, error) {
 	if pr < 1 {
 		return "", newValidationError("--pr must be a positive pull request number")
 	}
-	return "pr-" + strconv.Itoa(pr), nil
+	if !prDBNamePattern.MatchString(db) {
+		return "", newValidationError("database name %q is not a valid name", db)
+	}
+	suffix := "-pr-" + strconv.Itoa(pr)
+	if len(db)+len(suffix) <= prBranchNameMax {
+		return db + suffix, nil
+	}
+	sum := sha256.Sum256([]byte(db))
+	tag := "-" + hex.EncodeToString(sum[:])[:6]
+	keep := prBranchNameMax - len(suffix) - len(tag)
+	if keep < 1 {
+		return "", newValidationError("--pr is too large for a branch name")
+	}
+	return db[:keep] + tag + suffix, nil
 }
 
 func validatePRTTL(ttl string) error {
@@ -80,7 +100,7 @@ func runDatabasesBranchPR(prog string, args []string, stdout, stderr io.Writer, 
 		fs.Usage()
 		return exitUsage
 	}
-	name, err := prBranchName(pr)
+	name, err := prBranchName(rest[0], pr)
 	if err == nil {
 		err = validatePRTTL(ttl)
 	}
@@ -208,7 +228,7 @@ func runDatabasesBranchPRClose(prog string, args []string, stdout, stderr io.Wri
 		fs.Usage()
 		return exitUsage
 	}
-	name, err := prBranchName(pr)
+	name, err := prBranchName(rest[0], pr)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}

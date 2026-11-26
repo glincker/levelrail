@@ -106,7 +106,7 @@ Usage:
   levelrail-cli databases branch protect <database> <branch> [--off]
   levelrail-cli databases branch rm <database> <branch> --confirm <branch>
 
-"pr" creates or reuses the branch pr-<N> and waits until it is ready. It prints
+"pr" creates or reuses the branch <database>-pr-<N> and waits until it is ready. It prints
 host, port and name, and how to get credentials; --print-url reveals the password
 (owner only, step-up, audited). "pr-close" deletes the branch; a missing branch is success.
 

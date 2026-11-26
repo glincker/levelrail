@@ -12,11 +12,27 @@ import (
 )
 
 func TestPRBranchHelpers(t *testing.T) {
-	if n, err := prBranchName(42); err != nil || n != "pr-42" {
+	if n, err := prBranchName("app-db", 42); err != nil || n != "app-db-pr-42" {
 		t.Fatalf("name = %q, %v", n, err)
 	}
-	if _, err := prBranchName(0); err == nil {
+	if _, err := prBranchName("app-db", 0); err == nil {
 		t.Fatal("pr 0 accepted")
+	}
+	if _, err := prBranchName("App_DB", 1); err == nil {
+		t.Fatal("invalid db accepted")
+	}
+	a, _ := prBranchName("app-db", 7)
+	b, _ := prBranchName("other-db", 7)
+	if a == b {
+		t.Fatal("same PR number collided across databases")
+	}
+	long1 := "a" + strings.Repeat("b", 70) + "1"
+	long2 := "a" + strings.Repeat("b", 70) + "2"
+	n1, _ := prBranchName(long1, 12)
+	n1b, _ := prBranchName(long1, 12)
+	n2, _ := prBranchName(long2, 12)
+	if len(n1) > 63 || !strings.HasSuffix(n1, "-pr-12") || n1 != n1b || n1 == n2 {
+		t.Fatalf("long names: %q %q", n1, n2)
 	}
 	for _, ok := range []string{"7d", "12h", "never"} {
 		if validatePRTTL(ok) != nil {
@@ -45,20 +61,20 @@ func TestRun_DatabasesBranchPR_CreateThenCloseIdempotent(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/main/branches/pr-5":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/main/branches/main-pr-5":
 			if !exists {
 				w.WriteHeader(http.StatusNotFound)
 				_, _ = w.Write([]byte(`{"error":"not found"}`))
 				return
 			}
-			_ = json.NewEncoder(w).Encode(apiclient.DatabaseBranchNode{Name: "pr-5", Parent: "main", Mode: "schema", State: "ready"})
+			_ = json.NewEncoder(w).Encode(apiclient.DatabaseBranchNode{Name: "main-pr-5", Parent: "main", Mode: "schema", State: "ready"})
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/databases/main/branches":
 			_ = json.NewDecoder(r.Body).Decode(&created)
 			exists = true
 			w.WriteHeader(http.StatusAccepted)
-			_ = json.NewEncoder(w).Encode(apiclient.DatabaseBranchNode{Name: "pr-5", Parent: "main", Mode: "schema", State: "ready"})
-		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/pr-5":
-			_, _ = w.Write([]byte(`{"name":"pr-5","engine":"postgres"}`))
+			_ = json.NewEncoder(w).Encode(apiclient.DatabaseBranchNode{Name: "main-pr-5", Parent: "main", Mode: "schema", State: "ready"})
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/main-pr-5":
+			_, _ = w.Write([]byte(`{"name":"main-pr-5","engine":"postgres"}`))
 		case r.Method == http.MethodDelete:
 			exists = false
 			w.WriteHeader(http.StatusNoContent)
@@ -73,7 +89,7 @@ func TestRun_DatabasesBranchPR_CreateThenCloseIdempotent(t *testing.T) {
 	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitOK {
 		t.Fatalf("pr exit = %d (%q %q)", got, stdout.String(), stderr.String())
 	}
-	if created.Name != "pr-5" || created.Mode != "schema" || created.TTL != "7d" || created.Protected {
+	if created.Name != "main-pr-5" || created.Mode != "schema" || created.TTL != "7d" || created.Protected {
 		t.Errorf("create body = %+v", created)
 	}
 	if strings.Contains(stdout.String(), "password") || !strings.Contains(stdout.String(), `"created": true`) {
