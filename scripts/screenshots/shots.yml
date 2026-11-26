@@ -336,3 +336,16 @@
   height: 1000
   wait: 2500
   javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const c = [...document.querySelectorAll('h1,h2,h3,h4,p,span,div,label')].filter(x => x.textContent.trim().length < 80 && /passkey/i.test(x.textContent)); const e = c.sort((a, b) => a.textContent.length - b.textContent.length)[0]; if (e || ++n > 40) { clearInterval(t); if (e) e.scrollIntoView({block: 'start'}); setTimeout(r, 800); } }, 200); })"
+
+- output: docs/assets/screenshots/network-topology.png
+  url: __BASE_URL__/network/
+  width: 1280
+  height: 900
+  wait: 3000
+
+- output: docs/assets/screenshots/app-analysis.png
+  url: __BASE_URL__/apps/checkout-api/overview
+  width: 1280
+  height: 900
+  wait: 4500
+  javascript: "new Promise((done) => { let n = 0; const tick = () => { const h = [...document.querySelectorAll('h2,h3')].find(e => /analysis/i.test((e.textContent || '').trim()) && (e.textContent || '').length < 40); if (h) { h.scrollIntoView({block: 'start'}); window.scrollBy(0, -60); setTimeout(done, 800); } else if (n++ < 40) { setTimeout(tick, 250); } else { done(); } }; tick(); })"

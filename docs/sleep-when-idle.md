@@ -96,8 +96,6 @@ box only needs room for the apps in use at once, plus the platform itself.
   memory that frees. The apps list marks each sleeping app with an Asleep
   badge.
 
-![The Sleeping apps card on the dashboard, with the apps that are asleep and Wake now](assets/screenshots/dashboard-sleeping-apps.png)
-
 ## Ignored paths
 
 Health checks and uptime monitors must not keep an app awake. These routes
@@ -247,8 +245,6 @@ Slept and woke also appear in the app's activity timeline. History keeps the
 newest 500 events per app; set `APP_SLEEP_EVENTS_KEEP` to change that.
 
 ## Dashboard
-
-![The Sleep when idle card on an app that is asleep, with Wake now](assets/screenshots/app-sleep-card.png)
 
 App, Deploys: the Sleep when idle card has the switch, the idle minutes, and a
 Wake now button while the app is asleep. Sleeping apps carry an Asleep badge in
