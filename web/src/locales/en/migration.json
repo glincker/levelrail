@@ -755,6 +755,9 @@
     }
   },
   "importPlan": {
+    "sampleBadge": "Sample plan",
+    "sampleHint": "Sample plan and build log for this repository. Install to analyze and deploy it for real.",
+    "sampleLogLabel": "Sample build log",
     "anonymousVolume": "(anonymous)",
     "importingToast": "Importing \"{{name}}\".",
     "watching": "Watching the build log now.",
