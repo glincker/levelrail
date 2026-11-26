@@ -188,9 +188,27 @@ func (rt *Router) requireAbilityForBranch(ability string, action dbauthz.Action,
 	return func(w http.ResponseWriter, r *http.Request) {
 		resolver := &dbauthz.Resolver{Engine: &dbPolicyEngine{rt: rt}}
 		resource := dbauthz.ResourcePrefix + r.PathValue("branch")
+		parent := dbauthz.ResourcePrefix + r.PathValue("name")
+		// Changing a branch needs write on the database in the path, looking needs read; this runs
+		// before the branch is looked up or the body is read.
+		parentAction := dbauthz.ActionWrite
+		if action == dbauthz.ActionRead {
+			parentAction = dbauthz.ActionRead
+		}
 		var hidden bool
 		decision := func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error) {
 			caller := dbauthz.Caller{PrincipalType: principalType, PrincipalID: principalID, Abilities: abilities}
+			pAllowed, pHidden, err := resolveImplied(ctx, resolver, caller, parent, parentAction)
+			if err != nil || pHidden {
+				hidden = pHidden
+				return pHidden, err
+			}
+			if !pAllowed {
+				return false, nil
+			}
+			if d, err := resolver.Resolve(ctx, caller, parent, dbauthz.ActionRead); err != nil || d.PolicyDecision == dbauthz.PolicyDenied {
+				return false, err
+			}
 			allowed, h, err := resolveImplied(ctx, resolver, caller, resource, action)
 			hidden = h
 			return allowed || h, err
