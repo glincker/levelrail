@@ -299,6 +299,9 @@ databases.bulk_concurrency
 databases.bulk_max_items
 databases.crash_loop_restarts
 databases.crash_loop_window_seconds
+databases.dynamodb.describe_tables_max
+databases.dynamodb.page_items
+databases.dynamodb.page_items_max
 databases.import_max_bytes
 databases.latest_lookup_timeout_seconds
 databases.latest_version_cache_seconds

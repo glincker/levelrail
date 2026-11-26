@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbviewer"
@@ -51,9 +50,19 @@ func (rt *Router) dynamoViewerTarget(w http.ResponseWriter, r *http.Request) (db
 	}, desired, true
 }
 
+// dynamoLimits reads the live page limits on every request.
+func (rt *Router) dynamoLimits(r *http.Request) dbviewer.DynamoLimits {
+	ctx := r.Context()
+	return dbviewer.DynamoLimits{
+		PageItems:    rt.runtimeSettings.Int(ctx, runtimesettings.KeyDynamoPageItems),
+		PageItemsMax: rt.runtimeSettings.Int(ctx, runtimesettings.KeyDynamoPageItemsMax),
+		DescribeMax:  rt.runtimeSettings.Int(ctx, runtimesettings.KeyDynamoDescribeMax),
+	}
+}
+
 // runDynamo guards, runs and logs one typed request. History names the shape only, never key values.
 func (rt *Router) runDynamo(w http.ResponseWriter, r *http.Request, target dbviewer.Target, desired *store.DesiredDatabase, req dbviewer.DynamoRequest) (dbviewer.DynamoResult, dbviewer.DynamoPrepared, bool) {
-	q, err := dbviewer.CheckDynamo(req, target.Limits, dbviewer.DynamoLimitsFromEnv(os.LookupEnv))
+	q, err := dbviewer.CheckDynamo(req, target.Limits, rt.dynamoLimits(r))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return dbviewer.DynamoResult{}, q, false
@@ -114,7 +123,7 @@ func (rt *Router) handleGetDynamoTables(w http.ResponseWriter, r *http.Request) 
 	if resp.Names == nil {
 		resp.Names = []string{}
 	}
-	describeMax := dbviewer.DynamoLimitsFromEnv(os.LookupEnv).DescribeMax
+	describeMax := rt.dynamoLimits(r).DescribeMax
 	for i, tn := range resp.Names {
 		if i >= describeMax {
 			resp.Truncated = true

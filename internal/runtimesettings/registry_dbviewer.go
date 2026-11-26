@@ -20,6 +20,9 @@ const (
 	// KeyDeploySummaryCacheSeconds is how long the deployments summary scan is reused, 0 disables.
 	KeyDeploySummaryCacheSeconds = "deployments.summary_cache_seconds"
 
+	KeyDynamoPageItems     = "databases.dynamodb.page_items"
+	KeyDynamoPageItemsMax  = "databases.dynamodb.page_items_max"
+	KeyDynamoDescribeMax   = "databases.dynamodb.describe_tables_max"
 	KeyLogRuleEvalInterval = "log_rules.eval_interval"
 	KeyLogRuleMaxWindow    = "log_rules.max_window"
 	KeyLogRuleMaxRows      = "log_rules.max_rows"
@@ -73,6 +76,9 @@ func init() {
 	registerLimitInt(KeyDBViewerMaxConc, "APP_DB_VIEWER_MAX_CONCURRENT", "4", "Database browser: concurrent reads", "Document browser reads in flight at once, per database and per user.", 1, 64)
 	registerLimitInt(KeyDBViewerCacheSeconds, "APP_DB_VIEWER_CACHE_SECONDS", "5", "Database browser: overview cache seconds", "How long the collection overview and schema outline are reused before the database is asked again, 0 turns the cache off.", 0, 3600)
 	registerLimitInt(KeyDeploySummaryCacheSeconds, "APP_DEPLOY_SUMMARY_CACHE_SECONDS", "3", "Deployments: summary cache seconds", "How long the deployments summary reuses its 30 day scan before reading again, 0 turns the cache off.", 0, 3600)
+	registerLimitInt(KeyDynamoPageItems, "APP_DYNAMODB_PAGE_ITEMS", "50", "DynamoDB explorer: default page items", "Items one DynamoDB explorer read returns when the request names no limit.", 1, 10000)
+	registerLimitInt(KeyDynamoPageItemsMax, "APP_DYNAMODB_PAGE_ITEMS_MAX", "500", "DynamoDB explorer: max page items", "Most items one DynamoDB explorer read may return.", 1, 10000)
+	registerLimitInt(KeyDynamoDescribeMax, "APP_DYNAMODB_DESCRIBE_TABLES_MAX", "25", "DynamoDB explorer: tables described per list", "Tables whose schema the explorer describes on one list request.", 1, 200)
 	registerLimitInt(KeyDBViewerQueueWaitMs, "APP_DB_VIEWER_QUEUE_WAIT_MS", "2000", "Database browser: queue wait (ms)", "How long a document read waits for a free slot before it is refused as too busy, 0 refuses at once.", 0, 30000)
 
 	Register(Definition{

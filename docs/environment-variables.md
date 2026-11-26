@@ -595,6 +595,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DB_QUERY_TIMEOUT` | [`database_viewer.query_timeout`](/runtime-settings#observability) | `15s` |
 | `APP_DB_VIEWER_QUEUE_WAIT_MS` | [`database_viewer.queue_wait_ms`](/runtime-settings#observability) | `2000` |
 | `APP_DB_SCHEMA_MAX_ROWS` | [`database_viewer.schema_max_rows`](/runtime-settings#observability) | `5000` |
+| `APP_DYNAMODB_DESCRIBE_TABLES_MAX` | [`databases.dynamodb.describe_tables_max`](/runtime-settings#observability) | `25` |
+| `APP_DYNAMODB_PAGE_ITEMS` | [`databases.dynamodb.page_items`](/runtime-settings#observability) | `50` |
+| `APP_DYNAMODB_PAGE_ITEMS_MAX` | [`databases.dynamodb.page_items_max`](/runtime-settings#observability) | `500` |
 | `APP_MAJOR_UPGRADE_RESTORE_POINT_MAX_AGE_HOURS` | [`databases.major_upgrade_restore_point_max_age_hours`](/runtime-settings#observability) | `24` |
 | `APP_DB_STATS_INTERVAL_SECONDS` | [`databases.stats_interval_seconds`](/runtime-settings#observability) | `30` |
 | `APP_DB_STATS_MAX_DATABASES` | [`databases.stats_max_databases`](/runtime-settings#observability) | `20` |
