@@ -45,6 +45,7 @@ describe('layoutSchemaMap', () => {
       for (let j = i + 1; j < nodes.length; j++) {
         const p = nodes[i]
         const q = nodes[j]
+        if (!p || !q) continue
         const apart =
           p.x + p.w <= q.x ||
           q.x + q.w <= p.x ||
@@ -61,7 +62,7 @@ describe('layoutSchemaMap', () => {
     )
     expect(n?.shown).toHaveLength(8)
     expect(n?.more).toBe(4)
-    expect(n?.shown[0].primaryKey).toBe(true)
+    expect(n?.shown[0]?.primaryKey).toBe(true)
   })
 })
 

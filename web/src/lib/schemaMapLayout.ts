@@ -123,6 +123,7 @@ export function layoutSchemaMap(
     const root = [...members].sort(
       (a, b) => (adj.get(b)?.size ?? 0) - (adj.get(a)?.size ?? 0) || cmp(a, b),
     )[0]
+    if (root === undefined) continue
     const layer = new Map<string, number>([[root, 0]])
     const queue = [root]
     while (queue.length > 0) {
@@ -136,10 +137,10 @@ export function layoutSchemaMap(
     }
     const depth = Math.max(...layer.values())
     const columns: string[][] = Array.from({ length: depth + 1 }, () => [])
-    for (const id of members) columns[layer.get(id) ?? 0].push(id)
+    for (const id of members) columns[layer.get(id) ?? 0]?.push(id)
     // One barycenter pass against the previous layer to cut crossings.
     const rank = new Map<string, number>()
-    columns[0].sort(cmp).forEach((id, i) => rank.set(id, i))
+    columns[0]?.sort(cmp).forEach((id, i) => rank.set(id, i))
     for (let l = 1; l <= depth; l++) {
       const score = (id: string): number => {
         const prev = [...(adj.get(id) ?? [])].filter(
@@ -148,8 +149,8 @@ export function layoutSchemaMap(
         if (prev.length === 0) return 0
         return prev.reduce((s, n) => s + (rank.get(n) ?? 0), 0) / prev.length
       }
-      columns[l].sort((a, b) => score(a) - score(b) || cmp(a, b))
-      columns[l].forEach((id, i) => rank.set(id, i))
+      columns[l]?.sort((a, b) => score(a) - score(b) || cmp(a, b))
+      columns[l]?.forEach((id, i) => rank.set(id, i))
     }
     let groupH = 0
     columns.forEach((col, l) => {
@@ -223,7 +224,8 @@ export function routeEdge(
   }
   const x1 = from.x + from.w
   const x2 = to.x + to.w
-  const bulge = Math.max(x1, x2) + 48
+  // Longer spans bulge further so stacked edges do not share one curve.
+  const bulge = Math.max(x1, x2) + 24 + Math.min(Math.abs(y2 - y1) / 5, 72)
   return {
     d: `M${x1} ${y1} C${bulge} ${y1} ${bulge} ${y2} ${x2} ${y2}`,
     x1,

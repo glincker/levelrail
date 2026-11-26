@@ -99,12 +99,14 @@ export default function SchemaMap({
     const ids = new Set(tables.map((tb) => tb.id))
     const out: MapEdge[] = []
     structures.forEach((q, i) => {
+      const from = tables[i]?.id
+      if (!from) return
       for (const fk of q.data?.foreign_keys ?? []) {
         const to = tableKey(fk.ref_schema, fk.ref_table)
         if (!ids.has(to)) continue
         out.push({
-          id: `${tables[i].id}:${fk.name}`,
-          from: tables[i].id,
+          id: `${from}:${fk.name}`,
+          from,
           to,
           fromColumn: fk.columns[0],
         })
@@ -337,18 +339,31 @@ export default function SchemaMap({
           >
             <defs>
               <marker
-                id="schema-map-foot"
+                id="schema-map-many"
                 viewBox="0 0 10 10"
-                refX="9"
+                refX="0"
                 refY="5"
                 markerWidth="10"
                 markerHeight="10"
-                orient="auto-start-reverse"
+                markerUnits="userSpaceOnUse"
+                orient="auto"
               >
                 <path
-                  d="M0 5 L10 0 M0 5 L10 10 M0 5 L10 5"
+                  d="M10 5 L0 0 M10 5 L0 10 M10 5 L0 5"
                   className="fill-none stroke-current"
                 />
+              </marker>
+              <marker
+                id="schema-map-one"
+                viewBox="0 0 10 10"
+                refX="10"
+                refY="5"
+                markerWidth="10"
+                markerHeight="10"
+                markerUnits="userSpaceOnUse"
+                orient="auto"
+              >
+                <path d="M6 0 L6 10" className="fill-none stroke-current" />
               </marker>
             </defs>
             <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
@@ -361,7 +376,8 @@ export default function SchemaMap({
                   <path
                     key={e.id}
                     d={routeEdge(a, b, e.fromColumn).d}
-                    markerEnd="url(#schema-map-foot)"
+                    markerStart="url(#schema-map-many)"
+                    markerEnd="url(#schema-map-one)"
                     className={cn(
                       'fill-none stroke-muted-foreground text-muted-foreground',
                       lit && 'stroke-primary text-primary',
