@@ -13,7 +13,10 @@ import {
   type IntegrationStateCode,
 } from '../../../queries/databaseIntegrations'
 
-const DOCS_BASE = 'https://docs.levelrail.com/'
+// The card docs field is a URL, a rooted path or a bare page slug under /docs.
+function docsHref(docs: string): string {
+  return /^(https?:)?\//.test(docs) ? docs : `/docs/${docs}`
+}
 const CATEGORY_ORDER = ['monitor', 'develop', 'deploy', 'query', 'replicate']
 
 // Only cards whose setup lives on an existing page get a Configure action.
@@ -66,7 +69,7 @@ function IntegrationTile({ card }: Readonly<{ card: IntegrationCard }>) {
           </span>
         ) : (
           <a
-            href={`${DOCS_BASE}${card.docs}`}
+            href={docsHref(card.docs)}
             target="_blank"
             rel="noreferrer"
             className="text-xs underline underline-offset-2"
