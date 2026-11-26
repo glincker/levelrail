@@ -111,6 +111,8 @@ const (
 	KeyDatabasesAuditRetentionDays = "databases.audit_retention_days"
 	KeyDatabasesAuditStoreText     = "databases.audit_store_text"
 	KeyDatabasesAuditQueueSize     = "databases.audit_queue_size"
+	KeyDatabasesAuditMaxRows       = "databases.audit_max_rows"
+	KeyDatabasesAuditTextMaxBytes  = "databases.audit_text_max_bytes"
 )
 
 func init() {
@@ -125,5 +127,13 @@ func init() {
 	Register(Definition{
 		Key: KeyDatabasesAuditQueueSize, Category: CategoryDeploys, Kind: KindInt, Default: "4096", Env: "APP_DB_AUDIT_QUEUE_SIZE", Apply: ApplyLive,
 		CheckValue: intRangeCheck(16, 1000000), EnvConvert: branchEnvConvert(intRangeCheck(16, 1000000)), Title: "Database audit queue size", Description: "Events buffered before the writer drops reads and counts the drop.",
+	})
+	Register(Definition{
+		Key: KeyDatabasesAuditMaxRows, Category: CategoryDeploys, Kind: KindInt, Default: "1000000", Env: "APP_DB_AUDIT_MAX_ROWS", Apply: ApplyLive,
+		CheckValue: intRangeCheck(1000, 100000000), EnvConvert: branchEnvConvert(intRangeCheck(1000, 100000000)), Title: "Database audit row cap", Description: "Most audit rows kept. The sweeper deletes the oldest rows beyond it.",
+	})
+	Register(Definition{
+		Key: KeyDatabasesAuditTextMaxBytes, Category: CategoryDeploys, Kind: KindInt, Default: "4096", Env: "APP_DB_AUDIT_TEXT_MAX_BYTES", Apply: ApplyLive,
+		CheckValue: intRangeCheck(64, 65536), EnvConvert: branchEnvConvert(intRangeCheck(64, 65536)), Title: "Database audit text size", Description: "Longest statement text stored per audit row, after secret masking. Longer text is cut.",
 	})
 }

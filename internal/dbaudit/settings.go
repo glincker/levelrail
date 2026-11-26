@@ -23,3 +23,13 @@ func (s ServiceSettings) QueueSize(ctx context.Context) int {
 func (s ServiceSettings) RetentionDays(ctx context.Context) int {
 	return s.Svc.Int(ctx, runtimesettings.KeyDatabasesAuditRetentionDays)
 }
+
+// MaxRows is the live row cap the sweeper enforces.
+func (s ServiceSettings) MaxRows(ctx context.Context) int {
+	return s.Svc.Int(ctx, runtimesettings.KeyDatabasesAuditMaxRows)
+}
+
+// TextMaxBytes is the live bound on stored statement text.
+func (s ServiceSettings) TextMaxBytes(ctx context.Context) int {
+	return s.Svc.Int(ctx, runtimesettings.KeyDatabasesAuditTextMaxBytes)
+}

@@ -354,9 +354,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINER_LOG_MAX_FILES` | [`containers.log_max_files`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINER_LOG_MAX_SIZE_MB` | [`containers.log_max_size_mb`](/runtime-settings#deploys) | `0` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
+| `APP_DB_AUDIT_MAX_ROWS` | [`databases.audit_max_rows`](/runtime-settings#deploys) | `1000000` |
 | `APP_DB_AUDIT_QUEUE_SIZE` | [`databases.audit_queue_size`](/runtime-settings#deploys) | `4096` |
 | `APP_DB_AUDIT_RETENTION_DAYS` | [`databases.audit_retention_days`](/runtime-settings#deploys) | `90` |
 | `APP_DB_AUDIT_STORE_TEXT` | [`databases.audit_store_text`](/runtime-settings#deploys) | `false` |
+| `APP_DB_AUDIT_TEXT_MAX_BYTES` | [`databases.audit_text_max_bytes`](/runtime-settings#deploys) | `4096` |
 | `LEVELRAIL_DATABASES_AUTO_LATEST` | [`databases.auto_latest`](/runtime-settings#deploys) | `true` |
 | `APP_DATABASES_BULK_CONCURRENCY` | [`databases.bulk_concurrency`](/runtime-settings#deploys) | `4` |
 | `APP_DATABASES_BULK_MAX_ITEMS` | [`databases.bulk_max_items`](/runtime-settings#deploys) | `200` |

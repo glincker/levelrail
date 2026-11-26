@@ -12,6 +12,7 @@ import (
 
 const (
 	dbAuditSweepInterval = time.Hour
+	dbAuditSweepFirst    = 30 * time.Second
 	dbAuditFlushEvery    = time.Second
 )
 
@@ -26,6 +27,8 @@ func startDatabaseAudit(ctx context.Context, rt *api.Router, db *store.DB, logge
 	w := dbaudit.New(db, set, dbaudit.Options{FlushInterval: dbAuditFlushEvery, Logger: logger})
 	w.Start()
 	rt.WithDatabaseAudit(w)
-	go dbaudit.RunSweeper(ctx, db, set, dbAuditSweepInterval, logger)
+	go dbaudit.RunSweeper(ctx, db, set, dbAuditSweepFirst, dbAuditSweepInterval, logger)
+	// Close is idempotent, so a caller stop and the context end can both run it.
+	context.AfterFunc(ctx, w.Close)
 	return w.Close
 }

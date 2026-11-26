@@ -2,11 +2,13 @@ package dbaudit
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -15,14 +17,25 @@ type fakeSink struct {
 	rows    []store.DatabaseStatementAudit
 	batches int
 	pruned  time.Time
+	trimmed int
+	// failWhen makes an insert fail when it returns true for the batch.
+	failWhen func([]store.DatabaseStatementAudit) bool
 }
 
 func (f *fakeSink) InsertDatabaseStatementAudits(_ context.Context, r []store.DatabaseStatementAudit) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.failWhen != nil && f.failWhen(r) {
+		return errors.New("insert refused")
+	}
 	f.rows = append(f.rows, r...)
 	f.batches++
 	return nil
+}
+
+func (f *fakeSink) TrimDatabaseStatementAudits(_ context.Context, maxRows, _ int) (int64, error) {
+	f.trimmed = maxRows
+	return 0, nil
 }
 
 func (f *fakeSink) PruneDatabaseStatementAudits(_ context.Context, c time.Time, _ int) (int64, error) {
@@ -41,6 +54,9 @@ type fakeSet struct {
 	queue int
 	days  int
 }
+
+func (fakeSet) MaxRows(context.Context) int      { return 500 }
+func (fakeSet) TextMaxBytes(context.Context) int { return 64 }
 
 func (s fakeSet) StoreText(context.Context) bool    { return s.text }
 func (s fakeSet) QueueSize(context.Context) int     { return s.queue }
@@ -120,5 +136,56 @@ func TestAuditSweepUsesRetention(t *testing.T) {
 	n, err := Sweep(context.Background(), sink, fakeSet{days: 90}, now)
 	if err != nil || n != 3 || !sink.pruned.Equal(now.AddDate(0, 0, -90)) {
 		t.Fatalf("%d %v %v", n, err, sink.pruned)
+	}
+}
+
+func TestAuditRowCapsFieldsAndMasksText(t *testing.T) {
+	sink := &fakeSink{}
+	w := New(sink, fakeSet{queue: 10, text: true}, Options{FlushInterval: time.Hour})
+	long := strings.Repeat("x", 5000)
+	w.Record(context.Background(), Event{DatabaseName: long, ClientKind: long, StatementText: "select '" + strings.Repeat("y", 500) + "'"})
+	secretmask.Add("canary-registered-secret-9931")
+	w.Record(context.Background(), Event{DatabaseName: "app", StatementText: "select 'canary-registered-secret-9931'"})
+	w.Flush(context.Background())
+	if got := sink.rows[0]; len(got.DatabaseName) != fieldMaxBytes || len(got.ClientKind) != fieldMaxBytes || len(got.StatementText) > 64 {
+		t.Fatalf("not capped: %d %d %d", len(got.DatabaseName), len(got.ClientKind), len(got.StatementText))
+	}
+	if strings.Contains(sink.rows[1].StatementText, "canary-registered-secret-9931") {
+		t.Fatalf("secret stored: %q", sink.rows[1].StatementText)
+	}
+}
+
+func TestAuditFlushRetriesThenIsolatesBadRow(t *testing.T) {
+	sink := &fakeSink{failWhen: func(b []store.DatabaseStatementAudit) bool {
+		for _, r := range b {
+			if r.DatabaseName == "bad" {
+				return true
+			}
+		}
+		return false
+	}}
+	w := New(sink, fakeSet{queue: 10}, Options{FlushInterval: time.Hour})
+	for _, n := range []string{"a", "bad", "c"} {
+		w.Record(context.Background(), Event{DatabaseName: n})
+	}
+	w.Flush(context.Background())
+	if n, _ := sink.count(); n != 2 || w.Failed() != 1 {
+		t.Fatalf("stored %d failed %d, want 2 and 1", n, w.Failed())
+	}
+}
+
+func TestAuditCloseThenStartIsSafe(_ *testing.T) {
+	w := New(&fakeSink{}, fakeSet{queue: 10}, Options{FlushInterval: time.Hour})
+	w.Start()
+	w.Close()
+	w.Close()
+	w.Start()
+	w.Close()
+}
+
+func TestAuditSweepTrimsToRowCap(t *testing.T) {
+	sink := &fakeSink{}
+	if _, err := Sweep(context.Background(), sink, fakeSet{days: 90}, time.Now()); err != nil || sink.trimmed != 500 {
+		t.Fatalf("trimmed %d %v", sink.trimmed, err)
 	}
 }

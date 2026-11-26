@@ -40,6 +40,7 @@ import (
 
 // rootDeps carries everything rootHandler wires into the API router.
 type rootDeps struct {
+	ctx                 context.Context // process lifetime; nil means background
 	logger              *slog.Logger
 	b                   *brand.Brand
 	db                  *store.DB
@@ -438,8 +439,12 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
 	rt.RecoverMailHolds(context.Background())
-	// Flushed by the writer's own interval; a process exit loses at most one interval of rows.
-	_ = startDatabaseAudit(context.Background(), rt, db, logger)
+	// The writer flushes when the process context ends, and on its own interval until then.
+	auditCtx := d.ctx
+	if auditCtx == nil {
+		auditCtx = context.Background()
+	}
+	_ = startDatabaseAudit(auditCtx, rt, db, logger)
 	if builder != nil {
 		// Spec file deploys (webhook, git push, builds) admit host ports like POST /apps.
 		builder.SetPortAdmitter(rt)
