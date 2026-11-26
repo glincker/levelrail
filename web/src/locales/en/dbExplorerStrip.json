@@ -3,7 +3,9 @@
   "mode": {
     "readOnly": "Read only",
     "writesOn": "Write unlocked",
-    "writesUntil": "Write unlocked until {{time}}"
+    "writesUntil": "Write unlocked until {{time}}",
+    "writesLeft": "Write unlocked, {{time}} left",
+    "relocked": "Writes locked again"
   },
   "login": "Login",
   "superuser": "superuser (platform)",
@@ -18,5 +20,28 @@
   "access": "Access",
   "notRunning": "The database is not running. Start it to use the explorer.",
   "unreachable": "Could not read this database’s status.",
-  "retry": "Retry"
+  "retry": "Retry",
+  "lockNow": "Lock now",
+  "unlock": {
+    "open": "Unlock writes",
+    "title": "Unlock writes",
+    "description": "Statements run as the platform superuser and change data in \"{{name}}\" right away. Every statement is recorded in the audit log.",
+    "confirmLabel": "Type {{name}} to confirm",
+    "duration": "Unlock for",
+    "minutes": "{{count}} min",
+    "cancel": "Cancel",
+    "confirm": "Unlock writes"
+  },
+  "activity": {
+    "open": "Activity",
+    "title": "Statement activity",
+    "description": "The last {{count}} statements run against this database.",
+    "time": "Time",
+    "principal": "Principal",
+    "action": "Action",
+    "outcome": "Outcome",
+    "fingerprint": "Fingerprint",
+    "empty": "No statements recorded yet.",
+    "error": "Could not load the statement activity."
+  }
 }

@@ -3,7 +3,9 @@
   "mode": {
     "readOnly": "Somente leitura",
     "writesOn": "Escrita desbloqueada",
-    "writesUntil": "Escrita desbloqueada até {{time}}"
+    "writesUntil": "Escrita desbloqueada até {{time}}",
+    "writesLeft": "Escrita liberada, faltam {{time}}",
+    "relocked": "Escrita bloqueada de novo"
   },
   "login": "Login",
   "superuser": "superusuário (plataforma)",
@@ -18,5 +20,28 @@
   "access": "Acesso",
   "notRunning": "O banco de dados não está em execução. Inicie-o para usar o explorador.",
   "unreachable": "Não foi possível ler o status deste banco de dados.",
-  "retry": "Tentar novamente"
+  "retry": "Tentar novamente",
+  "lockNow": "Bloquear agora",
+  "unlock": {
+    "open": "Liberar escrita",
+    "title": "Liberar escrita",
+    "description": "As instruções rodam como superusuário da plataforma e alteram os dados de \"{{name}}\" na hora. Cada instrução fica no log de auditoria.",
+    "confirmLabel": "Digite {{name}} para confirmar",
+    "duration": "Liberar por",
+    "minutes": "{{count}} min",
+    "cancel": "Cancelar",
+    "confirm": "Liberar escrita"
+  },
+  "activity": {
+    "open": "Atividade",
+    "title": "Atividade das instruções",
+    "description": "As últimas {{count}} instruções executadas neste banco.",
+    "time": "Hora",
+    "principal": "Principal",
+    "action": "Ação",
+    "outcome": "Resultado",
+    "fingerprint": "Impressão digital",
+    "empty": "Nenhuma instrução registrada ainda.",
+    "error": "Não foi possível carregar a atividade."
+  }
 }

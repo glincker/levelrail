@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 
 // Minutes a write unlock lasts; 0 means it stays until locked again.
-const UNLOCK_MINUTES = Number(
+export const DEFAULT_UNLOCK_MINUTES = Number(
   import.meta.env.VITE_DB_WRITE_UNLOCK_MINUTES ?? 15,
 )
-const TICK_MS = 30_000
+// One second keeps the countdown and the auto relock honest.
+const TICK_MS = 1000
 const listeners = new Set<() => void>()
 
 const keyFor = (db: string) => `lr.dbWrite.${db}`
@@ -40,7 +41,8 @@ export interface WriteUnlock {
   unlocked: boolean
   /** Epoch ms when the window ends, null when it has no end. */
   until: number | null
-  unlock: () => void
+  /** Minutes override the env default; 0 keeps it unlocked until locked. */
+  unlock: (minutes?: number) => void
   lock: () => void
 }
 
@@ -66,11 +68,14 @@ export function useWriteUnlock(db: string): WriteUnlock {
     if (expired) write(db, null)
   }, [expired, db])
 
-  const unlock = useCallback(() => {
-    const ms = UNLOCK_MINUTES > 0 ? Date.now() + UNLOCK_MINUTES * 60_000 : 0
-    setNow(Date.now())
-    write(db, String(ms))
-  }, [db])
+  const unlock = useCallback(
+    (minutes: number = DEFAULT_UNLOCK_MINUTES) => {
+      const ms = minutes > 0 ? Date.now() + minutes * 60_000 : 0
+      setNow(Date.now())
+      write(db, String(ms))
+    },
+    [db],
+  )
   const lock = useCallback(() => {
     write(db, null)
   }, [db])
