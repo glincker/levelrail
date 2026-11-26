@@ -322,6 +322,7 @@
       "console": "SQL-Konsole"
     },
     "unsupported": "Der Viewer unterstützt Postgres, MySQL, MariaDB und Redis-kompatible Engines. Diese Datenbank ist {{engine}}.",
+    "unsupportedDocumentdb": "Der Explorer für DocumentDB ist noch nicht verfügbar. Verbinde dich mit den Snippets im Verbinden-Dialog.",
     "notRunning": "Der Viewer benötigt eine laufende Datenbank. Starten Sie die Datenbank und versuchen Sie es erneut.",
     "beta": {
       "label": "Beta",

@@ -322,6 +322,7 @@
       "console": "Console SQL"
     },
     "unsupported": "O visualizador suporta Postgres, MySQL, MariaDB e mecanismos compatíveis com Redis. Este banco de dados é {{engine}}.",
+    "unsupportedDocumentdb": "O explorador do DocumentDB ainda não está disponível. Conecte-se com os snippets da caixa de diálogo Conectar.",
     "notRunning": "O visualizador precisa de um banco de dados em execução. Inicie o banco de dados e tente novamente.",
     "beta": {
       "label": "Beta",

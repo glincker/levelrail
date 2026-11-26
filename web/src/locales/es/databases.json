@@ -322,6 +322,7 @@
       "console": "Consola SQL"
     },
     "unsupported": "El visor es compatible con Postgres, MySQL, MariaDB y motores compatibles con Redis. Esta base de datos es {{engine}}.",
+    "unsupportedDocumentdb": "El explorador de DocumentDB aún no está disponible. Conéctate con los fragmentos del cuadro de diálogo Conectar.",
     "notRunning": "El visor necesita una base de datos en ejecución. Inicia la base de datos e inténtalo de nuevo.",
     "beta": {
       "label": "Beta",

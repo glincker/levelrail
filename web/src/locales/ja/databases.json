@@ -322,6 +322,7 @@
       "console": "SQLコンソール"
     },
     "unsupported": "ビューアーはPostgres、MySQL、MariaDB、Redis互換エンジンに対応しています。このデータベースは{{engine}}です。",
+    "unsupportedDocumentdb": "DocumentDB のエクスプローラーはまだ利用できません。接続ダイアログのスニペットを使って接続してください。",
     "notRunning": "ビューアーには実行中のデータベースが必要です。データベースを起動して、もう一度お試しください。",
     "beta": {
       "label": "ベータ",

@@ -322,6 +322,7 @@
       "console": "Console SQL"
     },
     "unsupported": "Le visualiseur prend en charge Postgres, MySQL, MariaDB et les moteurs compatibles Redis. Cette base de données est {{engine}}.",
+    "unsupportedDocumentdb": "L'explorateur pour DocumentDB n'est pas encore disponible. Connectez-vous avec les extraits de la boîte de dialogue Se connecter.",
     "notRunning": "Le visualiseur a besoin d'une base de données en marche. Démarrez la base de données et réessayez.",
     "beta": {
       "label": "Bêta",

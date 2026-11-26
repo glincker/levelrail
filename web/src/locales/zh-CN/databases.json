@@ -322,6 +322,7 @@
       "console": "SQL 控制台"
     },
     "unsupported": "查看器支持 Postgres、MySQL、MariaDB 以及兼容 Redis 的引擎。此数据库是 {{engine}}。",
+    "unsupportedDocumentdb": "DocumentDB 的资源管理器暂不可用。请使用“连接”对话框中的代码片段进行连接。",
     "notRunning": "查看器需要数据库处于运行状态。请启动数据库后重试。",
     "beta": {
       "label": "Beta",
