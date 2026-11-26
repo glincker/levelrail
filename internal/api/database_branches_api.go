@@ -155,19 +155,60 @@ func (rt *Router) branchLimits(ctx context.Context) dbbranch.Limits {
 	}
 }
 
-// dbActionVerdict resolves one db action on one database for the caller.
-func (rt *Router) dbActionVerdict(r *http.Request, action dbauthz.Action, database string) (allowed, hidden bool) {
+// branchAuthz holds one resolver for a request, so the policy load happens once.
+type branchAuthz struct {
+	resolver *dbauthz.Resolver
+	caller   dbauthz.Caller
+	ctx      context.Context
+	broken   bool
+}
+
+func (rt *Router) newBranchAuthz(r *http.Request) *branchAuthz {
 	pt, pid, abilities, err := rt.callerPrincipal(r)
 	if err != nil {
+		return &branchAuthz{broken: true}
+	}
+	return &branchAuthz{resolver: &dbauthz.Resolver{Engine: &dbPolicyEngine{rt: rt}}, caller: dbauthz.Caller{PrincipalType: pt, PrincipalID: pid, Abilities: abilities}, ctx: r.Context()}
+}
+
+// verdict resolves one db action on one database; an engine error looks like a hidden database.
+func (a *branchAuthz) verdict(action dbauthz.Action, database string) (allowed, hidden bool) {
+	if a.broken {
 		return false, true
 	}
-	resolver := &dbauthz.Resolver{Engine: &dbPolicyEngine{rt: rt}}
-	allowed, hidden, err = resolveImplied(r.Context(), resolver, dbauthz.Caller{PrincipalType: pt, PrincipalID: pid, Abilities: abilities}, dbauthz.ResourcePrefix+database, action)
+	allowed, hidden, err := resolveImplied(a.ctx, a.resolver, a.caller, dbauthz.ResourcePrefix+database, action)
 	if err != nil {
-		// Fail closed: an engine error must never make a database look visible.
 		return false, true
 	}
 	return allowed, hidden
+}
+
+// explicitlyDenied is true when a policy Deny covers the action on the database.
+func (a *branchAuthz) explicitlyDenied(action dbauthz.Action, database string) bool {
+	if a.broken {
+		return true
+	}
+	d, err := a.resolver.Resolve(a.ctx, a.caller, dbauthz.ResourcePrefix+database, action)
+	return err != nil || d.PolicyDecision == dbauthz.PolicyDenied
+}
+
+// dbActionVerdict resolves one db action on one database for the caller.
+func (rt *Router) dbActionVerdict(r *http.Request, action dbauthz.Action, database string) (allowed, hidden bool) {
+	return rt.newBranchAuthz(r).verdict(action, database)
+}
+
+// branchResourceFor renders a branch with parent and root hidden when the caller may not see them.
+func (rt *Router) branchResourceFor(a *branchAuthz, b store.DatabaseBranch) branchResource {
+	res := toBranchResource(b)
+	if res.ParentName != "" {
+		if _, hidden := a.verdict(dbauthz.ActionRead, res.ParentName); hidden {
+			res.ParentName = "hidden"
+		}
+	}
+	if _, hidden := a.verdict(dbauthz.ActionRead, res.RootName); hidden {
+		res.RootName = "hidden"
+	}
+	return res
 }
 
 // requireDBAction answers 404 for a hidden database and 403 for a denied action, and reports whether the caller may go on.
@@ -217,28 +258,42 @@ func (rt *Router) loadPathBranch(w http.ResponseWriter, r *http.Request, action 
 		rt.internalError(w, "api: database branch: load failed", err)
 		return store.DatabaseBranch{}, nil, false
 	}
+	if n, ok := r.Context().Value(auditNoteKey{}).(*auditNote); ok {
+		n.Database = b.RootName
+	}
 	// The branch is checked first, then the tree it lives in: managing a branch also needs the
 	// matching right on the root database (read to look, write to change).
 	treeAction := dbauthz.ActionWrite
 	if action == dbauthz.ActionRead {
 		treeAction = dbauthz.ActionRead
 	}
+	az := rt.newBranchAuthz(r)
+	notFound := func() (store.DatabaseBranch, branchAPIStore, bool) {
+		writeError(w, http.StatusNotFound, "branch not found")
+		return store.DatabaseBranch{}, nil, false
+	}
+	if pathName := r.PathValue("name"); pathName != b.RootName {
+		if allowed, hidden := az.verdict(dbauthz.ActionRead, pathName); hidden || !allowed {
+			return notFound()
+		}
+	}
 	for _, c := range []struct {
 		action dbauthz.Action
 		name   string
 	}{{action, b.DatabaseName}, {treeAction, b.RootName}} {
-		allowed, hidden := rt.dbActionVerdict(r, c.action, c.name)
+		allowed, hidden := az.verdict(c.action, c.name)
 		if hidden {
-			writeError(w, http.StatusNotFound, "branch not found")
-			return store.DatabaseBranch{}, nil, false
+			return notFound()
 		}
 		if !allowed {
 			writeError(w, http.StatusForbidden, "this action needs "+string(c.action)+" on database "+c.name)
 			return store.DatabaseBranch{}, nil, false
 		}
 	}
-	if n, ok := r.Context().Value(auditNoteKey{}).(*auditNote); ok {
-		n.Database = b.RootName
+	// A Deny on the root for the requested action holds even when the branch itself grants it.
+	if az.explicitlyDenied(action, b.RootName) {
+		writeError(w, http.StatusForbidden, "this action needs "+string(action)+" on database "+b.RootName)
+		return store.DatabaseBranch{}, nil, false
 	}
 	return b, bs, true
 }
@@ -606,16 +661,7 @@ func (rt *Router) handleListDatabaseBranches(w http.ResponseWriter, r *http.Requ
 
 func (rt *Router) handleGetDatabaseBranch(w http.ResponseWriter, r *http.Request) {
 	if b, _, ok := rt.loadPathBranch(w, r, dbauthz.ActionRead); ok {
-		res := toBranchResource(b)
-		if res.ParentName != "" {
-			if _, hidden := rt.dbActionVerdict(r, dbauthz.ActionRead, res.ParentName); hidden {
-				res.ParentName = "hidden"
-			}
-		}
-		if _, hidden := rt.dbActionVerdict(r, dbauthz.ActionRead, res.RootName); hidden {
-			res.RootName = "hidden"
-		}
-		writeJSON(w, http.StatusOK, res)
+		writeJSON(w, http.StatusOK, rt.branchResourceFor(rt.newBranchAuthz(r), b))
 	}
 }
 
@@ -693,7 +739,7 @@ func (rt *Router) handlePatchDatabaseBranch(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: patch branch: reload failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toBranchResource(cur))
+	writeJSON(w, http.StatusOK, rt.branchResourceFor(rt.newBranchAuthz(r), cur))
 }
 
 // shortensExpiry is true when the new lifetime ends earlier than the current one; never is the longest.
@@ -787,7 +833,7 @@ func (rt *Router) handlePromoteDatabaseBranch(w http.ResponseWriter, r *http.Req
 		rt.internalError(w, "api: promote branch: reload failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toBranchResource(cur))
+	writeJSON(w, http.StatusOK, rt.branchResourceFor(rt.newBranchAuthz(r), cur))
 }
 
 // handleResetDatabaseBranch clones the parent's current data again. The database is recreated, so it gets new credentials.
@@ -861,7 +907,7 @@ func (rt *Router) handleResetDatabaseBranch(w http.ResponseWriter, r *http.Reque
 	rt.nudgeReconciler()
 	rt.auditBranch(r.Context(), r, AuditActionDatabaseBranchReset, map[string]any{"parent": b.ParentName, "branch": b.DatabaseName, "mode": b.Mode})
 	rt.startBranchClone(row, old.Engine)
-	writeJSON(w, http.StatusAccepted, toBranchResource(row))
+	writeJSON(w, http.StatusAccepted, rt.branchResourceFor(rt.newBranchAuthz(r), row))
 }
 
 func hasLiveBranch(rows []store.DatabaseBranch) bool {
@@ -894,4 +940,23 @@ func (rt *Router) auditBranch(ctx context.Context, r *http.Request, action strin
 	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(ctx), e); err != nil {
 		rt.logger.Warn("api: branch audit failed", slog.String("error", err.Error()))
 	}
+}
+
+// reservedBranchName refuses a new root database whose name looks like a pull request branch of an existing one.
+func (rt *Router) reservedBranchName(ctx context.Context, name string) (string, bool) {
+	const marker = "-pr-"
+	for i := strings.Index(name, marker); i > 0; {
+		rest := name[i+len(marker):]
+		if rest != "" && rest[0] >= '0' && rest[0] <= '9' {
+			if _, err := rt.databases.GetDesiredDatabase(ctx, name[:i]); err == nil {
+				return name[:i], true
+			}
+		}
+		next := strings.Index(name[i+1:], marker)
+		if next < 0 {
+			break
+		}
+		i += 1 + next
+	}
+	return "", false
 }

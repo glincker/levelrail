@@ -451,6 +451,10 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	defer lockAppName("database:" + req.Name)()
+	if base, reserved := rt.reservedBranchName(r.Context(), req.Name); reserved {
+		writeError(w, http.StatusConflict, "name is reserved for pull request branches of database "+base+", choose another name")
+		return
+	}
 	// Databases carry no domains, so placement never prefers the local
 	// node for ingress reasons here.
 	cp := &createPlacement{Kind: store.NodeMoveKindDatabase, Name: req.Name}

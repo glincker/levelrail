@@ -117,13 +117,10 @@ func (rt *Router) recordExplorerAudit(r *http.Request, aw *auditWriter, n *audit
 	}
 	ctx := context.WithoutCancel(r.Context())
 	ev := dbaudit.Event{
-		At: time.Now(), DatabaseName: r.PathValue("name"), Ability: ability, Action: string(action),
+		At: time.Now(), DatabaseName: auditPathName(r, n), Ability: ability, Action: string(action),
 		OpKind: auditOpKind(r.Pattern), Fingerprint: n.Fingerprint, StatementText: n.Text, RowsReturned: n.Rows,
-		Bytes: aw.bytes, DurationMs: d.Milliseconds(), Outcome: auditOutcome(r, status), ClientIP: clientIP(r), BranchName: r.PathValue("branch"),
+		Bytes: aw.bytes, DurationMs: d.Milliseconds(), Outcome: auditOutcome(r, status), ClientIP: clientIP(r), BranchName: auditSafeName(r.PathValue("branch")),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")), RequestID: aw.Header().Get(requestIDHeader),
-	}
-	if n.Database != "" {
-		ev.DatabaseName = n.Database
 	}
 	if n.Denied {
 		ev.Outcome = dbaudit.OutcomeDenied
@@ -255,4 +252,21 @@ func (rt *Router) handleListDatabaseStatementAudit(w http.ResponseWriter, r *htt
 		rows = []store.DatabaseStatementAudit{}
 	}
 	writeJSON(w, http.StatusOK, databaseAuditListResponse{Items: rows, NextCursor: next})
+}
+
+// auditSafeName keeps only values shaped like a database name, so raw caller input never reaches the trail.
+func auditSafeName(v string) string {
+	if auditDatabaseNameRe.MatchString(v) {
+		return v
+	}
+	return ""
+}
+
+// auditPathName is the database a request touched. Branch routes use the resolved root, or nothing
+// when the handler did not get that far, never the raw path value.
+func auditPathName(r *http.Request, n *auditNote) string {
+	if r.PathValue("branch") != "" {
+		return auditSafeName(n.Database)
+	}
+	return r.PathValue("name")
 }

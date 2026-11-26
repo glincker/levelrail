@@ -31,16 +31,20 @@ func (rt *Router) handleGetBranchSchemaDiff(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
-	if !dbbranch.Reachable(b.State) {
-		writeCodedError(w, http.StatusConflict, "branch_not_ready", "branch "+b.DatabaseName+" is "+b.State+" and not available yet")
-		return
-	}
 	against := r.URL.Query().Get("against")
 	if against == "" || against == schemaDiffAgainstParent {
 		against = b.ParentName
 	}
 	if against == b.DatabaseName {
 		writeError(w, http.StatusBadRequest, "against must be a different database")
+		return
+	}
+	// Read access on the base comes before any answer that mentions a state.
+	if !rt.requireDBAction(w, r, dbauthz.ActionRead, against) {
+		return
+	}
+	if !dbbranch.Reachable(b.State) {
+		writeCodedError(w, http.StatusConflict, "branch_not_ready", "branch "+b.DatabaseName+" is "+b.State+" and not available yet")
 		return
 	}
 	if !rt.requireSchemaDiffBase(w, r, bs, b, against) {
