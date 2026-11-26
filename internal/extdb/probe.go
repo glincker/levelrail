@@ -144,9 +144,9 @@ redis-cli "$@" PING 2>&1`
 func mysqlProbe(engine string) string {
 	return dbviewer.MySQLSSLCase(engine == EngineMariaDB) + `
 BIN=$(command -v mysql || command -v mariadb)
-set --
-if [ -n "$EXT_DB" ]; then set -- "$EXT_DB"; fi
-"$BIN" --protocol=tcp -h"$EXT_HOST" -P"$EXT_PORT" -u"$EXT_USER" $SSL --connect-timeout=10 -N -B -e "SELECT CURRENT_USER(), IFNULL(DATABASE(), ''), VERSION(), IFNULL((SELECT GROUP_CONCAT(schema_name ORDER BY schema_name) FROM information_schema.schemata WHERE schema_name NOT IN ('mysql','information_schema','performance_schema','sys')), '')" "$@" 2>&1`
+DBOPT=""
+if [ -n "$EXT_DB" ]; then DBOPT="--database=$EXT_DB"; fi
+"$BIN" --protocol=tcp -h"$EXT_HOST" -P"$EXT_PORT" -u"$EXT_USER" $SSL $DBOPT --connect-timeout=10 -N -B -e "SELECT CURRENT_USER(), IFNULL(DATABASE(), ''), VERSION(), IFNULL((SELECT GROUP_CONCAT(schema_name ORDER BY schema_name) FROM information_schema.schemata WHERE schema_name NOT IN ('mysql','information_schema','performance_schema','sys')), '')" 2>&1`
 }
 
 var (

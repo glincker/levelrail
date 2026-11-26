@@ -98,3 +98,42 @@ func TestProviders_PresetsAreValid(t *testing.T) {
 		}
 	}
 }
+
+func TestValidate_RejectsOptionLikeIdentifiers(t *testing.T) {
+	for _, v := range []string{"-h169.254.169.254", "-eSHUTDOWN", "--skip-ssl", "-"} {
+		for _, field := range []string{"user", "database", "auth"} {
+			c := Conn{Engine: EngineMySQL, Host: "db.example.com"}
+			switch field {
+			case "user":
+				c.User = v
+			case "database":
+				c.Database = v
+			default:
+				c.AuthDatabase = v
+			}
+			if err := c.Validate(Policy{}); err == nil {
+				t.Errorf("%s %q accepted", field, v)
+			}
+		}
+	}
+	ok := Conn{Engine: EngineMySQL, Host: "db.example.com", User: "app-user", Database: "my-db"}
+	if err := ok.Validate(Policy{}); err != nil {
+		t.Errorf("plain identifiers rejected: %v", err)
+	}
+}
+
+func TestValidate_HostForms(t *testing.T) {
+	blocked := []string{"2852039166", "0xa9fea9fe", "0251.0376.0251.0376", "169.254.43518", "0xA9.0xFE.0xA9.0xFE", "169.254.169.254", "64:ff9b::a9fe:a9fe", "[64:ff9b::1]", "metadata.google.internal", "metadata", "127.1", "localhost", "0"}
+	for _, h := range blocked {
+		c := Conn{Engine: EnginePostgres, Host: h}
+		if err := c.Validate(Policy{}); err == nil {
+			t.Errorf("host %q accepted", h)
+		}
+	}
+	for _, h := range []string{"db.example.com", "10.1.2.3", "pg-1", "2001-db8.example.com", "1password.example.com"} {
+		c := Conn{Engine: EnginePostgres, Host: h}
+		if err := c.Validate(Policy{}); err != nil {
+			t.Errorf("host %q rejected: %v", h, err)
+		}
+	}
+}

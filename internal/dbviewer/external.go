@@ -28,7 +28,7 @@ func MySQLSSLCase(mariadb bool) string {
 func mysqlExternalCmd(mariadb bool) []string {
 	return []string{"sh", "-c", MySQLSSLCase(mariadb) + `
 BIN=$(command -v mysql || command -v mariadb)
-set --
-if [ -n "$EXT_DB" ]; then set -- "$EXT_DB"; fi
-exec "$BIN" --protocol=tcp -h"$EXT_HOST" -P"$EXT_PORT" -u"$EXT_USER" $SSL --connect-timeout=10 --xml --skip-pager --default-character-set=utf8mb4 "$@"`}
+DBOPT=""
+if [ -n "$EXT_DB" ]; then DBOPT="--database=$EXT_DB"; fi
+exec "$BIN" --protocol=tcp -h"$EXT_HOST" -P"$EXT_PORT" -u"$EXT_USER" $SSL $DBOPT --connect-timeout=10 --xml --skip-pager --default-character-set=utf8mb4`}
 }

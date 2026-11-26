@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"strings"
 	"sync"
 	"testing"
@@ -95,8 +96,14 @@ func TestCheckResolved(t *testing.T) {
 	if err := c.CheckResolved(t.Context(), Policy{AllowLinkLocal: true}, fakeResolver{addrs: []string{"169.254.169.254"}}); err != nil {
 		t.Fatalf("opt in: %v", err)
 	}
-	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{err: errors.New("no such host")}); err != nil {
+	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{err: &net.DNSError{Err: "no such host", IsNotFound: true}}); err != nil {
 		t.Fatalf("docker-only name must pass: %v", err)
+	}
+	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{err: errors.New("server misbehaving")}); err == nil {
+		t.Fatal("a failed lookup must stop the connection")
+	}
+	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{addrs: []string{"64:ff9b::a9fe:a9fe"}}); err == nil {
+		t.Fatal("a translated address must be rejected")
 	}
 	if err := c.CheckResolved(t.Context(), Policy{}, fakeResolver{addrs: []string{"10.1.2.3"}}); err != nil {
 		t.Fatalf("private ok: %v", err)

@@ -50,10 +50,14 @@ const AllowLinkLocalEnv = "APP_EXTERNAL_DB_ALLOW_LINK_LOCAL"
 const defaultAuthDB = "admin"
 
 var (
-	nameRe  = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
-	hostRe  = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$`)
-	identRe = regexp.MustCompile(`^[A-Za-z0-9_.@$-]{1,128}$`)
-	netRe   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`)
+	nameRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+	hostRe = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$`)
+	// No leading dash: values reach client programs as option arguments.
+	identRe = regexp.MustCompile(`^[A-Za-z0-9_.@$][A-Za-z0-9_.@$-]{0,127}$`)
+	// Numeric host spellings (decimal, hex, octal, short dotted forms) that
+	// some resolvers read as an IPv4 address.
+	numericHostRe = regexp.MustCompile(`(?i)^(0x[0-9a-f]+|[0-9]+)(\.(0x[0-9a-f]+|[0-9]+))*$`)
+	netRe         = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`)
 
 	metadataPrefixes = []netip.Prefix{
 		netip.MustParsePrefix("169.254.0.0/16"),
@@ -61,6 +65,8 @@ var (
 		netip.MustParsePrefix("fd00:ec2::/32"),
 		netip.MustParsePrefix("100.100.100.200/32"),
 	}
+	// Addresses that translate to an IPv4 destination are never connectable.
+	nat64Prefix   = netip.MustParsePrefix("64:ff9b::/96")
 	metadataNames = map[string]bool{"metadata.google.internal": true, "metadata": true}
 )
 
@@ -189,6 +195,9 @@ func checkHost(host string, p Policy) error {
 	if !hostRe.MatchString(host) {
 		return errors.New("host must be a hostname or IP address")
 	}
+	if numericHostRe.MatchString(host) {
+		return fmt.Errorf("%w: %s is a numeric address form, write the IP address as a dotted IPv4 address", ErrBlockedAddress, host)
+	}
 	if metadataNames[lower] && !p.AllowLinkLocal {
 		return fmt.Errorf("%w: %s is a cloud metadata name (set %s=true to permit)", ErrBlockedAddress, host, AllowLinkLocalEnv)
 	}
@@ -202,6 +211,9 @@ func checkAddr(addr netip.Addr, p Policy) error {
 		return fmt.Errorf("%w: %s is not a connectable address", ErrBlockedAddress, addr)
 	case addr.IsLoopback():
 		return fmt.Errorf("%w: %s is loopback and points at the helper container itself, use the container name, its network address or the host's LAN address", ErrBlockedAddress, addr)
+	}
+	if nat64Prefix.Contains(addr) {
+		return fmt.Errorf("%w: %s is a translated address", ErrBlockedAddress, addr)
 	}
 	if p.AllowLinkLocal {
 		return nil
@@ -220,8 +232,7 @@ type Resolver interface {
 }
 
 // CheckResolved rejects a hostname that resolves to a forbidden address.
-// A lookup failure is not an error: container names only resolve inside
-// Docker networks.
+// A host that does not exist is not an error here, but a failed lookup is.
 func (c Conn) CheckResolved(ctx context.Context, p Policy, r Resolver) error {
 	if _, err := netip.ParseAddr(strings.Trim(c.Host, "[]")); err == nil {
 		return nil
@@ -233,7 +244,13 @@ func (c Conn) CheckResolved(ctx context.Context, p Policy, r Resolver) error {
 	defer cancel()
 	addrs, err := r.LookupHost(ctx, c.Host)
 	if err != nil {
-		return nil
+		// A name that does not exist is left to the probe to report (container
+		// names only resolve inside Docker networks); any other failure stops here.
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
+			return nil
+		}
+		return fmt.Errorf("host %s could not be checked: %w", c.Host, err)
 	}
 	for _, a := range addrs {
 		ip, perr := netip.ParseAddr(a)
