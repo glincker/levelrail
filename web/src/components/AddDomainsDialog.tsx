@@ -47,6 +47,8 @@ import type { EditDomainsResult } from '../queries/appEnvironmentDomains'
 import { DomainDnsSetup } from './dns/DomainDnsSetup'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
+import { useIsDemo } from '../hooks/useDemo'
+import { DemoSampleDnsCheck } from './demo/DemoSampleResults'
 import { GoLivePanel } from './GoLivePanel'
 import { ServerAddressLine } from './domains/ServerAddressCard'
 import { AddDomainWizard } from './domains/AddDomainWizard'
@@ -523,6 +525,8 @@ function AddDomainsModes({
     apps.length === 0 && !initialApp ? 'proxy' : 'app',
   )
   const [advanced, setAdvanced] = useState(false)
+  const isDemo = useIsDemo()
+  if (isDemo) return <DemoSampleDnsCheck />
   const guided = mode === 'app' && !advanced && (apps.length > 0 || initialApp)
   return (
     <>

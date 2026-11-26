@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
+import { useIsDemo } from '../hooks/useDemo'
+import { DemoSampleScale } from './demo/DemoSampleResults'
 import { FieldLabel } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -39,6 +41,7 @@ export function AppScalePanel({ app }: { app: AppDetail }) {
   const metrics = useAppMetricsRow(app.name)
   const autoscale = useQuery(autoscaleQueryOptions(app.name))
   const lb = useAppLoadBalancer(app.name)
+  const isDemo = useIsDemo()
   const configured = lb.data?.configured === true
   const status = useAppLoadBalancerStatus(app.name, configured)
 
@@ -88,6 +91,8 @@ export function AppScalePanel({ app }: { app: AppDetail }) {
             </AlertDescription>
           </Alert>
         ) : null}
+
+        {isDemo ? <DemoSampleScale replicas={app.replicas} /> : null}
 
         <div className="space-y-1">
           <h3 className="text-sm font-medium">{t('autoscale')}</h3>

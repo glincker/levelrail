@@ -35,3 +35,92 @@ export const DEMO_QUERY_ROWS: readonly (readonly string[])[] = [
   ['2', 'ben@example.com', '2026-01-13 17:03:08'],
   ['1', 'ada@example.com', '2026-01-12 08:55:30'],
 ]
+
+// Build narration for the sample app result: generic steps, not tied to any real build.
+export const DEMO_BUILD_LOG: readonly string[] = [
+  'Cloning repository',
+  'Detected stack, using the default build plan',
+  'Installing dependencies',
+  'Building image',
+  'Starting container',
+  'Health check passed',
+  'Deploy complete',
+]
+
+// example.com is reserved for documentation, so a sample URL can never point at a real site.
+export function demoSampleUrl(name: string): string {
+  const slug =
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, '-') || 'app'
+  return `https://${slug}.example.com`
+}
+
+const DB_SCHEMES: Record<string, { scheme: string; port: number }> = {
+  postgres: { scheme: 'postgres', port: 5432 },
+  postgresql: { scheme: 'postgres', port: 5432 },
+  mysql: { scheme: 'mysql', port: 3306 },
+  mariadb: { scheme: 'mysql', port: 3306 },
+  redis: { scheme: 'redis', port: 6379 },
+  mongodb: { scheme: 'mongodb', port: 27017 },
+  mongo: { scheme: 'mongodb', port: 27017 },
+}
+
+export const DEMO_MASK = '••••••••'
+
+// The password is always masked; the sample never carries a real secret.
+export function demoSampleConnection(engine: string, name: string): string {
+  const e = DB_SCHEMES[engine.toLowerCase()] ?? {
+    scheme: engine.toLowerCase() || 'postgres',
+    port: 5432,
+  }
+  const db = name.trim() || 'db'
+  return `${e.scheme}://app:${DEMO_MASK}@${db}:${e.port}/app`
+}
+
+export interface DemoEnvDiff {
+  added: string[]
+  changed: string[]
+  removed: string[]
+}
+
+/** Key-level diff only, values never leave the form. */
+export function diffEnvKeys(
+  before: Readonly<Record<string, string>>,
+  after: Readonly<Record<string, string>>,
+): DemoEnvDiff {
+  const added = Object.keys(after).filter((k) => !(k in before))
+  const removed = Object.keys(before).filter((k) => !(k in after))
+  const changed = Object.keys(after).filter(
+    (k) => k in before && before[k] !== after[k],
+  )
+  return { added, changed, removed }
+}
+
+// Documentation address range, never a real server.
+export const DEMO_SAMPLE_IP = '203.0.113.10'
+
+export interface DemoDnsRow {
+  type: 'A' | 'CNAME'
+  host: string
+  value: string
+  verified: boolean
+}
+
+export function demoDnsRows(domain: string): DemoDnsRow[] {
+  const d = domain.trim().toLowerCase() || 'app.example.com'
+  return [
+    { type: 'A', host: d, value: DEMO_SAMPLE_IP, verified: true },
+    { type: 'CNAME', host: `www.${d}`, value: d, verified: false },
+  ]
+}
+
+export const DEMO_SAMPLE_LOGS: readonly string[] = [
+  'Server listening on port 3000',
+  'GET /health 200 2ms',
+  'GET / 200 14ms',
+  'GET /api/items 200 21ms',
+  'POST /api/items 201 33ms',
+  'GET /favicon.ico 304 1ms',
+]
