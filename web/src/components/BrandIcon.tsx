@@ -31,6 +31,9 @@ export type BrandIconName =
   | 'neon'
   | 'supabase'
   | 'aws-rds'
+  | 'aws-aurora'
+  | 'planetscale'
+  | 'upstash'
   | 'node'
   | 'go'
   | 'java'
@@ -198,6 +201,9 @@ const LOADERS: Record<
   neon: () => import('@thesvg/react/neon'),
   supabase: () => import('@thesvg/react/supabase'),
   'aws-rds': () => import('@thesvg/react/aws-amazon-rds'),
+  'aws-aurora': () => import('@thesvg/react/aws-amazon-aurora'),
+  planetscale: () => import('@thesvg/react/planetscale'),
+  upstash: () => import('@thesvg/react/upstash'),
   node: () => import('@thesvg/react/nodedotjs'),
   go: () => import('@thesvg/react/go'),
   java: () => import('@thesvg/react/java'),

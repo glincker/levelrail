@@ -188,7 +188,7 @@ export function ConnectDatabaseDetails({
 
       <div className="space-y-1">
         <Label>{t('external.connect.fields.tls')}</Label>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {TLS_MODES.map((m) => (
             <ChoiceButton
               key={m}
