@@ -93,9 +93,9 @@ func (db *DB) CreateExternalDatabase(ctx context.Context, d ExternalDatabase) er
 func (db *DB) UpdateExternalDatabase(ctx context.Context, d ExternalDatabase) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE external_databases SET host = ?, port = ?, username = ?, database_name = ?, tls_mode = ?,
-			network = ?, node_id = ?, updated_at = ?
+			network = ?, node_id = ?, provider = ?, updated_at = ?
 		WHERE name = ?
-	`, d.Host, d.Port, d.Username, d.DatabaseName, d.TLSMode, d.Network, d.NodeID, nowRFC3339(), d.Name)
+	`, d.Host, d.Port, d.Username, d.DatabaseName, d.TLSMode, d.Network, d.NodeID, d.Provider, nowRFC3339(), d.Name)
 	if err != nil {
 		return fmt.Errorf("store: update external database %q: %w", d.Name, err)
 	}

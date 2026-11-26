@@ -143,3 +143,88 @@ func TestHostedDatabase_AddressPolicyAndAuthz(t *testing.T) {
 		t.Fatalf("a helper was started for a denied request: %d", len(fake.created))
 	}
 }
+
+func TestHostedDatabase_NoLeaksForOtherEngines(t *testing.T) {
+	rt, db, fake, _, logs := newExternalTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	cases := map[string]struct{ url, out string }{
+		"my-mysql": {"mysql://app:" + hostedPass + "@aws.connect.psdb.cloud/shop", "app@%\tshop\t8.0.36\tshop\nLR_EXIT:0\n"},
+		"my-redis": {"rediss://default:" + hostedPass + "@eu1-calm-1.upstash.io:6379", "PONG\nLR_EXIT:0\n"},
+		"my-mongo": {"mongodb+srv://app:" + hostedPass + "@cluster0.ab1cd.mongodb.net/shop", `{"ok":1,"version":"7.0"}` + "\nLR_EXIT:0\n"},
+	}
+	all := ""
+	for name, tc := range cases {
+		fake.execOut = tc.out
+		rec := viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/external-databases", `{"name":"`+name+`","url":"`+tc.url+`"}`)
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("%s create = %d %s", name, rec.Code, rec.Body.String())
+		}
+		all += rec.Body.String()
+		all += viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/external-databases/test", `{"url":"`+tc.url+`"}`).Body.String()
+		all += viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/external-databases/"+name+"/probe", "").Body.String()
+	}
+	all += viewerDo(t, rt, cookie, http.MethodGet, "/api/v1/databases", "").Body.String()
+	if strings.Contains(all, hostedPass) || strings.Contains(logs.String(), hostedPass) {
+		t.Fatal("password leaked through a response or a log")
+	}
+	for _, c := range fake.execCmds {
+		if strings.Contains(strings.Join(c, " "), hostedPass) {
+			t.Fatalf("password in argv: %v", c)
+		}
+	}
+	if entries, err := db.ListAuditEntries(t.Context(), 200, nil, store.AuditEntryFilter{}); err == nil {
+		for _, e := range entries {
+			if strings.Contains(e.Path, hostedPass) {
+				t.Fatalf("password in audit path %q", e.Path)
+			}
+		}
+	}
+	srv := false
+	for _, spec := range fake.created {
+		if spec.Env["EXT_SRV"] == "1" {
+			srv = true
+		}
+	}
+	if !srv {
+		t.Error("the Atlas helper did not use the seed record form")
+	}
+}
+
+func TestHostedDatabase_UpdateAdoptEngineMismatchAndProbeLimit(t *testing.T) {
+	rt, db, fake, _, _ := newExternalTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	fake.execOut = hostedProbeOK
+	rec := viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/external-databases", hostedURL())
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = viewerDo(t, rt, cookie, http.MethodPut, "/api/v1/external-databases/neon-main", `{"url":"mysql://u:pw@db.example.com/x"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("update with a mysql url = %d, want 400", rec.Code)
+	}
+	rec = viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/external-databases/adopt", `{"container":"coolify-pg","url":"mysql://u:pw@db.example.com/x"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("adopt with a mysql url = %d, want 400", rec.Code)
+	}
+
+	req := authedRequest(t, cookie, http.MethodPost, "/api/v1/external-databases/test", "")
+	var releases []func()
+	for i := 0; i < 2; i++ {
+		rel, ok := rt.acquireExternalProbe(req)
+		if !ok {
+			t.Fatalf("slot %d refused below the limit", i)
+		}
+		releases = append(releases, rel)
+	}
+	rec = viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/external-databases/test", hostedURL())
+	if rec.Code != http.StatusTooManyRequests {
+		t.Errorf("over the limit = %d, want 429", rec.Code)
+	}
+	for _, rel := range releases {
+		rel()
+	}
+	rec = viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/external-databases/test", hostedURL())
+	if rec.Code != http.StatusOK {
+		t.Errorf("after release = %d %s", rec.Code, rec.Body.String())
+	}
+}

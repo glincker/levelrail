@@ -17,6 +17,7 @@ type externalFlags struct {
 	passwordStdin bool
 	testOnly      bool
 	urlFlag       string
+	urlStdin      bool
 }
 
 func (e *externalFlags) register(fs *flag.FlagSet) {
@@ -33,14 +34,20 @@ func (e *externalFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&e.req.NodeID, "node", "", "node that runs the connection helper (default: local)")
 	fs.StringVar(&e.req.ProjectID, "project", "", "project to place the record in")
 	fs.StringVar(&e.req.Provider, "provider", "", "hosting service preset (neon, aws-rds, supabase, ...), detected from the host when empty")
-	fs.StringVar(&e.urlFlag, "url", "", "connection string (postgres://, mysql://, mongodb://, rediss://); prefer APP_EXTERNAL_DB_URL so the password stays out of the process list")
+	fs.StringVar(&e.urlFlag, "url", "", "connection string (postgres://, mysql://, mongodb://, rediss://); prefer --url-stdin or APP_EXTERNAL_DB_URL, because arguments are visible in process lists")
+	fs.BoolVar(&e.urlStdin, "url-stdin", false, "read the connection string from the first line of stdin")
 	fs.BoolVar(&e.req.SaveAnyway, "save-anyway", false, "with --url or --provider: save even when the connection test fails")
 	fs.BoolVar(&e.passwordStdin, "password-stdin", false, "read the password from the first line of stdin")
 }
 
 // readURL takes the connection string from the flag or the environment.
-func (e *externalFlags) readURL(lookupEnv func(string) (string, bool)) {
+func (e *externalFlags) readURL(stdin io.Reader, lookupEnv func(string) (string, bool)) {
 	e.req.URL = strings.TrimSpace(e.urlFlag)
+	if e.urlStdin {
+		line, _ := bufio.NewReader(stdin).ReadString('\n')
+		e.req.URL = strings.TrimSpace(line)
+		return
+	}
 	if v, ok := lookupEnv("APP_EXTERNAL_DB_URL"); ok && e.req.URL == "" {
 		e.req.URL = strings.TrimSpace(v)
 	}
@@ -94,9 +101,13 @@ func runDatabasesConnect(prog string, args []string, stdin io.Reader, stdout, st
 	if _, code, ok := parseInterspersed(fs, args); !ok {
 		return code
 	}
-	f.readURL(lookupEnv)
+	if f.urlStdin && f.passwordStdin {
+		_, _ = fmt.Fprintln(stderr, "--url-stdin and --password-stdin both read stdin; use only one")
+		return exitUsage
+	}
+	f.readURL(stdin, lookupEnv)
 	if f.req.URL == "" && (f.req.Engine == "" || f.req.Host == "" || (f.req.Name == "" && !f.testOnly)) {
-		_, _ = fmt.Fprintf(stderr, "usage: %s databases connect --name NAME --engine ENGINE --host HOST [--port N] [--user U] [--database DB] [--tls-mode M] [--network N] [--password-stdin] [--test] [--json]\n       %s databases connect --url CONNECTION_STRING [--name NAME] [--provider P] [--save-anyway] [--test] [--json]\n", prog, prog)
+		_, _ = fmt.Fprintf(stderr, "usage: %s databases connect --name NAME --engine ENGINE --host HOST [--port N] [--user U] [--database DB] [--tls-mode M] [--network N] [--password-stdin] [--test] [--json]\n       %s databases connect --url CONNECTION_STRING | --url-stdin [--name NAME] [--provider P] [--save-anyway] [--test] [--json]\n", prog, prog)
 		return exitUsage
 	}
 	f.readPassword(stdin, lookupEnv)

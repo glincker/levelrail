@@ -304,6 +304,7 @@ databases.crash_loop_window_seconds
 databases.dynamodb.describe_tables_max
 databases.dynamodb.page_items
 databases.dynamodb.page_items_max
+databases.external_probe_concurrency
 databases.import_max_bytes
 databases.latest_lookup_timeout_seconds
 databases.latest_version_cache_seconds

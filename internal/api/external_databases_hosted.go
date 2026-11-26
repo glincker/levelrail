@@ -7,9 +7,11 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/extdb"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -37,6 +39,7 @@ func (req *externalDatabaseRequest) applyConnectionURL() error {
 	if err != nil {
 		return err
 	}
+	req.urlEngine = p.Engine
 	req.URL = ""
 	fill := func(dst *string, v string) {
 		if *dst == "" {
@@ -75,19 +78,61 @@ type hostedSaveBlocked struct {
 	Probe extdb.Result `json:"probe"`
 }
 
+var (
+	extProbeMu     sync.Mutex
+	extProbeActive = map[string]int{}
+)
+
+// acquireExternalProbe takes one probe slot for the caller; the returned
+// function releases it. ok is false when the caller is at the live limit.
+func (rt *Router) acquireExternalProbe(r *http.Request) (release func(), ok bool) {
+	key := "anonymous"
+	if ptype, pid, _, err := rt.callerPrincipal(r); err == nil {
+		key = ptype + ":" + pid
+	}
+	limit := 2
+	if rt.runtimeSettings != nil {
+		limit = rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyExternalProbeConcurrency)
+	}
+	extProbeMu.Lock()
+	defer extProbeMu.Unlock()
+	if extProbeActive[key] >= limit {
+		return nil, false
+	}
+	extProbeActive[key]++
+	return func() {
+		extProbeMu.Lock()
+		defer extProbeMu.Unlock()
+		if extProbeActive[key]--; extProbeActive[key] <= 0 {
+			delete(extProbeActive, key)
+		}
+	}, true
+}
+
+func writeProbeBusy(w http.ResponseWriter) {
+	w.Header().Set("Retry-After", "5")
+	writeError(w, http.StatusTooManyRequests, "too many connection tests are running, wait for one to finish")
+}
+
 const hostedProbeBudget = 3 * time.Minute
 
 // hostedPreflight probes before anything is stored. It returns blocked=true
 // after writing the response when the probe failed and save_anyway is off.
 func (rt *Router) hostedPreflight(w http.ResponseWriter, r *http.Request, req externalDatabaseRequest, c extdb.Conn) (extdb.Result, bool) {
+	release, ok := rt.acquireExternalProbe(r)
+	if !ok {
+		writeProbeBusy(w)
+		return extdb.Result{}, true
+	}
+	defer release()
 	ctx, cancel := context.WithTimeout(r.Context(), hostedProbeBudget)
 	defer cancel()
 	res, err := rt.externalProbe(ctx, req.Name, req.NodeID, c)
 	if err != nil {
 		res = extdb.Result{Status: store.ExternalHealthUnknown, Reason: c.Scrub(err.Error())}
 	}
-	ok := res.Status == extdb.StatusReachable || res.Status == extdb.StatusSlow
-	if !ok && !req.SaveAnyway {
+	reached := res.Status == extdb.StatusReachable || res.Status == extdb.StatusSlow
+	if !reached && !req.SaveAnyway {
 		writeJSON(w, http.StatusUnprocessableEntity, hostedSaveBlocked{
 			Error: "the connection test failed; fix the details or choose save anyway",
 			Code:  "probe_failed",

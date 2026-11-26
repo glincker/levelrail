@@ -11,7 +11,7 @@ Usage:
   levelrail-cli databases create [flags]     create a managed database
   levelrail-cli databases create --interactive  guided, step-by-step creation
   levelrail-cli databases connect --name N --engine E --host H [flags]  connect an existing database where it is, no data moved (--password-stdin, --test)
-  levelrail-cli databases connect --url CONNECTION_STRING [--name N] [--save-anyway] [--test]  connect a hosted database (Neon, RDS, Supabase, Atlas, ...) from its connection string; tested before it is saved
+  levelrail-cli databases connect --url-stdin | --url CONNECTION_STRING [--name N] [--save-anyway] [--test]  connect a hosted database (Neon, RDS, Supabase, Atlas, ...) from its connection string; tested before it is saved
   levelrail-cli databases connect <name> [--user U] [--launch] [flags]  tunnel to a managed database, print a connection string, optionally start psql, mysql or redis-cli
   levelrail-cli databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   levelrail-cli databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)

@@ -82,6 +82,10 @@ type externalDatabaseRequest struct {
 	URL        string `json:"url"`
 	Provider   string `json:"provider"`
 	SaveAnyway bool   `json:"save_anyway"`
+
+	// urlEngine is the engine the connection string named, kept so update and
+	// adopt can refuse a string for another engine.
+	urlEngine string
 }
 
 func (rt *Router) toExternalDatabaseResource(ctx context.Context, d store.ExternalDatabase) externalDatabaseResource {
@@ -211,6 +215,12 @@ func (rt *Router) handleTestExternalDatabase(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	release, ok := rt.acquireExternalProbe(r)
+	if !ok {
+		writeProbeBusy(w)
+		return
+	}
+	defer release()
 	res, err := rt.externalProbe(r.Context(), "test", req.NodeID, c)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, c.Scrub(err.Error()))
@@ -319,6 +329,10 @@ func (rt *Router) handleUpdateExternalDatabase(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
+	if req.urlEngine != "" && req.urlEngine != existing.Engine {
+		writeError(w, http.StatusBadRequest, "the connection string is for a different engine than this database")
+		return
+	}
 	req.Name, req.Engine = existing.Name, existing.Engine
 	if req.SourceContainer == "" {
 		req.SourceContainer = existing.SourceContainer
@@ -334,7 +348,10 @@ func (rt *Router) handleUpdateExternalDatabase(w http.ResponseWriter, r *http.Re
 	}
 	rec := store.ExternalDatabase{
 		Name: existing.Name, Host: c.Host, Port: c.Port, Username: c.User, DatabaseName: c.Database,
-		TLSMode: c.TLSMode, Network: c.Network, NodeID: req.NodeID,
+		TLSMode: c.TLSMode, Network: c.Network, NodeID: req.NodeID, Provider: req.Provider,
+	}
+	if rec.Provider == "" {
+		rec.Provider = existing.Provider
 	}
 	if err := rt.externalDatabases.UpdateExternalDatabase(r.Context(), rec); err != nil {
 		rt.internalError(w, "api: update external database failed", err, slog.String("name", existing.Name))
@@ -524,6 +541,10 @@ func (rt *Router) handleAdoptExternalDatabase(w http.ResponseWriter, r *http.Req
 	}
 	if cand == nil {
 		writeError(w, http.StatusNotFound, "no running database container with that name was found on the node")
+		return
+	}
+	if req.urlEngine != "" && req.urlEngine != cand.Engine {
+		writeError(w, http.StatusBadRequest, "the connection string is for a different engine than this container")
 		return
 	}
 	req.Engine = cand.Engine
