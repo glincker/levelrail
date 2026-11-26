@@ -16,9 +16,9 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-HERO_APP="marketing-site"
+HERO_APP="checkout-api"
 SECOND_APP="edge-cache"
-SAMPLE_DB="docs-sample-db"
+SAMPLE_DB="acme-orders"
 
 SCRATCH_DIR="$(mktemp -d "${TMPDIR:-/tmp}/levelrail-screenshot.XXXXXX")"
 BIN="$SCRATCH_DIR/levelrail"
@@ -336,7 +336,7 @@ log "scaling $HERO_APP to 2 replicas for the load balancer screenshot"
 # so ACME just fails quietly in the background.
 scale_status="$(curl -s -o /dev/null -w '%{http_code}' -X PUT \
   -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" \
-  -d '{"image":"nginx:alpine","port":80,"replicas":2,"domains":["marketing-site.example.com"]}' \
+  -d '{"image":"nginx:alpine","port":80,"replicas":2,"domains":["checkout-api.example.com"]}' \
   "$BASE_URL/api/v1/apps/${HERO_APP}")"
 [ "$scale_status" = "200" ] || fail "scale $HERO_APP to 2 replicas returned $scale_status, expected 200"
 wait_for_replica_count "$HERO_APP" 2
