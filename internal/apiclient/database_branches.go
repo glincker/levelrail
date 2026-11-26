@@ -60,16 +60,12 @@ func (c *Client) CreateLiveDatabaseBranch(ctx context.Context, db string, req Cr
 
 // ListDatabaseBranches returns the whole tree of the database's root.
 func (c *Client) ListDatabaseBranches(ctx context.Context, db string) (DatabaseBranchTree, error) {
-	var out DatabaseBranchTree
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(db)+"/branches", nil, &out)
-	return out, err
+	return getJSON[DatabaseBranchTree](ctx, c, "/api/v1/databases/"+PathEscape(db)+"/branches")
 }
 
 // GetDatabaseBranch returns one branch.
 func (c *Client) GetDatabaseBranch(ctx context.Context, db, branch string) (DatabaseBranchNode, error) {
-	var out DatabaseBranchNode
-	err := c.do(ctx, http.MethodGet, branchPath(db, branch), nil, &out)
-	return out, err
+	return getJSON[DatabaseBranchNode](ctx, c, branchPath(db, branch))
 }
 
 // PatchDatabaseBranch extends expiry or toggles protection.
