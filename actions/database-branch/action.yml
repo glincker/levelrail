@@ -36,7 +36,7 @@ inputs:
     default: ${{ github.token }}
 outputs:
   branch:
-    description: Branch name, pr-<number>.
+    description: Branch name, <database>-pr-<number>.
     value: ${{ steps.branch.outputs.branch }}
   host:
     description: Host of the branch database inside the platform network.
@@ -86,6 +86,8 @@ runs:
         set -euo pipefail
         echo "::add-mask::${APP_API_TOKEN}"
         case "${PR}" in ''|*[!0-9]*) echo "::error::pr-number must be a number"; exit 1 ;; esac
+        case "${MODE}" in schema|full) ;; *) echo "::error::mode must be schema or full"; exit 1 ;; esac
+        if ! printf '%s' "${TTL}" | grep -Eq '^[0-9]+[smhd]$|^never$'; then echo "::error::ttl must look like 7d or 12h, or never"; exit 1; fi
         out="$(levelrail-cli databases branch pr "${DATABASE}" --pr "${PR}" --mode "${MODE}" --ttl "${TTL}" --json)"
         {
           echo "branch=$(printf '%s' "${out}" | jq -r '.branch')"
@@ -94,7 +96,7 @@ runs:
           echo "database_name=$(printf '%s' "${out}" | jq -r '.database_name')"
         } >> "$GITHUB_OUTPUT"
         printf '%s' "${out}" > "${RUNNER_TEMP}/levelrail-branch.json"
-        levelrail-cli databases branch diff "${DATABASE}" "pr-${PR}" --json > "${RUNNER_TEMP}/levelrail-diff.json" || echo '{}' > "${RUNNER_TEMP}/levelrail-diff.json"
+        levelrail-cli databases branch diff "${DATABASE}" "$(printf '%s' "${out}" | jq -r '.branch')" --json > "${RUNNER_TEMP}/levelrail-diff.json" || echo '{}' > "${RUNNER_TEMP}/levelrail-diff.json"
     - name: Comment the branch on the pull request
       if: ${{ inputs.comment == 'true' && github.event_name == 'pull_request' && github.event.action != 'closed' }}
       shell: bash
@@ -107,21 +109,27 @@ runs:
         b="${RUNNER_TEMP}/levelrail-branch.json"
         d="${RUNNER_TEMP}/levelrail-diff.json"
         # Values come from the API as data and are rendered inside code spans only.
-        body="$(
+        head_part="$(
           printf '%s\n' "${marker}" "### Levelrail database branch" ""
           jq -r '"Branch `\(.branch | gsub("[^A-Za-z0-9_.-]"; "_"))`, mode `\(.mode | gsub("[^A-Za-z0-9_.-]"; "_"))`, state `\(.state | gsub("[^A-Za-z0-9_.-]"; "_"))`, expires `\((.expires_at // "never") | gsub("[^A-Za-z0-9_.:+-]"; "_"))`."' "${b}"
           jq -r 'select(.host != null and .host != "") | "\nHost `\(.host | gsub("[^A-Za-z0-9_.-]"; "_"))`, port `\(.port)`. Credentials are not shown here."' "${b}"
-          printf '\n'
+        )"
+        inner="$(
           jq -r '
             def clean: tostring | gsub("[^A-Za-z0-9_.$-]"; "_");
             if (.summary // null) == null then "Schema diff not available."
-            else "<details><summary>Schema diff: \(.summary.added) added, \(.summary.removed) removed, \(.summary.changed) changed</summary>\n\n"
-              + ((.changes // [])[:20] | map("- `\(.kind | clean)` `\(.object | clean)` `\(.schema | clean).\(if (.table // "") != "" then (.table | clean) + "." else "" end)\(.name | clean)`") | join("\n"))
+            else ((.changes // [])[:20] | map("- `\(.kind | clean)` `\(.object | clean)` `\(.schema | clean).\(if (.table // "") != "" then (.table | clean) + "." else "" end)\(.name | clean)`") | join("\n"))
               + (if ((.changes // []) | length) > 20 then "\n- and \(((.changes // []) | length) - 20) more" else "" end)
-              + "\n\n</details>" end' "${d}"
+              end' "${d}"
         )"
-        body="$(printf '%s' "${body}" | head -c 4000)"
-        id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate --jq "[.[] | select(.body | contains(\"${marker}\"))][0].id // empty" | head -n 1)"
+        inner="$(printf '%s' "${inner}" | head -c 3000)"
+        summary="$(jq -r 'if (.summary // null) == null then "" else "Schema diff: \(.summary.added) added, \(.summary.removed) removed, \(.summary.changed) changed" end' "${d}")"
+        if [ -n "${summary}" ]; then
+          body="${head_part}"$'\n'"<details><summary>${summary}</summary>"$'\n\n'"${inner}"$'\n\n'"</details>"
+        else
+          body="${head_part}"$'\n'"${inner}"
+        fi
+        id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate | jq -r --arg marker "${marker}" '[.[] | select(.body | contains($marker))][0].id // empty' | head -n 1)"
         if [ -n "${id}" ]; then
           gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="${body}" > /dev/null || echo "::warning::could not update the pull request comment"
         else
@@ -144,7 +152,7 @@ runs:
         levelrail-cli databases branch pr-close "${DATABASE}" --pr "${PR}" --yes
         if [ "${COMMENT}" = "true" ]; then
           marker="<!-- levelrail-database-branch -->"
-          id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate --jq "[.[] | select(.body | contains(\"${marker}\"))][0].id // empty" | head -n 1)"
+          id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate | jq -r --arg marker "${marker}" '[.[] | select(.body | contains($marker))][0].id // empty' | head -n 1)"
           if [ -n "${id}" ]; then
             gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="${marker}
         Branch deleted." > /dev/null || echo "::warning::could not update the pull request comment"

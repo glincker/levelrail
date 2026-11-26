@@ -5,7 +5,7 @@ description: "Create a database branch for every pull request with a GitHub Acti
 "og:url": "https://docs.levelrail.com/database-branch-per-pull-request"
 ---
 
-Each pull request gets its own copy of a database, named `pr-<number>`. The action posts one comment with the branch state and a schema diff, updates it on every push, and deletes the branch when the pull request closes or merges.
+Each pull request gets its own copy of a database, named `<database>-pr-<number>`. The action posts one comment with the branch state and a schema diff, updates it on every push, and deletes the branch when the pull request closes or merges.
 
 ## Workflow
 
@@ -36,7 +36,7 @@ Outputs: `branch`, `host`, `port` and `database-name`. Use them in later steps t
 
 ## Secrets and permissions
 
-- `LEVELRAIL_TOKEN`: an API token that can create and delete database branches. Give it no more than that and rotate it on a schedule. Pull requests from forks do not receive repository secrets, so the action does nothing for them.
+- `LEVELRAIL_TOKEN`: a dedicated API token scoped to the one database, with branch create and delete only. Schema mode needs `db:write` on it, a full copy needs `db:admin` under the access model. Give it nothing else and rotate it on a schedule. Pull requests from forks do not receive repository secrets, so the action does nothing for them.
 - `pull-requests: write`: needed only for the comment. Set `comment: "false"` to skip it and drop the permission.
 
 ## Modes and expiry
@@ -46,7 +46,7 @@ Outputs: `branch`, `host`, `port` and `database-name`. Use them in later steps t
 | `mode` | `schema` copies tables only, `full` copies rows too | `schema` |
 | `ttl` | `7d`, `12h`, `never` | `7d` |
 
-The ttl is a safety net. A branch that nobody closed expires on its own.
+The branch is not protected by default. Protection blocks delete and expiry, which would stop the close step from cleaning up. The ttl is a safety net. A branch that nobody closed expires on its own.
 
 ## How it works
 
@@ -59,7 +59,7 @@ On `closed` the action runs `databases branch pr-close <database> --pr <number> 
 The comment shows host, port and name only. Credentials are never printed by the action. To connect from your machine:
 
 ```bash
-levelrail-cli databases connection-string pr-42 --reveal
+levelrail-cli databases connection-string app-db-pr-42 --reveal
 ```
 
 `--reveal` is limited to owners, asks for your password and is audited. The same commands work outside GitHub:
@@ -71,4 +71,4 @@ levelrail-cli databases branch pr-close app-db --pr 42 --yes
 
 ## Limits
 
-Branch names are `pr-<number>` and database names are unique on a server. Run one branching workflow per server, or the second create fails because the name is taken.
+Branch names include the database, so two databases can use the same pull request number. Names over 63 characters shorten the database part and add a six character hash of the full name, so they stay unique and repeatable.
