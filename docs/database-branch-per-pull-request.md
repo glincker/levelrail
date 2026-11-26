@@ -71,4 +71,4 @@ levelrail-cli databases branch pr-close app-db --pr 42 --yes
 
 ## Limits
 
-Branch names are `pr-<number>` and database names are unique on a server. Run one branching workflow per server, or the second repository reuses the first one's name and the command reports a conflict.
+Branch names are `pr-<number>` and database names are unique on a server. Run one branching workflow per server, or the second create fails because the name is taken.
