@@ -50,7 +50,7 @@ SELECT schemaname AS schema, relname AS tbl, seq_scan, COALESCE(idx_scan, 0) AS 
   last_autovacuum::text AS last_autovacuum, last_vacuum::text AS last_vacuum
 FROM pg_stat_user_tables
 WHERE n_live_tup + n_dead_tup >= ` + itoa(th.SeqScanMinRows) + `
-  AND ((seq_scan > 0 AND seq_scan * 100 >= ` + itoa(int64(th.SeqScanRatioPercent)) + ` * (seq_scan + COALESCE(idx_scan, 0)))
+  AND ((seq_scan > 0 AND seq_tup_read >= ` + itoa(th.SeqScanMinRows) + ` AND seq_scan * 100 >= ` + itoa(int64(th.SeqScanRatioPercent)) + ` * (seq_scan + COALESCE(idx_scan, 0)))
     OR (n_dead_tup > 0 AND n_dead_tup * 100 >= ` + itoa(int64(th.DeadTuplePercent)) + ` * GREATEST(n_live_tup, 1)))
 ORDER BY seq_tup_read DESC, n_dead_tup DESC LIMIT ` + itoa(int64(th.MaxFindings)) + `) t`
 }
@@ -67,7 +67,7 @@ func statementsSQL(th Thresholds) string {
 SELECT queryid::text AS queryid, calls, mean_exec_time, total_exec_time, rows, left(query, 2000) AS query
 FROM pg_stat_statements
 WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
-  AND mean_exec_time >= ` + itoa(int64(th.SlowStatementMs)) + ` AND query NOT LIKE '%pg_stat_statements%'
+  AND mean_exec_time >= ` + itoa(int64(th.SlowStatementMs)) + ` AND query NOT LIKE '%pg_stat_statements%' AND query NOT LIKE 'DECLARE lr_cursor%'
 ORDER BY total_exec_time DESC LIMIT ` + itoa(int64(th.MaxFindings)) + `) t`
 }
 

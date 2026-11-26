@@ -47,7 +47,8 @@ func TestBuildMissingFKIndexes(t *testing.T) {
 func TestBuildSeqScans(t *testing.T) {
 	th := testThresholds()
 	got := BuildSeqScans([]TableStatRow{
-		{Schema: "public", Table: "hot", SeqScan: 90, IdxScan: 10, LiveTup: 1000},
+		{Schema: "public", Table: "hot", SeqScan: 90, IdxScan: 10, LiveTup: 1000, SeqTupRead: 90000},
+		{Schema: "public", Table: "cheap", SeqScan: 1, IdxScan: 0, LiveTup: 1000, SeqTupRead: 0},
 		{Schema: "public", Table: "indexed", SeqScan: 10, IdxScan: 90, LiveTup: 1000},
 		{Schema: "public", Table: "small", SeqScan: 100, IdxScan: 0, LiveTup: 5},
 		{Schema: "public", Table: "never", SeqScan: 0, IdxScan: 0, LiveTup: 1000},
@@ -153,3 +154,10 @@ func TestSafeReason(t *testing.T) {
 type errTest string
 
 func (e errTest) Error() string { return string(e) }
+
+// The advisor's own statements run under a cursor and must never be reported back as slow.
+func TestStatementsSQLSkipsOwnCursor(t *testing.T) {
+	if !strings.Contains(statementsSQL(testThresholds()), "NOT LIKE 'DECLARE lr_cursor%'") {
+		t.Fatal("own statements are not excluded")
+	}
+}

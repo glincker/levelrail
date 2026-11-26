@@ -140,7 +140,7 @@ func BuildUnusedIndexes(rows []UnusedIndexRow, th Thresholds) []Finding {
 			Title:  "Index has never been used",
 			Object: plainName(r.Schema, r.Index),
 			Evidence: map[string]any{"table": plainName(r.Schema, r.Table), "idx_scan": r.IdxScan, "size_bytes": r.Bytes,
-				"definition": CleanText(r.Def), "stats_since": r.StatsReset},
+				"definition": CleanText(r.Def), "stats_since": orNever(r.StatsReset)},
 			Suggestion: "DROP INDEX CONCURRENTLY " + qualified(r.Schema, r.Index) + ";" +
 				" Counters only cover the time since the statistics were last reset, so check a full business cycle." + branchNote,
 			Docs: docsBase + "monitoring-stats.html",
@@ -178,7 +178,8 @@ func BuildSeqScans(rows []TableStatRow, th Thresholds) []Finding {
 	var out []Finding
 	for _, r := range rows {
 		total := r.SeqScan + r.IdxScan
-		if r.LiveTup < th.SeqScanMinRows || r.SeqScan <= 0 || total <= 0 {
+		// Sequential scans must have read at least a table's worth of rows, or one cheap scan would flag a table.
+		if r.LiveTup < th.SeqScanMinRows || r.SeqScan <= 0 || total <= 0 || r.SeqTupRead < th.SeqScanMinRows {
 			continue
 		}
 		pct := float64(r.SeqScan) * 100 / float64(total)
@@ -247,7 +248,7 @@ func BuildCacheHit(row CacheRow, th Thresholds) []Finding {
 		Title:  "Buffer cache hit ratio is low",
 		Object: "database",
 		Evidence: map[string]any{"hit_percent": round1(pct), "blks_hit": row.BlksHit, "blks_read": row.BlksRead,
-			"min_percent": th.CacheHitMinPercent, "stats_since": row.StatsReset},
+			"min_percent": th.CacheHitMinPercent, "stats_since": orNever(row.StatsReset)},
 		Suggestion: "Raise shared_buffers or give the database more memory, and check for large sequential scans. A freshly started or reset database reads cold, so recheck after it warms up." + branchNote,
 		Docs:       docsBase + "runtime-config-resource.html",
 	}}
@@ -316,6 +317,14 @@ func BuildSessions(rows []SessionRow, th Thresholds) []Finding {
 		})
 	}
 	return out
+}
+
+// orNever words a null stats_reset, which means the counters were never reset.
+func orNever(s string) string {
+	if s == "" {
+		return "never reset"
+	}
+	return s
 }
 
 func round1(f float64) float64 { return float64(int64(f*10+0.5)) / 10 }
