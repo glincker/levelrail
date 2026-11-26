@@ -91,6 +91,20 @@ export function useDatabaseSchema(name: string, enabled: boolean) {
   )
 }
 
+// Full schema (columns included) for editor autocomplete; only fetched
+// once the editor is first focused.
+export function useDatabaseFullSchema(name: string, enabled: boolean) {
+  return useQuery(
+    queryOptions({
+      queryKey: [...databaseViewerKeys.schema(name), 'full'] as const,
+      queryFn: () =>
+        request<DbSchemaResponse>(`${base(name)}/schema`, undefined, 'schema'),
+      enabled,
+      staleTime: 60_000,
+    }),
+  )
+}
+
 // Columns, indexes, keys and DDL of one table, fetched when it is opened
 // so a large schema never travels as one document.
 export function useDatabaseTableStructure(

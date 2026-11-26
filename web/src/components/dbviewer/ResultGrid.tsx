@@ -1,7 +1,11 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
-import { ChevronDownGlassIcon, ChevronUpGlassIcon } from '@thesvg/ui-react'
+import {
+  ChevronDownGlassIcon,
+  ChevronUpGlassIcon,
+  CopyGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -10,12 +14,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { CodeBlock } from '@/components/ui/code-block'
+import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
+import { inferColumnType } from '../../lib/sqlConsole/inferType'
 import type { DbCell } from '../../types/databaseViewer'
 
 const ROW_HEIGHT_PX = 32
 const OVERSCAN_ROWS = 12
 const MAX_CELL_CHARS = 80
+const DEFAULT_COL_PX = 192
+const MIN_COL_PX = 64
+const MAX_COL_PX = 800
+const KEY_RESIZE_PX = 16
 
 export interface ResultGridProps {
   columns: string[]
@@ -24,6 +34,8 @@ export interface ResultGridProps {
   sortDesc?: boolean
   onSort?: (column: string) => void
   className?: string
+  // Console extras: draggable column edges, type chips, copy-cell buttons.
+  enhanced?: boolean
 }
 
 interface Expanded {
@@ -40,10 +52,18 @@ export function ResultGrid({
   sortDesc,
   onSort,
   className,
+  enhanced = false,
 }: ResultGridProps) {
   const { t } = useTranslation('databases')
   const scrollRef = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState<Expanded | null>(null)
+  const [widths, setWidths] = useState<Record<number, number>>({})
+  const types = useMemo(
+    () => (enhanced ? columns.map((_, i) => inferColumnType(rows, i)) : []),
+    [enhanced, columns, rows],
+  )
+  const widthOf = (i: number) => widths[i] ?? DEFAULT_COL_PX
+  const clamp = (n: number) => Math.min(MAX_COL_PX, Math.max(MIN_COL_PX, n))
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -66,7 +86,7 @@ export function ResultGrid({
             className="sticky top-0 z-10 flex border-b border-border bg-muted/80 backdrop-blur"
             role="row"
           >
-            {columns.map((column) => {
+            {columns.map((column, ci) => {
               const active = sortColumn === column
               return (
                 <div
@@ -75,7 +95,11 @@ export function ResultGrid({
                   aria-sort={
                     active ? (sortDesc ? 'descending' : 'ascending') : undefined
                   }
-                  className="flex h-8 w-48 shrink-0 items-center border-r border-border px-2 last:border-r-0"
+                  className={cn(
+                    'relative flex h-8 shrink-0 items-center border-r border-border px-2 last:border-r-0',
+                    enhanced ? '' : 'w-48',
+                  )}
+                  style={enhanced ? { width: widthOf(ci) } : undefined}
                 >
                   {onSort ? (
                     <button
@@ -108,6 +132,62 @@ export function ResultGrid({
                   ) : (
                     <span className="truncate font-medium">{column}</span>
                   )}
+                  {enhanced ? (
+                    <>
+                      <span
+                        className="ml-1 shrink-0 rounded bg-muted px-1 font-mono text-xs text-muted-foreground"
+                        title={t('viewer.console.results.typeInferred')}
+                      >
+                        {t(
+                          `viewer.console.results.types.${types[ci] ?? 'text'}`,
+                        )}
+                      </span>
+                      <div
+                        role="separator"
+                        aria-orientation="vertical"
+                        tabIndex={0}
+                        aria-label={t('viewer.console.results.resizeColumn', {
+                          column,
+                        })}
+                        aria-valuenow={widthOf(ci)}
+                        aria-valuemin={MIN_COL_PX}
+                        aria-valuemax={MAX_COL_PX}
+                        className="absolute inset-y-0 right-0 w-1.5 cursor-col-resize hover:bg-primary/40 focus-visible:bg-primary/60 focus-visible:outline-none"
+                        onPointerDown={(e) => {
+                          e.preventDefault()
+                          const startX = e.clientX
+                          const startW = widthOf(ci)
+                          const move = (ev: PointerEvent) => {
+                            setWidths((w) => ({
+                              ...w,
+                              [ci]: clamp(startW + ev.clientX - startX),
+                            }))
+                          }
+                          const up = () => {
+                            window.removeEventListener('pointermove', move)
+                            window.removeEventListener('pointerup', up)
+                          }
+                          window.addEventListener('pointermove', move)
+                          window.addEventListener('pointerup', up)
+                        }}
+                        onKeyDown={(e) => {
+                          const d =
+                            e.key === 'ArrowRight'
+                              ? KEY_RESIZE_PX
+                              : e.key === 'ArrowLeft'
+                                ? -KEY_RESIZE_PX
+                                : 0
+                          if (d !== 0) {
+                            e.preventDefault()
+                            setWidths((w) => ({
+                              ...w,
+                              [ci]: clamp(widthOf(ci) + d),
+                            }))
+                          }
+                        }}
+                      />
+                    </>
+                  ) : null}
                 </div>
               )
             })}
@@ -135,6 +215,8 @@ export function ResultGrid({
                     <GridCell
                       key={column + String(ci)}
                       value={row[ci] ?? null}
+                      widthPx={enhanced ? widthOf(ci) : undefined}
+                      copyable={enhanced}
                       onExpand={(value) => {
                         setExpanded({ column, value })
                       }}
@@ -179,14 +261,26 @@ export function ResultGrid({
 function GridCell({
   value,
   onExpand,
+  widthPx,
+  copyable,
 }: {
   value: DbCell
   onExpand: (value: string) => void
+  widthPx?: number
+  copyable?: boolean
 }) {
   const { t } = useTranslation('databases')
+  const sizing = widthPx === undefined ? 'w-48' : ''
+  const sizeStyle = widthPx === undefined ? undefined : { width: widthPx }
   if (value === null) {
     return (
-      <div className="flex h-8 w-48 shrink-0 items-center border-r border-border/60 px-2 italic text-muted-foreground last:border-r-0">
+      <div
+        className={cn(
+          'flex h-8 shrink-0 items-center border-r border-border/60 px-2 italic text-muted-foreground last:border-r-0',
+          sizing,
+        )}
+        style={sizeStyle}
+      >
         {t('viewer.grid.null')}
       </div>
     )
@@ -196,7 +290,13 @@ function GridCell({
     ? value.slice(0, MAX_CELL_CHARS).replace(/\n/g, ' ')
     : value
   return (
-    <div className="flex h-8 w-48 shrink-0 items-center border-r border-border/60 px-2 font-mono text-xs last:border-r-0">
+    <div
+      className={cn(
+        'group/cell relative flex h-8 shrink-0 items-center border-r border-border/60 px-2 font-mono text-xs last:border-r-0',
+        sizing,
+      )}
+      style={sizeStyle}
+    >
       {long ? (
         <button
           type="button"
@@ -211,6 +311,32 @@ function GridCell({
       ) : (
         <span className="truncate">{shown}</span>
       )}
+      {copyable ? (
+        <button
+          type="button"
+          className="absolute right-1 top-1/2 hidden size-6 -translate-y-1/2 items-center justify-center rounded bg-card text-muted-foreground hover:text-foreground focus-visible:flex group-focus-within/cell:flex group-hover/cell:flex"
+          title={t('viewer.console.results.copyCell')}
+          aria-label={t('viewer.console.results.copyCell')}
+          onClick={() => {
+            navigator.clipboard.writeText(value).then(
+              () => {
+                toast.add({
+                  title: t('viewer.console.results.copied'),
+                  type: 'success',
+                })
+              },
+              () => {
+                toast.add({
+                  title: t('viewer.console.results.copyFailed'),
+                  type: 'error',
+                })
+              },
+            )
+          }}
+        >
+          <CopyGlassIcon className="size-4" aria-hidden="true" />
+        </button>
+      ) : null}
     </div>
   )
 }

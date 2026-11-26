@@ -476,6 +476,54 @@
           "grant": "Isso amplia o acesso a {{object}}.",
           "revoke": "Isso remove o acesso a {{object}}."
         }
+      },
+      "shortcutsHint": "Ctrl ou Cmd + Enter executa, S salva, T abre uma nova aba.",
+      "tabs": {
+        "listLabel": "Abas de consulta",
+        "untitled": "Consulta {{n}}",
+        "new": "Nova aba",
+        "close": "Fechar {{title}}",
+        "unsaved": "Alterações não salvas"
+      },
+      "editor": {
+        "format": "Formatar",
+        "formatHint": "Coloca as palavras-chave em maiúsculas e cada cláusula em sua própria linha",
+        "suggestions": "Sugestões"
+      },
+      "results": {
+        "exportCsv": "Exportar CSV",
+        "exportJson": "Exportar JSON",
+        "exportHint": "Exporta as {{count}} linhas carregadas neste resultado",
+        "exported": "{{count}} linhas exportadas.",
+        "copyCell": "Copiar célula",
+        "copied": "Copiado.",
+        "copyFailed": "Não foi possível copiar.",
+        "resizeColumn": "Redimensionar a coluna {{column}}",
+        "typeInferred": "Tipo deduzido dos valores desta página",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "Este plano não tem valores de custo, então o texto bruto é exibido.",
+        "showTree": "Mostrar árvore",
+        "showRaw": "Mostrar texto bruto",
+        "hottest": "Nó mais caro",
+        "cost": "custo {{value}}",
+        "rows": "{{count}} linhas",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "Instruções salvas e recentes",
+        "searchLabel": "Buscar instruções",
+        "searchPlaceholder": "Buscar nas salvas e no histórico",
+        "noMatch": "Nada corresponde à sua busca.",
+        "openInTab": "Abrir em uma nova aba"
       }
     },
     "keys": {

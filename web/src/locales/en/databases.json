@@ -472,6 +472,54 @@
           "grant": "This widens access on {{object}}.",
           "revoke": "This removes access on {{object}}."
         }
+      },
+      "shortcutsHint": "Ctrl or Cmd + Enter runs, S saves, T opens a new tab.",
+      "tabs": {
+        "listLabel": "Query tabs",
+        "untitled": "Query {{n}}",
+        "new": "New tab",
+        "close": "Close {{title}}",
+        "unsaved": "Unsaved changes"
+      },
+      "editor": {
+        "format": "Format",
+        "formatHint": "Uppercase keywords and start each clause on its own line",
+        "suggestions": "Suggestions"
+      },
+      "results": {
+        "exportCsv": "Export CSV",
+        "exportJson": "Export JSON",
+        "exportHint": "Exports the {{count}} rows loaded in this result",
+        "exported": "Exported {{count}} rows.",
+        "copyCell": "Copy cell",
+        "copied": "Copied.",
+        "copyFailed": "Could not copy.",
+        "resizeColumn": "Resize column {{column}}",
+        "typeInferred": "Type guessed from the values on this page",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "This plan has no cost figures, so the raw text is shown.",
+        "showTree": "Show tree",
+        "showRaw": "Show raw text",
+        "hottest": "Most expensive",
+        "cost": "cost {{value}}",
+        "rows": "{{count}} rows",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "Saved and recent statements",
+        "searchLabel": "Search statements",
+        "searchPlaceholder": "Search saved and history",
+        "noMatch": "Nothing matches your search.",
+        "openInTab": "Open in a new tab"
       }
     },
     "keys": {

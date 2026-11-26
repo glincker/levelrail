@@ -476,6 +476,54 @@
           "grant": "Cela élargit l'accès à {{object}}.",
           "revoke": "Cela retire l'accès à {{object}}."
         }
+      },
+      "shortcutsHint": "Ctrl ou Cmd + Entrée exécute, S enregistre, T ouvre un nouvel onglet.",
+      "tabs": {
+        "listLabel": "Onglets de requête",
+        "untitled": "Requête {{n}}",
+        "new": "Nouvel onglet",
+        "close": "Fermer {{title}}",
+        "unsaved": "Modifications non enregistrées"
+      },
+      "editor": {
+        "format": "Formater",
+        "formatHint": "Met les mots-clés en majuscules et place chaque clause sur sa propre ligne",
+        "suggestions": "Suggestions"
+      },
+      "results": {
+        "exportCsv": "Exporter en CSV",
+        "exportJson": "Exporter en JSON",
+        "exportHint": "Exporte les {{count}} lignes chargées dans ce résultat",
+        "exported": "{{count}} lignes exportées.",
+        "copyCell": "Copier la cellule",
+        "copied": "Copié.",
+        "copyFailed": "Copie impossible.",
+        "resizeColumn": "Redimensionner la colonne {{column}}",
+        "typeInferred": "Type déduit des valeurs de cette page",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "Ce plan ne contient pas de coûts, le texte brut est donc affiché.",
+        "showTree": "Afficher l’arbre",
+        "showRaw": "Afficher le texte brut",
+        "hottest": "Nœud le plus coûteux",
+        "cost": "coût {{value}}",
+        "rows": "{{count}} lignes",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "Requêtes enregistrées et récentes",
+        "searchLabel": "Rechercher des requêtes",
+        "searchPlaceholder": "Rechercher dans les enregistrées et l’historique",
+        "noMatch": "Aucun résultat pour votre recherche.",
+        "openInTab": "Ouvrir dans un nouvel onglet"
       }
     },
     "keys": {

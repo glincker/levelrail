@@ -468,6 +468,54 @@
           "grant": "这将扩大对 {{object}} 的访问。",
           "revoke": "这将撤销对 {{object}} 的访问。"
         }
+      },
+      "shortcutsHint": "Ctrl 或 Cmd + Enter 运行，S 保存，T 打开新标签页。",
+      "tabs": {
+        "listLabel": "查询标签页",
+        "untitled": "查询 {{n}}",
+        "new": "新标签页",
+        "close": "关闭 {{title}}",
+        "unsaved": "有未保存的更改"
+      },
+      "editor": {
+        "format": "格式化",
+        "formatHint": "关键字转为大写，每个子句另起一行",
+        "suggestions": "建议"
+      },
+      "results": {
+        "exportCsv": "导出 CSV",
+        "exportJson": "导出 JSON",
+        "exportHint": "导出此结果中已加载的 {{count}} 行",
+        "exported": "已导出 {{count}} 行。",
+        "copyCell": "复制单元格",
+        "copied": "已复制。",
+        "copyFailed": "无法复制。",
+        "resizeColumn": "调整列 {{column}} 的宽度",
+        "typeInferred": "类型由本页的值推断",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "此计划没有成本数值，因此显示原始文本。",
+        "showTree": "显示树",
+        "showRaw": "显示原始文本",
+        "hottest": "成本最高",
+        "cost": "成本 {{value}}",
+        "rows": "{{count}} 行",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "已保存和最近的语句",
+        "searchLabel": "搜索语句",
+        "searchPlaceholder": "搜索已保存和历史",
+        "noMatch": "没有匹配的内容。",
+        "openInTab": "在新标签页中打开"
       }
     },
     "keys": {

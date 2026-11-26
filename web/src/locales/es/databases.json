@@ -472,6 +472,54 @@
           "grant": "Esto amplía el acceso a {{object}}.",
           "revoke": "Esto quita acceso a {{object}}."
         }
+      },
+      "shortcutsHint": "Ctrl o Cmd + Intro ejecuta, S guarda, T abre una pestaña nueva.",
+      "tabs": {
+        "listLabel": "Pestañas de consulta",
+        "untitled": "Consulta {{n}}",
+        "new": "Pestaña nueva",
+        "close": "Cerrar {{title}}",
+        "unsaved": "Cambios sin guardar"
+      },
+      "editor": {
+        "format": "Formatear",
+        "formatHint": "Pone las palabras clave en mayúsculas y cada cláusula en su propia línea",
+        "suggestions": "Sugerencias"
+      },
+      "results": {
+        "exportCsv": "Exportar CSV",
+        "exportJson": "Exportar JSON",
+        "exportHint": "Exporta las {{count}} filas cargadas en este resultado",
+        "exported": "{{count}} filas exportadas.",
+        "copyCell": "Copiar celda",
+        "copied": "Copiado.",
+        "copyFailed": "No se pudo copiar.",
+        "resizeColumn": "Cambiar el ancho de la columna {{column}}",
+        "typeInferred": "Tipo deducido de los valores de esta página",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "Este plan no tiene cifras de coste, así que se muestra el texto sin procesar.",
+        "showTree": "Ver árbol",
+        "showRaw": "Ver texto sin procesar",
+        "hottest": "Nodo más costoso",
+        "cost": "coste {{value}}",
+        "rows": "{{count}} filas",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "Sentencias guardadas y recientes",
+        "searchLabel": "Buscar sentencias",
+        "searchPlaceholder": "Buscar en guardadas e historial",
+        "noMatch": "Nada coincide con tu búsqueda.",
+        "openInTab": "Abrir en una pestaña nueva"
       }
     },
     "keys": {

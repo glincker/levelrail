@@ -472,6 +472,54 @@
           "grant": "Dies erweitert den Zugriff auf {{object}}.",
           "revoke": "Dies entzieht Zugriff auf {{object}}."
         }
+      },
+      "shortcutsHint": "Strg oder Cmd + Eingabe führt aus, S speichert, T öffnet einen neuen Tab.",
+      "tabs": {
+        "listLabel": "Abfrage-Tabs",
+        "untitled": "Abfrage {{n}}",
+        "new": "Neuer Tab",
+        "close": "{{title}} schließen",
+        "unsaved": "Ungespeicherte Änderungen"
+      },
+      "editor": {
+        "format": "Formatieren",
+        "formatHint": "Schlüsselwörter großschreiben und jede Klausel in eine eigene Zeile setzen",
+        "suggestions": "Vorschläge"
+      },
+      "results": {
+        "exportCsv": "CSV exportieren",
+        "exportJson": "JSON exportieren",
+        "exportHint": "Exportiert die {{count}} in diesem Ergebnis geladenen Zeilen",
+        "exported": "{{count}} Zeilen exportiert.",
+        "copyCell": "Zelle kopieren",
+        "copied": "Kopiert.",
+        "copyFailed": "Kopieren nicht möglich.",
+        "resizeColumn": "Breite der Spalte {{column}} ändern",
+        "typeInferred": "Typ aus den Werten dieser Seite abgeleitet",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "Dieser Plan enthält keine Kostenwerte, daher wird der Rohtext angezeigt.",
+        "showTree": "Baum anzeigen",
+        "showRaw": "Rohtext anzeigen",
+        "hottest": "Teuerster Knoten",
+        "cost": "Kosten {{value}}",
+        "rows": "{{count}} Zeilen",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "Gespeicherte und letzte Anweisungen",
+        "searchLabel": "Anweisungen durchsuchen",
+        "searchPlaceholder": "Gespeicherte und Verlauf durchsuchen",
+        "noMatch": "Keine Treffer für deine Suche.",
+        "openInTab": "In neuem Tab öffnen"
       }
     },
     "keys": {

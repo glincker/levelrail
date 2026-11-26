@@ -468,6 +468,54 @@
           "grant": "{{object}} へのアクセスを広げます。",
           "revoke": "{{object}} へのアクセスを取り消します。"
         }
+      },
+      "shortcutsHint": "Ctrl または Cmd + Enter で実行、S で保存、T で新しいタブを開きます。",
+      "tabs": {
+        "listLabel": "クエリタブ",
+        "untitled": "クエリ {{n}}",
+        "new": "新しいタブ",
+        "close": "{{title}} を閉じる",
+        "unsaved": "未保存の変更"
+      },
+      "editor": {
+        "format": "整形",
+        "formatHint": "キーワードを大文字にし、各句を別の行に置きます",
+        "suggestions": "候補"
+      },
+      "results": {
+        "exportCsv": "CSV を書き出す",
+        "exportJson": "JSON を書き出す",
+        "exportHint": "この結果に読み込まれた {{count}} 行を書き出します",
+        "exported": "{{count}} 行を書き出しました。",
+        "copyCell": "セルをコピー",
+        "copied": "コピーしました。",
+        "copyFailed": "コピーできませんでした。",
+        "resizeColumn": "列 {{column}} の幅を変更",
+        "typeInferred": "このページの値から推測した型",
+        "types": {
+          "int": "int",
+          "number": "num",
+          "bool": "bool",
+          "json": "json",
+          "text": "text",
+          "null": "null"
+        }
+      },
+      "explainTree": {
+        "unparsed": "このプランにはコストの数値がないため、生のテキストを表示しています。",
+        "showTree": "ツリーを表示",
+        "showRaw": "生のテキストを表示",
+        "hottest": "最もコストが高い",
+        "cost": "コスト {{value}}",
+        "rows": "{{count}}行",
+        "time": "{{ms}} ms"
+      },
+      "sidebar": {
+        "label": "保存済みと最近のステートメント",
+        "searchLabel": "ステートメントを検索",
+        "searchPlaceholder": "保存済みと履歴を検索",
+        "noMatch": "検索に一致するものはありません。",
+        "openInTab": "新しいタブで開く"
       }
     },
     "keys": {
