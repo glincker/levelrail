@@ -97,20 +97,25 @@ func (rt *Router) withDatabaseAudit(ability string, action dbauthz.Action, next 
 			next(w, r)
 			return
 		}
-		// Writes and admin actions stop when the trail cannot take them; reads fail open and count a drop.
-		if (action == dbauthz.ActionWrite || action == dbauthz.ActionAdmin) && !rt.dbAudit.HasRoom(r.Context()) {
-			writeCodedError(w, http.StatusServiceUnavailable, "audit_unavailable", "the audit trail is full, try again shortly")
-			return
+		// Writes and admin actions hold a queue slot before they run and stop when none is free; reads fail open and count a drop.
+		var res *dbaudit.Reservation
+		if action == dbauthz.ActionWrite || action == dbauthz.ActionAdmin {
+			var ok bool
+			if res, ok = rt.dbAudit.Reserve(r.Context()); !ok {
+				writeCodedError(w, http.StatusServiceUnavailable, "audit_unavailable", "the audit trail is full, try again shortly")
+				return
+			}
+			defer res.Release()
 		}
 		note := &auditNote{}
 		aw := &auditWriter{ResponseWriter: w}
 		start := time.Now()
 		next(aw, r.WithContext(context.WithValue(r.Context(), auditNoteKey{}, note)))
-		rt.recordExplorerAudit(r, aw, note, ability, action, time.Since(start))
+		rt.recordExplorerAudit(r, aw, note, ability, action, time.Since(start), res)
 	}
 }
 
-func (rt *Router) recordExplorerAudit(r *http.Request, aw *auditWriter, n *auditNote, ability string, action dbauthz.Action, d time.Duration) {
+func (rt *Router) recordExplorerAudit(r *http.Request, aw *auditWriter, n *auditNote, ability string, action dbauthz.Action, d time.Duration, res *dbaudit.Reservation) {
 	status := aw.status
 	if status == 0 {
 		status = http.StatusOK
@@ -147,6 +152,10 @@ func (rt *Router) recordExplorerAudit(r *http.Request, aw *auditWriter, n *audit
 		if desired, err := rt.databases.GetDesiredDatabase(ctx, ev.DatabaseName); err == nil && desired != nil {
 			ev.Engine, ev.DatabaseID = desired.Engine, desired.InstanceID
 		}
+	}
+	if res != nil {
+		rt.dbAudit.RecordReserved(ctx, ev, res)
+		return
 	}
 	rt.dbAudit.Record(ctx, ev)
 }

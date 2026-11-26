@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -187,5 +188,56 @@ func TestAuditSweepTrimsToRowCap(t *testing.T) {
 	sink := &fakeSink{}
 	if _, err := Sweep(context.Background(), sink, fakeSet{days: 90}, time.Now()); err != nil || sink.trimmed != 500 {
 		t.Fatalf("trimmed %d %v", sink.trimmed, err)
+	}
+}
+
+func TestAuditReservationHoldsASlotAgainstReads(t *testing.T) {
+	ctx := context.Background()
+	w := New(&fakeSink{}, fakeSet{queue: 1}, Options{FlushInterval: time.Hour, FlushRows: 1000})
+	res, ok := w.Reserve(ctx)
+	if !ok {
+		t.Fatal("first reservation refused")
+	}
+	if _, ok := w.Reserve(ctx); ok {
+		t.Fatal("second write got the only slot")
+	}
+	w.Record(ctx, Event{DatabaseName: "read"})
+	if w.Dropped() != 1 {
+		t.Fatalf("a read took the reserved slot, dropped=%d", w.Dropped())
+	}
+	w.RecordReserved(ctx, Event{DatabaseName: "write"}, res)
+	if w.Dropped() != 1 || w.HasRoom(ctx) {
+		t.Fatalf("reserved write lost or queue not full: dropped=%d", w.Dropped())
+	}
+}
+
+func TestAuditReservationReleaseFreesTheSlot(t *testing.T) {
+	ctx := context.Background()
+	w := New(&fakeSink{}, fakeSet{queue: 1}, Options{FlushInterval: time.Hour, FlushRows: 1000})
+	res, _ := w.Reserve(ctx)
+	res.Release()
+	res.Release()
+	if _, ok := w.Reserve(ctx); !ok {
+		t.Fatal("slot not freed by release")
+	}
+}
+
+func TestAuditConcurrentWritesOneSlot(t *testing.T) {
+	ctx := context.Background()
+	w := New(&fakeSink{}, fakeSet{queue: 1}, Options{FlushInterval: time.Hour, FlushRows: 1000})
+	var granted atomic.Int32
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, ok := w.Reserve(ctx); ok {
+				granted.Add(1)
+			}
+		}()
+	}
+	wg.Wait()
+	if granted.Load() != 1 {
+		t.Fatalf("granted %d reservations for one slot", granted.Load())
 	}
 }

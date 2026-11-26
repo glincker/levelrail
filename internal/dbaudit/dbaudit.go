@@ -92,15 +92,17 @@ type Writer struct {
 	interval time.Duration
 	rows     int
 
-	mu      sync.Mutex
-	buf     []store.DatabaseStatementAudit
-	dropped atomic.Uint64
-	failed  atomic.Uint64
-	noPrin  atomic.Uint64
-	wake    chan struct{}
-	done    chan struct{}
-	stop    chan struct{}
-	started bool
+	mu  sync.Mutex
+	buf []store.DatabaseStatementAudit
+	// reserved counts queue slots promised to in-flight write requests; other events cannot take them.
+	reserved int
+	dropped  atomic.Uint64
+	failed   atomic.Uint64
+	noPrin   atomic.Uint64
+	wake     chan struct{}
+	done     chan struct{}
+	stop     chan struct{}
+	started  bool
 }
 
 // New builds a writer; call Start before Record and Close at shutdown.
@@ -140,7 +142,67 @@ func (w *Writer) HasRoom(ctx context.Context) bool {
 	limit := w.set.QueueSize(ctx)
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	return limit <= 0 || len(w.buf) < limit
+	return limit <= 0 || len(w.buf)+w.reserved < limit
+}
+
+// Reservation is one queue slot held for a request that must be audited.
+type Reservation struct {
+	w    *Writer
+	once sync.Once
+}
+
+// Reserve holds one slot so a write that passed the room check cannot lose its event to readers
+// filling the queue meanwhile. Release it when the request ends; RecordReserved consumes it.
+func (w *Writer) Reserve(ctx context.Context) (*Reservation, bool) {
+	if w == nil {
+		return &Reservation{}, true
+	}
+	limit := w.set.QueueSize(ctx)
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if limit > 0 && len(w.buf)+w.reserved >= limit {
+		return nil, false
+	}
+	w.reserved++
+	return &Reservation{w: w}, true
+}
+
+// Release gives the slot back; calling it after RecordReserved or twice is harmless.
+func (r *Reservation) Release() {
+	if r == nil || r.w == nil {
+		return
+	}
+	r.once.Do(func() {
+		r.w.mu.Lock()
+		r.w.reserved--
+		r.w.mu.Unlock()
+	})
+}
+
+// RecordReserved queues the event into the slot the reservation holds.
+func (w *Writer) RecordReserved(ctx context.Context, ev Event, r *Reservation) {
+	if w == nil {
+		return
+	}
+	row, err := w.row(ctx, ev)
+	if err != nil {
+		r.Release()
+		w.dropped.Add(1)
+		return
+	}
+	w.mu.Lock()
+	if r != nil && r.w == w {
+		r.once.Do(func() { w.reserved-- })
+	}
+	w.buf = append(w.buf, row)
+	full := len(w.buf) >= w.rows
+	w.mu.Unlock()
+	if full {
+		select {
+		case w.wake <- struct{}{}:
+		default:
+		}
+	}
 }
 
 // CountUnauthenticated counts a request that had no principal; no row is written for it.
@@ -162,7 +224,7 @@ func (w *Writer) Record(ctx context.Context, ev Event) {
 	}
 	limit := w.set.QueueSize(ctx)
 	w.mu.Lock()
-	if limit > 0 && len(w.buf) >= limit {
+	if limit > 0 && len(w.buf)+w.reserved >= limit {
 		w.mu.Unlock()
 		w.dropped.Add(1)
 		return
