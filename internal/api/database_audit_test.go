@@ -43,6 +43,14 @@ func TestDatabaseAuditEveryExplorerRouteRecords(t *testing.T) {
 	rt, db, fake, w := auditedRouter(t, false)
 	fake.out = "?column?\n1\n"
 	cookie := loginTestSession(t, rt, db)
+	// Branch routes record the resolved root, so the branch the route names must exist.
+	now := time.Now().UTC().Format(time.RFC3339)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "x", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.CreateDatabaseBranch(context.Background(), store.DatabaseBranch{ID: "bch_audit_x", DatabaseName: "x", ParentName: "main", RootName: "main", Mode: "schema", Source: "live", State: "ready", CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
 	routes := explorerRoutes("main")
 	for _, rr := range routes {
 		target := rr.path

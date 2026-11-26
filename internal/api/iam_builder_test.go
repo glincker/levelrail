@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dbauthz"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -480,8 +481,9 @@ func TestPatternCoverage(t *testing.T) {
 func TestCatalogDeclaresConditionSupport(t *testing.T) {
 	e := newBuilderEnv(t)
 	cat := decode[iamCatalogResponse](t, e.call(t, http.MethodGet, "/api/v1/iam/catalog", ""))
-	if len(cat.Abilities) != len(validAbilities) {
-		t.Errorf("abilities = %d, want %d", len(cat.Abilities), len(validAbilities))
+	// The catalog lists the flat abilities plus the database actions policies can name.
+	if want := len(validAbilities) + len(dbauthz.Actions); len(cat.Abilities) != want {
+		t.Errorf("abilities = %d, want %d", len(cat.Abilities), want)
 	}
 	if !slices.Equal(cat.Conditions.Supported, []string{"environment_kind"}) {
 		t.Errorf("supported conditions = %v", cat.Conditions.Supported)

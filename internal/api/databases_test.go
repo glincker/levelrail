@@ -216,8 +216,8 @@ func TestHandleListDatabases_Status(t *testing.T) {
 	if s := byName["healthy-db"].Status; s.Label != "Healthy" || s.Variant != "success" {
 		t.Errorf("healthy-db status = %+v, want Healthy/success", s)
 	}
-	if s := byName["broken-db"].Status; s.Label != "Attention needed" || s.Variant != "destructive" {
-		t.Errorf("broken-db status = %+v, want Attention needed/destructive", s)
+	if s := byName["broken-db"].Status; s.Label != "Crash looping" || s.Variant != "destructive" {
+		t.Errorf("broken-db status = %+v, want Crash looping/destructive", s)
 	}
 	if s := byName["pending-db"].Status; s.Label != "No status yet" || s.Variant != "muted" {
 		t.Errorf("pending-db status = %+v, want No status yet/muted", s)
