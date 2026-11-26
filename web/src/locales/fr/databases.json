@@ -1122,8 +1122,6 @@
     },
     "advanced": {
       "title": "Options avancées",
-      "node": "Node",
-      "autoNode": "Choisir automatiquement",
       "project": "Projet",
       "noProject": "Aucun projet"
     },
@@ -1164,7 +1162,78 @@
     "submitting": "Création...",
     "created": "La base de données \"{{name}}\" est en cours de création.",
     "createdPartial": "Base de données \"{{name}}\" créée, mais la taille ou les sauvegardes n'ont pas pu être appliquées. Vérifiez ses réglages.",
-    "dockerDown": "Docker ne répond pas sur ce serveur. Les bases de données ne peuvent pas être créées tant qu'il n'est pas revenu."
+    "dockerDown": "Docker ne répond pas sur ce serveur. Les bases de données ne peuvent pas être créées tant qu'il n'est pas revenu.",
+    "placement": {
+      "title": "Où elle s'exécute",
+      "kinds": {
+        "local": {
+          "title": "Ce serveur",
+          "note": "À côté de Levelrail"
+        },
+        "node": {
+          "title": "Nœud existant",
+          "note": "Déjà connecté"
+        },
+        "cloud": {
+          "title": "Nouveau nœud cloud",
+          "note": "Créer un serveur dans un cloud"
+        },
+        "host": {
+          "title": "Tout hôte Linux",
+          "note": "Centre de données ou votre propre machine"
+        }
+      },
+      "local": "S'exécute sur {{name}}, {{free}} de disque libre.",
+      "localNoDisk": "S'exécute sur {{name}}. Le disque libre n'est pas communiqué.",
+      "auto": "Choix automatique",
+      "autoPick": "Utiliserait {{name}}",
+      "autoNone": "Aucun nœud éligible pour l'instant.",
+      "diskFree": "{{free}} libres",
+      "diskUnknown": "disque non communiqué",
+      "load": "{{percent}} % de charge",
+      "workloads": "Charges {{count}}",
+      "noNodes": "Aucun autre nœud n'est encore connecté.",
+      "addNode": "Ajouter un nœud",
+      "noCloud": "Aucun compte cloud n'est connecté.",
+      "connectCloud": "Connecter un compte cloud",
+      "comingSoon": "Bientôt disponible",
+      "connected": "Connecté",
+      "notConnected": "Connecter",
+      "region": "Région",
+      "size": "Taille",
+      "pick": "Choisir",
+      "estimate": "Environ {{price}} {{currency}} par mois",
+      "noEstimate": "Aucun prix communiqué pour cette taille.",
+      "spendNote": "Créer un nœud cloud coûte de l'argent. Vous confirmez la taille et l'estimation mensuelle avant toute création.",
+      "combinedPending": "Créer le nœud et la base de données en un seul flux arrive dans la prochaine mise à jour. Ajoutez le nœud maintenant, puis créez la base dessus.",
+      "addCloudNode": "Ajouter un nœud cloud",
+      "hostNote": "Exécutez la commande d'installation sur tout hôte Linux avec Docker. Dès que le nœud apparaît, créez la base de données dessus.",
+      "hostCommand": "Afficher la commande d'installation",
+      "reasons": {
+        "offline": "Hors ligne",
+        "cordoned": "Isolé, n'accepte plus de travail",
+        "outdated": "L'agent est obsolète",
+        "failing": "Le nœud est en panne",
+        "noDocker": "Docker indisponible",
+        "lowDisk": "Peu d'espace disque libre"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "S'exécutera sur ce serveur ({{name}}).",
+        "node": "S'exécutera sur {{name}}.",
+        "auto": "Automatique : s'exécutera sur {{name}}.",
+        "cloud": "Il faut d'abord un nouveau nœud cloud. Ajoutez-le, puis créez la base de données dessus.",
+        "host": "Il faut d'abord un nœud sur votre hôte. Ajoutez-le, puis créez la base de données dessus."
+      }
+    }
   },
   "provision": {
     "title": "Configuration de votre base de données",

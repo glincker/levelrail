@@ -1106,8 +1106,6 @@
     },
     "advanced": {
       "title": "詳細オプション",
-      "node": "ノード",
-      "autoNode": "自動で選択",
       "project": "プロジェクト",
       "noProject": "プロジェクトなし"
     },
@@ -1148,7 +1146,78 @@
     "submitting": "作成中...",
     "created": "データベース「{{name}}」を作成しています。",
     "createdPartial": "データベース「{{name}}」を作成しましたが、サイズまたはバックアップを適用できませんでした。設定を確認してください。",
-    "dockerDown": "このサーバーでDockerが応答していません。復旧するまでデータベースを作成できません。"
+    "dockerDown": "このサーバーでDockerが応答していません。復旧するまでデータベースを作成できません。",
+    "placement": {
+      "title": "実行場所",
+      "kinds": {
+        "local": {
+          "title": "このサーバー",
+          "note": "Levelrail と同じ場所"
+        },
+        "node": {
+          "title": "既存のノード",
+          "note": "接続済み"
+        },
+        "cloud": {
+          "title": "新しいクラウドノード",
+          "note": "クラウド上にサーバーを作成"
+        },
+        "host": {
+          "title": "任意の Linux ホスト",
+          "note": "データセンターまたは自分のマシン"
+        }
+      },
+      "local": "{{name}} で実行します。空きディスク {{free}}。",
+      "localNoDisk": "{{name}} で実行します。空きディスクは報告されていません。",
+      "auto": "自動選択",
+      "autoPick": "{{name}} を使用します",
+      "autoNone": "現在、利用できるノードがありません。",
+      "diskFree": "空き {{free}}",
+      "diskUnknown": "ディスク未報告",
+      "load": "負荷 {{percent}}%",
+      "workloads": "ワークロード {{count}}",
+      "noNodes": "接続されている他のノードはまだありません。",
+      "addNode": "ノードを追加",
+      "noCloud": "クラウドアカウントが接続されていません。",
+      "connectCloud": "クラウドアカウントを接続",
+      "comingSoon": "近日対応",
+      "connected": "接続済み",
+      "notConnected": "接続",
+      "region": "リージョン",
+      "size": "サイズ",
+      "pick": "選択",
+      "estimate": "月額およそ {{price}} {{currency}}",
+      "noEstimate": "このサイズの価格は報告されていません。",
+      "spendNote": "クラウドノードの作成には費用がかかります。作成前にサイズと月額の見積もりを確認していただきます。",
+      "combinedPending": "ノードとデータベースを一度に作成する機能は次回のアップデートで提供します。先にノードを追加し、その上でデータベースを作成してください。",
+      "addCloudNode": "クラウドノードを追加",
+      "hostNote": "Docker のある Linux ホストでインストールコマンドを実行してください。ノードが表示されたら、その上でデータベースを作成します。",
+      "hostCommand": "インストールコマンドを表示",
+      "reasons": {
+        "offline": "オフライン",
+        "cordoned": "隔離中のため新しい作業を受け付けません",
+        "outdated": "エージェントが古くなっています",
+        "failing": "ノードに障害があります",
+        "noDocker": "Docker を利用できません",
+        "lowDisk": "空きディスクが少ない"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "このサーバー ({{name}}) で実行します。",
+        "node": "{{name}} で実行します。",
+        "auto": "自動選択: {{name}} で実行します。",
+        "cloud": "先に新しいクラウドノードが必要です。追加してから、その上でデータベースを作成してください。",
+        "host": "先にホスト上のノードが必要です。追加してから、その上でデータベースを作成してください。"
+      }
+    }
   },
   "provision": {
     "title": "データベースをセットアップ中",

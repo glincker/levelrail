@@ -32,7 +32,14 @@ import { useDatabaseVersions } from '../../queries/databaseVersions'
 import { useSystemStatusOptional } from '../../queries/systemStatus'
 import { ExistingVolumePrompt } from '../ExistingVolumePrompt'
 import { DatabaseVersionPicker } from '../databaseVersions/DatabaseVersionPicker'
-import { Advanced, LOCAL_NODE, NO_PROJECT } from './Advanced'
+import { Advanced, NO_PROJECT } from './Advanced'
+import { Placement } from './Placement'
+import { usePlacementNodes } from './usePlacementNodes'
+import {
+  AUTO_NODE,
+  placementBlocksCreate,
+  resolvePlacementNodeId,
+} from './placementPick'
 import { EngineCards, PresetCards } from './Pickers'
 import {
   CREDENTIALED_ENGINES,
@@ -71,6 +78,7 @@ export function DatabaseFlow({
   const targets = useBackupTargetsOptional().data ?? []
   const systemStatus = useSystemStatusOptional()
   const create = useCreateDatabase()
+  const placementNodes = usePlacementNodes()
 
   const initialEngine =
     engines.find((e) => e.id === wanted)?.id ??
@@ -83,7 +91,8 @@ export function DatabaseFlow({
     backups: true,
     schedule: 'daily',
     preset: defaultPreset(initialEngine),
-    nodeId: LOCAL_NODE,
+    placement: 'local',
+    nodeId: AUTO_NODE,
     projectId: NO_PROJECT,
   })
   const [userName, setUserName] = useState<string | null>(null)
@@ -128,7 +137,15 @@ export function DatabaseFlow({
         version: values.version.trim(),
         project_id:
           values.projectId === NO_PROJECT ? undefined : values.projectId,
-        node_id: values.nodeId === LOCAL_NODE ? undefined : values.nodeId,
+        // One node needs no explicit id, the server places it there anyway.
+        node_id:
+          values.placement === 'local' && placementNodes.length < 2
+            ? undefined
+            : resolvePlacementNodeId(
+                values.placement,
+                values.nodeId,
+                placementNodes,
+              ),
         existing_volume: volume,
         resources: presetResources(values.preset),
         ...(target && values.backups && supportsBackups(values.engine)
@@ -149,6 +166,7 @@ export function DatabaseFlow({
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    if (placementBlocksCreate(values.placement)) return
     if (Object.keys(errors).length > 0 || serverTaken) {
       setAttempted(true)
       return
@@ -337,12 +355,19 @@ export function DatabaseFlow({
           </section>
         ) : null}
 
-        <Advanced
+        <Placement
+          kind={values.placement}
           nodeId={values.nodeId}
-          projectId={values.projectId}
+          onKind={(placement) => {
+            patch({ placement })
+          }}
           onNode={(nodeId) => {
             patch({ nodeId })
           }}
+        />
+
+        <Advanced
+          projectId={values.projectId}
           onProject={(projectId) => {
             patch({ projectId })
           }}
@@ -371,7 +396,10 @@ export function DatabaseFlow({
         <Button type="button" variant="outline" onClick={onClose}>
           {t('flow.cancel')}
         </Button>
-        <Button type="submit" disabled={pending}>
+        <Button
+          type="submit"
+          disabled={pending || placementBlocksCreate(values.placement)}
+        >
           {pending ? t('flow.submitting') : t('flow.submit')}
         </Button>
       </DialogFooter>

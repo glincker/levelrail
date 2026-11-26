@@ -19,6 +19,7 @@ const base: DbValues = {
   backups: true,
   schedule: 'daily',
   preset: 'small',
+  placement: 'local',
   nodeId: '',
   projectId: '',
 }

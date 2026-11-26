@@ -1122,8 +1122,6 @@
     },
     "advanced": {
       "title": "Opções avançadas",
-      "node": "Node",
-      "autoNode": "Escolher automaticamente",
       "project": "Projeto",
       "noProject": "Sem projeto"
     },
@@ -1164,7 +1162,78 @@
     "submitting": "Criando...",
     "created": "O banco de dados \"{{name}}\" está sendo criado.",
     "createdPartial": "Banco de dados \"{{name}}\" criado, mas o tamanho ou os backups não puderam ser aplicados. Verifique as configurações dele.",
-    "dockerDown": "O Docker não está respondendo neste servidor. Não é possível criar bancos de dados até ele voltar."
+    "dockerDown": "O Docker não está respondendo neste servidor. Não é possível criar bancos de dados até ele voltar.",
+    "placement": {
+      "title": "Onde executa",
+      "kinds": {
+        "local": {
+          "title": "Este servidor",
+          "note": "Junto do Levelrail"
+        },
+        "node": {
+          "title": "Nó existente",
+          "note": "Já conectado"
+        },
+        "cloud": {
+          "title": "Novo nó na nuvem",
+          "note": "Criar um servidor em uma nuvem"
+        },
+        "host": {
+          "title": "Qualquer host Linux",
+          "note": "Datacenter ou sua própria máquina"
+        }
+      },
+      "local": "Executa em {{name}}, {{free}} de disco livre.",
+      "localNoDisk": "Executa em {{name}}. O disco livre não é informado.",
+      "auto": "Escolha automática",
+      "autoPick": "Usaria {{name}}",
+      "autoNone": "Nenhum nó elegível no momento.",
+      "diskFree": "{{free}} livres",
+      "diskUnknown": "disco não informado",
+      "load": "{{percent}}% de carga",
+      "workloads": "Cargas {{count}}",
+      "noNodes": "Ainda não há outro nó conectado.",
+      "addNode": "Adicionar um nó",
+      "noCloud": "Nenhuma conta de nuvem conectada.",
+      "connectCloud": "Conectar uma conta de nuvem",
+      "comingSoon": "Em breve",
+      "connected": "Conectado",
+      "notConnected": "Conectar",
+      "region": "Região",
+      "size": "Tamanho",
+      "pick": "Escolher",
+      "estimate": "Cerca de {{price}} {{currency}} por mês",
+      "noEstimate": "Nenhum preço informado para este tamanho.",
+      "spendNote": "Criar um nó na nuvem custa dinheiro. Você confirma o tamanho e a estimativa mensal antes de criar qualquer coisa.",
+      "combinedPending": "Criar o nó e o banco de dados em um único fluxo chega na próxima atualização. Adicione o nó agora e depois crie o banco de dados nele.",
+      "addCloudNode": "Adicionar um nó na nuvem",
+      "hostNote": "Execute o comando de instalação em qualquer host Linux com Docker. Quando o nó aparecer, crie o banco de dados nele.",
+      "hostCommand": "Mostrar comando de instalação",
+      "reasons": {
+        "offline": "Offline",
+        "cordoned": "Isolado, não aceita novo trabalho",
+        "outdated": "O agente está desatualizado",
+        "failing": "O nó está com falha",
+        "noDocker": "Docker indisponível",
+        "lowDisk": "Pouco disco livre"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "Será executado neste servidor ({{name}}).",
+        "node": "Será executado em {{name}}.",
+        "auto": "Automático: será executado em {{name}}.",
+        "cloud": "Primeiro é preciso um novo nó na nuvem. Adicione-o e depois crie o banco de dados nele.",
+        "host": "Primeiro é preciso um nó no seu host. Adicione-o e depois crie o banco de dados nele."
+      }
+    }
   },
   "provision": {
     "title": "Configurando seu banco de dados",

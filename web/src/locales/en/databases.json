@@ -1114,8 +1114,6 @@
     },
     "advanced": {
       "title": "Advanced options",
-      "node": "Node",
-      "autoNode": "Choose automatically",
       "project": "Project",
       "noProject": "No project"
     },
@@ -1156,7 +1154,78 @@
     "submitting": "Creating...",
     "created": "Database \"{{name}}\" is being created.",
     "createdPartial": "Database \"{{name}}\" created, but size or backups could not be applied. Check its settings.",
-    "dockerDown": "Docker is not responding on this server. Databases cannot be created until it is back."
+    "dockerDown": "Docker is not responding on this server. Databases cannot be created until it is back.",
+    "placement": {
+      "title": "Where it runs",
+      "kinds": {
+        "local": {
+          "title": "This server",
+          "note": "Next to Levelrail"
+        },
+        "node": {
+          "title": "Existing node",
+          "note": "Already connected"
+        },
+        "cloud": {
+          "title": "New cloud node",
+          "note": "Create a server on a cloud"
+        },
+        "host": {
+          "title": "Any Linux host",
+          "note": "Datacenter or your own machine"
+        }
+      },
+      "local": "Runs on {{name}}, {{free}} free disk.",
+      "localNoDisk": "Runs on {{name}}. Free disk is not reported.",
+      "auto": "Auto pick",
+      "autoPick": "Would use {{name}}",
+      "autoNone": "No eligible node right now.",
+      "diskFree": "{{free}} free",
+      "diskUnknown": "disk not reported",
+      "load": "{{percent}}% load",
+      "workloads": "Workloads {{count}}",
+      "noNodes": "No other node is connected yet.",
+      "addNode": "Add a node",
+      "noCloud": "No cloud account is connected.",
+      "connectCloud": "Connect a cloud account",
+      "comingSoon": "Coming soon",
+      "connected": "Connected",
+      "notConnected": "Connect",
+      "region": "Region",
+      "size": "Size",
+      "pick": "Choose",
+      "estimate": "About {{price}} {{currency}} per month",
+      "noEstimate": "No price reported for this size.",
+      "spendNote": "Creating a cloud node costs money. You confirm the size and monthly estimate before anything is created.",
+      "combinedPending": "Creating the node and the database in one flow arrives in the next update. Add the node now, then create the database on it.",
+      "addCloudNode": "Add a cloud node",
+      "hostNote": "Run the install command on any Linux host with Docker. Once the node appears, create the database on it.",
+      "hostCommand": "Show install command",
+      "reasons": {
+        "offline": "Offline",
+        "cordoned": "Cordoned, not accepting new work",
+        "outdated": "Agent is out of date",
+        "failing": "Node is failing",
+        "noDocker": "Docker not available",
+        "lowDisk": "Low free disk"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "Will run on this server ({{name}}).",
+        "node": "Will run on {{name}}.",
+        "auto": "Auto pick: will run on {{name}}.",
+        "cloud": "Needs a new cloud node first. Add it, then create the database on it.",
+        "host": "Needs a node on your host first. Add it, then create the database on it."
+      }
+    }
   },
   "provision": {
     "title": "Setting up your database",

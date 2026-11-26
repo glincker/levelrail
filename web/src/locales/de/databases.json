@@ -1114,8 +1114,6 @@
     },
     "advanced": {
       "title": "Erweiterte Optionen",
-      "node": "Node",
-      "autoNode": "Automatisch wählen",
       "project": "Projekt",
       "noProject": "Kein Projekt"
     },
@@ -1156,7 +1154,78 @@
     "submitting": "Wird erstellt...",
     "created": "Datenbank \"{{name}}\" wird erstellt.",
     "createdPartial": "Datenbank \"{{name}}\" erstellt, aber Größe oder Backups konnten nicht angewendet werden. Prüfen Sie ihre Einstellungen.",
-    "dockerDown": "Docker antwortet auf diesem Server nicht. Datenbanken können nicht erstellt werden, bis es zurück ist."
+    "dockerDown": "Docker antwortet auf diesem Server nicht. Datenbanken können nicht erstellt werden, bis es zurück ist.",
+    "placement": {
+      "title": "Wo es läuft",
+      "kinds": {
+        "local": {
+          "title": "Dieser Server",
+          "note": "Neben Levelrail"
+        },
+        "node": {
+          "title": "Vorhandener Node",
+          "note": "Bereits verbunden"
+        },
+        "cloud": {
+          "title": "Neuer Cloud-Node",
+          "note": "Server in einer Cloud erstellen"
+        },
+        "host": {
+          "title": "Beliebiger Linux-Host",
+          "note": "Rechenzentrum oder eigener Rechner"
+        }
+      },
+      "local": "Läuft auf {{name}}, {{free}} freier Speicher.",
+      "localNoDisk": "Läuft auf {{name}}. Freier Speicher wird nicht gemeldet.",
+      "auto": "Automatisch wählen",
+      "autoPick": "Würde {{name}} nutzen",
+      "autoNone": "Gerade kein geeigneter Node.",
+      "diskFree": "{{free}} frei",
+      "diskUnknown": "Speicher nicht gemeldet",
+      "load": "{{percent}}% Last",
+      "workloads": "Workloads {{count}}",
+      "noNodes": "Noch kein weiterer Node verbunden.",
+      "addNode": "Node hinzufügen",
+      "noCloud": "Kein Cloud-Konto verbunden.",
+      "connectCloud": "Cloud-Konto verbinden",
+      "comingSoon": "Demnächst",
+      "connected": "Verbunden",
+      "notConnected": "Verbinden",
+      "region": "Region",
+      "size": "Größe",
+      "pick": "Auswählen",
+      "estimate": "Etwa {{price}} {{currency}} pro Monat",
+      "noEstimate": "Für diese Größe wird kein Preis gemeldet.",
+      "spendNote": "Ein Cloud-Node verursacht Kosten. Sie bestätigen Größe und Monatsschätzung, bevor etwas erstellt wird.",
+      "combinedPending": "Node und Datenbank in einem Ablauf zu erstellen kommt im nächsten Update. Fügen Sie den Node jetzt hinzu und erstellen Sie danach die Datenbank darauf.",
+      "addCloudNode": "Cloud-Node hinzufügen",
+      "hostNote": "Führen Sie den Installationsbefehl auf einem Linux-Host mit Docker aus. Sobald der Node erscheint, erstellen Sie die Datenbank darauf.",
+      "hostCommand": "Installationsbefehl anzeigen",
+      "reasons": {
+        "offline": "Offline",
+        "cordoned": "Gesperrt, nimmt keine neue Arbeit an",
+        "outdated": "Agent ist veraltet",
+        "failing": "Node ist gestört",
+        "noDocker": "Docker nicht verfügbar",
+        "lowDisk": "Wenig freier Speicher"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "Läuft auf diesem Server ({{name}}).",
+        "node": "Läuft auf {{name}}.",
+        "auto": "Automatisch: läuft auf {{name}}.",
+        "cloud": "Zuerst wird ein neuer Cloud-Node benötigt. Fügen Sie ihn hinzu und erstellen Sie dann die Datenbank darauf.",
+        "host": "Zuerst wird ein Node auf Ihrem Host benötigt. Fügen Sie ihn hinzu und erstellen Sie dann die Datenbank darauf."
+      }
+    }
   },
   "provision": {
     "title": "Ihre Datenbank wird eingerichtet",

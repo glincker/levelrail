@@ -1114,8 +1114,6 @@
     },
     "advanced": {
       "title": "Opciones avanzadas",
-      "node": "Nodo",
-      "autoNode": "Elegir automáticamente",
       "project": "Proyecto",
       "noProject": "Sin proyecto"
     },
@@ -1156,7 +1154,78 @@
     "submitting": "Creando...",
     "created": "Se está creando la base de datos \"{{name}}\".",
     "createdPartial": "Se creó la base de datos \"{{name}}\", pero no se pudo aplicar el tamaño o las copias de seguridad. Revisa sus ajustes.",
-    "dockerDown": "Docker no responde en este servidor. No se pueden crear bases de datos hasta que vuelva."
+    "dockerDown": "Docker no responde en este servidor. No se pueden crear bases de datos hasta que vuelva.",
+    "placement": {
+      "title": "Dónde se ejecuta",
+      "kinds": {
+        "local": {
+          "title": "Este servidor",
+          "note": "Junto a Levelrail"
+        },
+        "node": {
+          "title": "Nodo existente",
+          "note": "Ya conectado"
+        },
+        "cloud": {
+          "title": "Nuevo nodo en la nube",
+          "note": "Crear un servidor en una nube"
+        },
+        "host": {
+          "title": "Cualquier host Linux",
+          "note": "Centro de datos o tu propia máquina"
+        }
+      },
+      "local": "Se ejecuta en {{name}}, {{free}} de disco libre.",
+      "localNoDisk": "Se ejecuta en {{name}}. No se informa el disco libre.",
+      "auto": "Elegir automáticamente",
+      "autoPick": "Usaría {{name}}",
+      "autoNone": "Ningún nodo apto ahora mismo.",
+      "diskFree": "{{free}} libres",
+      "diskUnknown": "disco no informado",
+      "load": "{{percent}}% de carga",
+      "workloads": "Cargas {{count}}",
+      "noNodes": "Aún no hay otro nodo conectado.",
+      "addNode": "Añadir un nodo",
+      "noCloud": "No hay ninguna cuenta de nube conectada.",
+      "connectCloud": "Conectar una cuenta de nube",
+      "comingSoon": "Próximamente",
+      "connected": "Conectado",
+      "notConnected": "Conectar",
+      "region": "Región",
+      "size": "Tamaño",
+      "pick": "Elegir",
+      "estimate": "Unos {{price}} {{currency}} al mes",
+      "noEstimate": "No se informa precio para este tamaño.",
+      "spendNote": "Crear un nodo en la nube cuesta dinero. Confirmas el tamaño y la estimación mensual antes de crear nada.",
+      "combinedPending": "Crear el nodo y la base de datos en un solo flujo llega en la próxima actualización. Añade el nodo ahora y crea después la base de datos en él.",
+      "addCloudNode": "Añadir un nodo en la nube",
+      "hostNote": "Ejecuta el comando de instalación en cualquier host Linux con Docker. Cuando el nodo aparezca, crea la base de datos en él.",
+      "hostCommand": "Mostrar comando de instalación",
+      "reasons": {
+        "offline": "Sin conexión",
+        "cordoned": "Aislado, no acepta trabajo nuevo",
+        "outdated": "El agente está desactualizado",
+        "failing": "El nodo está fallando",
+        "noDocker": "Docker no disponible",
+        "lowDisk": "Poco disco libre"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "Se ejecutará en este servidor ({{name}}).",
+        "node": "Se ejecutará en {{name}}.",
+        "auto": "Automático: se ejecutará en {{name}}.",
+        "cloud": "Primero hace falta un nodo nuevo en la nube. Añádelo y luego crea la base de datos en él.",
+        "host": "Primero hace falta un nodo en tu host. Añádelo y luego crea la base de datos en él."
+      }
+    }
   },
   "provision": {
     "title": "Configurando tu base de datos",

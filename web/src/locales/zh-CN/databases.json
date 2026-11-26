@@ -1106,8 +1106,6 @@
     },
     "advanced": {
       "title": "高级选项",
-      "node": "节点",
-      "autoNode": "自动选择",
       "project": "项目",
       "noProject": "无项目"
     },
@@ -1148,7 +1146,78 @@
     "submitting": "创建中...",
     "created": "正在创建数据库“{{name}}”。",
     "createdPartial": "数据库“{{name}}”已创建，但无法应用规格或备份。请检查其设置。",
-    "dockerDown": "此服务器上的 Docker 没有响应。在其恢复之前无法创建数据库。"
+    "dockerDown": "此服务器上的 Docker 没有响应。在其恢复之前无法创建数据库。",
+    "placement": {
+      "title": "运行位置",
+      "kinds": {
+        "local": {
+          "title": "此服务器",
+          "note": "与 Levelrail 同机"
+        },
+        "node": {
+          "title": "现有节点",
+          "note": "已连接"
+        },
+        "cloud": {
+          "title": "新的云节点",
+          "note": "在云上创建服务器"
+        },
+        "host": {
+          "title": "任意 Linux 主机",
+          "note": "数据中心或你自己的机器"
+        }
+      },
+      "local": "在 {{name}} 上运行，可用磁盘 {{free}}。",
+      "localNoDisk": "在 {{name}} 上运行。未上报可用磁盘。",
+      "auto": "自动选择",
+      "autoPick": "将使用 {{name}}",
+      "autoNone": "当前没有符合条件的节点。",
+      "diskFree": "可用 {{free}}",
+      "diskUnknown": "磁盘未上报",
+      "load": "负载 {{percent}}%",
+      "workloads": "工作负载 {{count}}",
+      "noNodes": "尚未连接其他节点。",
+      "addNode": "添加节点",
+      "noCloud": "尚未连接云账户。",
+      "connectCloud": "连接云账户",
+      "comingSoon": "即将推出",
+      "connected": "已连接",
+      "notConnected": "连接",
+      "region": "区域",
+      "size": "规格",
+      "pick": "选择",
+      "estimate": "约 {{price}} {{currency}} 每月",
+      "noEstimate": "此规格未上报价格。",
+      "spendNote": "创建云节点会产生费用。创建任何内容之前，你需要先确认规格和月度估算。",
+      "combinedPending": "在一个流程中同时创建节点和数据库将在下次更新中提供。请先添加节点，再在其上创建数据库。",
+      "addCloudNode": "添加云节点",
+      "hostNote": "在装有 Docker 的任意 Linux 主机上运行安装命令。节点出现后，再在其上创建数据库。",
+      "hostCommand": "显示安装命令",
+      "reasons": {
+        "offline": "离线",
+        "cordoned": "已隔离，不接受新任务",
+        "outdated": "代理版本过旧",
+        "failing": "节点故障",
+        "noDocker": "Docker 不可用",
+        "lowDisk": "可用磁盘不足"
+      },
+      "providers": {
+        "aws": "AWS",
+        "azure": "Azure",
+        "gcp": "Google Cloud",
+        "oracle": "Oracle Cloud",
+        "hetzner": "Hetzner",
+        "digitalocean": "DigitalOcean",
+        "vultr": "Vultr"
+      },
+      "summary": {
+        "local": "将在此服务器 ({{name}}) 上运行。",
+        "node": "将在 {{name}} 上运行。",
+        "auto": "自动选择：将在 {{name}} 上运行。",
+        "cloud": "需要先有一个新的云节点。请先添加，再在其上创建数据库。",
+        "host": "需要先在你的主机上有一个节点。请先添加，再在其上创建数据库。"
+      }
+    }
   },
   "provision": {
     "title": "正在设置你的数据库",
