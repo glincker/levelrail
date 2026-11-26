@@ -184,6 +184,7 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/branches", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleListDatabaseBranches))
 	mux.HandleFunc("GET /api/v1/databases/{name}/branch-capabilities", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleBranchCapabilities))
 	mux.HandleFunc("GET /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetDatabaseBranch))
+	mux.HandleFunc("GET /api/v1/databases/{name}/branches/{branch}/schema-diff", rt.requireAbilityForDatabase(AbilityReadSensitive, dbauthz.ActionRead, rt.handleGetBranchSchemaDiff))
 	mux.HandleFunc("PATCH /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionWrite, rt.handlePatchDatabaseBranch))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/branches/{branch}", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handleDeleteDatabaseBranch))
 	mux.HandleFunc("POST /api/v1/databases/{name}/branches/{branch}/reset", rt.requireAbilityForDatabase(AbilityRoot, dbauthz.ActionAdmin, rt.handleResetDatabaseBranch))

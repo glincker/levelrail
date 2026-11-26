@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"net/url"
 )
 
 // DatabaseBranchNode mirrors one node of GET /api/v1/databases/{name}/branches.
@@ -92,4 +93,38 @@ func (c *Client) PromoteDatabaseBranch(ctx context.Context, db, branch string) (
 	var out DatabaseBranchNode
 	err := c.do(ctx, http.MethodPost, branchPath(db, branch)+"/promote", map[string]string{"confirm": branch}, &out)
 	return out, err
+}
+
+// SchemaDiffChange is one difference in a branch schema diff.
+type SchemaDiffChange struct {
+	Object string `json:"object"`
+	Kind   string `json:"kind"`
+	Schema string `json:"schema"`
+	Table  string `json:"table,omitempty"`
+	Name   string `json:"name"`
+	Before string `json:"before,omitempty"`
+	After  string `json:"after,omitempty"`
+}
+
+// DatabaseBranchSchemaDiff mirrors GET /api/v1/databases/{name}/branches/{branch}/schema-diff.
+type DatabaseBranchSchemaDiff struct {
+	Branch  string `json:"branch"`
+	Against string `json:"against"`
+	Summary struct {
+		Added   int `json:"added"`
+		Removed int `json:"removed"`
+		Changed int `json:"changed"`
+	} `json:"summary"`
+	Changes   []SchemaDiffChange `json:"changes"`
+	SQL       string             `json:"sql"`
+	Truncated bool               `json:"truncated"`
+}
+
+// GetDatabaseBranchSchemaDiff compares a branch with its parent, or with against (another database of the tree).
+func (c *Client) GetDatabaseBranchSchemaDiff(ctx context.Context, db, branch, against string) (DatabaseBranchSchemaDiff, error) {
+	path := branchPath(db, branch) + "/schema-diff"
+	if against != "" {
+		path += "?against=" + url.QueryEscape(against)
+	}
+	return getJSON[DatabaseBranchSchemaDiff](ctx, c, path)
 }

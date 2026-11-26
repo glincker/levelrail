@@ -20,6 +20,8 @@ func runDatabasesBranch(prog string, args []string, stdout, stderr io.Writer, lo
 		return exitOK
 	case "create":
 		return runDatabasesBranchCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diff":
+		return runDatabasesBranchDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ls", "show", "reset", "promote", "rm", "protect":
 		return runDatabasesBranchManage(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -35,6 +37,7 @@ func databasesBranchUsage(prog string) string {
   %[1]s databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
   %[1]s databases branch ls <database>
   %[1]s databases branch show <database> <branch>
+  %[1]s databases branch diff <database> <branch> [--against NAME] [--sql]
   %[1]s databases branch reset <database> <branch>
   %[1]s databases branch promote <database> <branch>
   %[1]s databases branch protect <database> <branch> [--off]
