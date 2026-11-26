@@ -48,6 +48,26 @@ export const ALERT_KIND_COPY = {
     description: 'alertKinds.database_connections_high.description',
     action: 'alertKinds.database_connections_high.action',
   },
+  database_crash_loop: {
+    label: 'alertKinds.database_crash_loop.label',
+    description: 'alertKinds.database_crash_loop.description',
+    action: 'alertKinds.database_crash_loop.action',
+  },
+  database_disk_growth: {
+    label: 'alertKinds.database_disk_growth.label',
+    description: 'alertKinds.database_disk_growth.description',
+    action: 'alertKinds.database_disk_growth.action',
+  },
+  database_connections_saturated: {
+    label: 'alertKinds.database_connections_saturated.label',
+    description: 'alertKinds.database_connections_saturated.description',
+    action: 'alertKinds.database_connections_saturated.action',
+  },
+  database_backup_missing: {
+    label: 'alertKinds.database_backup_missing.label',
+    description: 'alertKinds.database_backup_missing.description',
+    action: 'alertKinds.database_backup_missing.action',
+  },
   node_disk_space: {
     label: 'alertKinds.node_disk_space.label',
     description: 'alertKinds.node_disk_space.description',

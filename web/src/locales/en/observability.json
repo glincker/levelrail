@@ -253,6 +253,26 @@
       "label": "Job failing",
       "description": "Fires once per failing job on this app that has alert on failure turned on, rate limited per job.",
       "action": "Open the job's run history to read the failed run's logs, fix the cause, then run it now to confirm."
+    },
+    "database_crash_loop": {
+      "label": "Database crash loop",
+      "description": "Fires while a database container keeps restarting.",
+      "action": "Open the database logs, fix the error that stops it from starting, then restart it."
+    },
+    "database_disk_growth": {
+      "label": "Database disk filling",
+      "description": "Fires when the last 7 days of growth say the data volume will fill within the warning or critical days.",
+      "action": "Delete data you no longer need or grow the data volume before it fills."
+    },
+    "database_connections_saturated": {
+      "label": "Database out of connections",
+      "description": "Fires while connections in use stay over the saturation percent of the database limit.",
+      "action": "Close idle or leaked connections, add a pooler or raise the connection limit."
+    },
+    "database_backup_missing": {
+      "label": "Database backup missing",
+      "description": "Fires when a database has no recent successful backup, or holds real data with no backup storage.",
+      "action": "Set up backup storage for the database, then run a backup now."
     }
   },
   "budgetThreshold": {

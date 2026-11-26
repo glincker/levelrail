@@ -253,6 +253,26 @@
       "label": "Job schlägt fehl",
       "description": "Löst einmal pro fehlschlagendem Job dieser App aus, bei dem Alarm bei Fehler eingeschaltet ist, begrenzt pro Job.",
       "action": "Öffnen Sie den Lauf-Verlauf des Jobs, um die Logs des fehlgeschlagenen Laufs zu lesen, beheben Sie die Ursache und führen Sie ihn dann jetzt aus, um es zu bestätigen."
+    },
+    "database_crash_loop": {
+      "label": "Datenbank im Absturz-Loop",
+      "description": "Löst aus, solange ein Datenbank-Container immer wieder neu startet.",
+      "action": "Öffnen Sie die Datenbank-Logs, beheben Sie den Startfehler und starten Sie neu."
+    },
+    "database_disk_growth": {
+      "label": "Datenbank-Festplatte füllt sich",
+      "description": "Löst aus, wenn das Wachstum der letzten 7 Tage zeigt, dass das Datenvolumen innerhalb der Warn- oder Kritisch-Tage voll wird.",
+      "action": "Löschen Sie nicht mehr benötigte Daten oder vergrößern Sie das Datenvolumen, bevor es voll ist."
+    },
+    "database_connections_saturated": {
+      "label": "Datenbank ohne freie Verbindungen",
+      "description": "Löst aus, solange die genutzten Verbindungen über dem Sättigungs-Prozentsatz des Limits bleiben.",
+      "action": "Schließen Sie ungenutzte oder undichte Verbindungen, ergänzen Sie einen Pooler oder erhöhen Sie das Limit."
+    },
+    "database_backup_missing": {
+      "label": "Datenbank-Backup fehlt",
+      "description": "Löst aus, wenn eine Datenbank kein aktuelles erfolgreiches Backup hat oder echte Daten ohne Backup-Speicher hält.",
+      "action": "Richten Sie Backup-Speicher für die Datenbank ein und starten Sie dann ein Backup."
     }
   },
   "budgetThreshold": {
