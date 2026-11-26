@@ -1,5 +1,20 @@
 export const DEMO_TOAST_ID = 'demo-readonly'
 
+let lastDemoRefusalAt = -Infinity
+
+/** Called synchronously when the demo answers 403, before any onError handler runs. */
+export function noteDemoRefusal(now: number = Date.now()): void {
+  lastDemoRefusalAt = now
+}
+
+/** True while a failure toast would only pile onto the read-only notice for the same click. */
+export function isRecentDemoRefusal(now: number = Date.now()): boolean {
+  const raw: unknown = import.meta.env.VITE_DEMO_REFUSAL_WINDOW_MS
+  const windowMs =
+    typeof raw === 'string' && Number(raw) > 0 ? Number(raw) : 3000
+  return now - lastDemoRefusalAt < windowMs
+}
+
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 const ACTION_TARGET =
   'button, [role="button"], [role="menuitem"], input[type="submit"], form'

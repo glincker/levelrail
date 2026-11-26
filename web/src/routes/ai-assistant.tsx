@@ -31,7 +31,7 @@ function AiAssistantPage() {
         description="Reads logs, metrics, and deploy history automatically. Always asks before deploying, rolling back, or restarting anything."
       />
 
-      <DemoGate reason="generic">
+      <DemoGate reason="ai">
         {settings.configured ? (
           <AiChatPanel />
         ) : (

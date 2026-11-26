@@ -79,5 +79,33 @@
     "title": "Available when you install",
     "description": "This feature needs a real server, so the demo shows it as a preview only. Install {{brand}} on your own host to use it with your apps.",
     "install": "Install {{brand}}"
+  },
+  "sample": {
+    "badge": "Sample",
+    "chat": {
+      "hint": "Canned replies to show how the assistant answers. Install to connect your own model and ask about your apps.",
+      "empty": "Pick a question to see a sample answer.",
+      "prompts": {
+        "crashloop": "Why is my app restarting?",
+        "slow": "Why did responses get slow?",
+        "rollback": "Roll back the last deploy"
+      },
+      "replies": {
+        "crashloop": "Sample reply: I read the last 200 log lines and the container exit codes. The process exits with code 1 right after start because a required variable is missing. Set it in the app environment and redeploy.",
+        "slow": "Sample reply: I compared CPU, memory and request latency for the last hour. Latency rises with memory use near the limit. Raising the memory limit or adding a replica should help.",
+        "rollback": "Sample reply: I would propose a rollback to the previous healthy deploy and wait for your approval before changing anything. Changes always need your confirmation."
+      }
+    },
+    "terminal": {
+      "hint": "A sample shell session. Install to open a real terminal inside your own containers.",
+      "label": "Sample terminal transcript"
+    },
+    "database": {
+      "hint": "A sample query and result. Install to run SQL against your own databases.",
+      "queryLabel": "Sample SQL query",
+      "resultLabel": "Sample query result",
+      "rowCount_one": "{{count}} row (sample)",
+      "rowCount_other": "{{count}} rows (sample)"
+    }
   }
 }
