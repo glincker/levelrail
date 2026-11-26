@@ -16,12 +16,17 @@ func postgresExternalCmd(lim Limits, write bool) []string {
 	return []string{"sh", "-c", `PGOPTIONS="` + opts + `" exec psql -X -q --no-password --csv -v ON_ERROR_STOP=1`}
 }
 
-func mysqlExternalCmd(mariadb bool) []string {
-	ssl := `case "$EXT_TLS" in disable) SSL="--ssl-mode=DISABLED";; require) SSL="--ssl-mode=REQUIRED";; *) SSL="";; esac`
+// MySQLSSLCase is the shell fragment that turns EXT_TLS into client flags,
+// shared by the viewer and the connection probe.
+func MySQLSSLCase(mariadb bool) string {
 	if mariadb {
-		ssl = `case "$EXT_TLS" in disable) SSL="--skip-ssl";; require) SSL="--ssl --skip-ssl-verify-server-cert";; *) SSL="";; esac`
+		return `case "$EXT_TLS" in disable) SSL="--skip-ssl";; require) SSL="--ssl --skip-ssl-verify-server-cert";; verify-ca|verify-full) SSL="--ssl --ssl-verify-server-cert";; *) SSL="";; esac`
 	}
-	return []string{"sh", "-c", ssl + `
+	return `case "$EXT_TLS" in disable) SSL="--ssl-mode=DISABLED";; require) SSL="--ssl-mode=REQUIRED";; verify-ca) SSL="--ssl-mode=VERIFY_CA";; verify-full) SSL="--ssl-mode=VERIFY_IDENTITY";; *) SSL="";; esac`
+}
+
+func mysqlExternalCmd(mariadb bool) []string {
+	return []string{"sh", "-c", MySQLSSLCase(mariadb) + `
 BIN=$(command -v mysql || command -v mariadb)
 set --
 if [ -n "$EXT_DB" ]; then set -- "$EXT_DB"; fi

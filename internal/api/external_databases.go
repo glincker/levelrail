@@ -54,6 +54,7 @@ type externalDatabaseResource struct {
 	NodeID          string                  `json:"node_id,omitempty"`
 	ProjectID       string                  `json:"project_id,omitempty"`
 	SourceContainer string                  `json:"source_container,omitempty"`
+	Provider        string                  `json:"provider,omitempty"`
 	HasPassword     bool                    `json:"has_password"`
 	External        bool                    `json:"external"`
 	Health          *externalDatabaseHealth `json:"health,omitempty"`
@@ -76,13 +77,18 @@ type externalDatabaseRequest struct {
 	ProjectID       string `json:"project_id"`
 	SourceContainer string `json:"source_container"`
 	Container       string `json:"container"`
+	// URL is a connection string; it fills any field left empty. Provider,
+	// SaveAnyway and URL belong to the hosted flow, see external_databases_hosted.go.
+	URL        string `json:"url"`
+	Provider   string `json:"provider"`
+	SaveAnyway bool   `json:"save_anyway"`
 }
 
 func (rt *Router) toExternalDatabaseResource(ctx context.Context, d store.ExternalDatabase) externalDatabaseResource {
 	res := externalDatabaseResource{
 		Name: d.Name, Engine: d.Engine, Host: d.Host, Port: d.Port, Username: d.Username, Database: d.DatabaseName,
 		TLSMode: d.TLSMode, Network: d.Network, NodeID: d.NodeID, ProjectID: d.ProjectID,
-		SourceContainer: d.SourceContainer, External: true, CreatedAt: d.CreatedAt,
+		SourceContainer: d.SourceContainer, Provider: d.Provider, External: true, CreatedAt: d.CreatedAt,
 	}
 	if rt.secrets != nil {
 		if ok, err := rt.secrets.Exists(ctx, store.ExternalDatabaseSecretsKey(d.Name), store.ExternalDatabasePasswordKey); err == nil {
@@ -120,6 +126,10 @@ func (rt *Router) decodeExternalDatabaseRequest(w http.ResponseWriter, r *http.R
 		return req, false
 	}
 	req.Name = strings.TrimSpace(req.Name)
+	if err := req.applyConnectionURL(); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return req, false
+	}
 	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadGateway, msgExternalNodeUnreachable), nodeRef(req.NodeID)) {
 		return req, false
 	}
@@ -241,9 +251,18 @@ func (rt *Router) createExternalDatabase(w http.ResponseWriter, r *http.Request,
 		rt.internalError(w, "api: create external database: check managed name failed", err, slog.String("name", req.Name))
 		return
 	}
+	var hostedProbe *extdb.Result
+	if req.hosted() {
+		res, blocked := rt.hostedPreflight(w, r, req, c)
+		if blocked {
+			return
+		}
+		hostedProbe = &res
+	}
 	rec := store.ExternalDatabase{
 		Name: req.Name, Engine: c.Engine, Host: c.Host, Port: c.Port, Username: c.User, DatabaseName: c.Database,
 		TLSMode: c.TLSMode, Network: c.Network, NodeID: req.NodeID, ProjectID: req.ProjectID, SourceContainer: c.SourceContainer,
+		Provider: req.Provider,
 	}
 	if err := rt.externalDatabases.CreateExternalDatabase(ctx, rec); errors.Is(err, store.ErrExternalDatabaseExists) {
 		writeError(w, http.StatusConflict, "an external database with this name already exists")
@@ -260,7 +279,11 @@ func (rt *Router) createExternalDatabase(w http.ResponseWriter, r *http.Request,
 		}
 	}
 	rt.logger.Info("api: external database connected", slog.String("name", req.Name), slog.String("engine", c.Engine), slog.String("host", c.Host), slog.Int("port", c.Port))
-	rt.probeExternalDetached(req.Name, req.NodeID, c)
+	if hostedProbe != nil {
+		rt.recordExternalHealth(ctx, req.Name, *hostedProbe)
+	} else {
+		rt.probeExternalDetached(req.Name, req.NodeID, c)
+	}
 	saved, err := rt.externalDatabases.GetExternalDatabase(ctx, req.Name)
 	if err != nil {
 		rt.internalError(w, "api: create external database: reload failed", err, slog.String("name", req.Name))

@@ -42,6 +42,7 @@ env_settings.go
 errors_issues.go
 event_webhooks.go
 external_databases.go
+external_databases_hosted.go
 fixit.go
 function_routes.go
 function_triggers.go

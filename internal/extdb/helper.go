@@ -45,6 +45,9 @@ func HelperEnv(c Conn) map[string]string {
 		env["PGHOST"], env["PGPORT"], env["PGUSER"], env["PGPASSWORD"] = c.Host, strconv.Itoa(c.Port), c.User, c.Password
 		env["PGDATABASE"] = c.Database
 		env["PGSSLMODE"] = c.TLSMode
+		if TLSVerifies(c.TLSMode) {
+			env["PGSSLROOTCERT"] = "system"
+		}
 		env["PGCONNECT_TIMEOUT"] = "10"
 	case EngineMySQL, EngineMariaDB:
 		env["MYSQL_PWD"] = c.Password

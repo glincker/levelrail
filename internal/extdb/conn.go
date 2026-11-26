@@ -30,7 +30,19 @@ const (
 	TLSDisable = "disable"
 	TLSPrefer  = "prefer"
 	TLSRequire = "require"
+	// TLSVerifyCA and TLSVerifyFull check the server certificate against the
+	// system roots; full also checks the host name.
+	TLSVerifyCA   = "verify-ca"
+	TLSVerifyFull = "verify-full"
 )
+
+// TLSOn reports whether mode encrypts the connection.
+func TLSOn(mode string) bool {
+	return mode == TLSRequire || mode == TLSVerifyCA || mode == TLSVerifyFull
+}
+
+// TLSVerifies reports whether mode checks the server certificate.
+func TLSVerifies(mode string) bool { return mode == TLSVerifyCA || mode == TLSVerifyFull }
 
 // AllowLinkLocalEnv opts in to link-local and cloud metadata addresses.
 const AllowLinkLocalEnv = "APP_EXTERNAL_DB_ALLOW_LINK_LOCAL"
@@ -136,9 +148,9 @@ func (c *Conn) Validate(p Policy) error {
 	switch c.TLSMode {
 	case "":
 		c.TLSMode = DefaultTLSMode(c.Engine)
-	case TLSDisable, TLSPrefer, TLSRequire:
+	case TLSDisable, TLSPrefer, TLSRequire, TLSVerifyCA, TLSVerifyFull:
 	default:
-		return fmt.Errorf("tls_mode %q is not valid, use disable, prefer or require", c.TLSMode)
+		return fmt.Errorf("tls_mode %q is not valid, use disable, prefer, require, verify-ca or verify-full", c.TLSMode)
 	}
 	for field, v := range map[string]string{"user": c.User, "database": c.Database, "auth_database": c.AuthDatabase} {
 		if v != "" && !identRe.MatchString(v) {

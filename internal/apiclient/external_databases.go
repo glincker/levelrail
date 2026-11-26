@@ -28,6 +28,7 @@ type ExternalDatabase struct {
 	NodeID          string                  `json:"node_id,omitempty"`
 	ProjectID       string                  `json:"project_id,omitempty"`
 	SourceContainer string                  `json:"source_container,omitempty"`
+	Provider        string                  `json:"provider,omitempty"`
 	HasPassword     bool                    `json:"has_password"`
 	Health          *ExternalDatabaseHealth `json:"health,omitempty"`
 }
@@ -47,6 +48,10 @@ type ExternalDatabaseRequest struct {
 	NodeID       string `json:"node_id,omitempty"`
 	ProjectID    string `json:"project_id,omitempty"`
 	Container    string `json:"container,omitempty"`
+	// URL is a connection string the server splits into the fields above.
+	URL        string `json:"url,omitempty"`
+	Provider   string `json:"provider,omitempty"`
+	SaveAnyway bool   `json:"save_anyway,omitempty"`
 }
 
 // ExternalDatabaseProbe is one connectivity probe result.

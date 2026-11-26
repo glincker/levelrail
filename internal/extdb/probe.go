@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dbviewer"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -127,12 +128,12 @@ func ProbeScript(engine string) (string, error) {
 	case EngineMongoDB:
 		body = `set -- --quiet --host "$EXT_HOST" --port "$EXT_PORT" --authenticationDatabase "${EXT_AUTHDB:-admin}"
 if [ -n "$EXT_USER" ]; then set -- "$@" --username "$EXT_USER" --password "$EXT_PASSWORD"; fi
-if [ "$EXT_TLS" = require ]; then set -- "$@" --tls --tlsAllowInvalidCertificates; fi
+case "$EXT_TLS" in require) set -- "$@" --tls --tlsAllowInvalidCertificates;; verify-ca) set -- "$@" --tls --tlsAllowInvalidHostnames;; verify-full) set -- "$@" --tls;; esac
 mongosh "$@" --eval 'JSON.stringify({ok: db.runCommand({ping: 1}).ok, version: db.version()})' 2>&1`
 	case EngineRedis:
 		body = `set -- -h "$EXT_HOST" -p "$EXT_PORT"
 if [ -n "$EXT_USER" ]; then set -- "$@" --user "$EXT_USER"; fi
-if [ "$EXT_TLS" = require ]; then set -- "$@" --tls --insecure; fi
+case "$EXT_TLS" in require) set -- "$@" --tls --insecure;; verify-ca|verify-full) set -- "$@" --tls --cacertdir /etc/ssl/certs;; esac
 redis-cli "$@" PING 2>&1`
 	default:
 		return "", errors.New("probing is not supported for engine " + engine)
@@ -141,11 +142,7 @@ redis-cli "$@" PING 2>&1`
 }
 
 func mysqlProbe(engine string) string {
-	ssl := `case "$EXT_TLS" in disable) SSL="--ssl-mode=DISABLED";; require) SSL="--ssl-mode=REQUIRED";; *) SSL="";; esac`
-	if engine == EngineMariaDB {
-		ssl = `case "$EXT_TLS" in disable) SSL="--skip-ssl";; require) SSL="--ssl --skip-ssl-verify-server-cert";; *) SSL="";; esac`
-	}
-	return ssl + `
+	return dbviewer.MySQLSSLCase(engine == EngineMariaDB) + `
 BIN=$(command -v mysql || command -v mariadb)
 set --
 if [ -n "$EXT_DB" ]; then set -- "$EXT_DB"; fi

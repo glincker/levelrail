@@ -90,6 +90,8 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/external-databases", rt.requireAbility(AbilityRoot, rt.handleCreateExternalDatabase))
 	mux.HandleFunc("POST /api/v1/external-databases/test", rt.requireAbility(AbilityRoot, rt.handleTestExternalDatabase))
 	mux.HandleFunc("GET /api/v1/external-databases/candidates", rt.requireAbility(AbilityRoot, rt.handleListExternalDatabaseCandidates))
+	mux.HandleFunc("GET /api/v1/external-databases/providers", rt.requireAbility(AbilityRoot, rt.handleListExternalDatabaseProviders))
+	mux.HandleFunc("POST /api/v1/external-databases/parse", rt.requireAbility(AbilityRoot, rt.handleParseExternalDatabaseURL))
 	mux.HandleFunc("POST /api/v1/external-databases/adopt", rt.requireAbility(AbilityRoot, rt.handleAdoptExternalDatabase))
 	mux.HandleFunc("GET /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetExternalDatabase))
 	mux.HandleFunc("PUT /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleUpdateExternalDatabase))
