@@ -147,7 +147,7 @@ func Run(ctx context.Context, t dbviewer.Target, th Thresholds, now time.Time) (
 }
 
 // checkCount scales the overall deadline: each check may use up to one timeout.
-const checkCount = 8
+const checkCount = 7
 
 func statementFindings(ctx context.Context, t dbviewer.Target, th Thresholds, fail func(string, error)) []Finding {
 	var st StatementsState

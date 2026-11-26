@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/dbadvisor"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -71,5 +72,33 @@ func TestDatabaseAdvisor_NeedsQueryAccess(t *testing.T) {
 	attachTestPolicy(t, db, "advisor-query-deny", "Deny", "db:query", "database:victim", store.PrincipalTypeUser, user.ID)
 	if got := matrixDo(rt, http.MethodGet, "/api/v1/databases/victim/advisor", func(req *http.Request) { req.AddCookie(cookie) }); got != http.StatusForbidden {
 		t.Errorf("status = %d, want 403", got)
+	}
+}
+
+func TestAdvisorSlotsLimitConcurrency(t *testing.T) {
+	var rel []func()
+	for i := 0; i < advisorMaxConcurrent; i++ {
+		r, ok := acquireAdvisorSlot("slots-db")
+		if !ok {
+			t.Fatalf("slot %d refused", i)
+		}
+		rel = append(rel, r)
+	}
+	if _, ok := acquireAdvisorSlot("slots-db"); ok {
+		t.Fatal("slot granted beyond the limit")
+	}
+	if _, ok := acquireAdvisorSlot("other-db"); !ok {
+		t.Fatal("another database must have its own slots")
+	}
+	rel[0]()
+	if _, ok := acquireAdvisorSlot("slots-db"); !ok {
+		t.Fatal("released slot not reusable")
+	}
+}
+
+func TestAdvisorTimedOutSkipsCache(t *testing.T) {
+	rep := dbadvisor.Report{Findings: []dbadvisor.Finding{{Kind: dbadvisor.KindCheckFailed, Evidence: map[string]any{"reason": "timed out"}}}}
+	if !advisorTimedOut(rep) || advisorTimedOut(dbadvisor.Report{Findings: []dbadvisor.Finding{{Kind: dbadvisor.KindCheckFailed, Evidence: map[string]any{"reason": "query failed"}}}}) {
+		t.Fatal("timed out detection is wrong")
 	}
 }

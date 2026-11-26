@@ -1,15 +1,65 @@
 package api
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbadvisor"
 	"github.com/GLINCKER/levelrail/internal/dbviewer"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// advisorMaxConcurrent bounds advisor runs per database so repeated calls cannot pile onto one server.
+const advisorMaxConcurrent = 2
+
+var advisorSlots = struct {
+	mu sync.Mutex
+	by map[string]chan struct{}
+}{by: map[string]chan struct{}{}}
+
+// acquireAdvisorSlot takes one of the database's slots without waiting; release must be called when true.
+func acquireAdvisorSlot(db string) (release func(), ok bool) {
+	advisorSlots.mu.Lock()
+	ch := advisorSlots.by[db]
+	if ch == nil {
+		ch = make(chan struct{}, advisorMaxConcurrent)
+		advisorSlots.by[db] = ch
+	}
+	advisorSlots.mu.Unlock()
+	select {
+	case ch <- struct{}{}:
+		return func() { <-ch }, true
+	default:
+		return nil, false
+	}
+}
+
+// advisorCacheKey separates external records by their connection details and update time.
+func (rt *Router) advisorCacheKey(r *http.Request, label, containerID string) string {
+	key := label + "|" + containerID + "|advisor"
+	if containerID != "" || rt.externalDatabases == nil {
+		return key
+	}
+	if rec, err := rt.externalDatabases.GetExternalDatabase(r.Context(), label); err == nil && rec != nil {
+		key += fmt.Sprintf("|%s:%d|%s|%s|%s|%s|%s", rec.Host, rec.Port, rec.DatabaseName, rec.Username, rec.TLSMode, rec.NodeID, rec.UpdatedAt)
+	}
+	return key
+}
+
+// advisorTimedOut reports a check that hit its deadline; such a partial report is not worth caching.
+func advisorTimedOut(rep dbadvisor.Report) bool {
+	for _, f := range rep.Findings {
+		if f.Kind == dbadvisor.KindCheckFailed && f.Evidence["reason"] == "timed out" {
+			return true
+		}
+	}
+	return false
+}
 
 // advisorResponse is the advisor report plus whether it came from the short cache.
 type advisorResponse struct {
@@ -40,11 +90,24 @@ func (rt *Router) handleGetDatabaseAdvisor(w http.ResponseWriter, r *http.Reques
 		SlowStatementMs: cfg.SlowStatementMs, MaxFindings: cfg.MaxFindings, Timeout: cfg.Timeout,
 	}
 	label := desired.Name
-	v, _, hit, err := viewerOverviews.do(cfg.CacheTTL, label, label+"|"+target.ContainerID+"|advisor", func() (any, error) {
+	v, _, hit, err := viewerOverviews.do(cfg.CacheTTL, label, rt.advisorCacheKey(r, label, target.ContainerID), func() (any, error) {
+		release, free := acquireAdvisorSlot(label)
+		if !free {
+			writeError(w, http.StatusTooManyRequests, "an advisor run for this database is already in progress, try again shortly")
+			return nil, errViewerLoadFailed
+		}
+		defer release()
 		rep, err := dbadvisor.Run(r.Context(), target, th, time.Now())
 		if err != nil {
-			rt.writeViewerError(w, "api: database advisor failed", label, err)
+			// A caller that went away is not a server fault.
+			if !errors.Is(err, context.Canceled) {
+				rt.writeViewerError(w, "api: database advisor failed", label, err)
+			}
 			return nil, errViewerLoadFailed
+		}
+		if advisorTimedOut(rep) {
+			// Invalidating while loading makes the cache skip storing this partial report.
+			viewerOverviews.invalidate(label)
 		}
 		return rep, nil
 	})
