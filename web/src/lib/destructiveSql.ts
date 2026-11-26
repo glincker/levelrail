@@ -15,7 +15,9 @@ export interface DestructiveStatement {
   typeToConfirm: boolean
 }
 
-const IDENT = String.raw`((?:"[^"]+"|[\w$]+)(?:\.(?:"[^"]+"|[\w$]+))*)`
+// Backticks quote identifiers on MySQL and MariaDB.
+const PART = String.raw`(?:"[^"]+"|\x60[^\x60]+\x60|[\w$]+)`
+const IDENT = String.raw`(${PART}(?:\.${PART})*)`
 
 // Strings and comments can hold keywords, so blank them before matching.
 function strip(sql: string): string {
@@ -26,11 +28,33 @@ function strip(sql: string): string {
 }
 
 function clean(name: string): string {
-  return name.replace(/"/g, '')
+  return name.replace(/["`]/g, '')
+}
+
+// A leading WITH clause hides the real statement, so skip its balanced CTEs.
+function stripCte(stmt: string): string {
+  const head = /^with\s+(?:recursive\s+)?/i.exec(stmt)
+  if (!head) return stmt
+  let i = head[0].length
+  for (;;) {
+    const open = stmt.indexOf('(', i)
+    if (open < 0) return stmt
+    let depth = 0
+    let j = open
+    for (; j < stmt.length; j++) {
+      if (stmt[j] === '(') depth++
+      else if (stmt[j] === ')' && --depth === 0) break
+    }
+    if (depth !== 0) return stmt
+    const rest = stmt.slice(j + 1)
+    const comma = /^\s*,/.exec(rest)
+    if (!comma) return rest.trim()
+    i = j + 1 + comma[0].length
+  }
 }
 
 function inspect(stmt: string): DestructiveStatement | null {
-  const s = stmt.trim()
+  const s = stripCte(stmt.trim())
   if (s === '') return null
   let m = new RegExp(
     String.raw`^drop\s+(?:table|view|schema|database|index|materialized\s+view|sequence|type|function|extension)\s+(?:if\s+exists\s+)?${IDENT}`,
@@ -88,13 +112,19 @@ function inspect(stmt: string): DestructiveStatement | null {
   return null
 }
 
-/** Returns the first destructive statement in the SQL, or null. Read queries never match. */
-export function detectDestructive(sql: string): DestructiveStatement | null {
+/** Every destructive statement in the SQL, in order. Read queries never match. */
+export function detectAllDestructive(sql: string): DestructiveStatement[] {
+  const hits: DestructiveStatement[] = []
   for (const part of strip(sql).split(';')) {
     const hit = inspect(part)
-    if (hit) return hit
+    if (hit) hits.push(hit)
   }
-  return null
+  return hits
+}
+
+/** Returns the first destructive statement in the SQL, or null. */
+export function detectDestructive(sql: string): DestructiveStatement | null {
+  return detectAllDestructive(sql)[0] ?? null
 }
 
 /** The name to type for a DROP or TRUNCATE: the last dotted part of the object. */
