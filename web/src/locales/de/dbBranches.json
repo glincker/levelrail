@@ -1,0 +1,64 @@
+{
+  "title": "Branches",
+  "description": "Kopien dieser Datenbank für Tests und Vorschauen, mit eigenen Zugangsdaten.",
+  "empty": "Diese Datenbank hat noch keine Branches. Erstellen Sie einen, um Änderungen sicher zu testen.",
+  "unavailable": "Branches sind auf diesem Server noch nicht verfügbar. Sie kommen mit dem nächsten Update.",
+  "loadFailed": "Branches konnten nicht geladen werden: {{error}}",
+  "created": "Branch angefordert",
+  "cancel": "Abbrechen",
+  "notReady": "Dieser Branch ist noch nicht bereit. Versuchen Sie es nach Abschluss der Kopie erneut.",
+  "protected": "Geschützt",
+  "protectLabel": "Schützen",
+  "protectAria": "{{name}} schützen",
+  "expires": "Läuft ab {{date}}",
+  "create": {
+    "open": "Branch erstellen",
+    "title": "Branch erstellen",
+    "description": "Kopiert die gewählten Daten in eine neue Datenbank.",
+    "name": "Name",
+    "mode": "Modus",
+    "parent": "Übergeordnet",
+    "parentRoot": "Diese Datenbank",
+    "expiry": "Ablauf",
+    "protect": "Vor Löschen schützen",
+    "submit": "Branch erstellen"
+  },
+  "mode": {
+    "full": "Vollständige Kopie",
+    "schema": "Nur Schema",
+    "anonymized": "Anonymisiert"
+  },
+  "state": {
+    "cloning": "Wird kopiert",
+    "ready": "Bereit",
+    "failed": "Fehlgeschlagen",
+    "expiring": "Läuft bald ab",
+    "working": "In Arbeit"
+  },
+  "expiry": {
+    "1d": "1 Tag",
+    "7d": "7 Tage",
+    "30d": "30 Tage",
+    "never": "Nie"
+  },
+  "actions": {
+    "reset": "Zurücksetzen",
+    "promote": "Übernehmen",
+    "delete": "Löschen"
+  },
+  "confirm": {
+    "typeName": "Geben Sie {{name}} zur Bestätigung ein",
+    "reset": {
+      "title": "Branch zurücksetzen",
+      "body": "Ersetzt {{name}} durch eine frische Kopie des übergeordneten Elements. Daten und Zugangsdaten ändern sich."
+    },
+    "promote": {
+      "title": "Branch übernehmen",
+      "body": "Macht {{name}} zur Hauptdatenbank. Das lässt sich nicht rückgängig machen."
+    },
+    "delete": {
+      "title": "Branch löschen",
+      "body": "Löscht {{name}} und seine Daten endgültig."
+    }
+  }
+}

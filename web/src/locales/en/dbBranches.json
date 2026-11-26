@@ -1,0 +1,64 @@
+{
+  "title": "Branches",
+  "description": "Copies of this database for testing and previews, with their own credentials.",
+  "empty": "This database has no branches yet. Create one to try changes safely.",
+  "unavailable": "Branches are not available on this server yet. They arrive after the next update.",
+  "loadFailed": "Could not load branches: {{error}}",
+  "created": "Branch requested",
+  "cancel": "Cancel",
+  "notReady": "This branch is not ready yet. Try again when the copy finishes.",
+  "protected": "Protected",
+  "protectLabel": "Protect",
+  "protectAria": "Protect {{name}}",
+  "expires": "Expires {{date}}",
+  "create": {
+    "open": "Create branch",
+    "title": "Create a branch",
+    "description": "Copies the data you choose into a new database.",
+    "name": "Name",
+    "mode": "Mode",
+    "parent": "Parent",
+    "parentRoot": "This database",
+    "expiry": "Expires",
+    "protect": "Protect from deletion",
+    "submit": "Create branch"
+  },
+  "mode": {
+    "full": "Full copy",
+    "schema": "Schema only",
+    "anonymized": "Anonymized"
+  },
+  "state": {
+    "cloning": "Cloning",
+    "ready": "Ready",
+    "failed": "Failed",
+    "expiring": "Expiring",
+    "working": "Working"
+  },
+  "expiry": {
+    "1d": "1 day",
+    "7d": "7 days",
+    "30d": "30 days",
+    "never": "Never"
+  },
+  "actions": {
+    "reset": "Reset",
+    "promote": "Promote",
+    "delete": "Delete"
+  },
+  "confirm": {
+    "typeName": "Type {{name}} to confirm",
+    "reset": {
+      "title": "Reset this branch",
+      "body": "Replaces {{name}} with a fresh copy of its parent. Its data and credentials change."
+    },
+    "promote": {
+      "title": "Promote this branch",
+      "body": "Makes {{name}} the main database. This cannot be undone."
+    },
+    "delete": {
+      "title": "Delete this branch",
+      "body": "Permanently deletes {{name}} and its data."
+    }
+  }
+}

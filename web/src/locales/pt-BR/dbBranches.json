@@ -1,0 +1,64 @@
+{
+  "title": "Branches",
+  "description": "Cópias deste banco de dados para testes e prévias, com credenciais próprias.",
+  "empty": "Este banco de dados ainda não tem branches. Crie uma para testar mudanças com segurança.",
+  "unavailable": "Branches ainda não estão disponíveis neste servidor. Chegam na próxima atualização.",
+  "loadFailed": "Não foi possível carregar as branches: {{error}}",
+  "created": "Branch solicitada",
+  "cancel": "Cancelar",
+  "notReady": "Esta branch ainda não está pronta. Tente de novo quando a cópia terminar.",
+  "protected": "Protegida",
+  "protectLabel": "Proteger",
+  "protectAria": "Proteger {{name}}",
+  "expires": "Expira em {{date}}",
+  "create": {
+    "open": "Criar branch",
+    "title": "Criar uma branch",
+    "description": "Copia os dados escolhidos para um novo banco de dados.",
+    "name": "Nome",
+    "mode": "Modo",
+    "parent": "Origem",
+    "parentRoot": "Este banco de dados",
+    "expiry": "Expiração",
+    "protect": "Proteger contra exclusão",
+    "submit": "Criar branch"
+  },
+  "mode": {
+    "full": "Cópia completa",
+    "schema": "Somente esquema",
+    "anonymized": "Anonimizada"
+  },
+  "state": {
+    "cloning": "Clonando",
+    "ready": "Pronta",
+    "failed": "Falhou",
+    "expiring": "Expirando",
+    "working": "Em andamento"
+  },
+  "expiry": {
+    "1d": "1 dia",
+    "7d": "7 dias",
+    "30d": "30 dias",
+    "never": "Nunca"
+  },
+  "actions": {
+    "reset": "Redefinir",
+    "promote": "Promover",
+    "delete": "Excluir"
+  },
+  "confirm": {
+    "typeName": "Digite {{name}} para confirmar",
+    "reset": {
+      "title": "Redefinir esta branch",
+      "body": "Substitui {{name}} por uma cópia nova da origem. Dados e credenciais mudam."
+    },
+    "promote": {
+      "title": "Promover esta branch",
+      "body": "Torna {{name}} o banco de dados principal. Não pode ser desfeito."
+    },
+    "delete": {
+      "title": "Excluir esta branch",
+      "body": "Exclui {{name}} e seus dados permanentemente."
+    }
+  }
+}

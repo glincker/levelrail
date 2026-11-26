@@ -1,0 +1,64 @@
+{
+  "title": "分支",
+  "description": "此数据库的副本，用于测试和预览，拥有独立凭据。",
+  "empty": "此数据库还没有分支。创建一个以安全地尝试更改。",
+  "unavailable": "此服务器尚不支持分支，将在下次更新后提供。",
+  "loadFailed": "无法加载分支：{{error}}",
+  "created": "已请求分支",
+  "cancel": "取消",
+  "notReady": "此分支尚未就绪。请在复制完成后重试。",
+  "protected": "受保护",
+  "protectLabel": "保护",
+  "protectAria": "保护 {{name}}",
+  "expires": "{{date}} 过期",
+  "create": {
+    "open": "创建分支",
+    "title": "创建分支",
+    "description": "将所选数据复制到新数据库。",
+    "name": "名称",
+    "mode": "模式",
+    "parent": "父级",
+    "parentRoot": "此数据库",
+    "expiry": "过期时间",
+    "protect": "防止删除",
+    "submit": "创建分支"
+  },
+  "mode": {
+    "full": "完整复制",
+    "schema": "仅结构",
+    "anonymized": "已匿名化"
+  },
+  "state": {
+    "cloning": "复制中",
+    "ready": "就绪",
+    "failed": "失败",
+    "expiring": "即将过期",
+    "working": "处理中"
+  },
+  "expiry": {
+    "1d": "1 天",
+    "7d": "7 天",
+    "30d": "30 天",
+    "never": "永不"
+  },
+  "actions": {
+    "reset": "重置",
+    "promote": "提升",
+    "delete": "删除"
+  },
+  "confirm": {
+    "typeName": "输入 {{name}} 以确认",
+    "reset": {
+      "title": "重置此分支",
+      "body": "用其父级的新副本替换 {{name}}。其数据和凭据会改变。"
+    },
+    "promote": {
+      "title": "提升此分支",
+      "body": "将 {{name}} 设为主数据库。此操作无法撤销。"
+    },
+    "delete": {
+      "title": "删除此分支",
+      "body": "永久删除 {{name}} 及其数据。"
+    }
+  }
+}

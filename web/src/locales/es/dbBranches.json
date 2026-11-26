@@ -1,0 +1,64 @@
+{
+  "title": "Ramas",
+  "description": "Copias de esta base de datos para pruebas y vistas previas, con sus propias credenciales.",
+  "empty": "Esta base de datos aún no tiene ramas. Crea una para probar cambios con seguridad.",
+  "unavailable": "Las ramas aún no están disponibles en este servidor. Llegarán con la próxima actualización.",
+  "loadFailed": "No se pudieron cargar las ramas: {{error}}",
+  "created": "Rama solicitada",
+  "cancel": "Cancelar",
+  "notReady": "Esta rama aún no está lista. Inténtalo de nuevo cuando termine la copia.",
+  "protected": "Protegida",
+  "protectLabel": "Proteger",
+  "protectAria": "Proteger {{name}}",
+  "expires": "Caduca {{date}}",
+  "create": {
+    "open": "Crear rama",
+    "title": "Crear una rama",
+    "description": "Copia los datos que elijas en una base de datos nueva.",
+    "name": "Nombre",
+    "mode": "Modo",
+    "parent": "Origen",
+    "parentRoot": "Esta base de datos",
+    "expiry": "Caducidad",
+    "protect": "Proteger contra borrado",
+    "submit": "Crear rama"
+  },
+  "mode": {
+    "full": "Copia completa",
+    "schema": "Solo esquema",
+    "anonymized": "Anonimizada"
+  },
+  "state": {
+    "cloning": "Clonando",
+    "ready": "Lista",
+    "failed": "Fallida",
+    "expiring": "Caduca pronto",
+    "working": "En curso"
+  },
+  "expiry": {
+    "1d": "1 día",
+    "7d": "7 días",
+    "30d": "30 días",
+    "never": "Nunca"
+  },
+  "actions": {
+    "reset": "Restablecer",
+    "promote": "Promover",
+    "delete": "Eliminar"
+  },
+  "confirm": {
+    "typeName": "Escribe {{name}} para confirmar",
+    "reset": {
+      "title": "Restablecer esta rama",
+      "body": "Sustituye {{name}} por una copia nueva de su origen. Cambian sus datos y credenciales."
+    },
+    "promote": {
+      "title": "Promover esta rama",
+      "body": "Convierte {{name}} en la base de datos principal. No se puede deshacer."
+    },
+    "delete": {
+      "title": "Eliminar esta rama",
+      "body": "Elimina {{name}} y sus datos de forma permanente."
+    }
+  }
+}
