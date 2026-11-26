@@ -4,7 +4,9 @@ import type {
   ExternalCandidate,
   ExternalDatabase,
   ExternalDatabaseRequest,
+  ExternalParsedConnection,
   ExternalProbeResult,
+  ExternalProvider,
 } from '../types/externalDatabase'
 import { databaseKeys } from './databases'
 
@@ -37,6 +39,7 @@ async function send<T>(
 export const externalDatabaseKeys = {
   candidates: (nodeId: string) =>
     [...databaseKeys.all, 'external-candidates', nodeId] as const,
+  providers: () => [...databaseKeys.all, 'external-providers'] as const,
 }
 
 export function useExternalCandidates(nodeId: string, enabled: boolean) {
@@ -125,5 +128,78 @@ export function useRevealExternalPassword() {
         undefined,
         'reveal failed',
       ),
+  })
+}
+
+export function useExternalProviders(enabled: boolean) {
+  return useQuery({
+    queryKey: externalDatabaseKeys.providers(),
+    queryFn: () =>
+      send<ExternalProvider[]>(
+        'GET',
+        `${BASE}/providers`,
+        undefined,
+        'list hosted providers failed',
+      ),
+    enabled,
+    staleTime: Infinity,
+    retry: false,
+  })
+}
+
+export function useParseExternalUrl() {
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (url: string) =>
+      send<ExternalParsedConnection>(
+        'POST',
+        `${BASE}/parse`,
+        { url },
+        'parse connection string failed',
+      ),
+  })
+}
+
+// A hosted save refused with 422: the probe failed and nothing was stored.
+export class HostedProbeBlockedError extends ApiError {
+  readonly probe: ExternalProbeResult | null
+
+  constructor(message: string, probe: ExternalProbeResult | null) {
+    super(422, message)
+    this.probe = probe
+  }
+}
+
+export function useConnectHostedDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: async (req: ExternalDatabaseRequest) => {
+      const res = await fetch(BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req),
+      })
+      if (res.status === 422) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: string
+          probe?: ExternalProbeResult
+        } | null
+        throw new HostedProbeBlockedError(
+          body?.error ?? 'connection test failed',
+          body?.probe ?? null,
+        )
+      }
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `connect database failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as ExternalDatabase
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.all })
+    },
   })
 }

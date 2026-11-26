@@ -202,7 +202,23 @@
       "save": "Salvar banco hospedado",
       "saving": "Salvando...",
       "readOnlyNote": "Somente leitura por padrão. Use um login só com permissão de leitura. O explorador não grava a menos que você ative a escrita neste banco.",
-      "toast": "\"{{name}}\" conectado."
+      "toast": "\"{{name}}\" conectado.",
+      "step": "Etapa {{current}} de {{total}}",
+      "providersError": "Não foi possível carregar a lista de provedores. Você ainda pode usar Outro ou autogerenciado.",
+      "parseError": "Isso não parece uma string de conexão: {{reason}}",
+      "tlsNotChecked": "O certificado TLS não é verificado neste modo",
+      "tlsExplain": {
+        "disable": "Sem criptografia. Somente para uma rede privada.",
+        "prefer": "Criptografa se o servidor oferecer. O certificado não é verificado.",
+        "require": "Sempre criptografa. O certificado não é verificado.",
+        "verify-ca": "Sempre criptografa e verifica a cadeia do certificado.",
+        "verify-full": "Sempre criptografa, verifica a cadeia e o nome do host. A opção mais segura."
+      },
+      "saveAnywayWarn": "O teste falhou, então não há confirmação de que funciona. Salvar mesmo assim guarda o registro e a senha como informados, e os apps que o usam podem não conectar.",
+      "busy": "Há testes de conexão demais em andamento. Aguarde alguns segundos e tente de novo.",
+      "forbidden": "Somente a conta root pode conectar bancos de dados hospedados.",
+      "testIdle": "Execute o teste para verificar se o banco responde antes de salvar.",
+      "summary": "{{engine}} em {{host}}:{{port}}"
     }
   },
   "delete": {

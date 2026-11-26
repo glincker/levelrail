@@ -202,7 +202,23 @@
       "save": "Gehostete Datenbank speichern",
       "saving": "Speichere...",
       "readOnlyNote": "Standardmäßig nur lesend. Nutzen Sie einen Login mit reinen Leserechten. Der Explorer kann nicht schreiben, solange Sie Schreiben für diese Datenbank nicht aktivieren.",
-      "toast": "\"{{name}}\" verbunden."
+      "toast": "\"{{name}}\" verbunden.",
+      "step": "Schritt {{current}} von {{total}}",
+      "providersError": "Die Anbieterliste konnte nicht geladen werden. Sie können weiterhin Andere oder selbst verwaltet wählen.",
+      "parseError": "Das sieht nicht wie eine Verbindungszeichenfolge aus: {{reason}}",
+      "tlsNotChecked": "TLS-Zertifikat wird in diesem Modus nicht geprüft",
+      "tlsExplain": {
+        "disable": "Keine Verschlüsselung. Nur für ein privates Netzwerk.",
+        "prefer": "Verschlüsselt, wenn der Server es anbietet. Das Zertifikat wird nicht geprüft.",
+        "require": "Verschlüsselt immer. Das Zertifikat wird nicht geprüft.",
+        "verify-ca": "Verschlüsselt immer und prüft die Zertifikatskette.",
+        "verify-full": "Verschlüsselt immer, prüft Kette und Hostnamen. Die sicherste Wahl."
+      },
+      "saveAnywayWarn": "Der Test ist fehlgeschlagen, daher ist nicht bestätigt, dass die Verbindung funktioniert. Beim Speichern trotzdem werden Eintrag und Passwort wie eingegeben gespeichert, und Apps können sich eventuell nicht verbinden.",
+      "busy": "Es laufen zu viele Verbindungstests. Warten Sie einige Sekunden und versuchen Sie es erneut.",
+      "forbidden": "Nur das Root-Konto kann gehostete Datenbanken verbinden.",
+      "testIdle": "Starten Sie den Test, um die Erreichbarkeit vor dem Speichern zu prüfen.",
+      "summary": "{{engine}} unter {{host}}:{{port}}"
     }
   },
   "delete": {

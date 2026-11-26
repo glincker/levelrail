@@ -202,7 +202,23 @@
       "save": "Guardar base de datos alojada",
       "saving": "Guardando...",
       "readOnlyNote": "Solo lectura por defecto. Usa un acceso con permisos de solo lectura. El explorador no puede escribir salvo que actives la escritura para esta base de datos.",
-      "toast": "\"{{name}}\" conectada."
+      "toast": "\"{{name}}\" conectada.",
+      "step": "Paso {{current}} de {{total}}",
+      "providersError": "No se pudo cargar la lista de proveedores. Aún puedes usar Otro o autogestionado.",
+      "parseError": "Eso no parece una cadena de conexión: {{reason}}",
+      "tlsNotChecked": "El certificado TLS no se verifica en este modo",
+      "tlsExplain": {
+        "disable": "Sin cifrado. Solo para una red privada.",
+        "prefer": "Cifra si el servidor lo ofrece. No se comprueba el certificado.",
+        "require": "Siempre cifra. No se comprueba el certificado.",
+        "verify-ca": "Siempre cifra y comprueba la cadena del certificado.",
+        "verify-full": "Siempre cifra, comprueba la cadena y el nombre de host. La opción más segura."
+      },
+      "saveAnywayWarn": "La prueba falló, así que no hay confirmación de que funcione. Guardar de todos modos almacena el registro y la contraseña tal como están, y las apps que lo usen quizá no conecten.",
+      "busy": "Hay demasiadas pruebas de conexión en curso. Espera unos segundos e inténtalo de nuevo.",
+      "forbidden": "Solo la cuenta root puede conectar bases de datos alojadas.",
+      "testIdle": "Ejecuta la prueba para comprobar que la base de datos responde antes de guardarla.",
+      "summary": "{{engine}} en {{host}}:{{port}}"
     }
   },
   "delete": {

@@ -1,10 +1,9 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CloudGlassIcon, ServerGlassIcon } from '@thesvg/ui-react'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useNodeListOptional } from '../queries/nodes'
-import { ConnectDatabaseDialog } from './ConnectDatabaseDialog'
+import { ConnectHostedDialog } from './ConnectHostedDialog'
 
 const OPTION =
   'flex min-h-14 flex-1 flex-col items-start justify-center gap-0.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60'
@@ -93,13 +92,7 @@ export function DatabaseWhereItRuns() {
             <CloudGlassIcon size="1.2em" aria-hidden="true" />
             {t('where.hosted')}
           </span>
-          <ConnectDatabaseDialog
-            trigger={
-              <Button type="button" size="xs" variant="outline">
-                {t('where.hostedAction')}
-              </Button>
-            }
-          />
+          <ConnectHostedDialog compact />
         </div>
       </div>
       {where === 'node' && multiNode ? (

@@ -202,7 +202,23 @@
       "save": "保存托管数据库",
       "saving": "保存中...",
       "readOnlyNote": "默认只读。请使用仅有读权限的登录。除非为该数据库开启写入,否则浏览器不能写入。",
-      "toast": "已连接“{{name}}”。"
+      "toast": "已连接“{{name}}”。",
+      "step": "第 {{current}} 步，共 {{total}} 步",
+      "providersError": "无法加载提供商列表。你仍可选择“其他或自行管理”。",
+      "parseError": "这看起来不是连接字符串：{{reason}}",
+      "tlsNotChecked": "此模式下不验证 TLS 证书",
+      "tlsExplain": {
+        "disable": "不加密。仅适用于私有网络。",
+        "prefer": "服务器支持时加密。不检查证书。",
+        "require": "始终加密。不检查证书。",
+        "verify-ca": "始终加密并检查证书链。",
+        "verify-full": "始终加密，检查证书链和主机名。最安全的选择。"
+      },
+      "saveAnywayWarn": "测试失败，无法确认连接可用。仍然保存会按输入原样存储记录和密码，使用它的应用可能无法连接。",
+      "busy": "正在运行的连接测试过多。请等待几秒后重试。",
+      "forbidden": "只有 root 账户可以连接托管数据库。",
+      "testIdle": "保存前先运行测试，确认数据库可达。",
+      "summary": "{{engine}}，地址 {{host}}:{{port}}"
     }
   },
   "delete": {

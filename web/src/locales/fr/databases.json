@@ -202,7 +202,23 @@
       "save": "Enregistrer la base hébergée",
       "saving": "Enregistrement...",
       "readOnlyNote": "Lecture seule par défaut. Utilisez un identifiant avec des droits de lecture uniquement. L'explorateur ne peut pas écrire tant que vous n'activez pas l'écriture pour cette base.",
-      "toast": "\"{{name}}\" connectée."
+      "toast": "\"{{name}}\" connectée.",
+      "step": "Étape {{current}} sur {{total}}",
+      "providersError": "Impossible de charger la liste des fournisseurs. Vous pouvez toujours choisir Autre ou auto-géré.",
+      "parseError": "Cela ne ressemble pas à une chaîne de connexion : {{reason}}",
+      "tlsNotChecked": "Le certificat TLS n'est pas vérifié dans ce mode",
+      "tlsExplain": {
+        "disable": "Aucun chiffrement. Uniquement pour un réseau privé.",
+        "prefer": "Chiffre si le serveur le propose. Le certificat n'est pas vérifié.",
+        "require": "Chiffre toujours. Le certificat n'est pas vérifié.",
+        "verify-ca": "Chiffre toujours et vérifie la chaîne du certificat.",
+        "verify-full": "Chiffre toujours, vérifie la chaîne et le nom d'hôte. Le choix le plus sûr."
+      },
+      "saveAnywayWarn": "Le test a échoué, donc rien ne confirme que la connexion fonctionne. Enregistrer quand même conserve l'entrée et le mot de passe tels quels, et les apps qui l'utilisent risquent de ne pas se connecter.",
+      "busy": "Trop de tests de connexion sont en cours. Attendez quelques secondes et réessayez.",
+      "forbidden": "Seul le compte root peut connecter des bases de données hébergées.",
+      "testIdle": "Lancez le test pour vérifier que la base répond avant l'enregistrement.",
+      "summary": "{{engine}} sur {{host}}:{{port}}"
     }
   },
   "delete": {

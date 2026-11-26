@@ -202,7 +202,23 @@
       "save": "Save hosted database",
       "saving": "Saving...",
       "readOnlyNote": "Read only by default. Use a login with read permissions only. The explorer cannot write unless you turn writes on for this database.",
-      "toast": "Connected \"{{name}}\"."
+      "toast": "Connected \"{{name}}\".",
+      "step": "Step {{current}} of {{total}}",
+      "providersError": "Could not load the provider list. You can still use Other or self-managed.",
+      "parseError": "That does not look like a connection string: {{reason}}",
+      "tlsNotChecked": "TLS certificate not verified in this mode",
+      "tlsExplain": {
+        "disable": "No encryption. Only for a private network.",
+        "prefer": "Encrypts when the server offers it. The certificate is not checked.",
+        "require": "Always encrypts. The certificate is not checked.",
+        "verify-ca": "Always encrypts and checks the certificate chain.",
+        "verify-full": "Always encrypts, checks the chain and the host name. The safest choice."
+      },
+      "saveAnywayWarn": "The test failed, so nothing is confirmed to work. Saving anyway stores the record and password as entered, and apps that use it may not connect.",
+      "busy": "Too many connection tests are running. Wait a few seconds and try again.",
+      "forbidden": "Only the root account can connect hosted databases.",
+      "testIdle": "Run the test to check the database is reachable before it is saved.",
+      "summary": "{{engine}} at {{host}}:{{port}}"
     }
   },
   "delete": {
