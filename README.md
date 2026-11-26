@@ -38,20 +38,25 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
 
 **Coming from another platform?** Side by side pages: [Coolify](docs/coolify-alternative.md), [Dokku](docs/dokku-alternative.md), [Dokploy](docs/dokploy-alternative.md), [CapRover](docs/caprover-alternative.md), [Kamal](docs/kamal-alternative.md), [Heroku](docs/heroku-alternative.md), [Railway](docs/railway-alternative.md), [Netlify](docs/netlify-alternative.md), [Vercel](docs/vercel-alternative.md) and [Cloud Run](docs/cloud-run-alternative.md), or the [overall comparison](docs/comparison.md).
 
+**Get started:** [install on a Linux server in one line](#install), [try the live demo](https://demo.levelrail.com) first, or follow [First 15 minutes](docs/first-15-minutes.md).
+
 v1.x. Single-server is production ready, multi-node is beta. Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).
 
 ## Install
 
-Pick one. Release assets on GitHub are the primary source: every binary, `install.sh`, `install-cli.sh` and `checksums.txt` ship with each [release](https://github.com/glincker/levelrail/releases/latest).
+**On a Linux server (amd64 or arm64, systemd), run this as a user that can use `sudo`:**
+
+```bash
+curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh && sudo sh install.sh
+```
+
+That downloads the installer from the latest GitHub release, saves it to disk (so you can read it first) and runs it. It runs preflight checks, installs the control plane binary and a systemd unit, and prints a setup link for the admin account. It uses the Docker or Podman already on the host and installs Docker (through `get.docker.com`) only when neither is found. It is safe to re-run. To see what it would do without changing anything, run `sudo sh install.sh check` first.
+
+Other ways to install. Release assets on GitHub are the primary source: every binary, `install.sh`, `install-cli.sh` and `checksums.txt` ship with each [release](https://github.com/glincker/levelrail/releases/latest).
 
 - **Homebrew (CLI):** `brew install glincker/tap/levelrail-cli`
 - **Docker (server):** `docker pull ghcr.io/glincker/levelrail:latest` (see [Installing](docs/installing.md) for the full run command with volumes and ports)
-- **GitHub release download:** get `install.sh` from the [latest release](https://github.com/glincker/levelrail/releases/latest), then run it as root on a Linux server (amd64 or arm64, systemd). The installer adds Docker.
-
-```bash
-curl -fsSLO https://github.com/glincker/levelrail/releases/latest/download/install.sh
-sudo sh install.sh
-```
+- **Verified install:** check the installer against the signed `checksums.txt` before running it, see the next section.
 
 <details>
 <summary>Advanced: verify the installer against checksums.txt first</summary>
@@ -71,7 +76,7 @@ On macOS use `shasum -a 256 -c -` instead of `sha256sum -c -`. `checksums.txt` i
 
 ## Quickstart
 
-You need a Linux server (amd64 or arm64) with systemd and root. The installer adds Docker. Open ports 80 and 443. Install first with one of the options in [Install](#install).
+You need a Linux server (amd64 or arm64) with systemd and root. Levelrail runs apps in containers: the installer uses the Docker or Podman already on the host and installs Docker only if neither is found. Open ports 80 and 443. Install first with one of the options in [Install](#install).
 
 1. Open the setup link the installer prints and choose a password. That creates the admin account.
 2. In the dashboard, copy the login line from the **Connect your CLI** card and run it (it looks like `levelrail-cli login --api-url http://127.0.0.1:8080 --code ABCD-EF23`).
