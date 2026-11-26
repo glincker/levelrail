@@ -102,6 +102,7 @@ func (rt *Router) requireAbilityForDatabase(ability string, action dbauthz.Actio
 		}
 		gated := func(w http.ResponseWriter, r *http.Request) {
 			if hidden {
+				noteDenied(r)
 				writeError(w, http.StatusNotFound, hiddenResourceMessage(resource))
 				return
 			}

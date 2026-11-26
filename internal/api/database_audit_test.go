@@ -13,11 +13,21 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-type auditTestSettings struct{ text bool }
+type auditTestSettings struct {
+	text  bool
+	queue int
+}
 
-func (s auditTestSettings) StoreText(context.Context) bool  { return s.text }
-func (auditTestSettings) QueueSize(context.Context) int     { return 1000 }
+func (s auditTestSettings) StoreText(context.Context) bool { return s.text }
+func (s auditTestSettings) QueueSize(context.Context) int {
+	if s.queue > 0 {
+		return s.queue
+	}
+	return 1000
+}
 func (auditTestSettings) RetentionDays(context.Context) int { return 90 }
+func (auditTestSettings) MaxRows(context.Context) int       { return 1000000 }
+func (auditTestSettings) TextMaxBytes(context.Context) int  { return 4096 }
 
 const hostileValue = "HOSTILE-VALUE-42"
 
@@ -130,5 +140,74 @@ func TestDatabaseAuditFingerprintIdentifiesNormalizedStatement(t *testing.T) {
 	}
 	if len(rows) != 3 || len(fp) != 2 {
 		t.Fatalf("want 3 rows and 2 distinct fingerprints (same shape, different literal collapses), got %d rows %d fingerprints", len(rows), len(fp))
+	}
+}
+
+func TestDatabaseAuditUnauthenticatedWritesNoRow(t *testing.T) {
+	rt, db, _, w := auditedRouter(t, false)
+	name := strings.Repeat("z", 3000)
+	for _, target := range []string{"/api/v1/databases/main/query", "/api/v1/databases/" + name + "/query"} {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, target, strings.NewReader(`{"sql":"select 1"}`)))
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("status %d, want 401", rec.Code)
+		}
+	}
+	w.Flush(context.Background())
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM database_statement_audit`).Scan(&n); err != nil || n != 0 {
+		t.Fatalf("rows %d %v, want none", n, err)
+	}
+	if w.Unauthenticated() != 2 {
+		t.Fatalf("counted %d, want 2", w.Unauthenticated())
+	}
+}
+
+func TestDatabaseAuditFullQueueRefusesWritesNotReads(t *testing.T) {
+	rt, db, fake, _ := newViewerTestRouterWithAudit(t, 1)
+	fake.out = "?column?\n1\n"
+	cookie := loginTestSession(t, rt, db)
+	if rec := viewerDo(t, rt, cookie, http.MethodGet, "/api/v1/databases/main/schema", ""); rec.Code == http.StatusServiceUnavailable {
+		t.Fatalf("first read refused")
+	}
+	if rec := viewerDo(t, rt, cookie, http.MethodGet, "/api/v1/databases/main/schema", ""); rec.Code == http.StatusServiceUnavailable {
+		t.Fatalf("a read must fail open when the queue is full")
+	}
+	rec := viewerDo(t, rt, cookie, http.MethodPost, "/api/v1/databases/main/query/write", `{"sql":"select 1","confirm":"main"}`)
+	if rec.Code != http.StatusServiceUnavailable || !strings.Contains(rec.Body.String(), "audit_unavailable") {
+		t.Fatalf("write status %d body %s, want 503 audit_unavailable", rec.Code, rec.Body.String())
+	}
+}
+
+func newViewerTestRouterWithAudit(t *testing.T, queue int) (*Router, *store.DB, *fakeViewerRuntime, *dbaudit.Writer) {
+	t.Helper()
+	rt, db, fake := newViewerTestRouter(t, store.EnginePostgres)
+	w := dbaudit.New(db, auditTestSettings{queue: queue}, dbaudit.Options{FlushInterval: time.Hour})
+	rt.WithDatabaseAudit(w)
+	return rt, db, fake, w
+}
+
+func TestDatabaseAuditReusedNameCannotReadOldTrail(t *testing.T) {
+	rt, db, _, _ := auditedRouter(t, false)
+	desired, err := db.GetDesiredDatabase(context.Background(), "main")
+	if err != nil || desired == nil {
+		t.Fatalf("desired %v %v", desired, err)
+	}
+	at := time.Now().UTC().Format(store.StatementAuditTimeLayout)
+	old := store.DatabaseStatementAudit{ID: "old1", At: at, DatabaseName: "main", DatabaseID: "previous-incarnation", Action: "db:read", Outcome: "ok"}
+	cur := store.DatabaseStatementAudit{ID: "cur1", At: at, DatabaseName: "main", DatabaseID: desired.InstanceID, Action: "db:read", Outcome: "ok"}
+	if err := db.InsertDatabaseStatementAudits(context.Background(), []store.DatabaseStatementAudit{old, cur}); err != nil {
+		t.Fatal(err)
+	}
+	cookie := loginTestSession(t, rt, db)
+	rec := viewerDo(t, rt, cookie, http.MethodGet, "/api/v1/databases/main/audit", "")
+	var out databaseAuditListResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range out.Items {
+		if r.ID == "old1" {
+			t.Fatalf("old trail readable: %+v", out.Items)
+		}
 	}
 }

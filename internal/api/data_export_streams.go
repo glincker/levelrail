@@ -67,6 +67,12 @@ func (rt *Router) handleScrapeMetrics(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	if !scope.restricted() && rt.dbAudit != nil {
+		if err := rt.dbAudit.WriteMetrics(&buf, levelrailMetricPrefix); err != nil {
+			rt.internalError(w, "api: scrape metrics: render database audit", err)
+			return
+		}
+	}
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 	_, _ = w.Write(buf.Bytes())
 }

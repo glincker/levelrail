@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,6 +36,17 @@ type auditNote struct {
 	Fingerprint string
 	Text        string
 	Rows        int64
+	Denied      bool
+}
+
+// auditDatabaseNameRe mirrors the database name rule, so odd path values never reach a lookup.
+var auditDatabaseNameRe = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
+
+// noteDenied marks the current explorer request as refused by the gate.
+func noteDenied(r *http.Request) {
+	if n, ok := r.Context().Value(auditNoteKey{}).(*auditNote); ok {
+		n.Denied = true
+	}
 }
 
 // noteStatement records the statement identity for the current explorer request.
@@ -83,6 +95,11 @@ func (rt *Router) withDatabaseAudit(ability string, action dbauthz.Action, next 
 			next(w, r)
 			return
 		}
+		// Writes and admin actions stop when the trail cannot take them; reads fail open and count a drop.
+		if (action == dbauthz.ActionWrite || action == dbauthz.ActionAdmin) && !rt.dbAudit.HasRoom(r.Context()) {
+			writeCodedError(w, http.StatusServiceUnavailable, "audit_unavailable", "the audit trail is full, try again shortly")
+			return
+		}
 		note := &auditNote{}
 		aw := &auditWriter{ResponseWriter: w}
 		start := time.Now()
@@ -100,8 +117,11 @@ func (rt *Router) recordExplorerAudit(r *http.Request, aw *auditWriter, n *audit
 	ev := dbaudit.Event{
 		At: time.Now(), DatabaseName: r.PathValue("name"), Ability: ability, Action: string(action),
 		OpKind: auditOpKind(r.Pattern), Fingerprint: n.Fingerprint, StatementText: n.Text, RowsReturned: n.Rows,
-		Bytes: aw.bytes, DurationMs: d.Milliseconds(), Outcome: auditOutcome(r, status), ClientIP: clientIP(r),
+		Bytes: aw.bytes, DurationMs: d.Milliseconds(), Outcome: auditOutcome(r, status), ClientIP: clientIP(r), BranchName: r.PathValue("branch"),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")), RequestID: aw.Header().Get(requestIDHeader),
+	}
+	if n.Denied {
+		ev.Outcome = dbaudit.OutcomeDenied
 	}
 	if ev.Outcome != dbaudit.OutcomeOK {
 		ev.ErrorClass = "http_" + strconv.Itoa(status)
@@ -109,17 +129,21 @@ func (rt *Router) recordExplorerAudit(r *http.Request, aw *auditWriter, n *audit
 	if ev.Fingerprint == "" {
 		ev.Fingerprint = routeFingerprint(r)
 	}
-	if pt, pid, _, err := rt.callerPrincipal(r); err == nil {
-		ev.PrincipalType, ev.PrincipalID = pt, pid
-		actor := "session"
-		if pt == store.PrincipalTypeToken {
-			actor = "token"
-		}
-		ev.PrincipalName = rt.auditActorName(ctx, actor, pid, pid)
+	pt, pid, _, err := rt.callerPrincipal(r)
+	if err != nil {
+		// No principal means a flood of unauthenticated requests could fill the trail; count, do not store.
+		rt.dbAudit.CountUnauthenticated()
+		return
 	}
-	if rt.databases != nil {
+	ev.PrincipalType, ev.PrincipalID = pt, pid
+	actor := "session"
+	if pt == store.PrincipalTypeToken {
+		actor = "token"
+	}
+	ev.PrincipalName = rt.auditActorName(ctx, actor, pid, pid)
+	if rt.databases != nil && auditDatabaseNameRe.MatchString(ev.DatabaseName) {
 		if desired, err := rt.databases.GetDesiredDatabase(ctx, ev.DatabaseName); err == nil && desired != nil {
-			ev.Engine = desired.Engine
+			ev.Engine, ev.DatabaseID = desired.Engine, desired.InstanceID
 		}
 	}
 	rt.dbAudit.Record(ctx, ev)
@@ -206,6 +230,12 @@ func (rt *Router) handleListDatabaseStatementAudit(w http.ResponseWriter, r *htt
 			return
 		}
 		f.Limit = n
+	}
+	// Only rows of this incarnation of the name are readable, so a reused name starts a clean trail.
+	if rt.databases != nil && auditDatabaseNameRe.MatchString(f.DatabaseName) {
+		if desired, err := rt.databases.GetDesiredDatabase(r.Context(), f.DatabaseName); err == nil && desired != nil {
+			f.DatabaseID, f.MatchDatabaseID = desired.InstanceID, true
+		}
 	}
 	rows, next, err := rt.dbAuditStore.ListDatabaseStatementAudits(r.Context(), f)
 	if err != nil {
