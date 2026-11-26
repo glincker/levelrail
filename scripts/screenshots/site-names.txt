@@ -1,0 +1,21 @@
+# Names the website build fetches from this directory; keep each present as a dark PNG.
+app-analysis
+app-deploy-settings
+app-environment
+apps-list
+backups
+command-palette-search
+control-plane-health
+dashboard-home
+database-overview
+deploy-history
+deploy-live-log
+domains-list
+encryption-keys
+load-balancer
+logs
+network-topology
+nodes
+pipeline-run
+status-page-settings
+templates-catalog
