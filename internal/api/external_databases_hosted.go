@@ -28,6 +28,9 @@ func (req *externalDatabaseRequest) applyConnectionURL() error {
 		}
 	}
 	if req.URL == "" {
+		if req.TLSMode == "" {
+			req.TLSMode = extdb.PresetTLSMode(req.Provider)
+		}
 		return nil
 	}
 	p, err := extdb.ParseURL(req.URL)

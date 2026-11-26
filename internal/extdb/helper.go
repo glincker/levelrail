@@ -26,6 +26,9 @@ const (
 	envDatabase      = "EXT_DB"
 	envAuthDB        = "EXT_AUTHDB"
 	envTLS           = "EXT_TLS"
+	envSRV           = "EXT_SRV"
+	// caBundlePath is the system bundle in the Debian based client images.
+	caBundlePath = "/etc/ssl/certs/ca-certificates.crt"
 )
 
 // HelperEnv is the environment a helper container runs with. Standard client
@@ -40,13 +43,18 @@ func HelperEnv(c Conn) map[string]string {
 		envAuthDB:   c.AuthDatabase,
 		envTLS:      c.TLSMode,
 	}
+	if c.Engine == EngineMongoDB && DetectProvider(c.Host) == "mongodb-atlas" {
+		// Atlas cluster names resolve through DNS seed records, not a host and port.
+		env[envSRV] = "1"
+	}
 	switch c.Engine {
 	case EnginePostgres:
 		env["PGHOST"], env["PGPORT"], env["PGUSER"], env["PGPASSWORD"] = c.Host, strconv.Itoa(c.Port), c.User, c.Password
 		env["PGDATABASE"] = c.Database
 		env["PGSSLMODE"] = c.TLSMode
 		if TLSVerifies(c.TLSMode) {
-			env["PGSSLROOTCERT"] = "system"
+			// A file works for verify-ca and verify-full on every libpq release.
+			env["PGSSLROOTCERT"] = caBundlePath
 		}
 		env["PGCONNECT_TIMEOUT"] = "10"
 	case EngineMySQL, EngineMariaDB:

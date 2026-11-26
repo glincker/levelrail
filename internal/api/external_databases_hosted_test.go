@@ -80,7 +80,7 @@ func TestHostedDatabase_SaveFlow(t *testing.T) {
 		}
 	}
 	last := fake.created[len(fake.created)-1]
-	if last.Env["PGSSLMODE"] != "verify-full" || last.Env["PGSSLROOTCERT"] != "system" {
+	if last.Env["PGSSLMODE"] != "verify-full" || last.Env["PGSSLROOTCERT"] != "/etc/ssl/certs/ca-certificates.crt" {
 		t.Errorf("helper TLS env = %v", last.Env)
 	}
 }

@@ -3,6 +3,8 @@ package extdb
 import (
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/dbviewer"
 )
 
 func TestParseURL_Providers(t *testing.T) {
@@ -135,5 +137,57 @@ func TestValidate_HostForms(t *testing.T) {
 		if err := c.Validate(Policy{}); err != nil {
 			t.Errorf("host %q rejected: %v", h, err)
 		}
+	}
+}
+
+func TestParseURL_TLSExplicitOffAndPresets(t *testing.T) {
+	cases := []struct {
+		raw  string
+		want string
+	}{
+		{"redis://:pw@eu1-x-1.upstash.io:6379", TLSVerifyFull},
+		{"mongodb://u:pw@c0.ab.mongodb.net/x", TLSVerifyFull},
+		{"mongodb://u:pw@c0.ab.mongodb.net/x?tls=false", TLSDisable},
+		{"mysql://u:pw@aws.connect.psdb.cloud/x?ssl-mode=DISABLED", TLSDisable},
+		{"mysql://u:pw@aws.connect.psdb.cloud/x?ssl=false", TLSDisable},
+		{"redis://:pw@cache.internal.example.com", TLSDisable},
+		{"postgres://u:pw@db.example.com/x?sslmode=disable", TLSDisable},
+	}
+	for _, tc := range cases {
+		got, err := ParseURL(tc.raw)
+		if err != nil || got.TLSMode != tc.want {
+			t.Errorf("%s: tls = %q err %v, want %q", tc.raw, got.TLSMode, err, tc.want)
+		}
+	}
+	if PresetTLSMode("neon") != TLSVerifyFull || PresetTLSMode(ProviderGeneric) != "" || PresetTLSMode("") != "" {
+		t.Error("preset TLS lookup wrong")
+	}
+}
+
+func TestClientTLSScripts(t *testing.T) {
+	my := dbviewer.MySQLSSLCase(false)
+	for _, want := range []string{"VERIFY_IDENTITY --ssl-ca=$CA", "VERIFY_CA --ssl-ca=$CA", "/etc/pki/tls/certs/ca-bundle.crt"} {
+		if !strings.Contains(my, want) {
+			t.Errorf("mysql case missing %q", want)
+		}
+	}
+	if maria := dbviewer.MySQLSSLCase(true); !strings.Contains(maria, "--ssl-verify-server-cert --ssl-ca=$CA") {
+		t.Error("mariadb verify mode lacks the CA file")
+	}
+	mongo, _ := ProbeScript(EngineMongoDB)
+	if !strings.Contains(mongo, `mongodb+srv://$EXT_HOST/`) || strings.Contains(mongo, "--tlsAllowInvalidCertificates;; verify-full") {
+		t.Errorf("mongo script: %s", mongo)
+	}
+	for _, mode := range []string{TLSVerifyCA, TLSVerifyFull} {
+		env := HelperEnv(Conn{Engine: EnginePostgres, Host: "h", Port: 5432, TLSMode: mode})
+		if env["PGSSLROOTCERT"] != "/etc/ssl/certs/ca-certificates.crt" || env["PGSSLMODE"] != mode {
+			t.Errorf("%s env = %v", mode, env)
+		}
+	}
+	if HelperEnv(Conn{Engine: EngineMongoDB, Host: "c0.ab.mongodb.net", Port: 27017})["EXT_SRV"] != "1" {
+		t.Error("atlas host should use the seed record form")
+	}
+	if _, ok := HelperEnv(Conn{Engine: EngineMongoDB, Host: "db.example.com", Port: 27017})["EXT_SRV"]; ok {
+		t.Error("plain mongo host must not use the seed record form")
 	}
 }

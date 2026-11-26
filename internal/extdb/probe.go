@@ -126,7 +126,8 @@ func ProbeScript(engine string) (string, error) {
 	case EngineMySQL, EngineMariaDB:
 		body = mysqlProbe(engine)
 	case EngineMongoDB:
-		body = `set -- --quiet --host "$EXT_HOST" --port "$EXT_PORT" --authenticationDatabase "${EXT_AUTHDB:-admin}"
+		body = `if [ "$EXT_SRV" = 1 ]; then set -- "mongodb+srv://$EXT_HOST/" --quiet; else set -- --quiet --host "$EXT_HOST" --port "$EXT_PORT"; fi
+set -- "$@" --authenticationDatabase "${EXT_AUTHDB:-admin}"
 if [ -n "$EXT_USER" ]; then set -- "$@" --username "$EXT_USER" --password "$EXT_PASSWORD"; fi
 case "$EXT_TLS" in require) set -- "$@" --tls --tlsAllowInvalidCertificates;; verify-ca) set -- "$@" --tls --tlsAllowInvalidHostnames;; verify-full) set -- "$@" --tls;; esac
 mongosh "$@" --eval 'JSON.stringify({ok: db.runCommand({ping: 1}).ok, version: db.version()})' 2>&1`

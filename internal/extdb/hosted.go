@@ -165,8 +165,9 @@ func ParseURL(raw string) (Parsed, error) {
 		p.Database = ""
 	}
 	p.Provider = DetectProvider(p.Host)
-	p.TLSMode = urlTLSMode(engine, strings.ToLower(scheme), q)
-	if pr, found := ProviderByID(p.Provider); found {
+	var off bool
+	p.TLSMode, off = urlTLSMode(engine, strings.ToLower(scheme), q)
+	if pr, found := ProviderByID(p.Provider); found && p.Provider != ProviderGeneric && !off {
 		p.TLSMode = strongerTLS(p.TLSMode, pr.TLSMode)
 	}
 	if p.Port == 0 && !strings.HasSuffix(strings.ToLower(scheme), "+srv") {
@@ -197,7 +198,16 @@ func firstMongoHost(raw string) string {
 	return scheme + "://" + auth[:at+1] + first + rest[end:]
 }
 
-func urlTLSMode(engine, scheme string, q url.Values) string {
+// urlTLSMode reads the TLS setting a connection string carries. The second
+// result is true only when the string explicitly turned TLS off.
+func urlTLSMode(engine, scheme string, q url.Values) (string, bool) {
+	falsy := func(v string) bool {
+		switch strings.ToLower(v) {
+		case "false", "0", "no", "disable", "disabled":
+			return true
+		}
+		return false
+	}
 	truthy := func(v string) bool {
 		switch strings.ToLower(v) {
 		case "true", "1", "yes", "required", "require":
@@ -208,36 +218,44 @@ func urlTLSMode(engine, scheme string, q url.Values) string {
 	switch engine {
 	case EnginePostgres:
 		switch m := strings.ToLower(q.Get("sslmode")); m {
-		case TLSDisable, TLSRequire, TLSVerifyCA, TLSVerifyFull:
-			return m
+		case TLSDisable:
+			return TLSDisable, true
+		case TLSRequire, TLSVerifyCA, TLSVerifyFull:
+			return m, false
 		case "allow", TLSPrefer:
-			return TLSPrefer
+			return TLSPrefer, false
 		}
-		return TLSRequire
+		return TLSRequire, false
 	case EngineMySQL, EngineMariaDB:
-		switch strings.ToLower(firstNonEmpty(q.Get("ssl-mode"), q.Get("sslmode"))) {
+		v := strings.ToLower(firstNonEmpty(q.Get("ssl-mode"), q.Get("sslmode")))
+		switch v {
 		case "disabled", TLSDisable:
-			return TLSDisable
+			return TLSDisable, true
 		case "verify_ca", TLSVerifyCA:
-			return TLSVerifyCA
+			return TLSVerifyCA, false
 		case "verify_identity", TLSVerifyFull:
-			return TLSVerifyFull
-		case "required", TLSRequire:
-			return TLSRequire
+			return TLSVerifyFull, false
 		}
-		return TLSRequire
+		if falsy(firstNonEmpty(q.Get("ssl"), q.Get("tls"))) {
+			return TLSDisable, true
+		}
+		return TLSRequire, false
 	case EngineMongoDB:
-		if strings.HasSuffix(scheme, "+srv") || truthy(firstNonEmpty(q.Get("tls"), q.Get("ssl"))) {
-			return TLSRequire
+		v := firstNonEmpty(q.Get("tls"), q.Get("ssl"))
+		if falsy(v) && v != "" {
+			return TLSDisable, true
 		}
-		return TLSDisable
+		if strings.HasSuffix(scheme, "+srv") || truthy(v) {
+			return TLSRequire, false
+		}
+		return TLSDisable, false
 	case EngineRedis:
 		if scheme == "rediss" {
-			return TLSRequire
+			return TLSRequire, false
 		}
-		return TLSDisable
+		return TLSDisable, false
 	}
-	return TLSRequire
+	return TLSRequire, false
 }
 
 func firstNonEmpty(vals ...string) string {
@@ -251,13 +269,22 @@ func firstNonEmpty(vals ...string) string {
 
 var tlsRank = map[string]int{TLSDisable: 0, TLSPrefer: 1, TLSRequire: 2, TLSVerifyCA: 3, TLSVerifyFull: 4}
 
-// strongerTLS lifts an encrypted mode to the preset's stricter one. A
-// connection string that asks for no TLS is left as written.
+// strongerTLS lifts the mode to the preset's stricter one. The caller skips
+// it when the connection string explicitly turned TLS off.
 func strongerTLS(fromURL, preset string) string {
-	if fromURL == TLSDisable || tlsRank[preset] <= tlsRank[fromURL] {
+	if tlsRank[preset] <= tlsRank[fromURL] {
 		return fromURL
 	}
 	return preset
+}
+
+// PresetTLSMode is the TLS mode to use when a request names a hosting
+// preset and gives none. Generic and unknown providers return "".
+func PresetTLSMode(provider string) string {
+	if p, ok := ProviderByID(provider); ok && provider != ProviderGeneric {
+		return p.TLSMode
+	}
+	return ""
 }
 
 // SuggestName derives a record name from a host name.
