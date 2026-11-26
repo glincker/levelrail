@@ -8,6 +8,10 @@ type Column struct {
 	Type     string `json:"type"`
 	Nullable bool   `json:"nullable"`
 	Default  string `json:"default,omitempty"`
+	// Identity is "a" (ALWAYS) or "d" (BY DEFAULT) for an identity column; Generated is "s" for a stored
+	// generated column, whose expression is carried in Default.
+	Identity  string `json:"identity,omitempty"`
+	Generated string `json:"generated,omitempty"`
 }
 
 // Index is a standalone index; indexes that back a constraint are carried by the constraint.

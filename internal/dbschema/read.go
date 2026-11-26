@@ -25,7 +25,8 @@ SELECT json_agg(t ORDER BY t.schema, t.name) FROM (
 SELECT (row_number() OVER (ORDER BY n.nspname, c.relname) - 1) / ` + strconv.Itoa(chunk) + ` AS chunk,
   n.nspname AS schema, c.relname AS name, c.relkind::text AS kind,
   CASE WHEN c.relkind IN ('r','p') THEN (SELECT COALESCE(json_agg(json_build_object('name', a.attname, 'type', format_type(a.atttypid, a.atttypmod),
-      'nullable', NOT a.attnotnull, 'default', COALESCE(pg_get_expr(d.adbin, d.adrelid), '')) ORDER BY a.attnum), '[]'::json)
+      'nullable', NOT a.attnotnull, 'default', COALESCE(pg_get_expr(d.adbin, d.adrelid), ''),
+      'identity', COALESCE(NULLIF(a.attidentity::text, ''), ''), 'generated', COALESCE(to_jsonb(a)->>'attgenerated', '')) ORDER BY a.attnum), '[]'::json)
     FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
     WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped) ELSE '[]'::json END AS columns,
   CASE WHEN c.relkind IN ('r','p') THEN (SELECT COALESCE(json_agg(json_build_object('name', ic.relname, 'definition', pg_get_indexdef(i.indexrelid)) ORDER BY ic.relname), '[]'::json)
