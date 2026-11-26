@@ -238,6 +238,7 @@ type Controller struct {
 	// effectiveSlowQueryThresholdMs.
 	slowQueryThresholdMs int
 	paramsMaxMemoryMB    func() int
+	crashLoopLive        func() (int, time.Duration)
 	provRec              *dbprovision.Recorder
 	prov                 *dbprovision.Tracker
 	probe                func(ctx context.Context, addr string) error

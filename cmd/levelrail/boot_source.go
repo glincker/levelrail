@@ -486,6 +486,15 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 			}
 			return 0
 		}))
+		dbOpts = append(dbOpts, database.WithCrashLoopSettings(func() (int, time.Duration) {
+			svc := deps.settingsService()
+			if svc == nil {
+				return 0, 0
+			}
+			ctx := context.Background()
+			return svc.Limit(ctx, runtimesettings.KeyDBCrashLoopRestarts),
+				time.Duration(svc.Limit(ctx, runtimesettings.KeyDBCrashLoopWindowSeconds)) * time.Second
+		}))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers

@@ -360,6 +360,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `LEVELRAIL_DATABASES_AUTO_LATEST` | [`databases.auto_latest`](/runtime-settings#deploys) | `true` |
 | `APP_DATABASES_BULK_CONCURRENCY` | [`databases.bulk_concurrency`](/runtime-settings#deploys) | `4` |
 | `APP_DATABASES_BULK_MAX_ITEMS` | [`databases.bulk_max_items`](/runtime-settings#deploys) | `200` |
+| `APP_DB_CRASH_LOOP_RESTARTS` | [`databases.crash_loop_restarts`](/runtime-settings#deploys) | `3` |
+| `APP_DB_CRASH_LOOP_WINDOW_SECONDS` | [`databases.crash_loop_window_seconds`](/runtime-settings#deploys) | `60` |
 | `LEVELRAIL_DATABASES_LATEST_LOOKUP_TIMEOUT_SECONDS` | [`databases.latest_lookup_timeout_seconds`](/runtime-settings#deploys) | `8` |
 | `LEVELRAIL_DATABASES_LATEST_VERSION_CACHE_SECONDS` | [`databases.latest_version_cache_seconds`](/runtime-settings#deploys) | `3600` |
 | `APP_DB_PARAMS_MAX_CONNECTIONS` | [`databases.params_max_connections`](/runtime-settings#deploys) | `5000` |

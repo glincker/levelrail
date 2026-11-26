@@ -27,7 +27,18 @@ type logTailer interface {
 	TailLogs(ctx context.Context, name string, lines int) (string, error)
 }
 
-func crashLoopThreshold() int {
+// WithCrashLoopSettings supplies the live crash loop threshold and window, so a
+// settings change applies on the next pass. Without it the env seeds are read.
+func WithCrashLoopSettings(fn func() (restarts int, window time.Duration)) Option {
+	return func(c *Controller) { c.crashLoopLive = fn }
+}
+
+func (c *Controller) crashLoopThreshold() int {
+	if c.crashLoopLive != nil {
+		if n, _ := c.crashLoopLive(); n > 0 {
+			return n
+		}
+	}
 	if n, err := strconv.Atoi(os.Getenv(EnvCrashLoopRestarts)); err == nil && n > 0 {
 		return n
 	}
@@ -81,7 +92,7 @@ func (c *Controller) captureCrash(ctx context.Context) {
 // crashLoopResult stops the wait early when the container keeps restarting; ok is false when it does not.
 func (c *Controller) crashLoopResult(ctx context.Context, target string) (reconcile.Result, bool) {
 	n := c.restartsOf(ctx, target)
-	if n < crashLoopThreshold() {
+	if n < c.crashLoopThreshold() {
 		return reconcile.Result{}, false
 	}
 	return notReady(dbprovision.ReasonCrashLoop, fmt.Errorf("the database container restarted %d times while starting", n)), true
@@ -107,9 +118,9 @@ type crashRecord struct {
 // threshold it reports CrashLoop with the last log line and waits longer each time.
 func (c *Controller) crashGate(ctx context.Context, target string) (reconcile.Result, bool) {
 	now := c.clock()
-	window := durationFromEnv(EnvCrashLoopWindow, defaultCrashLoopWindow)
-	n, wait := c.shared.noteCrash(c.dbName, now, window, crashLoopThreshold())
-	if n < crashLoopThreshold() {
+	window := c.crashLoopWindow()
+	n, wait := c.shared.noteCrash(c.dbName, now, window, c.crashLoopThreshold())
+	if n < c.crashLoopThreshold() {
 		return reconcile.Result{}, false
 	}
 	if wait <= 0 {
@@ -123,6 +134,15 @@ func (c *Controller) crashGate(ctx context.Context, target string) (reconcile.Re
 	res := notReady(dbprovision.ReasonCrashLoop, fmt.Errorf("the database container exited %d times within %s; retrying in %s. Last output: %s", n, window, wait.Round(time.Second), line))
 	res.RequeueAfter = wait
 	return res, true
+}
+
+func (c *Controller) crashLoopWindow() time.Duration {
+	if c.crashLoopLive != nil {
+		if _, w := c.crashLoopLive(); w > 0 {
+			return w
+		}
+	}
+	return durationFromEnv(EnvCrashLoopWindow, defaultCrashLoopWindow)
 }
 
 func lastLine(s string) string {

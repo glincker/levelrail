@@ -297,6 +297,8 @@ databases.audit_store_text
 databases.auto_latest
 databases.bulk_concurrency
 databases.bulk_max_items
+databases.crash_loop_restarts
+databases.crash_loop_window_seconds
 databases.import_max_bytes
 databases.latest_lookup_timeout_seconds
 databases.latest_version_cache_seconds
