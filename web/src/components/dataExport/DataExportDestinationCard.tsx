@@ -4,18 +4,19 @@ import {
   CircleAlertGlassIcon,
   CircleCheckGlassIcon,
   CirclePauseGlassIcon,
-  SendGlassIcon,
-  TrashGlassIcon,
+  EllipsisGlassIcon,
+  ShareGlassIcon,
 } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { BrandIcon } from '../BrandIcon'
+import { KIND_MARKS } from '../../lib/dataExportKinds'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
@@ -49,15 +50,6 @@ const KIND_KEYS = {
   metrics_otlp: 'kinds.metrics_otlp',
   metrics_remote_write: 'kinds.metrics_remote_write',
 } as const satisfies Record<DataExportKind, string>
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="truncate text-sm text-foreground">{value}</dd>
-    </div>
-  )
-}
 
 export function DataExportDestinationCard({
   destination,
@@ -147,80 +139,90 @@ export function DataExportDestinationCard({
     )
   }
 
+  const mark = KIND_MARKS[destination.kind]
+  const sent = s.last_success_at
+    ? new Date(s.last_success_at).toLocaleString()
+    : t('card.never')
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex flex-wrap items-center gap-2">
-          {destination.name}
-          {health}
-        </CardTitle>
-        <CardDescription className="break-all">
-          {t(KIND_KEYS[destination.kind])}
-          {endpoint ? ` · ${endpoint}` : ''}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat
-            label={t('card.lastSuccess')}
-            value={s.last_success_at || t('card.never')}
+    <li className="space-y-2 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          {mark ? (
+            <BrandIcon name={mark} className="size-5 shrink-0" />
+          ) : (
+            <ShareGlassIcon className="size-5 shrink-0" aria-hidden="true" />
+          )}
+          <span className="min-w-0">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="truncate text-sm font-medium">
+                {destination.name}
+              </span>
+              <Badge variant="muted">{t(KIND_KEYS[destination.kind])}</Badge>
+              {health}
+            </span>
+            {endpoint ? (
+              <span className="block truncate text-xs text-muted-foreground">
+                {endpoint}
+              </span>
+            ) : null}
+          </span>
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {t('card.lastSuccess')}: {sent}
+        </span>
+        <label className="flex items-center gap-2 text-xs">
+          <Switch
+            checked={destination.enabled}
+            disabled={update.isPending}
+            aria-label={t('card.enabled')}
+            onCheckedChange={(checked) => {
+              update.mutate({ id: destination.id, body: { enabled: checked } })
+            }}
           />
-          <Stat label={t('card.queue')} value={String(s.queue_depth)} />
-          <Stat label={t('card.sent')} value={String(s.sent_total)} />
-          <Stat label={t('card.dropped')} value={String(s.dropped_total)} />
-        </dl>
-        {s.last_error ? (
-          <p className="break-words text-sm text-tone-danger">
-            {t('card.lastError')}: {s.last_error}
-          </p>
-        ) : null}
-        {failure?.fix ? (
-          <TestFixPanel
-            destination={destination}
-            fix={failure.fix}
-            message={failure.error ?? ''}
-            saving={update.isPending || test.isPending}
-            onApply={applyFix}
-            onRetest={runTest}
-          />
-        ) : null}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <Switch
-              checked={destination.enabled}
-              disabled={update.isPending}
-              onCheckedChange={(checked) => {
-                update.mutate({
-                  id: destination.id,
-                  body: { enabled: checked },
-                })
-              }}
-            />
-            {t('card.enabled')}
-          </label>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={test.isPending}
-              onClick={runTest}
-            >
-              <SendGlassIcon className="size-5" aria-hidden="true" />
+          {t('card.enabled')}
+        </label>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label={t('card.actions', { name: destination.name })}
+              />
+            }
+          >
+            <EllipsisGlassIcon className="size-5" aria-hidden="true" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem disabled={test.isPending} onClick={runTest}>
               {test.isPending ? t('card.testing') : t('card.test')}
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => {
                 setConfirmOpen(true)
               }}
             >
-              <TrashGlassIcon className="size-5" aria-hidden="true" />
               {t('card.delete')}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {s.last_error ? (
+        <p className="text-xs break-words text-tone-danger">
+          {t('card.lastError')}: {s.last_error}
+        </p>
+      ) : null}
+      {failure?.fix ? (
+        <TestFixPanel
+          destination={destination}
+          fix={failure.fix}
+          message={failure.error ?? ''}
+          saving={update.isPending || test.isPending}
+          onApply={applyFix}
+          onRetest={runTest}
+        />
+      ) : null}
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
@@ -239,6 +241,6 @@ export function DataExportDestinationCard({
           })
         }}
       />
-    </Card>
+    </li>
   )
 }

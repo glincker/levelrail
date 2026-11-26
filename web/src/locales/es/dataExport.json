@@ -6,12 +6,13 @@
   "notConfigured": "La exportación de datos no está disponible en este plano de control.",
   "empty": {
     "title": "No hay destinos de exportación",
-    "description": "Añade un endpoint de Loki, syslog o HTTP para los logs, un webhook o un bucket para el registro de auditoría, o un colector OTLP para las métricas."
+    "description": "Elige un destino para empezar a enviar logs, eventos de auditoría o métricas. Todo es opcional."
   },
   "scrape": {
     "title": "Endpoint de scrape de Prometheus",
-    "description": "Apunta Prometheus o Grafana Agent a esta ruta con un token de lectura como credencial bearer. Las etiquetas se limitan a app, base de datos y nodo.",
-    "path": "GET /metrics"
+    "description": "Apunta Prometheus o Grafana Agent a esta ruta con un token de lectura como credencial bearer.",
+    "path": "GET /metrics",
+    "copy": "Copiar ruta de scrape"
   },
   "kinds": {
     "logs_http": "Logs por HTTP (líneas JSON)",
@@ -60,7 +61,8 @@
     "deleteConfirm": "Eliminar destino",
     "deleting": "Eliminando",
     "secretsSet": "Credenciales guardadas (solo escritura)",
-    "behind": "Con retraso: las entregas están fallando, las filas de auditoría esperan a salvo en el registro"
+    "behind": "Con retraso: las entregas están fallando, las filas de auditoría esperan a salvo en el registro",
+    "actions": "Acciones de {{name}}"
   },
   "fix": {
     "title": "La prueba falló",
@@ -127,6 +129,15 @@
     "gzip": "Comprimir los cuerpos de las peticiones (gzip)",
     "insecure": "Omitir la verificación del certificado TLS",
     "insecureWarning": "No es seguro: el registro de auditoría puede leerse o alterarse en tránsito. Úsalo solo con un colector que controles.",
-    "auditStreamHint": "La entrega es al menos una vez y se reanuda donde se detuvo. Cada evento lleva los campos de la cadena de hash de auditoría para que el receptor pueda verificar el registro."
+    "auditStreamHint": "La entrega es al menos una vez y se reanuda donde se detuvo. Cada evento lleva los campos de la cadena de hash de auditoría para que el receptor pueda verificar el registro.",
+    "advanced": "Avanzado",
+    "back": "Atrás",
+    "tenant": "ID de inquilino (opcional)"
+  },
+  "gallery": {
+    "hint": "Elige adónde enviar los datos.",
+    "logs": "Logs",
+    "audit": "Registro de auditoría",
+    "metrics": "Métricas"
   }
 }

@@ -20,10 +20,10 @@ function docsHref(docs: string): string {
 const CATEGORY_ORDER = ['monitor', 'develop', 'deploy', 'query', 'replicate']
 
 // Only cards whose setup lives on an existing page get a Configure action.
-const CONFIGURE_ROUTE: Record<string, string> = {
-  datadog: '/settings/data-export',
-  opentelemetry: '/settings/data-export',
-}
+const CONFIGURE_KIND = {
+  datadog: 'logs_datadog',
+  opentelemetry: 'metrics_otlp',
+} as const
 
 const CHIP_VARIANT: Record<IntegrationStateCode, 'default' | 'muted'> = {
   connected: 'default',
@@ -36,7 +36,10 @@ const CHIP_VARIANT: Record<IntegrationStateCode, 'default' | 'muted'> = {
 
 function IntegrationTile({ card }: Readonly<{ card: IntegrationCard }>) {
   const { t } = useTranslation('dbIntegrations')
-  const configure = CONFIGURE_ROUTE[card.id]
+  const configure =
+    card.id === 'datadog' || card.id === 'opentelemetry'
+      ? CONFIGURE_KIND[card.id]
+      : undefined
   const actionable =
     configure !== undefined &&
     card.kind === 'connector' &&
@@ -59,7 +62,12 @@ function IntegrationTile({ card }: Readonly<{ card: IntegrationCard }>) {
       <p className="flex-1 text-xs text-muted-foreground">{card.summary}</p>
       <div className="flex items-center gap-2">
         {actionable ? (
-          <Button size="sm" render={<Link to={configure} />}>
+          <Button
+            size="sm"
+            render={
+              <Link to="/settings/data-export" search={{ add: configure }} />
+            }
+          >
             {t('configure')}
           </Button>
         ) : null}

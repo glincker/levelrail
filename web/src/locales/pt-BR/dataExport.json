@@ -6,12 +6,13 @@
   "notConfigured": "A exportação de dados não está disponível neste control plane.",
   "empty": {
     "title": "Nenhum destino de exportação",
-    "description": "Adicione um endpoint Loki, syslog ou HTTP para logs, um webhook ou bucket para o log de auditoria, ou um coletor OTLP para métricas."
+    "description": "Escolha um destino para começar a enviar logs, eventos de auditoria ou métricas. Tudo é opcional."
   },
   "scrape": {
     "title": "Endpoint de scrape do Prometheus",
-    "description": "Aponte o Prometheus ou o Grafana Agent para este caminho com um token de leitura como credencial bearer. Os rótulos se limitam a app, banco de dados e node.",
-    "path": "GET /metrics"
+    "description": "Aponte o Prometheus ou o Grafana Agent para este caminho com um token de leitura como credencial bearer.",
+    "path": "GET /metrics",
+    "copy": "Copiar caminho de scrape"
   },
   "kinds": {
     "logs_http": "Logs via HTTP (linhas JSON)",
@@ -60,7 +61,8 @@
     "deleteConfirm": "Excluir destino",
     "deleting": "Excluindo",
     "secretsSet": "Credenciais armazenadas (somente escrita)",
-    "behind": "Atrasado: as entregas estão falhando, as linhas de auditoria aguardam com segurança no log"
+    "behind": "Atrasado: as entregas estão falhando, as linhas de auditoria aguardam com segurança no log",
+    "actions": "Ações de {{name}}"
   },
   "fix": {
     "title": "O teste falhou",
@@ -127,6 +129,15 @@
     "gzip": "Compactar o corpo das requisições (gzip)",
     "insecure": "Ignorar a verificação do certificado TLS",
     "insecureWarning": "Inseguro: o log de auditoria pode ser lido ou alterado em trânsito. Use apenas com um coletor que você controla.",
-    "auditStreamHint": "A entrega é pelo menos uma vez e continua de onde parou. Cada evento carrega os campos da cadeia de hash de auditoria para que o receptor possa verificar o log."
+    "auditStreamHint": "A entrega é pelo menos uma vez e continua de onde parou. Cada evento carrega os campos da cadeia de hash de auditoria para que o receptor possa verificar o log.",
+    "advanced": "Avançado",
+    "back": "Voltar",
+    "tenant": "ID do tenant (opcional)"
+  },
+  "gallery": {
+    "hint": "Escolha para onde enviar os dados.",
+    "logs": "Logs",
+    "audit": "Log de auditoria",
+    "metrics": "Métricas"
   }
 }

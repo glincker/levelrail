@@ -6,12 +6,13 @@
   "notConfigured": "L'export de données n'est pas disponible sur ce control plane.",
   "empty": {
     "title": "Aucune destination d'export",
-    "description": "Ajoutez un point de terminaison Loki, syslog ou HTTP pour les logs, un webhook ou un bucket pour le journal d'audit, ou un collecteur OTLP pour les métriques."
+    "description": "Choisissez une destination pour envoyer des logs, des événements d’audit ou des métriques. Tout est facultatif."
   },
   "scrape": {
     "title": "Point de terminaison de scrape Prometheus",
-    "description": "Pointez Prometheus ou Grafana Agent vers ce chemin avec un token de lecture comme identifiant bearer. Les labels sont limités à app, database et node.",
-    "path": "GET /metrics"
+    "description": "Pointez Prometheus ou Grafana Agent vers ce chemin avec un jeton de lecture comme identifiant bearer.",
+    "path": "GET /metrics",
+    "copy": "Copier le chemin de scrape"
   },
   "kinds": {
     "logs_http": "Logs via HTTP (lignes JSON)",
@@ -60,7 +61,8 @@
     "deleteConfirm": "Supprimer la destination",
     "deleting": "Suppression",
     "secretsSet": "Identifiants stockés (en écriture seule)",
-    "behind": "En retard : les livraisons échouent, les lignes d'audit attendent en sécurité dans le journal"
+    "behind": "En retard : les livraisons échouent, les lignes d'audit attendent en sécurité dans le journal",
+    "actions": "Actions pour {{name}}"
   },
   "fix": {
     "title": "Échec du test",
@@ -127,6 +129,15 @@
     "gzip": "Compresser les corps de requête (gzip)",
     "insecure": "Ignorer la vérification du certificat TLS",
     "insecureWarning": "Dangereux : le journal d'audit peut être lu ou modifié en transit. À utiliser uniquement pour un collecteur que vous contrôlez.",
-    "auditStreamHint": "La livraison est au moins une fois et reprend là où elle s'est arrêtée. Chaque événement porte les champs de la chaîne de hachage d'audit pour que le destinataire puisse vérifier le journal."
+    "auditStreamHint": "La livraison est au moins une fois et reprend là où elle s'est arrêtée. Chaque événement porte les champs de la chaîne de hachage d'audit pour que le destinataire puisse vérifier le journal.",
+    "advanced": "Avancé",
+    "back": "Retour",
+    "tenant": "ID de tenant (facultatif)"
+  },
+  "gallery": {
+    "hint": "Choisissez où envoyer les données.",
+    "logs": "Logs",
+    "audit": "Journal d’audit",
+    "metrics": "Métriques"
   }
 }
