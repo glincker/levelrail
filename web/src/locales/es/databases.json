@@ -446,7 +446,33 @@
         "delete": "Eliminar sentencia guardada",
         "load": "Cargar en el editor"
       },
-      "plan": "Plan de consulta"
+      "plan": "Plan de consulta",
+      "runWrite": "Ejecutar (escritura)",
+      "writeDone": "Confirmado. {{count}} filas devueltas.",
+      "destructive": {
+        "title": "Confirmar {{kind}}",
+        "run": "Ejecutar de todos modos",
+        "typeLabel": "Escribe {{name}} para ejecutarla",
+        "unknownObject": "el destino",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "DELETE sin WHERE",
+          "updateAll": "UPDATE sin WHERE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "Esto elimina {{object}} y sus datos de forma permanente.",
+          "truncate": "Esto vacía {{object}}: se eliminan todas las filas.",
+          "deleteAll": "Sin WHERE se borran todas las filas de {{object}}.",
+          "updateAll": "Sin WHERE se actualizan todas las filas de {{object}}.",
+          "alterDrop": "Esto elimina parte de {{object}} y sus datos.",
+          "grant": "Esto amplía el acceso a {{object}}.",
+          "revoke": "Esto quita acceso a {{object}}."
+        }
+      }
     },
     "keys": {
       "title": "Explorador de claves",

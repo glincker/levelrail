@@ -21,6 +21,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import { useWriteUnlock } from '../../hooks/useWriteUnlock'
+import { confirmName, detectDestructive } from '../../lib/destructiveSql'
+import { WriteUnlockDialog } from './WriteUnlockDialog'
 import { useRunDatabaseQuery, useSaveQuery } from '../../queries/databaseViewer'
 import type { DbQueryResponse } from '../../types/databaseViewer'
 import { HistoryPanel, SavedPanel } from './ConsoleSidePanels'
@@ -41,7 +43,8 @@ export function SqlConsole({
   const unlock = useWriteUnlock(databaseName)
   const writes = unlock.unlocked
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [confirmText, setConfirmText] = useState('')
+  const [destructiveOpen, setDestructiveOpen] = useState(false)
+  const [typedObject, setTypedObject] = useState('')
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [result, setResult] = useState<DbQueryResponse | null>(null)
@@ -70,9 +73,19 @@ export function SqlConsole({
     )
   }
 
+  const destructive = writes ? detectDestructive(sql) : null
+
+  function runClicked() {
+    if (destructive) {
+      setTypedObject('')
+      setDestructiveOpen(true)
+      return
+    }
+    execute('read')
+  }
+
   function onToggleWrites(next: boolean) {
     if (next) {
-      setConfirmText('')
       setConfirmOpen(true)
       return
     }
@@ -106,7 +119,7 @@ export function SqlConsole({
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canRun) {
               e.preventDefault()
-              execute('read')
+              runClicked()
             }
           }}
         />
@@ -115,14 +128,15 @@ export function SqlConsole({
             type="button"
             size="sm"
             disabled={!canRun}
-            onClick={() => {
-              execute('read')
-            }}
+            variant={writes ? 'destructive' : 'default'}
+            onClick={runClicked}
           >
             <PlayGlassIcon className="size-5" aria-hidden="true" />
             {run.isPending
               ? t('viewer.console.running')
-              : t('viewer.console.run')}
+              : writes
+                ? t('viewer.console.runWrite')
+                : t('viewer.console.run')}
           </Button>
           <Button
             type="button"
@@ -193,7 +207,16 @@ export function SqlConsole({
         </TabsContent>
       </Tabs>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <WriteUnlockDialog
+        databaseName={databaseName}
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onUnlock={(minutes) => {
+          unlock.unlock(minutes)
+        }}
+      />
+
+      <Dialog open={destructiveOpen} onOpenChange={setDestructiveOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-1.5 text-destructive">
@@ -201,30 +224,47 @@ export function SqlConsole({
                 className="size-6 text-tone-warning"
                 aria-hidden="true"
               />
-              {t('viewer.console.writeConfirmTitle')}
+              {destructive
+                ? t('viewer.console.destructive.title', {
+                    kind: t(
+                      `viewer.console.destructive.kind.${destructive.kind}`,
+                    ),
+                  })
+                : null}
             </DialogTitle>
             <DialogDescription>
-              {t('viewer.console.writeConfirmDescription', {
-                name: databaseName,
-              })}
+              {destructive
+                ? t(`viewer.console.destructive.body.${destructive.kind}`, {
+                    object:
+                      destructive.object ||
+                      t('viewer.console.destructive.unknownObject'),
+                  })
+                : null}
             </DialogDescription>
           </DialogHeader>
-          <label className="space-y-1 text-sm">
-            <span>{t('viewer.console.writeConfirmLabel')}</span>
-            <Input
-              value={confirmText}
-              autoComplete="off"
-              onChange={(e) => {
-                setConfirmText(e.target.value)
-              }}
-            />
-          </label>
+          {destructive?.typeToConfirm ? (
+            <label className="space-y-1 text-sm">
+              <span>
+                {t('viewer.console.destructive.typeLabel', {
+                  name: confirmName(destructive),
+                })}
+              </span>
+              <Input
+                value={typedObject}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(e) => {
+                  setTypedObject(e.target.value)
+                }}
+              />
+            </label>
+          ) : null}
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                setConfirmOpen(false)
+                setDestructiveOpen(false)
               }}
             >
               {t('viewer.console.cancel')}
@@ -232,13 +272,16 @@ export function SqlConsole({
             <Button
               type="button"
               variant="destructive"
-              disabled={confirmText !== databaseName}
+              disabled={
+                destructive?.typeToConfirm === true &&
+                typedObject !== confirmName(destructive)
+              }
               onClick={() => {
-                unlock.unlock()
-                setConfirmOpen(false)
+                setDestructiveOpen(false)
+                execute('read')
               }}
             >
-              {t('viewer.console.writeConfirmAction')}
+              {t('viewer.console.destructive.run')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -338,6 +381,11 @@ function ResultsView({
   }
   return (
     <div className="space-y-2">
+      {result.mode === 'write' ? (
+        <p className="text-sm" role="status">
+          {t('viewer.console.writeDone', { count: result.row_count })}
+        </p>
+      ) : null}
       {result.columns.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           {t('viewer.console.okNoRows')}

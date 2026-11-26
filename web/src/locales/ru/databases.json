@@ -454,7 +454,33 @@
         "delete": "Удалить сохраненный запрос",
         "load": "Загрузить в редактор"
       },
-      "plan": "План запроса"
+      "plan": "План запроса",
+      "runWrite": "Выполнить (запись)",
+      "writeDone": "Зафиксировано. Возвращено строк: {{count}}.",
+      "destructive": {
+        "title": "Подтвердите {{kind}}",
+        "run": "Выполнить всё равно",
+        "typeLabel": "Введите {{name}}, чтобы выполнить",
+        "unknownObject": "цель",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "DELETE без WHERE",
+          "updateAll": "UPDATE без WHERE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "Это навсегда удалит {{object}} и его данные.",
+          "truncate": "Это очистит {{object}}: все строки будут удалены.",
+          "deleteAll": "Без WHERE удаляются все строки в {{object}}.",
+          "updateAll": "Без WHERE обновляются все строки в {{object}}.",
+          "alterDrop": "Это удалит часть {{object}} вместе с данными.",
+          "grant": "Это расширит доступ к {{object}}.",
+          "revoke": "Это отзовёт доступ к {{object}}."
+        }
+      }
     },
     "keys": {
       "title": "Браузер ключей",

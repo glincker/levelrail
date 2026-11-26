@@ -450,7 +450,33 @@
         "delete": "Supprimer l'instruction enregistrée",
         "load": "Charger dans l'éditeur"
       },
-      "plan": "Plan de requête"
+      "plan": "Plan de requête",
+      "runWrite": "Exécuter (écriture)",
+      "writeDone": "Validé. {{count}} lignes renvoyées.",
+      "destructive": {
+        "title": "Confirmer {{kind}}",
+        "run": "Exécuter quand même",
+        "typeLabel": "Saisissez {{name}} pour l'exécuter",
+        "unknownObject": "la cible",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "DELETE sans WHERE",
+          "updateAll": "UPDATE sans WHERE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "Cela supprime définitivement {{object}} et ses données.",
+          "truncate": "Cela vide {{object}} : toutes les lignes sont supprimées.",
+          "deleteAll": "Sans WHERE, toutes les lignes de {{object}} sont supprimées.",
+          "updateAll": "Sans WHERE, toutes les lignes de {{object}} sont modifiées.",
+          "alterDrop": "Cela supprime une partie de {{object}} et ses données.",
+          "grant": "Cela élargit l'accès à {{object}}.",
+          "revoke": "Cela retire l'accès à {{object}}."
+        }
+      }
     },
     "keys": {
       "title": "Navigateur de clés",

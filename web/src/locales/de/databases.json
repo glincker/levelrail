@@ -446,7 +446,33 @@
         "delete": "Gespeicherte Anweisung löschen",
         "load": "In den Editor laden"
       },
-      "plan": "Abfrageplan"
+      "plan": "Abfrageplan",
+      "runWrite": "Ausführen (Schreiben)",
+      "writeDone": "Übernommen. {{count}} Zeilen zurückgegeben.",
+      "destructive": {
+        "title": "{{kind}} bestätigen",
+        "run": "Trotzdem ausführen",
+        "typeLabel": "{{name}} eingeben, um auszuführen",
+        "unknownObject": "das Ziel",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "DELETE ohne WHERE",
+          "updateAll": "UPDATE ohne WHERE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "Dies entfernt {{object}} und seine Daten dauerhaft.",
+          "truncate": "Dies leert {{object}}: alle Zeilen werden entfernt.",
+          "deleteAll": "Ohne WHERE werden alle Zeilen in {{object}} gelöscht.",
+          "updateAll": "Ohne WHERE werden alle Zeilen in {{object}} aktualisiert.",
+          "alterDrop": "Dies entfernt einen Teil von {{object}} samt Daten.",
+          "grant": "Dies erweitert den Zugriff auf {{object}}.",
+          "revoke": "Dies entzieht Zugriff auf {{object}}."
+        }
+      }
     },
     "keys": {
       "title": "Schlüssel-Browser",

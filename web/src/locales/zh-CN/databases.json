@@ -442,7 +442,33 @@
         "delete": "删除已保存的语句",
         "load": "载入编辑器"
       },
-      "plan": "查询计划"
+      "plan": "查询计划",
+      "runWrite": "运行（写入）",
+      "writeDone": "已提交。返回 {{count}} 行。",
+      "destructive": {
+        "title": "确认 {{kind}}",
+        "run": "仍然运行",
+        "typeLabel": "输入 {{name}} 以运行",
+        "unknownObject": "目标",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "不带 WHERE 的 DELETE",
+          "updateAll": "不带 WHERE 的 UPDATE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "这将永久删除 {{object}} 及其数据。",
+          "truncate": "这将清空 {{object}}：所有行都会被删除。",
+          "deleteAll": "没有 WHERE，{{object}} 的所有行都会被删除。",
+          "updateAll": "没有 WHERE，{{object}} 的所有行都会被更新。",
+          "alterDrop": "这将删除 {{object}} 的一部分及其数据。",
+          "grant": "这将扩大对 {{object}} 的访问。",
+          "revoke": "这将撤销对 {{object}} 的访问。"
+        }
+      }
     },
     "keys": {
       "title": "键浏览器",

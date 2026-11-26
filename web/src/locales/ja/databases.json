@@ -442,7 +442,33 @@
         "delete": "保存済みの文を削除",
         "load": "エディターに読み込む"
       },
-      "plan": "クエリプラン"
+      "plan": "クエリプラン",
+      "runWrite": "実行 (書き込み)",
+      "writeDone": "コミットしました。{{count}} 行が返されました。",
+      "destructive": {
+        "title": "{{kind}} の確認",
+        "run": "それでも実行",
+        "typeLabel": "実行するには {{name}} を入力",
+        "unknownObject": "対象",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "WHERE なしの DELETE",
+          "updateAll": "WHERE なしの UPDATE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "{{object}} とそのデータを完全に削除します。",
+          "truncate": "{{object}} を空にします。すべての行が削除されます。",
+          "deleteAll": "WHERE がないため {{object}} の全行が削除されます。",
+          "updateAll": "WHERE がないため {{object}} の全行が更新されます。",
+          "alterDrop": "{{object}} の一部とそのデータを削除します。",
+          "grant": "{{object}} へのアクセスを広げます。",
+          "revoke": "{{object}} へのアクセスを取り消します。"
+        }
+      }
     },
     "keys": {
       "title": "キーブラウザー",

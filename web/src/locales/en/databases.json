@@ -446,7 +446,33 @@
         "delete": "Delete saved statement",
         "load": "Load into editor"
       },
-      "plan": "Query plan"
+      "plan": "Query plan",
+      "runWrite": "Run (write)",
+      "writeDone": "Committed. {{count}} rows returned.",
+      "destructive": {
+        "title": "Confirm {{kind}}",
+        "run": "Run anyway",
+        "typeLabel": "Type {{name}} to run it",
+        "unknownObject": "the target",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "DELETE without WHERE",
+          "updateAll": "UPDATE without WHERE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "This permanently removes {{object}} and its data.",
+          "truncate": "This empties {{object}}: every row is removed.",
+          "deleteAll": "There is no WHERE clause, so every row in {{object}} is deleted.",
+          "updateAll": "There is no WHERE clause, so every row in {{object}} is updated.",
+          "alterDrop": "This drops part of {{object}} and the data stored in it.",
+          "grant": "This widens access on {{object}}.",
+          "revoke": "This removes access on {{object}}."
+        }
+      }
     },
     "keys": {
       "title": "Key browser",

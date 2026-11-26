@@ -450,7 +450,33 @@
         "delete": "Excluir instrução salva",
         "load": "Carregar no editor"
       },
-      "plan": "Plano da consulta"
+      "plan": "Plano da consulta",
+      "runWrite": "Executar (escrita)",
+      "writeDone": "Confirmado. {{count}} linhas retornadas.",
+      "destructive": {
+        "title": "Confirmar {{kind}}",
+        "run": "Executar mesmo assim",
+        "typeLabel": "Digite {{name}} para executar",
+        "unknownObject": "o alvo",
+        "kind": {
+          "drop": "DROP",
+          "truncate": "TRUNCATE",
+          "deleteAll": "DELETE sem WHERE",
+          "updateAll": "UPDATE sem WHERE",
+          "alterDrop": "ALTER ... DROP",
+          "grant": "GRANT",
+          "revoke": "REVOKE"
+        },
+        "body": {
+          "drop": "Isso remove {{object}} e seus dados de forma permanente.",
+          "truncate": "Isso esvazia {{object}}: todas as linhas são removidas.",
+          "deleteAll": "Sem WHERE, todas as linhas de {{object}} são apagadas.",
+          "updateAll": "Sem WHERE, todas as linhas de {{object}} são atualizadas.",
+          "alterDrop": "Isso remove parte de {{object}} e seus dados.",
+          "grant": "Isso amplia o acesso a {{object}}.",
+          "revoke": "Isso remove o acesso a {{object}}."
+        }
+      }
     },
     "keys": {
       "title": "Navegador de chaves",
