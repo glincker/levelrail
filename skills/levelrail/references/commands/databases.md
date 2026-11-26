@@ -51,6 +51,7 @@ Usage:
   levelrail-cli databases network show|allow|deny|make-private|scope|tls <name> ...  reachability, allowed sources, scope, TLS
   levelrail-cli databases engine-stats <name> [flags]  live counts for a search engine or Memcached database
   levelrail-cli databases explorer capabilities <name> [flags]  which explorer features the engine supports and the viewer limits
+  levelrail-cli databases dynamo tables|query|scan <name> ...  read-only DynamoDB local tables and items
   levelrail-cli databases mongo collections|find <name> ...  read-only MongoDB collections and documents
   levelrail-cli databases redis info|slowlog|clients <name> [flags]  INFO sections, slow commands and connected clients of a Redis-family database
   levelrail-cli databases audit <name> [--principal ID] [--action A] [--since 24h] [flags]  explorer statement audit (root)

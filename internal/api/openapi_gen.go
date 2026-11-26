@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2420 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2423 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -839,6 +839,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/branches/{branch}/promote", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handlePromoteDatabaseBranch", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/branches/{branch}/reset", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleResetDatabaseBranch", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/credentials/reveal", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRevealDatabaseCredentials", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/dynamo/query", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDynamoQuery", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/dynamo/scan", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDynamoScan", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/dynamo/tables", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDynamoTables", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/engine-stats", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseEngineStats", Description: "Live counts for engines with no data browser; index names can name tenants."},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/environment", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseEnvironment", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/explain", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseExplain", Description: ""},
