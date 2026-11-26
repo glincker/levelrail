@@ -28,3 +28,4 @@ security-center
 status-page-settings
 storage-destinations
 templates-catalog
+app-metrics
