@@ -18,8 +18,7 @@ func TestAuthzDatabaseViewerExtrasDenyRows(t *testing.T) {
 	attachTestPolicy(t, db, "viewer-extras-u", "Deny", "*", "database:victim", store.PrincipalTypeUser, user.ID)
 	attachTestPolicy(t, db, "viewer-extras-t", "Deny", "*", "database:victim", store.PrincipalTypeToken, "viewer-extras-tok")
 
-	// Branch routes resolve the branch first, so a missing branch answers 404 exactly like a hidden one;
-	// a Deny on an existing branch's root is covered by TestBranchAPI_ExplicitDenyBeatsBranchAdmin.
+	// Branch routes check the path database first, so an explicit Deny on it answers 403 even for a branch that does not exist.
 	rows := []struct {
 		method, path string
 		want         int
@@ -27,7 +26,7 @@ func TestAuthzDatabaseViewerExtrasDenyRows(t *testing.T) {
 		{http.MethodGet, "/api/v1/databases/victim/engine-stats", http.StatusForbidden},
 		{http.MethodGet, "/api/v1/databases/victim/advisor", http.StatusForbidden},
 		{http.MethodGet, "/api/v1/databases/victim/explorer/capabilities", http.StatusForbidden},
-		{http.MethodGet, "/api/v1/databases/victim/branches/b1/schema-diff", http.StatusNotFound},
+		{http.MethodGet, "/api/v1/databases/victim/branches/b1/schema-diff", http.StatusForbidden},
 		{http.MethodGet, "/api/v1/databases/victim/redis/info", http.StatusForbidden},
 		{http.MethodGet, "/api/v1/databases/victim/redis/slowlog", http.StatusForbidden},
 		{http.MethodGet, "/api/v1/databases/victim/redis/clients", http.StatusForbidden},
