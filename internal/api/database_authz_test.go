@@ -32,6 +32,7 @@ var explorerHandlers = []string{
 	"handleGetMongoCollections", "handleMongoFind", "handleListDatabaseQueryHistory",
 	"handleClearDatabaseQueryHistory", "handleListDatabaseSavedQueries", "handleSaveDatabaseQuery",
 	"handleDeleteDatabaseSavedQuery", "handleGetDatabaseEngineStats",
+	"handleGetDynamoTables", "handleDynamoQuery", "handleDynamoScan",
 	"handleGetRedisInfo", "handleGetRedisSlowlog", "handleGetRedisClients",
 }
 
