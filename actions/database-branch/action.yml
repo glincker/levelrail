@@ -34,6 +34,10 @@ inputs:
     description: Token used to download the release asset and post the PR comment.
     required: false
     default: ${{ github.token }}
+  comment-author:
+    description: Login that owns the comment, github-actions[bot] for the default token. Set it when github-token is an App or personal token.
+    required: false
+    default: github-actions[bot]
 outputs:
   branch:
     description: Branch name, <database>-pr-<number>.
@@ -50,7 +54,24 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Check the event
+      id: guard
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        BASE_REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        if [ "${EVENT}" != "pull_request" ]; then echo "::error::this action runs on the pull_request event only, never pull_request_target"; exit 1; fi
+        if [ "${HEAD_REPO}" != "${BASE_REPO}" ]; then
+          echo "::notice::pull request from a fork, no database branch is created (the token is not shared with forks)"
+          echo "run=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "run=true" >> "$GITHUB_OUTPUT"
+        fi
     - name: Install the CLI
+      if: ${{ steps.guard.outputs.run == 'true' }}
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
@@ -73,7 +94,7 @@ runs:
         echo "${BIN_DIR}" >> "$GITHUB_PATH"
     - name: Create or reuse the branch
       id: branch
-      if: ${{ github.event.action != 'closed' }}
+      if: ${{ steps.guard.outputs.run == 'true' && github.event.action != 'closed' }}
       shell: bash
       env:
         APP_API_URL: ${{ inputs.server }}
@@ -87,22 +108,31 @@ runs:
         echo "::add-mask::${APP_API_TOKEN}"
         case "${PR}" in ''|*[!0-9]*) echo "::error::pr-number must be a number"; exit 1 ;; esac
         case "${MODE}" in schema|full) ;; *) echo "::error::mode must be schema or full"; exit 1 ;; esac
-        if ! printf '%s' "${TTL}" | grep -Eq '^[0-9]+[smhd]$|^never$'; then echo "::error::ttl must look like 7d or 12h, or never"; exit 1; fi
+        if ! printf '%s' "${TTL}" | grep -Eq '^(never|[1-9][0-9]{0,3}[dh])$'; then echo "::error::ttl must be never or like 7d or 12h"; exit 1; fi
         out="$(levelrail-cli databases branch pr "${DATABASE}" --pr "${PR}" --mode "${MODE}" --ttl "${TTL}" --json)"
+        safe() {
+          v="$(printf '%s' "${out}" | jq -r --arg k "$1" '.[$k] // ""')"
+          if [ -n "${v}" ] && ! printf '%s' "${v}" | grep -Eq '^[a-z0-9.-]{1,253}$'; then echo "::error::unexpected value for $1 from the server"; exit 1; fi
+          printf '%s' "${v}"
+        }
+        branch_out="$(safe branch)"; host_out="$(safe host)"; dbname_out="$(safe database_name)"
+        port_out="$(printf '%s' "${out}" | jq -r '.port // ""')"
+        case "${port_out}" in *[!0-9]*) echo "::error::unexpected port from the server"; exit 1 ;; esac
         {
-          echo "branch=$(printf '%s' "${out}" | jq -r '.branch')"
-          echo "host=$(printf '%s' "${out}" | jq -r '.host // ""')"
-          echo "port=$(printf '%s' "${out}" | jq -r '.port // ""')"
-          echo "database_name=$(printf '%s' "${out}" | jq -r '.database_name')"
+          echo "branch=${branch_out}"
+          echo "host=${host_out}"
+          echo "port=${port_out}"
+          echo "database_name=${dbname_out}"
         } >> "$GITHUB_OUTPUT"
         printf '%s' "${out}" > "${RUNNER_TEMP}/levelrail-branch.json"
-        levelrail-cli databases branch diff "${DATABASE}" "$(printf '%s' "${out}" | jq -r '.branch')" --json > "${RUNNER_TEMP}/levelrail-diff.json" || echo '{}' > "${RUNNER_TEMP}/levelrail-diff.json"
+        levelrail-cli databases branch diff "${DATABASE}" "${branch_out}" --json > "${RUNNER_TEMP}/levelrail-diff.json" || echo '{}' > "${RUNNER_TEMP}/levelrail-diff.json"
     - name: Comment the branch on the pull request
-      if: ${{ inputs.comment == 'true' && github.event_name == 'pull_request' && github.event.action != 'closed' }}
+      if: ${{ steps.guard.outputs.run == 'true' && inputs.comment == 'true' && github.event.action != 'closed' }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         PR: ${{ inputs.pr-number }}
+        AUTHOR: ${{ inputs.comment-author }}
       run: |
         set -euo pipefail
         marker="<!-- levelrail-database-branch -->"
@@ -129,20 +159,21 @@ runs:
         else
           body="${head_part}"$'\n'"${inner}"
         fi
-        id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate | jq -r --arg marker "${marker}" '[.[] | select(.body | contains($marker))][0].id // empty' | head -n 1)"
+        id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate | jq -r --arg marker "${marker}" --arg author "${AUTHOR}" '[.[] | select(.user.login == $author and (.body | startswith($marker)))][0].id // empty' | head -n 1)"
         if [ -n "${id}" ]; then
           gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="${body}" > /dev/null || echo "::warning::could not update the pull request comment"
         else
           gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" -f body="${body}" > /dev/null || echo "::warning::could not comment on the pull request"
         fi
     - name: Delete the branch
-      if: ${{ github.event.action == 'closed' }}
+      if: ${{ steps.guard.outputs.run == 'true' && github.event.action == 'closed' }}
       shell: bash
       env:
         APP_API_URL: ${{ inputs.server }}
         APP_API_TOKEN: ${{ inputs.token }}
         DATABASE: ${{ inputs.database }}
         COMMENT: ${{ inputs.comment }}
+        AUTHOR: ${{ inputs.comment-author }}
         GH_TOKEN: ${{ inputs.github-token }}
         PR: ${{ inputs.pr-number }}
       run: |
@@ -152,7 +183,7 @@ runs:
         levelrail-cli databases branch pr-close "${DATABASE}" --pr "${PR}" --yes
         if [ "${COMMENT}" = "true" ]; then
           marker="<!-- levelrail-database-branch -->"
-          id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate | jq -r --arg marker "${marker}" '[.[] | select(.body | contains($marker))][0].id // empty' | head -n 1)"
+          id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate | jq -r --arg marker "${marker}" --arg author "${AUTHOR}" '[.[] | select(.user.login == $author and (.body | startswith($marker)))][0].id // empty' | head -n 1)"
           if [ -n "${id}" ]; then
             gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="${marker}
         Branch deleted." > /dev/null || echo "::warning::could not update the pull request comment"
