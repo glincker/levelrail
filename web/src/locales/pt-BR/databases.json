@@ -593,6 +593,31 @@
         "indexes": "Índices",
         "type": "Tipo"
       }
+    },
+    "dynamo": {
+      "tables": "Tabelas",
+      "truncated": "Apenas parte da lista é exibida.",
+      "meta": "{{count}} itens, {{size}}",
+      "estimate": "Contagens e tamanhos são estimativas que o motor atualiza de forma tardia.",
+      "noTables": "Este banco de dados ainda não tem tabelas.",
+      "readOnly": "Somente leitura",
+      "ttl": "TTL em {{attr}}",
+      "mode": "Modo",
+      "query": "Consulta",
+      "scan": "Varredura",
+      "index": "Índice",
+      "tableKey": "Chave da tabela",
+      "partitionKey": "Chave de partição",
+      "scanConfirm": "Entendo que uma varredura lê cada item que percorre",
+      "limit": "Limite",
+      "run": "Executar",
+      "failed": "Falha na leitura",
+      "summary": "{{count}} itens, {{scanned}} verificados, {{ms}} ms",
+      "noItems": "Nenhum item corresponde.",
+      "prev": "Anterior",
+      "next": "Próximo",
+      "item": "Item",
+      "close": "Fechar"
     }
   },
   "createFlavor": {

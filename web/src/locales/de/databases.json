@@ -586,6 +586,31 @@
         "indexes": "Indizes",
         "type": "Typ"
       }
+    },
+    "dynamo": {
+      "tables": "Tabellen",
+      "truncated": "Nur ein Teil der Liste wird angezeigt.",
+      "meta": "{{count}} Elemente, {{size}}",
+      "estimate": "Anzahl und Größe sind Schätzwerte, die die Engine verzögert aktualisiert.",
+      "noTables": "Diese Datenbank hat noch keine Tabellen.",
+      "readOnly": "Nur lesen",
+      "ttl": "TTL auf {{attr}}",
+      "mode": "Modus",
+      "query": "Abfrage",
+      "scan": "Scan",
+      "index": "Index",
+      "tableKey": "Tabellenschlüssel",
+      "partitionKey": "Partitionsschlüssel",
+      "scanConfirm": "Ich weiß, dass ein Scan jedes durchlaufene Element liest",
+      "limit": "Limit",
+      "run": "Ausführen",
+      "failed": "Lesen fehlgeschlagen",
+      "summary": "{{count}} Elemente, {{scanned}} durchsucht, {{ms}} ms",
+      "noItems": "Keine passenden Elemente.",
+      "prev": "Zurück",
+      "next": "Weiter",
+      "item": "Element",
+      "close": "Schließen"
     }
   },
   "createFlavor": {

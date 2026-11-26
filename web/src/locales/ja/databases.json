@@ -579,6 +579,31 @@
         "indexes": "インデックス",
         "type": "種類"
       }
+    },
+    "dynamo": {
+      "tables": "テーブル",
+      "truncated": "一覧の一部のみ表示しています。",
+      "meta": "{{count}} 件、{{size}}",
+      "estimate": "件数とサイズは推定値で、エンジンが遅延して更新します。",
+      "noTables": "このデータベースにはまだテーブルがありません。",
+      "readOnly": "読み取り専用",
+      "ttl": "{{attr}} に TTL",
+      "mode": "モード",
+      "query": "クエリ",
+      "scan": "スキャン",
+      "index": "インデックス",
+      "tableKey": "テーブルキー",
+      "partitionKey": "パーティションキー",
+      "scanConfirm": "スキャンは通過した全項目を読み取ることを理解しました",
+      "limit": "上限",
+      "run": "実行",
+      "failed": "読み取りに失敗しました",
+      "summary": "{{count}} 件、{{scanned}} 件走査、{{ms}} ms",
+      "noItems": "一致する項目はありません。",
+      "prev": "前へ",
+      "next": "次へ",
+      "item": "項目",
+      "close": "閉じる"
     }
   },
   "createFlavor": {

@@ -1,6 +1,7 @@
 export const SQL_ENGINES = new Set(['postgres', 'mysql', 'mariadb'])
 export const KV_ENGINES = new Set(['redis', 'keydb', 'dragonfly', 'valkey'])
 export const DOCUMENT_ENGINES = new Set(['mongodb', 'documentdb'])
+export const TABLE_ENGINES = new Set(['dynamodb'])
 // No browser: the explorer shows live counts from the engine's own API.
 export const STATS_ENGINES = new Set([
   'meilisearch',

@@ -11,12 +11,14 @@ import {
   KV_ENGINES,
   SQL_ENGINES,
   STATS_ENGINES,
+  TABLE_ENGINES,
 } from './engines'
 import { ExplorerLoading } from './explorer/ExplorerStates'
 import { UnsupportedEngine } from './UnsupportedEngine'
 
 // Own chunk: the document explorer only loads for MongoDB-compatible engines.
 const MongoExplorer = lazy(() => import('./mongo/MongoExplorer'))
+const DynamoExplorer = lazy(() => import('./dynamo/DynamoExplorer'))
 const RedisKeyBrowser = lazy(() =>
   import('./RedisKeyBrowser').then((m) => ({ default: m.RedisKeyBrowser })),
 )
@@ -53,6 +55,10 @@ export function DatabaseExplorerPanel({
       ) : DOCUMENT_ENGINES.has(engine) ? (
         <Suspense fallback={<ExplorerLoading />}>
           <MongoExplorer databaseName={databaseName} />
+        </Suspense>
+      ) : TABLE_ENGINES.has(engine) ? (
+        <Suspense fallback={<ExplorerLoading />}>
+          <DynamoExplorer databaseName={databaseName} />
         </Suspense>
       ) : STATS_ENGINES.has(engine) ? (
         <EngineStatsPanel databaseName={databaseName} engine={engine} />

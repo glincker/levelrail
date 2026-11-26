@@ -593,6 +593,31 @@
         "indexes": "Index",
         "type": "Type"
       }
+    },
+    "dynamo": {
+      "tables": "Tables",
+      "truncated": "Seule une partie de la liste est affichée.",
+      "meta": "{{count}} éléments, {{size}}",
+      "estimate": "Les nombres et tailles sont des estimations que le moteur met à jour de façon différée.",
+      "noTables": "Cette base de données ne contient pas encore de table.",
+      "readOnly": "Lecture seule",
+      "ttl": "TTL sur {{attr}}",
+      "mode": "Mode",
+      "query": "Requête",
+      "scan": "Scan",
+      "index": "Index",
+      "tableKey": "Clé de la table",
+      "partitionKey": "Clé de partition",
+      "scanConfirm": "Je comprends qu'un scan lit chaque élément parcouru",
+      "limit": "Limite",
+      "run": "Exécuter",
+      "failed": "Échec de la lecture",
+      "summary": "{{count}} éléments, {{scanned}} parcourus, {{ms}} ms",
+      "noItems": "Aucun élément ne correspond.",
+      "prev": "Précédent",
+      "next": "Suivant",
+      "item": "Élément",
+      "close": "Fermer"
     }
   },
   "createFlavor": {

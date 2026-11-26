@@ -586,6 +586,31 @@
         "indexes": "Índices",
         "type": "Tipo"
       }
+    },
+    "dynamo": {
+      "tables": "Tablas",
+      "truncated": "Solo se muestra una parte de la lista.",
+      "meta": "{{count}} elementos, {{size}}",
+      "estimate": "Los recuentos y tamaños son estimaciones que el motor actualiza de forma diferida.",
+      "noTables": "Esta base de datos aún no tiene tablas.",
+      "readOnly": "Solo lectura",
+      "ttl": "TTL en {{attr}}",
+      "mode": "Modo",
+      "query": "Consulta",
+      "scan": "Escaneo",
+      "index": "Índice",
+      "tableKey": "Clave de la tabla",
+      "partitionKey": "Clave de partición",
+      "scanConfirm": "Entiendo que un escaneo lee cada elemento que recorre",
+      "limit": "Límite",
+      "run": "Ejecutar",
+      "failed": "Error de lectura",
+      "summary": "{{count}} elementos, {{scanned}} examinados, {{ms}} ms",
+      "noItems": "Ningún elemento coincide.",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "item": "Elemento",
+      "close": "Cerrar"
     }
   },
   "createFlavor": {

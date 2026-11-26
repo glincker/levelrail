@@ -579,6 +579,31 @@
         "indexes": "索引",
         "type": "类型"
       }
+    },
+    "dynamo": {
+      "tables": "表",
+      "truncated": "仅显示部分列表。",
+      "meta": "{{count}} 项，{{size}}",
+      "estimate": "数量和大小为估算值，引擎会延迟刷新。",
+      "noTables": "此数据库中还没有表。",
+      "readOnly": "只读",
+      "ttl": "{{attr}} 启用 TTL",
+      "mode": "模式",
+      "query": "查询",
+      "scan": "扫描",
+      "index": "索引",
+      "tableKey": "表主键",
+      "partitionKey": "分区键",
+      "scanConfirm": "我了解扫描会读取其经过的每一项",
+      "limit": "上限",
+      "run": "运行",
+      "failed": "读取失败",
+      "summary": "{{count}} 项，扫描 {{scanned}} 项，{{ms}} 毫秒",
+      "noItems": "没有匹配的项。",
+      "prev": "上一页",
+      "next": "下一页",
+      "item": "项",
+      "close": "关闭"
     }
   },
   "createFlavor": {
