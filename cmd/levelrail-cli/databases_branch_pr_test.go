@@ -64,7 +64,7 @@ func TestRun_DatabasesBranchPR_CreateThenCloseIdempotent(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/main/branches/main-pr-5":
 			if !exists {
 				w.WriteHeader(http.StatusNotFound)
-				_, _ = w.Write([]byte(`{"error":"not found"}`))
+				_, _ = w.Write([]byte(`{"error":"branch not found"}`))
 				return
 			}
 			_ = json.NewEncoder(w).Encode(apiclient.DatabaseBranchNode{Name: "main-pr-5", Parent: "main", Mode: "schema", State: "ready"})
@@ -73,6 +73,8 @@ func TestRun_DatabasesBranchPR_CreateThenCloseIdempotent(t *testing.T) {
 			exists = true
 			w.WriteHeader(http.StatusAccepted)
 			_ = json.NewEncoder(w).Encode(apiclient.DatabaseBranchNode{Name: "main-pr-5", Parent: "main", Mode: "schema", State: "ready"})
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/main":
+			_, _ = w.Write([]byte(`{"name":"main","engine":"postgres"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/main-pr-5":
 			_, _ = w.Write([]byte(`{"name":"main-pr-5","engine":"postgres"}`))
 		case r.Method == http.MethodDelete:
@@ -108,5 +110,73 @@ func TestRun_DatabasesBranchPR_CreateThenCloseIdempotent(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "not found") {
 		t.Errorf("second close output = %q", stdout.String())
+	}
+}
+
+func TestPRNumberAndVerdicts(t *testing.T) {
+	for _, bad := range []string{"", "0", "010", "0x10", "-1", "1e3", "12345678901"} {
+		if _, err := parsePRNumber(bad); err == nil {
+			t.Errorf("pr %q accepted", bad)
+		}
+	}
+	if n, err := parsePRNumber("42"); err != nil || n != 42 {
+		t.Fatalf("42 = %d %v", n, err)
+	}
+	node := func(parent, state, mode string) apiclient.DatabaseBranchNode {
+		return apiclient.DatabaseBranchNode{Name: "main-pr-1", Parent: parent, State: state, Mode: mode}
+	}
+	if reuse, _, err := prExistingVerdict(node("main", "ready", "schema"), "main", "schema"); !reuse || err != nil {
+		t.Errorf("same branch not reused: %v", err)
+	}
+	if _, rec, err := prExistingVerdict(node("main", "failed", "schema"), "main", "schema"); !rec || err != nil {
+		t.Errorf("failed branch not recreated: %v", err)
+	}
+	for _, n := range []apiclient.DatabaseBranchNode{node("other", "ready", "schema"), node("main", "promoted", "schema"), node("main", "deleting", "schema"), node("main", "ready", "full")} {
+		if _, _, err := prExistingVerdict(n, "main", "schema"); err == nil {
+			t.Errorf("verdict accepted %+v", n)
+		}
+	}
+}
+
+func TestRun_DatabasesBranchPRClose_Guards(t *testing.T) {
+	branch := apiclient.DatabaseBranchNode{Name: "main-pr-3", Parent: "main", State: "ready", Protected: true}
+	var deleted bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/main":
+			_, _ = w.Write([]byte(`{"name":"main","engine":"postgres"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/databases/main/branches/main-pr-3":
+			_ = json.NewEncoder(w).Encode(branch)
+		case r.Method == http.MethodPatch:
+			branch.Protected = false
+			_ = json.NewEncoder(w).Encode(branch)
+		case r.Method == http.MethodDelete:
+			deleted = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error":"database not found"}`))
+		}
+	}))
+	defer srv.Close()
+	closeArgs := func(db string, extra ...string) []string {
+		return append([]string{"databases", "branch", "pr-close", db, "--pr", "3", "--yes", "--api-url", srv.URL}, extra...)
+	}
+	var out, errb bytes.Buffer
+	if got := run("levelrail-cli-test", closeArgs("nope"), &out, &errb, envMap()); got == exitOK {
+		t.Error("missing parent database reported success")
+	}
+	if got := run("levelrail-cli-test", closeArgs("main"), &out, &errb, envMap()); got == exitOK || deleted {
+		t.Errorf("protected branch deleted without --force (exit %d)", got)
+	}
+	if got := run("levelrail-cli-test", closeArgs("main", "--force"), &out, &errb, envMap()); got != exitOK || !deleted {
+		t.Errorf("force close exit = %d deleted=%v (%s)", got, deleted, errb.String())
+	}
+	branch.State = "promoted"
+	branch.Protected = false
+	deleted = false
+	if got := run("levelrail-cli-test", closeArgs("main"), &out, &errb, envMap()); got == exitOK || deleted {
+		t.Error("promoted branch was deleted")
 	}
 }

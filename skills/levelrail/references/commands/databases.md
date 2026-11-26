@@ -97,7 +97,7 @@ Usage:
   levelrail-cli databases branch create <parent> <new-name> [--mode data|schema] [--ttl 1d|7d|never] [--protected] [flags]
   levelrail-cli databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
   levelrail-cli databases branch pr <database> --pr N [--mode schema|full] [--ttl 7d] [--protect] [--timeout 5m] [--print-url] [--json]
-  levelrail-cli databases branch pr-close <database> --pr N --yes
+  levelrail-cli databases branch pr-close <database> --pr N --yes [--force]
   levelrail-cli databases branch ls <database>
   levelrail-cli databases branch show <database> <branch>
   levelrail-cli databases branch diff <database> <branch> [--against NAME] [--sql]

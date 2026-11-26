@@ -40,7 +40,7 @@ func databasesBranchUsage(prog string) string {
   %[1]s databases branch create <parent> <new-name> [--mode data|schema] [--ttl 1d|7d|never] [--protected] [flags]
   %[1]s databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
   %[1]s databases branch pr <database> --pr N [--mode schema|full] [--ttl 7d] [--protect] [--timeout 5m] [--print-url] [--json]
-  %[1]s databases branch pr-close <database> --pr N --yes
+  %[1]s databases branch pr-close <database> --pr N --yes [--force]
   %[1]s databases branch ls <database>
   %[1]s databases branch show <database> <branch>
   %[1]s databases branch diff <database> <branch> [--against NAME] [--sql]

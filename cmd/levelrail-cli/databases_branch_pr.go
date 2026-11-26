@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"regexp"
 	"strconv"
 	"time"
@@ -39,6 +41,43 @@ func prBranchName(db string, pr int) (string, error) {
 		return "", newValidationError("--pr is too large for a branch name")
 	}
 	return db[:keep] + tag + suffix, nil
+}
+
+var prNumberPattern = regexp.MustCompile(`^[1-9][0-9]{0,9}$`)
+
+// parsePRNumber reads --pr as plain decimal, so 010 or 0x10 are refused instead of reinterpreted.
+func parsePRNumber(s string) (int, error) {
+	if !prNumberPattern.MatchString(s) {
+		return 0, newValidationError("--pr must be a pull request number such as 42")
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, newValidationError("--pr must be a pull request number such as 42")
+	}
+	return n, nil
+}
+
+// isBranchNotFound is true only for the "branch not found" answer, so a missing parent database is never mistaken for it.
+func isBranchNotFound(err error) bool {
+	var apiErr *apiclient.APIError
+	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound && apiErr.Message == "branch not found"
+}
+
+// prExistingVerdict decides what to do with a branch that already has the pull request name.
+func prExistingVerdict(n apiclient.DatabaseBranchNode, db, mode string) (reuse, recreate bool, err error) {
+	if n.Parent != db {
+		return false, false, fmt.Errorf("branch %q belongs to %q, not %q", n.Name, n.Parent, db)
+	}
+	switch n.State {
+	case "failed":
+		return false, true, nil
+	case "promoted", "deleting", "expiring", "deleted":
+		return false, false, fmt.Errorf("branch %q is %s and cannot be reused; delete it or use another pull request number", n.Name, n.State)
+	}
+	if n.Mode != mode {
+		return false, false, fmt.Errorf("branch %q already exists with mode %q, not %q; run pr-close first", n.Name, n.Mode, mode)
+	}
+	return true, false, nil
 }
 
 func validatePRTTL(ttl string) error {
@@ -79,11 +118,10 @@ type prBranchResult struct {
 func runDatabasesBranchPR(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	const cmd = "databases branch pr"
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cmd, "print the branch as JSON to stdout and nothing else", stderr)
-	var pr int
-	var mode, ttl string
+	var prArg, mode, ttl string
 	var protect, printURL bool
 	var timeout time.Duration
-	fs.IntVar(&pr, "pr", 0, "pull request number")
+	fs.StringVar(&prArg, "pr", "", "pull request number")
 	fs.StringVar(&mode, "mode", "schema", "schema or full")
 	fs.StringVar(&ttl, "ttl", "7d", "auto delete after this time, for example 7d, 12h or never")
 	fs.BoolVar(&protect, "protect", false, "protect the branch from delete and expiry")
@@ -100,7 +138,11 @@ func runDatabasesBranchPR(prog string, args []string, stdout, stderr io.Writer, 
 		fs.Usage()
 		return exitUsage
 	}
-	name, err := prBranchName(rest[0], pr)
+	pr, err := parsePRNumber(prArg)
+	var name string
+	if err == nil {
+		name, err = prBranchName(rest[0], pr)
+	}
 	if err == nil {
 		err = validatePRTTL(ttl)
 	}
@@ -119,14 +161,35 @@ func runDatabasesBranchPR(prog string, args []string, stdout, stderr io.Writer, 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	fail := func(err error) int { return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s: %w", cmd, err)) }
 
+	create := func() (apiclient.DatabaseBranchNode, error) {
+		n, cerr := client.CreateLiveDatabaseBranch(ctx, db, apiclient.CreateLiveDatabaseBranchRequest{Name: name, Mode: apiMode, TTL: ttl, Protected: protect})
+		if cerr != nil {
+			return n, fmt.Errorf("create branch %q of %q: %w", name, db, cerr)
+		}
+		return n, nil
+	}
 	node, err := client.GetDatabaseBranch(ctx, db, name)
 	created := false
 	switch {
 	case err == nil:
-	case isAPINotFound(err):
-		node, err = client.CreateLiveDatabaseBranch(ctx, db, apiclient.CreateLiveDatabaseBranchRequest{Name: name, Mode: apiMode, TTL: ttl, Protected: protect})
-		if err != nil {
-			return fail(fmt.Errorf("create branch %q of %q: %w", name, db, err))
+		reuse, recreate, verr := prExistingVerdict(node, db, apiMode)
+		if verr != nil {
+			return fail(verr)
+		}
+		if recreate {
+			if derr := client.DeleteDatabaseBranch(ctx, db, name, name); derr != nil && !isBranchNotFound(derr) {
+				return fail(fmt.Errorf("delete failed branch %q: %w", name, derr))
+			}
+		}
+		if !reuse {
+			if node, err = create(); err != nil {
+				return fail(err)
+			}
+			created = true
+		}
+	case isBranchNotFound(err):
+		if node, err = create(); err != nil {
+			return fail(err)
 		}
 		created = true
 	default:
@@ -198,6 +261,8 @@ func waitBranchReady(ctx context.Context, client *apiclient.Client, db, name str
 			return node, nil
 		case "failed":
 			return node, fmt.Errorf("branch %q failed: %s", name, safeTerminalText(node.StateReason))
+		case "promoted", "deleting", "expiring", "deleted":
+			return node, fmt.Errorf("branch %q is %s and will not become ready", name, node.State)
 		}
 		if time.Now().After(deadline) {
 			return node, fmt.Errorf("branch %q is still %q after %s", name, node.State, timeout)
@@ -213,10 +278,11 @@ func waitBranchReady(ctx context.Context, client *apiclient.Client, db, name str
 func runDatabasesBranchPRClose(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	const cmd = "databases branch pr-close"
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cmd, "print the result as JSON to stdout and nothing else", stderr)
-	var pr int
-	var yes bool
-	fs.IntVar(&pr, "pr", 0, "pull request number")
+	var prArg string
+	var yes, force bool
+	fs.StringVar(&prArg, "pr", "", "pull request number")
 	fs.BoolVar(&yes, "yes", false, "delete without asking")
+	fs.BoolVar(&force, "force", false, "also delete a protected branch")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesBranchUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, _, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -228,7 +294,12 @@ func runDatabasesBranchPRClose(prog string, args []string, stdout, stderr io.Wri
 		fs.Usage()
 		return exitUsage
 	}
-	name, err := prBranchName(rest[0], pr)
+	db := rest[0]
+	pr, err := parsePRNumber(prArg)
+	var name string
+	if err == nil {
+		name, err = prBranchName(db, pr)
+	}
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -238,20 +309,37 @@ func runDatabasesBranchPRClose(prog string, args []string, stdout, stderr io.Wri
 	ctx := context.Background()
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	fail := func(err error) int { return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s: %w", cmd, err)) }
-	node, err := client.GetDatabaseBranch(ctx, rest[0], name)
+	// A wrong database name or a token without access must fail, never look like a clean close.
+	if _, err := client.GetDatabase(ctx, db); err != nil {
+		return fail(fmt.Errorf("database %q: %w", db, err))
+	}
+	node, err := client.GetDatabaseBranch(ctx, db, name)
 	deleted := false
 	switch {
-	case isAPINotFound(err):
+	case isBranchNotFound(err):
 	case err != nil:
 		return fail(err)
 	default:
+		if node.Parent != db {
+			return fail(fmt.Errorf("branch %q belongs to %q, not %q", name, node.Parent, db))
+		}
+		if node.State != "ready" && node.State != "failed" {
+			return fail(fmt.Errorf("branch %q is %s, close it when it is ready or failed", name, node.State))
+		}
+		if node.Protected && !force {
+			return fail(fmt.Errorf("branch %q is protected, pass --force to delete it", name))
+		}
 		if node.Protected {
 			off := false
-			if _, err := client.PatchDatabaseBranch(ctx, rest[0], name, apiclient.PatchDatabaseBranchRequest{Protected: &off}); err != nil && !isAPINotFound(err) {
+			if _, err := client.PatchDatabaseBranch(ctx, db, name, apiclient.PatchDatabaseBranchRequest{Protected: &off}); err != nil {
 				return fail(err)
 			}
 		}
-		if err := client.DeleteDatabaseBranch(ctx, rest[0], name, name); err != nil && !isAPINotFound(err) {
+		if err := client.DeleteDatabaseBranch(ctx, db, name, name); err != nil && !isBranchNotFound(err) {
+			if node.Protected {
+				on := true
+				_, _ = client.PatchDatabaseBranch(ctx, db, name, apiclient.PatchDatabaseBranchRequest{Protected: &on})
+			}
 			return fail(err)
 		}
 		deleted = true
