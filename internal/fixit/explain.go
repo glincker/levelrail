@@ -92,6 +92,8 @@ func buildExplainTable() map[string]Explanation {
 			"Add swap or memory, or build on a bigger node. Open Settings, then Builds, to pick the build node.", "", KindGuided),
 		ex("database_audit_health", "Some database explorer audit events were dropped or failed to write.", "The audit trail has gaps for that period.",
 			"Raise the audit queue size in Settings, check the control plane disk, then press Re-check.", "", KindManual),
+		ex("database_alerts", "One or more databases are crash looping, running out of connections, filling their disk or missing a backup.", "The affected database may stop accepting work or lose its recovery point.",
+			"Open the named database's monitoring page, or its backup settings for a missing backup, then press Re-check.", "", KindManual),
 		ex("personal_builder_owner", "A personal builder has no owner label.", "Under the default scope it receives no builds, so they run elsewhere.",
 			"Add the builder.owner node label with a user id, or set build.personal_builder_scope to all in Settings.", "", KindManual),
 		ex("build_queue", "The build queue has been paused or draining for a long time.", "New builds and webhook deploys wait in the queue until someone resumes it.",
