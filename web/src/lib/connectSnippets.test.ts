@@ -4,8 +4,10 @@ import {
   connectDatabase,
   connectHasPassword,
   connectUser,
+  connectEndpoint,
   connectFrameworks,
   downloadContent,
+  tunnelCommand,
   type ConnectInput,
 } from './connectSnippets'
 
@@ -62,7 +64,7 @@ describe('buildConnectSnippets', () => {
       'spring.data.mongodb.uri=mongodb://levelrail:<password>@127.0.0.1:27017/admin?authSource=admin&directConnection=true',
     )
     expect(s.springYaml).toContain('      uri: "mongodb://')
-    expect(s.node).toContain('mongoose')
+    expect(s.node).toContain("from 'mongodb'")
     expect(s.python).toContain('MongoClient')
     expect(s.go).toContain('mongo.Connect')
     expect(s.env).toContain('MONGODB_URI=')
@@ -148,5 +150,90 @@ describe('engine defaults', () => {
       user: '',
     })
     expect(JSON.stringify(s)).not.toContain('password')
+  })
+})
+
+describe('stacks and locations', () => {
+  const pgEnd = {
+    internal: { host: 'db-app', port: 5432 },
+    tunnelPort: 15432,
+    remote: { host: 'lr.example.com', port: 5433 },
+  }
+
+  it('picks host, port and tunnel command per location', () => {
+    expect(connectEndpoint({ mode: 'host', ...pgEnd })).toEqual({
+      host: '127.0.0.1',
+      port: 15432,
+    })
+    expect(connectEndpoint({ mode: 'internal', ...pgEnd })).toEqual({
+      host: 'db-app',
+      port: 5432,
+    })
+    expect(connectEndpoint({ mode: 'remote', ...pgEnd })?.host).toBe(
+      'lr.example.com',
+    )
+    expect(
+      connectEndpoint({ mode: 'remote', ...pgEnd, remote: null }),
+    ).toBeNull()
+    expect(tunnelCommand('shop', 15432)).toBe(
+      'levelrail-cli databases tunnel shop --port 15432',
+    )
+  })
+
+  it('postgres on the host tunnel renders every stack against localhost', () => {
+    const s = buildConnectSnippets({ ...base, port: 15432, tls: true })
+    expect(s.springYaml).toContain(
+      'jdbc:postgresql://127.0.0.1:15432/app?sslmode=require',
+    )
+    expect(s.springProperties).toContain('spring.datasource.username=postgres')
+    expect(s.jdbc).toContain('user=postgres')
+    expect(s.prisma).toContain('provider = "postgresql"')
+    expect(s.prisma).toContain('env("DATABASE_URL")')
+    expect(s.drizzle).toContain('drizzle-orm/node-postgres')
+    expect(s.sqlalchemy).toContain('postgresql+psycopg')
+    expect(s.django).toContain('"sslmode": "require"')
+    expect(s.rails).toContain('adapter: postgresql')
+    expect(s.compose).toContain(
+      'DATABASE_URL: "postgresql://postgres:<password>@127.0.0.1:15432/app?sslmode=require"',
+    )
+    expect(s.cli).toBe(`psql "${s.url}"`)
+    expect(s.env).toContain('DATABASE_URL=postgresql://')
+  })
+
+  it('internal and remote modes change only host and port', () => {
+    const internal = buildConnectSnippets({ ...base, host: 'db-app' })
+    const remote = buildConnectSnippets({
+      ...base,
+      host: 'lr.example.com',
+      port: 5433,
+    })
+    expect(internal.jdbc).toContain('jdbc:postgresql://db-app:5432/app')
+    expect(remote.jdbc).toContain('jdbc:postgresql://lr.example.com:5433/app')
+  })
+
+  it('mongodb gets prisma, the mongodb driver, mongosh and tls', () => {
+    const s = buildConnectSnippets({
+      ...base,
+      engine: 'mongodb',
+      port: 27017,
+      database: 'admin',
+      user: 'shop',
+      tls: true,
+    })
+    expect(s.prisma).toContain('provider = "mongodb"')
+    expect(s.cli).toMatch(
+      /^mongosh "mongodb:\/\/shop:<password>@127\.0\.0\.1:27017/,
+    )
+    expect(s.url).toContain('&tls=true')
+    expect(s.jdbc).toBeUndefined()
+    expect(connectFrameworks('mongodb')).not.toContain('django')
+  })
+
+  it('does not leak a password until one is passed', () => {
+    const hidden = JSON.stringify(buildConnectSnippets(base))
+    expect(hidden).not.toContain('hunter2')
+    expect(
+      JSON.stringify(buildConnectSnippets({ ...base, password: 'hunter2' })),
+    ).toContain('hunter2')
   })
 })

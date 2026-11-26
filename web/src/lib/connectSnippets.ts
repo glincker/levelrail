@@ -14,6 +14,40 @@ export type ConnectFramework =
   | 'python'
   | 'go'
   | 'dotnet'
+  | 'jdbc'
+  | 'prisma'
+  | 'drizzle'
+  | 'sqlalchemy'
+  | 'django'
+  | 'rails'
+  | 'compose'
+  | 'cli'
+
+export type ConnectMode = 'host' | 'internal' | 'remote'
+
+export const LOOPBACK_HOST = '127.0.0.1'
+
+export interface ConnectEndpointInput {
+  mode: ConnectMode
+  internal: { host: string; port: number }
+  // Local port the tunnel listens on; defaults to the engine port.
+  tunnelPort: number
+  remote: { host: string; port: number } | null
+}
+
+/** Host and port a client should use for where the app runs, or null when unreachable. */
+export function connectEndpoint(
+  e: ConnectEndpointInput,
+): { host: string; port: number } | null {
+  if (e.mode === 'host') return { host: LOOPBACK_HOST, port: e.tunnelPort }
+  if (e.mode === 'internal') return e.internal
+  return e.remote
+}
+
+/** The one command that opens the local tunnel for host mode. */
+export function tunnelCommand(name: string, port: number): string {
+  return `levelrail-cli databases tunnel ${name} --port ${port}`
+}
 
 export interface ConnectInput {
   engine: string
@@ -64,17 +98,28 @@ export function connectFamily(engine: string): ConnectFamily {
 
 /** Frameworks that make sense for an engine, in tab order. */
 export function connectFrameworks(engine: string): ConnectFramework[] {
-  if (connectFamily(engine) === 'other') return ['url', 'env']
-  return [
-    'springProperties',
+  const f = connectFamily(engine)
+  if (f === 'other') return ['url', 'env']
+  const sql = f === 'postgres' || f === 'mysql'
+  const list: (ConnectFramework | false)[] = [
     'springYaml',
+    'springProperties',
+    sql && 'jdbc',
     'node',
+    (sql || f === 'mongodb') && 'prisma',
+    sql && 'drizzle',
     'python',
+    sql && 'sqlalchemy',
+    sql && 'django',
+    sql && 'rails',
     'go',
     'dotnet',
     'url',
     'env',
+    'compose',
+    'cli',
   ]
+  return list.filter((x): x is ConnectFramework => x !== false)
 }
 
 function pw(i: ConnectInput): string {
@@ -113,6 +158,81 @@ export function connectUrl(i: ConnectInput): string {
       return `${i.tls ? 'rediss' : 'redis'}://${addr}`
     default:
       return addr
+  }
+}
+
+function jdbcDetail(i: ConnectInput): string {
+  const url = jdbcUrl(i)
+  return url ? `${url}\nuser=${i.user}\npassword=${pw(i)}` : connectUrl(i)
+}
+
+function prismaSnippet(i: ConnectInput): string {
+  const provider =
+    connectFamily(i.engine) === 'mongodb'
+      ? 'mongodb'
+      : connectFamily(i.engine) === 'mysql'
+        ? 'mysql'
+        : 'postgresql'
+  return `datasource db {\n  provider = "${provider}"\n  url      = env("${envVarName(i.engine)}")\n}`
+}
+
+function drizzleSnippet(i: ConnectInput): string {
+  const mod = connectFamily(i.engine) === 'mysql' ? 'mysql2' : 'node-postgres'
+  return `import { drizzle } from 'drizzle-orm/${mod}'\n\nexport const db = drizzle(process.env.${envVarName(i.engine)}!)`
+}
+
+function sqlalchemySnippet(i: ConnectInput): string {
+  const my = connectFamily(i.engine) === 'mysql'
+  const scheme = my ? 'mysql+pymysql' : 'postgresql+psycopg'
+  const from = my ? 'mysql' : 'postgresql'
+  const env = envVarName(i.engine)
+  return `import os\nfrom sqlalchemy import create_engine\n\nurl = os.environ["${env}"].replace("${from}://", "${scheme}://", 1)\nengine = create_engine(url)`
+}
+
+function djangoSnippet(i: ConnectInput): string {
+  const my = connectFamily(i.engine) === 'mysql'
+  const lines = [
+    'DATABASES = {',
+    '    "default": {',
+    `        "ENGINE": "django.db.backends.${my ? 'mysql' : 'postgresql'}",`,
+    `        "NAME": "${i.database}",`,
+    `        "USER": "${i.user}",`,
+    `        "PASSWORD": "${pw(i)}",`,
+    `        "HOST": "${i.host}",`,
+    `        "PORT": "${i.port}",`,
+  ]
+  if (i.tls) {
+    lines.push(
+      my
+        ? '        "OPTIONS": {"ssl_mode": "REQUIRED"},'
+        : '        "OPTIONS": {"sslmode": "require"},',
+    )
+  }
+  lines.push('    }', '}')
+  return lines.join('\n')
+}
+
+function railsSnippet(i: ConnectInput): string {
+  const adapter = connectFamily(i.engine) === 'mysql' ? 'mysql2' : 'postgresql'
+  return `default: &default\n  adapter: ${adapter}\n  url: <%= ENV["${envVarName(i.engine)}"] %>\n\nproduction:\n  <<: *default`
+}
+
+function composeSnippet(i: ConnectInput): string {
+  const lines = ['services:', '  app:', '    environment:']
+  lines.push(`      ${envVarName(i.engine)}: ${q(connectUrl(i))}`)
+  return lines.join('\n')
+}
+
+function cliSnippet(i: ConnectInput): string {
+  switch (connectFamily(i.engine)) {
+    case 'postgres':
+      return `psql "${connectUrl(i)}"`
+    case 'mysql':
+      return `mysql -h ${i.host} -P ${i.port} -u ${i.user} -p ${i.database}${i.tls ? ' --ssl-mode=REQUIRED' : ''}`
+    case 'mongodb':
+      return `mongosh "${connectUrl(i)}"`
+    default:
+      return `redis-cli -u ${connectUrl(i)}`
   }
 }
 
@@ -192,7 +312,7 @@ function nodeSnippet(i: ConnectInput): string {
     case 'mysql':
       return `import mysql from 'mysql2/promise'\n\nconst conn = await mysql.createConnection(process.env.${env})`
     case 'mongodb':
-      return `import mongoose from 'mongoose'\n\nawait mongoose.connect(process.env.${env})`
+      return `import { MongoClient } from 'mongodb'\n\nconst client = new MongoClient(process.env.${env})\nawait client.connect()`
     default:
       return `import Redis from 'ioredis'\n\nconst redis = new Redis(process.env.${env})`
   }
@@ -263,6 +383,19 @@ export function buildConnectSnippets(i: ConnectInput): ConnectSnippets {
   out.python = pythonSnippet(i)
   out.go = goSnippet(i)
   out.dotnet = dotnetSnippet(i)
+  out.compose = composeSnippet(i)
+  out.cli = cliSnippet(i)
+  const f = connectFamily(i.engine)
+  if (f === 'postgres' || f === 'mysql') {
+    out.jdbc = jdbcDetail(i)
+    out.drizzle = drizzleSnippet(i)
+    out.sqlalchemy = sqlalchemySnippet(i)
+    out.django = djangoSnippet(i)
+    out.rails = railsSnippet(i)
+  }
+  if (f === 'postgres' || f === 'mysql' || f === 'mongodb') {
+    out.prisma = prismaSnippet(i)
+  }
   return out
 }
 
