@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 )
 
@@ -18,6 +20,11 @@ const DNSTokenEnvKey = "credential"
 func (db *DB) GetDNSTokenProviderEnabled(ctx context.Context, provider string) (bool, error) {
 	var enabled int
 	err := db.QueryRowContext(ctx, `SELECT enabled FROM dns_token_providers WHERE provider = ?`, provider).Scan(&enabled)
+	if errors.Is(err, sql.ErrNoRows) {
+		// A provider without a row (e.g. an install that predates its seed)
+		// is simply not configured: resolution must skip it, not abort.
+		return false, nil
+	}
 	if err != nil {
 		return false, fmt.Errorf("store: get dns provider %s: %w", provider, err)
 	}
