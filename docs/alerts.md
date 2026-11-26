@@ -78,7 +78,7 @@ Default alerts always reach the in-app inbox, and the admin email only when emai
 
 ## Which database health alerts are on by default?
 
-Four rules watch every managed database from metrics Levelrail already collects. They are seeded on and send through your existing channels. Each message names the database, the value and the next step, and links to the monitoring page or to `/databases/{name}/settings?section=backups`.
+Four rules watch every managed database from metrics Levelrail already collects. They are seeded on and send through your existing channels. Each message names the database, the value and the next step, and links to the metrics page (`/databases/{name}/metrics`) or to `/databases/{name}/settings?section=backups`.
 
 | Rule | Fires when | Settings (all live) |
 | --- | --- | --- |

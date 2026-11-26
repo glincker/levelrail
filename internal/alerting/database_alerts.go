@@ -122,7 +122,7 @@ func databaseBreach(kind Kind, severity string, d DatabaseAlertInput, p Database
 		}
 		return DatabaseBreach{Database: d.Name, Value: 1, Notice: fmt.Sprintf(
 			"%s keeps crashing on start.%s What to do: open the database logs to see why, then fix the setting or restore a backup. %s",
-			d.Name, msg, databasePath(d.Name, "monitoring"))}, true
+			d.Name, msg, databasePath(d.Name, "metrics"))}, true
 	case KindDatabaseConnectionsSaturated:
 		if !p.ConnectionsEnabled || d.ConnMax <= 0 || p.ConnectionsPercent <= 0 {
 			return DatabaseBreach{}, false
@@ -137,7 +137,7 @@ func databaseBreach(kind Kind, severity string, d DatabaseAlertInput, p Database
 		}
 		return DatabaseBreach{Database: d.Name, Value: pct, Notice: fmt.Sprintf(
 			"%s is using %.0f of %.0f connections (%.0f%%, alert at %.0f%%). What to do: close idle clients, enable the connection pooler or raise max connections. %s",
-			d.Name, d.ConnTotal, d.ConnMax, pct, p.ConnectionsPercent, databasePath(d.Name, "monitoring"))}, true
+			d.Name, d.ConnTotal, d.ConnMax, pct, p.ConnectionsPercent, databasePath(d.Name, "metrics"))}, true
 	case KindDatabaseDiskGrowth:
 		if !p.DiskGrowthEnabled {
 			return DatabaseBreach{}, false
@@ -161,7 +161,7 @@ func databaseBreach(kind Kind, severity string, d DatabaseAlertInput, p Database
 		}
 		return DatabaseBreach{Database: d.Name, Value: proj.DaysUntilFull, Notice: fmt.Sprintf(
 			"%s data volume is forecast to fill in %.1f days at the current growth of %s per day. What to do: free space, prune old data or move to a bigger volume. %s",
-			d.Name, proj.DaysUntilFull, humanBytes(proj.SlopeBytesPerDay), databasePath(d.Name, "monitoring"))}, true
+			d.Name, proj.DaysUntilFull, humanBytes(proj.SlopeBytesPerDay), databasePath(d.Name, "metrics"))}, true
 	case KindDatabaseBackupMissing:
 		if !p.BackupEnabled {
 			return DatabaseBreach{}, false

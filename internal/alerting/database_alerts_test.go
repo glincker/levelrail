@@ -48,7 +48,7 @@ func TestDatabaseBreachesTable(t *testing.T) {
 		want      bool
 		contains  string
 	}{
-		{"crash breach", KindDatabaseCrashLoop, SeverityCritical, DatabaseAlertInput{Name: "pg", CrashLooping: true}, nil, false, true, "/databases/pg/monitoring"},
+		{"crash breach", KindDatabaseCrashLoop, SeverityCritical, DatabaseAlertInput{Name: "pg", CrashLooping: true}, nil, false, true, "/databases/pg/metrics"},
 		{"crash fine", KindDatabaseCrashLoop, SeverityCritical, DatabaseAlertInput{Name: "pg"}, nil, false, false, ""},
 		{"crash disabled", KindDatabaseCrashLoop, SeverityCritical, DatabaseAlertInput{Name: "pg", CrashLooping: true}, func(p *DatabaseAlertPolicy) { p.CrashLoopEnabled = false }, false, false, ""},
 
@@ -59,7 +59,7 @@ func TestDatabaseBreachesTable(t *testing.T) {
 		{"conn no max", KindDatabaseConnectionsSaturated, SeverityWarning, DatabaseAlertInput{Name: "pg", ConnTotal: 5}, nil, false, false, ""},
 
 		{"disk slow growth", KindDatabaseDiskGrowth, SeverityWarning, DatabaseAlertInput{Name: "pg", DiskPoints: slow, DiskTotalBytes: total}, nil, false, false, ""},
-		{"disk fast warn", KindDatabaseDiskGrowth, SeverityWarning, DatabaseAlertInput{Name: "pg", DiskPoints: fast, DiskTotalBytes: total}, nil, false, true, "/databases/pg/monitoring"},
+		{"disk fast warn", KindDatabaseDiskGrowth, SeverityWarning, DatabaseAlertInput{Name: "pg", DiskPoints: fast, DiskTotalBytes: total}, nil, false, true, "/databases/pg/metrics"},
 		{"disk fast critical", KindDatabaseDiskGrowth, SeverityCritical, DatabaseAlertInput{Name: "pg", DiskPoints: fast, DiskTotalBytes: total}, nil, false, true, "days"},
 		{"disk slow critical", KindDatabaseDiskGrowth, SeverityCritical, DatabaseAlertInput{Name: "pg", DiskPoints: nearWarn, DiskTotalBytes: total}, nil, false, false, ""},
 		{"disk no history", KindDatabaseDiskGrowth, SeverityWarning, DatabaseAlertInput{Name: "pg", DiskTotalBytes: total}, nil, false, false, ""},

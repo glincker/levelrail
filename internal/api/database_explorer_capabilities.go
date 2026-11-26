@@ -51,7 +51,7 @@ func (rt *Router) handleGetDatabaseExplorerCapabilities(w http.ResponseWriter, r
 	if external {
 		row = dbviewer.ExternalCapabilitiesFor(engine)
 	}
-	lim := dbviewer.LimitsFromEnv(nil)
+	lim := rt.databaseViewerLimits(r.Context())
 	writeJSON(w, http.StatusOK, databaseExplorerCapabilitiesResource{
 		EngineCapabilities: row,
 		External:           external,
