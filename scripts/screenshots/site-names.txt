@@ -1,12 +1,17 @@
 # Names the website build fetches from this directory; keep each present as a dark PNG.
+account-activity
+account-passkeys
 app-analysis
 app-deploy-settings
 app-environment
+app-source
 apps-list
 backups
+cli-access
 command-palette-search
 control-plane-health
 dashboard-home
+database-backups
 database-overview
 deploy-history
 deploy-live-log
@@ -14,8 +19,12 @@ domains-list
 encryption-keys
 load-balancer
 logs
+mesh-network
 network-topology
+node-providers
 nodes
 pipeline-run
+security-center
 status-page-settings
+storage-destinations
 templates-catalog
