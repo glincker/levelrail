@@ -58,7 +58,8 @@ Generated from `CHANGELOG.md` by `node scripts/gen-versions-table.mjs`. Do not e
 <!-- versions:begin -->
 | Version | Date | Status | Notes |
 | --- | --- | --- | --- |
-| 1.5.10 | 2026-11-25 | Latest | [Release notes](https://github.com/glincker/levelrail/releases/tag/v1.5.10) |
+| 1.5.11 | 2026-11-26 | Latest | [Release notes](https://github.com/glincker/levelrail/releases/tag/v1.5.11) |
+| 1.5.10 | 2026-11-25 |  | [Release notes](https://github.com/glincker/levelrail/releases/tag/v1.5.10) |
 | 1.5.9 | 2026-11-22 |  | [Release notes](https://github.com/glincker/levelrail/releases/tag/v1.5.9) |
 | 1.5.8 | 2026-11-22 |  | [Release notes](https://github.com/glincker/levelrail/releases/tag/v1.5.8) |
 | 1.5.7 | 2026-11-21 |  | [Release notes](https://github.com/glincker/levelrail/releases/tag/v1.5.7) |
