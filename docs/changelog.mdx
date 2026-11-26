@@ -4,6 +4,114 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.5.11" description="2026-11-26">
+**Features**
+
+* add DocumentDB managed database engine behind a beta flag
+* alerts card on the database monitoring page
+* allowed sources and linked apps on the networking page
+* backup setup call to action when upgrades lack a backup target
+* backup storage setup flow with provider presets
+* branch clone worker, live branch dumper and expiry job
+* connect dialog stack and location picker
+* connect dialog with framework snippets and config downloads for databases
+* connect hosted database modal
+* connect snippets for more stacks
+* data export page and add flow redesign
+* database access resolver with explicit deny precedence
+* database alert kinds in the alerts UI
+* database branch API routes with clone and expiry wiring
+* database branch store, lifecycle core and delete guards
+* database branches page
+* database crash loop thresholds are live runtime settings
+* database dashboard redesign with logos, list, home navigation, overview, monitoring and explorers
+* database exposure levels on the networking page
+* database health alert rules
+* database integrations catalog with API and CLI
+* database integrations page
+* database Networking, Access and Credentials pages and explorer status strip
+* database statement audit table, batched writer and retention settings
+* databases connect accepts a connection URL
+* destructive statement confirm in the SQL console
+* doctor check for crash looping databases
+* doctor row for database alerts
+* DynamoDB explorer limits are runtime settings
+* DynamoDB explorer routes
+* DynamoDB explorer UI
+* DynamoDB local engine
+* en-GB overlay locale with US and UK English switcher
+* explorer capability model and GET /databases/&#123;name&#125;/explorer/capabilities
+* hosted database presets, URL parser and probe before save
+* hosted provider logos and verify TLS modes in the form
+* leftover volume list reports the detected engine and version
+* levelrail databases branch commands
+* locale strings for the hosted database flow
+* MongoDB CLI verbs and viewer hardening
+* MongoDB collections and find routes for the database viewer
+* MongoDB viewer target with read-only operation guard
+* pick the latest stable database version automatically when none is given
+* Postgres database metrics collector
+* record explorer statements in the audit and add the audit API and CLI
+* Redis family explorer with typed values, info, slowlog and clients
+* schema diagram view on the tables page
+* schema diff API and CLI for database branches
+* schema diff drawer on the branches page
+* schema diff engine and live caps for database branches
+* SQL editor v2 with tabs, autocomplete, export and explain tree
+* start the database statement audit at boot
+* statement activity drawer
+* status tooltip shows the database crash hint
+* write unlock dialog and countdown
+
+
+**Bug Fixes**
+
+* a data volume owned by another instance is not reported as missing
+* add the database id column to the audit table as a migration
+* apply provider TLS presets and keep TLS on for pasted URLs
+* audit fingerprints identify the normalized statement
+* backfill missing dns_token_providers rows and treat a missing row as not configured (#1720)
+* bound database audit rows and refuse writes when the audit queue is full
+* bound, mask and cap database audit rows
+* branch authz and lifecycle hardening
+* branch clone data safety
+* branches page issues found in a real run
+* connect dialog uses the reconciler's real users, databases and passwordless redis
+* database status shows crash loops with the last log line and a hint
+* DocumentDB review fixes: mongodb URLs, flag gating, telemetry off, TLS, backups, version pattern
+* DynamoDB connect snippet uses static local credentials
+* DynamoDB explorer listing is bounded and tolerant of vanished tables
+* external database update and adopt reject a connection url for another engine
+* harden MongoDB viewer with operator allow list, system namespace block and read limits
+* integration fixes
+* integration fixes round 2
+* integrations docs links use the card docs field
+* keep declared latest stable in IaC and Terraform, harden the latest resolver and tag lister
+* match environment-kind resources in policy lookups
+* refuse a database over an incompatible leftover volume, stop crash loop redeploys and show explorer error states
+* register the DynamoDB commands in the CLI command tree
+* schema diagram issues found in a real run
+* schema diff issues found against a real postgres
+* SQL editor completion popup placement and run shortcut
+* treat double quoted text as strings in mysql statement fingerprints
+* use the shared getter in the branches client
+* use the shared getter in the integrations client
+* validate external database identifiers and pass the database as an option
+
+
+**Performance**
+
+* explorer viewer cache with bounded queue and cached deployments summary
+* lazy load shell banners and whats new off first load
+* load sidebar nav icons in a deferred chunk
+
+
+**Documentation**
+
+* README introduction, alternative keywords and one-line install (#1740)
+* README visuals, plain wording, star history and GLINR Studios credit (#1741)
+</Update>
+
 <Update label="1.5.10" description="2026-11-25">
 **release**
 
