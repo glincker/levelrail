@@ -280,7 +280,7 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 		out = append(out, databaseListResource{
 			databaseResource: res,
-			Status:           summarizeAppConditions(conditionsByController[databaseControllerName(d.Name)]),
+			Status:           summarizeDatabaseConditions(conditionsByController[databaseControllerName(d.Name)]),
 		})
 	}
 	out = rt.appendExternalDatabases(r, canSee, out)

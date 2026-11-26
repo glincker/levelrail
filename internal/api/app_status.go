@@ -9,6 +9,8 @@ type appStatusSummary struct {
 	// Reason and Message come from the first failing condition so list rows can say why.
 	Reason  string `json:"reason,omitempty"`
 	Message string `json:"message,omitempty"`
+	// Hint is the next step for a database that crash loops, omitted otherwise.
+	Hint string `json:"hint,omitempty"`
 }
 
 // Mirrors summarizeAppStatus: any False wins, then all True means healthy, a never-built app is Not deployed, otherwise still reconciling.
