@@ -60,5 +60,37 @@
       "title": "Branch löschen",
       "body": "Löscht {{name}} und seine Daten endgültig."
     }
+  },
+  "schemaDiff": {
+    "open": "Schema-Diff",
+    "title": "Schema-Diff",
+    "description": "Was {{branch}} gegenüber {{against}} ändert.",
+    "against": "Vergleichen mit",
+    "parent": "Parent",
+    "added_one": "{{count}} hinzugefügt",
+    "added_other": "{{count}} hinzugefügt",
+    "removed_one": "{{count}} entfernt",
+    "removed_other": "{{count}} entfernt",
+    "changed_one": "{{count}} geändert",
+    "changed_other": "{{count}} geändert",
+    "none": "Keine Schemaunterschiede",
+    "loadFailed": "Der Schema-Diff konnte nicht geladen werden: {{error}}",
+    "truncated": "Das Schema wurde am Objektlimit abgeschnitten, der Diff ist daher unvollständig. Erhöhen Sie das Limit in den Laufzeiteinstellungen.",
+    "copySql": "Migrations-SQL kopieren",
+    "copied": "Migrations-SQL kopiert",
+    "review": "Vor dem Ausführen prüfen. Levelrail führt dieses SQL nie aus.",
+    "group": {
+      "added": "Hinzugefügt",
+      "removed": "Entfernt",
+      "changed": "Geändert"
+    },
+    "object": {
+      "table": "Tabelle",
+      "column": "Spalte",
+      "index": "Index",
+      "constraint": "Constraint",
+      "view": "View",
+      "sequence": "Sequenz"
+    }
   }
 }

@@ -60,5 +60,37 @@
       "title": "Delete this branch",
       "body": "Permanently deletes {{name}} and its data."
     }
+  },
+  "schemaDiff": {
+    "open": "Schema diff",
+    "title": "Schema diff",
+    "description": "What {{branch}} changes compared with {{against}}.",
+    "against": "Compare with",
+    "parent": "Parent",
+    "added_one": "{{count}} added",
+    "added_other": "{{count}} added",
+    "removed_one": "{{count}} removed",
+    "removed_other": "{{count}} removed",
+    "changed_one": "{{count}} changed",
+    "changed_other": "{{count}} changed",
+    "none": "No schema differences",
+    "loadFailed": "Could not load the schema diff: {{error}}",
+    "truncated": "The schema was cut at the object limit, so this diff is partial. Raise the limit in runtime settings to see everything.",
+    "copySql": "Copy migration SQL",
+    "copied": "Migration SQL copied",
+    "review": "Review before running. Levelrail never runs this SQL.",
+    "group": {
+      "added": "Added",
+      "removed": "Removed",
+      "changed": "Changed"
+    },
+    "object": {
+      "table": "table",
+      "column": "column",
+      "index": "index",
+      "constraint": "constraint",
+      "view": "view",
+      "sequence": "sequence"
+    }
   }
 }

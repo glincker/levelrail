@@ -60,5 +60,37 @@
       "title": "Excluir esta branch",
       "body": "Exclui {{name}} e seus dados permanentemente."
     }
+  },
+  "schemaDiff": {
+    "open": "Diff de esquema",
+    "title": "Diff de esquema",
+    "description": "O que {{branch}} muda em relação a {{against}}.",
+    "against": "Comparar com",
+    "parent": "Pai",
+    "added_one": "{{count}} adicionado",
+    "added_other": "{{count}} adicionados",
+    "removed_one": "{{count}} removido",
+    "removed_other": "{{count}} removidos",
+    "changed_one": "{{count}} alterado",
+    "changed_other": "{{count}} alterados",
+    "none": "Sem diferenças de esquema",
+    "loadFailed": "Não foi possível carregar o diff de esquema: {{error}}",
+    "truncated": "O esquema foi cortado no limite de objetos, então este diff é parcial. Aumente o limite nas configurações de execução.",
+    "copySql": "Copiar SQL de migração",
+    "copied": "SQL de migração copiado",
+    "review": "Revise antes de executar. O Levelrail nunca executa este SQL.",
+    "group": {
+      "added": "Adicionados",
+      "removed": "Removidos",
+      "changed": "Alterados"
+    },
+    "object": {
+      "table": "tabela",
+      "column": "coluna",
+      "index": "índice",
+      "constraint": "restrição",
+      "view": "view",
+      "sequence": "sequência"
+    }
   }
 }

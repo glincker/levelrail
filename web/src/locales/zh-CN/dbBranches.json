@@ -60,5 +60,37 @@
       "title": "删除此分支",
       "body": "永久删除 {{name}} 及其数据。"
     }
+  },
+  "schemaDiff": {
+    "open": "架构差异",
+    "title": "架构差异",
+    "description": "{{branch}} 相对于 {{against}} 的更改。",
+    "against": "对比对象",
+    "parent": "父级",
+    "added_one": "新增 {{count}} 项",
+    "added_other": "新增 {{count}} 项",
+    "removed_one": "删除 {{count}} 项",
+    "removed_other": "删除 {{count}} 项",
+    "changed_one": "更改 {{count}} 项",
+    "changed_other": "更改 {{count}} 项",
+    "none": "没有架构差异",
+    "loadFailed": "无法加载架构差异：{{error}}",
+    "truncated": "架构已在对象上限处截断，因此此差异不完整。请在运行时设置中提高上限。",
+    "copySql": "复制迁移 SQL",
+    "copied": "已复制迁移 SQL",
+    "review": "运行前请先检查。Levelrail 不会执行此 SQL。",
+    "group": {
+      "added": "新增",
+      "removed": "删除",
+      "changed": "更改"
+    },
+    "object": {
+      "table": "表",
+      "column": "列",
+      "index": "索引",
+      "constraint": "约束",
+      "view": "视图",
+      "sequence": "序列"
+    }
   }
 }

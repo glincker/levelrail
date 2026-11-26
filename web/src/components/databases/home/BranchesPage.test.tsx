@@ -40,6 +40,7 @@ vi.mock('../../../queries/databaseBranches', async (orig) => {
     useCreateBranch: () => mutation,
     useProtectBranch: () => mutation,
     useBranchAction: () => mutation,
+    useBranchSchemaDiff: () => ({}),
   }
 })
 

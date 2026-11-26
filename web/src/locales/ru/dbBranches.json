@@ -60,5 +60,43 @@
       "title": "Удалить эту ветку",
       "body": "Безвозвратно удаляет {{name}} и её данные."
     }
+  },
+  "schemaDiff": {
+    "open": "Diff схемы",
+    "title": "Diff схемы",
+    "description": "Что {{branch}} меняет по сравнению с {{against}}.",
+    "against": "Сравнить с",
+    "parent": "Родитель",
+    "added_one": "{{count}} добавлен",
+    "added_other": "{{count}} добавлено",
+    "added_few": "{{count}} добавлено",
+    "added_many": "{{count}} добавлено",
+    "removed_one": "{{count}} удалён",
+    "removed_other": "{{count}} удалено",
+    "removed_few": "{{count}} удалено",
+    "removed_many": "{{count}} удалено",
+    "changed_one": "{{count}} изменён",
+    "changed_other": "{{count}} изменено",
+    "changed_few": "{{count}} изменено",
+    "changed_many": "{{count}} изменено",
+    "none": "Различий в схеме нет",
+    "loadFailed": "Не удалось загрузить diff схемы: {{error}}",
+    "truncated": "Схема обрезана по лимиту объектов, поэтому diff неполный. Увеличьте лимит в настройках времени выполнения.",
+    "copySql": "Копировать SQL миграции",
+    "copied": "SQL миграции скопирован",
+    "review": "Проверьте перед запуском. Levelrail никогда не выполняет этот SQL.",
+    "group": {
+      "added": "Добавлено",
+      "removed": "Удалено",
+      "changed": "Изменено"
+    },
+    "object": {
+      "table": "таблица",
+      "column": "столбец",
+      "index": "индекс",
+      "constraint": "ограничение",
+      "view": "представление",
+      "sequence": "последовательность"
+    }
   }
 }

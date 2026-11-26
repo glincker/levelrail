@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '@/lib/apiError'
+import { SchemaDiffDrawer } from './SchemaDiffDrawer'
 import { orderTree } from './branchTree'
 import { ACTION_STATES, expiryAllowed, parseGoDuration } from './branchTtl'
 import { useRuntimeSettings } from '../../../queries/runtimeSettings'
@@ -282,6 +283,7 @@ export function BranchesPage({ name }: Readonly<{ name: string }>) {
   const { data, isLoading, error } = useDatabaseBranches(name)
   const protect = useProtectBranch(name)
   const [createOpen, setCreateOpen] = useState(false)
+  const [diffBranch, setDiffBranch] = useState<string | null>(null)
   const [target, setTarget] = useState<{
     branch: string
     action: BranchAction
@@ -372,6 +374,16 @@ export function BranchesPage({ name }: Readonly<{ name: string }>) {
                   />
                   {t('protectLabel')}
                 </label>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!READY_STATES.has(b.state)}
+                  onClick={() => {
+                    setDiffBranch(b.name)
+                  }}
+                >
+                  {t('schemaDiff.open')}
+                </Button>
                 {(['reset', 'promote', 'delete'] as const).map((a) => (
                   <Button
                     key={a}
@@ -395,6 +407,14 @@ export function BranchesPage({ name }: Readonly<{ name: string }>) {
         branches={data?.branches ?? []}
         open={createOpen}
         onOpenChange={setCreateOpen}
+      />
+      <SchemaDiffDrawer
+        database={name}
+        branch={diffBranch}
+        branches={data?.branches ?? []}
+        onClose={() => {
+          setDiffBranch(null)
+        }}
       />
       <ConfirmDialog
         database={name}

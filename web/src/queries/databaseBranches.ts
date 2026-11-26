@@ -111,3 +111,44 @@ export function useBranchAction(name: string) {
     },
   )
 }
+
+// Wire shape of GET .../branches/{branch}/schema-diff (internal/api/database_branches_schema_diff.go).
+export interface SchemaDiffChange {
+  object: 'table' | 'column' | 'index' | 'constraint' | 'view' | 'sequence'
+  kind: 'added' | 'removed' | 'changed'
+  schema: string
+  table?: string
+  name: string
+  before?: string
+  after?: string
+}
+
+export interface SchemaDiff {
+  branch: string
+  against: string
+  summary: { added: number; removed: number; changed: number }
+  changes: SchemaDiffChange[]
+  sql: string
+  truncated: boolean
+}
+
+// against is empty for the parent; a diff is a point in time read, so it never refetches by itself.
+export function useBranchSchemaDiff(
+  name: string,
+  branch: string,
+  against: string,
+  enabled: boolean,
+) {
+  const q = against ? `?against=${encodeURIComponent(against)}` : ''
+  return useQuery({
+    queryKey: [...branchKey(name), 'schema-diff', branch, against] as const,
+    queryFn: () =>
+      call<SchemaDiff>(
+        `${base(name)}/branches/${encodeURIComponent(branch)}/schema-diff${q}`,
+      ),
+    enabled,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+  })
+}

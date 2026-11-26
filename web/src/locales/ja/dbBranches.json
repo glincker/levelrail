@@ -60,5 +60,37 @@
       "title": "このブランチを削除",
       "body": "{{name}}とそのデータを完全に削除します。"
     }
+  },
+  "schemaDiff": {
+    "open": "スキーマ差分",
+    "title": "スキーマ差分",
+    "description": "{{branch}} の {{against}} に対する変更です。",
+    "against": "比較対象",
+    "parent": "親",
+    "added_one": "{{count}} 件追加",
+    "added_other": "{{count}} 件追加",
+    "removed_one": "{{count}} 件削除",
+    "removed_other": "{{count}} 件削除",
+    "changed_one": "{{count}} 件変更",
+    "changed_other": "{{count}} 件変更",
+    "none": "スキーマの差分はありません",
+    "loadFailed": "スキーマ差分を読み込めませんでした: {{error}}",
+    "truncated": "オブジェクト数の上限でスキーマが途中までのため、この差分は一部です。実行時設定で上限を上げてください。",
+    "copySql": "マイグレーション SQL をコピー",
+    "copied": "マイグレーション SQL をコピーしました",
+    "review": "実行前に必ず確認してください。Levelrail がこの SQL を実行することはありません。",
+    "group": {
+      "added": "追加",
+      "removed": "削除",
+      "changed": "変更"
+    },
+    "object": {
+      "table": "テーブル",
+      "column": "カラム",
+      "index": "インデックス",
+      "constraint": "制約",
+      "view": "ビュー",
+      "sequence": "シーケンス"
+    }
   }
 }
