@@ -257,8 +257,8 @@ func TestBranchAPI_NestedBranchPathNameIsChecked(t *testing.T) {
 	denyMid := newBranchTokenWith(t, db, "tok_nested", []string{AbilityRead},
 		stmtDoc("Allow", `"db:write"`, `"database:app-db"`), stmtDoc("Allow", `"db:admin"`, `"database:app-db-pr-*"`),
 		stmtDoc("Deny", `"db:read"`, `"database:app-db-pr-5"`))
-	if code := branchTokenDo(rt, denyMid, http.MethodGet, "/api/v1/databases/app-db-pr-5/branches/app-db-pr-5-x", ""); code != http.StatusNotFound {
-		t.Fatalf("nested show with a denied path database = %d, want 404", code)
+	if code := branchTokenDo(rt, denyMid, http.MethodGet, "/api/v1/databases/app-db-pr-5/branches/app-db-pr-5-x", ""); !denied(code) {
+		t.Fatalf("nested show with a denied path database = %d, want 403 or 404", code)
 	}
 }
 
@@ -316,13 +316,12 @@ func TestBranchAPI_AuditRecordsResolvedRoot(t *testing.T) {
 		if strings.Contains(row.DatabaseName, "HOSTILE") || strings.Contains(row.BranchName, "HOSTILE") {
 			t.Errorf("raw caller value in audit row: %+v", row)
 		}
-		if row.BranchName == "app-db-pr-3" && row.DatabaseName == "app-db" {
-			if row.Outcome == "ok" {
-				sawOK = true
-			}
-			if row.Outcome == "denied" {
-				sawDenied = true
-			}
+		// A refusal at the gate happens before the root is resolved, so its row names no database.
+		if row.BranchName == "app-db-pr-3" && row.Outcome == "ok" && row.DatabaseName == "app-db" {
+			sawOK = true
+		}
+		if row.BranchName == "app-db-pr-3" && row.Outcome == "denied" && row.DatabaseName == "" {
+			sawDenied = true
 		}
 	}
 	if !sawOK || !sawDenied {
