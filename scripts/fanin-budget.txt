@@ -66,6 +66,7 @@ internal/usagecost 190
 internal/version 36
 kit/cronexpr 201
 kit/diskspace 58
+kit/forecast 24
 kit/ids 92
 kit/netguard 214
 kit/pathfilter 27
