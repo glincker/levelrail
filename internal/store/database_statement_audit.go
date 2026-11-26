@@ -109,7 +109,7 @@ func (db *DB) ListDatabaseStatementAudits(ctx context.Context, f DatabaseStateme
 		}
 	}
 	if f.MatchDatabaseID {
-		where = append(where, "database_id = ?")
+		where = append(where, "(database_id = ? OR database_id = '')")
 		args = append(args, f.DatabaseID)
 	}
 	add("principal_id = ?", f.PrincipalID)

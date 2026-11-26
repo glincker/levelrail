@@ -3,7 +3,6 @@ CREATE TABLE database_statement_audit (
     id             TEXT PRIMARY KEY,
     at             TEXT NOT NULL,
     database_name  TEXT NOT NULL,
-    database_id    TEXT NOT NULL DEFAULT '',
     engine         TEXT NOT NULL DEFAULT '',
     principal_type TEXT NOT NULL DEFAULT '',
     principal_id   TEXT NOT NULL DEFAULT '',
