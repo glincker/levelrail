@@ -312,6 +312,8 @@ databases.params_max_connections
 databases.params_max_memory_mb
 databases.pooler_default
 databases.pooler_image
+databases.schema_diff_max_objects
+databases.schema_diff_timeout_seconds
 databases.stats_interval_seconds
 databases.stats_max_databases
 databases.stats_timeout_seconds
