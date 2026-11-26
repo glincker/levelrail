@@ -14,12 +14,14 @@ import {
 } from '@/components/ui/sidebar'
 import { useTranslation } from 'react-i18next'
 import { useBrand } from '../hooks/useBrand'
+import { useHasStockWordmark } from '../hooks/useHasStockWordmark'
 import { AccountMenu } from './shell/AccountMenu'
 import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
 import { GlobalNav } from './shell/GlobalNav'
 import { sidebarArea } from './shell/sidebarArea'
 import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
+import { BrandWordmark } from './BrandWordmark'
 import { useRecordRecent } from './shell/useNavPrefs'
 const SidebarCustomize = lazy(() =>
   import('./shell/SidebarCustomize').then((m) => ({
@@ -81,6 +83,7 @@ function warmScopedSidebars() {
 export function AppSidebar() {
   const { t } = useTranslation()
   const brand = useBrand()
+  const stockWordmark = useHasStockWordmark()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = appScopeName(pathname)
   const scopedDatabaseName = databaseScopeName(pathname)
@@ -106,12 +109,27 @@ export function AppSidebar() {
               render={<Link to="/" />}
               className="cursor-pointer gap-2 rounded-md transition-colors duration-150 ease-out motion-reduce:transition-none data-[slot=sidebar-menu-button]:!p-1 h-7 hover:bg-sidebar-accent/70 active:bg-sidebar-accent"
             >
-              <span className="relative flex size-5 shrink-0 items-center justify-center text-sm font-bold text-foreground">
-                <BrandMarkGlyph svgWrapperClassName="flex size-5 items-center justify-center [&_svg]:size-full" />
-              </span>
-              <span className="truncate text-sm font-semibold group-data-[collapsible=icon]:hidden">
-                {brand.ShortName || brand.Name}
-              </span>
+              {stockWordmark ? (
+                <>
+                  <BrandWordmark
+                    width={80}
+                    height={28}
+                    className="h-7 w-auto group-data-[collapsible=icon]:hidden"
+                  />
+                  <span className="relative hidden size-5 shrink-0 items-center justify-center text-sm font-bold text-foreground group-data-[collapsible=icon]:flex">
+                    <BrandMarkGlyph svgWrapperClassName="flex size-5 items-center justify-center [&_svg]:size-full" />
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="relative flex size-5 shrink-0 items-center justify-center text-sm font-bold text-foreground">
+                    <BrandMarkGlyph svgWrapperClassName="flex size-5 items-center justify-center [&_svg]:size-full" />
+                  </span>
+                  <span className="truncate text-sm font-semibold group-data-[collapsible=icon]:hidden">
+                    {brand.ShortName || brand.Name}
+                  </span>
+                </>
+              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

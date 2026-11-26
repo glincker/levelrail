@@ -9,6 +9,7 @@ import {
 } from '@thesvg/ui-react'
 import { devModeQueryOptions } from '../queries/devMode'
 import { useBrand } from '../hooks/useBrand'
+import { useHasStockWordmark } from '../hooks/useHasStockWordmark'
 import {
   setupStatusQueryOptions,
   useConsumeSessionLink,
@@ -31,6 +32,7 @@ import { InsecureConnectionBanner } from './InsecureConnectionBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { HeaderLanguageSelect } from './language/HeaderLanguageSelect'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
+import { BrandWordmark } from './BrandWordmark'
 import { LoginBrandPanel } from './LoginBrandPanel'
 import { LockedOutDialog } from './LockedOutDialog'
 import { LoginAttribution } from './LoginAttribution'
@@ -62,6 +64,7 @@ export function LoginScreen({
   passwordMode?: boolean
 }) {
   const brand = useBrand()
+  const stockWordmark = useHasStockWordmark()
   const { t } = useTranslation('common')
   const setupStatus = useQuery(setupStatusQueryOptions())
   const consumeSessionLink = useConsumeSessionLink()
@@ -111,15 +114,21 @@ export function LoginScreen({
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4">
         <div className="flex flex-col items-center gap-2 text-center">
-          <div
-            aria-hidden="true"
-            className="flex size-10 items-center justify-center rounded-lg text-base font-semibold shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
-          >
-            <BrandMarkGlyph />
-          </div>
-          <span className="text-sm font-medium text-foreground">
-            {brandLabel}
-          </span>
+          {stockWordmark ? (
+            <BrandWordmark width={140} height={49} />
+          ) : (
+            <>
+              <div
+                aria-hidden="true"
+                className="flex size-10 items-center justify-center rounded-lg text-base font-semibold shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
+              >
+                <BrandMarkGlyph />
+              </div>
+              <span className="text-sm font-medium text-foreground">
+                {brandLabel}
+              </span>
+            </>
+          )}
         </div>
         <Card className="w-full max-w-sm shadow-sm">
           <CardContent className="space-y-4 pt-6">
@@ -156,17 +165,21 @@ export function LoginScreen({
     <div className="grid min-h-dvh bg-background lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
       <div className="relative flex min-w-0 flex-col px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-10">
         <header className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span
-              aria-hidden="true"
-              className="flex size-8 items-center justify-center rounded-lg"
-            >
-              <BrandMarkGlyph />
-            </span>
-            <span className="text-sm font-medium text-foreground">
-              {brandLabel}
-            </span>
-          </div>
+          {stockWordmark ? (
+            <BrandWordmark width={100} height={35} />
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="flex size-8 items-center justify-center rounded-lg"
+              >
+                <BrandMarkGlyph />
+              </span>
+              <span className="text-sm font-medium text-foreground">
+                {brandLabel}
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <HeaderLanguageSelect />
             <ThemeToggle />
