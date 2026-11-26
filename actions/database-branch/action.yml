@@ -1,0 +1,152 @@
+name: Levelrail database branch
+description: Create a database branch for a pull request, comment its details, and delete it when the pull request closes.
+inputs:
+  server:
+    description: Base URL of your Levelrail server, for example https://levelrail.example.com.
+    required: true
+  token:
+    description: Levelrail API token that may manage database branches. Store it as a secret.
+    required: true
+  database:
+    description: Name of the database to branch.
+    required: true
+  mode:
+    description: Branch mode, schema or full.
+    required: false
+    default: schema
+  ttl:
+    description: Auto delete after this time, for example 7d, 12h or never.
+    required: false
+    default: 7d
+  pr-number:
+    description: Pull request number.
+    required: false
+    default: ${{ github.event.pull_request.number }}
+  comment:
+    description: Post or update one comment on the pull request (needs pull-requests write permission).
+    required: false
+    default: "true"
+  version:
+    description: CLI release tag to install, for example v1.5.7. Empty means the latest release.
+    required: false
+    default: ""
+  github-token:
+    description: Token used to download the release asset and post the PR comment.
+    required: false
+    default: ${{ github.token }}
+outputs:
+  branch:
+    description: Branch name, pr-<number>.
+    value: ${{ steps.branch.outputs.branch }}
+  host:
+    description: Host of the branch database inside the platform network.
+    value: ${{ steps.branch.outputs.host }}
+  port:
+    description: Port of the branch database.
+    value: ${{ steps.branch.outputs.port }}
+  database-name:
+    description: Name of the branch database.
+    value: ${{ steps.branch.outputs.database_name }}
+runs:
+  using: composite
+  steps:
+    - name: Install the CLI
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        BIN_DIR: ${{ runner.temp }}/levelrail-bin
+        RUNNER_OS_NAME: ${{ runner.os }}
+        RUNNER_ARCH_NAME: ${{ runner.arch }}
+      run: |
+        set -euo pipefail
+        case "${RUNNER_OS_NAME}" in Linux) os=linux ;; macOS) os=darwin ;; *) echo "::error::unsupported runner OS ${RUNNER_OS_NAME}"; exit 1 ;; esac
+        case "${RUNNER_ARCH_NAME}" in X64) arch=amd64 ;; ARM64) arch=arm64 ;; *) echo "::error::unsupported runner arch ${RUNNER_ARCH_NAME}"; exit 1 ;; esac
+        asset="levelrail-cli-${os}-${arch}"
+        work="$(mktemp -d)"
+        tag_args=()
+        if [ -n "${VERSION}" ]; then tag_args=("${VERSION}"); fi
+        gh release download "${tag_args[@]}" --repo GLINCKER/levelrail --pattern "${asset}" --pattern checksums.txt --dir "${work}"
+        (cd "${work}" && grep " ${asset}\$" checksums.txt > expected.txt && { sha256sum -c expected.txt 2>/dev/null || shasum -a 256 -c expected.txt; })
+        mkdir -p "${BIN_DIR}"
+        install -m 0755 "${work}/${asset}" "${BIN_DIR}/levelrail-cli"
+        echo "${BIN_DIR}" >> "$GITHUB_PATH"
+    - name: Create or reuse the branch
+      id: branch
+      if: ${{ github.event.action != 'closed' }}
+      shell: bash
+      env:
+        APP_API_URL: ${{ inputs.server }}
+        APP_API_TOKEN: ${{ inputs.token }}
+        DATABASE: ${{ inputs.database }}
+        MODE: ${{ inputs.mode }}
+        TTL: ${{ inputs.ttl }}
+        PR: ${{ inputs.pr-number }}
+      run: |
+        set -euo pipefail
+        echo "::add-mask::${APP_API_TOKEN}"
+        case "${PR}" in ''|*[!0-9]*) echo "::error::pr-number must be a number"; exit 1 ;; esac
+        out="$(levelrail-cli databases branch pr "${DATABASE}" --pr "${PR}" --mode "${MODE}" --ttl "${TTL}" --json)"
+        {
+          echo "branch=$(printf '%s' "${out}" | jq -r '.branch')"
+          echo "host=$(printf '%s' "${out}" | jq -r '.host // ""')"
+          echo "port=$(printf '%s' "${out}" | jq -r '.port // ""')"
+          echo "database_name=$(printf '%s' "${out}" | jq -r '.database_name')"
+        } >> "$GITHUB_OUTPUT"
+        printf '%s' "${out}" > "${RUNNER_TEMP}/levelrail-branch.json"
+        levelrail-cli databases branch diff "${DATABASE}" "pr-${PR}" --json > "${RUNNER_TEMP}/levelrail-diff.json" || echo '{}' > "${RUNNER_TEMP}/levelrail-diff.json"
+    - name: Comment the branch on the pull request
+      if: ${{ inputs.comment == 'true' && github.event_name == 'pull_request' && github.event.action != 'closed' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR: ${{ inputs.pr-number }}
+      run: |
+        set -euo pipefail
+        marker="<!-- levelrail-database-branch -->"
+        b="${RUNNER_TEMP}/levelrail-branch.json"
+        d="${RUNNER_TEMP}/levelrail-diff.json"
+        # Values come from the API as data and are rendered inside code spans only.
+        body="$(
+          printf '%s\n' "${marker}" "### Levelrail database branch" ""
+          jq -r '"Branch `\(.branch | gsub("[^A-Za-z0-9_.-]"; "_"))`, mode `\(.mode | gsub("[^A-Za-z0-9_.-]"; "_"))`, state `\(.state | gsub("[^A-Za-z0-9_.-]"; "_"))`, expires `\((.expires_at // "never") | gsub("[^A-Za-z0-9_.:+-]"; "_"))`."' "${b}"
+          jq -r 'select(.host != null and .host != "") | "\nHost `\(.host | gsub("[^A-Za-z0-9_.-]"; "_"))`, port `\(.port)`. Credentials are not shown here."' "${b}"
+          printf '\n'
+          jq -r '
+            def clean: tostring | gsub("[^A-Za-z0-9_.$-]"; "_");
+            if (.summary // null) == null then "Schema diff not available."
+            else "<details><summary>Schema diff: \(.summary.added) added, \(.summary.removed) removed, \(.summary.changed) changed</summary>\n\n"
+              + ((.changes // [])[:20] | map("- `\(.kind | clean)` `\(.object | clean)` `\(.schema | clean).\(if (.table // "") != "" then (.table | clean) + "." else "" end)\(.name | clean)`") | join("\n"))
+              + (if ((.changes // []) | length) > 20 then "\n- and \(((.changes // []) | length) - 20) more" else "" end)
+              + "\n\n</details>" end' "${d}"
+        )"
+        body="$(printf '%s' "${body}" | head -c 4000)"
+        id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate --jq "[.[] | select(.body | contains(\"${marker}\"))][0].id // empty" | head -n 1)"
+        if [ -n "${id}" ]; then
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="${body}" > /dev/null || echo "::warning::could not update the pull request comment"
+        else
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" -f body="${body}" > /dev/null || echo "::warning::could not comment on the pull request"
+        fi
+    - name: Delete the branch
+      if: ${{ github.event.action == 'closed' }}
+      shell: bash
+      env:
+        APP_API_URL: ${{ inputs.server }}
+        APP_API_TOKEN: ${{ inputs.token }}
+        DATABASE: ${{ inputs.database }}
+        COMMENT: ${{ inputs.comment }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR: ${{ inputs.pr-number }}
+      run: |
+        set -euo pipefail
+        echo "::add-mask::${APP_API_TOKEN}"
+        case "${PR}" in ''|*[!0-9]*) echo "::error::pr-number must be a number"; exit 1 ;; esac
+        levelrail-cli databases branch pr-close "${DATABASE}" --pr "${PR}" --yes
+        if [ "${COMMENT}" = "true" ]; then
+          marker="<!-- levelrail-database-branch -->"
+          id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate --jq "[.[] | select(.body | contains(\"${marker}\"))][0].id // empty" | head -n 1)"
+          if [ -n "${id}" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="${marker}
+        Branch deleted." > /dev/null || echo "::warning::could not update the pull request comment"
+          fi
+        fi
