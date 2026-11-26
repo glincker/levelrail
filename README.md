@@ -30,6 +30,14 @@ A self-hosted deployment platform in one Go binary. The control plane idles at a
 <a href="https://demo.levelrail.com"><img src="docs/assets/brand/social/hero-2560x1280-light.jpg" alt="Levelrail: a lightweight, self-hosted deployment platform. Try the live demo." width="880"></a>
 </div>
 
+**Levelrail is a lightweight, open source, self-hosted platform as a service (PaaS) that turns your own servers into a deployment platform.** Running apps on a VPS, a homelab box or a rack usually means stitching together Docker, a reverse proxy, TLS certificates, a CI pipeline, backups, databases, monitoring and alerts, and then keeping all of it patched. Levelrail replaces that pile of glue with one Go binary and one dashboard, so shipping software to servers you own feels like using a managed platform such as Heroku, Vercel, Netlify or Railway, without a managed platform's bill or lock-in.
+
+**How it works:** push to git, and Levelrail builds your app, serves it over automatic HTTPS and rolls back if the deploy goes wrong. Add a database with backups, branches and a built-in explorer, pick from 570+ one-click apps, open a preview environment, and watch it all with monitoring and alerts. The control plane idles at about 200 MB of RAM ([measured](docs/performance.md)), runs on a small VPS and grows to more servers through a node agent (beta). If you are looking for a lightweight alternative to Coolify, Dokku, Dokploy, CapRover or Kamal, this is the one-binary option.
+
+**Who it makes life easier for:** solo developers and small teams get a Heroku, Vercel or Railway style workflow on cheap hardware they own. Homelabbers get one place to deploy, update and back up everything. Agencies and platform teams get an audit log, roles and backups that are verified with restore drills. Coding agents can operate it safely through an MCP server with scoped tools and confirm-gated writes.
+
+**Coming from another platform?** Side by side pages: [Coolify](docs/coolify-alternative.md), [Dokku](docs/dokku-alternative.md), [Dokploy](docs/dokploy-alternative.md), [CapRover](docs/caprover-alternative.md), [Kamal](docs/kamal-alternative.md), [Heroku](docs/heroku-alternative.md), [Railway](docs/railway-alternative.md), [Netlify](docs/netlify-alternative.md), [Vercel](docs/vercel-alternative.md) and [Cloud Run](docs/cloud-run-alternative.md), or the [overall comparison](docs/comparison.md).
+
 v1.x. Single-server is production ready, multi-node is beta. Levelrail turns Linux servers into a private cloud and works with the Kubernetes clusters and cloud accounts you already have. Every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).
 
 ## Install
@@ -221,6 +229,18 @@ Each claim links to the page that backs it. The status column follows [Feature s
 | An MCP server with ability-scoped tools and confirm-gated writes, never in the reconcile path | beta | [MCP](docs/mcp.md), [Tool surface](docs/mcp-tool-surface.md) |
 
 Moving from another platform: [Migrate to Levelrail](docs/migrate-to-levelrail.md). Architecture notes: [Comparison](docs/comparison.md).
+
+## Common questions
+
+**What is Levelrail?** A lightweight, open source (Apache 2.0), self-hosted PaaS in one Go binary. You push to git, and it builds, deploys, serves HTTPS, rolls back and runs your databases on servers you own.
+
+**Is Levelrail an alternative to Coolify, Dokku or Dokploy?** They solve the same problem: deploying apps to your own servers without a managed platform. Levelrail is one Go binary with a control plane that idles at about 200 MB of RAM, and it adds built-in databases with backups and branches, preview environments, a node agent for multi-node setups (beta) and an MCP server. The [Coolify](docs/coolify-alternative.md), [Dokku](docs/dokku-alternative.md) and [Dokploy](docs/dokploy-alternative.md) pages compare feature by feature.
+
+**Can it replace Heroku, Vercel, Netlify or Railway?** For git push deploys, preview environments, HTTPS, rollbacks and databases on your own servers, yes. See the [Heroku](docs/heroku-alternative.md), [Vercel](docs/vercel-alternative.md), [Netlify](docs/netlify-alternative.md) and [Railway](docs/railway-alternative.md) pages, and [Migrate to Levelrail](docs/migrate-to-levelrail.md).
+
+**What does it run on?** A Linux server (amd64 or arm64, systemd). The installer adds Docker. A small VPS or a homelab machine is enough for a single server.
+
+**Does it work with Kubernetes and the cloud?** It can connect existing Kubernetes clusters as deploy targets (experimental) and provision nodes on cloud accounts you already have. Each feature's status is in [Feature status](docs/feature-status.md).
 
 ## Community
 
