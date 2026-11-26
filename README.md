@@ -36,6 +36,17 @@ flowchart LR
   deploy -. "fails its health check" .-> back["Rolled back"]
 ```
 
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/carousel-dark.webp"><img src="docs/assets/readme/carousel-light.webp" alt="Levelrail dashboard tour: dashboard, live deploy logs, databases, branches, SQL console and schema map" width="880"></picture></p>
+
+<p align="center">
+<a href="docs/assets/screenshots/dashboard-home.png"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/thumb-1-dashboard-home-dark.webp"><img src="docs/assets/readme/thumb-1-dashboard-home-light.webp" alt="Dashboard" width="136"></picture></a>
+<a href="docs/assets/screenshots/deploy-live-log.png"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/thumb-2-deploy-live-log-dark.webp"><img src="docs/assets/readme/thumb-2-deploy-live-log-light.webp" alt="Deploys with live logs" width="136"></picture></a>
+<a href="docs/assets/screenshots/databases-list.png"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/thumb-3-databases-list-dark.webp"><img src="docs/assets/readme/thumb-3-databases-list-light.webp" alt="Databases" width="136"></picture></a>
+<a href="docs/assets/screenshots/database-branches.png"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/thumb-4-database-branches-dark.webp"><img src="docs/assets/readme/thumb-4-database-branches-light.webp" alt="Database branches" width="136"></picture></a>
+<a href="docs/assets/screenshots/database-sql-editor.png"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/thumb-5-database-sql-editor-dark.webp"><img src="docs/assets/readme/thumb-5-database-sql-editor-light.webp" alt="SQL console" width="136"></picture></a>
+<a href="docs/assets/screenshots/database-schema-map.png"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/thumb-6-database-schema-map-dark.webp"><img src="docs/assets/readme/thumb-6-database-schema-map-light.webp" alt="Schema map" width="136"></picture></a>
+</p>
+
 **Get started:** [install on a Linux server in one line](#install), [try the live demo](https://demo.levelrail.com) first, or follow [First 15 minutes](docs/first-15-minutes.md). Coming from Coolify, Dokku, Dokploy, CapRover, Kamal, Heroku, Railway, Netlify, Vercel or Cloud Run? The [side by side pages](docs/comparison.md) cover each: [Coolify](docs/coolify-alternative.md), [Dokku](docs/dokku-alternative.md), [Dokploy](docs/dokploy-alternative.md), [CapRover](docs/caprover-alternative.md), [Kamal](docs/kamal-alternative.md), [Heroku](docs/heroku-alternative.md), [Railway](docs/railway-alternative.md), [Netlify](docs/netlify-alternative.md), [Vercel](docs/vercel-alternative.md), [Cloud Run](docs/cloud-run-alternative.md).
 
 v1.x. Single-server is production ready, multi-node is beta. Levelrail works with the Kubernetes clusters and cloud accounts you already have, and every feature carries a stable, beta or experimental label in [Feature status](docs/feature-status.md).
