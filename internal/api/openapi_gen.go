@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2419 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2420 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -827,6 +827,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/access/temp", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseTempCredentials", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/access/temp", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleIssueDatabaseTempCredential", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/access/temp/{id}", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRevokeDatabaseTempCredential", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/audit", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseStatementAudit", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListBaseBackupHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleTriggerBaseBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/branch-capabilities", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleBranchCapabilities", Description: ""},

@@ -1324,6 +1324,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handleListDatabaseLinks": Operation("GET", "/api/v1/databases/{name}/links", False, False),
     "handleListDatabaseQueryHistory": Operation("GET", "/api/v1/databases/{name}/query-history", False, False),
     "handleListDatabaseSavedQueries": Operation("GET", "/api/v1/databases/{name}/saved-queries", False, False),
+    "handleListDatabaseStatementAudit": Operation("GET", "/api/v1/databases/{name}/audit", False, False),
     "handleListDatabaseTags": Operation("GET", "/api/v1/databases/{name}/tags", False, False),
     "handleListDatabaseTempCredentials": Operation("GET", "/api/v1/databases/{name}/access/temp", False, False),
     "handleListDatabaseUsers": Operation("GET", "/api/v1/databases/{name}/users", False, False),

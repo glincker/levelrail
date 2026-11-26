@@ -1051,6 +1051,7 @@ Endpoints for:
 | DELETE | /api/v1/databases/{name}/branches/{branch} | AbilityRoot | handleDeleteDatabaseBranch |
 | POST | /api/v1/databases/{name}/branches/{branch}/reset | AbilityRoot | handleResetDatabaseBranch |
 | POST | /api/v1/databases/{name}/branches/{branch}/promote | AbilityRoot | handlePromoteDatabaseBranch |
+| GET | /api/v1/databases/{name}/audit | AbilityRoot | handleListDatabaseStatementAudit |
 | GET | /api/v1/databases/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/databases/{name}/notes | AbilityWrite |  |
 

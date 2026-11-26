@@ -1316,6 +1316,7 @@ var Operations = map[string]Operation{
 	"handleListDatabaseLinks":                  {Method: "GET", Path: "/api/v1/databases/{name}/links", HasBody: false, Stream: false},
 	"handleListDatabaseQueryHistory":           {Method: "GET", Path: "/api/v1/databases/{name}/query-history", HasBody: false, Stream: false},
 	"handleListDatabaseSavedQueries":           {Method: "GET", Path: "/api/v1/databases/{name}/saved-queries", HasBody: false, Stream: false},
+	"handleListDatabaseStatementAudit":         {Method: "GET", Path: "/api/v1/databases/{name}/audit", HasBody: false, Stream: false},
 	"handleListDatabaseTags":                   {Method: "GET", Path: "/api/v1/databases/{name}/tags", HasBody: false, Stream: false},
 	"handleListDatabaseTempCredentials":        {Method: "GET", Path: "/api/v1/databases/{name}/access/temp", HasBody: false, Stream: false},
 	"handleListDatabaseUsers":                  {Method: "GET", Path: "/api/v1/databases/{name}/users", HasBody: false, Stream: false},
