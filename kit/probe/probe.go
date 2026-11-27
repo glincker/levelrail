@@ -137,6 +137,9 @@ const (
 	FailureExitCode     FailureKind = "ExecNonZeroExit"
 	FailureExecError    FailureKind = "ExecFailed"
 	FailureExecNotReady FailureKind = "ExecUnavailable"
+	// FailureUnsupported marks a probe that cannot run in this image with no
+	// port to fall back to; it is reported, never counted as a failure.
+	FailureUnsupported FailureKind = "ProbeUnsupported"
 )
 
 // Failure is one failed probe attempt. Its Error text is written for an
@@ -307,8 +310,14 @@ func (p *Prober) attempt(ctx context.Context, t Target, cfg Config) error {
 	}
 	if cfg.IsExec() {
 		err := p.execAttempt(ctx, t.ContainerID, cfg.Exec, timeout)
-		if err != nil && t.FallbackAddr != "" && execCannotRun(err) {
-			return p.tcpAttempt(ctx, t.FallbackAddr, timeout)
+		if err != nil && execCannotRun(err) {
+			if t.FallbackAddr != "" {
+				return p.tcpAttempt(ctx, t.FallbackAddr, timeout)
+			}
+			// A vanished container is a real failure, not an unsupported probe.
+			if !strings.Contains(err.Error(), "no such container") {
+				return p.unsupportedExec(t.ContainerID, cfg.Exec, err)
+			}
 		}
 		return err
 	}

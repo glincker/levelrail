@@ -68,8 +68,9 @@ func runnableProbe(p *store.ServiceProbe, port int) *store.ServiceProbe {
 func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerState, p store.ServiceProbe, port int, nodeID string) (probe.Target, error) {
 	if !p.NeedsPort() {
 		t := probe.Target{ContainerID: state.ID}
-		// Best-effort TCP fallback for shell-less images where exec cannot run.
-		if addr, err := PrimaryAddr(state, port); port > 0 && nodeID == "" && err == nil {
+		// TCP fallback for shell-less images where exec cannot run. Port 0
+		// (compose import) uses the first published tcp port.
+		if addr, err := PrimaryAddr(state, port); nodeID == "" && err == nil {
 			t.FallbackAddr = addr
 		}
 		return t, nil

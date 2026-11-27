@@ -81,3 +81,12 @@ func execCannotRun(err error) bool {
 	}
 	return false
 }
+
+// unsupportedExec passes a probe that cannot start and has no port to fall
+// back to, so the container's running state decides health. The reason is
+// reported through the attempt side channel for status and doctor output.
+func (p *Prober) unsupportedExec(containerID string, cmd []string, cause error) error {
+	reason := fmt.Sprintf("probe unsupported: exec %s cannot run in this image and no port is known to check instead (%v); using the container running state", DescribeCommand(cmd), cause)
+	p.report(time.Now(), containerID, 0, 0, &Failure{Kind: FailureUnsupported, Reason: reason})
+	return nil
+}
