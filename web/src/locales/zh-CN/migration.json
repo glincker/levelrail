@@ -753,6 +753,9 @@
     }
   },
   "importPlan": {
+    "sampleBadge": "示例方案",
+    "sampleHint": "此仓库的示例方案和构建日志。安装 Levelrail 后即可真实分析并部署。",
+    "sampleLogLabel": "示例构建日志",
     "anonymousVolume": "（匿名）",
     "importingToast": "正在导入“{{name}}”。",
     "watching": "正在查看构建日志。",

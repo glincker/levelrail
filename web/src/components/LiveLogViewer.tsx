@@ -2,6 +2,8 @@ import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useLogStream } from '../hooks/useLogStream'
+import { useIsDemo } from '../hooks/useDemo'
+import { DemoSampleLogs } from './demo/DemoSampleResults'
 import { buildLiveLogStreamUrl } from '../queries/liveLogs'
 import type { ReconcileCondition } from '../types/deploy'
 import { ContainerExitBanner } from './ContainerExitBanner'
@@ -27,6 +29,7 @@ export function LiveLogViewer({
 }) {
   const { t } = useTranslation('observability')
   const { t: tRows } = useTranslation('appRows')
+  const isDemo = useIsDemo()
   const url = buildLiveLogStreamUrl(appName)
   const { lines, connectionState, isPaused, pause, resume, runStatus } =
     useLogStream(url)
@@ -109,6 +112,7 @@ export function LiveLogViewer({
         </p>
       ) : null}
 
+      {isDemo && lines.length === 0 ? <DemoSampleLogs /> : null}
       <LogTerminal
         lines={lines}
         isPaused={isPaused}

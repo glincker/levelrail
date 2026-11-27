@@ -27,8 +27,6 @@
   },
   "unavailable": {
     "title": "Indisponível na demonstração",
-    "terminal": "O terminal e a execução de comandos rodam comandos em um host real, por isso estão desativados na demonstração.",
-    "database": "O explorador de banco de dados e o console SQL se conectam a um banco de dados real, por isso estão desativados na demonstração.",
     "generic": "Este recurso precisa de um host real, por isso está desativado na demonstração.",
     "installHint": "Instale o {{brand}} no seu próprio servidor para usá-lo.",
     "install": "Veja como instalar"
@@ -79,5 +77,86 @@
     "description": "This feature needs a real server, so the demo shows it as a preview only. Install {{brand}} on your own host to use it with your apps.",
     "install": "Install {{brand}}",
     "title": "Available when you install"
+  },
+  "sample": {
+    "badge": "Exemplo",
+    "back": "Voltar",
+    "close": "Fechar",
+    "chat": {
+      "hint": "Respostas prontas para mostrar como o assistente responde. Instale para conectar seu próprio modelo e perguntar sobre seus apps.",
+      "empty": "Escolha uma pergunta para ver uma resposta de exemplo.",
+      "prompts": {
+        "crashloop": "Por que meu app está reiniciando?",
+        "slow": "Por que as respostas ficaram lentas?",
+        "rollback": "Reverter o último deploy"
+      },
+      "replies": {
+        "crashloop": "Resposta de exemplo: li as últimas 200 linhas de log e os códigos de saída do contêiner. O processo termina com o código 1 logo após iniciar porque falta uma variável obrigatória. Defina-a no ambiente do app e faça o deploy novamente.",
+        "slow": "Resposta de exemplo: comparei CPU, memória e latência das requisições na última hora. A latência sobe quando a memória chega perto do limite. Aumentar o limite de memória ou adicionar uma réplica deve ajudar.",
+        "rollback": "Resposta de exemplo: eu proporia reverter para o deploy saudável anterior e esperaria sua aprovação antes de alterar qualquer coisa. Mudanças sempre precisam da sua confirmação."
+      }
+    },
+    "terminal": {
+      "hint": "Uma sessão de shell de exemplo. Instale para abrir um terminal real dentro dos seus próprios contêineres.",
+      "label": "Transcrição de terminal de exemplo"
+    },
+    "database": {
+      "hint": "Uma consulta e um resultado de exemplo. Instale para executar SQL nos seus próprios bancos de dados.",
+      "queryLabel": "Consulta SQL de exemplo",
+      "resultLabel": "Resultado de consulta de exemplo",
+      "rowCount_one": "{{count}} linha (exemplo)",
+      "rowCount_other": "{{count}} linhas (exemplo)"
+    },
+    "app": {
+      "hint": "Um resultado de exemplo. Nada foi criado. Instale para fazer o deploy deste app de verdade.",
+      "created": "Exemplo: {{name}} foi criado e implantado",
+      "url": "URL de exemplo:",
+      "logLabel": "Log de build de exemplo"
+    },
+    "db": {
+      "hint": "Um resultado de exemplo. Nenhum banco de dados foi criado. Instale para criar um no seu próprio servidor.",
+      "created": "Exemplo: o banco de dados {{name}} foi criado",
+      "status": "Status",
+      "running": "Em execução (exemplo)",
+      "connectionLabel": "String de conexão de exemplo",
+      "masked": "A senha está mascarada. Um banco de dados real mostra a própria string de conexão."
+    },
+    "env": {
+      "hint": "Uma prévia de exemplo. Nada foi salvo. Instale para gerenciar o ambiente dos seus próprios apps.",
+      "saved": "Exemplo: variáveis salvas",
+      "added": "Adicionadas",
+      "changed": "Alteradas",
+      "removed": "Removidas",
+      "noChanges": "Nenhuma alteração de chave.",
+      "redeploy": "Um novo deploy começaria agora para aplicar os novos valores (exemplo)."
+    },
+    "scale": {
+      "hint": "Uma prévia de exemplo. O app não é alterado. Instale para escalar seus próprios apps.",
+      "target": "Réplicas depois",
+      "preview": "Ver mudança de escala",
+      "change": "Réplicas: de {{from}} para {{to}} (exemplo)",
+      "steps": {
+        "start": "Iniciar as novas réplicas",
+        "health": "Aguardar os health checks passarem",
+        "route": "Direcionar o tráfego para as novas réplicas",
+        "done": "Encerrar as réplicas excedentes e concluir"
+      }
+    },
+    "dns": {
+      "hint": "Um resultado de exemplo. Nenhuma consulta DNS foi executada. Instale para verificar seus próprios domínios.",
+      "domain": "Domínio",
+      "check": "Verificar DNS",
+      "resultLabel": "Resultado de verificação de DNS de exemplo",
+      "type": "Tipo",
+      "host": "Host",
+      "value": "Aponta para",
+      "state": "Estado",
+      "verified": "Verificado (exemplo)",
+      "pending": "Aguardando o DNS (exemplo)"
+    },
+    "logs": {
+      "hint": "Este app não tem logs na demo. Estas linhas são um exemplo do que um app em execução imprime.",
+      "label": "Logs de app de exemplo"
+    }
   }
 }

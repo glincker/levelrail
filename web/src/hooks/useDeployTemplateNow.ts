@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/components/ui/toast'
+import { isDemoFinalError } from '../lib/apiError'
 import { useDeployServiceTemplateNow } from '../queries/serviceTemplates'
 import type { ComposeDeployResponse } from '../queries/compose'
 
@@ -41,6 +42,8 @@ export function useDeployTemplateNow(
         void navigate({ to: '/apps/$name', params: { name: landingName } })
       },
       onError: (error) => {
+        // The demo gate shows its own read-only notice, so no second failure toast.
+        if (isDemoFinalError(error)) return
         toast.add({
           title: t('result.deployFailed'),
           description: error.message,

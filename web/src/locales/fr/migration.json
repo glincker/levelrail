@@ -757,6 +757,9 @@
     }
   },
   "importPlan": {
+    "sampleBadge": "Plan d’exemple",
+    "sampleHint": "Plan et journal de build d’exemple pour ce dépôt. Installez Levelrail pour l’analyser et le déployer pour de vrai.",
+    "sampleLogLabel": "Journal de build d’exemple",
     "anonymousVolume": "(anonyme)",
     "importingToast": "Import de \"{{name}}\".",
     "watching": "Surveillance du log de build en cours.",

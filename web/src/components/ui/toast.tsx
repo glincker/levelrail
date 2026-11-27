@@ -14,7 +14,22 @@ import {
   TriangleAlertGlassIcon,
   XGlassIcon,
 } from '@thesvg/ui-react'
+import { isRecentDemoRefusal } from '@/lib/demoToast'
+import { getDemoInfo } from '@/lib/demoStore'
 const toast = ToastPrimitive.createToastManager()
+
+// Per-mutation onError toasts would stack a failure on the demo's read-only notice.
+const addToast = toast.add.bind(toast)
+toast.add = (options) => {
+  if (
+    options.type === 'error' &&
+    getDemoInfo().enabled &&
+    isRecentDemoRefusal()
+  ) {
+    return ''
+  }
+  return addToast(options)
+}
 
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
   return <ToastPrimitive.Provider {...props} />

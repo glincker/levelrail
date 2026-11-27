@@ -27,8 +27,6 @@
   },
   "unavailable": {
     "title": "Not available in the demo",
-    "terminal": "The terminal and command execution run commands on a real host, so they are switched off in the demo.",
-    "database": "The database explorer and SQL console connect to a live database, so they are switched off in the demo.",
     "generic": "This feature needs a real host, so it is switched off in the demo.",
     "installHint": "Install {{brand}} on your own server to use it.",
     "install": "See how to install"
@@ -79,5 +77,86 @@
     "title": "Available when you install",
     "description": "This feature needs a real server, so the demo shows it as a preview only. Install {{brand}} on your own host to use it with your apps.",
     "install": "Install {{brand}}"
+  },
+  "sample": {
+    "badge": "Sample",
+    "back": "Back",
+    "close": "Close",
+    "chat": {
+      "hint": "Canned replies to show how the assistant answers. Install to connect your own model and ask about your apps.",
+      "empty": "Pick a question to see a sample answer.",
+      "prompts": {
+        "crashloop": "Why is my app restarting?",
+        "slow": "Why did responses get slow?",
+        "rollback": "Roll back the last deploy"
+      },
+      "replies": {
+        "crashloop": "Sample reply: I read the last 200 log lines and the container exit codes. The process exits with code 1 right after start because a required variable is missing. Set it in the app environment and redeploy.",
+        "slow": "Sample reply: I compared CPU, memory and request latency for the last hour. Latency rises with memory use near the limit. Raising the memory limit or adding a replica should help.",
+        "rollback": "Sample reply: I would propose a rollback to the previous healthy deploy and wait for your approval before changing anything. Changes always need your confirmation."
+      }
+    },
+    "terminal": {
+      "hint": "A sample shell session. Install to open a real terminal inside your own containers.",
+      "label": "Sample terminal transcript"
+    },
+    "database": {
+      "hint": "A sample query and result. Install to run SQL against your own databases.",
+      "queryLabel": "Sample SQL query",
+      "resultLabel": "Sample query result",
+      "rowCount_one": "{{count}} row (sample)",
+      "rowCount_other": "{{count}} rows (sample)"
+    },
+    "app": {
+      "hint": "A sample result. Nothing was created. Install to deploy this app for real.",
+      "created": "Sample: {{name}} was created and deployed",
+      "url": "Sample URL:",
+      "logLabel": "Sample build log"
+    },
+    "db": {
+      "hint": "A sample result. No database was created. Install to create one on your own server.",
+      "created": "Sample: database {{name}} was created",
+      "status": "Status",
+      "running": "Running (sample)",
+      "connectionLabel": "Sample connection string",
+      "masked": "The password is masked. A real database shows its own connection string."
+    },
+    "env": {
+      "hint": "A sample preview. Nothing was saved. Install to manage the environment of your own apps.",
+      "saved": "Sample: variables saved",
+      "added": "Added",
+      "changed": "Changed",
+      "removed": "Removed",
+      "noChanges": "No key changes.",
+      "redeploy": "A redeploy would start now to apply the new values (sample)."
+    },
+    "scale": {
+      "hint": "A sample preview. The app is not changed. Install to scale your own apps.",
+      "target": "Replicas after",
+      "preview": "Preview scale change",
+      "change": "Replicas: {{from}} to {{to}} (sample)",
+      "steps": {
+        "start": "Start the new replicas",
+        "health": "Wait for health checks to pass",
+        "route": "Route traffic to the new replicas",
+        "done": "Retire surplus replicas and finish"
+      }
+    },
+    "dns": {
+      "hint": "A sample result. No DNS lookup ran. Install to check your own domains.",
+      "domain": "Domain",
+      "check": "Check DNS",
+      "resultLabel": "Sample DNS check result",
+      "type": "Type",
+      "host": "Host",
+      "value": "Points to",
+      "state": "State",
+      "verified": "Verified (sample)",
+      "pending": "Waiting for DNS (sample)"
+    },
+    "logs": {
+      "hint": "This app has no logs in the demo. These lines are a sample of what a running app prints.",
+      "label": "Sample app logs"
+    }
   }
 }

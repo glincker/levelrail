@@ -755,6 +755,9 @@
     }
   },
   "importPlan": {
+    "sampleBadge": "Beispielplan",
+    "sampleHint": "Beispielplan und Build-Log für dieses Repository. Installiere Levelrail, um es echt zu analysieren und zu deployen.",
+    "sampleLogLabel": "Beispiel-Build-Log",
     "anonymousVolume": "(anonym)",
     "importingToast": "\"{{name}}\" wird importiert.",
     "watching": "Das Build-Log wird jetzt beobachtet.",
