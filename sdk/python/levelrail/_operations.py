@@ -1748,6 +1748,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handlePutAppAbuse": Operation("PUT", "/api/v1/apps/{name}/abuse", True, False),
     "handlePutAppCDN": Operation("PUT", "/api/v1/apps/{name}/cdn", True, False),
     "handlePutAppDeployFreeze": Operation("PUT", "/api/v1/apps/{name}/deploy-freeze", True, False),
+    "handlePutAppEnv": Operation("PUT", "/api/v1/apps/{name}/env", True, False),
     "handlePutAppImportPlan": Operation("PUT", "/api/v1/migration/apps/sessions/{id}/plan", True, False),
     "handlePutAppIngressLimits": Operation("PUT", "/api/v1/apps/{name}/ingress-limits", True, False),
     "handlePutAppProtection": Operation("PUT", "/api/v1/apps/{name}/protection", True, False),

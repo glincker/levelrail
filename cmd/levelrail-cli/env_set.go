@@ -85,15 +85,14 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		if !quiet {
 			printEnvNameDiff(stderr, plan.New, plan.Changed, nil)
 		}
-		app.Env = plan.Merged
-		saved, err := client.UpdateApp(ctx, name, app)
+		saved, err := mergeEnv(ctx, client, name, envMergeFromPlan(plan, false, nil))
 		if err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
+			return reportError(stdout, stderr, jsonOut, err)
 		}
 		rebuildKeys = saved.RebuildKeys
 		changed = true
 	}
-	// After the env PUT, which would otherwise resend a stale vault_env map.
+	// Env goes first in its own column-scoped call; references follow.
 	for _, k := range sortedRefKeys(refs) {
 		if _, err := client.SetAppVaultEnv(ctx, name, k, refs[k]); err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("set secret reference %q for app %q: %w", k, name, err))
@@ -282,6 +281,7 @@ One trailing newline is dropped and sources are limited to 64 KiB of UTF-8 text.
 the literal "@text". Any other leading @ (for example @oncall) is stored as typed.
 --secret NAME=secret://conn/path#key (repeatable) points a variable at a secret connection; only the reference is stored.
 Keys stored as secrets are refused, use "%[1]s apps secrets set" for those.
+All keys go to the server in one column-scoped call, so a concurrent deploy cannot drop them.
 Changes reach the running container at the next restart, or now with --apply.
 NEXT_PUBLIC_ and VITE_ keys are baked in at build time: a git app needs "%[1]s deploy <app> --latest", an upload app "%[1]s deploy <dir>".
 

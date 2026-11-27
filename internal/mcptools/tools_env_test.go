@@ -23,10 +23,10 @@ func TestEnvTools(t *testing.T) {
 		wantRedeps bool
 		wantErr    string
 	}{
-		{"set plain", "set_app_env", map[string]any{"name": "web", "key": "A", "value": "1"}, []string{"GET /api/v1/apps/web", "PUT /api/v1/apps/web"}, true, ""},
+		{"set plain", "set_app_env", map[string]any{"name": "web", "key": "A", "value": "1"}, []string{"PUT /api/v1/apps/web/env"}, true, ""},
 		{"set secret", "set_app_env", map[string]any{"name": "web", "key": "TOKEN", "value": secretValue, "secret": true}, []string{"PUT /api/v1/apps/web/secrets/TOKEN"}, true, ""},
-		{"unset plain", "unset_app_env", map[string]any{"name": "web", "key": "EXISTING"}, []string{"GET /api/v1/apps/web", "PUT /api/v1/apps/web"}, true, ""},
-		{"unset missing plain", "unset_app_env", map[string]any{"name": "web", "key": "NOPE"}, []string{"GET /api/v1/apps/web"}, false, "no plain env var"},
+		{"unset plain", "unset_app_env", map[string]any{"name": "web", "key": "EXISTING"}, []string{"PUT /api/v1/apps/web/env"}, true, ""},
+		{"unset missing plain", "unset_app_env", map[string]any{"name": "web", "key": "NOPE"}, []string{"PUT /api/v1/apps/web/env"}, false, "no plain env var"},
 		{"unset secret", "unset_app_env", map[string]any{"name": "web", "key": "TOKEN", "secret": true}, []string{"DELETE /api/v1/apps/web/secrets/TOKEN"}, true, ""},
 		{"unset secret force", "unset_app_env", map[string]any{"name": "web", "key": "TOKEN", "secret": true, "force": true}, []string{"DELETE /api/v1/apps/web/secrets/TOKEN"}, true, ""},
 	}
@@ -40,13 +40,16 @@ func TestEnvTools(t *testing.T) {
 				mu.Unlock()
 				w.Header().Set("Content-Type", "application/json")
 				switch {
-				case r.Method == http.MethodGet:
-					_ = json.NewEncoder(w).Encode(apiclient.AppResource{Name: "web", Env: map[string]string{"EXISTING": "x"}})
-				case r.Method == http.MethodPut && !strings.Contains(r.URL.Path, "/secrets/"):
-					var app apiclient.AppResource
-					_ = json.NewDecoder(r.Body).Decode(&app)
-					app.EnvDirty = true
-					_ = json.NewEncoder(w).Encode(app)
+				case r.Method == http.MethodPut && strings.HasSuffix(r.URL.Path, "/env"):
+					var req apiclient.EnvMergeRequest
+					_ = json.NewDecoder(r.Body).Decode(&req)
+					out := apiclient.EnvMergeResult{App: "web", Changed: true, EnvDirty: true, Removed: []string{}}
+					for _, k := range req.Unset {
+						if k == "EXISTING" {
+							out.Removed = append(out.Removed, k)
+						}
+					}
+					_ = json.NewEncoder(w).Encode(out)
 				default:
 					w.WriteHeader(http.StatusNoContent)
 				}

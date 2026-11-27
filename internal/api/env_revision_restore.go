@@ -76,11 +76,28 @@ func (rt *Router) handleRestoreEnvRevision(w http.ResponseWriter, r *http.Reques
 	if updated.Env == nil {
 		updated.Env = map[string]string{}
 	}
-	updated.EnvDirty = true
-	if err := rt.apps.SaveDesiredService(r.Context(), updated); err != nil {
+	merger, ok := rt.apps.(envMergeStore)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "env merge is not available on this control plane")
+		return
+	}
+	var drop []string
+	for k := range svc.Env {
+		if _, keep := updated.Env[k]; !keep {
+			drop = append(drop, k)
+		}
+	}
+	// Column-scoped so a concurrent spec write cannot undo or be undone by the restore.
+	merged, err := merger.MergeServiceEnv(r.Context(), name, updated.Env, drop)
+	if errors.Is(err, store.ErrEnvKeyIsSecret) {
+		writeError(w, http.StatusConflict, "a restored key is now stored as a secret; remove the secret first")
+		return
+	}
+	if err != nil {
 		rt.internalError(w, "api: env restore save failed", err, slog.String("name", name))
 		return
 	}
+	updated.Env = merged.After
 	out := envRevisionRestoreResource{App: name, Restored: rev, Added: []string{}, Removed: []string{}, Changed: []string{}}
 	for _, c := range diffEnvKeys(svc.Env, updated.Env) {
 		switch c.Action {

@@ -101,7 +101,7 @@ func fakeEnvServer(t *testing.T, gotPut *map[string]any) *httptest.Server {
 			_, _ = io.WriteString(w, `{"name":"web","image":"nginx","port":80,"bind_address":"private","env":{"KEEP":"1","CHG":"old"},"secret_env":["DECLARED"]}`)
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/web/secrets":
 			_, _ = io.WriteString(w, `[{"key":"API_KEY"}]`)
-		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web":
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web/env":
 			_ = json.NewDecoder(r.Body).Decode(gotPut)
 			_, _ = io.WriteString(w, `{"name":"web","image":"nginx","port":80,"bind_address":"private"}`)
 		default:
@@ -131,8 +131,8 @@ func TestRun_AppsEnvImport(t *testing.T) {
 	}
 
 	runCLIExpectOK(t, []string{"apps", "env", "import", "web", "--file", file, "--api-url", srv.URL})
-	env, _ := put["env"].(map[string]any)
-	if env["NEW"] != "n" || env["CHG"] != "fresh" || env["KEEP"] != "1" {
+	env, _ := put["set"].(map[string]any)
+	if env["NEW"] != "n" || env["CHG"] != "fresh" {
 		t.Errorf("PUT env = %v", env)
 	}
 	if _, leaked := env["API_KEY"]; leaked {

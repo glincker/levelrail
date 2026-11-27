@@ -162,7 +162,7 @@ Same as `apps logs <app>`. The log archive and search commands keep their names 
 ```
 levelrail-cli env set <app> KEY=VALUE... [--apply|--no-apply] [--allow-file-values] [flags]
 ```
-Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those. `KEY=@-` reads the value from stdin. `KEY=@./path`, `KEY=@/abs/path` and `KEY=@~/path` read a local file only with `--allow-file-values` and are refused otherwise. `KEY=@@text` stores the literal `@text`.
+Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those. `KEY=@-` reads the value from stdin. `KEY=@./path`, `KEY=@/abs/path` and `KEY=@~/path` read a local file only with `--allow-file-values` and are refused otherwise. `KEY=@@text` stores the literal `@text`. All keys go to the server in one column-scoped call, so a concurrent deploy cannot drop them.
 
 ```
 levelrail-cli open <app> [flags]

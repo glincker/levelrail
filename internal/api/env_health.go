@@ -253,7 +253,20 @@ func (rt *Router) handleFixEnv(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	updated.EnvDirty = true
-	if err := rt.apps.SaveDesiredService(r.Context(), updated); err != nil {
+	if match.Fix.Action == envFixRemoveKey {
+		// Column-scoped so a concurrent spec write cannot lose the removal.
+		merger, ok := rt.apps.(envMergeStore)
+		if !ok {
+			writeError(w, http.StatusNotImplemented, "env merge is not available on this control plane")
+			return
+		}
+		merged, err := merger.MergeServiceEnv(r.Context(), name, nil, []string{req.Key})
+		if err != nil {
+			rt.internalError(w, "api: env fix save failed", err, slog.String("name", name))
+			return
+		}
+		updated.Env = merged.After
+	} else if err := rt.apps.SaveDesiredService(r.Context(), updated); err != nil {
 		rt.internalError(w, "api: env fix save failed", err, slog.String("name", name))
 		return
 	}

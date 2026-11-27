@@ -295,6 +295,7 @@ export const operations = {
   handleSetAppEgressPolicy: ["PUT","/api/v1/apps/{name}/egress-policy",1,0],
   handleClearAppEgressPolicy: ["DELETE","/api/v1/apps/{name}/egress-policy",0,0],
   handleAppEgressReport: ["GET","/api/v1/apps/{name}/egress-report",0,0],
+  handlePutAppEnv: ["PUT","/api/v1/apps/{name}/env",1,0],
   handleEnvDiff: ["GET","/api/v1/apps/{name}/env-diff",0,0],
   handleListBoundEnv: ["GET","/api/v1/apps/{name}/env/bound",0,0],
   handleCheckEnv: ["GET","/api/v1/apps/{name}/env/check",0,0],

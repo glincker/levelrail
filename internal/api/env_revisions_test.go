@@ -126,3 +126,30 @@ func TestEnvRevisions_SnapshotAndNamesOnlyDiff(t *testing.T) {
 	f.do(t, f.cookie, http.MethodGet, "/api/v1/apps/web/env/revisions/diff?from=1&to=99", "", http.StatusNotFound)
 	f.do(t, f.cookie, http.MethodGet, "/api/v1/apps/web/env/revisions/diff?from=x", "", http.StatusBadRequest)
 }
+
+func TestPutAppEnv_BatchSetUnsetNamesOnly(t *testing.T) {
+	f := newEnvFixture(t)
+	f.do(t, f.cookie, http.MethodPut, "/api/v1/apps/web", `{"name":"web","image":"img:v1","port":3000,"env":{"KEEP":"one","DROP":"two"}}`, http.StatusOK)
+	rec := f.do(t, f.cookie, http.MethodPut, "/api/v1/apps/web/env", `{"set":{"NEW":"`+plainSecretValue+`","KEEP":"one"},"unset":["DROP","GONE"]}`, http.StatusOK)
+	var got envMergeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if !got.Changed || !got.EnvDirty || strings.Join(got.Set, ",") != "NEW" || strings.Join(got.Removed, ",") != "DROP" || strings.Join(got.Missing, ",") != "GONE" || strings.Join(got.Keys, ",") != "KEEP,NEW" {
+		t.Fatalf("merge = %+v", got)
+	}
+	assertNoSecretValues(t, "merge response", rec.Body.String())
+	svc, err := f.db.GetDesiredService(context.Background(), "web")
+	if err != nil || svc.Env["NEW"] != plainSecretValue || svc.Image != "img:v1" || !svc.EnvDirty {
+		t.Fatalf("stored = %+v, %v", svc, err)
+	}
+	// Repeating the batch is a no-op.
+	again := f.do(t, f.cookie, http.MethodPut, "/api/v1/apps/web/env", `{"set":{"NEW":"`+plainSecretValue+`"},"unset":["DROP"]}`, http.StatusOK)
+	var second envMergeResource
+	if err := json.Unmarshal(again.Body.Bytes(), &second); err != nil || second.Changed || len(second.Set) != 0 {
+		t.Fatalf("repeat = %+v, %v", second, err)
+	}
+	f.do(t, f.cookie, http.MethodPut, "/api/v1/apps/web/env", `{}`, http.StatusBadRequest)
+	f.do(t, f.cookie, http.MethodPut, "/api/v1/apps/web/env", `{"set":{"A":"1"},"unset":["A"]}`, http.StatusBadRequest)
+	f.do(t, f.cookie, http.MethodPut, "/api/v1/apps/ghost/env", `{"set":{"A":"1"}}`, http.StatusNotFound)
+}
