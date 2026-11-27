@@ -1,10 +1,30 @@
 ---
 title: "Architecture"
-description: How the control plane, node agent, reconciler, ingress, store and extension points fit together, with the code path of a deploy and the trust boundaries.
+description: See what runs on your server and how it fits together: control plane, node agent, reconciler, ingress, store, trust boundaries and where state lives on disk.
 "og:image": "https://docs.levelrail.com/public/og/architecture.png"
 "twitter:image": "https://docs.levelrail.com/public/og/architecture.png"
 "og:url": "https://docs.levelrail.com/architecture"
 ---
+
+Use this page to see what runs on your server, how a deploy flows through it and where each piece of state lives.
+
+<CardGroup cols={3}>
+<Card title="One process on one host" icon="server">
+
+The control plane, ingress and reconcile engine run in one Go binary. Extra nodes add an agent.
+
+</Card>
+<Card title="Agents dial out" icon="plug">
+
+A managed node needs no inbound port for control traffic.
+
+</Card>
+<Card title="State is local" icon="database">
+
+SQLite files in the data dir. Docker is the source of truth for what runs.
+
+</Card>
+</CardGroup>
 
 This page is for contributors and for operators who want to know what runs on their server. It describes the code as it is on this branch. Every claim maps to a path in [Where to look](#where-to-look). To use the platform, start with [Getting started](/getting-started). For maturity per feature, see [Feature status](/feature-status). For the checks that protect these boundaries, see [Which guard catches what](/contributing-guards).
 
@@ -78,7 +98,19 @@ sequenceDiagram
   C->>S: conditions via engine
 ```
 
+## How does a request reach an app?
+
+```mermaid
+flowchart LR
+  B["Browser"] -->|HTTPS| CD["Embedded Caddy ingress"]
+  CD -->|"route by hostname"| AC["App container on a node"]
+```
+
+Ingress runs inside the control plane process. See [Ingress](#ingress) for certificates.
+
 ## Reconcile loop invariants
+
+<Accordion title="Rules the reconcile loop must keep (for contributors)">
 
 These are properties the code and its tests rely on. Controllers in `internal/reconcile` must keep them.
 
@@ -92,6 +124,8 @@ These are properties the code and its tests rely on. Controllers in `internal/re
 - Rolling waves. `reconcileRolling` replaces replicas in waves bounded by max surge and max unavailable from the rollout policy.
 - Storm protection. The engine rate limits passes and opens a per-controller circuit breaker after repeated failures. The limits are read from `APP_RECONCILE_*` environment variables, and `NudgeController` closes a breaker when a change makes a retry worthwhile.
 - Shutdown. A pass in progress can finish for a drain timeout after a stop signal before its context is cancelled.
+
+</Accordion>
 
 ## Trust boundaries
 

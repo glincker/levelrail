@@ -1,12 +1,30 @@
 ---
 title: "Sleep when idle"
-description: Stop an app that has had no requests for a while so it uses no memory or CPU, and wake it on the next request.
+description: Stop an app that has had no requests for a set time so it uses no memory or CPU, then wake it on the next request. Off by default and set per app.
 "og:url": "https://docs.levelrail.com/sleep-when-idle"
 ---
 
 Opt an app into stopping after it has had no requests for a set time. A
 sleeping app uses no memory or CPU. The next request to its domain starts it
 again. Off by default, per app.
+
+<CardGroup cols={3}>
+<Card title="Use it for" icon="moon">
+
+Side projects and staging apps on a small server.
+
+</Card>
+<Card title="Cost of waking" icon="clock">
+
+The first visitor waits for the cold start, seconds not milliseconds.
+
+</Card>
+<Card title="Turn on" icon="terminal">
+
+`levelrail-cli apps sleep enable <name> --after 30m`
+
+</Card>
+</CardGroup>
 
 ## How it works
 
@@ -270,7 +288,8 @@ the `deploy` ability, `GET` needs `read`. See the
 
 ## Troubleshooting
 
-### Turning sleep on returns an error
+<AccordionGroup>
+<Accordion title="Turning sleep on returns an error">
 
 **Likely cause:** A blocker applies. The most common is a pinned host port with port wake off or unavailable. The API answers 409 and lists every blocker with its fix.
 
@@ -278,7 +297,8 @@ the `deploy` ability, `GET` needs `read`. See the
 
 **Fix:** Run the fix it prints: `levelrail-cli apps sleep enable <name> --port-wake`, or unpin the host port and route the app through a domain.
 
-### Sleep now says to turn sleep on first, or that the app is already stopped
+</Accordion>
+<Accordion title="Sleep now says to turn sleep on first, or that the app is already stopped">
 
 **Likely cause:** `apps sleep now` and the Sleep now button need sleep to be enabled for the app, and an app you stopped by hand cannot be put to sleep. Both answer 409.
 
@@ -286,7 +306,8 @@ the `deploy` ability, `GET` needs `read`. See the
 
 **Fix:** Run `levelrail-cli apps sleep enable <name> --after 30m` first, or start the app and try again.
 
-### A request to a sleeping app returns 503
+</Accordion>
+<Accordion title="A request to a sleeping app returns 503">
 
 **Likely cause:** This is the waking response, by design. The first request starts the app and the page retries on its own. Scripts and API clients get a plain or JSON 503 with a `Retry-After` header and must retry themselves.
 
@@ -294,7 +315,8 @@ the `deploy` ability, `GET` needs `read`. See the
 
 **Fix:** For callers that cannot retry, turn on hold mode: `levelrail-cli apps sleep enable <name> --after 30m --hold`. The request then waits for the app (up to its adaptive hold limit) and gets one `307` redirect back to the same URL once it is ready, so the client must follow redirects (`curl -L`, and most HTTP libraries do for GET).
 
-### The app sleeps while people are using it
+</Accordion>
+<Accordion title="The app sleeps while people are using it">
 
 **Likely cause:** Activity is judged from ingress requests, container network traffic above the floor, and open connections to pinned ports. A client that keeps a quiet connection to another port, traffic from other apps over the internal network, and offline background jobs are not seen.
 
@@ -302,7 +324,8 @@ the `deploy` ability, `GET` needs `read`. See the
 
 **Fix:** Lower `APP_SLEEP_NETWORK_FLOOR_BYTES_PER_MIN` if real but light traffic is below the floor, turn on hold requests for apps other apps call, or turn sleep off (`levelrail-cli apps sleep disable <name>`).
 
-### The app wakes but requests still fail
+</Accordion>
+<Accordion title="The app wakes but requests still fail">
 
 **Likely cause:** The app did not become ready in time. Hold mode waits up to the app's hold limit (its p95 wake times 1.5, between 10 and 120 seconds), after which the visitor gets the waking page again while the start continues.
 
@@ -310,7 +333,8 @@ the `deploy` ability, `GET` needs `read`. See the
 
 **Fix:** Fix whatever slows or breaks startup (a migration on boot, a missing variable). Use a longer idle time for apps with slow starts so they sleep less often.
 
-### The app stays asleep after you started it by hand
+</Accordion>
+<Accordion title="The app stays asleep after you started it by hand">
 
 **Likely cause:** It should not: starting the app clears the sleeping state on the next check, which runs every minute.
 
@@ -318,6 +342,10 @@ the `deploy` ability, `GET` needs `read`. See the
 
 **Fix:** If it still reports asleep, run `levelrail-cli apps sleep wake <name>`.
 
+</Accordion>
+</AccordionGroup>
+
 ### Still stuck
 
 Collect the output of `levelrail-cli apps sleep status <name>`, `levelrail-cli apps logs <name>` and `levelrail-cli doctor`, then see [Troubleshooting](troubleshooting.md).
+

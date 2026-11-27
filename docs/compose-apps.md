@@ -1,18 +1,34 @@
 ---
 title: "Compose apps"
-description: Run a Docker Compose file as one app with per-service status, start order, rollback to an earlier compose file, teardown, and installable templates.
+description: Deploy a Docker Compose file as one app and manage it: per-service status and start order, rollback to an earlier file, teardown, and installable templates.
 "og:url": "https://docs.levelrail.com/compose-apps"
 ---
 
 A compose app is one app built from a Docker Compose file. Every service in the file becomes a member service of the app with its own containers, logs, metrics and status. All of them share a private network where they reach each other by service name. The reconciler handles each service on its own: a broken service never blocks a sibling that does not depend on it, and a container you kill by hand comes back on the next pass.
 
-You can deploy a compose app three ways:
+You can deploy a compose app three ways.
 
-- In the dashboard, open **New resource**, pick **Docker Compose**, then paste or upload the file. A preview lists every service, port, domain, volume and env var before anything is deployed.
-- From the CLI, run `levelrail-cli compose deploy <app> -f compose.yaml`.
-- From a template, open a template page and fill in its settings, or run `levelrail-cli templates install <id>`.
+<Tabs>
+<Tab title="Dashboard">
 
+Open **New resource**, pick **Docker Compose**, then paste or upload the file. A preview lists every service, port, domain, volume and env var before anything is deployed.
+
+</Tab>
+<Tab title="CLI">
+
+Run `levelrail-cli compose deploy <app> -f compose.yaml`.
+
+</Tab>
+<Tab title="Template">
+
+Open a template page and fill in its settings, or run `levelrail-cli templates install <id>`.
+
+</Tab>
+</Tabs>
+
+<Note>
 To deploy a compose file that lives in a git repository and needs `build:`, use a git deploy with `build.type: compose` ([Deploying apps](/deploying-apps)). This page covers compose files that use pre-built images.
+</Note>
 
 ## Deploy a stack
 
@@ -274,7 +290,8 @@ levelrail-cli compose schedules runs shop web nightly-report
 
 ## Troubleshooting
 
-### Compose file was rejected as invalid
+<AccordionGroup>
+<Accordion title="Compose file was rejected as invalid">
 
 **Likely cause:** The compose file uses keys that are not allowed (privileged, cap_add, host networking, bind mounts of docker.sock, etc.), or it has syntax errors.
 
@@ -282,7 +299,8 @@ levelrail-cli compose schedules runs shop web nightly-report
 
 **Fix:** Remove the rejected keys from the compose file. Common issues: privileged mode, cap_add, bind mounts to /var/run/docker.sock, and host networking are all refused for security. Update the file and try again.
 
-### Service is not starting or is stuck waiting
+</Accordion>
+<Accordion title="Service is not starting or is stuck waiting">
 
 **Likely cause:** A dependency is not healthy, or the service itself has a startup issue.
 
@@ -290,13 +308,17 @@ levelrail-cli compose schedules runs shop web nightly-report
 
 **Fix:** Check the service logs with `levelrail-cli compose logs <app> --service <service> -f`. If a dependency is not healthy, fix that service first (check its health check). If the service itself is failing, check logs for startup errors.
 
-### Generated secret value is wrong or missing
+</Accordion>
+<Accordion title="Generated secret value is wrong or missing">
 
 **Likely cause:** The template is missing the setting definition, or the setting is not used in the compose file with the correct variable name.
 
 **How to confirm:** Run `levelrail-cli templates get <id>` and check the `template.yaml` for the setting definition. Look for the `${KEY}` placeholder in the compose file.
 
 **Fix:** Make sure the setting is defined in `template.yaml` and the variable name in the compose file exactly matches the `key` field. Generated values are stored per app and reused on redeploy, so environment changes to the setting do not affect existing apps.
+
+</Accordion>
+</AccordionGroup>
 
 ### Still stuck
 
@@ -313,6 +335,7 @@ For help with compose files, run `levelrail-cli compose preview <name> -f compos
 | `POST` | `/api/v1/apps/{name}/compose/redeploy` | `deploy` |
 | `DELETE` | `/api/v1/apps/{name}/compose[?volumes=true]` | `write` (plus `write-sensitive` with volumes) |
 | `POST` | `/api/v1/service-templates/{id}/install` | `deploy` |
+
 
 ## Backing up a database service
 

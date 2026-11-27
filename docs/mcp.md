@@ -241,6 +241,31 @@ This prints a JSON block for the client's config file with the command, `APP_API
 
 ## Troubleshooting
 
+<AccordionGroup>
+<Accordion title="Runbook text appears empty or truncated">
+
+Likely cause: The runbook content exceeded `APP_MCP_RESOURCE_MAX_BYTES` and was truncated for safety, or the resource does not have a runbook.
+
+How to confirm: Check the resource details in the dashboard or with the CLI: `levelrail-cli apps get <app> --json | jq .runbook` (returns empty if no runbook). Check server logs for "resource too large" messages.
+
+Fix: Runbooks are optional; most resources do not have one. If a runbook is truncated, increase `APP_MCP_RESOURCE_MAX_BYTES` on the control plane (default 16384 bytes, max 1 MiB) and restart.
+
+Still stuck: Runbooks are embedded documentation for operators; if truncated, read the full version on the resource's status page in the dashboard.
+
+</Accordion>
+<Accordion title="Token is not appearing in the client config">
+
+Likely cause: `--print-config` never embeds real tokens (it only shows a placeholder).
+
+How to confirm: The output includes `"env": { "APP_API_TOKEN": "sk-..." }` with a placeholder. You must add your real token to the config file after copying it.
+
+Fix: Create or retrieve your token: `levelrail-cli tokens create --name mcp-token --abilities read` or `levelrail-cli tokens list` to get an existing one. Paste the real token into your client's MCP config file, replacing the placeholder.
+
+Still stuck: Tokens start with `tk_` after creation. Copy the full token value (it is shown once at creation, then never shown again).
+
+</Accordion>
+</AccordionGroup>
+
 ### MCP server not accessible by client, "connection refused"
 
 Likely cause: The server is not running, or it is listening on a different address than the client expects.
@@ -250,16 +275,6 @@ How to confirm: Check if the server is running: `ps aux | grep levelrail-mcp | g
 Fix: Start the MCP server: `levelrail-mcp` (stdio mode, for local clients) or `levelrail-mcp --transport=http --listen=127.0.0.1:8090` (network mode). Verify the client is configured with the same address. For Claude Desktop, use `levelrail-mcp --print-config claude` to generate the correct config block.
 
 Still stuck: Check if a firewall is blocking the port, or if the MCP server process crashed. Look for error messages: `levelrail-mcp 2>&1 | head -20`.
-
-### Runbook text appears empty or truncated
-
-Likely cause: The runbook content exceeded `APP_MCP_RESOURCE_MAX_BYTES` and was truncated for safety, or the resource does not have a runbook.
-
-How to confirm: Check the resource details in the dashboard or with the CLI: `levelrail-cli apps get <app> --json | jq .runbook` (returns empty if no runbook). Check server logs for "resource too large" messages.
-
-Fix: Runbooks are optional; most resources do not have one. If a runbook is truncated, increase `APP_MCP_RESOURCE_MAX_BYTES` on the control plane (default 16384 bytes, max 1 MiB) and restart.
-
-Still stuck: Runbooks are embedded documentation for operators; if truncated, read the full version on the resource's status page in the dashboard.
 
 ### Client receives "untrusted output" warnings for every tool call
 
@@ -271,15 +286,6 @@ Fix: No fix needed; this is intentional. The safety wrapper warns the assistant 
 
 Still stuck: See [Threat model](/mcp#threat-model) for the sanitization details.
 
-### Token is not appearing in the client config
-
-Likely cause: `--print-config` never embeds real tokens (it only shows a placeholder).
-
-How to confirm: The output includes `"env": { "APP_API_TOKEN": "sk-..." }` with a placeholder. You must add your real token to the config file after copying it.
-
-Fix: Create or retrieve your token: `levelrail-cli tokens create --name mcp-token --abilities read` or `levelrail-cli tokens list` to get an existing one. Paste the real token into your client's MCP config file, replacing the placeholder.
-
-Still stuck: Tokens start with `tk_` after creation. Copy the full token value (it is shown once at creation, then never shown again).
 
 ## Threat model
 

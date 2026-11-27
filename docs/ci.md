@@ -1,31 +1,25 @@
 ---
 title: "CI"
-description: How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
+description: Learn which GitHub Actions checks a Levelrail pull request runs, how a diff selects them, what each costs and which ones branch protection requires.
 "og:url": "https://docs.levelrail.com/ci"
 ---
 
 How the GitHub Actions checks on a pull request are chosen and which ones gate a merge. This page is for contributors to Levelrail itself. To deploy your own apps from CI, see [Use any CI](/use-any-ci).
 
-## The short version
+## What does my pull request run?
 
-A PR runs only the work its diff can affect:
+A PR runs only the work its diff can affect.
 
-- Docs only (`*.md`, `adr/`): change detection, the aggregator, the
-  secret scan and PR hygiene. A change under `docs/` also rebuilds the web
-  bundle, since `docs/` feeds the dashboard's `/help` pages.
-- Web only (`web/`): the web job, with vitest limited to tests whose
-  module graph reaches a changed file. No Go job runs.
-- Go: build, vet and tests for the affected packages only (the packages
-  you changed plus every package that imports them, including through test
-  imports), lint for the packages you changed, reporting only issues on
-  lines you touched.
-- Workflow files only: actionlint on the changed workflow files, inside
-  the Lint job.
+| Your diff touches | What runs |
+| --- | --- |
+| Docs only (`*.md`, `adr/`) | Change detection, the aggregator, the secret scan and PR hygiene. A change under `docs/` also rebuilds the web bundle, since `docs/` feeds the dashboard's `/help` pages. |
+| Web only (`web/`) | The web job, with vitest limited to tests whose module graph reaches a changed file. No Go job runs. |
+| Go | Build, vet and tests for the affected packages only (the packages you changed plus every package that imports them, including through test imports), lint for the packages you changed, reporting only issues on lines you touched. |
+| Workflow files only | actionlint on the changed workflow files, inside the Lint job. |
 
-A store migration that only adds tables, indexes or columns doesn't run
-everything. It selects the store and the packages that mention the table.
-Whole-tree scanner tests have no import edge to what they scan, so
-`scripts/ci-guards.txt` lists them and any non-test Go change selects them.
+A store migration that only adds tables, indexes or columns doesn't run everything. It selects the store and the packages that mention the table. Whole-tree scanner tests have no import edge to what they scan, so `scripts/ci-guards.txt` lists them and any non-test Go change selects them.
+
+<Accordion title="What runs on a main push and in the nightly run">
 
 A `main` push runs the same impact-based jobs as a PR (`Build, vet`, `Lint`,
 every `Test (*)` job, `Web (tsc, eslint)`, `install.sh`),
@@ -44,6 +38,8 @@ start goroutines or use `sync`, `atomic` or channels
 `scripts/ci-heavy-packages.txt` so no lane nears its timeout, and the docker
 lane pre-pulls its upstream images with retries. One summary table and one
 `nightly-failure` issue report the run (see "Nightly and flaky tests").
+
+</Accordion>
 
 ## How a change is scoped
 
