@@ -11,10 +11,12 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
@@ -35,7 +37,14 @@ const (
 	RuleProfileEndpoint = "profile_endpoint_not_allowed"
 	RuleProfileScope    = "profile_scope_violation"
 	RuleProfileDisabled = "profile_disabled"
+	RuleProfileCreate   = "profile_create_not_allowed"
 )
+
+// reservedLabelPrefix mirrors spec.ReservedLabelPrefix without importing spec.
+const reservedLabelPrefix = "platform-reserved."
+
+// minProfileAPIMinor is the oldest v1.N Engine API a profile socket serves.
+const minProfileAPIMinor = 24
 
 // GrantCapPrefix marks a docker_api grant inside a service's granted caps, so
 // the grant travels with the existing per-service grant plumbing.
@@ -69,6 +78,10 @@ type ProfileSpec struct {
 	// Project is the value of LabelKey that a container must carry to be visible.
 	Project  string
 	LabelKey string
+	// Service and Network pin what ProfileProject may create: container names
+	// must start with "<Service>-dapi-" and attach only to Network.
+	Service string
+	Network string
 }
 
 // Validate refuses an incomplete spec so a socket can never serve unscoped.
@@ -78,6 +91,9 @@ func (s ProfileSpec) Validate() error {
 	}
 	if s.Project == "" || s.LabelKey == "" {
 		return fmt.Errorf("dockerguard: a profile socket needs a project and a label key")
+	}
+	if s.Profile == ProfileProject && (s.Service == "" || s.Network == "") {
+		return fmt.Errorf("dockerguard: the project profile needs a service and a network")
 	}
 	return nil
 }
@@ -199,6 +215,14 @@ func (g *ProfileGuard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		g.deny(w, RuleProfileEndpoint, r.Method+" "+cp.Path+" is not part of the "+string(g.spec.Profile)+" profile")
 		return
 	}
+	if !versionAtLeast(cp.Version, minProfileAPIMinor) {
+		g.deny(w, RuleProfileEndpoint, "api versions below v1."+strconv.Itoa(minProfileAPIMinor)+" are not served")
+		return
+	}
+	if ep.Body == bodyNone && ep.Pattern != "/exec/*/start" && hasBody(r) {
+		g.deny(w, RuleBodyInvalid, "this endpoint takes no request body")
+		return
+	}
 	r.URL.Path, r.URL.RawPath = cp.Forward(), ""
 	segs := splitSegs(cp.Path)
 	switch ep.Scope {
@@ -245,11 +269,13 @@ func (g *ProfileGuard) rewriteBody(w http.ResponseWriter, r *http.Request, ep pr
 			g.deny(w, RuleBodyInvalid, "request body is not a container create")
 			return false
 		}
+		// Checked on the client's labels before ours is forced in.
+		vs = g.spec.validateProfileCreate(req, r.URL.Query()["name"])
 		if req.Labels == nil {
 			req.Labels = map[string]string{}
 		}
 		req.Labels[g.spec.LabelKey] = g.spec.Project
-		vs = g.policy.validateCreate(req, docker.CreateDeclaration{})
+		vs = append(vs, g.policy.validateCreate(req, docker.CreateDeclaration{})...)
 		out, vs = reencode(req, vs)
 	case bodyExecCreate:
 		var req container.ExecOptions
@@ -334,4 +360,72 @@ func scopeFilters(raw, labelKey, project string) (string, error) {
 	}
 	b, err := json.Marshal(filters)
 	return string(b), err
+}
+
+func versionAtLeast(version string, minor int) bool {
+	if version == "" {
+		return true
+	}
+	maj, rest, ok := strings.Cut(strings.TrimPrefix(version, "v"), ".")
+	m, err := strconv.Atoi(rest)
+	return ok && err == nil && maj == "1" && m >= minor
+}
+
+func hasBody(r *http.Request) bool {
+	if r.Body == nil || r.Body == http.NoBody {
+		return false
+	}
+	var one [1]byte
+	n, _ := r.Body.Read(one[:])
+	return n > 0
+}
+
+// validateProfileCreate holds a project-profile create to the app's own
+// name prefix, labels and network, with no host binds or published ports.
+func (s ProfileSpec) validateProfileCreate(req container.CreateRequest, names []string) []Violation {
+	var out []Violation
+	prefix := s.Service + "-dapi-"
+	if len(names) != 1 || !strings.HasPrefix(names[0], prefix) || len(names[0]) == len(prefix) {
+		out = append(out, violation(RuleProfileCreate, "container name must be given once and start with %s", prefix))
+	}
+	for k := range req.Labels {
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(k)), reservedLabelPrefix) {
+			out = append(out, violation(RuleProfileCreate, "labels under %s are reserved", reservedLabelPrefix))
+			break
+		}
+	}
+	if req.NetworkingConfig != nil {
+		for name := range req.NetworkingConfig.EndpointsConfig {
+			if !s.networkAllowed(name) {
+				out = append(out, violation(RuleProfileCreate, "network %q is not this app's network", name))
+			}
+		}
+	}
+	hc := req.HostConfig
+	if hc == nil {
+		return out
+	}
+	if !s.networkAllowed(string(hc.NetworkMode)) {
+		out = append(out, violation(RuleProfileCreate, "HostConfig.NetworkMode %q is not this app's network", hc.NetworkMode))
+	}
+	if len(hc.Binds) > 0 {
+		out = append(out, violation(RuleProfileCreate, "HostConfig.Binds is not allowed through a docker api grant"))
+	}
+	for _, m := range hc.Mounts {
+		if m.Type != mount.TypeTmpfs {
+			out = append(out, violation(RuleProfileCreate, "Mounts type %q is not allowed through a docker api grant", m.Type))
+		}
+	}
+	if len(hc.PortBindings) > 0 || hc.PublishAllPorts {
+		out = append(out, violation(RuleProfileCreate, "published ports are not allowed through a docker api grant"))
+	}
+	return out
+}
+
+func (s ProfileSpec) networkAllowed(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "", "default", "bridge":
+		return true
+	}
+	return name == s.Network
 }

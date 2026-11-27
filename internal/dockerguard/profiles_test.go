@@ -51,7 +51,7 @@ func newProfileUpstream(t *testing.T) (*profileUpstream, string) {
 func newTestProfile(t *testing.T, p Profile, on bool) (*ProfileGuard, *profileUpstream) {
 	t.Helper()
 	u, sock := newProfileUpstream(t)
-	pg, err := NewProfileGuard(sock, ProfileSpec{Profile: p, Project: "blog", LabelKey: "levelrail.app"}, Policy{}, Tunables{MaxBodyBytes: 1 << 20}, func() bool { return on }, nil)
+	pg, err := NewProfileGuard(sock, ProfileSpec{Profile: p, Project: "blog", LabelKey: "levelrail.app", Service: "blog", Network: "lr-app-blog"}, Policy{}, Tunables{MaxBodyBytes: 1 << 20}, func() bool { return on }, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestProfileGuardReadOnly(t *testing.T) {
 		{"GET", "/images/json", 403},
 		{"GET", "/volumes", 403},
 	} {
-		if got := doProfile(pg, tc.method, tc.path, "{}").Code; got != tc.want {
+		if got := doProfile(pg, tc.method, tc.path, "").Code; got != tc.want {
 			t.Errorf("%s %s = %d, want %d", tc.method, tc.path, got, tc.want)
 		}
 	}
@@ -113,7 +113,7 @@ func TestProfileGuardProject(t *testing.T) {
 	if got := doProfile(pg, "POST", "/containers/create", `{"Image":"x","HostConfig":{"Binds":["/var/run/docker.sock:/s"]}}`).Code; got != 403 {
 		t.Errorf("bind create = %d", got)
 	}
-	if got := doProfile(pg, "POST", "/containers/create?name=a", `{"Image":"x","Labels":{"levelrail.app":"other"}}`).Code; got != 200 {
+	if got := doProfile(pg, "POST", "/containers/create?name=blog-dapi-a", `{"Image":"x","Labels":{"levelrail.app":"other"}}`).Code; got != 200 {
 		t.Errorf("plain create = %d", got)
 	}
 	if !strings.Contains(up.body, `"levelrail.app":"blog"`) {
@@ -121,6 +121,46 @@ func TestProfileGuardProject(t *testing.T) {
 	}
 	if got := doProfile(pg, "DELETE", "/containers/mine", "").Code; got != 403 {
 		t.Errorf("delete = %d", got)
+	}
+}
+
+func TestProfileGuardGrantHardening(t *testing.T) {
+	pg, _ := newTestProfile(t, ProfileProject, true)
+	const named = "/containers/create?name=blog-dapi-x"
+	for _, tc := range []struct {
+		name, path, body string
+		want             int
+	}{
+		{"own name and network", named, `{"Image":"x","HostConfig":{"NetworkMode":"lr-app-blog"},"NetworkingConfig":{"EndpointsConfig":{"lr-app-blog":{}}}}`, 200},
+		{"tmpfs mount", named, `{"Image":"x","HostConfig":{"Mounts":[{"Type":"tmpfs","Target":"/t"}]}}`, 200},
+		{"squatted name", "/containers/create?name=levelrail-web", `{"Image":"x"}`, 403},
+		{"no name", "/containers/create", `{"Image":"x"}`, 403},
+		{"two names", "/containers/create?name=blog-dapi-a&name=web", `{"Image":"x"}`, 403},
+		{"reserved label", named, `{"Image":"x","Labels":{"platform-reserved.read-only-rootfs":"0"}}`, 403},
+		{"reserved label case", named, `{"Image":"x","Labels":{"Platform-Reserved.app":"y"}}`, 403},
+		{"container netns", named, `{"Image":"x","HostConfig":{"NetworkMode":"container:abc"}}`, 403},
+		{"foreign network mode", named, `{"Image":"x","HostConfig":{"NetworkMode":"lr-app-other"}}`, 403},
+		{"foreign endpoint", named, `{"Image":"x","NetworkingConfig":{"EndpointsConfig":{"lr-app-other":{}}}}`, 403},
+		{"bind", named, `{"Image":"x","HostConfig":{"Binds":["/srv:/srv"]}}`, 403},
+		{"volume mount", named, `{"Image":"x","HostConfig":{"Mounts":[{"Type":"volume","Source":"v","Target":"/v"}]}}`, 403},
+		{"bind mount", named, `{"Image":"x","HostConfig":{"Mounts":[{"Type":"bind","Source":"/etc","Target":"/e"}]}}`, 403},
+		{"port bindings", named, `{"Image":"x","HostConfig":{"PortBindings":{"80/tcp":[{"HostPort":"80"}]}}}`, 403},
+		{"publish all", named, `{"Image":"x","HostConfig":{"PublishAllPorts":true}}`, 403},
+		{"start with body", "/containers/mine/start", `{"x":1}`, 403},
+		{"old api version", "/v1.23/containers/mine/start", "", 403},
+		{"odd api version", "/v2.0/containers/mine/start", "", 403},
+		{"min api version", "/v1.24/containers/mine/start", "", 200},
+	} {
+		if got := doProfile(pg, "POST", tc.path, tc.body).Code; got != tc.want {
+			t.Errorf("%s = %d, want %d", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestProfileSpecProjectNeedsServiceAndNetwork(t *testing.T) {
+	spec := ProfileSpec{Profile: ProfileProject, Project: "blog", LabelKey: "k"}
+	if spec.Validate() == nil {
+		t.Fatal("project profile accepted without service and network")
 	}
 }
 

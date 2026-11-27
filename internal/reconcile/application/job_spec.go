@@ -58,7 +58,7 @@ func (c *Controller) BuildJobSpec(ctx context.Context, desired *store.DesiredSer
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
-	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
+	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, appLabelValue(desired))
 	if desired.Incarnation != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.IncarnationLabelKey, desired.Incarnation)
 	}

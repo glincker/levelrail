@@ -788,6 +788,9 @@ func isReady(r reconcile.Result) bool {
 // Reconcile treats ErrServiceNotFound as "not deployed yet," not "stop
 // everything," so a deleted service is never reconciled again otherwise.
 func (c *Controller) Teardown(ctx context.Context) error {
+	if c.dockerAPI != nil {
+		c.dockerAPI.Revoke(c.serviceName)
+	}
 	if err := c.removeStale(ctx, nil); err != nil {
 		return err
 	}
@@ -1455,7 +1458,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
-	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
+	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, appLabelValue(desired))
 	if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
 		spec.Labels = mergeLabel(spec.Labels, appspec.DeployURLLabelKey, "1")
 	}

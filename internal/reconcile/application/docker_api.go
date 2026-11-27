@@ -18,6 +18,7 @@ const containerDockerSocket = "/var/run/docker.sock"
 type DockerAPISockets interface {
 	Enabled() bool
 	Ensure(service string, spec dockerguard.ProfileSpec) (hostSocket string, err error)
+	Revoke(service string)
 }
 
 // WithDockerAPI wires the per-grant socket source. Without it a docker_api
@@ -45,7 +46,10 @@ func (c *Controller) applyDockerAPI(desired *store.DesiredService, spec *docker.
 	if !SameNode(desired.NodeID, "", local) {
 		return fmt.Errorf("docker api grant for %s is only supported on the control plane node", desired.Name)
 	}
-	sock, err := c.dockerAPI.Ensure(desired.Name, dockerguard.ProfileSpec{Profile: profile, Project: desired.AppID, LabelKey: appspec.AppLabelKey})
+	sock, err := c.dockerAPI.Ensure(desired.Name, dockerguard.ProfileSpec{
+		Profile: profile, Project: appLabelValue(desired), LabelKey: appspec.AppLabelKey,
+		Service: desired.Name, Network: NetworkName(c.networkPrefix, desired.AppID),
+	})
 	if err != nil {
 		return fmt.Errorf("docker api socket: %w", err)
 	}
