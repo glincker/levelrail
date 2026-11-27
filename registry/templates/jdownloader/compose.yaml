@@ -1,0 +1,16 @@
+services:
+  jdownloader:
+    image: jlesage/jdownloader-2:v26.11.2
+    ports: ["5800"]
+    volumes:
+      - jdownloader_config:/config
+      - jdownloader_output:/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5800/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+volumes:
+  jdownloader_config:
+  jdownloader_output:

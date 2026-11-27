@@ -1,0 +1,15 @@
+id: tvheadend
+name: Tvheadend
+slogan: A TV streaming server and recorder for live TV, DVB tuners and IPTV.
+description: GPL 3.0 licensed. Web UI on port 9981. Add tuners or IPTV networks in the configuration. Hardware tuners need device access that is not enabled here.
+category: Media
+documentation_url: https://docs.tvheadend.org
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/tvheadend/tvheadend
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/tvheadend/tvheadend/blob/master/LICENSE.md

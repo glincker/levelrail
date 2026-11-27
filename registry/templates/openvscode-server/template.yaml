@@ -1,0 +1,15 @@
+id: openvscode-server
+name: OpenVSCode Server
+slogan: Visual Studio Code in the browser, served from your own host.
+description: MIT licensed. Open the page with ?tkn= and the generated connection token from the deployment variables.
+category: Developer Tools
+documentation_url: https://github.com/gitpod-io/openvscode-server
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/gitpod-io/openvscode-server
+license: MIT
+license_class: permissive
+license_url: https://github.com/gitpod-io/openvscode-server/blob/main/LICENSE.txt

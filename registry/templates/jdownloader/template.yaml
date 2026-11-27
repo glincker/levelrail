@@ -1,0 +1,15 @@
+id: jdownloader
+name: JDownloader 2
+slogan: A download manager with link grabbing and one-click hosters, run in a browser.
+description: Freeware, the container packaging is MIT. The desktop is served in the browser on port 5800, no password by default, keep it private or put an auth proxy in front.
+category: Media
+documentation_url: https://github.com/jlesage/docker-jdownloader-2
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/jlesage/docker-jdownloader-2
+license: LicenseRef-JDownloader-EULA
+license_class: source-available
+license_url: https://jdownloader.org/legal/terms
