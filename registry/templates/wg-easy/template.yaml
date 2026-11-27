@@ -2,7 +2,7 @@
 id: wg-easy
 name: WireGuard Easy
 slogan: A WireGuard VPN server with a web UI for managing clients.
-description: Needs NET_ADMIN and NET_RAW under a reviewed grant, plus the WireGuard kernel module already loaded on the host (modprobe wireguard). The VPN listens on UDP 51820, open that port in the firewall and forward it to the host. The web UI needs HTTPS, so open it through a domain. Create the admin account on first visit. AGPL v3 licence.
+description: A WireGuard VPN server with a web UI for managing clients.
 category: Networking
 documentation_url: https://wg-easy.github.io/wg-easy/latest/
 recommended_memory_bytes: 134217728
@@ -18,7 +18,7 @@ license_url: https://github.com/wg-easy/wg-easy/blob/master/LICENSE
 manifest:
     id: wg-easy
     name: WireGuard Easy
-    description: Needs NET_ADMIN and NET_RAW under a reviewed grant, plus the WireGuard kernel module already loaded on the host (modprobe wireguard). The VPN listens on UDP 51820, open that port in the firewall and forward it to the host. The web UI needs HTTPS, so open it through a domain. Create the admin account on first visit. AGPL v3 licence.
+    description: A WireGuard VPN server with a web UI for managing clients.
     icon: wireguard
     category: Networking
     documentation_url: https://wg-easy.github.io/wg-easy/latest/
@@ -36,6 +36,7 @@ manifest:
     replaced_by: ""
     aliases: []
     first_run:
+        - Needs NET_ADMIN and NET_RAW under a reviewed grant, and the WireGuard kernel module loaded on the host (modprobe wireguard).
         - Open the web UI through your domain and create the admin account.
         - Open UDP 51820 in the firewall and forward it to this host.
     compose_file: compose.yaml
