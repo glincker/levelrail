@@ -4,6 +4,42 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.5.13" description="2026-11-27">
+**Features**
+
+* demo shows sample AI chat, terminal and SQL output and drops failure toasts after a read-only refusal
+* demo shows sample results for new app, database, env save, scale, domain DNS check and empty logs
+* demo shows sample results instead of read-only dead ends
+
+
+**Bug Fixes**
+
+* add the import sample strings and Russian plural forms to every locale
+* connect the git source and register its webhook when a build carries a repo and ref
+* demo template deploy shows one notice and repo import returns a sample plan
+* merge env in one column-scoped transaction so env set cannot lose variables
+* rebase or revision-check every read-modify-write desired service save so env updates are not lost
+* replace the stored local-issuer fallback certificate and retry public issuance once DNS resolves
+* restore experimental flags after DocumentDB gate test and pin them in environment tests
+* revision-checked desired service saves so a deploy cannot overwrite env
+
+
+**Documentation**
+
+* add the AI install page to the nav and list the intro pages in llms.txt
+* add what is Levelrail, lower infrastructure cost and category comparison pages, rework introduction
+* importer pages, migration overview cleanup, indexability fixes
+* install decision hub, outcome and verify steps, install with an AI agent page
+* migration hub cards, Vercel page structure, front matter, llms.txt migration pages
+* name products in the comparison page and cost table with links to their own docs
+* regenerate all-pages
+* regenerate all-pages
+* regenerate all-pages for new overview pages
+* regenerate the all-pages index
+* restructure 12 concept pages with at-a-glance cards, tabs, tables and accordions
+* restructure migration and import pages with outcomes, tabs, accordions and question headings
+</Update>
+
 <Update label="1.5.12" description="2026-11-26">
 **Features**
 
