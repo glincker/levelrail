@@ -1,10 +1,10 @@
 ---
-title: "Compared with other approaches"
-description: "Levelrail compared by category with managed platforms, Kubernetes platforms, plain Docker Compose with scripts and DIY tool stacks: who does what."
+title: "Levelrail vs other platforms: Coolify, Dokploy, Vercel, Heroku, Kubernetes and more"
+description: "Levelrail compared with Coolify, Dokploy, CapRover, Dokku, Kamal, Heroku, Railway, Vercel, Render, Kubernetes and DIY stacks, and when each fits better."
 "og:url": "https://docs.levelrail.com/compared-with-other-approaches"
 ---
 
-There are four common ways to run applications. This page compares them by category and says when each one fits. Product-by-product pages are linked at the end.
+There are four common ways to run applications. This page compares them by category, names the products in each, and says when each one fits. Each product links to its own documentation. Descriptions are general and dated 2026-11-26. Their features and pricing change, so confirm on their sites.
 
 ## At a glance
 
@@ -22,20 +22,38 @@ There are four common ways to run applications. This page compares them by categ
 
 ## Managed platforms
 
-You hand the servers to a provider and pay for usage or seats. Setup time is minimal and there is no server to patch. This fits teams that want no operations work and accept the provider's regions, limits and pricing. Levelrail fits when you want apps on your own servers or cloud accounts, with data and logs staying there. You can move in with the [migration guides](/migrate-to-levelrail).
+Examples: [Heroku](https://devcenter.heroku.com/), [Railway](https://docs.railway.com/), [Vercel](https://vercel.com/docs), [Netlify](https://docs.netlify.com/), [Render](https://render.com/docs) and [Google Cloud Run](https://cloud.google.com/run/docs).
+
+You hand the servers to a provider, who runs them for you. Setup time is minimal and there is no server to patch. This fits teams that want no operations work and accept the provider's regions, limits and pricing, which are listed on each provider's own pricing page. Levelrail fits when you want apps on your own servers or cloud accounts, with data and logs staying there.
+
+Pages for each: [Heroku alternative](/heroku-alternative), [Railway alternative](/railway-alternative), [Vercel alternative](/vercel-alternative), [Netlify alternative](/netlify-alternative), [Cloud Run alternative](/cloud-run-alternative). Moving in: [Migrate from Vercel](/migrate-from-vercel), [Migrate from Netlify](/migrating-from-netlify), [Migrate from Render](/migrating-from-render), [Migrate from Cloud Run](/migrating-from-cloud-run).
+
+## Self-hosted deploy platforms
+
+Examples: [Coolify](https://coolify.io/docs), [Dokploy](https://docs.dokploy.com/), [CapRover](https://caprover.com/docs/), [Dokku](https://dokku.com/docs/getting-started/installation/) and [Kamal](https://kamal-deploy.org/).
+
+These also run on your own servers and cover the deploy workflow. They differ in scope, so check their docs for what each includes. If one of them already covers what you need, it is a reasonable choice and moving costs you time. Levelrail adds a single control plane with built-in observability, preview environments, an AI control plane over MCP, and Terraform, API and CLI parity.
+
+Pages for each: [Coolify alternative](/coolify-alternative), [Dokploy alternative](/dokploy-alternative), [CapRover alternative](/caprover-alternative), [Dokku alternative](/dokku-alternative), [Kamal alternative](/kamal-alternative). A side-by-side with the features checked in this repo is in [Coolify vs Levelrail](/guides/coolify-vs-levelrail) and [vs Coolify, Dokploy, CapRover, Dokku and Kamal](/comparison). Moving in: [Migrate from Coolify](/migrate-from-coolify), [Migrate from Dokploy](/migrate-from-dokploy), [Migrate from CapRover](/migrate-from-caprover), [Migrate from Dokku](/migrate-from-dokku).
 
 ## Kubernetes platforms
 
-Kubernetes gives a large ecosystem, many nodes and fine control over scheduling. It fits big fleets and teams with platform engineers. Levelrail targets smaller fleets (see [Who Levelrail is for](/use-cases)) and works next to Kubernetes: you can [import Kubernetes manifests](/import-kubernetes) into apps, and [connect a cluster](/kubernetes-clusters) you already run (experimental, see [Feature status](/feature-status)).
+Examples: [Kubernetes](https://kubernetes.io/docs/home/) itself, lightweight distributions such as [K3s](https://docs.k3s.io/), and platforms built on Kubernetes such as [Rancher](https://ranchermanager.docs.rancher.com/) and [OpenShift](https://docs.redhat.com/en/documentation/openshift_container_platform).
+
+Kubernetes gives a large ecosystem, many nodes and fine control over scheduling. It fits big fleets and teams with platform engineers, and if you already run a cluster for the rest of your company, keeping apps there is a sound choice. Levelrail targets smaller fleets (see [Who Levelrail is for](/use-cases)) and works next to Kubernetes: you can [import Kubernetes manifests](/import-kubernetes) into apps, and [connect a cluster](/kubernetes-clusters) you already run (experimental, see [Feature status](/feature-status)).
 
 ## Plain Docker Compose and scripts
+
+Example: [Docker Compose](https://docs.docker.com/compose/) with a shell script or a CI job.
 
 Compose on one server is simple and transparent. You add the proxy, certificates, backups, deploy automation and monitoring yourself. This fits one or two small apps. Levelrail runs Compose files directly ([Compose apps](/compose-apps)) and exports any app back to plain Compose ([Leave anytime](/leave-anytime)), so starting there costs you nothing later. See [Migrate from Docker Compose](/migrate-from-docker-compose).
 
 ## DIY tool stacks
 
-A proxy, a CI runner, a backup tool, a metrics stack, a log store and a secrets manager, each chosen and configured by you. This gives full control over every part and suits teams that want specific tools. The cost is the integration and upgrade work across all of them. Levelrail packages those jobs in one binary and still lets you use outside tools through [Prometheus scrape](/prometheus-scrape), [OTLP ingest](/otlp-ingest) and [event webhooks](/event-webhooks).
+Examples: [Traefik](https://doc.traefik.io/traefik/) or [Caddy](https://caddyserver.com/docs/) for the proxy, [Prometheus](https://prometheus.io/docs/) and [Grafana](https://grafana.com/docs/) for metrics, [Loki](https://grafana.com/docs/loki/latest/) for logs, [restic](https://restic.readthedocs.io/) for backups, plus a CI runner.
 
-## Product pages
+Each tool focuses on one job, and this gives full control over every part. It suits teams that want specific tools. The cost is the integration and upgrade work across all of them. Levelrail packages those jobs in one binary and still lets you use outside tools through [Prometheus scrape](/prometheus-scrape), [OTLP ingest](/otlp-ingest), the [Loki-compatible API](/loki-api) and [event webhooks](/event-webhooks).
 
-For named products, see [Self-hosted PaaS](/self-hosted-paas) and the alternative pages in the Compare and choose group.
+## More
+
+See [Self-hosted PaaS](/self-hosted-paas) for what to look for when choosing.

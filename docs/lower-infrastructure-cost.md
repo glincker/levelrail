@@ -8,17 +8,17 @@ Levelrail is Apache 2.0 software with one edition. There is no license key, no u
 
 ## 1. One control plane replaces several services
 
-A typical self-run setup pays for, or operates, separate tools for each job. Levelrail ships these in the same binary:
+A typical self-run setup pays for, or operates, separate tools for each job. Levelrail ships these in the same binary. The last column lists tools people commonly run for the same job:
 
-| Job | Where it lives in Levelrail |
-| --- | --- |
-| Build and deploy from git | [Deploying apps](/deploying-apps) |
-| Reverse proxy and TLS certificates | [Domains and ingress](/domains-and-ingress) |
-| Database management and backups | [Managed databases](/managed-databases), [Backups and storage](/backups-and-storage) |
-| Metrics, logs and alerts | [Observability](/observability), [Monitors](/monitors) |
-| Status page | [Status page](/status-page) |
-| Preview environments | [Preview environments](/preview-environments) |
-| Access control and audit log | [Identity and access](/identity-and-access), [Audit log](/audit-log) |
+| Job | Where it lives in Levelrail | Tools often run separately |
+| --- | --- | --- |
+| Build and deploy from git | [Deploying apps](/deploying-apps) | CI runners, deploy scripts |
+| Reverse proxy and TLS certificates | [Domains and ingress](/domains-and-ingress) | Traefik, Caddy, certbot |
+| Database management and backups | [Managed databases](/managed-databases), [Backups and storage](/backups-and-storage) | cron with dump scripts, restic |
+| Metrics, logs and alerts | [Observability](/observability), [Monitors](/monitors) | Prometheus, Grafana, Loki |
+| Status page | [Status page](/status-page) | a separate status page service |
+| Preview environments | [Preview environments](/preview-environments) | hosted preview features of managed platforms |
+| Access control and audit log | [Identity and access](/identity-and-access), [Audit log](/audit-log) | per-tool logs |
 
 Observability data is stored on your own nodes, so there is no separate metrics or logging service to pay for or host. Each replaced service is one less subscription or one less server to keep running.
 
