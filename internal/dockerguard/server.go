@@ -37,6 +37,30 @@ func UpstreamSocket(host string) (string, error) {
 // Listen creates the guard socket at socket (mode 0600, parent 0700) and
 // serves g on it until ctx ends or Close is called.
 func Listen(ctx context.Context, g *Guard, socket string) (*Server, error) {
+	s, err := listenHandler(ctx, g, g.tunables.HeaderTimeout, socket)
+	if err != nil {
+		return nil, err
+	}
+	s.Guard = g
+	return s, nil
+}
+
+// ListenProfile serves a profile guard on its own socket. The file is world
+// connectable because the container user is not the daemon's; the 0700 parent
+// keeps every other process out, only the bind mount reaches it.
+func ListenProfile(ctx context.Context, pg *ProfileGuard, headerTimeout time.Duration, socket string) (*Server, error) {
+	s, err := listenHandler(ctx, pg, headerTimeout, socket)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.Chmod(socket, 0o666); err != nil { //nolint:gosec // parent dir is 0700, see above
+		_ = s.Close()
+		return nil, fmt.Errorf("dockerguard: chmod %s: %w", socket, err)
+	}
+	return s, nil
+}
+
+func listenHandler(ctx context.Context, h http.Handler, headerTimeout time.Duration, socket string) (*Server, error) {
 	if len(socket) > maxSocketPath {
 		return nil, fmt.Errorf("dockerguard: socket path %s is %d bytes, over the %d a unix socket allows; set %s to a shorter path", socket, len(socket), maxSocketPath, EnvSocket)
 	}
@@ -51,11 +75,10 @@ func Listen(ctx context.Context, g *Guard, socket string) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		Guard:  g,
 		Socket: socket,
 		srv: &http.Server{
-			Handler:           g,
-			ReadHeaderTimeout: g.tunables.HeaderTimeout,
+			Handler:           h,
+			ReadHeaderTimeout: headerTimeout,
 			BaseContext:       func(net.Listener) context.Context { return context.WithoutCancel(ctx) },
 		},
 	}

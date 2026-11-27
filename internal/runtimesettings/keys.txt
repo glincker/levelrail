@@ -811,6 +811,7 @@ telemetry.retention_batch_rows
 telemetry.retention_sweep_budget
 telemetry.visitor_history_retention
 telemetry.visitor_salt_rotation
+templates.cap_docker_api
 templates.capability_net_admin_enabled
 templates.file_input_max_bytes
 templates.first_boot_max_seconds

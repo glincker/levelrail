@@ -26,7 +26,8 @@ const AuditActionCapabilityGranted = "templates.capability_granted"
 // capabilityPolicy reads the per-class runtime settings; a missing store means off.
 func (rt *Router) capabilityPolicy(ctx context.Context) catalog.CapabilityPolicy {
 	on := rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyTemplatesCapNetAdmin)
-	return catalog.CapabilityPolicy{Enabled: map[string]bool{catalog.CapClassNetAdmin: on}}
+	dockerAPI := rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyTemplatesCapDockerAPI)
+	return catalog.CapabilityPolicy{Enabled: map[string]bool{catalog.CapClassNetAdmin: on, catalog.CapClassDockerAPI: dockerAPI}}
 }
 
 // resolveTemplateCapabilities returns the grants an install or upgrade may carry, or writes the refusal.

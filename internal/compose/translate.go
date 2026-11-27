@@ -5,6 +5,7 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -105,6 +106,13 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			d.Files = append(d.Files, store.ServiceFile{Path: cf.Path, Mode: cf.Mode, Secret: cf.Secret, NoExpand: cf.NoExpand, Content: cf.Content, Hash: store.FileContentHash(d.Name, cf.Path, cf.Content)})
 		}
 		for _, v := range svc.Volumes {
+			if v.HostPath != "" && socketGrantCovers(f, key, v) {
+				// The real socket is never stored; the reconciler mounts the grant's own.
+				if p, ok := dockerguard.ProfileFromCaps(f.CapGrants[key]); ok {
+					d.GrantedCaps = append(d.GrantedCaps, dockerguard.GrantCap(p))
+				}
+				continue
+			}
 			if v.HostPath != "" {
 				d.BindMounts = append(d.BindMounts, store.ServiceBindMount{
 					HostPath:      v.HostPath,

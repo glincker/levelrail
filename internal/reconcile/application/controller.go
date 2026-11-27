@@ -279,6 +279,7 @@ type Controller struct {
 	deployWindows       func(context.Context) deploysafety.Windows    // live override of the timings, see WithDeployWindows
 	restartPolicy       func(context.Context) string                  // stored runtime setting, read per container create
 	elevatedCaps        func(context.Context) bool                    // nil fails closed: no elevated capability is applied, see WithElevatedCaps
+	dockerAPI           DockerAPISockets                              // nil fails closed: no docker_api grant is applied, see WithDockerAPI
 	policySwept         sync.Map                                      // container IDs already brought to the desired restart policy
 	applied             AppliedConfigRecorder                         // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
@@ -1439,6 +1440,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	spec.RestartPolicy = c.restartPolicyFor(ctx, desired)
 	c.applyMeshBind(ctx, desired, &spec)
+	if err := c.applyDockerAPI(desired, &spec); err != nil {
+		return err
+	}
 	streamPorts, err := c.streamPortBindings(ctx, desired.Name)
 	if err != nil {
 		return fmt.Errorf("app streams: %w", err)
@@ -2956,7 +2960,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 	}
 	applyRuntimeOptions(&spec, desired.Runtime)
 	// The hardening profile drops ALL and adds this record back, so only approved grants reach the container.
-	spec.CapAdd = append([]string(nil), desired.GrantedCaps...)
+	spec.CapAdd = plainCaps(desired.GrantedCaps)
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every

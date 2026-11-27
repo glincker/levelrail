@@ -344,6 +344,9 @@ func validateComposeServices(f *File, allowBuild, allowBindMounts bool) []error 
 					errs = append(errs, fmt.Errorf("service %q: bind-mount volume %q is not supported here, use a named volume instead", name, v.ContainerPath))
 					continue
 				}
+				if socketGrantCovers(f, name, v) {
+					continue
+				}
 				if err := validateBindMountHostPath(v.HostPath); err != nil {
 					errs = append(errs, fmt.Errorf("service %q: %w", name, err))
 				}

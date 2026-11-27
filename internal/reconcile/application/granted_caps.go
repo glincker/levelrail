@@ -29,6 +29,7 @@ func (c *Controller) withPolicyCaps(ctx context.Context, desired *store.DesiredS
 		}
 		kept = append(kept, g)
 	}
+	kept = c.withoutDockerAPIGrant(kept)
 	if len(kept) == len(desired.GrantedCaps) {
 		return desired
 	}

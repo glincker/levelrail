@@ -46,7 +46,7 @@ var capClasses = map[string]capClassSpec{
 	CapClassCapAdd:      {CapTierReview, dockerguard.ReviewTierCaps, true},
 	CapClassNetAdmin:    {CapTierElevated, dockerguard.GrantableCaps, true},
 	CapClassHostLibs:    {CapTierReview, nil, false},
-	CapClassDockerAPI:   {CapTierElevated, nil, false},
+	CapClassDockerAPI:   {CapTierElevated, []string{"READ_ONLY", "PROJECT"}, true},
 	CapClassDevices:     {CapTierElevated, nil, false},
 	CapClassHostNetwork: {CapTierElevated, nil, false},
 	CapClassPrivileged:  {CapTierPrivileged, nil, false},
@@ -131,6 +131,9 @@ func (m Manifest) validateCapabilityShape() []error {
 		if len(caps) == 0 {
 			errs = append(errs, fmt.Errorf("%s: class %q needs caps", at, c.Class))
 		}
+		if c.Class == CapClassDockerAPI && len(caps) != 1 {
+			errs = append(errs, fmt.Errorf("%s: class %q takes exactly one profile (read_only or project)", at, c.Class))
+		}
 		if bad := capSubset(caps, spec.caps); len(bad) > 0 {
 			errs = append(errs, fmt.Errorf("%s: caps %s are outside the %s allowlist", at, strings.Join(bad, ", "), c.Class))
 		}
@@ -155,6 +158,12 @@ func (m Manifest) validateCapabilityUsage(body string) []error {
 	for _, c := range m.Capabilities {
 		if _, ok := f.Services[c.Service]; !ok {
 			errs = append(errs, fmt.Errorf("capability %s names service %q, which the compose file does not declare", c.Class, c.Service))
+			continue
+		}
+		if c.Class == CapClassDockerAPI {
+			if !mountsDockerSocket(f.Services[c.Service]) {
+				errs = append(errs, fmt.Errorf("capability %s is declared for service %q but it does not mount /var/run/docker.sock", c.Class, c.Service))
+			}
 			continue
 		}
 		if declared[c.Service] == nil {
@@ -185,6 +194,27 @@ func (m Manifest) validateCapabilityUsage(body string) []error {
 		}
 	}
 	return errs
+}
+
+func mountsDockerSocket(svc compose.Service) bool {
+	for _, v := range svc.Volumes {
+		if v.HostPath == "/var/run/docker.sock" && v.ContainerPath == "/var/run/docker.sock" {
+			return true
+		}
+	}
+	return false
+}
+
+// grantCaps gives a docker_api declaration its grant token; other classes keep their cap names.
+func grantCaps(class string, caps []string) []string {
+	if class != CapClassDockerAPI {
+		return caps
+	}
+	out := make([]string, 0, len(caps))
+	for _, c := range caps {
+		out = append(out, dockerguard.GrantCapPrefix+c)
+	}
+	return out
 }
 
 // validateSubmissionCapabilities keeps the Privileged tier out of submissions,
@@ -220,7 +250,7 @@ func (m Manifest) CapabilityGrants(p CapabilityPolicy) ([]CapabilityGrant, error
 				}
 			}
 		}
-		out = append(out, CapabilityGrant{Class: c.Class, Tier: spec.tier, Service: c.Service, Reason: c.Reason, Caps: caps})
+		out = append(out, CapabilityGrant{Class: c.Class, Tier: spec.tier, Service: c.Service, Reason: c.Reason, Caps: grantCaps(c.Class, caps)})
 	}
 	return out, nil
 }
@@ -248,7 +278,7 @@ func (m Manifest) CapabilityDigest() string {
 func (m Manifest) DeclaredCapabilities() []CapabilityGrant {
 	var out []CapabilityGrant
 	for _, c := range m.Capabilities {
-		out = append(out, CapabilityGrant{Class: c.Class, Tier: capClasses[c.Class].tier, Service: c.Service, Reason: c.Reason, Caps: normCaps(c.Caps)})
+		out = append(out, CapabilityGrant{Class: c.Class, Tier: capClasses[c.Class].tier, Service: c.Service, Reason: c.Reason, Caps: grantCaps(c.Class, normCaps(c.Caps))})
 	}
 	return out
 }

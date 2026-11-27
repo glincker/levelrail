@@ -34,12 +34,37 @@ func validateHostAccess(f *File) []error {
 			errs = append(errs, fmt.Errorf("service %q: %s", name, msg))
 		}
 		for _, v := range svc.Volumes {
-			if v.HostPath != "" && isDockerSocket(v.HostPath) {
-				errs = append(errs, fmt.Errorf("service %q: mounting the Docker socket (%s) is never allowed: it grants root on the host [%s]", name, v.HostPath, dockerguard.RuleBindSensitive))
+			if v.HostPath == "" || !isDockerSocket(v.HostPath) {
+				continue
 			}
+			if socketGrantCovers(f, name, v) {
+				continue
+			}
+			errs = append(errs, fmt.Errorf("service %q: mounting the Docker socket (%s) is never allowed without a docker_api grant: it grants root on the host [%s]", name, v.HostPath, dockerguard.RuleBindSensitive))
 		}
 	}
 	return errs
+}
+
+// dockerAPISocketPath is where a granted service sees its own scoped socket.
+const dockerAPISocketPath = "/var/run/docker.sock"
+
+// socketGrantCovers reports whether a docker.sock volume is fine: the service holds a
+// docker_api grant, or a rollback is dropping an ungranted one. Only the standard
+// host path qualifies, and it is never mounted for real: the reconciler swaps in the grant's own socket.
+func socketGrantCovers(f *File, name string, v Volume) bool {
+	if !isStandardDockerSocket(v.HostPath) || path.Clean(v.ContainerPath) != dockerAPISocketPath {
+		return false
+	}
+	if _, ok := dockerguard.ProfileFromCaps(f.CapGrants[name]); ok {
+		return true
+	}
+	return f.DropUngrantedCaps
+}
+
+func isStandardDockerSocket(hostPath string) bool {
+	p := path.Clean(hostPath)
+	return p == "/var/run/docker.sock" || p == "/run/docker.sock"
 }
 
 func hostAccessViolations(svc Service, granted []string, dropUngranted bool) []string {
