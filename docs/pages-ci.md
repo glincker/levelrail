@@ -1,4 +1,7 @@
-# Deploy Pages from CI
+---
+title: "Deploy Pages from CI"
+description: "Create a Pages deploy token that can publish one site only, then deploy from GitHub Actions or any other CI with the pages-deploy action or the CLI."
+---
 
 A deploy token can publish one Pages site and nothing else. Create one per pipeline and rotate it when you like.
 

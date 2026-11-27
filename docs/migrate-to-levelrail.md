@@ -11,17 +11,51 @@ The short version: the old server keeps serving while you stage, copy and test t
 
 ## Pick your starting point
 
-| You run | Go to | What the importer reads |
-| --- | --- | --- |
-| Coolify | [Migrate from Coolify](/migrate-from-coolify) | Its HTTP API (read-only), or a `docker inspect` snapshot |
-| Dokploy | [Migrate from Dokploy](/migrate-from-dokploy) | Its HTTP API (read-only) |
-| CapRover | [Migrate from CapRover](/migrate-from-caprover) | Its HTTP API (read-only) |
-| Dokku | [Migrate from Dokku](/migrate-from-dokku) | Live over SSH (read only, Docker socket), or a pasted `dokku config:export` dump as a fallback. Includes a Dokku command map |
-| A `docker-compose.yml` | [Migrate from Docker Compose](/migrate-from-docker-compose) | The compose file you paste or pass |
-| Heroku-style or plain git apps | [Importing apps](/importing-apps) | Nothing to import: point Levelrail at the repo, image or Dockerfile |
-| Vercel or Cloud Run | [From Vercel](/migrating-from-vercel), [from Cloud Run](/migrating-from-cloud-run) | Separate guides |
+Each card lists what moves and the rough effort. Effort means your hands-on time: planning and staging take minutes, image and data copies scale with size, and a database adds a write freeze for its final copy.
 
-## The six steps
+<CardGroup cols={2}>
+  <Card title="From Coolify" icon="arrow-right-arrow-left" href="/migrate-from-coolify">
+    Moves apps, databases, env vars, domains. Volumes get one `rsync` command each. Reads the Coolify API read-only, or a `docker inspect` snapshot. Effort: medium, plus the database freeze. Also see the [exit gap report](/coolify-exit-gap-report) and [service to Compose](/coolify-service-to-compose).
+  </Card>
+  <Card title="From Dokploy" icon="arrow-right-arrow-left" href="/migrate-from-dokploy">
+    Moves applications, databases, env vars, domains. Reads the Dokploy API read-only. Effort: medium.
+  </Card>
+  <Card title="From CapRover" icon="arrow-right-arrow-left" href="/migrate-from-caprover">
+    Moves apps, env vars, domains, volumes. Reads the CapRover API read-only. CapRover builds locally, so images need a repo or registry. Effort: medium.
+  </Card>
+  <Card title="From Dokku" icon="arrow-right-arrow-left" href="/migrate-from-dokku">
+    Moves apps, env vars, domains. Reads Docker on the Dokku host over SSH, or a pasted `dokku config:export` dump (variables only). Includes a Dokku command map. Effort: medium.
+  </Card>
+  <Card title="From Docker Compose" icon="file-code" href="/migrate-from-docker-compose">
+    Turns a compose file into apps and managed databases, then copies data. Effort: short for stateless stacks, medium with databases.
+  </Card>
+  <Card title="Over SSH, any old host" icon="terminal" href="/migrate-over-ssh">
+    Imports apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login. Read only, no agent. Effort: medium.
+  </Card>
+  <Card title="On the same server" icon="server" href="/migrate-same-server">
+    Installs in coexist mode beside Coolify, Dokploy or CapRover, imports, verifies, then takes over ports 80 and 443. Effort: medium, with a short switch.
+  </Card>
+  <Card title="From a repository" icon="code-branch" href="/import-a-repo">
+    Heroku-style or plain git apps: point Levelrail at the repo and review what detection found. Nothing to import from a platform. Effort: short.
+  </Card>
+  <Card title="From Kubernetes manifests" icon="cube" href="/import-kubernetes">
+    Converts Kubernetes YAML into Levelrail apps with `levelrail-cli import k8s`. Text only, no cluster contact. Effort: short, review the output.
+  </Card>
+  <Card title="From Vercel" icon="triangle" href="/migrate-from-vercel">
+    One Vercel project in seven printed steps with `levelrail-cli import vercel`. Never changes DNS or Vercel. See also the [Next.js runbook](/migrating-from-vercel). Effort: short.
+  </Card>
+  <Card title="From Cloud Run" icon="cloud" href="/migrating-from-cloud-run">
+    A separate guide for moving a Cloud Run service. Effort: short to medium.
+  </Card>
+  <Card title="From Render or Netlify" icon="cloud" href="/migrating-from-render">
+    Separate guides for a Render service ([Render](/migrating-from-render)) or a Netlify site ([Netlify](/migrating-from-netlify)). Effort: short to medium.
+  </Card>
+  <Card title="Any repo, image or docker run" icon="download" href="/importing-apps">
+    Import a repo URL, docker run command, image, compose file or Dockerfile, review the plan, deploy. From the shell see [Doctor and import](/doctor-and-import) and [Importers](/iac/importers). Effort: short.
+  </Card>
+</CardGroup>
+
+## The generic flow
 
 <Steps>
 <Step title="Inventory">
@@ -46,7 +80,7 @@ Create the apps here stopped and not routed, copy images, data and volumes, then
 </Step>
 <Step title="Cutover, one domain at a time">
 
-Lower DNS TTLs a day ahead. Run the cutover check, freeze writes for apps with databases, do the final data copy, then switch DNS and verify. Do the least important domain first.
+Lower DNS TTLs a day ahead. Run the cutover check (`levelrail-cli migrate cutover`), freeze writes for apps with databases, do the final data copy, then switch DNS and verify. Do the least important domain first.
 
 </Step>
 <Step title="Retire the old server">
@@ -55,6 +89,10 @@ Keep it running, but idle, for at least one full traffic cycle (a week for a wee
 
 </Step>
 </Steps>
+
+<Note>
+**Rollback and what stays untouched.** Levelrail only reads from the old host and never stops, edits or deletes anything there. Until you retire it, rollback means pointing DNS back (minutes with a low TTL) or deleting what the import created here. Data written to the new database after the switch is not copied back, so keep the freeze short and decide early. Details are in [Rollback](#rollback).
+</Note>
 
 ## What stays online during the move
 
