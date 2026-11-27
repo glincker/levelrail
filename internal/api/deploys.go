@@ -371,6 +371,11 @@ func (s deployTriggerImageStore) SaveDesiredService(ctx context.Context, svc sto
 	return s.rt.apps.SaveDesiredService(ctx, svc)
 }
 
+// GetDesiredService lets ImageTrigger re-read the row when its revision-checked save loses a race.
+func (s deployTriggerImageStore) GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error) {
+	return s.rt.apps.GetDesiredService(ctx, name)
+}
+
 func (s deployTriggerImageStore) SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error {
 	return s.rt.deployAttempts.SaveDeployAttempt(ctx, a)
 }
@@ -540,17 +545,22 @@ const imageRefusedMessage = "this image may not be deployed to this app's enviro
 // both drive, clearing EnvDirty the same way RestartService already
 // does for a real redeploy.
 func (rt *Router) setDesiredImage(ctx context.Context, existing store.DesiredService, image string) (store.DesiredService, error) {
-	updated := existing
-	updated.Image = image
-	updated.EnvDirty = false
-	// Template grants belong to the template's own image; another image must not inherit them.
-	if !docker.ImageIdentityMatches(existing.Image, image) {
-		updated.GrantedCaps = nil
+	build := func(base store.DesiredService) store.DesiredService {
+		next := base
+		next.Image = image
+		next.EnvDirty = !store.EnvColumnsEqual(existing, base)
+		// Template grants belong to the template's own image; another image must not inherit them.
+		if !docker.ImageIdentityMatches(existing.Image, image) {
+			next.GrantedCaps = nil
+		}
+		return next
 	}
+	updated := build(existing)
 	if st, msg := rt.checkServiceImageRepo(ctx, updated); st != 0 {
 		return store.DesiredService{}, errors.New(msg)
 	}
-	if err := rt.apps.SaveDesiredService(ctx, updated); err != nil {
+	updated, err := store.SaveRebased(ctx, updated, rt.apps.GetDesiredService, rt.apps.SaveDesiredService, build)
+	if err != nil {
 		return store.DesiredService{}, err
 	}
 	return updated, nil

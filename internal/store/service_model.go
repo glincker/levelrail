@@ -132,6 +132,10 @@ type DesiredService struct {
 	Affinity    json.RawMessage
 	// InternalDNSNames are extra names under the mesh zone that resolve like the app's own name.
 	InternalDNSNames []string
+	// Rev is the row revision as read. With CheckRev set, a save is rejected with
+	// ErrStaleDesiredService unless the stored revision still equals Rev.
+	Rev      int64
+	CheckRev bool
 	// NextCache overrides the app.yaml next.cache (none or redis); empty defers to the spec and a save never clears it.
 	NextCache string
 	// NextImageCache overrides next.image_cache (persistent or none); empty defers to the spec and a save never clears it.

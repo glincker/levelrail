@@ -180,7 +180,7 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 		}
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	res, err := tx.ExecContext(ctx, `
 		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, is_trial, template_id, pull_policy, image_id, image_id_ref, depends_on, depends_on_healthy, published_ports, files, incarnation, tolerations, affinity, next_cache, next_image_cache, run_user, working_dir, runtime_options, granted_caps, internal_dns_names, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
@@ -223,9 +223,16 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 			internal_dns_names = excluded.internal_dns_names,
 			files = CASE WHEN ? THEN excluded.files ELSE desired_services.files END,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.IsTrial, svc.TemplateID, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON), string(dependsOnHealthyJSON), string(publishedPortsJSON), string(filesJSON), incarnation, string(tolerationsJSON), string(affinityJSON), svc.NextCache, svc.NextImageCache, svc.User, svc.WorkingDir, runtimeJSON, grantedJSON, string(dnsNamesJSON), svc.Files != nil)
+		WHERE NOT ? OR desired_services.rev = ?
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.IsTrial, svc.TemplateID, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON), string(dependsOnHealthyJSON), string(publishedPortsJSON), string(filesJSON), incarnation, string(tolerationsJSON), string(affinityJSON), svc.NextCache, svc.NextImageCache, svc.User, svc.WorkingDir, runtimeJSON, grantedJSON, string(dnsNamesJSON), svc.Files != nil, svc.CheckRev, svc.Rev)
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
+	}
+	if svc.CheckRev {
+		// A skipped upsert update touches no row; that is the stale-snapshot signal.
+		if n, err := res.RowsAffected(); err == nil && n == 0 {
+			return fmt.Errorf("store: save desired service %q: %w", svc.Name, ErrStaleDesiredService)
+		}
 	}
 
 	if err := claimServiceDomains(ctx, tx, svc.Name, svc.Domains); err != nil {
