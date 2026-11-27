@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -138,10 +139,16 @@ func (b *FenceBook) SetPath(path string) {
 	b.path = path
 	raw, err := os.ReadFile(path) //nolint:gosec // path comes from the agent data dir
 	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			slog.Warn("fence book unreadable, starting empty", slog.String("path", path), slog.String("error", err.Error()))
+		}
 		return
 	}
 	var m map[string]uint64
-	if json.Unmarshal(raw, &m) != nil {
+	if jerr := json.Unmarshal(raw, &m); jerr != nil {
+		// Keep the bad file for the operator; the next save would overwrite it.
+		_ = os.Rename(path, path+".corrupt")
+		slog.Error("fence book corrupt, moved aside and starting empty", slog.String("path", path), slog.String("error", jerr.Error()))
 		return
 	}
 	for k, v := range m {
@@ -164,24 +171,43 @@ func (b *FenceBook) Admit(target string, token uint64) error {
 	}
 	if token > hi {
 		b.seen[target] = token
-		b.saveLocked()
+		if err := b.saveLocked(); err != nil {
+			slog.Warn("fence book not saved, a restart forgets this token", slog.String("error", err.Error()))
+		}
 	}
 	return nil
 }
 
-func (b *FenceBook) saveLocked() {
+func (b *FenceBook) saveLocked() error {
 	if b.path == "" {
-		return
+		return nil
 	}
 	raw, err := json.Marshal(b.seen)
 	if err != nil {
-		return
+		return fmt.Errorf("encode: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(b.path), 0o700); err != nil {
+		return fmt.Errorf("create dir: %w", err)
 	}
 	tmp := b.path + ".tmp"
-	if os.MkdirAll(filepath.Dir(b.path), 0o700) != nil || os.WriteFile(tmp, raw, 0o600) != nil {
-		return
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) //nolint:gosec // path comes from the agent data dir
+	if err != nil {
+		return fmt.Errorf("open: %w", err)
 	}
-	_ = os.Rename(tmp, b.path)
+	_, werr := f.Write(raw)
+	if serr := f.Sync(); werr == nil {
+		werr = serr
+	}
+	if cerr := f.Close(); werr == nil {
+		werr = cerr
+	}
+	if werr != nil {
+		return fmt.Errorf("write: %w", werr)
+	}
+	if err := os.Rename(tmp, b.path); err != nil {
+		return fmt.Errorf("rename: %w", err)
+	}
+	return nil
 }
 
 // CheckRequest applies Admit to the fence fields of a destructive request; other requests pass.
