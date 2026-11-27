@@ -77,6 +77,7 @@
             "group": "Install and deploy",
             "pages": [
               "index",
+              "what-is-levelrail",
               "features",
               "faq",
               "first-15-minutes",
@@ -378,6 +379,7 @@
               "resource-console",
               "command-palette",
               "keyboard",
+              "lower-infrastructure-cost",
               "cost-estimate",
               "usage-and-cost",
               "cost-explorer",
@@ -546,6 +548,7 @@
               "threat-model",
               "verify-a-release",
               "docker-access",
+              "compared-with-other-approaches",
               "comparison",
               "use-cases",
               "white-labeling",

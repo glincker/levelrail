@@ -1,18 +1,41 @@
 ---
 title: "Levelrail documentation"
 icon: "/assets/icons/house.svg"
-sidebarTitle: "What is Levelrail"
-description: Lightweight, self-hosted deployment platform: the control plane idles at about 200 MB and is one Go binary, with git deploys, one-click templates, edge and TLS, managed databases and built-in observability.
+sidebarTitle: "Introduction"
+description: "Levelrail is an open source, self-hosted deployment platform in one Go binary: git deploys, templates, databases, TLS, backups, observability and MCP."
 "og:image": "https://docs.levelrail.com/public/og/index.png"
 "twitter:image": "https://docs.levelrail.com/public/og/index.png"
 "og:url": "https://docs.levelrail.com/index"
 ---
 
-Levelrail is a lightweight, self-hosted deployment platform: one Go binary whose control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box (see [Performance](/performance) and [Benchmarks](/benchmarks)). Your apps use their own resources on top. It turns one or more Linux servers into a private cloud. Push to a git repo and get a running app with TLS, logs, metrics and one-click rollback.
+**Levelrail is an open source (Apache 2.0), self-hosted deployment platform that runs as one Go binary and turns your own Linux servers or cloud accounts into a private cloud. It deploys apps from git or Docker images with automatic HTTPS, runs databases with backups, keeps logs and metrics, and exposes the same API to people, the CLI, Terraform and AI agents through MCP, with an audit log.**
+
+The control plane idles at about 200 MB of RAM and 1.5 percent of one CPU on a 2 vCPU box (see [Performance](/performance) and [Benchmarks](/benchmarks)). Your apps use their own resources on top. There is one edition and no license key.
+
+<CardGroup cols={3}>
+  <Card title="What is Levelrail" icon="/assets/icons/house.svg" href="/what-is-levelrail">
+    The definition, what it replaces and who it is for.
+  </Card>
+  <Card title="What it solves" icon="/assets/icons/scales.svg" href="/compared-with-other-approaches">
+    Apps, databases, domains, TLS, backups and logs in one place. Compared by category.
+  </Card>
+  <Card title="Install" icon="/assets/icons/rocket-launch.svg" href="/getting-started">
+    Install, sign in and deploy your first app in about ten minutes.
+  </Card>
+  <Card title="AI agents and MCP" icon="/assets/icons/terminal-window.svg" href="/mcp">
+    An MCP server with the same permissions as the API, plus an off switch in AI control.
+  </Card>
+  <Card title="Templates" icon="/assets/icons/cloud-arrow-up.svg" href="/template-catalog">
+    570+ one-click templates for databases, tools and AI stacks.
+  </Card>
+  <Card title="Observability" icon="/assets/icons/tree-structure.svg" href="/observability">
+    Metrics, logs, monitors and alerts stored on your own nodes.
+  </Card>
+</CardGroup>
 
 <CardGroup cols={2}>
-  <Card title="Getting started" icon="/assets/icons/rocket-launch.svg" href="/getting-started">
-    Install, sign in and deploy your first app in about ten minutes.
+  <Card title="Lower infrastructure cost" icon="/assets/icons/scales.svg" href="/lower-infrastructure-cost">
+    Where cost drops: one control plane, commodity servers, sleep when idle.
   </Card>
   <Card title="Deploying apps" icon="/assets/icons/cloud-arrow-up.svg" href="/deploying-apps">
     Dockerfile, Compose and Railpack builds with readiness-gated cutover.
