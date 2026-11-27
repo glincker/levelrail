@@ -50,6 +50,9 @@ Each card lists what moves and the rough effort. Effort means your hands-on time
   <Card title="From Render or Netlify" icon="cloud" href="/migrating-from-render">
     Separate guides for a Render service ([Render](/migrating-from-render)) or a Netlify site ([Netlify](/migrating-from-netlify)). Effort: short to medium.
   </Card>
+  <Card title="From Heroku, Fly.io or DigitalOcean" icon="cloud" href="/iac/importers">
+    Reads a Heroku account through its API, or a `fly.toml` or `.do/app.yaml` file, and writes reviewable documents. Databases are created empty. Effort: short to medium.
+  </Card>
   <Card title="Any repo, image or docker run" icon="download" href="/importing-apps">
     Import a repo URL, docker run command, image, compose file or Dockerfile, review the plan, deploy. From the shell see [Doctor and import](/doctor-and-import) and [Importers](/iac/importers). Effort: short.
   </Card>
@@ -139,21 +142,9 @@ Until you stop the old server, rollback is cheap.
 - **After the DNS switch:** point the record back at the old server. With a low TTL that takes minutes. The guided cutover does this for you (`levelrail-cli import cutover rollback`), restoring the stored previous value of a record it wrote through Cloudflare or Route 53. Rollback does not restore a Cloudflare proxy (orange cloud) setting, so check it.
 - **Data written here after the switch** is not copied back. If users already wrote to the new database, you decide which side is the truth. This is the main reason to keep the freeze window short and to roll back early or not at all.
 
-## Migration status
+## If something fails
 
-Maturity here uses the labels on [Feature status](/feature-status). The migration importer is not yet listed there. By that page's definition it is **beta**: it works and is tested, but has no end-to-end suite and almost no record on real infrastructure.
-
-| Source | Maturity | What backs it |
-| --- | --- | --- |
-| Coolify | beta | Unit tests against a fake Coolify API and fixtures. Database copy rehearsed live on two droplets for PostgreSQL, MySQL and MongoDB. Guided cutover has a live Docker test. |
-| Dokploy | beta | Unit tests against fixtures. No live Dokploy run recorded. |
-| CapRover | beta | Unit tests against fixtures. No live CapRover run recorded. |
-| Dokku (SSH route) | beta | The shared Docker over SSH importer, with unit tests. No live Dokku run recorded. |
-| Dokku (env dump) | beta | Unit tests. Variables only, no live Dokku run recorded. |
-| Docker Compose file | beta | Unit tests. No live rehearsal recorded. |
-| Docker snapshot (`docker inspect`) | beta | Unit tests. Works for any host that runs plain containers. |
-
-If something fails, the plan says why and what to do by hand. Tell us what broke on [GitHub](https://github.com/glincker/levelrail/issues).
+The plan says why and what to do by hand. Maturity labels for each importer are on [Feature status](/feature-status). Report anything that breaks on [GitHub](https://github.com/glincker/levelrail/issues).
 
 ## FAQ
 

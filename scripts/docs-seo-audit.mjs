@@ -25,7 +25,8 @@ const ignored = new Set(
     : [],
 )
 const slugOf = (f) => relative(root, f).replace(/\.mdx?$/, '')
-const pages = files.filter((f) => !ignored.has(relative(root, f)))
+const isIgnored = (rel) => ignored.has(rel) || [...ignored].some((p) => p.endsWith('/') && rel.startsWith(p))
+const pages = files.filter((f) => !isIgnored(relative(root, f)))
 const slugs = new Set(pages.map(slugOf))
 
 const nav = new Set()

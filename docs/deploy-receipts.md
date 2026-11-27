@@ -4,8 +4,6 @@ description: A downloadable record of one deploy, with the commit, image digest,
 "og:url": "https://docs.levelrail.com/deploy-receipts"
 ---
 
-# Deploy receipts
-
 Every deploy has a receipt: one document that answers what ran, who asked for it, who approved it and which checks it passed. It is built on request from data the control plane already stores, so there is nothing to enable and no extra storage.
 
 A receipt is **unsigned**. It is a convenient summary, not an attestation, and it proves nothing to a third party on its own. Signing is planned separately.

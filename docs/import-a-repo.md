@@ -1,7 +1,7 @@
 ---
 title: "Import a repository"
 sidebarTitle: "Import a repo"
-description: Go from a git repository to a running app in a few steps, with detection that tells you what it found and why.
+description: "Go from a git repository to a running app in a few steps, with detection that tells you what it found and why, and a plan to review before anything is created."
 "og:url": "https://docs.levelrail.com/import-a-repo"
 ---
 

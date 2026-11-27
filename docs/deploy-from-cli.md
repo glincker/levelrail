@@ -1,7 +1,7 @@
 ---
 title: "Deploy from your computer"
 sidebarTitle: "Deploy from CLI"
-description: Deploy the current directory with one command, no git remote and no registry needed.
+description: "Deploy the current directory to your Levelrail server with one command, no git remote and no registry needed, then roll back or follow the logs."
 "og:url": "https://docs.levelrail.com/deploy-from-cli"
 ---
 

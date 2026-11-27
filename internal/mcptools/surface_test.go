@@ -60,7 +60,7 @@ func renderSurface(t *testing.T) string {
 	sort.Strings(groups)
 
 	var b strings.Builder
-	b.WriteString("---\ndescription: \"Estimated model context cost of the MCP tool list, by toolset.\"\n---\n\n# MCP tool surface\n\n")
+	b.WriteString("---\ntitle: \"MCP tool surface\"\ndescription: \"Estimated model context cost of the Levelrail MCP tool list, by toolset, so you can choose which toolsets to enable.\"\n---\n\n")
 	b.WriteString("Estimated model context cost of the MCP tool list. Tokens are estimated as characters divided by 4 over each tool's name, description and input schema JSON.\n\n")
 	b.WriteString("Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-surface`.\n\n")
 	b.WriteString("## By toolset\n\n| Toolset | Tools | Est. tokens |\n| --- | ---: | ---: |\n")

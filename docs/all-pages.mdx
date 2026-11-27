@@ -82,7 +82,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 ### Essentials
 
-- [Doctor and import from the command line](/doctor-and-import): Run the server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, an image, a config folder or a monorepo with levelrail-cli.
+- [Doctor and import from the command line](/doctor-and-import): Run server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, image, config folder or monorepo with levelrail-cli.
 - [Email notifications](/email-notifications): Choose an email provider for alert emails, password resets and invites, check your sender domain, send a test, and read the delivery log.
 - [Email templates and messages](/email-templates): Edit every email the platform sends, build audiences, and send announcements with opt-outs, scheduling and delivery history.
 - [Alerts](/alerts): Alert rules, the inbox, history, silences, maintenance windows and the 18 notification channel kinds, with the dashboard, CLI and API steps for each.
@@ -95,7 +95,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Deploying
 
 - [Deploying and managing apps](/deploying-apps): Create, deploy, roll back, configure, promote, and operate an app on Levelrail, from the dashboard, CLI, or API.
-- [Deploy from your computer](/deploy-from-cli): Deploy the current directory with one command, no git remote and no registry needed.
+- [Deploy from your computer](/deploy-from-cli): Deploy the current directory to your Levelrail server with one command, no git remote and no registry needed, then roll back or follow the logs.
 - [Drop deploy for static sites](/drop-deploy): Drag a folder or a .zip onto a static site and it goes live, with no git and no build.
 - [Compose apps](/compose-apps): Deploy a Docker Compose file as one app and manage it: per-service status and start order, rollback to an earlier file, teardown, and installable templates.
 - [Runtime options](/runtime-options): The allowlisted container options a service can set under runtime, with their bounds, and how compose keys map onto them.
@@ -245,7 +245,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Git reliability](/git-reliability): What the control plane caches and polls, what connection and webhook statuses mean, the variables behind them, and how to recover a push that did not deploy.
 - [Wait for CI before deploying](/ci-gate): Hold an automatic git deploy until the commit's CI checks conclude. Works with GitHub and GitLab, and the push is answered at once while the wait runs in the background.
 - [Deploy with git push](/git-push-deploy): Push a branch to a git remote on your own server and it builds and deploys that exact commit. A beta feature, off by default, with a per-app token.
-- [Import a repository](/import-a-repo): Go from a git repository to a running app in a few steps, with detection that tells you what it found and why.
+- [Import a repository](/import-a-repo): Go from a git repository to a running app in a few steps, with detection that tells you what it found and why, and a plan to review before anything is created.
 - [Monorepos](/monorepos): Detect workspaces, run one service per package from a single repository, and redeploy only the services a push actually changed.
 
 ### Security and access
@@ -329,7 +329,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migration wizard](/migration-wizard): Move apps, databases and volumes off Coolify, Dokploy, CapRover or an old server in one guided, resumable job with live progress and a safe-to-delete gate.
 - [Migrate from Coolify](/migrate-from-coolify): Move Coolify apps, databases, env vars and domains to Levelrail with a read-only plan, staged copies and a reversible cutover. Coolify keeps serving.
 - [Coolify exit gap report](/coolify-exit-gap-report): What the Coolify importer carries over, what it reports for you to finish, and what it cannot see yet, audited against what a real Coolify instance holds.
-- [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose): How migrate coolify turns a Coolify one-click service into a Compose file, how magic variables are translated, and what you still fix by hand.
+- [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose): See how migrate coolify turns a Coolify one-click service into a Compose file, how magic variables are translated, and what you still fix by hand.
 - [Migrate from Dokploy](/migrate-from-dokploy): Import Dokploy applications, databases, env vars and domains into Levelrail with a read-only dry run, then copy data and switch DNS while Dokploy keeps serving.
 - [Migrate from CapRover](/migrate-from-caprover): Import CapRover apps, env vars, domains and volumes into Levelrail with a read-only dry run. CapRover builds locally, so images need a repo or registry.
 - [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by reading the Dokku host's Docker over SSH, or from an env dump as the fallback. Includes a Dokku command map.
@@ -359,7 +359,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Connect a cloud account](/iac/cloud-connect): Give Levelrail a scoped Oracle Cloud credential. A guided bootstrap from your own machine, or paste one you made. Root and tenancy admin credentials are never accepted.
 - [IaC resource kinds](/iac/resources): Each resource kind with a worked example and the rules that do not fit a field table. The field list itself is the generated reference.
 - [Cron jobs and alert rules in files](/iac/cron-and-alerts): Keep an app's scheduled commands and alert rules in your repository as CronJob and AlertRule documents, then plan, apply, export and prune them.
-- [Import from a deploy.yml or a Portainer stack](/iac/importers): Turn an existing deploy.yml or Portainer stack file into reviewable Levelrail App documents with an offline dry run, and save them with --write.
+- [Import Heroku, Fly, DigitalOcean, Portainer and more](/iac/importers): Turn a fly.toml, DigitalOcean app spec, Render Blueprint, Netlify, Railway or Portainer file, or a Heroku account, into reviewable Levelrail documents with a dry run.
 - [Compose projects as code](/iac/compose): Point an App document at an existing Docker Compose file instead of copying it. Plan, apply, import and adopt, with the exact limits strict mode enforces.
 - [IaC reference](/iac/reference): Every resource kind, its fields, types and which are required. Generated from the JSON Schema.
 - [IaC error codes](/iac/errors): Every stable error code an apply, plan or stack call can return, what it means and how to fix it. Generated from the code list.
@@ -405,7 +405,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Plugins](/plugins): Run signed, operator-approved plugins in locked-down containers. The first release supports notification channels.
 - [Publishing plugins](/plugin-publishing): Sign a plugin, make a marketplace index entry and sign an index, all offline.
 - [First-party plugins](/plugins-first-party): Notification channel plugins for services the built-in channels do not cover, built on the same public contract as any third-party plugin.
-- [mcp-tool-surface](/mcp-tool-surface): Estimated model context cost of the MCP tool list, by toolset.
+- [MCP tool surface](/mcp-tool-surface): Estimated model context cost of the Levelrail MCP tool list, by toolset, so you can choose which toolsets to enable.
 - [Agent tooling audit](/agent-tooling-audit): Size, overlap and annotation audit of the levelrail-mcp tool surface, with the token budget test that keeps it from regressing.
 - [Shared Go kit](/kit): Standard-library-only Go module with networking, scheduling, parsing and system helper packages.
 - [Terraform and OpenTofu provider](/terraform-provider): Manage projects, environments, apps, domains, databases and shared env variables from Terraform or OpenTofu, with import support and what is not covered.

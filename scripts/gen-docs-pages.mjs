@@ -22,6 +22,10 @@ const shot = (file, title) =>
 fs.mkdirSync('docs/self-host', { recursive: true })
 for (const f of fs.readdirSync('docs/self-host')) if (f.endsWith('.mdx')) fs.unlinkSync(`docs/self-host/${f}`)
 
+// Two templates can share a display name, so titles add the id when needed.
+const nameCount = new Map()
+for (const t of templates) nameCount.set(t.name, (nameCount.get(t.name) || 0) + 1)
+
 const byCat = new Map()
 for (const t of templates) {
   if (!byCat.has(t.category)) byCat.set(t.category, [])
@@ -66,7 +70,7 @@ ${req.protections.map((p) => `- ${esc(p.label)}.`).join('\n')}
     ? `levelrail-cli templates get ${t.id} --output json | jq -r .compose > ${t.id}.compose.yaml\n# edit ${t.id}.compose.yaml to set the variables you must provide\nlevelrail-cli apps deploy-compose my-${t.id} --file ${t.id}.compose.yaml`
     : `levelrail-cli templates deploy ${t.id} --name my-${t.id}`
   const out = `---
-title: ${q(`Self-host ${t.name} with Docker`)}
+title: ${q(`Self-host ${t.name} with Docker${nameCount.get(t.name) > 1 ? ` (${t.id})` : ''}`)}
 sidebarTitle: ${q(t.name)}
 description: ${q(t.slogan)}
 "og:url": "https://docs.levelrail.com/${'self-host/'+t.id}"
