@@ -1,0 +1,3 @@
+blocker | compose | services.web.pid | service "web": pid: host shares a host namespace and is not allowed [host_pid] | remove or change the field; the file cannot deploy as written
+blocker | compose | services.web.validate | service "web": deploy.placement is not supported yet; it is a Swarm-specific field with no meaning outside a Swarm cluster (only deploy.resources.reservations.devices, for GPU reservations, and deploy.replicas are read) | remove or change the field; the file cannot deploy as written
+changes-behavior | compose | services.web.cpuset | CPU pinning is not applied | set the app's CPU pinning in its resource settings

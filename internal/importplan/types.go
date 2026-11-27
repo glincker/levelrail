@@ -3,6 +3,8 @@
 // side-effect free deployment plan preview from it.
 package importplan
 
+import "github.com/GLINCKER/levelrail/internal/importreport"
+
 // SourceKind is what Classify decided the input is.
 type SourceKind string
 
@@ -119,6 +121,8 @@ type DeploymentPlan struct {
 	SecretRefs  []string          `json:"secret_refs,omitempty"`
 	Unsupported []Unsupported     `json:"unsupported,omitempty"`
 	Conflicts   []Conflict        `json:"conflicts,omitempty"`
+	// Report lists every dropped or changed field with a plain reason, for compose and docker run.
+	Report []importreport.Finding `json:"report,omitempty"`
 }
 
 // Input is the raw request to Classify and Plan.

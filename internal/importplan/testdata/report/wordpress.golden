@@ -1,0 +1,5 @@
+changes-behavior | compose | services.db.healthcheck.test | CMD-SHELL needs /bin/sh in the image; in a shell-less image the check always fails and the service reports unhealthy | use the CMD form with an executable the image contains
+ignored-safe | compose | services.db.platform | platform linux/amd64 is now pinned, so the service only runs on a node of that architecture | keep it if the image is single-arch, or remove it to let the node pick
+ignored-safe | compose | services.wordpress.container_name | containers are named <app>-<service>, so the custom name is not applied | the custom name is not applied; containers are named <app>-<service> and other services reach this one by its service key, so use that as the hostname
+ignored-safe | compose | services.wordpress.logging | the logging driver and options are not applied; the platform collects logs itself | logs are collected by the platform; read them with the logs commands
+ignored-safe | compose | services.wordpress.ports.80 | no host port is set, so the port is reachable through ingress and the app network only | add HOST:CONTAINER if it must be published on the node

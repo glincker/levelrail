@@ -78,6 +78,21 @@ func resolveComposePath(p string) (string, error) {
 	return "", fmt.Errorf("no compose file in %s (looked for %s)", p, strings.Join(composeFileNames, ", "))
 }
 
+// printImportReport lists every dropped or changed field, worst first, so the
+// operator sees the cost of the import before anything is deployed.
+func printImportReport(out io.Writer, report []apiclient.ImportFinding) {
+	if len(report) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintf(out, "\nimport report (%d findings):\n", len(report))
+	for _, f := range report {
+		_, _ = fmt.Fprintf(out, "  [%s] %s: %s\n", f.Severity, f.Path, f.Reason)
+		if f.Fix != "" {
+			_, _ = fmt.Fprintf(out, "      fix: %s\n", f.Fix)
+		}
+	}
+}
+
 // printImportStack lists what a compose import would create, what it cannot
 // carry over and which names clash. Secret values are never printed.
 func printImportStack(out io.Writer, p apiclient.ImportPlan) {

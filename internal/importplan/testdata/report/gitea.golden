@@ -1,0 +1,8 @@
+blocker | compose | services.server.volumes | service "server": bind-mount host path "/etc/timezone" is not allowed: "/etc" is a protected system path | remove or change the field; the file cannot deploy as written
+changes-behavior | compose | networks | networks: is declared but not enforced; every service in this app shares one network and can already reach every other service, regardless of any networks: assignment | rely on the shared app network, or split the stack into separate apps
+changes-behavior | compose | services.server.volumes./data | a host bind mount needs root approval to create and ties the service to one node | use a named volume unless the data must live at that host path
+changes-behavior | compose | services.server.volumes./etc/timezone | a host bind mount needs root approval to create and ties the service to one node | use a named volume unless the data must live at that host path
+ignored-safe | compose | services.server.hostname | the container hostname is not set | services reach each other by service name; remove it
+ignored-safe | compose | services.server.stdin_open | containers run without stdin | remove it; containers run without stdin
+ignored-safe | compose | services.server.tty | containers run without a TTY | remove it; containers run without a TTY
+ignored-safe | compose | services.server.x-levelrail-node | the service is pinned to node "node-eu-1"; it stays pending if that node is missing | make sure the node is enrolled before deploying

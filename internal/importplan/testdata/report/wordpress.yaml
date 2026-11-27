@@ -1,0 +1,34 @@
+services:
+  wordpress:
+    image: wordpress:6.5-apache
+    container_name: wp
+    restart: always
+    ports:
+      - "80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: change-me
+    volumes:
+      - wp_data:/var/www/html
+    depends_on:
+      - db
+    logging:
+      driver: json-file
+  db:
+    image: mysql:8.0
+    restart: always
+    platform: linux/amd64
+    environment:
+      MYSQL_DATABASE: wp
+      MYSQL_USER: wp
+      MYSQL_PASSWORD: change-me
+      MYSQL_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost"]
+      interval: 10s
+volumes:
+  wp_data:
+  db_data:

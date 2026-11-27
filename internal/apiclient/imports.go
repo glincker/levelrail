@@ -80,6 +80,16 @@ type ImportPlan struct {
 	SecretRefs         []string            `json:"secret_refs,omitempty"`
 	Unsupported        []ImportUnsupported `json:"unsupported,omitempty"`
 	Conflicts          []ImportConflict    `json:"conflicts,omitempty"`
+	Report             []ImportFinding     `json:"report,omitempty"`
+}
+
+// ImportFinding is one dropped or changed field in an import fidelity report.
+type ImportFinding struct {
+	Kind     string `json:"kind"`
+	Path     string `json:"path"`
+	Reason   string `json:"reason"`
+	Severity string `json:"severity"`
+	Fix      string `json:"fix,omitempty"`
 }
 
 // ImportResource is one thing a plan would create.

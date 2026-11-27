@@ -1,0 +1,36 @@
+services:
+  server:
+    image: gitea/gitea:1.22
+    hostname: git
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+    x-levelrail-node: node-eu-1
+    environment:
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: db:5432
+    ports:
+      - "3000:3000"
+      - "222:22"
+    volumes:
+      - /srv/forge:/data
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      - gitea
+    depends_on:
+      - db
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gitea
+      POSTGRES_DB: gitea
+    networks:
+      - gitea
+    volumes:
+      - pg:/var/lib/postgresql/data
+networks:
+  gitea:
+    external: false
+volumes:
+  pg:
