@@ -18,6 +18,7 @@ func applyRuntimeOptions(s *docker.ContainerSpec, r *spec.RuntimeOptions) {
 	s.ExtraHosts = append([]string(nil), r.ExtraHosts...)
 	s.PidsLimit = int64(r.PidsLimit)
 	s.StopTimeoutSeconds = r.StopTimeout
+	s.Platform = r.Platform
 	if len(r.Sysctls) > 0 {
 		s.Sysctls = r.Sysctls
 	}

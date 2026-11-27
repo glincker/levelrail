@@ -62,6 +62,7 @@ type rawService struct {
 	Sysctls         sysctlMap              `yaml:"sysctls"`
 	CapDrop         []string               `yaml:"cap_drop"`
 	PidsLimit       int                    `yaml:"pids_limit"`
+	Platform        string                 `yaml:"platform"`
 	ReadOnly        bool                   `yaml:"read_only"`
 	HostAccess      HostAccess             `yaml:",inline"`
 	Strategy        string                 `yaml:"x-levelrail-strategy"`

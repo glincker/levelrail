@@ -125,6 +125,7 @@ type Service struct {
 	Sysctls         sysctlMap
 	CapDrop         []string
 	PidsLimit       int
+	Platform        string
 	ReadOnly        bool
 	HostAccess      HostAccess
 	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
