@@ -1,7 +1,7 @@
 id: cinny
 name: Cinny
-slogan: "A simple, elegant Matrix client for the web."
-description: "AGPL 3.0 licensed. Point it at any Matrix homeserver from the sign in page."
+slogan: A simple, elegant Matrix client for the web.
+description: AGPL 3.0 licensed. Point it at any Matrix homeserver from the sign in page.
 category: Communication
 documentation_url: https://github.com/cinnyapp/cinny#self-hosting
 recommended_memory_bytes: 67108864

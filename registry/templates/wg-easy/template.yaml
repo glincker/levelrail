@@ -40,8 +40,6 @@ manifest:
         - Open UDP 51820 in the firewall and forward it to this host.
     compose_file: compose.yaml
     recommended_memory_bytes: 134217728
-    requires_kernel_modules:
-        - wireguard
     env: []
     domains:
         - service: wg-easy
@@ -63,3 +61,5 @@ manifest:
           caps:
             - NET_ADMIN
             - NET_RAW
+    requires_kernel_modules:
+        - wireguard

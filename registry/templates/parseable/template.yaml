@@ -1,7 +1,7 @@
 id: parseable
 name: Parseable
-slogan: "A lightweight log analytics and observability platform in one binary."
-description: "AGPL 3.0 licensed. Runs on local disk storage. Sign in as admin with the generated password from the deployment variables, then send logs to the ingest API."
+slogan: A lightweight log analytics and observability platform in one binary.
+description: AGPL 3.0 licensed. Runs on local disk storage. Sign in as admin with the generated password from the deployment variables, then send logs to the ingest API.
 category: Monitoring
 documentation_url: https://www.parseable.com/docs
 recommended_memory_bytes: 536870912

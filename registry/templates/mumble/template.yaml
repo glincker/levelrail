@@ -1,7 +1,7 @@
 id: mumble
 name: Mumble Server
-slogan: "Low latency, high quality voice chat server for gaming and teams."
-description: "BSD 3 Clause licensed. Voice uses port 64738 over TCP and UDP, open both in the firewall. The generated SuperUser password is in the deployment variables."
+slogan: Low latency, high quality voice chat server for gaming and teams.
+description: BSD 3 Clause licensed. Voice uses port 64738 over TCP and UDP, open both in the firewall. The generated SuperUser password is in the deployment variables.
 category: Communication
 documentation_url: https://www.mumble.info/documentation/
 recommended_memory_bytes: 134217728

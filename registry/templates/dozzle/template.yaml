@@ -59,3 +59,4 @@ manifest:
           reason: Lists containers and streams their logs through a read-only socket proxy.
           caps:
             - read_only
+    requires_kernel_modules: []

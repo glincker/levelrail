@@ -1,7 +1,7 @@
 id: pinry
 name: Pinry
-slogan: "A tiling image board for saving and sharing pins, self hosted."
-description: "BSD 2 Clause licensed. Create the first account on the sign up page, then turn off public sign ups in the settings."
+slogan: A tiling image board for saving and sharing pins, self hosted.
+description: BSD 2 Clause licensed. Create the first account on the sign up page, then turn off public sign ups in the settings.
 category: Productivity
 documentation_url: https://docs.getpinry.com/
 recommended_memory_bytes: 268435456
