@@ -1,0 +1,15 @@
+id: quickwit
+name: Quickwit
+slogan: A cloud-native search engine for logs and traces that keeps data on cheap object storage.
+description: Apache 2.0 licensed. Runs a single node with local file storage. REST API and UI on port 7280.
+category: Monitoring
+documentation_url: https://quickwit.io/docs
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/quickwit-oss/quickwit
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/quickwit-oss/quickwit/blob/main/LICENSE

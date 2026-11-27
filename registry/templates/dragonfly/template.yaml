@@ -1,0 +1,16 @@
+id: dragonfly
+name: DragonflyDB
+slogan: A multi-threaded, Redis and Memcached compatible in-memory data store.
+description: Source-available (BSL 1.1). Speaks the Redis protocol on port 6379. The generated password is required to connect.
+category: Databases
+documentation_url: https://www.dragonflydb.io/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: dragonfly
+source_repo: https://github.com/dragonflydb/dragonfly
+license: BUSL-1.1
+license_class: source-available
+license_url: https://github.com/dragonflydb/dragonfly/blob/main/LICENSE.md

@@ -1,0 +1,12 @@
+services:
+  cobalt:
+    image: ghcr.io/imputnet/cobalt:11
+    ports: ["9000"]
+    environment:
+      API_URL: ${SERVICE_URL_COBALT:-http://localhost:9000}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:9000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s

@@ -1,0 +1,38 @@
+services:
+  tududi:
+    image: chrisvel/tududi:2.1.5
+    ports: ["3002"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://tududi:$SERVICE_PASSWORD_DB@db:5432/tududi
+      TUDUDI_USER_EMAIL: admin@example.com
+      TUDUDI_USER_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      TUDUDI_SESSION_SECRET: $SERVICE_PASSWORD_64_SESSION
+      TUDUDI_ALLOWED_ORIGINS: ${SERVICE_URL_TUDUDI:-http://localhost:3002}
+    volumes:
+      - tududi_uploads:/app/backend/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3002/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tududi
+      POSTGRES_USER: tududi
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - tududi_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tududi -d tududi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+volumes:
+  tududi_db:
+  tududi_uploads:

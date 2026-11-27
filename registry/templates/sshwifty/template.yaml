@@ -1,0 +1,15 @@
+id: sshwifty
+name: Sshwifty
+slogan: A web based SSH and Telnet client you can open from any browser.
+description: AGPL 3.0 licensed. Open the page and enter the host to connect to. The shared access key is generated and shown in the deployment variables.
+category: Developer Tools
+documentation_url: https://github.com/nirui/sshwifty
+recommended_memory_bytes: 67108864
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/nirui/sshwifty
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/nirui/sshwifty/blob/master/LICENSE.md

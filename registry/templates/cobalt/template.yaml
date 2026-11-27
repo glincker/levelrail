@@ -1,0 +1,16 @@
+id: cobalt
+name: Cobalt API
+slogan: A media downloader API that turns links into clean files with no ads or trackers.
+description: AGPL 3.0 licensed. This is the API on port 9000. Pair it with a Cobalt web frontend or any compatible client.
+category: Media
+documentation_url: https://github.com/imputnet/cobalt/blob/main/docs/run-an-instance.md
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: cobalt
+source_repo: https://github.com/imputnet/cobalt
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/imputnet/cobalt/blob/main/LICENSE
