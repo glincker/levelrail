@@ -24,6 +24,9 @@ type WeeklyFacts struct {
 	BackupsFailed    int
 	DiskWorstPercent float64
 	DiskWorstNode    string
+	// AdvisorFindings and AdvisorReclaimMB are the dry-run right-sizing totals, zero when none.
+	AdvisorFindings  int
+	AdvisorReclaimMB int64
 }
 
 // NamedCount is a label with a number, used for restarts per app and days left per certificate.
@@ -44,6 +47,8 @@ type WeeklySources struct {
 	Nodes     NodeSource
 	Metrics   MetricsSource
 	Tracker   *RestartTracker
+	// Advisor returns the right-sizing finding count and reclaimable MiB; nil or ok=false leaves the section out.
+	Advisor func(ctx context.Context) (findings int, reclaimMB int64, ok bool)
 	// CertWarnDays lists certificates expiring within this many days.
 	CertWarnDays int
 	Logger       *slog.Logger
@@ -140,6 +145,11 @@ func CollectWeeklyFacts(ctx context.Context, src WeeklySources, now time.Time) W
 			}
 		}
 	}
+	if src.Advisor != nil {
+		if n, mb, ok := src.Advisor(ctx); ok {
+			f.AdvisorFindings, f.AdvisorReclaimMB = n, mb
+		}
+	}
 	return f
 }
 
@@ -173,6 +183,9 @@ func RenderWeeklyDigest(f WeeklyFacts) (subject, text, htmlBody string) {
 			parts = append(parts, fmt.Sprintf("%s in %d days", c.Name, c.Count))
 		}
 		lines = append(lines, "Certificates expiring: "+strings.Join(parts, ", "))
+	}
+	if f.AdvisorFindings > 0 {
+		lines = append(lines, fmt.Sprintf("Right-sizing (dry run, nothing applied): %d suggestions, %d MB reclaimable", f.AdvisorFindings, f.AdvisorReclaimMB))
 	}
 	head := fmt.Sprintf("Week of %s to %s", f.Since.UTC().Format("2006-01-02"), f.Until.UTC().Format("2006-01-02"))
 	text = head + "\n\n" + strings.Join(lines, "\n") + "\n"

@@ -54,6 +54,9 @@ func Analyze(in Input) []Finding {
 		out = append(out, diskFindings(n, th, now)...)
 		out = append(out, hostFindings(n, res, th, now)...)
 	}
+	for i := range out {
+		out[i].ReclaimableMB = out[i].Impact.SavingMemoryBytes >> 20
+	}
 	Sort(out)
 	return out
 }
@@ -90,7 +93,10 @@ type Summary struct {
 	PendingData       int            `json:"pending_data"`
 	SavingMemoryBytes int64          `json:"saving_memory_bytes"`
 	SavingDiskBytes   int64          `json:"saving_disk_bytes"`
-	TopSavings        []Finding      `json:"top_savings"`
+	ReclaimableMB     int64          `json:"reclaimable_mb"`
+	// MonthlySavings stays nil until a node price source exists; prices are never guessed.
+	MonthlySavings *float64  `json:"monthly_savings"`
+	TopSavings     []Finding `json:"top_savings"`
 }
 
 // Summarize builds a Summary; not-enough-data findings are counted apart.
@@ -109,6 +115,7 @@ func Summarize(fs []Finding, top int) Summary {
 			s.Actionable++
 		}
 		s.SavingMemoryBytes += f.Impact.SavingMemoryBytes
+		s.ReclaimableMB += f.Impact.SavingMemoryBytes >> 20
 		s.SavingDiskBytes += f.Impact.SavingDiskBytes
 		if f.Impact.SavingMemoryBytes > 0 || f.Impact.SavingDiskBytes > 0 {
 			saving = append(saving, f)

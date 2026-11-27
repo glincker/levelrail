@@ -145,7 +145,10 @@ func runAdvisorSummary(prog string, args []string, stdout, stderr io.Writer, loo
 			_, _ = fmt.Fprintf(stdout, "not enough data yet: %d resources\n", res.PendingData)
 		}
 		if res.SavingMemoryBytes > 0 {
-			_, _ = fmt.Fprintf(stdout, "estimated memory to reclaim: %s\n", rightsizing.FormatMemory(res.SavingMemoryBytes))
+			_, _ = fmt.Fprintf(stdout, "estimated memory to reclaim: %s (%d MB)\n", rightsizing.FormatMemory(res.SavingMemoryBytes), res.ReclaimableMB)
+		}
+		if res.MonthlySavings != nil {
+			_, _ = fmt.Fprintf(stdout, "estimated monthly savings: %.2f\n", *res.MonthlySavings)
 		}
 		tw := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
 		for _, f := range res.TopSavings {

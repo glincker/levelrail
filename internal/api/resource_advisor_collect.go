@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -273,4 +274,17 @@ func databaseLinks(svcs []store.DesiredService, dbs []store.DesiredDatabase) map
 		}
 	}
 	return out
+}
+
+// AdvisorDigestTotals returns the finding count and reclaimable MiB for the weekly digest, ok=false while the beta is off.
+func (rt *Router) AdvisorDigestTotals(ctx context.Context) (int, int64, bool) {
+	if !experimental.Enabled(experimental.ResourceAdvisor) {
+		return 0, 0, false
+	}
+	fs, err := rt.advisorFindings(ctx)
+	if err != nil {
+		return 0, 0, false
+	}
+	s := resourceadvisor.Summarize(fs, 0)
+	return s.Actionable, s.ReclaimableMB, s.Actionable > 0
 }
