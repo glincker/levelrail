@@ -18,6 +18,7 @@ const (
 	KeyAdvisorSlowStatementMs  = "databases.advisor_slow_statement_ms"
 	KeyAdvisorCacheSeconds     = "databases.advisor_cache_seconds"
 	KeyAdvisorAutoApply        = "advisor.auto_apply"
+	KeyAdvisorIdleHours        = "advisor.idle_hours"
 	advisorLiveNote            = " The next advisor run uses a changed value."
 	advisorBytesCeil           = 1 << 50
 )
@@ -29,6 +30,9 @@ func init() {
 		Title:       "Resource advisor: auto apply",
 		Description: "When on, right-sizing limits may be applied without a manual confirm. Off by default: the advisor only suggests and sends a weekly dry-run digest.",
 	})
+	registerLimit(Definition{Key: KeyAdvisorIdleHours, Category: CategoryDeploys, Default: "168", Env: "APP_ADVISOR_IDLE_HOURS", Apply: ApplyLive,
+		Title:       "Resource advisor: idle window (hours)",
+		Description: "How long an app must see no requests before the advisor suggests sleeping it. From 1 to 8760." + advisorLiveNote}, 1, 8760)
 	def := func(key, env, dflt, title, desc string, lo, hi int) {
 		registerLimit(Definition{Key: key, Category: CategoryDeploys, Default: dflt, Env: env, Apply: ApplyLive,
 			Title: title, Description: desc + advisorLiveNote}, lo, hi)

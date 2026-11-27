@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -43,6 +44,9 @@ func (rt *Router) advisorThresholds() resourceadvisor.Thresholds {
 	th, errs := resourceadvisor.ThresholdsFromEnv(os.LookupEnv)
 	for _, err := range errs {
 		rt.logger.Warn("resource advisor: ignoring threshold", slog.String("error", err.Error()))
+	}
+	if rt.runtimeSettings != nil {
+		th.IdleWindow = time.Duration(rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyAdvisorIdleHours)) * time.Hour
 	}
 	return th
 }

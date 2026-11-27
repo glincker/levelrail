@@ -46,6 +46,7 @@ func advisorUsage(prog string) string {
   %[1]s advisor findings [--resource app:NAME] [--severity S] [--all]   list resource advice (beta)
   %[1]s advisor summary                                              counts and the biggest savings
   %[1]s advisor apply <finding-id> [--yes]                           preview, then apply with --yes
+  %[1]s advisor apply --kind idle --all [--yes]                      sleep every idle app the advisor found
   %[1]s advisor dismiss <finding-id>                                 hide a finding until restored
   %[1]s advisor snooze <finding-id> [--for 7d]                       hide a finding for a while
   %[1]s advisor restore <finding-id>                                 show a dismissed or snoozed finding again
@@ -159,6 +160,11 @@ func runAdvisorSummary(prog string, args []string, stdout, stderr io.Writer, loo
 }
 
 func runAdvisorApply(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	for _, a := range args {
+		if a == "--all" || a == "-all" {
+			return runAdvisorApplyAll(prog, args, stdout, stderr, lookupEnv)
+		}
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "advisor apply", "print the preview or result as JSON to stdout and nothing else", stderr)
 	yes := fs.Bool("yes", false, "apply the change; without it only the preview is shown")
 	client, id, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "advisor apply", "finding id"}, lookupEnv)
