@@ -1,7 +1,7 @@
 id: postgrest
 name: PostgREST
 slogan: Serve a PostgreSQL database as a REST API with no glue code.
-description: MIT licensed. Ships with a PostgreSQL 16 database and exposes the public schema through the anon role. Add your own roles and schemas before exposing it.
+description: MIT licensed. Ships with a PostgreSQL 16 database and exposes the public schema through the anon role. It connects as the database owner and switches role per request, so create a least-privilege authenticator role for production. Add your own roles and schemas before exposing it.
 category: Developer Tools
 documentation_url: https://docs.postgrest.org
 recommended_memory_bytes: 268435456

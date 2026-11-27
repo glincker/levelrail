@@ -3,7 +3,7 @@ services:
     image: postgrest/postgrest:v16.6
     ports: ["3000"]
     environment:
-      PGRST_DB_URI: postgres://authenticator:$SERVICE_PASSWORD_DB@db:5432/app
+      PGRST_DB_URI: postgres://postgres:$SERVICE_PASSWORD_DB@db:5432/app
       PGRST_DB_SCHEMAS: public
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: $SERVICE_PASSWORD_64_JWT
@@ -28,7 +28,7 @@ services:
       - sh
       - -c
       - |
-        printf '%s\n' "CREATE ROLE anon NOLOGIN;" "CREATE ROLE authenticator NOINHERIT LOGIN PASSWORD '$$POSTGRES_PASSWORD';" "GRANT anon TO authenticator;" "GRANT USAGE ON SCHEMA public TO anon;" > /docker-entrypoint-initdb.d/roles.sql
+        printf '%s\n' "CREATE ROLE anon NOLOGIN;" "GRANT anon TO postgres;""GRANT USAGE ON SCHEMA public TO anon;" > /docker-entrypoint-initdb.d/roles.sql
         exec docker-entrypoint.sh postgres
     volumes:
       - postgrest_db:/var/lib/postgresql/data
