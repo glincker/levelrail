@@ -86,6 +86,21 @@ describe('DomainsTable', () => {
     )
   })
 
+  it('flags a domain holding the untrusted fallback certificate', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    )
+    renderTable({
+      domains: [
+        makeDomain({ fallback: true }),
+        makeDomain({ domain: 'ok.example.com' }),
+      ],
+      appCount: 1,
+    })
+    expect(screen.getAllByText('Untrusted certificate')).toHaveLength(1)
+  })
+
   it('offers Add domain when apps exist but no domains do', async () => {
     const onAdd = vi.fn()
     const user = userEvent.setup()

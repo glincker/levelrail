@@ -311,7 +311,9 @@
       "daysLeft_other": "{{count}} days left",
       "expiresToday": "Expires today",
       "expiredAgo_one": "Expired {{count}} day ago",
-      "expiredAgo_other": "Expired {{count}} days ago"
+      "expiredAgo_other": "Expired {{count}} days ago",
+      "fallback": "Untrusted certificate",
+      "fallbackHint": "Browsers will warn: a public certificate could not be issued and a temporary local one is in use. Renew the certificate once DNS points here."
     },
     "visibility": {
       "toggle": "Allow search engines to index {{domain}}",

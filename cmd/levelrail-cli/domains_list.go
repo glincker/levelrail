@@ -54,6 +54,9 @@ func printDomainsTable(out io.Writer, domains []domainResource) {
 		if link == "" && d.ReachableReason != "" {
 			link = "(" + d.ReachableReason + ")"
 		}
+		if d.Fallback {
+			link = "(untrusted fallback certificate, run domains tls-cert renew) " + link
+		}
 		if len(d.Issues) > 0 {
 			link = "(" + d.Issues[0].Severity + ": " + d.Issues[0].Message + ")"
 		}

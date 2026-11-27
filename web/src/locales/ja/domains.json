@@ -307,7 +307,9 @@
       "renewsManual": "アップロードした証明書: 期限切れの前に更新してください",
       "daysLeft_other": "残り {{count}} 日",
       "expiresToday": "本日期限切れ",
-      "expiredAgo_other": "{{count}} 日前に期限切れ"
+      "expiredAgo_other": "{{count}} 日前に期限切れ",
+      "fallback": "信頼されない証明書",
+      "fallbackHint": "公開証明書を発行できず、一時的なローカル証明書を使用中のため、ブラウザーに警告が表示されます。DNS がこのサーバーを指したら証明書を更新してください。"
     },
     "visibility": {
       "toggle": "{{domain}} の検索エンジンによるインデックスを許可",
