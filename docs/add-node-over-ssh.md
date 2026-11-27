@@ -6,6 +6,12 @@ description: "Adopt an existing Linux machine as a node: the control plane conne
 "og:url": "https://docs.levelrail.com/add-node-over-ssh"
 ---
 
+Outcome: an existing Linux server becomes a Levelrail node without you copying any command onto it.
+
+<Note>
+Before you start: a running control plane, root SSH access to the server (key or password), and the server's host key fingerprint to compare. See [What you need](#what-you-need) below.
+</Note>
+
 Use this when you have a server you can SSH into and you do not want to copy a join command onto it yourself. The control plane connects to the machine, installs the node agent as a systemd service and waits for it to enroll. After that the machine is a normal node. To copy the command by hand instead, see [Add a node anywhere](/add-node-anywhere). For the full multi-node picture see [Multi-node](/multi-node).
 
 <Warning>
@@ -68,6 +74,13 @@ levelrail-cli nodes ssh-provisions show PROVISION_ID
 
 </Tab>
 </Tabs>
+
+Verify it works: the provision ends at `ready` and the node is online.
+
+```bash
+levelrail-cli nodes ssh-provisions show PROVISION_ID
+levelrail-cli nodes list
+```
 
 ## Host key handling
 
