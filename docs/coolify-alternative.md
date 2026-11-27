@@ -6,6 +6,8 @@ description: "Levelrail is an open source Coolify alternative: Docker Engine API
 "og:url": "https://docs.levelrail.com/coolify-alternative"
 ---
 
+After this guide you know how Levelrail compares with Coolify and can move your apps over in four steps while Coolify keeps serving.
+
 **A self-hosted deploy platform for Coolify users**
 
 Levelrail is an open source deployment platform for your own servers. Its agent talks to Docker's Engine API directly instead of SSHing in and shelling out, so the platform stays out of your apps' way.

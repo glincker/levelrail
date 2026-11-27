@@ -5,16 +5,18 @@ description: Import CapRover apps, env vars, domains and volumes into Levelrail 
 "og:url": "https://docs.levelrail.com/migrate-from-caprover"
 ---
 
+After this guide your CapRover apps, env vars, domains and volumes exist on Levelrail, with data copied and DNS switched when you are ready.
+
 CapRover apps import over its HTTP API, read-only. The main difference from the other sources is that CapRover builds images on its own host and does not expose them, so every app needs a source here: a git repository or a registry image. Read the [migration overview](/migrate-to-levelrail) first for the flow and the downtime table.
 
-## Prerequisites
+## What do I need before I start? {#prerequisites}
 
 - Levelrail installed on the new server and the CLI signed in (`levelrail-cli auth login`).
 - The CapRover login password. It is exchanged for a session token with `POST /api/v2/login` (the only non-GET request the importer makes).
 - The CapRover URL reachable from the Levelrail control plane. For a private address, set `APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true` and pass `--allow-private`.
 - Each app's git repository, or a registry you can push its image to.
 
-## What moves
+## What moves to Levelrail? {#what-moves}
 
 | Item | Result |
 | --- | --- |
@@ -25,7 +27,7 @@ CapRover apps import over its HTTP API, read-only. The main difference from the 
 | Volumes | Volumes and bind mounts |
 | Git source | The repository and branch when CapRover has an `appPushWebhook` |
 
-## What needs a manual step
+## What do I still do by hand? {#what-needs-a-manual-step}
 
 - **A source for every app.** Connect the repository (with credentials for a private one) and run a build, or push an image to a registry and set it as the source.
 - **Volume contents**, by `rsync` commands you run.
@@ -35,14 +37,14 @@ CapRover apps import over its HTTP API, read-only. The main difference from the 
 - **Tags and deploy token.** Tags are listed. When a deploy token is enabled, the token value is never read into the plan or the report: create a new one for the app's build hook and update the caller.
 - **Health checks.** CapRover has none to import. Add a readiness path here.
 
-## What does not move
+## What does not move? {#what-does-not-move}
 
 - Images built on CapRover: there is no recoverable image through its API. Rebuild from source.
 - Databases as a feature. CapRover runs databases as ordinary apps or one-click apps, so nothing maps to a managed database. Create a [managed database](/managing-databases) here and copy the data.
 - Certificates, DNS records, deploy history, logs and metrics.
 - `captain-definition` files and one-click app definitions. Neither has an importer yet. The [feature map](/caprover-alternative) lists where each CapRover feature lives here.
 
-## Steps
+## How do I run the migration? {#steps}
 
 <Steps>
 <Step title="Dry run">
@@ -92,29 +94,36 @@ levelrail-cli migrate cutover --verify
 </Step>
 </Steps>
 
-## Databases and the downtime window
+## How long is the downtime window? {#databases-and-the-downtime-window}
 
 The database copy is a full dump and restore with row counts compared, repeatable, with the source read-only. There is no incremental sync. Pause the old app, run the final copy, start the app here, switch DNS. The window is the final copy time plus a restart. Apps without a database and without volumes can move with no outage you would notice. See the [downtime table](/migrate-to-levelrail#what-stays-online-during-the-move).
 
-## Domains and TLS
+## How do domains and TLS switch over? {#domains-and-tls}
 
 CapRover runs nginx on ports 80 and 443. Point DNS at a new server, or install Levelrail in [coexist mode](/behind-an-existing-proxy). Lower the TTL to 300 seconds a day ahead and let `levelrail-cli migrate cutover` tell you when it is low enough. Certificates are issued here on first use once DNS points here. See [Domains and ingress](/domains-and-ingress).
 
-## Common problems and fixes
+## What if something goes wrong? {#common-problems-and-fixes}
 
-| Problem | Fix |
-| --- | --- |
-| Login fails | Use the CapRover password, not a token, and check the URL scheme |
-| An app has no image | Expected. Connect a repo or registry image and deploy |
-| Domain not imported | The app was not exposed in CapRover. Add the domain by hand on the app |
-| Database copy cannot connect | The source database port is not reachable from the Levelrail node |
-
-## Verify and roll back
+<AccordionGroup>
+<Accordion title="Login fails">
+Use the CapRover password, not a token, and check the URL scheme
+</Accordion>
+<Accordion title="An app has no image">
+Expected. Connect a repo or registry image and deploy
+</Accordion>
+<Accordion title="Domain not imported">
+The app was not exposed in CapRover. Add the domain by hand on the app
+</Accordion>
+<Accordion title="Database copy cannot connect">
+The source database port is not reachable from the Levelrail node
+</Accordion>
+</AccordionGroup>
+## How do I verify and roll back? {#verify-and-roll-back}
 
 Run `levelrail-cli migrate cutover --verify` after you switch DNS. It checks the certificate, the health path and DNS.
 
 The copy only reads the old server, so nothing there is changed. To roll back, restart the old app if you paused it and point DNS back at the old server.
 
-## Choose to stay if
+## When should I stay where I am? {#choose-to-stay-if}
 
 CapRover's one-click apps and simple Swarm setup already cover what you run, and you do not want to re-point apps at a git source. Levelrail has no recorded run against a live CapRover. See [CapRover alternative](/caprover-alternative) and the [comparison](/comparison).

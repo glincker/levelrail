@@ -219,7 +219,13 @@ func (rt *Router) handleRevertApp(w http.ResponseWriter, r *http.Request) {
 	}
 	desired := plan.Service
 	desired.EnvDirty = live.EnvDirty || envDiffers(live.Env, desired.Env)
-	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
+	// A stale save re-plans the revert against the fresh row, so env changed since is diffed, not dropped.
+	replan := func(fresh store.DesiredService) store.DesiredService {
+		next := configrev.Apply(fresh, target).Service
+		next.EnvDirty = fresh.EnvDirty || envDiffers(fresh.Env, next.Env)
+		return next
+	}
+	if _, err := rt.saveOwned(r.Context(), desired, replan); err != nil {
 		var taken *store.ErrDomainTaken
 		if errors.As(err, &taken) {
 			writeCodedError(w, http.StatusConflict, "revert_target_missing", taken.Error())

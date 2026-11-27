@@ -907,6 +907,8 @@ export function createResources(op: Bind) {
       putAppCDN: op("handlePutAppCDN"),
       /** Put App Deploy Freeze Requires `deploy`. PUT /api/v1/apps/{name}/deploy-freeze */
       putAppDeployFreeze: op("handlePutAppDeployFreeze"),
+      /** Batch set and unset merged in one transaction; the CLI uses this instead of a full-spec PUT. Requires `write`. PUT /api/v1/apps/{name}/env */
+      putAppEnv: op("handlePutAppEnv"),
       /** Put App Ingress Limits Requires `deploy`. PUT /api/v1/apps/{name}/ingress-limits */
       putAppIngressLimits: op("handlePutAppIngressLimits"),
       /** Put App Protection Requires `write:sensitive`. PUT /api/v1/apps/{name}/protection */

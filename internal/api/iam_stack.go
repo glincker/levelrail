@@ -380,6 +380,7 @@ var stackWritePatterns = map[string]string{
 	"PUT /api/v1/apps/{name}":                      "app",
 	"PUT /api/v1/apps/{name}/project":              "app",
 	"PUT /api/v1/apps/{name}/environment":          "app",
+	"PUT /api/v1/apps/{name}/env":                  "app",
 	"POST /api/v1/apps/{name}/restart":             "app",
 	"POST /api/v1/apps/{name}/tags":                "app",
 	"DELETE /api/v1/apps/{name}/tags/{id}":         "app",

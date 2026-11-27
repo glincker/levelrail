@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/certfallback"
 	"github.com/GLINCKER/levelrail/internal/domaindoctor"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -331,6 +332,9 @@ type renewCertificateResponse struct {
 	// call, not an error.
 	HadStoredCertificate bool   `json:"had_stored_certificate"`
 	Status               string `json:"status"`
+	// DroppedFallback is true when the stored certificate was the untrusted
+	// local-issuer fallback and only that was removed.
+	DroppedFallback bool `json:"dropped_fallback,omitempty"`
 	// Reason echoes why the operator forced the renewal (audit trail).
 	Reason string `json:"reason,omitempty"`
 	// PreviousError is the CA error of the attempt this renewal replaces, so a
@@ -380,13 +384,23 @@ func (rt *Router) handleRenewDomainCertificate(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	hadCert, err := alerting.DeleteCertificateForDomain(r.Context(), rt.certs, rt.certs, domain)
+	// A stored local-issuer fallback is dropped on its own so a public-CA
+	// certificate is never removed in its place.
+	dropped, err := certfallback.Drop(r.Context(), rt.certs, domain)
 	if err != nil {
+		rt.internalError(w, "api: renew domain certificate: drop fallback failed", err, slog.String("domain", domain))
+		return
+	}
+	hadCert := dropped > 0
+	if dropped > 0 {
+		a := rt.accessActor(r)
+		rt.AuditCertFallbackDrop(r.Context(), a.kind, a.id, a.name, domain, "manual renewal dropped the local-issuer fallback certificate")
+	} else if hadCert, err = alerting.DeleteCertificateForDomain(r.Context(), rt.certs, rt.certs, domain); err != nil {
 		rt.internalError(w, "api: renew domain certificate failed", err, slog.String("domain", domain))
 		return
 	}
 
-	out := renewCertificateResponse{Domain: domain, HadStoredCertificate: hadCert, Status: "renewal_requested", Reason: req.Reason}
+	out := renewCertificateResponse{Domain: domain, HadStoredCertificate: hadCert, DroppedFallback: dropped > 0, Status: "renewal_requested", Reason: req.Reason}
 	// Drop the old failure so GET .../cert/status afterwards reports only this attempt.
 	if f, ok := ingress.DefaultACMEFailures().Get(domain); ok {
 		out.PreviousError, out.Explanation = f.Error, domaindoctor.ExplainACME(f.Error)

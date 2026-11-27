@@ -1,12 +1,30 @@
 ---
 title: "Preview environments"
-description: Run a copy of an app for each pull request, with its own URL, caps, optional database, and automatic teardown when the pull request closes.
+description: Run a copy of an app for each pull request with its own URL, caps and optional database, and have it torn down automatically when the pull request closes.
 "og:url": "https://docs.levelrail.com/preview-environments"
 ---
 
 A preview environment is a running copy of an app for one pull request. Levelrail deploys it when the pull request opens or gets new commits, and tears it down when the pull request closes or merges.
 
 Previews are off until you turn them on for an app. Each app opts in on its own.
+
+<CardGroup cols={3}>
+<Card title="Use it for" icon="code-pull-request">
+
+Reviewing a change on a real URL before it merges.
+
+</Card>
+<Card title="Needs" icon="git-branch">
+
+An app connected to a git repository.
+
+</Card>
+<Card title="Ends" icon="trash">
+
+The preview is removed when the pull request closes or merges.
+
+</Card>
+</CardGroup>
 
 ## Turn it on
 

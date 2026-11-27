@@ -18,6 +18,8 @@ func (rt *Router) registerEnvProtectionRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/env/bound", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListBoundEnv))
 	mux.HandleFunc("GET /api/v1/apps/{name}/env/export", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleExportEnvRedacted))
 
+	// Batch set and unset merged in one transaction; the CLI uses this instead of a full-spec PUT.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/env", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePutAppEnv))
 	mux.HandleFunc("GET /api/v1/apps/{name}/env/settings", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetEnvSettings))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/env/settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePutEnvSettings))
 	mux.HandleFunc("POST /api/v1/apps/{name}/env/{key}/convert-to-secret", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleConvertEnvToSecret))

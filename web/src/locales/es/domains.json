@@ -311,7 +311,9 @@
       "daysLeft_other": "Quedan {{count}} días",
       "expiresToday": "Caduca hoy",
       "expiredAgo_one": "Caducó hace {{count}} día",
-      "expiredAgo_other": "Caducó hace {{count}} días"
+      "expiredAgo_other": "Caducó hace {{count}} días",
+      "fallback": "Certificado no confiable",
+      "fallbackHint": "Los navegadores mostrarán una advertencia: no se pudo emitir un certificado público y se usa uno local temporal. Renueva el certificado cuando el DNS apunte aquí."
     },
     "visibility": {
       "toggle": "Permitir que los buscadores indexen {{domain}}",

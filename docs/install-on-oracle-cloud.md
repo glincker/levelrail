@@ -6,6 +6,12 @@ description: "Create an Always Free Arm VM on Oracle Cloud, open both firewall l
 "og:url": "https://docs.levelrail.com/install-on-oracle-cloud"
 ---
 
+Outcome: Levelrail runs on an Oracle Cloud Always Free Arm VM with both firewall layers open and the dashboard reachable.
+
+<Note>
+Before you start: an Oracle Cloud account with the budget alert and compartment quota set (see the first section), an Arm `VM.Standard.A1.Flex` Ubuntu 24.04 instance, and an SSH key. A domain is optional.
+</Note>
+
 This page covers running Levelrail on an Oracle Cloud Always Free Arm VM. The install itself is the same `install.sh` as everywhere else, see [Installing Levelrail](/installing). What is specific to Oracle is the shape, the two firewalls, capacity errors and the idle rule.
 
 Oracle changes its free tier limits and rules. Treat every number here as a pointer to Oracle's page, not as a promise. The source for the limits and the idle rule is [Always Free Resources](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm). Check it and your own console before you plan around a figure.
@@ -129,6 +135,26 @@ sudo sh install.sh
 ```
 
 The installer installs Docker if it is missing. Measured once on a 1 OCPU / 6 GB Arm VM, 2026-11-01: the install took 67 seconds, the control plane used about 160 to 176 MB of resident memory, and used RAM on the machine was 549 MB at 3 minutes and 646 MB at about 17 minutes, idle, with Docker installed and no apps. This is one measurement, not a guarantee.
+
+Verify it works:
+
+```bash
+curl -fsS http://127.0.0.1:8080/healthz
+systemctl status levelrail --no-pager
+```
+
+Expected: `/healthz` answers and the service is `active (running)`.
+
+<Accordion title="If it does not work">
+
+| What you see | What to do |
+| --- | --- |
+| The `http://<public-ip>:8080` link times out | Expected with the VCN rules from step 2. Use the SSH tunnel below. |
+| Ports 80 or 443 show as blocked | Check both firewall layers, see [Which layer is blocking you](#which-layer-is-blocking-you). |
+| Out of host capacity on create | See [If you get "out of host capacity"](#if-you-get-out-of-host-capacity). |
+| `control plane did not become healthy within 60s` | Run `journalctl -u levelrail -n 100 --no-pager`. |
+
+</Accordion>
 
 ## First access to the dashboard
 

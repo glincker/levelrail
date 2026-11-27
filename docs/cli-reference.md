@@ -162,7 +162,7 @@ Same as `apps logs <app>`. The log archive and search commands keep their names 
 ```
 levelrail-cli env set <app> KEY=VALUE... [--apply|--no-apply] [--allow-file-values] [flags]
 ```
-Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those. `KEY=@-` reads the value from stdin. `KEY=@./path`, `KEY=@/abs/path` and `KEY=@~/path` read a local file only with `--allow-file-values` and are refused otherwise. `KEY=@@text` stores the literal `@text`.
+Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those. `KEY=@-` reads the value from stdin. `KEY=@./path`, `KEY=@/abs/path` and `KEY=@~/path` read a local file only with `--allow-file-values` and are refused otherwise. `KEY=@@text` stores the literal `@text`. All keys go to the server in one column-scoped call, so a concurrent deploy cannot drop them.
 
 ```
 levelrail-cli open <app> [flags]
@@ -213,7 +213,7 @@ levelrail-cli apps clone <name> <new-name> [flags]
 levelrail-cli apps delete <name> [flags]
 ```
 
-- `apps create --repo` accepts `ssh://` URLs as well as https. `apps create` registers an existing image or triggers a real build from a git repository; `--file` reads an [app spec](/app-spec-reference), `--interactive` runs a step-by-step wizard. Required flags missing outside `--interactive` fail with an error instead of prompting. Flags-only creates can set health with `--readiness-path|exec|preset|interval|timeout|expected-status`, the same `--liveness-*` set plus `--liveness-failures`, and `--ready-timeout`; they follow the same rules as `apps health set`.
+- `apps create --repo` accepts `ssh://` URLs as well as https. `apps create` registers an existing image or triggers a real build from a git repository. A build with a repository and ref also connects that repository as the app's git source (push trigger) and registers its push webhook, so no separate `apps git-source set` is needed; an existing source for a different repository is kept and the response says so; `--file` reads an [app spec](/app-spec-reference), `--interactive` runs a step-by-step wizard. Required flags missing outside `--interactive` fail with an error instead of prompting. Flags-only creates can set health with `--readiness-path|exec|preset|interval|timeout|expected-status`, the same `--liveness-*` set plus `--liveness-failures`, and `--ready-timeout`; they follow the same rules as `apps health set`.
 - `apps status` shows an app's current reconcile conditions; `apps overview` shows CPU, memory, traffic and errors for every app (or the names given) in one request; `apps network` shows the live traffic path (container port, host port, running).
 
 `apps tree <name>` prints what an app consists of: current deployment and last deploy (image tag, short digest, status), replicas with their reconcile conditions, domains, volumes, linked databases and the env key count (never values). `--watch` redraws every `--interval` (default 5s, or `LEVELRAIL_TREE_INTERVAL`) until Ctrl+C; `--json` prints the nested structure. Per-container rows are not shown because there is no per-app container endpoint.

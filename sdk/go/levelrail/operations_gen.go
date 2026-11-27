@@ -1740,6 +1740,7 @@ var Operations = map[string]Operation{
 	"handlePutAppAbuse":                        {Method: "PUT", Path: "/api/v1/apps/{name}/abuse", HasBody: true, Stream: false},
 	"handlePutAppCDN":                          {Method: "PUT", Path: "/api/v1/apps/{name}/cdn", HasBody: true, Stream: false},
 	"handlePutAppDeployFreeze":                 {Method: "PUT", Path: "/api/v1/apps/{name}/deploy-freeze", HasBody: true, Stream: false},
+	"handlePutAppEnv":                          {Method: "PUT", Path: "/api/v1/apps/{name}/env", HasBody: true, Stream: false},
 	"handlePutAppImportPlan":                   {Method: "PUT", Path: "/api/v1/migration/apps/sessions/{id}/plan", HasBody: true, Stream: false},
 	"handlePutAppIngressLimits":                {Method: "PUT", Path: "/api/v1/apps/{name}/ingress-limits", HasBody: true, Stream: false},
 	"handlePutAppProtection":                   {Method: "PUT", Path: "/api/v1/apps/{name}/protection", HasBody: true, Stream: false},

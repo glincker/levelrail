@@ -123,10 +123,38 @@ func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.D
 	if err := p.persistFileSecrets(ctx, &desired); err != nil {
 		return false, err
 	}
+	save := p.store.SaveDesiredService
 	if req.Order != nil && p.ordered != nil {
-		return false, p.ordered.SaveDesiredServiceOrdered(ctx, desired, *req.Order, CheckOrder)
+		save = func(ctx context.Context, svc store.DesiredService) error {
+			return p.ordered.SaveDesiredServiceOrdered(ctx, svc, *req.Order, CheckOrder)
+		}
 	}
-	return false, p.store.SaveDesiredService(ctx, desired)
+	return false, p.saveRebasedFromSpec(ctx, req, desired, save)
+}
+
+// saveRebasedFromSpec writes the spec-built service with a revision check so env edited
+// during a long build is merged in rather than overwritten; only this deploy's own
+// env changes relative to the row seen at deploy start are applied.
+func (p *Pipeline) saveRebasedFromSpec(ctx context.Context, req Request, desired store.DesiredService, save func(context.Context, store.DesiredService) error) error {
+	g, ok := p.store.(interface {
+		GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
+	})
+	if !ok || req.baseline == nil {
+		return save(ctx, desired)
+	}
+	base := *req.baseline
+	cur, err := g.GetDesiredService(ctx, desired.Name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		return save(ctx, desired)
+	}
+	if err != nil {
+		return err
+	}
+	desired = store.RebaseEnvColumns(base, desired, *cur)
+	_, err = store.SaveRebased(ctx, desired, g.GetDesiredService, save, func(fresh store.DesiredService) store.DesiredService {
+		return store.RebaseEnvColumns(base, desired, fresh)
+	})
+	return err
 }
 
 func (p *Pipeline) recordDigest(ctx context.Context, req Request, res ImageResolution) {
@@ -143,4 +171,19 @@ func commitPoint(req Request) error {
 		return nil
 	}
 	return req.Commit()
+}
+
+// captureBaseline reads the stored row once at deploy start; nil when the store cannot re-read or the app is new.
+func (p *Pipeline) captureBaseline(ctx context.Context, name string) *store.DesiredService {
+	g, ok := p.store.(interface {
+		GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
+	})
+	if !ok {
+		return nil
+	}
+	cur, err := g.GetDesiredService(ctx, name)
+	if err != nil {
+		return nil
+	}
+	return cur
 }

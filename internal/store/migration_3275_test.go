@@ -19,7 +19,8 @@ func TestMigration3275_ImageRepoBackfillOldestWinsAndIdempotent(t *testing.T) {
 		{"clone", "docker.io/library/web:0123456789abcdef0123456789abcdef01234567"},
 		{"cache", "redis:7"},
 	} {
-		if err := old.SaveDesiredService(ctx, DesiredService{Name: s.name, Image: s.image, Port: 80}); err != nil {
+		// Raw insert: the save SQL names the rev column added after this ceiling.
+		if _, err := old.ExecContext(ctx, `INSERT INTO desired_services (name, image, port, updated_at) VALUES (?, ?, 80, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`, s.name, s.image); err != nil {
 			t.Fatalf("seed %s: %v", s.name, err)
 		}
 	}

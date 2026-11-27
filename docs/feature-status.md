@@ -1,8 +1,32 @@
 ---
 title: "Feature status"
-description: Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
+description: Check how mature each Levelrail feature is: stable, beta or hide-behind-flag labels, with the test, end-to-end, docs and real-host evidence behind each one.
 "og:url": "https://docs.levelrail.com/feature-status"
 ---
+
+Use this page to check how mature a feature is before you depend on it.
+
+<CardGroup cols={3}>
+<Card title="Stable" icon="circle-check">
+
+Unit tests, a doc page, and a live end-to-end test or a documented live verification.
+
+</Card>
+<Card title="Beta" icon="flask">
+
+Works and is tested, but has no end-to-end test and no run on real infrastructure.
+
+</Card>
+<Card title="Hide-behind-flag" icon="flag">
+
+Off by default. See [Experimental features](/experimental-features).
+
+</Card>
+</CardGroup>
+
+<Note>
+Stable rows today include the GitHub webhook deploy, deploy approvals, Postgres PITR and backups, GitHub previews, IAM, pipelines, deploy freeze, feature flags, supply chain checks, sleep when idle, the status page, and generic webhook and SMTP notification channels. The [Summary](#summary) table has the exact label and evidence for each row.
+</Note>
 
 This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Last full review 2026-11-09. Template and tool counts refreshed for release 1.4.0. Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
 

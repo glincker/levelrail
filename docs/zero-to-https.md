@@ -5,6 +5,12 @@ description: "From the install command to a trusted HTTPS address, first on a te
 "og:url": "https://docs.levelrail.com/zero-to-https"
 ---
 
+Outcome: your Levelrail dashboard and an app answer on trusted HTTPS addresses, first a free test address and then your own domain.
+
+<Note>
+Before you start: a server with Levelrail installed ([Getting started](/getting-started)), ports 80 and 443 open to the internet, and for your own domain an `A` record you can edit.
+</Note>
+
 This page is the short path from a fresh Linux server to a working HTTPS address. Do the steps in order. Each one links to the full page for the details.
 
 ## 1. Install
@@ -79,6 +85,14 @@ levelrail-cli apps domains add my-app shop.example.com --wait
 ```
 
 DNS changes can take minutes to hours, depending on the record's TTL. If you connected a DNS provider, `--dns preview` shows the record without changing anything. See [Domains and ingress](/domains-and-ingress#walkthrough-your-first-domain).
+
+Verify it works from your own machine:
+
+```bash
+curl -I https://shop.example.com
+```
+
+Expected: an `HTTP/2 200` (or your app's own status) with no certificate error.
 
 ## 5. When it does not work
 

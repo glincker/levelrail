@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/certfallback"
 	"github.com/GLINCKER/levelrail/internal/cloudflareips"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
@@ -17,6 +19,7 @@ func (s *bootState) setupDNS01Check() {
 		return rs.Duration(c, runtimesettings.KeyIngressCARetryBase), rs.Duration(c, runtimesettings.KeyIngressCARetryMax)
 	})
 	s.startCloudflareIPsRefresh()
+	s.startCertFallbackRetry()
 	s.apiRouter.SetDNS01ProviderCheck(func(ctx context.Context) bool {
 		if sec == nil {
 			return false
@@ -41,4 +44,25 @@ func (s *bootState) startCloudflareIPsRefresh() {
 	}
 	next := func(c context.Context) time.Duration { return rs.Duration(c, runtimesettings.KeyCloudflareIPsRefresh) }
 	go cloudflareips.Default().Run(s.ctx, limits, next, s.engine.Nudge)
+}
+
+// startCertFallbackRetry re-requests a public certificate for domains stuck on the local fallback once their DNS points here.
+func (s *bootState) startCertFallbackRetry() {
+	rs, router := s.apiRouter.RuntimeSettings(), s.apiRouter
+	r := &certfallback.Retrier{
+		Store:      s.db,
+		Candidates: router.CertFallbackCandidates,
+		Resolves: func(c context.Context, domain string) bool {
+			return certfallback.ResolvesHere(c, domain, ingress.DetectPublicIPs(c))
+		},
+		Interval: func(c context.Context) time.Duration {
+			return rs.Duration(c, runtimesettings.KeyCertFallbackRetryInterval)
+		},
+		MaxRetries: func(c context.Context) int { return rs.Int(c, runtimesettings.KeyCertFallbackRetryMax) },
+		Audit: func(c context.Context, domain, detail string) {
+			router.AuditCertFallbackDrop(c, "system", "cert-fallback", "fallback certificate retry", domain, detail)
+		},
+		Nudge: s.engine.Nudge,
+	}
+	go r.Run(s.ctx)
 }

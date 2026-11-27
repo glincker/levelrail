@@ -155,15 +155,17 @@ func TestEnvSet(t *testing.T) {
 		"GET /api/v1/apps/web/secrets":         []map[string]string{{"key": "TOKEN"}},
 		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
 		"GET /api/v1/apps/web/pending-changes": map[string]any{},
-		"PUT /api/v1/apps/web":                 appResource{Name: "web"},
+		"PUT /api/v1/apps/web/env":             map[string]any{"name": "web"},
 	}, bodies)
 	runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "B=2", "A=9"))
-	var sent appResource
-	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web"], &sent); err != nil {
+	var sent struct {
+		Set map[string]string `json:"set"`
+	}
+	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web/env"], &sent); err != nil {
 		t.Fatal(err)
 	}
-	if sent.Env["A"] != "9" || sent.Env["B"] != "2" {
-		t.Errorf("env = %v", sent.Env)
+	if len(sent.Set) != 2 || sent.Set["A"] != "9" || sent.Set["B"] != "2" {
+		t.Errorf("set = %v", sent.Set)
 	}
 	if msg := runCLIExpectValidationError(t, cliArgs(srv, "env", "set", "web", "TOKEN=x")); !strings.Contains(msg, "apps secrets set") {
 		t.Errorf("secret key message = %q", msg)

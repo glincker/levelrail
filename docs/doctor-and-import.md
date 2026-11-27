@@ -1,13 +1,15 @@
 ---
 title: "Doctor and import from the command line"
 sidebarTitle: "Doctor and import CLI"
-description: Run the server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, an image, a config folder or a monorepo with levelrail-cli.
+description: "Run server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, image, config folder or monorepo with levelrail-cli."
 "og:url": "https://docs.levelrail.com/doctor-and-import"
 ---
 
+After this guide you can run the health checks that find the usual setup problems and import an app from a source with one command.
+
 Two command groups do most of the work from a terminal. `doctor` checks the server and explains what is wrong. `import` turns a repository, an image or a config folder into an app. The dashboard versions are on [Doctor](/doctor) and [Import a repository](/import-a-repo). This page covers the CLI flags, output and exit codes.
 
-## Doctor
+## How do I check my setup? {#doctor}
 
 ### Run the checks
 
@@ -102,7 +104,7 @@ levelrail-cli apps diagnose <name>
 
 This explains why the latest deploy failed or why the app is crash looping. It applies fixed rules to signals the platform already collected, such as the deploy error, reconcile reasons and recent log lines. When no rule matches, it says so. Nothing changes unless you pass `--apply-fix N`.
 
-## Import
+## How do I import an app? {#import}
 
 The plan, analyze and apply commands need a control plane. `import config` is offline.
 
@@ -193,7 +195,7 @@ levelrail-cli import repo apply https://github.com/you/monorepo --set web.PUBLIC
 | `3` | The API could not be reached. |
 | `4` | The API answered with an error. |
 
-## Not yet
+## What is not available yet? {#not-yet}
 
 - A `doctor` exit code of `1` for failed checks in JSON and text output. Today those formats exit `0`, so scripts must read the `ok` field.
 - A way to run `doctor --fix` for risky fixes without `fixes apply`.

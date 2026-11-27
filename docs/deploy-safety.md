@@ -6,6 +6,8 @@ description: "What stands between a deploy trigger and serving: readiness gate, 
 "og:url": "https://docs.levelrail.com/deploy-safety"
 ---
 
+Use this page to understand what protects a deploy between the trigger and live traffic, and how to tune or override each check.
+
 Between "a deploy was triggered" and "that exact content is serving",
 Levelrail runs a series of checks. A release has to pass a readiness gate
 and hold it for a stable window. The previous release drains. Rollback
@@ -475,7 +477,8 @@ the drain turned off the same test loses requests at cutover.
 
 ## Troubleshooting
 
-### Deployment was held by a freeze window
+<AccordionGroup>
+<Accordion title="Deployment was held by a freeze window">
 
 **Likely cause:** A freeze window is active on the app, blocking automated deploys.
 
@@ -483,7 +486,8 @@ the drain turned off the same test loses requests at cutover.
 
 **Fix:** Wait for the freeze window to end, or override it with a reason: `levelrail-cli apps deploys override <name> <deploy-id> "reason"`.
 
-### Automatic rollback was triggered
+</Accordion>
+<Accordion title="Automatic rollback was triggered">
 
 **Likely cause:** The deployed image crashed within the post-deploy watch window (default 5 minutes), exceeded its memory limit, or had a high error rate.
 
@@ -491,7 +495,8 @@ the drain turned off the same test loses requests at cutover.
 
 **Fix:** Fix the issue in the code and redeploy. Check the app logs with `levelrail-cli apps logs <name>` for crash messages.
 
-### Cannot roll back to the target image
+</Accordion>
+<Accordion title="Cannot roll back to the target image">
 
 **Likely cause:** The image was garbage collected or is no longer in the registry.
 
@@ -499,6 +504,10 @@ the drain turned off the same test loses requests at cutover.
 
 **Fix:** Redeploy from source (git push or `apps builds trigger`), or deploy a newer image tag. To keep more rollback images, increase `APP_DEPLOY_ROLLBACK_PINS` (default 3).
 
+</Accordion>
+</AccordionGroup>
+
 ### Still stuck
 
 For all failure codes and their meanings, see [Deploy failures](deploy-failures.md). Run `levelrail-cli apps diagnose <name>` for system details.
+

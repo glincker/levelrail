@@ -190,6 +190,8 @@ type Request struct {
 	// returns its scope. Nil refuses every proxy rule.
 	ProxyAuthorizer ProxyAuthorizer
 
+	// baseline is the stored row at deploy start, the base for merging this deploy's env edits at save time.
+	baseline *store.DesiredService
 	// nextDeploymentID is set by the Next.js build path and reaches the
 	// container env in finishDeploy.
 	nextDeploymentID string
@@ -292,6 +294,7 @@ func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.
 	if err := p.scanSecrets(ctx, req); err != nil {
 		return "", err
 	}
+	req.baseline = p.captureBaseline(ctx, req.ServiceName)
 	switch req.Service.Build.Type {
 	case spec.BuildDockerfile:
 		return p.deployDockerfile(ctx, req, progress)

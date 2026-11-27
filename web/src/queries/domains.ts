@@ -63,6 +63,9 @@ export interface Domain {
   environment_id?: string
   // Negative once expired; absent when the domain has no certificate.
   tls_days_left?: number
+  // fallback is true when the stored certificate is the untrusted local
+  // fallback, not one from a public CA.
+  fallback?: boolean
 }
 
 export interface DomainIssue {

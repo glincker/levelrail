@@ -262,7 +262,16 @@ func (rt *Router) handleMailPortsOpen(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if len(out.Changed) > 0 {
-		if err := rt.apps.SaveDesiredService(r.Context(), next); err != nil {
+		rebase := func(fresh store.DesiredService) store.DesiredService {
+			fresh.PublishedPorts = slices.Clone(fresh.PublishedPorts)
+			for i, p := range fresh.PublishedPorts {
+				if slices.Contains(out.Changed, p.HostPort) {
+					fresh.PublishedPorts[i].Bind = spec.PortBindPublic
+				}
+			}
+			return fresh
+		}
+		if _, err := rt.saveOwned(r.Context(), next, rebase); err != nil {
 			rt.internalError(w, "api: mail ports open: save app failed", err, slog.String("name", svc.Name))
 			return
 		}

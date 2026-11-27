@@ -59,7 +59,9 @@ func TestDatabaseEnginesRoute_RequireAuth(t *testing.T) {
 
 // Not parallel: the experimental gate is process global.
 func TestDocumentDBHiddenWhileFlagOff(t *testing.T) {
-	experimental.Reset()
+	// Reset would leave every flag off for later tests; Set() is off now and restored after.
+	experimental.Set()
+	t.Cleanup(enableAllExperimental)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 

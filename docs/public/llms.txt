@@ -36,6 +36,13 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 ## Tutorials
 
 - [Getting started](https://docs.levelrail.com/getting-started): install Levelrail and deploy your first app end to end.
+- [What is Levelrail](https://docs.levelrail.com/what-is-levelrail): the problem it solves, what it introduces, and who it is for.
+- [Lower infrastructure cost](https://docs.levelrail.com/lower-infrastructure-cost): where cost drops at the infrastructure level, with a worked example from the cost reference rates.
+- [Levelrail vs other platforms](https://docs.levelrail.com/compared-with-other-approaches): comparison with managed platforms, self-hosted deploy platforms, Kubernetes platforms, Compose and scripts, and DIY stacks.
+- [Install with your AI agent](https://docs.levelrail.com/install-with-ai-agent): paste-ready prompts that install Levelrail and connect an agent over MCP.
+- [Installing](https://docs.levelrail.com/installing): one-command install on a Linux server, with the verify step.
+- [Zero to HTTPS](https://docs.levelrail.com/zero-to-https): from a fresh server to an app on a real domain with TLS.
+- [Add a node over SSH](https://docs.levelrail.com/add-node-over-ssh): grow from one server to several.
 - [All features](https://docs.levelrail.com/features): every feature by area with a stable, beta or experimental label.
 - [FAQ](https://docs.levelrail.com/faq): short answers to common questions.
 - [Alerts](https://docs.levelrail.com/alerts): notification channels, rules and the alert inbox.
@@ -141,6 +148,18 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Integrations](https://docs.levelrail.com/integrations): attach curated third-party tools like PostHog, Sentry, and Datadog to an app.
 - [Templates and registry](https://docs.levelrail.com/templates-and-registry): the curated service catalog (570+ templates in the catalog: 574 catalog entries, 565 active, 9 deprecated, 346 with a recorded real-engine pass, 228 previews), searchable by name or category.
 - [Starter kit templates](https://docs.levelrail.com/templates): curated starter-kit templates for real multi-service Compose patterns.
+- [Migrate to Levelrail](https://docs.levelrail.com/migrate-to-levelrail): start here for moving off another platform: one card per source, the generic flow, downtime table and rollback.
+- [Migrate from Coolify](https://docs.levelrail.com/migrate-from-coolify): read-only plan, staged copies and a reversible cutover for Coolify apps, databases and domains.
+- [Migrate from Dokploy](https://docs.levelrail.com/migrate-from-dokploy): import Dokploy applications, databases, env vars and domains with a dry run.
+- [Migrate from CapRover](https://docs.levelrail.com/migrate-from-caprover): import CapRover apps, env vars, domains and volumes with a dry run.
+- [Migrate from Dokku](https://docs.levelrail.com/migrate-from-dokku): move Dokku apps over SSH or from an env dump, with a Dokku command map.
+- [Migrate from Docker Compose](https://docs.levelrail.com/migrate-from-docker-compose): turn a compose file into Levelrail apps and managed databases.
+- [Migrate over SSH](https://docs.levelrail.com/migrate-over-ssh): import from an old host with only an SSH login, read only.
+- [Migrate on the same server](https://docs.levelrail.com/migrate-same-server): install in coexist mode beside the old platform, then take over ports 80 and 443.
+- [Migrate a project from Vercel](https://docs.levelrail.com/migrate-from-vercel): move one Vercel project with levelrail-cli import vercel.
+- [Import a repository](https://docs.levelrail.com/import-a-repo): from a git repository to a running app, with detection that explains itself.
+- [Import Kubernetes manifests](https://docs.levelrail.com/import-kubernetes): convert Kubernetes YAML into Levelrail apps, text only.
+- [Doctor and import from the command line](https://docs.levelrail.com/doctor-and-import): server checks, safe fixes, and planning apps from the CLI.
 - [Migration wizard](https://docs.levelrail.com/migration-wizard): the guided, resumable job for moving off Coolify, Dokploy, CapRover or an old server, with a safe-to-delete gate.
 - [Coolify exit gap report](https://docs.levelrail.com/coolify-exit-gap-report): what the Coolify importer moves, reports or cannot see, and what is not proven.
 - [Migrating from Coolify, Dokploy, or CapRover](https://docs.levelrail.com/migrating-from-coolify-dokploy-and-caprover): move an existing deployment to Levelrail.

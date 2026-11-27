@@ -69,13 +69,19 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 		return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
 	}
 
-	updated := existing
-	resolution.apply(&updated)
-	updated.EnvDirty = false
-	// Template grants belong to the template's own image; another image must not inherit them.
-	if !docker.ImageIdentityMatches(existing.Image, image) {
-		updated.GrantedCaps = nil
+	// Only image fields and the env latch are ours; every other column comes from the row as stored.
+	build := func(base store.DesiredService) store.DesiredService {
+		next := base
+		resolution.apply(&next)
+		// Env changed since the snapshot was read: keep the latch so the new keys reach a container.
+		next.EnvDirty = !store.EnvColumnsEqual(existing, base)
+		// Template grants belong to the template's own image; another image must not inherit them.
+		if !docker.ImageIdentityMatches(existing.Image, image) {
+			next.GrantedCaps = nil
+		}
+		return next
 	}
+	updated := build(existing)
 
 	heldID, err := t.holdIfLocked(ctx, updated)
 	if err != nil {
@@ -88,12 +94,14 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 			return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
 		}
 	}
-	switch {
-	case heldID != "":
-	case t.Sequencer != nil && t.Ordered != nil:
-		err = t.Ordered.SaveDesiredServiceOrdered(ctx, updated, store.DeployOrder{Sequence: seq, Automatic: t.Automatic}, CheckOrder)
-	default:
-		err = t.Store.SaveDesiredService(ctx, updated)
+	if heldID == "" {
+		save := t.Store.SaveDesiredService
+		if t.Sequencer != nil && t.Ordered != nil {
+			save = func(ctx context.Context, svc store.DesiredService) error {
+				return t.Ordered.SaveDesiredServiceOrdered(ctx, svc, store.DeployOrder{Sequence: seq, Automatic: t.Automatic}, CheckOrder)
+			}
+		}
+		updated, err = store.SaveRebased(ctx, updated, t.reload, save, build)
 	}
 	if err != nil {
 		return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
@@ -114,6 +122,17 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 		t.Nudger.Nudge()
 	}
 	return updated, nil
+}
+
+// reload re-reads a service for a stale-save retry; stores without a reader never produce a stale error.
+func (t ImageTrigger) reload(ctx context.Context, name string) (*store.DesiredService, error) {
+	r, ok := t.Store.(interface {
+		GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
+	})
+	if !ok {
+		return nil, fmt.Errorf("store cannot re-read %q", name)
+	}
+	return r.GetDesiredService(ctx, name)
 }
 
 // TriggerImageDeploy is ImageTrigger without digest resolution or ordering,

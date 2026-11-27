@@ -4,8 +4,6 @@ description: Preview and install OS package updates on a server, with holds for 
 "og:url": "https://docs.levelrail.com/server-patching"
 ---
 
-# Server patching
-
 `nodes patch-status` reports how many OS package updates a server has pending. `nodes patch preview` and `nodes patch apply` install them safely.
 
 **Status: beta.** Read these limits before using it:

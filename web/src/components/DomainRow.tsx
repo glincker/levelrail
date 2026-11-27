@@ -19,6 +19,7 @@ import {
   UnlinkGlassIcon,
   SignpostGlassIcon,
   StethoscopeGlassIcon,
+  TriangleAlertGlassIcon,
   WrenchGlassIcon,
   type UiIcon,
 } from '@thesvg/ui-react'
@@ -198,6 +199,14 @@ function CertCell({
   const { t } = useTranslation('domains')
   if (!cert && domain.tls_owner === 'proxy') {
     return <Badge variant="info">{t('proxyManaged.badge')}</Badge>
+  }
+  if (domain.fallback) {
+    return (
+      <Badge variant="destructive" title={t('page.cert.fallbackHint')}>
+        <TriangleAlertGlassIcon size="1em" aria-hidden />
+        {t('page.cert.fallback')}
+      </Badge>
+    )
   }
   const renewal = cert ? certRenewalBadge(cert) : null
   // One chip per row; fixing the certificate lives on the domain page.

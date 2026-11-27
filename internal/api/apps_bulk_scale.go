@@ -69,7 +69,11 @@ func (rt *Router) bulkScale(ctx context.Context, req bulkAppsRequest, svc store.
 		return bulkStatusSkipped, msg
 	}
 	defer release()
-	if err := rt.apps.SaveDesiredService(ctx, next); err != nil {
+	rebase := func(fresh store.DesiredService) store.DesiredService {
+		fresh.Replicas = n
+		return fresh
+	}
+	if _, err := store.SaveRebased(ctx, next, rt.apps.GetDesiredService, rt.apps.SaveDesiredService, rebase); err != nil {
 		rt.logger.Error("api: bulk apps: scale failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
 		return bulkStatusError, "scale failed"
 	}

@@ -428,7 +428,11 @@ func (rt *Router) handleSetAppExposure(w http.ResponseWriter, r *http.Request) {
 		hp := plan.HostPort
 		next.HostPort = &hp
 	}
-	if err := rt.apps.SaveDesiredService(r.Context(), next); err != nil {
+	rebase := func(fresh store.DesiredService) store.DesiredService {
+		fresh.Port, fresh.BindAddress, fresh.HostPort = next.Port, next.BindAddress, next.HostPort
+		return fresh
+	}
+	if _, err := rt.saveOwned(r.Context(), next, rebase); err != nil {
 		rt.internalError(w, "api: exposure: save app failed", err, slog.String("name", svc.Name))
 		return
 	}

@@ -10,7 +10,64 @@ description: Install Levelrail on a Linux server with one command, open the dash
 
 ## How do I install Levelrail and deploy my first app?
 
-Run one command as root on a Linux server, open the dashboard link it prints, choose a password, and deploy an app from a template or a Git repository. In about 10 minutes you have a running app with a health check, logs, metrics and rollback. You can add your own domain with an automatic Let's Encrypt certificate at the end.
+Outcome: a running Levelrail control plane on your Linux server and your first app behind HTTPS, in about 10 minutes. Run one command as root, open the dashboard link it prints, choose a password, and deploy from a template or a Git repository. Each app gets a health check, logs, metrics and rollback.
+
+## Pick your install path
+
+<CardGroup cols={3}>
+<Card title="One command on a Linux server" icon="/assets/icons/terminal-window.svg" href="/installing">
+
+About 10 minutes. Fits a VPS or a home server you can SSH into.
+
+</Card>
+<Card title="On a cloud VM" icon="/assets/icons/cloud-arrow-up.svg" href="/install-on-cloud">
+
+About 10 minutes. Fits AWS, Google Cloud, Azure, DigitalOcean or Hetzner, with boot scripts and firewall ports.
+
+</Card>
+<Card title="Add a remote node over SSH" icon="/assets/icons/hard-drives.svg" href="/add-node-over-ssh">
+
+About 5 minutes once a control plane runs. Fits a second server you can SSH into. Beta.
+
+</Card>
+<Card title="With Docker" icon="/assets/icons/download-simple.svg" href="/docker">
+
+About 5 minutes. Fits hosts that already run everything as containers.
+
+</Card>
+<Card title="From mainland China" icon="/assets/icons/globe-hemisphere-west.svg" href="/install-from-china">
+
+About 15 minutes. Fits networks where github.com, ghcr.io or Docker Hub are slow or blocked.
+
+</Card>
+<Card title="With an AI agent" icon="/assets/icons/sparkle.svg" href="/install-with-ai-agent">
+
+About 10 minutes. Fits Claude Code, Cursor or any agent that can run shell commands over SSH.
+
+</Card>
+</CardGroup>
+
+Times are estimates for a fresh server with a normal connection. Not sure what to rent? See [What you need](/what-you-need). On Oracle Cloud Always Free, see [Oracle Cloud](/install-on-oracle-cloud). To try it on your laptop first, see [local development](/local-development).
+
+## The shortest path
+
+<Steps>
+<Step title="Install">
+Run the installer as root on the server. Steps and checks are in [1. Install](#1-install).
+</Step>
+<Step title="Open the dashboard">
+Open the setup link the installer prints, through an SSH tunnel if port 8080 is closed. See [2. Open the dashboard](#2-open-the-dashboard).
+</Step>
+<Step title="Log in">
+Choose the admin password on the setup page. Back up `/var/lib/levelrail-data/master.key` now.
+</Step>
+<Step title="Deploy your first app">
+Pick a template or paste a Git URL. See [3. Deploy a one-click template](#3-deploy-a-one-click-template) and [4. Deploy from Git](#4-deploy-from-git).
+</Step>
+<Step title="Add a domain with HTTPS">
+Point an `A` record at the server and attach the domain. See [5. Add a domain with HTTPS](#5-add-a-domain-with-https).
+</Step>
+</Steps>
 
 ```mermaid
 flowchart LR
@@ -20,14 +77,9 @@ flowchart LR
   D --> E["5 Domain + HTTPS"]
 ```
 
-## Before you start
-
-- A Linux server, `amd64` or `arm64`, with systemd and root access. 1 vCPU and 1 GB of RAM boots the platform. 2 vCPU and 2 GB is more comfortable once you build images on it.
-- Ports 80 and 443 free on the server and reachable from the internet. Let's Encrypt uses port 80. If another proxy holds them, the installer moves Levelrail to ports 8088 and 8443 (coexist mode) and one-click HTTPS does not work. See [Server already runs a proxy](/installing#server-already-runs-a-proxy).
-- Port 8080 stays closed to the internet. The dashboard answers there over plain HTTP, so use an SSH tunnel or open it to your own IP only. See [Dashboard port 8080](/installing#dashboard-port-8080).
-- Optional: a domain you can point at the server. Without one you can use a free `sslip.io` test address.
-
-The full requirements are in [Installing](/installing#requirements). No server yet? [Try it on your laptop](/local-development) first.
+<Note>
+Before you start: a Linux server (`amd64` or `arm64`, systemd, root access, 1 vCPU and 1 GB RAM boots it, 2 vCPU and 2 GB is more comfortable), ports 80 and 443 free and reachable, and port 8080 kept closed to the internet. A domain is optional. Another proxy on 80 and 443 puts the installer in coexist mode, where one-click HTTPS does not work, see [Server already runs a proxy](/installing#server-already-runs-a-proxy). Dashboard access without opening 8080 is in [Dashboard port 8080](/installing#dashboard-port-8080). Full requirements: [Installing](/installing#requirements).
+</Note>
 
 ## 1. Install
 
@@ -45,6 +97,15 @@ Back up `/var/lib/levelrail-data/master.key` now. Every stored secret is encrypt
 <Tip>
 To pin a release, set `LEVELRAIL_VERSION=vX.Y.Z` before the command. You can also run Levelrail as a container. See [Installing](/installing).
 </Tip>
+
+Verify it works:
+
+```bash
+curl -fsS http://127.0.0.1:8080/healthz
+systemctl status levelrail --no-pager
+```
+
+Expected: `/healthz` answers and the service is `active (running)`. If the dashboard port was taken, use the port the installer printed.
 
 ## 2. Open the dashboard
 

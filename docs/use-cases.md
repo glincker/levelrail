@@ -1,39 +1,46 @@
 ---
 title: Who Levelrail is for
-description: "Three audiences for Levelrail (solo developers, small agencies, teams leaving Coolify, Dokploy, Heroku or Vercel), which features fit and where it falls short."
+description: "Check whether Levelrail fits you: three audiences (solo developers, small agencies, teams moving platforms), the features that fit each and what to verify first."
 "og:url": "https://docs.levelrail.com/use-cases"
 ---
 
-The audiences below come straight from the project's own stated scope: the
-[README](https://github.com/glincker/levelrail#readme) describes Levelrail
-as built for 3 to 50 services across 1 to 10 machines, explicitly not a
-Kubernetes competitor, and [comparison.md](/comparison#choosing) frames
-the project the same way: an agent-based control plane with built-in
-observability, for someone who does not want to run Kubernetes to get there.
-The three groups below are the ones that framing describes.
+Use this page to decide whether Levelrail fits your setup. It covers three audiences, the features that fit each, and what to verify before you rely on it.
 
-## How to read this page
+The audiences come straight from the project's own stated scope: the [README](https://github.com/glincker/levelrail#readme) describes Levelrail as built for 3 to 50 services across 1 to 10 machines, explicitly not a Kubernetes competitor, and [comparison.md](/comparison#choosing) frames the project the same way: an agent-based control plane with built-in observability, for someone who does not want to run Kubernetes to get there.
 
-- Every feature named below links to the doc page that covers it, and every
-  maturity claim matches the label in [feature status](/feature-status).
-  Some areas are stable (backed by a live end-to-end test) and others are
-  beta or behind a flag. "It fits" means the feature exists and is
-  tested, not that it has survived production load.
-- Single-server is stable. For a revenue-critical workload, run a shadow
-  alongside whatever you use today first, the same step
-  [migrating-from-vercel.md](/migrating-from-vercel) describes.
-- Where a claim is uncertain, this page says so, the same convention
-  [comparison.md](/comparison) uses.
+<CardGroup cols={3}>
+<Card title="Solo developers" icon="user" href="#solo-developers-and-indie-founders-running-their-own-stack">
+
+A VPS or two, a few projects, HTTPS and a database without a deploy script.
+
+</Card>
+<Card title="Small agencies" icon="users" href="#small-agencies-and-freelancers-running-several-clients-apps">
+
+Several client apps, scoped access, an audit trail.
+
+</Card>
+<Card title="Teams moving platforms" icon="arrow-right" href="#teams-moving-off-coolify-dokploy-heroku-or-vercel">
+
+An importer or runbook, and the architecture differences.
+
+</Card>
+</CardGroup>
+
+## How do I read the claims on this page?
+
+- Every feature named below links to the doc page that covers it, and every maturity claim matches the label in [feature status](/feature-status). Some areas are stable (backed by a live end-to-end test) and others are beta or behind a flag. "It fits" means the feature exists and is tested, not that it has survived production load.
+- Single-server is stable. For a revenue-critical workload, run a shadow alongside whatever you use today first, the same step [migrating-from-vercel.md](/migrating-from-vercel) describes.
+- Where a claim is uncertain, this page says so, the same convention [comparison.md](/comparison) uses.
 
 ## Solo developers and indie founders running their own stack
 
-### What this group is likely trying to do
+### What is this group trying to do?
 
 Run a handful of side projects or a small product on a VPS or two, without
 paying per-service platform fees and without hand-rolling a deploy script
 every time something new needs HTTPS and a database.
 
-### Where Levelrail fits
+### Where does Levelrail fit?
 
 - One binary, single node. The control plane and the agent can run in
   the same process over an in-memory transport
@@ -59,7 +66,7 @@ every time something new needs HTTPS and a database.
   ([comparison.md](/comparison#sso-audit-iam-and-backups-are-not-paywalled)),
   so a project that grows past "just me" doesn't hit a feature wall.
 
-### What to know before you rely on it
+### What should I verify before relying on it?
 
 - The measured idle footprint (58 to 96 MB RSS from 0 to 500 apps,
   [performance.md](/performance)) is from a macOS dev build on one
@@ -80,13 +87,13 @@ every time something new needs HTTPS and a database.
 
 ## Small agencies and freelancers running several clients' apps
 
-### What this group is likely trying to do
+### What is this group trying to do?
 
 Operate a handful of client projects on infrastructure the agency controls
 (not a reseller platform with its own billing), give a client or contractor
 scoped access to only their own app, and keep a record of who deployed what.
 
-### Where Levelrail fits
+### Where does Levelrail fit?
 
 - Scoped access without a full RBAC build-out. IAM policies are
   Allow/Deny statements scoped to `app:name`, `database:name`, or `*`, on
@@ -114,7 +121,7 @@ scoped access to only their own app, and keep a record of who deployed what.
   GCP), so a client that needs isolation can get its own node
   ([node-provisioning.md](/node-provisioning), [multi-cloud-provisioning.md](/multi-cloud-provisioning)).
 
-### What to know before you rely on it
+### What should I verify before relying on it?
 
 - IAM is labeled stable: a live end-to-end test shows a Deny policy
   blocking a real action and a token allow policy scoping one
@@ -137,14 +144,14 @@ scoped access to only their own app, and keep a record of who deployed what.
 
 ## Teams moving off Coolify, Dokploy, Heroku, or Vercel
 
-### What this group is likely trying to do
+### What is this group trying to do?
 
 Already run on one of those platforms, and want more control over how
 servers are driven, or hit a limitation (SSH-based management, a paywalled
 feature, a managed-cloud pricing model) that Levelrail's architecture
 avoids.
 
-### Where Levelrail fits
+### Where does Levelrail fit?
 
 - A documented importer for Coolify, Dokploy, and CapRover. It reads the
   source platform's own API, supports a dry run that reports what would be
@@ -168,7 +175,7 @@ avoids.
   259 tools in on-demand toolsets, in
   [feature-status.md](/feature-status#ai-assistant-mcp-server-and-in-app-chat)).
 
-### What to know before you rely on it
+### What should I verify before relying on it?
 
 - Heroku has no dedicated migration runbook. Only
   Coolify/Dokploy/CapRover (importer-backed) and Vercel (manual runbook)
@@ -192,30 +199,28 @@ avoids.
 
 ## Questions that come up across all three groups
 
-Can I use this to resell hosting to my own customers, with billing?
+<AccordionGroup>
+<Accordion title="Can I use this to resell hosting to my own customers, with billing?">
 
-No. There is no billing, metering, or subscription layer anywhere in this
-codebase. IAM policies can scope a customer's access to their own app, but
-charging them is outside this project's scope.
+No. There is no billing, metering, or subscription layer anywhere in this codebase. IAM policies can scope a customer's access to their own app, but charging them is outside this project's scope.
 
-Is this ready to replace my production Heroku/Vercel/Coolify setup today?
+</Accordion>
+<Accordion title="Is this ready to replace my production Heroku, Vercel or Coolify setup today?">
 
-Not without caution. Many areas are still beta (see
-[feature status](/feature-status)), and the recommended path, explicit in
-[migrating-from-vercel.md](/migrating-from-vercel), is to run Levelrail
-alongside your existing platform until a shadow run is clean.
+Not without caution. Many areas are still beta (see [feature status](/feature-status)), and the recommended path, explicit in [migrating-from-vercel.md](/migrating-from-vercel), is to run Levelrail alongside your existing platform until a shadow run is clean.
 
-Do I need to run more than one server?
+</Accordion>
+<Accordion title="Do I need to run more than one server?">
 
-No. Single node is the default and the best-tested path. You add a second
-node when one box runs out of room, not from day one ([multi-node.md](/multi-node)).
+No. Single node is the default and the best-tested path. You add a second node when one box runs out of room, not from day one ([multi-node.md](/multi-node)).
 
-What if I only half fit one of these three groups?
+</Accordion>
+<Accordion title="What if I only half fit one of these three groups?">
 
-That is fine. These are the audiences the project's own non-goals point at,
-not a rigid segmentation. Read [architecture.md](/architecture) and
-[feature-status.md](/feature-status) directly and decide which parts
-apply to your actual setup.
+That is fine. These are the audiences the project's own non-goals point at, not a rigid segmentation. Read [architecture.md](/architecture) and [feature-status.md](/feature-status) directly and decide which parts apply to your actual setup.
+
+</Accordion>
+</AccordionGroup>
 
 ## See also
 

@@ -73,8 +73,8 @@ func TestEnvUnsetClearsKeys(t *testing.T) {
 		wantEnv  string
 		wantCode int
 	}{
-		{"removes one of two", map[string]string{"A": "1", "B": "2"}, []string{"A"}, `{"B":"2"}`, exitOK},
-		{"last key sends an empty map", map[string]string{"A": "1"}, []string{"A"}, `{}`, exitOK},
+		{"removes one of two", map[string]string{"A": "1", "B": "2"}, []string{"A"}, `["A"]`, exitOK},
+		{"last key is just another unset", map[string]string{"A": "1"}, []string{"A"}, `["A"]`, exitOK},
 		{"missing key changes nothing", map[string]string{"A": "1"}, []string{"Z"}, "", exitOK},
 		{"secret is refused", map[string]string{"A": "1"}, []string{"TOKEN"}, "", exitValidation},
 	}
@@ -88,12 +88,12 @@ func TestEnvUnsetClearsKeys(t *testing.T) {
 					_ = json.NewEncoder(w).Encode(map[string]any{"name": "web", "image": "x:1", "env": tc.env, "secret_env": []string{"TOKEN"}})
 				case r.URL.Path == "/api/v1/apps/web/env/bound":
 					_, _ = io.WriteString(w, `[]`)
-				case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web":
+				case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web/env":
 					var body struct {
-						Env json.RawMessage `json:"env"`
+						Unset json.RawMessage `json:"unset"`
 					}
 					_ = json.NewDecoder(r.Body).Decode(&body)
-					putEnv = string(body.Env)
+					putEnv = string(body.Unset)
 					_, _ = io.WriteString(w, `{"name":"web"}`)
 				case r.URL.Path == "/api/v1/apps/web/pending-changes":
 					_, _ = io.WriteString(w, `{"pending":false}`)

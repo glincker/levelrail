@@ -189,6 +189,31 @@ Set the mode in the form, then click **Test connection**. A `tls_error` result m
 
 ## Troubleshooting
 
+<AccordionGroup>
+<Accordion title="Adopted container not reachable after restart">
+
+Likely cause: The container was recreated with a different network or IP, or moved to a different node.
+
+How to confirm: Check the container's current network: `docker container inspect <container> | grep NetworkID`. Compare it to what Levelrail has on file: `levelrail-cli databases get <name> --json | jq .docker_network`. If they differ, the container moved or the network changed.
+
+Fix: The record follows the container when recreated on the same node, because it uses the container name. If the container moved to a different node or network, re-adopt it: `levelrail-cli databases adopt --container <new-container> --name <same-name>` (the name must match to avoid duplicates). Or update the external database manually: `levelrail-cli databases connect --name <name> --host <new-host> --test --password-stdin`.
+
+Still stuck: See [Adopt a running container](/external-databases#adopt-a-running-container).
+
+</Accordion>
+<Accordion title="Cannot write to external database, only read works">
+
+Likely cause: The external database record uses a read-only user, or write access is not granted to that user role.
+
+How to confirm: Check what user is configured: `levelrail-cli databases get <name> --json | jq .user`. Try a write manually: `psql -h <host> -U <user> -c "INSERT INTO test VALUES (1)"`. If it fails with permission denied, the user lacks write permissions.
+
+Fix: Either create a new external database record with a write-enabled user, or grant the user write permissions on the database server. For Postgres: `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT INSERT, UPDATE, DELETE ON TABLES TO <user>`.
+
+Still stuck: Use the database viewer (Databases > <database> > Editor) with an admin user instead, or reconfigure the external database with a different user role that has write access.
+
+</Accordion>
+</AccordionGroup>
+
 ### Test connection fails with "unreachable" or "connection refused"
 
 Likely cause: The host and port are wrong, the database is not running, or a firewall is blocking the path.
@@ -219,22 +244,3 @@ Fix: If the database is genuinely slow due to load or queries, consider optimizi
 
 Still stuck: Monitor the database performance and connection pool to identify bottlenecks.
 
-### Adopted container not reachable after restart
-
-Likely cause: The container was recreated with a different network or IP, or moved to a different node.
-
-How to confirm: Check the container's current network: `docker container inspect <container> | grep NetworkID`. Compare it to what Levelrail has on file: `levelrail-cli databases get <name> --json | jq .docker_network`. If they differ, the container moved or the network changed.
-
-Fix: The record follows the container when recreated on the same node, because it uses the container name. If the container moved to a different node or network, re-adopt it: `levelrail-cli databases adopt --container <new-container> --name <same-name>` (the name must match to avoid duplicates). Or update the external database manually: `levelrail-cli databases connect --name <name> --host <new-host> --test --password-stdin`.
-
-Still stuck: See [Adopt a running container](/external-databases#adopt-a-running-container).
-
-### Cannot write to external database, only read works
-
-Likely cause: The external database record uses a read-only user, or write access is not granted to that user role.
-
-How to confirm: Check what user is configured: `levelrail-cli databases get <name> --json | jq .user`. Try a write manually: `psql -h <host> -U <user> -c "INSERT INTO test VALUES (1)"`. If it fails with permission denied, the user lacks write permissions.
-
-Fix: Either create a new external database record with a write-enabled user, or grant the user write permissions on the database server. For Postgres: `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT INSERT, UPDATE, DELETE ON TABLES TO <user>`.
-
-Still stuck: Use the database viewer (Databases > <database> > Editor) with an admin user instead, or reconfigure the external database with a different user role that has write access.

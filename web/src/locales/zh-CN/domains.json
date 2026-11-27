@@ -307,7 +307,9 @@
       "renewsManual": "已上传证书:请在到期前续期",
       "daysLeft_other": "剩余 {{count}} 天",
       "expiresToday": "今天到期",
-      "expiredAgo_other": "已过期 {{count}} 天"
+      "expiredAgo_other": "已过期 {{count}} 天",
+      "fallback": "不受信任的证书",
+      "fallbackHint": "浏览器会显示警告：无法签发公共证书，当前使用临时本地证书。待 DNS 指向本服务器后请续期证书。"
     },
     "visibility": {
       "toggle": "允许搜索引擎索引 {{domain}}",

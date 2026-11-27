@@ -152,6 +152,8 @@ type triggerBuildResponse struct {
 	Status        string `json:"status,omitempty"`
 	QueuePosition int    `json:"queue_position,omitempty"`
 	WaitReason    string `json:"wait_reason,omitempty"`
+	// GitSourceNote says what the build did to the app's git source: connected it, or kept a different one.
+	GitSourceNote string `json:"git_source_note,omitempty"`
 }
 
 // isGitHubHTTPSRepoURL reports whether repoURL is an https remote on
@@ -435,6 +437,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var gitNote string
 	var inline inlineMeta
 	if req.InlineSource != nil {
 		var status int
@@ -462,6 +465,9 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		if req.RepoURL == "" {
 			writeError(w, http.StatusBadRequest, "repo_url is required")
 			return
+		}
+		if req.Ref != "" {
+			gitNote = rt.ensureBuildGitSource(r, name, req, buildType)
 		}
 		if gitsshkey.IsSSHURL(req.RepoURL) {
 			if msg := rt.sshTriggerRefusal(r.Context(), name, req.RepoURL); msg != "" {
@@ -540,6 +546,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			markLaunched()
 			rt.auditInlineSource(r, name, inline)
 			rt.auditPagesURLDeploy(r, name, stagedURL)
+			resp.GitSourceNote = gitNote
 			writeJSON(w, http.StatusAccepted, resp)
 			return
 		}
@@ -557,7 +564,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	markLaunched()
 	rt.auditInlineSource(r, name, inline)
 	rt.auditPagesURLDeploy(r, name, stagedURL)
-	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: run.id})
+	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: run.id, GitSourceNote: gitNote})
 }
 
 // specServiceFromDesired reconstructs the parts of a spec.Service that

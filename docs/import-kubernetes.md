@@ -4,6 +4,8 @@ description: "Convert existing Kubernetes YAML into Levelrail apps with levelrai
 "og:url": "https://docs.levelrail.com/import-kubernetes"
 ---
 
+After this guide your Kubernetes manifests are translated into Levelrail apps in the stack format, with a report of what mapped and what did not.
+
 `levelrail-cli import k8s` reads existing Kubernetes YAML and creates the matching Levelrail apps, so a manifest you already have runs here without a rewrite. The conversion is text only: nothing is fetched from a URL, nothing is executed, and the cluster is never contacted.
 
 ```
@@ -16,7 +18,7 @@ Flags: `--dry-run` prints the documents and the report and changes nothing. `--a
 
 The API is `POST /api/v1/import/k8s?dry_run=true|false&force=&app_prefix=&namespace_as=&project=` with the YAML as the body (or `{"manifest": "..."}` as JSON). It needs the same permission as applying documents, and every app, domain and secret is created with the caller's own abilities.
 
-## What maps
+## What maps to Levelrail? {#what-maps}
 
 | Kubernetes | Levelrail |
 | --- | --- |
@@ -37,7 +39,7 @@ The API is `POST /api/v1/import/k8s?dry_run=true|false&force=&app_prefix=&namesp
 
 Output is the stack document format `levelrail-cli apply` reads, so the result goes through the normal apply path.
 
-## What does not map
+## What does not map? {#what-does-not-map}
 
 Everything the importer cannot carry over lands in the report with a kind, a name, a field path, a reason and a severity:
 
@@ -47,7 +49,7 @@ Everything the importer cannot carry over lands in the report with a kind, a nam
 
 Every app needs a port, so a workload that declares none gets the placeholder `APP_K8S_IMPORT_DEFAULT_PORT` (default 8080) and a report line.
 
-## Security refusals
+## What does the importer refuse? {#security-refusals}
 
 These are always blockers: `hostNetwork`, `hostPID`, `hostIPC`, `hostPath` volumes, `privileged` containers and `securityContext.capabilities.add`. The platform has no equivalent and the import never weakens isolation to fit.
 
@@ -55,7 +57,7 @@ Secret `data` and `stringData` become app secrets. Values are never printed, log
 
 Input limits, all from the environment: `APP_K8S_IMPORT_MAX_BYTES` (default 2 MiB), `APP_K8S_IMPORT_MAX_DOCS` (200), `APP_K8S_IMPORT_MAX_NODES` (200000, counted after alias expansion), `APP_K8S_IMPORT_MAX_DEPTH` (64) and `APP_K8S_IMPORT_MAX_ANCHOR_DEPTH` (8). A file over a limit, or a YAML alias bomb, is refused before anything is converted.
 
-## Example: web app with an Ingress
+## What does a web app with an Ingress look like? {#example-web-app-with-an-ingress}
 
 ```yaml
 apiVersion: apps/v1
@@ -95,6 +97,6 @@ spec:
 
 `levelrail-cli import k8s -f web.yaml --dry-run` shows one app `web` on port 80 with two replicas, the domain `shop.example.com` and a readiness check on `/healthz`.
 
-## Example: Postgres StatefulSet
+## What does a Postgres StatefulSet look like? {#example-postgres-statefulset}
 
 A StatefulSet with a `volumeClaimTemplates` entry named `data`, mounted at `/var/lib/postgresql/data`, and a Secret holding `POSTGRES_PASSWORD` imports as one app with a named volume `data` at that path and `POSTGRES_PASSWORD` as an app secret. The report notes that the storage size request is not enforced. For a managed database you can also create a `postgres` database resource instead and point the app at it.

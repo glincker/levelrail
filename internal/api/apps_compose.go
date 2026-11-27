@@ -250,7 +250,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		if opts.suspended {
 			save = rt.appCompose.SaveSuspendedDesiredService
 		}
-		if err := save(r.Context(), svc); err != nil {
+		if err := rt.saveComposeService(r.Context(), save, svc, previousServices); err != nil {
 			if !composeHadService(previousServices, svc.Name) {
 				rt.releaseImageRepoClaim(r.Context(), svc.Name)
 			}

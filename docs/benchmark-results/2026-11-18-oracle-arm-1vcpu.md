@@ -1,4 +1,7 @@
-# Oracle ARM 1 vCPU, v1.5.3, 2026-11-18
+---
+title: "Benchmark: Oracle ARM 1 vCPU, v1.5.3"
+description: "Measured results of Levelrail v1.5.3 on one Oracle Ampere A1 vCPU with 5.8 GB RAM: the checks run, the figures and the raw JSON, with addresses removed."
+---
 
 Hardware: Oracle Cloud Ampere A1, aarch64, 1 vCPU, 5.8 GB RAM, Ubuntu 24.04. Two VMs on one private network: the server under test, and a second VM as load generator. Server upgraded from v0.9.5 to v1.5.3 during the run. Raw figures: [2026-11-18-oracle-arm-1vcpu.json](2026-11-18-oracle-arm-1vcpu.json). Addresses, hostnames, user names, tokens, keys, restore point ids and bucket names are removed. No feature status row changes because of this run.
 

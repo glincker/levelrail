@@ -183,7 +183,11 @@ func (rt *Router) handlePublishHeldBuild(w http.ResponseWriter, r *http.Request)
 	if !portsOK {
 		return
 	}
-	err = rt.apps.SaveDesiredService(r.Context(), *held)
+	mine := *held
+	mine.Rev = svc.Rev
+	_, err = rt.saveOwned(r.Context(), mine, func(fresh store.DesiredService) store.DesiredService {
+		return store.RebaseEnvColumns(*svc, mine, fresh)
+	})
 	portsRelease()
 	if err != nil {
 		rt.internalError(w, "api: publish held build failed", err, slog.String("deploy_id", deployID))

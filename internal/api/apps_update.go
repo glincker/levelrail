@@ -135,7 +135,17 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	} else {
 		desired.EnvDirty = existing.EnvDirty || !maps.Equal(existing.Env, req.Env) || !maps.Equal(existing.VaultEnv, desired.VaultEnv)
 	}
-	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
+	// PUT owns env, but a stale write must keep keys a concurrent env write added: rebase merges only this request's env edits.
+	desired.Rev = existing.Rev
+	sent0 := desired
+	rebase := func(fresh store.DesiredService) store.DesiredService {
+		out := store.RebaseEnvColumns(*existing, sent0, fresh)
+		preserveUnsentAppFields(&out, fresh, req, imageChanged)
+		out.Egress = fresh.Egress
+		return out
+	}
+	desired, err = rt.saveOwned(r.Context(), desired, rebase)
+	if err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
 			writeError(w, http.StatusConflict, domainTaken.Error())

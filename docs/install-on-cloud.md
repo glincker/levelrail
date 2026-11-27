@@ -6,6 +6,12 @@ description: "Copy-paste user data and startup scripts that install the control 
 "og:url": "https://docs.levelrail.com/install-on-cloud"
 ---
 
+Outcome: a new cloud VM installs the Levelrail control plane by itself on first boot.
+
+<Note>
+Before you start: a cloud account and its CLI or console, an Ubuntu 24.04 or Debian 12 image on `amd64` or `arm64`, and the firewall rules for ports 80 and 443. A domain is optional.
+</Note>
+
 This page is for a fresh VM where you want the control plane to install itself on first boot. The install itself is the same `install.sh` described in [Installing Levelrail](/installing). The snippets below only pass that command to each cloud's boot hook.
 
 Read [Installing Levelrail](/installing) first for the requirements. Use an Ubuntu 24.04 or Debian 12 image, `amd64` or `arm64`, with at least 1 vCPU, 1 GB RAM and 10 GB disk. 2 vCPU, 2 GB RAM and 20 GB disk is more comfortable.
@@ -246,6 +252,28 @@ Create a Hetzner Cloud Firewall with inbound TCP 80 and 443 from all addresses a
 2. Open `http://<public-ip>:8080/login#setup=<token>` once (or the same link through the SSH tunnel with `localhost` as the host), create the admin, then set a domain with TLS on the dashboard as described in [Domains and ingress](/domains-and-ingress#the-dashboards-own-domain).
 3. Back up `master.key` from the data directory, then close port 8080 if you opened it. After HTTPS is on, plain HTTP sign-in is refused anyway.
 4. Run `levelrail-cli doctor` on the server to check Docker, disk and the ports.
+
+Verify it works from the server:
+
+```bash
+curl -fsS http://127.0.0.1:8080/healthz
+levelrail-cli doctor
+```
+
+Expected: `/healthz` answers and `doctor` lists no failed check.
+
+<Accordion title="If the VM did not install">
+
+| What you see | What to do |
+| --- | --- |
+| No dashboard after a few minutes | Read the boot log: `/var/log/cloud-init-output.log` (AWS, Azure, DigitalOcean, Hetzner) or `journalctl -u google-startup-scripts` (Google Cloud). |
+| The dashboard link times out | The cloud firewall blocks the port. Open 80 and 443, and 8080 to your address only, see [Cloud firewall rules](/cloud-firewall-rules). |
+| No setup token in the log | Expected, the token is not logged in non-interactive installs. Run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token`. |
+| `control plane did not become healthy within 60s` | Run `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. |
+
+More: [Installing: Troubleshooting](/installing#troubleshooting).
+
+</Accordion>
 
 The cloud CLI and Terraform snippets on this page have not been run end to end against real accounts. See [Cloud integrations](/cloud-integrations) for what is built and what is planned.
 

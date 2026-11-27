@@ -405,7 +405,8 @@ Instance A runs with `APP_INGRESS_HTTP_ADDR=:8088`, instance B with
 
 ## Troubleshooting
 
-### Domains served by the proxy are not routing correctly
+<AccordionGroup>
+<Accordion title="Domains served by the proxy are not routing correctly">
 
 Requests to the domain arrive at the proxy but do not reach the right Levelrail app.
 
@@ -415,7 +416,8 @@ How to confirm: check the proxy configuration (Traefik, nginx, Caddy) and verify
 
 Fix: verify Levelrail is running and listening on the correct port (set with `APP_INGRESS_HTTP_ADDR` or via the installer). Then add or update the proxy's route to forward the domain to that port. Refer to [Example proxy configs](/behind-an-existing-proxy#what-it-generates) above for the correct syntax for your proxy.
 
-### The domain shows the proxy's default certificate
+</Accordion>
+<Accordion title="The domain shows the proxy's default certificate">
 
 The status line names what the proxy served and, when it can, the reason. The
 diagnosis code is also returned by `levelrail proxy status` and the API. A proxy
@@ -450,7 +452,8 @@ live host. If the retry changes nothing, restart the proxy container once. It on
 works for Traefik file routes. The proxy log is read through the Docker API, and the
 line shown has secrets masked.
 
-### The dashboard shows mixed HTTP/HTTPS content
+</Accordion>
+<Accordion title="The dashboard shows mixed HTTP/HTTPS content">
 
 The browser blocks some resources because they are loaded over HTTP while the page came over HTTPS.
 
@@ -460,7 +463,8 @@ How to confirm: open the browser's developer console (F12) and check the Network
 
 Fix: open Domains, then Platform settings, then "Request limits and trusted proxies", and press the Fix button. Levelrail reads the forwarding headers of your own request to name the proxy (Cloudflare, Traefik, Coolify or another) and saves its address as the trusted proxy list; "Re-check" confirms it. The CLI equivalent is `levelrail-cli settings edge fix`. A proxy on a private or loopback address is trusted as `private_ranges`; a public address is trusted as that one address, and Cloudflare's public edge is never guessed, so enter its published ranges by hand. To do it by hand instead, set `APP_INGRESS_TRUSTED_PROXIES` to the IP range or address of your proxy; the environment variable always wins over the saved value. For example, `APP_INGRESS_TRUSTED_PROXIES=10.0.0.0/8` for a private network, or the proxy's specific IP if it is static. After setting it, restart Levelrail: `sudo systemctl restart levelrail`. Once Levelrail trusts the proxy's `X-Forwarded-Proto` header, it will serve links over HTTPS.
 
-### The dashboard is unreachable from outside but works on the server
+</Accordion>
+<Accordion title="The dashboard is unreachable from outside but works on the server">
 
 The proxy is not forwarding the dashboard address to Levelrail, or Levelrail is not listening on the right address.
 
@@ -471,6 +475,10 @@ How to confirm: check the proxy's route configuration to see if the dashboard do
 Fix: add a proxy route for the dashboard domain pointing to Levelrail's dashboard port (8080 by default, or the port set with `APP_HTTP_ADDR` or `LEVELRAIL_DASHBOARD_PORT` during install). Set `APP_HTTP_ADDR=127.0.0.1:8080` (local only, since the proxy is the external listener) if it is not already. The installer normally handles this for coexist mode; if you set up the proxy afterward, manually add the route.
 
 Still stuck? Check the [Installing behind an existing proxy](/installing#server-already-runs-a-proxy) section or attach your proxy config to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
+</Accordion>
+</AccordionGroup>
+
 
 ## API
 

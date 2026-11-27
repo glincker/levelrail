@@ -8,6 +8,12 @@ description: "A plain-language checklist for installing Levelrail: a Linux serve
 "og:url": "https://docs.levelrail.com/what-you-need"
 ---
 
+Outcome: you know exactly what to have ready before the install, and can check it in two commands.
+
+<Note>
+Before you start: nothing is installed by this page. It only lists what to prepare.
+</Note>
+
 Levelrail runs on a Linux server that you own or rent. You install it with one command, then use a web dashboard to deploy apps. This page lists everything you need up front.
 
 ## The short version
@@ -42,6 +48,26 @@ If you do have a domain, you will point an `A` record at your server's IP addres
 ## 3. A way to reach the server
 
 You will connect over SSH from your own computer. On macOS and Linux that is the `ssh` command in a terminal. On Windows, use PowerShell or Windows Terminal. Your hosting provider shows the command, usually `ssh root@YOUR_SERVER_IP`.
+
+## Check your server
+
+Run these over SSH on the server before you install:
+
+```bash
+uname -m
+systemctl --version | head -1
+df -h /
+```
+
+Expected: `x86_64` or `aarch64`, a systemd version line, and at least 10 GB free. The installer repeats these checks itself and stops on a failure.
+
+<Accordion title="If you cannot reach the server">
+
+- `Permission denied (publickey)`: use the user and key your provider shows for this server.
+- The connection times out: the provider firewall blocks port 22. Open it to your address.
+- No `sudo` rights: log in as `root`, or ask for a user that can run `sudo`.
+
+</Accordion>
 
 ## What happens next
 

@@ -137,9 +137,12 @@ func (rt *Router) applyAdvisorToApp(r *http.Request, f resourceadvisor.Finding, 
 		resp.Applied = true
 		return nil
 	}
-	desired := *existing
-	desired.Resources = resourcesWith(existing.Resources, resp.After)
-	if err := rt.apps.SaveDesiredService(ctx, desired); err != nil {
+	withSettings := func(base store.DesiredService) store.DesiredService {
+		base.Resources = resourcesWith(base.Resources, resp.After)
+		return base
+	}
+	desired, err := rt.saveOwned(ctx, withSettings(*existing), withSettings)
+	if err != nil {
 		return err
 	}
 	resp.Applied = true

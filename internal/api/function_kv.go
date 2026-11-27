@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"strconv"
@@ -267,7 +268,16 @@ func (rt *Router) handleRotateFunctionKVToken(w http.ResponseWriter, r *http.Req
 	env[functions.KVURLEnv] = rt.functionKVBaseURL(r)
 	next := *svc
 	next.Env = env
-	if err := rt.apps.SaveDesiredService(r.Context(), next); err != nil {
+	kvURL := env[functions.KVURLEnv]
+	rebase := func(fresh store.DesiredService) store.DesiredService {
+		fresh.Env = maps.Clone(fresh.Env)
+		if fresh.Env == nil {
+			fresh.Env = map[string]string{}
+		}
+		fresh.Env[functions.KVURLEnv] = kvURL
+		return fresh
+	}
+	if _, err := rt.saveOwned(r.Context(), next, rebase); err != nil {
 		rt.internalError(w, "api: save function kv url failed", err, slog.String("function", svc.Name))
 		return
 	}

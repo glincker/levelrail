@@ -6,6 +6,7 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"sort"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -126,11 +127,23 @@ func (x *executor) updateApp(ctx context.Context, r *Resource, f map[string]any,
 	if prune && len(merged.SecretEnv) == 0 && len(lw.SecretEnv) > 0 {
 		body["secret_env"] = []string{}
 	}
+	// Env travels as a column-scoped merge, not in the PUT body: a snapshot-based body would revert a concurrent env set.
+	envSet, envUnset := envDelta(lw.Env, fields.Env, prune)
+	delete(body, "env")
 	var out struct {
 		EnvDirty bool `json:"env_dirty"`
 	}
 	if err := x.do(ctx, http.MethodPut, "/api/v1/apps/"+esc(r.Name), body, &out); err != nil {
 		return err
+	}
+	if len(envSet) > 0 || len(envUnset) > 0 {
+		var merged struct {
+			EnvDirty bool `json:"env_dirty"`
+		}
+		if err := x.do(ctx, http.MethodPut, "/api/v1/apps/"+esc(r.Name)+"/env", map[string]any{"set": envSet, "unset": envUnset}, &merged); err != nil {
+			return err
+		}
+		out.EnvDirty = out.EnvDirty || merged.EnvDirty
 	}
 	return x.afterApp(ctx, r, fields, &live.wire, prune, setSecrets, out.EnvDirty)
 }
@@ -315,4 +328,23 @@ func (x *executor) syncVolumes(ctx context.Context, app string, want map[string]
 		return false, fmt.Errorf("set volumes: %w", err)
 	}
 	return true, nil
+}
+
+// envDelta is the keys the spec changes against live; with prune, live keys the spec omits are unset.
+func envDelta(live, want map[string]string, prune bool) (set map[string]string, unset []string) {
+	set = map[string]string{}
+	for k, v := range want {
+		if old, ok := live[k]; !ok || old != v {
+			set[k] = v
+		}
+	}
+	if prune {
+		for k := range live {
+			if _, ok := want[k]; !ok {
+				unset = append(unset, k)
+			}
+		}
+		sort.Strings(unset)
+	}
+	return set, unset
 }

@@ -10,12 +10,14 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 ### Install and deploy
 
-- [Levelrail documentation](/index): Lightweight, self-hosted deployment platform: the control plane idles at about 200 MB and is one Go binary, with git deploys, one-click templates, edge and TLS, managed databases and built-in observability.
+- [Levelrail documentation](/index): Levelrail is an open source, self-hosted deployment platform in one Go binary: git deploys, templates, databases, TLS, backups, observability and MCP.
+- [What is Levelrail](/what-is-levelrail): Levelrail is a self-hosted control plane that runs apps, databases, domains, TLS, backups and logs on your own servers or cloud accounts, with CLI, API and MCP.
 - [All features](/features): Every Levelrail feature by area, with a docs link and a stable, beta or experimental label for each.
 - [Frequently asked questions](/faq): Short answers to the most common questions about Levelrail, a self-hosted deployment platform, with a docs link and a stable, beta or experimental label where one applies.
 - [First 15 minutes](/first-15-minutes): A short checklist for a new server: install Levelrail, open the setup link, turn on HTTPS, deploy an app, take a first backup and run the doctor check.
 - [What you need before you start](/what-you-need): A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience.
 - [Installing Levelrail](/installing): Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
+- [Install with your AI agent](/install-with-ai-agent): Copy-paste prompts that let Claude Code, Cursor or another agent install Levelrail over SSH, connect through MCP with a read-only token and deploy a first app.
 - [Install from mainland China](/install-from-china): Install Levelrail where github.com, ghcr.io or Docker Hub are slow or blocked, using a release base URL, Docker mirrors, a pinned version and signature checks.
 - [Container runtimes](/container-runtimes): Which container runtimes Levelrail supports on a Linux server, how install.sh picks one, and the manual steps for Podman.
 - [Install on a cloud VM](/install-on-cloud): Copy-paste user data and startup scripts that install the control plane on a fresh AWS, Google Cloud, Azure, DigitalOcean or Hetzner VM, with the ports to open.
@@ -81,7 +83,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 ### Essentials
 
-- [Doctor and import from the command line](/doctor-and-import): Run the server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, an image, a config folder or a monorepo with levelrail-cli.
+- [Doctor and import from the command line](/doctor-and-import): Run server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, image, config folder or monorepo with levelrail-cli.
 - [Email notifications](/email-notifications): Choose an email provider for alert emails, password resets and invites, check your sender domain, send a test, and read the delivery log.
 - [Email templates and messages](/email-templates): Edit every email the platform sends, build audiences, and send announcements with opt-outs, scheduling and delivery history.
 - [Alerts](/alerts): Alert rules, the inbox, history, silences, maintenance windows and the 18 notification channel kinds, with the dashboard, CLI and API steps for each.
@@ -94,9 +96,9 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Deploying
 
 - [Deploying and managing apps](/deploying-apps): Create, deploy, roll back, configure, promote, and operate an app on Levelrail, from the dashboard, CLI, or API.
-- [Deploy from your computer](/deploy-from-cli): Deploy the current directory with one command, no git remote and no registry needed.
+- [Deploy from your computer](/deploy-from-cli): Deploy the current directory to your Levelrail server with one command, no git remote and no registry needed, then roll back or follow the logs.
 - [Drop deploy for static sites](/drop-deploy): Drag a folder or a .zip onto a static site and it goes live, with no git and no build.
-- [Compose apps](/compose-apps): Run a Docker Compose file as one app with per-service status, start order, rollback to an earlier compose file, teardown, and installable templates.
+- [Compose apps](/compose-apps): Deploy a Docker Compose file as one app and manage it: per-service status and start order, rollback to an earlier file, teardown, and installable templates.
 - [Runtime options](/runtime-options): The allowlisted container options a service can set under runtime, with their bounds, and how compose keys map onto them.
 - [App files](/app-files): Ship inline config files with a service so apps that need a file on disk at start can run without a custom image.
 - [UDP published ports](/udp-ports): Publish a UDP port from a compose service directly on the host, with the accepted syntax, safety rules, errors and what is not supported yet.
@@ -122,7 +124,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Jobs](/jobs): Run a command once, to completion, with N completions, a parallelism cap, retries with exponential backoff and a final Succeeded or Failed status.
 - [Image auto-update](/image-auto-update): Redeploy an image-based app automatically when its tag points at a new digest, with the same freeze and protection gates as a manual deploy.
 - [Build hooks](/build-hooks): Secret URLs that build and deploy an app when POSTed to, for headless CMS publishes and cron triggers.
-- [Sleep when idle](/sleep-when-idle): Stop an app that has had no requests for a while so it uses no memory or CPU, and wake it on the next request.
+- [Sleep when idle](/sleep-when-idle): Stop an app that has had no requests for a set time so it uses no memory or CPU, then wake it on the next request. Off by default and set per app.
 - [Functions](/functions): Deploy a ten line Node, Python or Go handler as a function that sleeps when idle and answers the first request after a cold start, on your own server.
 - [Canary deploys](/canary-deploys): Send a share of an app's traffic to a new image in stages, promote it, or let the control plane roll it back when errors or latency rise.
 - [Split testing](/split-testing): Send a share of an app's visitors to a branch deploy or a retained release, sticky per visitor, then promote the winner.
@@ -147,7 +149,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Running Levelrail in Docker](/docker): Run the Levelrail control plane and node agent as Docker containers from GitHub Container Registry or Docker Hub, with image tags and signatures.
 - [Zero-downtime deploys with Docker: readiness-gated cutover and rollback](/zero-downtime-deploys): How Levelrail ships without downtime: blue-green, rolling or recreate strategies gated on real readiness probes and digest-pinned images.
 - [Rollout control](/rollout-control): Tune rolling deploys with max_surge and max_unavailable, and protect running replicas with a min_available disruption budget.
-- [Preview environments](/preview-environments): Run a copy of an app for each pull request, with its own URL, caps, optional database, and automatic teardown when the pull request closes.
+- [Preview environments](/preview-environments): Run a copy of an app for each pull request with its own URL, caps and optional database, and have it torn down automatically when the pull request closes.
 - [Deploy contexts: env and build settings per kind of deploy](/deploy-contexts): Set env vars and static build settings separately for pull request previews, branch deploys and specific branches, and see the effective config for any deploy.
 
 ### Networking and multi-node
@@ -244,7 +246,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Git reliability](/git-reliability): What the control plane caches and polls, what connection and webhook statuses mean, the variables behind them, and how to recover a push that did not deploy.
 - [Wait for CI before deploying](/ci-gate): Hold an automatic git deploy until the commit's CI checks conclude. Works with GitHub and GitLab, and the push is answered at once while the wait runs in the background.
 - [Deploy with git push](/git-push-deploy): Push a branch to a git remote on your own server and it builds and deploys that exact commit. A beta feature, off by default, with a per-app token.
-- [Import a repository](/import-a-repo): Go from a git repository to a running app in a few steps, with detection that tells you what it found and why.
+- [Import a repository](/import-a-repo): Go from a git repository to a running app in a few steps, with detection that tells you what it found and why, and a plan to review before anything is created.
 - [Monorepos](/monorepos): Detect workspaces, run one service per package from a single repository, and redeploy only the services a push actually changed.
 
 ### Security and access
@@ -279,6 +281,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Resource console](/resource-console): Search every app, database, node, domain, bucket and private network in one list, tag them in bulk with a preview, save views, and see cost grouped by tag.
 - [Command palette](/command-palette): Keyboard-first command palette and shortcuts for navigating the dashboard and running quick app actions.
 - [Keyboard shortcuts](/keyboard): Single-key shortcuts for the dashboard lists and the deployments page.
+- [Lower infrastructure cost](/lower-infrastructure-cost): Where Levelrail lowers infrastructure cost: one control plane instead of several paid services, commodity servers, sleep when idle, and no per-seat pricing.
 - [Cost estimate](/cost-estimate): How the app cost estimate of what this would cost elsewhere is calculated, its assumptions, and the env vars that correct the reference rates for your region.
 - [Usage and cost](/usage-and-cost): Cost showback per app, project, environment and team, how your own prices and server bills are allocated by measured usage, budgets with alerts and CSV export.
 - [Cost explorer and budgets](/cost-explorer): Explore cost by app, project, tag, node or kind, see a month end forecast, and set budgets that alert at thresholds or pause and throttle apps.
@@ -306,7 +309,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### AI and agents
 
 - [Working with AI agents](/agents): Connect an AI coding agent to your instance, scope its token, and give it the instructions it needs to deploy safely.
-- [AI control](/ai-control): Decide what AI agents and agent tokens may do on your instance, from off to admin, enforced on the server for every request.
+- [AI control](/ai-control): Set what AI agents and agent tokens may do on your instance, from off to admin, with a server-side limit by environment kind, plus pause and revoke controls.
 
 ### Templates and catalog
 
@@ -327,7 +330,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migration wizard](/migration-wizard): Move apps, databases and volumes off Coolify, Dokploy, CapRover or an old server in one guided, resumable job with live progress and a safe-to-delete gate.
 - [Migrate from Coolify](/migrate-from-coolify): Move Coolify apps, databases, env vars and domains to Levelrail with a read-only plan, staged copies and a reversible cutover. Coolify keeps serving.
 - [Coolify exit gap report](/coolify-exit-gap-report): What the Coolify importer carries over, what it reports for you to finish, and what it cannot see yet, audited against what a real Coolify instance holds.
-- [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose): How migrate coolify turns a Coolify one-click service into a Compose file, how magic variables are translated, and what you still fix by hand.
+- [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose): See how migrate coolify turns a Coolify one-click service into a Compose file, how magic variables are translated, and what you still fix by hand.
 - [Migrate from Dokploy](/migrate-from-dokploy): Import Dokploy applications, databases, env vars and domains into Levelrail with a read-only dry run, then copy data and switch DNS while Dokploy keeps serving.
 - [Migrate from CapRover](/migrate-from-caprover): Import CapRover apps, env vars, domains and volumes into Levelrail with a read-only dry run. CapRover builds locally, so images need a repo or registry.
 - [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by reading the Dokku host's Docker over SSH, or from an env dump as the fallback. Includes a Dokku command map.
@@ -340,7 +343,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migrate on the same server](/migrate-same-server): Move from Coolify, Dokploy or CapRover to Levelrail on the same machine: install in coexist mode, import, verify, then take over ports 80 and 443.
 - [Move a domain with no downtime](/move-a-domain-with-no-downtime): Test a domain on its new Levelrail server before touching DNS, get its certificate ahead of time, then switch with a checklist that shows each step.
 - [Migrate over SSH](/migrate-over-ssh): Import apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login. Read only, no agent, no remote command.
-- [Migrate a project from Vercel](/migrate-from-vercel): Move one Vercel project with levelrail-cli import vercel in seven printed steps.
+- [Migrate a project from Vercel](/migrate-from-vercel): Move one Vercel project to Levelrail with levelrail-cli import vercel: a dry run first, seven printed steps, domains attached, DNS left for you, and a rollback path.
 - [Migrating a Next.js app from Vercel](/migrating-from-vercel): A runbook for moving a Vercel Next.js app to Levelrail: inventory, concept mapping, a DNS cutover and rollback plan, gaps with no equivalent and a shadow run.
 - [Migrating a static site from Netlify](/migrating-from-netlify): A runbook for moving a Netlify site to Levelrail: build settings, netlify.toml mapping, redirects and headers, forms, a DNS cutover and gaps.
 - [Migrating from Render](/migrating-from-render): A runbook for moving Render services to Levelrail: the import command, concept mapping, environment variables, disks, databases, cron jobs, a DNS cutover and what has no equivalent.
@@ -357,7 +360,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Connect a cloud account](/iac/cloud-connect): Give Levelrail a scoped Oracle Cloud credential. A guided bootstrap from your own machine, or paste one you made. Root and tenancy admin credentials are never accepted.
 - [IaC resource kinds](/iac/resources): Each resource kind with a worked example and the rules that do not fit a field table. The field list itself is the generated reference.
 - [Cron jobs and alert rules in files](/iac/cron-and-alerts): Keep an app's scheduled commands and alert rules in your repository as CronJob and AlertRule documents, then plan, apply, export and prune them.
-- [Import from a deploy.yml or a Portainer stack](/iac/importers): Turn an existing deploy.yml or Portainer stack file into reviewable Levelrail App documents with an offline dry run, and save them with --write.
+- [Import Heroku, Fly, DigitalOcean, Portainer and more](/iac/importers): Turn a fly.toml, DigitalOcean app spec, Render Blueprint, Netlify, Railway or Portainer file, or a Heroku account, into reviewable Levelrail documents with a dry run.
 - [Compose projects as code](/iac/compose): Point an App document at an existing Docker Compose file instead of copying it. Plan, apply, import and adopt, with the exact limits strict mode enforces.
 - [IaC reference](/iac/reference): Every resource kind, its fields, types and which are required. Generated from the JSON Schema.
 - [IaC error codes](/iac/errors): Every stable error code an apply, plan or stack call can return, what it means and how to fix it. Generated from the code list.
@@ -403,7 +406,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Plugins](/plugins): Run signed, operator-approved plugins in locked-down containers. The first release supports notification channels.
 - [Publishing plugins](/plugin-publishing): Sign a plugin, make a marketplace index entry and sign an index, all offline.
 - [First-party plugins](/plugins-first-party): Notification channel plugins for services the built-in channels do not cover, built on the same public contract as any third-party plugin.
-- [mcp-tool-surface](/mcp-tool-surface): Estimated model context cost of the MCP tool list, by toolset.
+- [MCP tool surface](/mcp-tool-surface): Estimated model context cost of the Levelrail MCP tool list, by toolset, so you can choose which toolsets to enable.
 - [Agent tooling audit](/agent-tooling-audit): Size, overlap and annotation audit of the levelrail-mcp tool surface, with the token budget test that keeps it from regressing.
 - [Shared Go kit](/kit): Standard-library-only Go module with networking, scheduling, parsing and system helper packages.
 - [Terraform and OpenTofu provider](/terraform-provider): Manage projects, environments, apps, domains, databases and shared env variables from Terraform or OpenTofu, with import support and what is not covered.
@@ -413,13 +416,14 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Explanation
 
 - [Product tour](/product-tour): A look at the Levelrail dashboard: apps, deploys, logs, databases, domains and nodes, each with a short explanation.
-- [Architecture](/architecture): How the control plane, node agent, reconciler, ingress, store and extension points fit together, with the code path of a deploy and the trust boundaries.
+- [Architecture](/architecture): See what runs on your server and how it fits together: control plane, node agent, reconciler, ingress, store, trust boundaries and where state lives on disk.
 - [Security overview](/security): How Levelrail handles secrets, sessions, TLS, and access control, and where to find the detailed page for each.
 - [Threat model](/threat-model): Trust boundaries, assets, attackers, the mitigations that exist today with file references, known gaps, and how to report a vulnerability.
 - [Verify a release](/verify-a-release): Check that a Levelrail binary or image came from this repository's release workflow: checksum, cosign signature, build provenance and SBOM, with exact commands.
 - [Docker access and the API guard](/docker-access): Every Docker Engine API call Levelrail makes, why it needs it, and the guard that refuses everything else, including privileged containers and host mounts.
+- [Levelrail vs other platforms: Coolify, Dokploy, Vercel, Heroku, Kubernetes and more](/compared-with-other-approaches): Levelrail compared with Coolify, Dokploy, CapRover, Dokku, Kamal, Heroku, Railway, Vercel, Render, Kubernetes and DIY stacks, and when each fits better.
 - [vs Coolify, Dokploy, CapRover, Dokku, and Kamal](/comparison): Honest comparison of Levelrail with Coolify, Dokploy, CapRover, Dokku and Kamal: architecture, what each is good at, and what ships without a paywall.
-- [Who Levelrail is for](/use-cases): Three audiences for Levelrail (solo developers, small agencies, teams leaving Coolify, Dokploy, Heroku or Vercel), which features fit and where it falls short.
+- [Who Levelrail is for](/use-cases): Check whether Levelrail fits you: three audiences (solo developers, small agencies, teams moving platforms), the features that fit each and what to verify first.
 - [White-labeling](/white-labeling): How the brand layer works, which names and prefixes it drives, the brand.yaml fields and APP_BRAND_* overrides, and what a fork must still change by hand.
 - [glinr-bot](/glinr-bot): How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge.
 - [Run behind an existing proxy](/behind-an-existing-proxy): Run Levelrail behind the proxy that already owns ports 80 and 443, with managed routes for Traefik (including Coolify) and Nginx.
@@ -454,7 +458,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Status and roadmap
 
 - [Roadmap](/roadmap): What Levelrail has shipped by area, what is still open, and what is out of scope.
-- [Feature status](/feature-status): Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
+- [Feature status](/feature-status): Check how mature each Levelrail feature is: stable, beta or hide-behind-flag labels, with the test, end-to-end, docs and real-host evidence behind each one.
 - [Feature coverage](/feature-coverage): What Levelrail covers, one row per capability, with a status label and a link to the page that explains it. Written from the code and the existing docs.
 - [Experimental features](/experimental-features): Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
 - [Support policy (draft)](/support-policy): Draft compatibility and support policy for a future stable line. Not yet in force.
@@ -469,7 +473,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 ### Engineering notes
 
-- [CI](/ci): How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
+- [CI](/ci): Learn which GitHub Actions checks a Levelrail pull request runs, how a diff selects them, what each costs and which ones branch protection requires.
 - [Release process](/release-process): How a merge becomes a release, which channels publish, what is skipped when unchanged, and how to dry run, verify and repair a release.
 - [Which guard catches what](/contributing-guards): For contributors. The repo-wide guard tests and scripts, what each one fails on, which command runs it, and how to fix the failure.
 - [Contribute to the template registry](/registry-contributing): How to add a template folder to registry/templates, the rules the validator enforces, and how CI smoke-tests your change.

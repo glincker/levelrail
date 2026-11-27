@@ -1,15 +1,17 @@
 ---
 title: "Move a Coolify one-click service to a Compose app"
 sidebarTitle: "Service to Compose"
-description: "How migrate coolify turns a Coolify one-click service into a Compose file, how magic variables are translated, and what you still fix by hand."
+description: "See how migrate coolify turns a Coolify one-click service into a Compose file, how magic variables are translated, and what you still fix by hand."
 "og:url": "https://docs.levelrail.com/coolify-service-to-compose"
 ---
+
+After this guide a Coolify one-click service is staged as a compose file, reviewed, and deployed as a Levelrail compose app.
 
 A Coolify one-click service is a Compose file with `SERVICE_` magic variables. `migrate coolify` finds these services on the Coolify instance, translates the magic variables, and stages each one as a Compose file on your machine. It starts nothing. You review the staged file, then deploy it with one command.
 
 For the rest of a Coolify move, see [Migrate from Coolify](/migrate-from-coolify).
 
-## What the migration does
+## What does the migration do? {#what-the-migration-does}
 
 For each one-click service it discovers, `migrate coolify` does four things:
 
@@ -32,7 +34,7 @@ Staging only covers one-click services. A Coolify application that uses the `doc
 
 A host from `--domain-suffix` is built from the magic variable's key. For example, with `--domain-suffix apps.example.com`, the key `APP` becomes `app.apps.example.com`. Set the suffix to a domain you own before you deploy a staged service that should be reachable.
 
-## Step 1: Stage the services
+## Step 1: How do I stage the services? {#step-1-stage-the-services}
 
 ```bash
 levelrail-cli migrate coolify --url https://coolify.example.com --token "$COOLIFY_TOKEN" \
@@ -53,7 +55,7 @@ The deploy line is printed with the word `levelrail`. In these docs the CLI is `
 
 Keep the staged files out of git. They contain the generated passwords.
 
-## Step 2: Review the staged file
+## Step 2: What do I review in the staged file? {#step-2-review-the-staged-file}
 
 Open `compose.yaml` and check the items the report lists under the service. The migration lists each of these and does not change it unless the table says so:
 
@@ -63,7 +65,7 @@ Open `compose.yaml` and check the items the report lists under the service. The 
 - **Masked secrets.** If Coolify returned a masked value for an inline secret, the file contains the mask. Replace it with the real value.
 - **Required variables with no default.** A `${NAME}` reference with no default is listed. Put the value in the app's environment before you deploy.
 
-## Step 3: Deploy the staged file
+## Step 3: How do I deploy and verify the staged file? {#step-3-deploy-the-staged-file}
 
 ```bash
 levelrail-cli compose preview -f ./migrated/compose/plausible/compose.yaml
@@ -74,7 +76,7 @@ levelrail-cli compose logs plausible --service app --tail 100
 
 Read the preview before the deploy. It shows the services and whether anything is still unresolved. Whether `compose deploy` creates the app or needs it to exist first is pending run on a real host.
 
-If a new release misbehaves, list the revisions and roll back:
+To verify, `compose status` shows each service and `compose logs` shows its output. If a new release misbehaves, list the revisions and roll back:
 
 ```bash
 levelrail-cli compose revisions plausible
@@ -115,7 +117,7 @@ services:
       POSTGRES_PASSWORD: "<the same generated value>"
 ```
 
-## Manual path
+## What if I want to write the file by hand? {#manual-path}
 
 Use this when the staged file is not what you want, or when you have a Compose file from elsewhere.
 
@@ -125,7 +127,21 @@ Use this when the staged file is not what you want, or when you have a Compose f
 
 The manual path does not check the file for Coolify-only keys or bind mounts. Check those yourself, as in Step 2.
 
-## Things to know
+## What if the deploy refuses the file? {#what-if-the-deploy-refuses-the-file}
+
+<AccordionGroup>
+<Accordion title="The file is marked as not applied">
+A `SERVICE_` token with no Levelrail equivalent stays in the file and the staged file is marked as not applied, so the deploy refuses it. Replace the token, then run `compose preview` again.
+</Accordion>
+<Accordion title="A secret looks like a mask">
+If Coolify returned a masked value for an inline secret, the file contains the mask. Replace it with the real value.
+</Accordion>
+<Accordion title="A required variable has no value">
+A `${NAME}` reference with no default is listed in the report. Put the value in the app's environment before you deploy.
+</Accordion>
+</AccordionGroup>
+
+## What else should I know? {#things-to-know}
 
 - **Data is not copied.** A database in the Compose file starts empty unless you restore a backup into it. See [Back up Postgres to S3 and test the restore](/tutorials/back-up-postgres-to-s3).
 - **Keep the Coolify service** stopped rather than deleted until the new app is verified.
