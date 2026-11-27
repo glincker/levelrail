@@ -27,7 +27,12 @@ const AuditActionCapabilityGranted = "templates.capability_granted"
 func (rt *Router) capabilityPolicy(ctx context.Context) catalog.CapabilityPolicy {
 	on := rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyTemplatesCapNetAdmin)
 	dockerAPI := rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyTemplatesCapDockerAPI)
-	return catalog.CapabilityPolicy{Enabled: map[string]bool{catalog.CapClassNetAdmin: on, catalog.CapClassDockerAPI: dockerAPI}}
+	hostNet := rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyTemplatesCapHostNetwork)
+	devices := rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyTemplatesCapDevices)
+	return catalog.CapabilityPolicy{Enabled: map[string]bool{
+		catalog.CapClassNetAdmin: on, catalog.CapClassDockerAPI: dockerAPI,
+		catalog.CapClassHostNetwork: hostNet, catalog.CapClassDevices: devices,
+	}}
 }
 
 // resolveTemplateCapabilities returns the grants an install or upgrade may carry, or writes the refusal.
@@ -218,7 +223,7 @@ func (rt *Router) auditAddedCapabilities(r *http.Request, app, templateID, event
 	for _, e := range added {
 		svc, capName, _ := strings.Cut(e, ":")
 		tier := catalog.CapTierReview
-		if slices.Contains(dockerguard.GrantableCaps, capName) {
+		if slices.Contains(dockerguard.GrantableCaps, capName) || dockerguard.IsAnyGrantCap(capName) {
 			tier = catalog.CapTierElevated
 		}
 		id, err := store.NewAuditEntryID()

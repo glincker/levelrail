@@ -279,6 +279,8 @@ type Controller struct {
 	deployWindows       func(context.Context) deploysafety.Windows    // live override of the timings, see WithDeployWindows
 	restartPolicy       func(context.Context) string                  // stored runtime setting, read per container create
 	elevatedCaps        func(context.Context) bool                    // nil fails closed: no elevated capability is applied, see WithElevatedCaps
+	hostNetworkGrant    func(context.Context) bool                    // nil fails closed, see WithHostGrants
+	devicesGrant        func(context.Context) bool                    // nil fails closed, see WithHostGrants
 	dockerAPI           DockerAPISockets                              // nil fails closed: no docker_api grant is applied, see WithDockerAPI
 	policySwept         sync.Map                                      // container IDs already brought to the desired restart policy
 	applied             AppliedConfigRecorder                         // nil is valid: pending changes just aren't tracked
@@ -1446,6 +1448,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err := c.applyDockerAPI(desired, &spec); err != nil {
 		return err
 	}
+	if err := c.applyHostGrants(ctx, desired, &spec); err != nil {
+		return err
+	}
 	streamPorts, err := c.streamPortBindings(ctx, desired.Name)
 	if err != nil {
 		return fmt.Errorf("app streams: %w", err)
@@ -1500,7 +1505,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		func() error { return c.ensureAppNetwork(ctx, desired) }, "EnsureNetworkFailed", networkTraceLabel(c.networkPrefix, desired)); err != nil {
 		return err
 	}
-	if desired.AppID != "" {
+	if desired.AppID != "" && spec.NetworkMode != "host" {
 		spec.Network = &docker.NetworkAttachment{Name: NetworkName(c.networkPrefix, desired.AppID), Alias: serviceAlias(desired)}
 		if err := c.connectReferencedDatabases(ctx, desired, NetworkName(c.networkPrefix, desired.AppID)); err != nil {
 			return err

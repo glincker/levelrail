@@ -305,6 +305,8 @@ type ContainerSpec struct {
 	// Devices are "host[:container[:perms]]" passthrough entries, for
 	// example /dev/fuse.
 	Devices []string
+	// HostNetworkGranted says NetworkMode host came from a template grant, so a guard lets it through.
+	HostNetworkGranted bool
 	// Files are inline files written into the container before it starts.
 	Files []FileMount
 	// Tmpfs is "path:opts" in-memory mounts; the spec layer requires a size.

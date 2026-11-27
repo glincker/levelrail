@@ -78,7 +78,7 @@ func (c *Controller) withoutDockerAPIGrant(kept []string) []string {
 func plainCaps(caps []string) []string {
 	var out []string
 	for _, g := range caps {
-		if !dockerguard.IsGrantCap(g) {
+		if !dockerguard.IsAnyGrantCap(g) {
 			out = append(out, g)
 		}
 	}

@@ -12,6 +12,27 @@ func init() {
 	})
 }
 
+// KeyTemplatesCapHostNetwork gates the Elevated host_network capability class.
+const KeyTemplatesCapHostNetwork = "templates.cap_host_network"
+
+// KeyTemplatesCapDevices gates the Elevated devices capability class.
+const KeyTemplatesCapDevices = "templates.cap_devices"
+
+func init() {
+	Register(Definition{
+		Key: KeyTemplatesCapHostNetwork, Category: CategorySecurity, Kind: KindBool, Default: "false",
+		Env: "APP_TEMPLATE_CAP_HOST_NETWORK", Apply: ApplyLive, Risk: RiskWeakensSecurity, TrueIsWeaker: true,
+		Title:       "Allow templates to use the host network",
+		Description: "Lets a template that declares the host_network capability run on the host network, for discovery and LAN protocols. The app then sees every host interface and port. Off by default; turning it on needs root, and turning it off stops the grant at the next reconcile.",
+	})
+	Register(Definition{
+		Key: KeyTemplatesCapDevices, Category: CategorySecurity, Kind: KindBool, Default: "false",
+		Env: "APP_TEMPLATE_CAP_DEVICES", Apply: ApplyLive, Risk: RiskWeakensSecurity, TrueIsWeaker: true,
+		Title:       "Allow templates to use host devices",
+		Description: "Lets a template that declares the devices capability map /dev/dri, /dev/ttyUSB*, /dev/ttyACM* or /dev/video* into its container. No other device is ever allowed. Off by default; turning it on needs root, and turning it off stops the grant at the next reconcile.",
+	})
+}
+
 // KeyTemplatesCapNetAdmin gates the Elevated net_admin capability class.
 const KeyTemplatesCapNetAdmin = "templates.capability_net_admin_enabled"
 

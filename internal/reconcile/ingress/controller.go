@@ -20,6 +20,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/canary"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -1483,6 +1484,9 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 	} else if dial, ok := dialAddr(state, svc.Port); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
+	} else if dial, ok := hostNetworkDial(svc, state); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
+		c.lastDial.Store(svc.Name, dial)
+		return dial, true
 	}
 
 	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, svc.Port, target, warmingImageID(svc, state)); ok {
@@ -1610,6 +1614,15 @@ func dialAddr(state *docker.ContainerState, port int) (string, bool) {
 		return "", false
 	}
 	return "127.0.0.1:" + strconv.Itoa(p.HostPort), true
+}
+
+// hostNetworkDial is the backend of a host-network container: it publishes nothing,
+// so the app is reached on the loopback at its own port.
+func hostNetworkDial(svc store.DesiredService, state *docker.ContainerState) (string, bool) {
+	if state == nil || !state.Running || svc.Port == 0 || !dockerguard.HasHostNetworkGrant(svc.GrantedCaps) {
+		return "", false
+	}
+	return "127.0.0.1:" + strconv.Itoa(svc.Port), true
 }
 
 // dialPreviousRelease finds another running, ported container for

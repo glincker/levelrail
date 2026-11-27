@@ -723,7 +723,7 @@ func suggestClonedAppName(sourceApp, newEnvironmentName string) string {
 func reviewCapsOnly(caps []string) []string {
 	var out []string
 	for _, c := range caps {
-		if !slices.Contains(dockerguard.GrantableCaps, c) && !dockerguard.IsGrantCap(c) {
+		if !slices.Contains(dockerguard.GrantableCaps, c) && !dockerguard.IsAnyGrantCap(c) {
 			out = append(out, c)
 		}
 	}

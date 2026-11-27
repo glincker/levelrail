@@ -512,6 +512,12 @@ func (s *bootState) startReconciler() {
 		elevatedCaps: func(c context.Context) bool {
 			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyTemplatesCapNetAdmin)
 		},
+		hostNetworkGrant: func(c context.Context) bool {
+			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyTemplatesCapHostNetwork)
+		},
+		devicesGrant: func(c context.Context) bool {
+			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyTemplatesCapDevices)
+		},
 		dependsOnTimeout: func(c context.Context) time.Duration {
 			return s.apiRouter.RuntimeSettings().Duration(c, runtimesettings.KeyComposeDependsOnTimeout)
 		},

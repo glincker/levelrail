@@ -30,7 +30,7 @@ func TestManifestCapabilities_Validation(t *testing.T) {
 		{"unused declaration", "capabilities:\n  - {class: cap_add, service: web, reason: chown, caps: [CHOWN, FOWNER]}\n  - {class: net_admin, service: web, reason: r, caps: [NET_RAW]}\n", capCompose, "FOWNER is declared for service \"web\" but its cap_add does not use it"},
 		{"unknown class", "capabilities:\n  - {class: root_shell, service: web, reason: x, caps: [CHOWN]}\n", testCompose, "unknown class"},
 		{"privileged never", "capabilities:\n  - {class: privileged, service: web, reason: x}\n", testCompose, "never allowed"},
-		{"reserved class", "capabilities:\n  - {class: devices, service: web, reason: x}\n", testCompose, "not available yet"},
+		{"reserved class", "capabilities:\n  - {class: host_libraries, service: web, reason: x}\n", testCompose, "not available yet"},
 		{"cap outside allowlist", "capabilities:\n  - {class: cap_add, service: web, reason: x, caps: [SYS_ADMIN]}\n", testCompose, "outside the cap_add allowlist"},
 		{"net_admin cap in review class", "capabilities:\n  - {class: cap_add, service: web, reason: x, caps: [NET_ADMIN]}\n", testCompose, "outside the cap_add allowlist"},
 		{"missing reason", "capabilities:\n  - {class: cap_add, service: web, caps: [CHOWN]}\n", testCompose, "missing reason"},
