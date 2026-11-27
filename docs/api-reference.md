@@ -128,6 +128,7 @@ System endpoints for:
 | GET | /api/v1/system/processes | AbilityRoot | handleGetSystemProcesses |
 | GET | /api/v1/system/slow-statements | AbilityRoot | handleGetSlowStatements |
 | GET | /api/v1/updates/self-upgrade/smoke | AbilityRead | handleSelfUpgradeSmoke |
+| POST | /api/v1/system/disk/gc | AbilityRoot | handleDiskGC |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

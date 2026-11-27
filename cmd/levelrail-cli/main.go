@@ -391,6 +391,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runViews(prog, args[1:], stdout, stderr, lookupEnv)
 	case "janitor":
 		return runJanitor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "disk":
+		return runDisk(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "system":
@@ -646,7 +648,8 @@ Usage:
   %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
   %[1]s views list|save|delete|apply [--list L] [flags]       saved list filters for apps, databases, domains, builds and deployments, private or shared with your team
   %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts
-  %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
+  %[1]s disk gc [--apply] [--if-needed] [flags]               preview or remove unused images and idle build cache, reclaimable bytes by category
+  %[1]s system-prune [flags]                               remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
   %[1]s volumes export|import <app> <volume> [flags]          move a volume out of or into Levelrail as a tar.gz
   %[1]s volumes-orphaned [flags]                              list this instance's named volumes no app or database references any more
   %[1]s volumes-orphaned-cleanup --names name1,name2 [flags]   remove exactly the named orphaned volumes, after re-confirming each is still orphaned
