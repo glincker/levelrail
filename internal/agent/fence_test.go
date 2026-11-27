@@ -89,6 +89,7 @@ func TestDestructiveRejectsStaleCompletion(t *testing.T) {
 			tr := newGRPCTransportWithCaps(newMux(stream), caps)
 			var rejected int
 			tr.fence = FenceHooks{
+				Required: func(context.Context) bool { return true },
 				Current:  func(context.Context, string) (uint64, error) { return c.current, nil },
 				Rejected: func(context.Context, string, string, uint64, uint64, string) { rejected++ },
 			}
@@ -134,7 +135,7 @@ func TestFenceCtxAroundMove(t *testing.T) {
 	run := func(ctx context.Context, current uint64) sent {
 		stream := newFakeSessionStream()
 		tr := newGRPCTransportWithCaps(newMux(stream), caps)
-		tr.fence = FenceHooks{Current: func(context.Context, string) (uint64, error) { return current, nil }}
+		tr.fence = FenceHooks{Required: func(context.Context) bool { return true }, Current: func(context.Context, string) (uint64, error) { return current, nil }}
 		done := make(chan error, 1)
 		go func() { done <- tr.Remove(ctx, "c1", true) }()
 		var req *agentpb.AgentRequest
@@ -178,5 +179,42 @@ func TestFenceCtxAroundMove(t *testing.T) {
 	unfenced := FenceCtx(context.Background(), func(context.Context, string) (uint64, error) { return 0, nil }, "web")
 	if _, ok := fenceFrom(unfenced); ok {
 		t.Error("a zero token must leave the context unfenced")
+	}
+}
+
+func TestFenceStampSendsNoTokenWhileSettingOff(t *testing.T) {
+	cases := []struct {
+		name     string
+		required func(context.Context) bool
+		wantTok  uint64
+	}{
+		{"setting off", func(context.Context) bool { return false }, 0},
+		{"no hook", nil, 0},
+		{"setting on", func(context.Context) bool { return true }, 7},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			caps := &capSet{}
+			caps.store([]string{CapFenceToken})
+			tr := newGRPCTransportWithCaps(newMux(newFakeSessionStream()), caps)
+			tr.fence = FenceHooks{Required: c.required}
+			tok, _, err := tr.fenceStamp(WithFence(context.Background(), "web", 7))
+			if err != nil || tok != c.wantTok {
+				t.Fatalf("tok=%d err=%v, want %d", tok, err, c.wantTok)
+			}
+		})
+	}
+}
+
+func TestFenceBookAdmitsTokenZeroAlways(t *testing.T) {
+	b := NewFenceBook()
+	if err := b.Admit("web", 9); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.Admit("web", 0); err != nil {
+		t.Fatalf("token 0 must pass: %v", err)
+	}
+	if err := b.Admit("web", 3); err == nil {
+		t.Fatal("a lower token must be refused")
 	}
 }

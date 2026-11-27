@@ -2369,3 +2369,37 @@ func TestSaveDesiredService_IncarnationIsStableAcrossUpdatesAndNewPerLife(t *tes
 		t.Errorf("recreated app incarnation = %q, want a new id", next.Incarnation)
 	}
 }
+
+func TestServiceFenceTokenNeverGoesBackwards(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	tokOf := func(name string) uint64 {
+		v, err := db.ServiceFenceToken(ctx, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return v
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatal(err)
+	}
+	before := tokOf("web")
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatal(err)
+	}
+	if got := tokOf("web"); got <= before {
+		t.Fatalf("recreated service token %d must exceed %d", got, before)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "api", Image: "img:v1", Port: 8081}); err != nil {
+		t.Fatal(err)
+	}
+	if tokOf("api") <= tokOf("web") {
+		t.Fatal("a second service must draw a later epoch")
+	}
+}

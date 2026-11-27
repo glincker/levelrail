@@ -16,9 +16,7 @@ import (
 // explains why it's deliberately excluded from that method's
 // full-record-replace semantics.
 func (db *DB) UpdateServiceNode(ctx context.Context, name, nodeID string) error {
-	if err := db.updateServiceRow(ctx, "update node", name, `
-		UPDATE desired_services SET node_id = ?, fence_token = fence_token + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
-	`, nodeID, name); err != nil {
+	if _, err := db.withServiceFenceBump(ctx, name, true, nodeID); err != nil {
 		return err
 	}
 	return db.noteAppChange(ctx, name)

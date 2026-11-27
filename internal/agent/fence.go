@@ -28,6 +28,9 @@ var (
 	ErrStaleAction = errors.New("agent: stale_action_rejected: the placement changed while the action ran")
 )
 
+// FenceRecoveryHint tells an operator how to clear an agent's remembered tokens; no protocol message does it.
+const FenceRecoveryHint = "To recover, stop the agent on that node, delete fence-tokens.json in its data directory and start it again, or turn agent.fence_required off"
+
 type fenceCtxKey struct{}
 
 type fenceInfo struct {
@@ -64,6 +67,8 @@ type FenceHooks struct {
 	Required func(ctx context.Context) bool
 	// Current returns the recorded token of target.
 	Current func(ctx context.Context, target string) (uint64, error)
+	// Refused records an agent-side stale_fence refusal; detail carries the operator recovery text.
+	Refused func(ctx context.Context, nodeID, target string, sent uint64, op, detail string)
 	// Rejected records a stale_action_rejected event.
 	Rejected func(ctx context.Context, nodeID, target string, sent, current uint64, op string)
 }
@@ -82,7 +87,8 @@ func (t *GRPCTransport) fenceStamp(ctx context.Context) (uint64, string, error) 
 		return 0, "", nil
 	}
 	fi, ok := fenceFrom(ctx)
-	if !ok {
+	// With the setting off no token is sent, so an out-of-date agent memory can never block a deploy.
+	if !ok || t.fence.Required == nil || !t.fence.Required(ctx) {
 		return 0, "", nil
 	}
 	return fi.token, fi.target, nil
@@ -97,6 +103,9 @@ func (t *GRPCTransport) destructive(ctx context.Context, op string, build func(t
 	resp, err := t.mux.Call(ctx, build(token, target))
 	if err != nil {
 		if strings.Contains(err.Error(), staleFencePrefix) {
+			if t.fence.Refused != nil {
+				t.fence.Refused(ctx, t.nodeID, target, token, op, err.Error()+". "+FenceRecoveryHint)
+			}
 			return nil, fmt.Errorf("%w: %s", ErrStaleFence, err.Error())
 		}
 		return nil, err
