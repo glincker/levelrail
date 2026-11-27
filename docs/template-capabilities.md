@@ -10,7 +10,7 @@ A template that needs more than a plain container declares it in its manifest. L
 
 | Class | What it gives | Notes |
 | --- | --- | --- |
-| `docker_api` | A filtered Docker socket for the app, never the host socket | Scope is `READ_ONLY` (inspect only) or `PROJECT` (only that app's containers) |
+| `docker_api` | A filtered Docker socket for the app, never the host socket | Scope is `READ_ONLY` (inspect and logs of the app's own containers), `PROJECT` (only that app's containers) or `LOGS` (see below) |
 | `host_network` | The app runs on the host network | It sees every host interface and port |
 | `devices` | Maps `/dev/dri`, `/dev/ttyUSB*`, `/dev/ttyACM*` or `/dev/video*` | No other device is ever allowed |
 | `net_admin` | The `NET_ADMIN` Linux capability | For VPN and routing apps |
@@ -31,6 +31,12 @@ Each class is off by default and applies live. Turning one on needs `root`.
 | `templates.capability_net_admin_enabled` | `net_admin` |
 
 Turning a setting off cuts the grant for running apps at the next reconcile.
+
+### The `LOGS` scope
+
+`LOGS` is for log viewers such as Dozzle. It lists and reads the containers and log text of every app on the host. It is read only: no start, stop, exec, archive, attach, image, volume, network, secret or swarm access.
+
+Inspect and list answers are filtered on the proxy: environment variables are removed, host paths and bind sources are reduced to names, and labels that look like secrets are dropped. The Levelrail control plane and containers that do not belong to an app are not visible. Containers carry no stack marker, so the scope is every app on the host, not one stack. Logs themselves are not filtered, and they can contain secrets, so grant `LOGS` only when everyone who can open the viewer may read every app's logs. Granting needs `root`.
 
 ## Declaring a capability
 

@@ -50,7 +50,7 @@ var capClasses = map[string]capClassSpec{
 	CapClassCapAdd:      {CapTierReview, dockerguard.ReviewTierCaps, true},
 	CapClassNetAdmin:    {CapTierElevated, dockerguard.GrantableCaps, true},
 	CapClassHostLibs:    {CapTierReview, nil, false},
-	CapClassDockerAPI:   {CapTierElevated, []string{"READ_ONLY", "PROJECT"}, true},
+	CapClassDockerAPI:   {CapTierElevated, []string{"READ_ONLY", "PROJECT", "LOGS"}, true},
 	CapClassDevices:     {CapTierElevated, nil, true},
 	CapClassHostNetwork: {CapTierElevated, nil, true},
 	CapClassPrivileged:  {CapTierPrivileged, nil, false},
@@ -149,7 +149,7 @@ func (m Manifest) validateCapabilityShape() []error {
 			}
 		}
 		if c.Class == CapClassDockerAPI && len(caps) != 1 {
-			errs = append(errs, fmt.Errorf("%s: class %q takes exactly one profile (read_only or project)", at, c.Class))
+			errs = append(errs, fmt.Errorf("%s: class %q takes exactly one profile (read_only, project or logs)", at, c.Class))
 		}
 		if bad := capSubset(caps, spec.caps); len(bad) > 0 && c.Class != CapClassDevices {
 			errs = append(errs, fmt.Errorf("%s: caps %s are outside the %s allowlist", at, strings.Join(bad, ", "), c.Class))

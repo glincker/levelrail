@@ -30,6 +30,8 @@ const (
 	ProfileReadOnly Profile = "read_only"
 	// ProfileProject adds create, start, stop, restart and exec, still on the app's own containers.
 	ProfileProject Profile = "project"
+	// ProfileLogs reads containers and logs of every app on the node, with env, host paths and secret labels stripped.
+	ProfileLogs Profile = "logs"
 )
 
 // Rule ids for the profile sockets. Public contract like the ids in rules.go.
@@ -65,7 +67,7 @@ func ProfileFromCaps(caps []string) (Profile, bool) {
 			continue
 		}
 		p := Profile(strings.ToLower(strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(c)), GrantCapPrefix)))
-		if p == ProfileReadOnly || p == ProfileProject {
+		if p == ProfileReadOnly || p == ProfileProject || p == ProfileLogs {
 			return p, true
 		}
 	}
@@ -86,7 +88,7 @@ type ProfileSpec struct {
 
 // Validate refuses an incomplete spec so a socket can never serve unscoped.
 func (s ProfileSpec) Validate() error {
-	if s.Profile != ProfileReadOnly && s.Profile != ProfileProject {
+	if s.Profile != ProfileReadOnly && s.Profile != ProfileProject && s.Profile != ProfileLogs {
 		return fmt.Errorf("dockerguard: unknown profile %q", s.Profile)
 	}
 	if s.Project == "" || s.LabelKey == "" {
@@ -120,6 +122,7 @@ var profileAllowlist = []profileEndpoint{
 	{http.MethodGet, "/_ping", scopeNone, bodyNone, false},
 	{http.MethodHead, "/_ping", scopeNone, bodyNone, false},
 	{http.MethodGet, "/version", scopeNone, bodyNone, false},
+	{http.MethodGet, "/info", scopeNone, bodyNone, false},
 	{http.MethodGet, "/events", scopeFilter, bodyNone, false},
 	{http.MethodGet, "/containers/json", scopeFilter, bodyNone, false},
 	{http.MethodGet, "/containers/*/json", scopeContainer, bodyNone, false},
@@ -143,6 +146,10 @@ func (s ProfileSpec) match(method, path string) (profileEndpoint, bool) {
 			continue
 		}
 		if e.Project && s.Profile != ProfileProject {
+			continue
+		}
+		// Process command lines can carry secrets, so logs never gets top.
+		if s.Profile == ProfileLogs && e.Pattern == "/containers/*/top" {
 			continue
 		}
 		return e, true
@@ -186,8 +193,9 @@ func NewProfileGuard(upstream string, spec ProfileSpec, policy Policy, tun Tunab
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.Out.URL.Scheme, pr.Out.URL.Host, pr.Out.Host = "http", "docker", "docker"
 		},
-		Transport:     transport,
-		FlushInterval: -1,
+		Transport:      transport,
+		FlushInterval:  -1,
+		ModifyResponse: filterResponse,
 		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
 			logger.Warn("dockerguard: profile upstream unreachable", slog.String("error", err.Error()))
 			writeDockerError(w, http.StatusBadGateway, "docker guard: upstream docker daemon unreachable")
@@ -227,7 +235,7 @@ func (g *ProfileGuard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	segs := splitSegs(cp.Path)
 	switch ep.Scope {
 	case scopeFilter:
-		f, ferr := scopeFilters(r.URL.Query().Get("filters"), g.spec.LabelKey, g.spec.Project)
+		f, ferr := scopeFilters(r.URL.Query().Get("filters"), g.spec.scopeCondition(), g.spec.Profile == ProfileLogs && ep.Pattern == "/events")
 		if ferr != nil {
 			g.deny(w, RuleBodyInvalid, "filters is not valid JSON")
 			return
@@ -245,6 +253,9 @@ func (g *ProfileGuard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			g.deny(w, RuleProfileScope, "exec is not part of this project")
 			return
 		}
+	}
+	if g.spec.Profile == ProfileLogs {
+		r = r.WithContext(withRespFilter(r.Context(), logsFilterFor(ep.Pattern)))
 	}
 	if ep.Body != bodyNone && !g.rewriteBody(w, r, ep) {
 		return
@@ -302,7 +313,19 @@ func (g *ProfileGuard) ownsContainer(ctx context.Context, ref string) bool {
 	if !g.getJSON(ctx, "/containers/"+url.PathEscape(ref)+"/json", &info) {
 		return false
 	}
+	if g.spec.Profile == ProfileLogs {
+		// Any container that carries an app label; the control plane and foreign containers carry none.
+		return info.Config.Labels[g.spec.LabelKey] != ""
+	}
 	return info.Config.Labels[g.spec.LabelKey] == g.spec.Project
+}
+
+// scopeCondition is the label filter every list and event call is pinned to.
+func (s ProfileSpec) scopeCondition() string {
+	if s.Profile == ProfileLogs {
+		return s.LabelKey
+	}
+	return s.LabelKey + "=" + s.Project
 }
 
 func (g *ProfileGuard) ownsExec(ctx context.Context, id string) bool {
@@ -334,7 +357,7 @@ func (g *ProfileGuard) getJSON(ctx context.Context, path string, into any) bool 
 // scopeFilters returns the Engine filters JSON with the project label
 // condition added. Other keys the client sent are kept; a label list is only
 // ever widened by the project condition, never replaced away from it.
-func scopeFilters(raw, labelKey, project string) (string, error) {
+func scopeFilters(raw, cond string, containerEventsOnly bool) (string, error) {
 	filters := map[string][]string{}
 	if raw != "" {
 		var list map[string][]string
@@ -354,7 +377,9 @@ func scopeFilters(raw, labelKey, project string) (string, error) {
 			}
 		}
 	}
-	cond := labelKey + "=" + project
+	if containerEventsOnly {
+		filters["type"] = []string{"container"}
+	}
 	if !slices.Contains(filters["label"], cond) {
 		filters["label"] = append(filters["label"], cond)
 	}
