@@ -13,7 +13,7 @@ var (
 // ValidName reports whether name can namespace a source's templates.
 func ValidName(name string) bool { return sourceNamePattern.MatchString(name) }
 
-// ValidRef reports whether ref is a plain branch or tag name.
+// ValidRef reports whether ref is a plain branch name (tags are not supported).
 func ValidRef(ref string) bool {
 	if ref == "" {
 		return true

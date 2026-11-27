@@ -2,6 +2,8 @@ package sources
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -22,7 +24,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	gitclient "github.com/go-git/go-git/v5/plumbing/transport/client"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -114,13 +115,13 @@ func (b *budgetBody) Read(p []byte) (int, error) {
 // Fetch shallow-clones the source into memory and returns its files as a
 // read-only filesystem. Nothing touches disk, no hook, filter or submodule
 // ever runs, and symlinks, submodules and LFS pointers are refused.
-func Fetch(ctx context.Context, s Source, lim Limits, lookup LookupFunc) (fs.FS, error) {
+func Fetch(ctx context.Context, s Source, lim Limits, lookup LookupFunc) (fs.FS, string, error) {
 	ssh, err := CheckURL(ctx, s.URL, lookup)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if !ValidRef(s.Ref) {
-		return nil, errors.New("sources: the ref must be a plain branch or tag name")
+		return nil, "", errors.New("sources: the ref must be a plain branch name")
 	}
 	if lim.Timeout > 0 {
 		var cancel context.CancelFunc
@@ -128,37 +129,62 @@ func Fetch(ctx context.Context, s Source, lim Limits, lookup LookupFunc) (fs.FS,
 		defer cancel()
 	}
 	url := strings.TrimSpace(s.URL)
-	if !ssh {
+	opts := &git.CloneOptions{
+		Depth: 1, SingleBranch: true, Tags: git.NoTags,
+		Auth: s.Auth, RecurseSubmodules: git.NoRecurseSubmodules,
+	}
+	if ssh {
+		installSSHDialer()
+		var release func()
+		opts.ProxyOptions.URL, release = sshProxyURL(lim.MaxBytes)
+		defer release()
+	} else {
 		installTransport()
 		url = guardedScheme + strings.TrimPrefix(url, "https")
 		budget := &atomic.Int64{}
 		budget.Store(lim.MaxBytes)
 		ctx = context.WithValue(ctx, budgetKey{}, budget)
 	}
-	opts := &git.CloneOptions{
-		URL: url, Depth: 1, SingleBranch: true, Tags: git.NoTags,
-		Auth: s.Auth, RecurseSubmodules: git.NoRecurseSubmodules,
-	}
+	opts.URL = url
 	if s.Ref != "" {
 		opts.ReferenceName = plumbing.NewBranchReferenceName(s.Ref)
 	}
-	repo, err := git.CloneContext(ctx, memory.NewStorage(), nil, opts)
+	repo, err := git.CloneContext(ctx, newCapStorage(lim), nil, opts)
 	if err != nil {
-		return nil, fmt.Errorf("sources: clone failed: %w", err)
+		return nil, "", cloneError(err)
 	}
 	head, err := repo.Head()
 	if err != nil {
-		return nil, fmt.Errorf("sources: resolve head: %w", err)
+		return nil, "", fmt.Errorf("sources: resolve head: %w", err)
 	}
 	commit, err := repo.CommitObject(head.Hash())
 	if err != nil {
-		return nil, fmt.Errorf("sources: load commit: %w", err)
+		return nil, "", fmt.Errorf("sources: load commit: %w", err)
 	}
 	tree, err := commit.Tree()
 	if err != nil {
-		return nil, fmt.Errorf("sources: load tree: %w", err)
+		return nil, "", fmt.Errorf("sources: load tree: %w", err)
 	}
-	return readTree(tree, lim)
+	fsys, err := readTree(tree, lim)
+	if err != nil {
+		return nil, "", err
+	}
+	return fsys, head.Hash().String(), nil
+}
+
+// cloneError keeps the size refusals and one not-found message, and folds every
+// network, handshake and protocol failure into one so the error is no port-scan oracle.
+func cloneError(err error) error {
+	switch {
+	case errors.Is(err, errBudget), errors.Is(err, errInflated):
+		return err
+	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+		return errors.New("sources: the fetch timed out")
+	case errors.Is(err, transport.ErrRepositoryNotFound), errors.Is(err, transport.ErrAuthenticationRequired),
+		errors.Is(err, transport.ErrAuthorizationFailed), errors.Is(err, plumbing.ErrReferenceNotFound):
+		return errors.New("sources: the repository or branch was not found or is not accessible")
+	}
+	return errUnreachable
 }
 
 const lfsPointer = "version https://git-lfs.github.com/spec"
@@ -263,10 +289,20 @@ func Build(source string, fsys fs.FS, isBuiltin func(string) bool) Result {
 		raw, _ := fs.ReadFile(fsys, path.Join(dir, "template.yaml"))
 		res.Entries = append(res.Entries, store.TemplateSourceEntry{
 			Source: source, ID: id, Name: m.Name, TemplateYAML: string(raw), ComposeYAML: m.Compose,
+			ContentHash: ContentHash(string(raw), m.Compose),
 		})
 	}
 	sort.Slice(res.Entries, func(i, j int) bool { return res.Entries[i].ID < res.Entries[j].ID })
 	return res
+}
+
+// ContentHash fingerprints what an install would run: the manifest and its compose.
+func ContentHash(templateYAML, composeYAML string) string {
+	h := sha256.New()
+	_, _ = h.Write([]byte(templateYAML))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write([]byte(composeYAML))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func oneLine(s string) string {

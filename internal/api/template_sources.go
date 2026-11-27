@@ -19,9 +19,10 @@ type TemplateSourceStore interface {
 	GetTemplateSource(ctx context.Context, name string) (store.TemplateSource, error)
 	ListTemplateSources(ctx context.Context) ([]store.TemplateSource, error)
 	DeleteTemplateSource(ctx context.Context, name string) error
-	ReplaceTemplateSourceEntries(ctx context.Context, name string, entries []store.TemplateSourceEntry) error
+	ReplaceTemplateSourceEntries(ctx context.Context, name, commit string, entries []store.TemplateSourceEntry) error
 	SetTemplateSourceStatus(ctx context.Context, name, status, detail string) error
 	ListTemplateSourceEntries(ctx context.Context, name string) ([]store.TemplateSourceEntry, error)
+	ApproveTemplateSourceEntry(ctx context.Context, source, id string) error
 }
 
 type templateSourceRequest struct {
@@ -94,7 +95,7 @@ func (rt *Router) handleCreateTemplateSource(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if !sources.ValidRef(req.Ref) {
-		writeError(w, http.StatusBadRequest, "ref must be a plain branch or tag name")
+		writeError(w, http.StatusBadRequest, "ref must be a plain branch name")
 		return
 	}
 	ssh, err := sources.CheckURL(r.Context(), req.GitURL, nil)
@@ -172,13 +173,13 @@ func (rt *Router) handleSyncTemplateSource(w http.ResponseWriter, r *http.Reques
 		}
 		in.Auth = auth
 	}
-	fsys, err := sources.Fetch(ctx, in, rt.templateSourceLimits(ctx), nil)
+	fsys, commit, err := sources.Fetch(ctx, in, rt.templateSourceLimits(ctx), nil)
 	if err != nil {
 		rt.failTemplateSourceSync(ctx, w, name, err)
 		return
 	}
 	res := sources.Build(name, fsys, sources.IsBuiltin)
-	if err := rt.templateSources.ReplaceTemplateSourceEntries(ctx, name, res.Entries); err != nil {
+	if err := rt.templateSources.ReplaceTemplateSourceEntries(ctx, name, commit, res.Entries); err != nil {
 		rt.internalError(w, "api: store template source entries failed", err)
 		return
 	}

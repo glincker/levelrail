@@ -25,6 +25,7 @@ type TemplateSource struct {
 	StatusDetail string `json:"status_detail,omitempty"`
 	LastSync     string `json:"last_sync,omitempty"`
 	CreatedAt    string `json:"created_at"`
+	CommitSHA    string `json:"commit_sha,omitempty"`
 	Templates    int    `json:"templates"`
 }
 
@@ -33,9 +34,17 @@ type TemplateSourceEntry struct {
 	Source       string `json:"source"`
 	ID           string `json:"id"`
 	Name         string `json:"name"`
+	ContentHash  string `json:"content_hash,omitempty"`
+	Review       string `json:"review,omitempty"`
 	TemplateYAML string `json:"-"`
 	ComposeYAML  string `json:"-"`
 }
+
+// Review states of a source entry. A changed entry that was approved before drops to needs_review.
+const (
+	TemplateReviewApproved    = "approved"
+	TemplateReviewNeedsReview = "needs_review"
+)
 
 // CreateTemplateSource inserts a source in pending state.
 func (db *DB) CreateTemplateSource(ctx context.Context, s TemplateSource) error {
@@ -71,7 +80,7 @@ func (db *DB) ListTemplateSources(ctx context.Context) ([]TemplateSource, error)
 
 func (db *DB) listTemplateSources(ctx context.Context, where string, args ...any) ([]TemplateSource, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT s.name, s.git_url, s.ref, s.deploy_key_app, s.status, s.status_detail, s.last_sync, s.created_at,
+		SELECT s.name, s.git_url, s.ref, s.deploy_key_app, s.status, s.status_detail, s.last_sync, s.created_at, s.commit_sha,
 		       (SELECT COUNT(*) FROM template_source_entries e WHERE e.source = s.name)
 		FROM template_sources s `+where+` ORDER BY s.name`, args...)
 	if err != nil {
@@ -81,7 +90,7 @@ func (db *DB) listTemplateSources(ctx context.Context, where string, args ...any
 	var out []TemplateSource
 	for rows.Next() {
 		var s TemplateSource
-		if err := rows.Scan(&s.Name, &s.GitURL, &s.Ref, &s.DeployKeyApp, &s.Status, &s.StatusDetail, &s.LastSync, &s.CreatedAt, &s.Templates); err != nil {
+		if err := rows.Scan(&s.Name, &s.GitURL, &s.Ref, &s.DeployKeyApp, &s.Status, &s.StatusDetail, &s.LastSync, &s.CreatedAt, &s.CommitSHA, &s.Templates); err != nil {
 			return nil, fmt.Errorf("store: scan template source: %w", err)
 		}
 		out = append(out, s)
@@ -109,23 +118,61 @@ func (db *DB) DeleteTemplateSource(ctx context.Context, name string) error {
 	return tx.Commit()
 }
 
-// ReplaceTemplateSourceEntries swaps a source's entries for the validated set of a sync.
-func (db *DB) ReplaceTemplateSourceEntries(ctx context.Context, name string, entries []TemplateSourceEntry) error {
+// ReplaceTemplateSourceEntries swaps a source's entries for the validated set of a sync and
+// records the commit. An entry whose content hash differs from its previous sync needs review.
+func (db *DB) ReplaceTemplateSourceEntries(ctx context.Context, name, commit string, entries []TemplateSourceEntry) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: replace template source entries: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	old := map[string][2]string{}
+	rows, err := tx.QueryContext(ctx, `SELECT id, content_hash, review FROM template_source_entries WHERE source = ?`, name)
+	if err != nil {
+		return fmt.Errorf("store: read template source entries: %w", err)
+	}
+	for rows.Next() {
+		var id, h, r string
+		if err := rows.Scan(&id, &h, &r); err != nil {
+			_ = rows.Close()
+			return fmt.Errorf("store: scan template source entry: %w", err)
+		}
+		old[id] = [2]string{h, r}
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return fmt.Errorf("store: read template source entries: %w", err)
+	}
+	_ = rows.Close()
 	if _, err := tx.ExecContext(ctx, `DELETE FROM template_source_entries WHERE source = ?`, name); err != nil {
 		return fmt.Errorf("store: clear template source entries: %w", err)
 	}
 	for _, e := range entries {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO template_source_entries (source, id, name, template_yaml, compose_yaml) VALUES (?, ?, ?, ?, ?)`,
-			name, e.ID, e.Name, e.TemplateYAML, e.ComposeYAML); err != nil {
+		review := TemplateReviewApproved
+		if prev, ok := old[e.ID]; ok && (prev[0] != e.ContentHash || prev[1] == TemplateReviewNeedsReview) {
+			review = TemplateReviewNeedsReview
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO template_source_entries (source, id, name, template_yaml, compose_yaml, content_hash, review) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			name, e.ID, e.Name, e.TemplateYAML, e.ComposeYAML, e.ContentHash, review); err != nil {
 			return fmt.Errorf("store: insert template source entry %q: %w", e.ID, err)
 		}
 	}
+	if _, err := tx.ExecContext(ctx, `UPDATE template_sources SET commit_sha = ? WHERE name = ?`, commit, name); err != nil {
+		return fmt.Errorf("store: record template source commit: %w", err)
+	}
 	return tx.Commit()
+}
+
+// ApproveTemplateSourceEntry marks a reviewed entry usable again.
+func (db *DB) ApproveTemplateSourceEntry(ctx context.Context, source, id string) error {
+	res, err := db.ExecContext(ctx, `UPDATE template_source_entries SET review = ? WHERE source = ? AND id = ?`, TemplateReviewApproved, source, id)
+	if err != nil {
+		return fmt.Errorf("store: approve template source entry: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrTemplateSourceNotFound
+	}
+	return nil
 }
 
 // SetTemplateSourceStatus records the outcome of a sync attempt.
@@ -143,9 +190,9 @@ func (db *DB) SetTemplateSourceStatus(ctx context.Context, name, status, detail 
 
 // ListTemplateSourceEntries returns the entries of one source, or of all when name is empty.
 func (db *DB) ListTemplateSourceEntries(ctx context.Context, name string) ([]TemplateSourceEntry, error) {
-	q, args := `SELECT source, id, name, template_yaml, compose_yaml FROM template_source_entries ORDER BY source, id`, []any(nil)
+	q, args := `SELECT source, id, name, content_hash, review, template_yaml, compose_yaml FROM template_source_entries ORDER BY source, id`, []any(nil)
 	if name != "" {
-		q, args = `SELECT source, id, name, template_yaml, compose_yaml FROM template_source_entries WHERE source = ? ORDER BY id`, []any{name}
+		q, args = `SELECT source, id, name, content_hash, review, template_yaml, compose_yaml FROM template_source_entries WHERE source = ? ORDER BY id`, []any{name}
 	}
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -155,7 +202,7 @@ func (db *DB) ListTemplateSourceEntries(ctx context.Context, name string) ([]Tem
 	var out []TemplateSourceEntry
 	for rows.Next() {
 		var e TemplateSourceEntry
-		if err := rows.Scan(&e.Source, &e.ID, &e.Name, &e.TemplateYAML, &e.ComposeYAML); err != nil {
+		if err := rows.Scan(&e.Source, &e.ID, &e.Name, &e.ContentHash, &e.Review, &e.TemplateYAML, &e.ComposeYAML); err != nil {
 			return nil, fmt.Errorf("store: scan template source entry: %w", err)
 		}
 		out = append(out, e)

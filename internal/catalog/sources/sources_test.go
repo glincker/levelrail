@@ -6,6 +6,8 @@ import (
 	"net/netip"
 	"testing"
 	"testing/fstest"
+
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 func fakeLookup(m map[string][]string) LookupFunc {
@@ -124,5 +126,61 @@ func TestBuildNamespacesAndRefusesBadTemplates(t *testing.T) {
 	res = Build("acme", fsys, func(id string) bool { return id == "wiki" })
 	if len(res.Entries) != 0 {
 		t.Fatalf("built-in collision was not refused: %+v", res.Entries)
+	}
+}
+
+func TestCapStorageRefusesInflation(t *testing.T) {
+	obj := func(n int) plumbing.EncodedObject {
+		o := &plumbing.MemoryObject{}
+		o.SetType(plumbing.BlobObject)
+		_, _ = o.Write(make([]byte, n))
+		return o
+	}
+	tests := []struct {
+		name    string
+		lim     Limits
+		sizes   []int
+		wantErr bool
+	}{
+		{"under every cap", Limits{MaxBytes: 100, MaxFiles: 2}, []int{40, 40}, false},
+		{"one object over the cap", Limits{MaxBytes: 100}, []int{101}, true},
+		{"total over twice the cap", Limits{MaxBytes: 100}, []int{100, 100, 1}, true},
+		{"too many objects", Limits{MaxBytes: 1 << 20, MaxFiles: 1}, make([]int, 70), true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			st := newCapStorage(tc.lim)
+			var err error
+			for _, n := range tc.sizes {
+				o := obj(n)
+				if n == 0 {
+					o.SetSize(int64(n))
+				}
+				if _, err = st.SetEncodedObject(o); err != nil {
+					break
+				}
+			}
+			if (err != nil) != tc.wantErr || (err != nil && !errors.Is(err, errInflated)) {
+				t.Fatalf("err = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestContentHashChanges(t *testing.T) {
+	base := ContentHash("a", "b")
+	tests := []struct {
+		name, tpl, compose string
+		same               bool
+	}{
+		{"identical", "a", "b", true},
+		{"manifest changed", "a2", "b", false},
+		{"compose changed", "a", "b2", false},
+		{"boundary shifted", "ab", "", false},
+	}
+	for _, tc := range tests {
+		if got := ContentHash(tc.tpl, tc.compose) == base; got != tc.same {
+			t.Errorf("%s: same = %v", tc.name, got)
+		}
 	}
 }
