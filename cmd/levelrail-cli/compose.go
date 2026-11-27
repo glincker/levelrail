@@ -22,7 +22,7 @@ func runCompose(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, composeUsage(prog))
 		return exitOK
-	case "deploy":
+	case "deploy", "up":
 		return runComposeDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "preview":
 		return runComposePreview(prog, args[1:], stdout, stderr, lookupEnv)
@@ -49,7 +49,7 @@ func runCompose(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 
 func composeUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s compose deploy <app> -f compose.yaml [--profile-name P]   deploy or update a stack
+  %[1]s compose deploy <app> -f compose.yaml [--profile-name P] [--node N]   deploy or update a stack (alias: up)
   %[1]s compose preview -f compose.yaml                            validate and show what would deploy
   %[1]s compose status <app>                                       per-service status and the stack phase
   %[1]s compose revisions <app>                                    deploy history, newest first
@@ -103,12 +103,13 @@ func readComposeFile(file string) ([]byte, error) {
 }
 
 func runComposeDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var file string
+	var file, node string
 	var profiles stringList
-	cmd, code, ok := parseComposeCmd(prog, "compose deploy", "compose deploy <app> -f compose.yaml [--profile-name P]...", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
+	cmd, code, ok := parseComposeCmd(prog, "compose deploy", "compose deploy <app> -f compose.yaml [--profile-name P]... [--node NAME|KEY=VALUE]", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.StringVar(&file, "file", "", "compose file to deploy (- reads stdin)")
 		fs.StringVar(&file, "f", "", "shorthand for --file")
 		fs.Var(&profiles, "profile-name", "compose profile to enable (repeatable)")
+		fs.StringVar(&node, "node", "", "run services without x-levelrail-node on this node (name or id), or the least loaded node matching KEY=VALUE labels")
 	})
 	if !ok {
 		return code
@@ -117,7 +118,7 @@ func runComposeDeploy(prog string, args []string, stdout, stderr io.Writer, look
 	if err != nil {
 		return reportError(stdout, stderr, cmd.json, err)
 	}
-	res, err := cmd.client.DeployComposeStack(context.Background(), cmd.args[0], data, profiles)
+	res, err := cmd.client.DeployComposeStackOnNode(context.Background(), cmd.args[0], data, profiles, node)
 	if err != nil {
 		return reportError(stdout, stderr, cmd.json, fmt.Errorf("deploy compose stack %q: %w", cmd.args[0], err))
 	}

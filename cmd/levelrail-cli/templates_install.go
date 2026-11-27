@@ -15,16 +15,17 @@ import (
 // manifest template with --env and --domain values and deploys it as a
 // compose stack (POST /api/v1/service-templates/{id}/install).
 func runTemplatesInstall(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var name, project string
+	var name, project, node string
 	var allowPlatform bool
 	env := stringMapFlag{}
 	domains := stringMapFlag{}
 	var grants stringListFlag
-	cmd, code, ok := parseComposeCmd(prog, "templates install", "templates install <id> [--name NAME] [--project ID] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [--grant CLASS]... [--allow-platform-mismatch]", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
+	cmd, code, ok := parseComposeCmd(prog, "templates install", "templates install <id> [--name NAME] [--project ID] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [--grant CLASS]... [--node NAME|KEY=VALUE] [--allow-platform-mismatch]", args, 1, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.StringVar(&name, "name", "", "app name (default: the template id plus a short random suffix)")
 		fs.StringVar(&project, "project", "", "group the installed services under this project id")
 		fs.Var(env, "env", "template setting KEY=VALUE (repeatable; see templates get <id>)")
 		fs.Var(domains, "domain", "put a service behind a domain, SERVICE=HOST (repeatable)")
+		fs.StringVar(&node, "node", "", "install on this node (name or id), or the least loaded node matching KEY=VALUE labels")
 		fs.BoolVar(&allowPlatform, "allow-platform-mismatch", false, "install even when the template has no verified build for this host's architecture")
 		fs.Var(&grants, "grant", "acknowledge a capability class the template declares, e.g. docker_api (repeatable)")
 	})
@@ -40,7 +41,8 @@ func runTemplatesInstall(prog string, args []string, stdout, stderr io.Writer, l
 		}
 		warnTemplateNeedsDomain(stderr, prog, cmd.args[0], detail, len(domains) > 0)
 	}
-	res, err := cmd.client.InstallTemplate(context.Background(), cmd.args[0], apiclient.TemplateInstallRequest{Name: name, Env: env, Domains: domains, ProjectID: project, AllowPlatformMismatch: allowPlatform})
+	nodeID, nodeSelector := apiclient.NodeRefFields(node)
+	res, err := cmd.client.InstallTemplate(context.Background(), cmd.args[0], apiclient.TemplateInstallRequest{Name: name, Env: env, Domains: domains, ProjectID: project, AllowPlatformMismatch: allowPlatform, NodeID: nodeID, NodeSelector: nodeSelector})
 	if err != nil {
 		return reportError(stdout, stderr, cmd.json, fmt.Errorf("install template %q: %w", cmd.args[0], err))
 	}

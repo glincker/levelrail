@@ -138,6 +138,9 @@ type Service struct {
 	// ports: published on their own host port with a private bind, instead
 	// of being dropped. The routed web port is the first tcp port not listed.
 	PublishedTCP []int
+	// Node is x-levelrail-node: where this service should run, as a node name
+	// or a key=value label selector. The API resolves it; empty means no pin.
+	Node string
 	// DependsOnHealthy lists the DependsOn entries declared with
 	// condition: service_healthy, which wait for readiness, not just start.
 	DependsOnHealthy []string
@@ -467,6 +470,9 @@ func joinErrors(errs []error) error {
 func validateStrategies(f *File) []error {
 	var errs []error
 	for _, name := range sortedServiceNames(f) {
+		if err := ValidateNodeRef(f.Services[name].Node); err != nil {
+			errs = append(errs, fmt.Errorf("service %q: x-levelrail-node: %w", name, err))
+		}
 		switch f.Services[name].Strategy {
 		case "", spec.StrategyBlueGreen, spec.StrategyRecreate, spec.StrategyRolling:
 		default:

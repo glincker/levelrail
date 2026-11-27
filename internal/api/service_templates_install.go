@@ -28,6 +28,9 @@ type templateInstallRequest struct {
 	ProjectID string `json:"project_id,omitempty"`
 	// AllowPlatformMismatch installs despite an architecture the template did not verify.
 	AllowPlatformMismatch bool `json:"allow_platform_mismatch,omitempty"`
+	// NodeID pins the install to one node (id or name); NodeSelector takes the least loaded node matching key=value labels.
+	NodeID       string `json:"node_id,omitempty"`
+	NodeSelector string `json:"node_selector,omitempty"`
 }
 
 func manifestIcon(m *catalog.Manifest) string {
@@ -90,7 +93,11 @@ func (rt *Router) installTemplate(w http.ResponseWriter, r *http.Request, tpl ca
 		writeError(w, http.StatusBadRequest, "name must start with a letter and use only lowercase letters, digits and dashes (40 characters at most)")
 		return
 	}
-	if reason, overridable := rt.platformPreflight(r.Context(), tpl); reason != "" && (!overridable || !req.AllowPlatformMismatch) {
+	target, ok := rt.resolveRequestNode(w, r, req.NodeID, req.NodeSelector)
+	if !ok {
+		return
+	}
+	if reason, overridable := rt.platformPreflightOn(r.Context(), tpl, target); reason != "" && (!overridable || !req.AllowPlatformMismatch) {
 		writeError(w, http.StatusUnprocessableEntity, reason)
 		return
 	}
@@ -126,7 +133,7 @@ func (rt *Router) installTemplate(w http.ResponseWriter, r *http.Request, tpl ca
 	if !ok {
 		return
 	}
-	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: interpEnvWithoutFiles(tpl.Manifest, req.Env), capGrants: catalog.CapGrantMap(grants)})
+	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: interpEnvWithoutFiles(tpl.Manifest, req.Env), capGrants: catalog.CapGrantMap(grants), node: target})
 	if !ok {
 		return
 	}

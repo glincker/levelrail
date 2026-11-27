@@ -57,6 +57,8 @@ type composeDeployOpts struct {
 	capGate func(added []string) bool
 	// addedCaps, when set, receives the newly added caps once the gate has passed.
 	addedCaps *[]string
+	// node is the request-level node every service lacking x-levelrail-node is pinned to.
+	node *nodeTarget
 }
 
 type composeServiceStatus struct {

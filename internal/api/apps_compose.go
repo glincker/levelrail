@@ -89,6 +89,11 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 			opts.source, opts.templateID = store.ComposeRevisionSourceTemplate, id
 		}
 	}
+	node, ok := rt.resolveRequestNode(w, r, r.URL.Query().Get("node_id"), r.URL.Query().Get("node_selector"))
+	if !ok {
+		return
+	}
+	opts.node = node
 	resp, ok := rt.lockedComposeDeploy(w, r, name, body, opts)
 	if !ok {
 		return
@@ -197,6 +202,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		services[i].IsTrial = isTrial
 		services[i].TemplateID = opts.templateID
 	}
+	nodePins, ok := rt.applyComposeNodeTargets(w, r, name, file, services, opts.node)
+	if !ok {
+		return composeDeployResponse{}, false
+	}
 	rt.applyFirstBootTimeout(r.Context(), opts.templateID, services)
 	if !rt.reviewCapabilityChange(w, name, previousServices, services, opts) {
 		return composeDeployResponse{}, false
@@ -256,6 +265,12 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 			}
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return composeDeployResponse{}, false
+		}
+		if nodeID, pinned := nodePins[svc.Name]; pinned {
+			if err := rt.apps.UpdateServiceNode(r.Context(), svc.Name, nodeID); err != nil {
+				rt.internalError(w, "api: deploy compose: assign node failed", err, slog.String("service", svc.Name), slog.String("node_id", nodeID))
+				return composeDeployResponse{}, false
+			}
 		}
 		svcTrace := trace.Clone()
 		svcTrace.Note(r.Context(), deploytrace.StepComposeService, store.TraceStatusDone, "", composeServiceLine(svc))
