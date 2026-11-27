@@ -51,7 +51,9 @@ type Manifest struct {
 	ConsoleCommand []string `yaml:"console_command" json:"console_command,omitempty"`
 	// Capabilities declares every elevated compose key the template uses, each with a reason.
 	Capabilities []ManifestCapability `yaml:"capabilities" json:"capabilities,omitempty"`
-	Compose      string               `yaml:"-" json:"-"`
+	// RequiresKernelModules names host kernel modules that must already be loaded; the container is never given SYS_MODULE to load them.
+	RequiresKernelModules []string `yaml:"requires_kernel_modules" json:"-"`
+	Compose               string   `yaml:"-" json:"-"`
 }
 
 // EnvPrompt is one ${KEY} placeholder the installer asks for.

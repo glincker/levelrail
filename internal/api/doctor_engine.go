@@ -146,6 +146,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		many("gpus", doctorGroupHardware, rt.doctorCheckGPUs),
 		many("gpu_placement", doctorGroupHardware, rt.doctorCheckGPUPlacement),
 		many("nas_client_tools", doctorGroupHardware, rt.doctorCheckNASClientTools),
+		many("kernel_modules", doctorGroupHardware, rt.doctorCheckKernelModules),
 	}
 }
 

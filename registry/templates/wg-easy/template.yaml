@@ -1,0 +1,65 @@
+# Adapted from Dokploy/templates (MIT, Copyright (c) 2024 Dokploy and Carlos Ortiz)
+id: wg-easy
+name: WireGuard Easy
+slogan: A WireGuard VPN server with a web UI for managing clients.
+description: Needs NET_ADMIN and NET_RAW under a reviewed grant, plus the WireGuard kernel module already loaded on the host (modprobe wireguard). The VPN listens on UDP 51820, open that port in the firewall and forward it to the host. The web UI needs HTTPS, so open it through a domain. Create the admin account on first visit. AGPL v3 licence.
+category: Networking
+documentation_url: https://wg-easy.github.io/wg-easy/latest/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: wireguard
+source_repo: https://github.com/wg-easy/wg-easy
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/wg-easy/wg-easy/blob/master/LICENSE
+manifest:
+    id: wg-easy
+    name: WireGuard Easy
+    description: Needs NET_ADMIN and NET_RAW under a reviewed grant, plus the WireGuard kernel module already loaded on the host (modprobe wireguard). The VPN listens on UDP 51820, open that port in the firewall and forward it to the host. The web UI needs HTTPS, so open it through a domain. Create the admin account on first visit. AGPL v3 licence.
+    icon: wireguard
+    category: Networking
+    documentation_url: https://wg-easy.github.io/wg-easy/latest/
+    source_repo: https://github.com/wg-easy/wg-easy
+    license: AGPL-3.0
+    license_class: network-copyleft
+    license_url: https://github.com/wg-easy/wg-easy/blob/master/LICENSE
+    hosted_use: unknown
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the web UI through your domain and create the admin account.
+        - Open UDP 51820 in the firewall and forward it to this host.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 134217728
+    requires_kernel_modules:
+        - wireguard
+    env: []
+    domains:
+        - service: wg-easy
+          port: 51821
+          description: Public address of the wg-easy web UI.
+    healthcheck:
+        service: wg-easy
+        port: 51821
+        path: /
+        expect: 200
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities:
+        - class: net_admin
+          service: wg-easy
+          reason: Creates the wg0 interface and its firewall rules for the VPN.
+          caps:
+            - NET_ADMIN
+            - NET_RAW

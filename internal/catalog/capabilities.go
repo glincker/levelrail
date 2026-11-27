@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -32,6 +33,9 @@ const (
 	CapClassHostNetwork = "host_network"
 	CapClassPrivileged  = "privileged"
 )
+
+// kernelModuleName keeps a module name safe to join into a /sys/module path.
+var kernelModuleName = regexp.MustCompile(`^[a-z0-9_]{1,40}$`)
 
 // ErrCapabilityDisabled means a declared class is off in runtime settings.
 var ErrCapabilityDisabled = errors.New("capability class is disabled")
@@ -106,6 +110,11 @@ func capSubset(caps, allowed []string) []string {
 // validateCapabilityShape checks classes, fields and params without the compose body.
 func (m Manifest) validateCapabilityShape() []error {
 	var errs []error
+	for _, mod := range m.RequiresKernelModules {
+		if !kernelModuleName.MatchString(mod) {
+			errs = append(errs, fmt.Errorf("requires_kernel_modules: %q must be lowercase letters, digits and underscores", mod))
+		}
+	}
 	seen := map[string]bool{}
 	for i, c := range m.Capabilities {
 		at := fmt.Sprintf("capabilities[%d]", i)

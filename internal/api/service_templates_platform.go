@@ -28,6 +28,9 @@ func (rt *Router) platformPreflight(ctx context.Context, tpl catalog.Template) (
 			return fmt.Sprintf("template %q needs an NVIDIA GPU and this node has no nvidia container runtime. Install the NVIDIA container toolkit, then retry.", tpl.ID), false
 		}
 	}
+	if reason := kernelModulePreflight(tpl); reason != "" {
+		return reason, false
+	}
 	return "", false
 }
 

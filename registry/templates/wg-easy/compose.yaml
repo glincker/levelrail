@@ -6,11 +6,7 @@ services:
       - etc_wireguard:/etc/wireguard
     cap_add:
       - NET_ADMIN
-      - SYS_MODULE
       - NET_RAW
-    sysctls:
-      net.ipv4.ip_forward: "1"
-      net.ipv4.conf.all.src_valid_mark: "1"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:51821/ || exit 1"]
       interval: 10s
