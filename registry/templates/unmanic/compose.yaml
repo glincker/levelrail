@@ -1,0 +1,18 @@
+services:
+  unmanic:
+    image: josh5/unmanic:0.4.1
+    ports: ["8888"]
+    volumes:
+      - unmanic_config:/config
+      - unmanic_library:/library
+      - unmanic_cache:/tmp/unmanic
+    healthcheck:
+      test: ["CMD-SHELL", 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8888/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+volumes:
+  unmanic_config:
+  unmanic_library:
+  unmanic_cache:

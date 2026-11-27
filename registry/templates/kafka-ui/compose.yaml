@@ -1,0 +1,19 @@
+services:
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports: ["8080"]
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
+      AUTH_TYPE: LOGIN_FORM
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - kafka_ui_config:/etc/kafkaui
+    healthcheck:
+      test: ["CMD-SHELL", 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/actuator/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+volumes:
+  kafka_ui_config:
