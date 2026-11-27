@@ -63,7 +63,7 @@ func TestAppsPutEnvOnlyKeepsEveryOtherField(t *testing.T) {
 		t.Fatalf("env = %v, want only MODE=dev", got.Env)
 	}
 	want := before
-	want.Env, want.EnvDirty = got.Env, got.EnvDirty
+	want.Env, want.EnvDirty, want.Rev = got.Env, got.EnvDirty, got.Rev
 	if !reflect.DeepEqual(*got, want) {
 		t.Fatalf("env-only PUT changed other fields:\n got %+v\nwant %+v", *got, want)
 	}
@@ -105,6 +105,8 @@ func TestAppsPutRoundTripIsNoOp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Every save bumps the row revision; it is not a field the PUT may change.
+	before.Rev = got.Rev
 	if !reflect.DeepEqual(*got, before) {
 		t.Fatalf("GET then PUT changed desired state:\n got %+v\nwant %+v", *got, before)
 	}

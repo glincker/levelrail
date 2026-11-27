@@ -47,3 +47,43 @@ func EnvColumnsEqual(a, b DesiredService) bool {
 		fmt.Sprint(a.DatabaseEnv) == fmt.Sprint(b.DatabaseEnv) &&
 		fmt.Sprint(a.VaultEnv) == fmt.Sprint(b.VaultEnv)
 }
+
+// MergeEnvMap applies the changes mine made relative to base onto fresh, so keys
+// another writer added after base survive and only mine's own edits are re-applied.
+func MergeEnvMap(base, mine, fresh map[string]string) map[string]string {
+	out := make(map[string]string, len(fresh)+len(mine))
+	for k, v := range fresh {
+		out[k] = v
+	}
+	for k, v := range mine {
+		if old, ok := base[k]; !ok || old != v {
+			out[k] = v
+		}
+	}
+	for k := range base {
+		if _, ok := mine[k]; !ok {
+			delete(out, k)
+		}
+	}
+	return out
+}
+
+// RebaseEnvColumns returns mine with its env edits (relative to base) layered onto
+// fresh's env columns and fresh's revision, for writers that own env but must not
+// drop what a concurrent env write added.
+func RebaseEnvColumns(base, mine, fresh DesiredService) DesiredService {
+	out := mine
+	out.Rev = fresh.Rev
+	out.Env = MergeEnvMap(base.Env, mine.Env, fresh.Env)
+	if fmt.Sprint(mine.SecretEnv) == fmt.Sprint(base.SecretEnv) {
+		out.SecretEnv = fresh.SecretEnv
+	}
+	if fmt.Sprint(mine.DatabaseEnv) == fmt.Sprint(base.DatabaseEnv) {
+		out.DatabaseEnv = fresh.DatabaseEnv
+	}
+	if fmt.Sprint(mine.VaultEnv) == fmt.Sprint(base.VaultEnv) {
+		out.VaultEnv = fresh.VaultEnv
+	}
+	out.EnvDirty = mine.EnvDirty || fresh.EnvDirty || !EnvColumnsEqual(base, out)
+	return out
+}

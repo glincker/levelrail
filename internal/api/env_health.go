@@ -266,7 +266,11 @@ func (rt *Router) handleFixEnv(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		updated.Env = merged.After
-	} else if err := rt.apps.SaveDesiredService(r.Context(), updated); err != nil {
+	} else if _, err := rt.saveOwned(r.Context(), updated, func(fresh store.DesiredService) store.DesiredService {
+		fresh.DatabaseEnv = updated.DatabaseEnv
+		fresh.EnvDirty = true
+		return fresh
+	}); err != nil {
 		rt.internalError(w, "api: env fix save failed", err, slog.String("name", name))
 		return
 	}

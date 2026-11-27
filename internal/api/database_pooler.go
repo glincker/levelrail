@@ -210,7 +210,11 @@ func (rt *Router) flagPoolerLinkedApps(ctx context.Context, dbName string) {
 		}
 		updated := services[i]
 		updated.EnvDirty = true
-		if err := rt.apps.SaveDesiredService(ctx, updated); err != nil {
+		latch := func(fresh store.DesiredService) store.DesiredService {
+			fresh.EnvDirty = true
+			return fresh
+		}
+		if _, err := rt.saveOwned(ctx, updated, latch); err != nil {
 			rt.logger.Warn("api: pooler: flag linked app failed", slog.String("app", updated.Name), slog.String("error", err.Error()))
 		}
 	}

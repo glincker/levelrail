@@ -132,3 +132,19 @@ func TestMigration3344AddsRevAndBumpsOnSpecWrites(t *testing.T) {
 		t.Fatalf("rev bumped by a non-spec column: %d", rev())
 	}
 }
+
+func TestRebaseEnvColumnsKeepsConcurrentKeys(t *testing.T) {
+	base := DesiredService{Name: "web", Env: map[string]string{"A": "1", "GONE": "x"}}
+	mine := DesiredService{Name: "web", Env: map[string]string{"A": "2"}}
+	fresh := DesiredService{Name: "web", Rev: 7, Env: map[string]string{"A": "1", "GONE": "x", "B": "3"}}
+	got := RebaseEnvColumns(base, mine, fresh)
+	if got.Rev != 7 || got.Env["A"] != "2" || got.Env["B"] != "3" {
+		t.Fatalf("got rev %d env %v, want rev 7 with A=2 and B=3", got.Rev, got.Env)
+	}
+	if _, ok := got.Env["GONE"]; ok {
+		t.Fatalf("key removed by this writer came back: %v", got.Env)
+	}
+	if !got.EnvDirty {
+		t.Fatal("env changed relative to base, env_dirty must be set")
+	}
+}

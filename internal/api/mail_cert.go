@@ -441,7 +441,21 @@ func (s *mailCertSwitch) apply(ctx context.Context, cert, key string, present bo
 		delete(next.Env, "MAIL_TLS_KEY_FILE")
 	}
 	if !maps.Equal(next.Env, svc.Env) {
-		if err := s.rt.apps.SaveDesiredService(ctx, next); err != nil {
+		rebase := func(fresh store.DesiredService) store.DesiredService {
+			fresh.Env = maps.Clone(fresh.Env)
+			if fresh.Env == nil {
+				fresh.Env = map[string]string{}
+			}
+			for _, k := range []string{"MAIL_TLS_CERT_FILE", "MAIL_TLS_KEY_FILE"} {
+				if v, ok := next.Env[k]; ok {
+					fresh.Env[k] = v
+				} else {
+					delete(fresh.Env, k)
+				}
+			}
+			return fresh
+		}
+		if _, err := s.rt.saveOwned(ctx, next, rebase); err != nil {
 			return err
 		}
 	}

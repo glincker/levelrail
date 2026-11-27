@@ -103,7 +103,29 @@ func (rt *Router) bulkResources(ctx context.Context, req bulkAppsRequest, svc st
 	if dry {
 		return bulkStatusOK, "", before, after
 	}
-	if err := rt.apps.SaveDesiredService(ctx, next); err != nil {
+	// Re-apply only the one memory, cpu or env edit onto a fresh row if a concurrent write won.
+	rebase := func(fresh store.DesiredService) store.DesiredService {
+		switch req.Action {
+		case bulkActionSetEnv:
+			fresh.Env = maps.Clone(fresh.Env)
+			if fresh.Env == nil {
+				fresh.Env = map[string]string{}
+			}
+			fresh.Env[req.EnvKey] = after
+			fresh.EnvDirty = true
+		default:
+			res := store.ServiceResources{}
+			if fresh.Resources != nil {
+				res = *fresh.Resources
+			}
+			if next.Resources != nil {
+				res.MemoryBytes, res.NanoCPUs = next.Resources.MemoryBytes, next.Resources.NanoCPUs
+			}
+			fresh.Resources = &res
+		}
+		return fresh
+	}
+	if _, err := rt.saveOwned(ctx, next, rebase); err != nil {
 		rt.logger.Error("api: bulk apps: save failed", slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("action", req.Action))
 		return bulkStatusError, req.Action + " failed", before, after
 	}

@@ -449,7 +449,7 @@ func (s *Syncer) realign(ctx context.Context, row store.DeployURL) bool {
 		return false
 	}
 	svc.Domains = domainsFor(host)
-	if err := s.Store.SaveDesiredService(ctx, svc); err != nil {
+	if err := s.saveDomains(ctx, svc); err != nil {
 		s.Logger.WarnContext(ctx, "deploy urls: realign failed", slog.String("service", row.ServiceName), slog.String("error", err.Error()))
 		return false
 	}

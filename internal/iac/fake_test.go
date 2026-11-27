@@ -226,7 +226,7 @@ func (f *fakeCP) appRoutes() {
 		if !ok {
 			return nil, errNotFound
 		}
-		for _, keep := range []string{"project_id", "environment_id", "tags", "vault_env", "volumes", "secret_env", "database_env"} {
+		for _, keep := range []string{"project_id", "environment_id", "tags", "vault_env", "volumes", "secret_env", "database_env", "env"} {
 			if _, sent := b[keep]; !sent && old[keep] != nil {
 				b[keep] = old[keep]
 			}
@@ -236,6 +236,25 @@ func (f *fakeCP) appRoutes() {
 		}
 		f.apps[m[1]] = b
 		return b, nil
+	})
+	f.route("PUT", `/api/v1/apps/([^/]+)/env`, func(m []string, b map[string]any) (any, error) {
+		cur, _ := f.apps[m[1]]["env"].(map[string]any)
+		next := map[string]any{}
+		for k, v := range cur {
+			next[k] = v
+		}
+		if set, ok := b["set"].(map[string]any); ok {
+			for k, v := range set {
+				next[k] = v
+			}
+		}
+		if unset, ok := b["unset"].([]any); ok {
+			for _, k := range unset {
+				delete(next, fmt.Sprint(k))
+			}
+		}
+		f.apps[m[1]]["env"] = next
+		return map[string]any{"env_dirty": true}, nil
 	})
 	f.route("DELETE", `/api/v1/apps/([^/]+)`, func(m []string, _ map[string]any) (any, error) { delete(f.apps, m[1]); return nil, nil })
 	f.route("GET", `/api/v1/apps/([^/]+)/secrets`, func(m []string, _ map[string]any) (any, error) {
