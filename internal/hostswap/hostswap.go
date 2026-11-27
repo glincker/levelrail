@@ -35,8 +35,12 @@ type State struct {
 // Read inspects root+"/proc"; pass "" for the live host.
 func Read(root string) State {
 	st := State{Swappiness: -1}
-	if runtime.GOOS != "linux" && root == "" {
-		return st
+	if root == "" {
+		if runtime.GOOS != "linux" {
+			return st
+		}
+		// Join("", "proc") is a relative path, so the live host needs an explicit root.
+		root = "/"
 	}
 	f, err := os.Open(filepath.Join(root, "proc", "meminfo")) // #nosec G304 -- fixed proc path
 	if err != nil {
