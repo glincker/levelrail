@@ -1,0 +1,16 @@
+id: parseable
+name: Parseable
+slogan: "A lightweight log analytics and observability platform in one binary."
+description: "AGPL 3.0 licensed. Runs on local disk storage. Sign in as admin with the generated password from the deployment variables, then send logs to the ingest API."
+category: Monitoring
+documentation_url: https://www.parseable.com/docs
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: parseable
+source_repo: https://github.com/parseablehq/parseable
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/parseablehq/parseable/blob/main/LICENSE
