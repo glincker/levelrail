@@ -621,6 +621,23 @@ yarn and pnpm use the same registry: `yarn dlx levelrail-cli` and `pnpm dlx leve
 - Provenance: packages are published from the release workflow with npm trusted publishing. Check them with `npm audit signatures` in a project that depends on `levelrail-cli`.
 - Pin the version to your server's version in CI so the client and the control plane stay in step.
 
+## Install channels
+
+Every channel below is published by the release workflow, so it follows each release without manual steps.
+
+| Channel | Command | Where it updates from |
+| --- | --- | --- |
+| GitHub Releases | `gh release download <tag> --repo glincker/levelrail` | Every release tag, with `checksums.txt`, cosign signatures and build provenance |
+| GHCR | `docker pull ghcr.io/glincker/levelrail` (also `levelrail-agent`) | Every release tag, multi-arch, cosign signed |
+| Docker Hub | `docker pull levelrail/levelrail` (also `levelrail-agent`) | Mirror of the GHCR image with the same digest |
+| npm (CLI) | `npm install --global levelrail-cli` | Every release, published with provenance |
+| npm (MCP server) | `npx levelrail-mcp` | Releases that change the MCP server |
+| MCP Registry | `io.github.glincker/levelrail` | Stable releases of the MCP server |
+| Homebrew | `brew install glincker/tap/levelrail-cli` (also `levelrail-agent`) | The `glincker/homebrew-tap` formulas, updated on each release |
+| Scoop (Windows) | `scoop bucket add glincker https://github.com/glincker/scoop-bucket` then `scoop install levelrail-cli` | The `glincker/scoop-bucket` manifest, updated on each stable release |
+| AUR and Nix files | `gh release download <tag> --repo glincker/levelrail --pattern 'levelrail-cli*'` | A `PKGBUILD` and a `flake.nix` attached to each release, to copy into your own package |
+| Terraform and OpenTofu provider | `source = "registry.terraform.io/glincker/levelrail"` | The `glincker/terraform-provider-levelrail` mirror, tagged when the provider changes |
+
 ## Verifying the install
 
 `install.sh` already fails loudly if the control plane is not healthy within 60 seconds (`LEVELRAIL_HEALTH_WAIT`). Re-check at any time:
