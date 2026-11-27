@@ -3,12 +3,15 @@ package catalog
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/GLINCKER/levelrail/internal/compose"
 )
+
+var sourcePlatformRe = regexp.MustCompile(`^linux/[a-z0-9]+(/[a-z0-9]+)?$`)
 
 // ValidateSource applies the registry validator plus the submission safety
 // checks (no privileged capability class, no bind mounts, no fetch at start)
@@ -26,6 +29,11 @@ func (m Manifest) ValidateSource() error {
 			if v.Name == "" {
 				errs = append(errs, fmt.Errorf("service %s: bind mounts are not allowed in source templates, use a named volume", name))
 			}
+		}
+	}
+	for _, p := range m.Platforms {
+		if !sourcePlatformRe.MatchString(p) {
+			errs = append(errs, fmt.Errorf("platforms: %q must be linux/<arch>, other operating systems are not supported", p))
 		}
 	}
 	errs = append(errs, m.checkFetch()...)

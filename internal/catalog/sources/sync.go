@@ -30,12 +30,22 @@ import (
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
+func (l Limits) wireBudget() int64 {
+	if l.MaxWireBytes > 0 && (l.MaxBytes == 0 || l.MaxWireBytes < l.MaxBytes) {
+		return l.MaxWireBytes
+	}
+	return l.MaxBytes
+}
+
 // Limits bound one fetch. All of them come from runtime settings.
 type Limits struct {
 	MaxBytes int64
-	MaxFiles int
-	MaxDepth int
-	Timeout  time.Duration
+	// MaxWireBytes bounds the compressed transfer; it is the real inflation bound, since
+	// go-git inflates an object before any size hook sees it. Zero falls back to MaxBytes.
+	MaxWireBytes int64
+	MaxFiles     int
+	MaxDepth     int
+	Timeout      time.Duration
 }
 
 // Source is what one sync needs. Auth is nil for an anonymous https clone.
@@ -136,13 +146,13 @@ func Fetch(ctx context.Context, s Source, lim Limits, lookup LookupFunc) (fs.FS,
 	if ssh {
 		installSSHDialer()
 		var release func()
-		opts.ProxyOptions.URL, release = sshProxyURL(lim.MaxBytes)
+		opts.ProxyOptions.URL, release = sshProxyURL(lim.wireBudget())
 		defer release()
 	} else {
 		installTransport()
 		url = guardedScheme + strings.TrimPrefix(url, "https")
 		budget := &atomic.Int64{}
-		budget.Store(lim.MaxBytes)
+		budget.Store(lim.wireBudget())
 		ctx = context.WithValue(ctx, budgetKey{}, budget)
 	}
 	opts.URL = url

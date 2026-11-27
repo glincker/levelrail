@@ -53,7 +53,11 @@ type Manifest struct {
 	Capabilities []ManifestCapability `yaml:"capabilities" json:"capabilities,omitempty"`
 	// RequiresKernelModules names host kernel modules that must already be loaded; the container is never given SYS_MODULE to load them.
 	RequiresKernelModules []string `yaml:"requires_kernel_modules" json:"-"`
-	Compose               string   `yaml:"-" json:"-"`
+	// Platforms lists the linux/<arch> pairs the images support; empty means unverified.
+	Platforms []string `yaml:"platforms,omitempty" json:"-"`
+	// RequiresGPU marks a template that reserves an NVIDIA GPU.
+	RequiresGPU bool   `yaml:"requires_gpu,omitempty" json:"-"`
+	Compose     string `yaml:"-" json:"-"`
 }
 
 // EnvPrompt is one ${KEY} placeholder the installer asks for.
@@ -254,6 +258,7 @@ func (m Manifest) Template() (Template, error) {
 	return Template{
 		ID: m.ID, Name: m.Name, Slogan: m.Description, Description: m.Description, Category: m.Category, DocumentationURL: m.DocumentationURL,
 		Compose: body, RecommendedMemoryBytes: m.RecommendedMemoryBytes, Manifest: &mm,
+		Platforms: m.Platforms, RequiresGPU: m.RequiresGPU,
 	}, nil
 }
 

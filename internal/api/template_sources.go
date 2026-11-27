@@ -2,13 +2,16 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/catalog/sources"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -23,7 +26,7 @@ type TemplateSourceStore interface {
 	ReplaceTemplateSourceEntries(ctx context.Context, name, commit string, entries []store.TemplateSourceEntry) error
 	SetTemplateSourceStatus(ctx context.Context, name, status, detail string) error
 	ListTemplateSourceEntries(ctx context.Context, name string) ([]store.TemplateSourceEntry, error)
-	ApproveTemplateSourceEntry(ctx context.Context, source, id string) error
+	ApproveTemplateSourceEntry(ctx context.Context, source, id, hash string) error
 }
 
 type templateSourceRequest struct {
@@ -42,10 +45,11 @@ func (rt *Router) templateSourceLimits(ctx context.Context) sources.Limits {
 		return 0
 	}
 	return sources.Limits{
-		MaxBytes: int64(get(runtimesettings.KeyTemplatesSourcesMaxMB)) << 20,
-		MaxFiles: get(runtimesettings.KeyTemplatesSourcesMaxFiles),
-		MaxDepth: get(runtimesettings.KeyTemplatesSourcesMaxDepth),
-		Timeout:  time.Duration(get(runtimesettings.KeyTemplatesSourcesTimeoutSeconds)) * time.Second,
+		MaxBytes:     int64(get(runtimesettings.KeyTemplatesSourcesMaxMB)) << 20,
+		MaxWireBytes: int64(get(runtimesettings.KeyTemplatesSourcesMaxWireMB)) << 20,
+		MaxFiles:     get(runtimesettings.KeyTemplatesSourcesMaxFiles),
+		MaxDepth:     get(runtimesettings.KeyTemplatesSourcesMaxDepth),
+		Timeout:      time.Duration(get(runtimesettings.KeyTemplatesSourcesTimeoutSeconds)) * time.Second,
 	}
 }
 
@@ -244,13 +248,78 @@ func (rt *Router) installSourceTemplate(w http.ResponseWriter, r *http.Request, 
 	writeError(w, http.StatusNotFound, "service template not found")
 }
 
+type templateSourceApproveRequest struct {
+	ContentHash string `json:"content_hash"`
+}
+
+// TemplateSourceEntryDetail is what root reviews before approving: the entry's files with
+// secret-looking values masked, and the hash an approval must carry.
+type TemplateSourceEntryDetail struct {
+	ID          string `json:"id"`
+	ContentHash string `json:"content_hash"`
+	Review      string `json:"review"`
+	Manifest    string `json:"manifest"`
+	Compose     string `json:"compose"`
+}
+
+var templateSourceSecretLine = regexp.MustCompile(`^(\s*(?:-\s*)?["']?)([A-Za-z_][A-Za-z0-9_]*)(["']?\s*[:=]\s*)(.+)$`)
+
+// maskTemplateSourceText hides inline values of secret-looking keys; ${VAR} references stay.
+func maskTemplateSourceText(body string) string {
+	lines := strings.Split(body, "\n")
+	for i, l := range lines {
+		m := templateSourceSecretLine.FindStringSubmatch(l)
+		if m == nil || strings.HasPrefix(strings.TrimSpace(m[4]), "$") {
+			continue
+		}
+		if masked, meta := envredact.Value(m[2], strings.Trim(strings.TrimSpace(m[4]), `"'`), nil); meta.ValueRedacted {
+			lines[i] = m[1] + m[2] + m[3] + masked
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// handleGetTemplateSourceEntry handles GET /api/v1/templates/sources/{name}/templates/{id}.
+func (rt *Router) handleGetTemplateSourceEntry(w http.ResponseWriter, r *http.Request) {
+	if rt.templateSources == nil {
+		writeError(w, http.StatusNotImplemented, "template sources are not configured")
+		return
+	}
+	name := r.PathValue("name")
+	id := name + "/" + r.PathValue("id")
+	rows, err := rt.templateSources.ListTemplateSourceEntries(r.Context(), name)
+	if err != nil {
+		rt.internalError(w, "api: read template source entry failed", err)
+		return
+	}
+	for _, e := range rows {
+		if e.ID == id {
+			writeJSON(w, http.StatusOK, TemplateSourceEntryDetail{
+				ID: e.ID, ContentHash: e.ContentHash, Review: e.Review,
+				Manifest: maskTemplateSourceText(e.TemplateYAML), Compose: maskTemplateSourceText(e.ComposeYAML),
+			})
+			return
+		}
+	}
+	writeError(w, http.StatusNotFound, "template source entry not found")
+}
+
 // handleApproveTemplateSourceEntry handles POST /api/v1/templates/sources/{name}/templates/{id}/approve.
 func (rt *Router) handleApproveTemplateSourceEntry(w http.ResponseWriter, r *http.Request) {
 	if !rt.templateSourcesReady(w, r) {
 		return
 	}
+	var req templateSourceApproveRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil || req.ContentHash == "" {
+		writeError(w, http.StatusBadRequest, "content_hash is required: read the entry first and approve the hash you reviewed")
+		return
+	}
 	name := r.PathValue("name")
-	if err := rt.templateSources.ApproveTemplateSourceEntry(r.Context(), name, name+"/"+r.PathValue("id")); err != nil {
+	if err := rt.templateSources.ApproveTemplateSourceEntry(r.Context(), name, name+"/"+r.PathValue("id"), req.ContentHash); err != nil {
+		if errors.Is(err, store.ErrTemplateSourceHashMismatch) {
+			writeError(w, http.StatusConflict, "the entry changed since you reviewed it: read it again and approve the new hash")
+			return
+		}
 		rt.templateSourceError(w, err)
 		return
 	}

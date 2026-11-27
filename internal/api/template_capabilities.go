@@ -59,14 +59,42 @@ func (rt *Router) resolveTemplateCapabilities(w http.ResponseWriter, r *http.Req
 	return grants, true
 }
 
+// templateWithManifest resolves a catalog id, or a source/name id through the store, so a source
+// template keeps its capability grants on upgrade and rollback.
+func (rt *Router) templateWithManifest(ctx context.Context, id string) (catalog.Template, bool) {
+	if tpl, ok := catalog.TemplateByID(id); ok {
+		return tpl, tpl.Manifest != nil
+	}
+	source, _, found := strings.Cut(id, "/")
+	if !found || rt.templateSources == nil {
+		return catalog.Template{}, false
+	}
+	entries, err := rt.templateSources.ListTemplateSourceEntries(ctx, source)
+	if err != nil {
+		return catalog.Template{}, false
+	}
+	for _, e := range entries {
+		if e.ID != id || e.Review != store.TemplateReviewApproved {
+			continue
+		}
+		m, err := catalog.ManifestFromSource(e.TemplateYAML, e.ComposeYAML)
+		if err != nil {
+			return catalog.Template{}, false
+		}
+		m.ID = id
+		return catalog.Template{ID: id, Manifest: &m}, true
+	}
+	return catalog.Template{}, false
+}
+
 // templateCapGrants re-derives the cap_add grants for an upgrade of an app that came from a
 // template, through the same checks as install. Revisions never store grants.
 func (rt *Router) templateCapGrants(w http.ResponseWriter, r *http.Request, templateID string) (map[string][]string, bool) {
 	if templateID == "" {
 		return nil, true
 	}
-	tpl, ok := catalog.TemplateByID(templateID)
-	if !ok || tpl.Manifest == nil {
+	tpl, ok := rt.templateWithManifest(r.Context(), templateID)
+	if !ok {
 		return nil, true
 	}
 	grants, ok := rt.resolveTemplateCapabilities(w, r, tpl.Manifest)
@@ -183,8 +211,8 @@ func (rt *Router) rollbackCapGrants(w http.ResponseWriter, r *http.Request, app,
 	if templateID == "" {
 		return nil, true
 	}
-	tpl, ok := catalog.TemplateByID(templateID)
-	if !ok || tpl.Manifest == nil {
+	tpl, ok := rt.templateWithManifest(r.Context(), templateID)
+	if !ok {
 		return nil, true
 	}
 	held, err := rt.heldCaps(r.Context(), app)

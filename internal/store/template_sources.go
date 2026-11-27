@@ -108,6 +108,9 @@ func (db *DB) DeleteTemplateSource(ctx context.Context, name string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM template_source_entries WHERE source = ?`, name); err != nil {
 		return fmt.Errorf("store: delete template source entries: %w", err)
 	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM template_source_approvals WHERE source = ?`, name); err != nil {
+		return fmt.Errorf("store: delete template source approvals: %w", err)
+	}
 	res, err := tx.ExecContext(ctx, `DELETE FROM template_sources WHERE name = ?`, name)
 	if err != nil {
 		return fmt.Errorf("store: delete template source: %w", err)
@@ -119,38 +122,39 @@ func (db *DB) DeleteTemplateSource(ctx context.Context, name string) error {
 }
 
 // ReplaceTemplateSourceEntries swaps a source's entries for the validated set of a sync and
-// records the commit. An entry whose content hash differs from its previous sync needs review.
+// records the commit. An entry is approved only when root approved the same content hash before.
 func (db *DB) ReplaceTemplateSourceEntries(ctx context.Context, name, commit string, entries []TemplateSourceEntry) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: replace template source entries: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	old := map[string][2]string{}
-	rows, err := tx.QueryContext(ctx, `SELECT id, content_hash, review FROM template_source_entries WHERE source = ?`, name)
+	approved := map[string]string{}
+	rows, err := tx.QueryContext(ctx, `SELECT id, content_hash FROM template_source_approvals WHERE source = ?`, name)
 	if err != nil {
-		return fmt.Errorf("store: read template source entries: %w", err)
+		return fmt.Errorf("store: read template source approvals: %w", err)
 	}
 	for rows.Next() {
-		var id, h, r string
-		if err := rows.Scan(&id, &h, &r); err != nil {
+		var id, h string
+		if err := rows.Scan(&id, &h); err != nil {
 			_ = rows.Close()
-			return fmt.Errorf("store: scan template source entry: %w", err)
+			return fmt.Errorf("store: scan template source approval: %w", err)
 		}
-		old[id] = [2]string{h, r}
+		approved[id] = h
 	}
 	if err := rows.Err(); err != nil {
 		_ = rows.Close()
-		return fmt.Errorf("store: read template source entries: %w", err)
+		return fmt.Errorf("store: read template source approvals: %w", err)
 	}
 	_ = rows.Close()
 	if _, err := tx.ExecContext(ctx, `DELETE FROM template_source_entries WHERE source = ?`, name); err != nil {
 		return fmt.Errorf("store: clear template source entries: %w", err)
 	}
 	for _, e := range entries {
-		review := TemplateReviewApproved
-		if prev, ok := old[e.ID]; ok && (prev[0] != e.ContentHash || prev[1] == TemplateReviewNeedsReview) {
-			review = TemplateReviewNeedsReview
+		// Only a hash that root approved before stays approved; every other id needs review.
+		review := TemplateReviewNeedsReview
+		if h, ok := approved[e.ID]; ok && h == e.ContentHash && h != "" {
+			review = TemplateReviewApproved
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO template_source_entries (source, id, name, template_yaml, compose_yaml, content_hash, review) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 			name, e.ID, e.Name, e.TemplateYAML, e.ComposeYAML, e.ContentHash, review); err != nil {
@@ -163,16 +167,33 @@ func (db *DB) ReplaceTemplateSourceEntries(ctx context.Context, name, commit str
 	return tx.Commit()
 }
 
-// ApproveTemplateSourceEntry marks a reviewed entry usable again.
-func (db *DB) ApproveTemplateSourceEntry(ctx context.Context, source, id string) error {
-	res, err := db.ExecContext(ctx, `UPDATE template_source_entries SET review = ? WHERE source = ? AND id = ?`, TemplateReviewApproved, source, id)
+// ErrTemplateSourceHashMismatch marks an approval for content that is no longer the current entry.
+var ErrTemplateSourceHashMismatch = errors.New("store: template source entry changed since it was reviewed")
+
+// ApproveTemplateSourceEntry marks the reviewed content usable and remembers its hash. It only
+// matches the entry whose content hash equals hash.
+func (db *DB) ApproveTemplateSourceEntry(ctx context.Context, source, id, hash string) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: approve template source entry: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `UPDATE template_source_entries SET review = ? WHERE source = ? AND id = ? AND content_hash = ? AND content_hash != ''`, TemplateReviewApproved, source, id, hash)
 	if err != nil {
 		return fmt.Errorf("store: approve template source entry: %w", err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
-		return ErrTemplateSourceNotFound
+		var one int
+		if err := tx.QueryRowContext(ctx, `SELECT 1 FROM template_source_entries WHERE source = ? AND id = ?`, source, id).Scan(&one); err != nil {
+			return ErrTemplateSourceNotFound
+		}
+		return ErrTemplateSourceHashMismatch
 	}
-	return nil
+	if _, err := tx.ExecContext(ctx, `INSERT INTO template_source_approvals (source, id, content_hash) VALUES (?, ?, ?)
+		ON CONFLICT(source, id) DO UPDATE SET content_hash = excluded.content_hash`, source, id, hash); err != nil {
+		return fmt.Errorf("store: record template source approval: %w", err)
+	}
+	return tx.Commit()
 }
 
 // SetTemplateSourceStatus records the outcome of a sync attempt.

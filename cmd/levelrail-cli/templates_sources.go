@@ -14,7 +14,7 @@ const templatesSourcesUsage = `Usage:
   %[1]s templates sources add [--ref REF] [--deploy-key-app APP] <name> <git-url>
   %[1]s templates sources ls [<name>]
   %[1]s templates sources sync <name>
-  %[1]s templates sources approve <source/name>
+  %[1]s templates sources approve <source/name> [--hash <content-hash>]
   %[1]s templates sources rm <name>
 
 Private template sources are git repos of templates. Root only, and off until
@@ -162,6 +162,7 @@ func runTemplatesSourcesRemove(prog string, args []string, stdout, stderr io.Wri
 func runTemplatesSourcesApprove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "templates sources approve", "print the result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprintf(stderr, templatesSourcesUsage, prog) }
+	hashFlag := fs.String("hash", "", "content hash you reviewed; without it the entry is printed for review")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, _, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
@@ -172,7 +173,16 @@ func runTemplatesSourcesApprove(prog string, args []string, stdout, stderr io.Wr
 		return exitUsage
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	if err := client.ApproveTemplateSourceEntry(context.Background(), source, id); err != nil {
+	if *hashFlag == "" {
+		detail, err := client.GetTemplateSourceEntry(context.Background(), source, id)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("read source template: %w", err))
+		}
+		_, _ = fmt.Fprintf(stdout, "content hash: %s\n\n--- template.yaml\n%s\n--- compose\n%s\n\nreview it, then approve with: %s templates sources approve %s --hash %s\n",
+			detail.ContentHash, detail.Manifest, detail.Compose, prog, fs.Arg(0), detail.ContentHash)
+		return exitOK
+	}
+	if err := client.ApproveTemplateSourceEntry(context.Background(), source, id, *hashFlag); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("approve source template: %w", err))
 	}
 	_, _ = fmt.Fprintf(stdout, "approved %s\n", fs.Arg(0))

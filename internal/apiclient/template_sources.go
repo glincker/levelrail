@@ -78,7 +78,24 @@ func (c *Client) DeleteTemplateSource(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, templateSourcesPath+"/"+PathEscape(name), nil, nil)
 }
 
-// ApproveTemplateSourceEntry calls POST /api/v1/templates/sources/{name}/templates/{id}/approve.
-func (c *Client) ApproveTemplateSourceEntry(ctx context.Context, source, id string) error {
-	return c.do(ctx, http.MethodPost, templateSourcesPath+"/"+PathEscape(source)+"/templates/"+PathEscape(id)+"/approve", nil, nil)
+// TemplateSourceEntryDetail is the masked manifest and compose of one entry, with the hash to approve.
+type TemplateSourceEntryDetail struct {
+	ID          string `json:"id"`
+	ContentHash string `json:"content_hash"`
+	Review      string `json:"review"`
+	Manifest    string `json:"manifest"`
+	Compose     string `json:"compose"`
+}
+
+// GetTemplateSourceEntry calls GET /api/v1/templates/sources/{name}/templates/{id}.
+func (c *Client) GetTemplateSourceEntry(ctx context.Context, source, id string) (TemplateSourceEntryDetail, error) {
+	var out TemplateSourceEntryDetail
+	err := c.do(ctx, http.MethodGet, templateSourcesPath+"/"+PathEscape(source)+"/templates/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
+// ApproveTemplateSourceEntry calls POST .../approve with the content hash that was reviewed.
+func (c *Client) ApproveTemplateSourceEntry(ctx context.Context, source, id, hash string) error {
+	body := map[string]string{"content_hash": hash}
+	return c.do(ctx, http.MethodPost, templateSourcesPath+"/"+PathEscape(source)+"/templates/"+PathEscape(id)+"/approve", body, nil)
 }

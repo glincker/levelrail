@@ -67,6 +67,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/templates/sources", rt.requireAbility(AbilityRoot, rt.handleListTemplateSources))
 	mux.HandleFunc("POST /api/v1/templates/sources", rt.requireAbility(AbilityRoot, rt.handleCreateTemplateSource))
 	mux.HandleFunc("GET /api/v1/templates/sources/{name}/templates", rt.requireAbility(AbilityRoot, rt.handleListTemplateSourceEntries))
+	mux.HandleFunc("GET /api/v1/templates/sources/{name}/templates/{id}", rt.requireAbility(AbilityRoot, rt.handleGetTemplateSourceEntry))
 	mux.HandleFunc("POST /api/v1/templates/sources/{name}/templates/{id}/approve", rt.requireAbility(AbilityRoot, rt.handleApproveTemplateSourceEntry))
 	mux.HandleFunc("POST /api/v1/templates/sources/{name}/sync", rt.requireAbility(AbilityRoot, rt.handleSyncTemplateSource))
 	mux.HandleFunc("DELETE /api/v1/templates/sources/{name}", rt.requireAbility(AbilityRoot, rt.handleDeleteTemplateSource))

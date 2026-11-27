@@ -38,38 +38,71 @@ func TestTemplateSourcesLifecycle(t *testing.T) {
 	}
 }
 
-func TestTemplateSourceHashChangeNeedsReview(t *testing.T) {
+func TestTemplateSourceReviewStates(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 	if err := db.CreateTemplateSource(ctx, TemplateSource{Name: "acme", GitURL: "https://git.example.com/a.git"}); err != nil {
 		t.Fatal(err)
 	}
-	e := TemplateSourceEntry{Source: "acme", ID: "acme/app", Name: "App"}
+	mk := func(id, hash string) TemplateSourceEntry {
+		return TemplateSourceEntry{Source: "acme", ID: id, Name: id, ContentHash: hash}
+	}
 	steps := []struct {
-		name, hash, want string
-		approve          bool
+		name    string
+		entries []TemplateSourceEntry
+		approve [2]string
+		want    map[string]string
 	}{
-		{"first sync is approved", "h1", TemplateReviewApproved, false},
-		{"same hash stays approved", "h1", TemplateReviewApproved, false},
-		{"changed hash needs review", "h2", TemplateReviewNeedsReview, false},
-		{"stays flagged while unreviewed", "h2", TemplateReviewNeedsReview, false},
-		{"approval clears it", "h2", TemplateReviewApproved, true},
+		{"new id needs review", []TemplateSourceEntry{mk("acme/app", "h1")}, [2]string{}, map[string]string{"acme/app": TemplateReviewNeedsReview}},
+		{"approve h1", nil, [2]string{"acme/app", "h1"}, map[string]string{"acme/app": TemplateReviewApproved}},
+		{"same hash stays approved", []TemplateSourceEntry{mk("acme/app", "h1")}, [2]string{}, map[string]string{"acme/app": TemplateReviewApproved}},
+		{"rename is a new id", []TemplateSourceEntry{mk("acme/other", "h1")}, [2]string{}, map[string]string{"acme/other": TemplateReviewNeedsReview}},
+		{"dropped", []TemplateSourceEntry{}, [2]string{}, map[string]string{}},
+		{"readd same hash stays approved", []TemplateSourceEntry{mk("acme/app", "h1")}, [2]string{}, map[string]string{"acme/app": TemplateReviewApproved}},
+		{"dropped again", []TemplateSourceEntry{}, [2]string{}, map[string]string{}},
+		{"readd different hash needs review", []TemplateSourceEntry{mk("acme/app", "h2")}, [2]string{}, map[string]string{"acme/app": TemplateReviewNeedsReview}},
 	}
 	for _, st := range steps {
-		e.ContentHash = st.hash
-		if st.approve {
-			if err := db.ApproveTemplateSourceEntry(ctx, "acme", "acme/app"); err != nil {
-				t.Fatal(err)
+		if st.approve[0] != "" {
+			if err := db.ApproveTemplateSourceEntry(ctx, "acme", st.approve[0], st.approve[1]); err != nil {
+				t.Fatalf("%s: %v", st.name, err)
 			}
-		} else if err := db.ReplaceTemplateSourceEntries(ctx, "acme", "sha", []TemplateSourceEntry{e}); err != nil {
+		} else if err := db.ReplaceTemplateSourceEntries(ctx, "acme", "sha", st.entries); err != nil {
 			t.Fatal(err)
 		}
 		rows, err := db.ListTemplateSourceEntries(ctx, "acme")
-		if err != nil || len(rows) != 1 || rows[0].Review != st.want {
+		if err != nil || len(rows) != len(st.want) {
 			t.Fatalf("%s: %+v, %v", st.name, rows, err)
+		}
+		for _, r := range rows {
+			if r.Review != st.want[r.ID] {
+				t.Fatalf("%s: %s is %s", st.name, r.ID, r.Review)
+			}
 		}
 	}
 	if got, _ := db.GetTemplateSource(ctx, "acme"); got.CommitSHA != "sha" {
 		t.Fatalf("commit not stored: %+v", got)
+	}
+}
+
+func TestTemplateSourceApproveHashMismatch(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.CreateTemplateSource(ctx, TemplateSource{Name: "acme", GitURL: "https://git.example.com/a.git"}); err != nil {
+		t.Fatal(err)
+	}
+	e := TemplateSourceEntry{Source: "acme", ID: "acme/app", Name: "App", ContentHash: "h2"}
+	if err := db.ReplaceTemplateSourceEntries(ctx, "acme", "sha", []TemplateSourceEntry{e}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.ApproveTemplateSourceEntry(ctx, "acme", "acme/app", "h1"); !errors.Is(err, ErrTemplateSourceHashMismatch) {
+		t.Fatalf("stale hash: %v", err)
+	}
+	if err := db.ApproveTemplateSourceEntry(ctx, "acme", "acme/none", "h2"); !errors.Is(err, ErrTemplateSourceNotFound) {
+		t.Fatalf("unknown id: %v", err)
+	}
+	rows, _ := db.ListTemplateSourceEntries(ctx, "acme")
+	if rows[0].Review != TemplateReviewNeedsReview {
+		t.Fatalf("mismatch approved the row: %+v", rows[0])
 	}
 }
