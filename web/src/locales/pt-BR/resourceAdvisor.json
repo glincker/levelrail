@@ -35,7 +35,9 @@
     "saving": "Cerca de {{amount}} de memória a recuperar",
     "pending_one": "Ainda coletando dados de {{count}} recurso",
     "pending_many": "Ainda coletando dados de {{count}} recursos",
-    "pending_other": "Ainda coletando dados de {{count}} recursos"
+    "pending_other": "Ainda coletando dados de {{count}} recursos",
+    "reclaimable": "{{amount}} reclaimable",
+    "monthly": "About {{amount}} a month"
   },
   "empty": {
     "title": "Nada para otimizar agora",
@@ -70,7 +72,9 @@
     "chartLabel": "Uso em {{window}} em relação ao limite",
     "usage": "Uso",
     "suggested": "Sugerido",
-    "notAllowed": "Você pode ver esta sugestão, mas não pode alterar {{name}}."
+    "notAllowed": "Você pode ver esta sugestão, mas não pode alterar {{name}}.",
+    "reclaimable": "Reclaims {{mb}} MB",
+    "monthly": "Saves about {{amount}} a month"
   },
   "kinds": {
     "memory_limit_missing": "Defina um limite de memória em {{name}}",
@@ -200,5 +204,28 @@
     "samlScimToggleLabel": "Ativar o login SAML e SCIM",
     "samlScimTurnedOn": "Login SAML e SCIM ativados",
     "samlScimTurnedOff": "Login SAML e SCIM desativados"
+  },
+  "sleepAll": {
+    "button": "Sleep {{count}} idle apps",
+    "title": "Sleep idle apps",
+    "description_one": "Enable sleep when idle for {{count}} app. It wakes on the next request.",
+    "description_other": "Enable sleep when idle for {{count}} apps. They wake on the next request.",
+    "confirm": "Sleep these apps",
+    "done_one": "Sleep enabled for {{count}} app",
+    "done_other": "Sleep enabled for {{count}} apps",
+    "failed": "Could not update: {{names}}"
+  },
+  "nodePrices": {
+    "title": "Node prices",
+    "hint": "Monthly cost per node. Without a price the advisor shows memory only, never a money figure.",
+    "node": "Node",
+    "nodePlaceholder": "Node name",
+    "price": "Monthly price",
+    "pricePlaceholder": "12.50",
+    "add": "Add node",
+    "remove": "Remove",
+    "save": "Save prices",
+    "saved": "Node prices saved",
+    "invalid": "Each row needs a node name and a positive price."
   }
 }

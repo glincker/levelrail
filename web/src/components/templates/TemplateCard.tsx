@@ -15,6 +15,7 @@ import { STARTER_STACKS } from '../../lib/templateStacks'
 import type { ServiceTemplateListItem } from '../../queries/serviceTemplates'
 import { DeleteCustomTemplateDialog } from '../DeleteCustomTemplateDialog'
 import { TemplateLogoTile } from '../TemplateLogoTile'
+import { TemplateCompatBadges } from './TemplateCompatBadges'
 import { TemplateFactBadges } from './TemplateFactBadges'
 import { TemplateVerifiedBadge } from './TemplateVerifiedBadge'
 
@@ -117,6 +118,7 @@ function Chips({ template }: { template: ServiceTemplateListItem }) {
           {t('marketplace.card.gpu')}
         </Badge>
       )}
+      <TemplateCompatBadges template={template} />
       <TemplateFactBadges facts={template} />
     </div>
   )

@@ -404,7 +404,9 @@
     "class": {
       "cap_add": "Ajoute des capacités Linux à un conteneur.",
       "net_admin": "Peut modifier les paramètres réseau dans le conteneur.",
-      "docker_api": "Lit les conteneurs Docker et les journaux de cet hôte via un proxy restreint."
+      "docker_api": "Lit les conteneurs Docker et les journaux de cet hôte via un proxy restreint.",
+      "host_network": "Shares the host network, so its ports are not isolated.",
+      "devices": "Passes a host device into the container."
     }
   },
   "deployButton": {
@@ -416,5 +418,44 @@
     "markdownLabel": "Extrait Markdown du bouton",
     "htmlLabel": "Extrait HTML du bouton",
     "cardLabel": "Extrait des balises meta de carte sociale"
+  },
+  "grantReview": {
+    "title": "Review the access this app gets",
+    "description": "This template asks for more than a normal app. Each grant below is recorded in the audit log.",
+    "rootOnly": "Granting these needs the root ability and the matching capability switched on in runtime settings.",
+    "cancel": "Cancel",
+    "confirm": "Grant and deploy"
+  },
+  "installBlock": {
+    "arch": {
+      "title": "No build for this CPU",
+      "fix": "Install on a node with a matching architecture, or pin another image tag. To try it under emulation, tick the box below and deploy again.",
+      "override": "Install anyway (allow_platform_mismatch)"
+    },
+    "kernel": {
+      "title": "Kernel module missing",
+      "fix": "Run modprobe {{module}} on the host, make it load at boot, then deploy again."
+    },
+    "platform": {
+      "title": "This host cannot run it",
+      "fix": "Fix the cause above on the node, or install on a node that meets it."
+    },
+    "root": {
+      "title": "Needs the root ability",
+      "fix": "Ask an operator with the root ability to install this template, after enabling its capability in runtime settings."
+    }
+  },
+  "compat": {
+    "needs": "Needs: {{what}}",
+    "noArm64": "No arm64 image",
+    "noArm64Hint": "The registry has no arm64 build of this template.",
+    "class": {
+      "cap_refused": "extra capability",
+      "socket_refused": "Docker API grant",
+      "arch_mismatch": "matching CPU",
+      "port_in_use": "free host port",
+      "kernel_module_missing": "kernel module",
+      "device_missing": "host device"
+    }
   }
 }
