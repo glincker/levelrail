@@ -1,0 +1,14 @@
+services:
+  memgraph:
+    image: memgraph/memgraph:3.14.0
+    ports: ["7687"]
+    volumes:
+      - memgraph_data:/var/lib/memgraph
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'RETURN 1;' | mgconsole | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+volumes:
+  memgraph_data:

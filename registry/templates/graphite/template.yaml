@@ -1,0 +1,16 @@
+id: graphite
+name: Graphite
+slogan: A time-series metrics store and graphing web app with a StatsD listener.
+description: Apache 2.0 licensed. Web UI on port 80, plaintext carbon on 2003 and StatsD on UDP 8125 inside the container network. Default login for the admin UI is root.
+category: Monitoring
+documentation_url: https://graphite.readthedocs.io
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: graphite
+source_repo: https://github.com/graphite-project/graphite-web
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/graphite-project/graphite-web/blob/master/LICENSE

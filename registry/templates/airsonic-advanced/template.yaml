@@ -1,0 +1,15 @@
+id: airsonic-advanced
+name: Airsonic Advanced
+slogan: A web based music streamer for your own library with Subsonic API clients.
+description: GPL 3.0 licensed. Web UI on port 4040. Default login is admin with password admin, change it on first sign-in.
+category: Media
+documentation_url: https://airsonic-advanced.github.io/airsonic-advanced
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/airsonic-advanced/airsonic-advanced
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/airsonic-advanced/airsonic-advanced/blob/master/LICENSE

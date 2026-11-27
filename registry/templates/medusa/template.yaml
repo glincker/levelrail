@@ -1,0 +1,16 @@
+id: medusa
+name: Medusa
+slogan: An automatic TV show downloader and library manager.
+description: GPL 3.0 licensed. Web UI on port 8081. Connect a download client and a media folder in the settings.
+category: Media
+documentation_url: https://github.com/pymedusa/Medusa/wiki
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: medusa
+source_repo: https://github.com/pymedusa/Medusa
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/pymedusa/Medusa/blob/master/LICENSE

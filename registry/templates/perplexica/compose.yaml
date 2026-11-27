@@ -1,0 +1,18 @@
+services:
+  perplexica:
+    image: itzcrazykns1337/perplexica:v1.12.0
+    ports: ["3000"]
+    environment:
+      HOSTNAME: 0.0.0.0
+    volumes:
+      - perplexica_data:/home/perplexica/data
+      - perplexica_uploads:/home/perplexica/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+volumes:
+  perplexica_data:
+  perplexica_uploads:

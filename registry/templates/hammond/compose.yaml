@@ -1,0 +1,18 @@
+services:
+  hammond:
+    image: alfhou/hammond:v0.0.24
+    ports: ["3000"]
+    environment:
+      JWT_SECRET: $SERVICE_PASSWORD_64_JWT
+    volumes:
+      - hammond_config:/config
+      - hammond_assets:/assets
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+volumes:
+  hammond_config:
+  hammond_assets:

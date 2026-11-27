@@ -1,0 +1,24 @@
+services:
+  airsonic-advanced:
+    image: linuxserver/airsonic-advanced:11.1.4
+    ports: ["4040"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    volumes:
+      - airsonic_advanced_config:/config
+      - airsonic_advanced_music:/music
+      - airsonic_advanced_playlists:/playlists
+      - airsonic_advanced_podcasts:/podcasts
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4040/ | grep -qE '^(200|302|401)'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+volumes:
+  airsonic_advanced_config:
+  airsonic_advanced_music:
+  airsonic_advanced_playlists:
+  airsonic_advanced_podcasts:
