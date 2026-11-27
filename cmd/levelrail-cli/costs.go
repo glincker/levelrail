@@ -86,12 +86,41 @@ func printCostExploration(out io.Writer, res apiclient.CostExploration) {
 		_, _ = fmt.Fprintf(w, "%s\t%.2f\t%.2f\t%s\n", label, s.Total, s.Previous, formatDeltaPct(s.DeltaPct))
 	}
 	_ = w.Flush()
+	printServerShares(out, res)
 	if len(res.Movers) > 0 {
 		_, _ = fmt.Fprintln(out, "\nTop movers (largest increase):")
 		for _, m := range res.Movers {
 			_, _ = fmt.Fprintf(out, "  %s  +%.2f (%s)\n", m.Key, m.Delta, formatDeltaPct(m.DeltaPct))
 		}
 	}
+}
+
+// printServerShares lists each node's bill per app; an unpriced node prints "-"
+// so a missing price is never shown as zero.
+func printServerShares(out io.Writer, res apiclient.CostExploration) {
+	for _, srv := range res.Servers {
+		_, _ = fmt.Fprintf(out, "\nServer %s, monthly price %s\n", srv.NodeID, moneyOrDash(srv.MonthlyPrice, res.Currency))
+		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		_, _ = fmt.Fprintln(w, "  APP\tSHARE\tPCT\tSAVINGS")
+		for _, a := range srv.Apps {
+			pct := "-"
+			if a.Pct != nil {
+				pct = fmt.Sprintf("%.1f%%", *a.Pct)
+			}
+			_, _ = fmt.Fprintf(w, "  %s\t%s\t%s\t%s\n", a.Name, moneyOrDash(a.Share, res.Currency), pct, moneyOrDash(a.Saving, res.Currency))
+		}
+		if srv.Idle != nil {
+			_, _ = fmt.Fprintf(w, "  (idle)\t%s\t\t\n", moneyOrDash(srv.Idle, res.Currency))
+		}
+		_ = w.Flush()
+	}
+}
+
+func moneyOrDash(v *float64, currency string) string {
+	if v == nil {
+		return "-"
+	}
+	return formatMoney(*v, currency)
 }
 
 func runCostsBudgets(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

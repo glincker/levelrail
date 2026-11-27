@@ -20,14 +20,15 @@ const (
 
 type costExploreResponse struct {
 	usagecost.Exploration
-	Granularity        string            `json:"granularity"`
-	Currency           string            `json:"currency"`
-	Period             usagecost.Period  `json:"period"`
-	Labels             map[string]string `json:"labels"`
-	Forecast           *usagecost.Band   `json:"forecast,omitempty"`
-	Configured         bool              `json:"configured"`
-	TelemetryAvailable bool              `json:"telemetry_available"`
-	GeneratedAt        string            `json:"generated_at"`
+	Granularity        string                  `json:"granularity"`
+	Currency           string                  `json:"currency"`
+	Period             usagecost.Period        `json:"period"`
+	Labels             map[string]string       `json:"labels"`
+	Forecast           *usagecost.Band         `json:"forecast,omitempty"`
+	Servers            []usagecost.ServerShare `json:"servers"`
+	Configured         bool                    `json:"configured"`
+	TelemetryAvailable bool                    `json:"telemetry_available"`
+	GeneratedAt        string                  `json:"generated_at"`
 }
 
 // costExplorePeriods resolves the window and its comparison window. Monthly
@@ -88,7 +89,7 @@ func (rt *Router) handleCostExplore(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: cost explore: inventory", err)
 		return
 	}
-	keep, _, err := rt.usageRowFilter(r, inv)
+	keep, seesAll, err := rt.usageRowFilter(r, inv)
 	if err != nil {
 		rt.internalError(w, "api: cost explore: visibility", err)
 		return
@@ -118,6 +119,10 @@ func (rt *Router) handleCostExplore(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: cost explore: nodes", err)
 		return
 	}
+	servers := []usagecost.ServerShare{}
+	if seesAll {
+		servers = rt.costServerShares(ctx, rows, nodes, settings, now)
+	}
 	labels := map[string]string{}
 	if group == usagecost.GroupProject {
 		for k, v := range rt.usageScopeNames(ctx) {
@@ -126,7 +131,7 @@ func (rt *Router) handleCostExplore(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, costExploreResponse{
 		Exploration: exp, Granularity: gran, Currency: settings.Currency, Period: period, Labels: labels,
-		Forecast: monthBand(period, rows, now), Configured: usageConfigured(settings, nodes),
+		Forecast: monthBand(period, rows, now), Servers: servers, Configured: usageConfigured(settings, nodes),
 		TelemetryAvailable: rt.telemetry != nil, GeneratedAt: now.UTC().Format(time.RFC3339),
 	})
 }
