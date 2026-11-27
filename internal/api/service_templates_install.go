@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/compose"
@@ -48,11 +49,22 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 
 func (rt *Router) installServiceTemplate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if strings.Contains(id, "/") {
+		rt.installSourceTemplate(w, r, id)
+		return
+	}
 	tpl, ok := catalog.TemplateByID(id)
 	if !ok || !templateAvailable(id) {
 		writeError(w, http.StatusNotFound, "service template not found")
 		return
 	}
+	rt.installTemplate(w, r, tpl)
+}
+
+// installTemplate is the one install path for built-in and source templates, so
+// the compose guard, platform preflight and capability grants cannot differ.
+func (rt *Router) installTemplate(w http.ResponseWriter, r *http.Request, tpl catalog.Template) {
+	id := tpl.ID
 	if tpl.Manifest == nil {
 		writeError(w, http.StatusConflict, "this template has no install manifest, so it cannot be configured at install time; use 'templates deploy "+id+"' (POST /api/v1/service-templates/"+id+"/deploy) instead")
 		return
@@ -67,7 +79,7 @@ func (rt *Router) installServiceTemplate(w http.ResponseWriter, r *http.Request)
 	}
 	name := req.Name
 	if name == "" {
-		generated, err := rt.generateOneClickAppName(r.Context(), tpl.ID)
+		generated, err := rt.generateOneClickAppName(r.Context(), strings.ReplaceAll(tpl.ID, "/", "-"))
 		if err != nil {
 			rt.internalError(w, "api: install template: generate app name failed", err, slog.String("template", tpl.ID))
 			return

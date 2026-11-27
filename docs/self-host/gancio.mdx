@@ -1,0 +1,67 @@
+---
+title: "Self-host Gancio with Docker"
+sidebarTitle: "Gancio"
+description: "A shared agenda for local communities, with events, federation and no tracking."
+"og:url": "https://docs.levelrail.com/self-host/gancio"
+---
+
+A shared agenda for local communities, with events, federation and no tracking.
+
+This page describes the Levelrail template for Gancio (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://gancio.org/install/docker.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `gancio` | `cisti/gancio:2.0.0-beta.12` | 13120 | `gancio_data -&#62; /home/node/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `gancio` | `GANCIO_DATA` | Preset in the template |
+| `gancio` | `GANCIO_DB_DIALECT` | Preset in the template |
+| `gancio` | `GANCIO_DB_STORAGE` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`gancio`): gancio_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Gancio with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Gancio. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy gancio --name my-gancio
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Communication templates
+
+- [Apache Answer](/self-host/answer)
+- [Apprise API](/self-host/apprise-api)
+- [Campfire](/self-host/campfire)
+- [Chatwoot](/self-host/chatwoot)
+- [Cinny](/self-host/cinny)
+
+All templates are listed in the [self-host gallery](/self-host).

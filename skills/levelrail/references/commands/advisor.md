@@ -11,9 +11,11 @@ Usage:
   levelrail-cli advisor findings [--resource app:NAME] [--severity S] [--all]   list resource advice (beta)
   levelrail-cli advisor summary                                              counts and the biggest savings
   levelrail-cli advisor apply <finding-id> [--yes]                           preview, then apply with --yes
+  levelrail-cli advisor apply --kind idle --all [--yes]                      sleep every idle app the advisor found
   levelrail-cli advisor dismiss <finding-id>                                 hide a finding until restored
   levelrail-cli advisor snooze <finding-id> [--for 7d]                       hide a finding for a while
   levelrail-cli advisor restore <finding-id>                                 show a dismissed or snoozed finding again
+  levelrail-cli advisor price <node> <amount> | --clear <node>               set a node's monthly price so savings show money
   levelrail-cli advisor enable|disable                                       switch the beta on or off for this instance
 
 The resource advisor is in beta and off by default. It only suggests:

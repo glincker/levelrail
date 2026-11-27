@@ -16,14 +16,17 @@ type TemplateSource struct {
 	StatusDetail string `json:"status_detail,omitempty"`
 	LastSync     string `json:"last_sync,omitempty"`
 	CreatedAt    string `json:"created_at"`
+	CommitSHA    string `json:"commit_sha,omitempty"`
 	Templates    int    `json:"templates"`
 }
 
 // TemplateSourceEntry is one validated template of a source.
 type TemplateSourceEntry struct {
-	Source string `json:"source"`
-	ID     string `json:"id"`
-	Name   string `json:"name"`
+	Source      string `json:"source"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	ContentHash string `json:"content_hash,omitempty"`
+	Review      string `json:"review,omitempty"`
 }
 
 // TemplateSourceRequest is the body of POST /api/v1/templates/sources.
@@ -73,4 +76,9 @@ func (c *Client) ListTemplateSourceEntries(ctx context.Context, name string) ([]
 // DeleteTemplateSource calls DELETE /api/v1/templates/sources/{name}.
 func (c *Client) DeleteTemplateSource(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, templateSourcesPath+"/"+PathEscape(name), nil, nil)
+}
+
+// ApproveTemplateSourceEntry calls POST /api/v1/templates/sources/{name}/templates/{id}/approve.
+func (c *Client) ApproveTemplateSourceEntry(ctx context.Context, source, id string) error {
+	return c.do(ctx, http.MethodPost, templateSourcesPath+"/"+PathEscape(source)+"/templates/"+PathEscape(id)+"/approve", nil, nil)
 }

@@ -3,6 +3,9 @@ package catalog
 import (
 	"errors"
 	"fmt"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/GLINCKER/levelrail/internal/compose"
 )
@@ -26,5 +29,41 @@ func (m Manifest) ValidateSource() error {
 		}
 	}
 	errs = append(errs, m.checkFetch()...)
+	errs = append(errs, volumeDriverErrors(m.Compose)...)
 	return errors.Join(errs...)
+}
+
+// ManifestFromSource rebuilds a stored source entry and validates it again, so a
+// row that was edited in the database cannot install anything a sync would refuse.
+func ManifestFromSource(templateYAML, composeYAML string) (Manifest, error) {
+	var m Manifest
+	if err := yaml.Unmarshal([]byte(templateYAML), &m); err != nil {
+		return Manifest{}, fmt.Errorf("catalog: source template: %w", err)
+	}
+	m.Compose = composeYAML
+	if err := m.ValidateSource(); err != nil {
+		return Manifest{}, err
+	}
+	return m, nil
+}
+
+// volumeDriverErrors refuses a named volume that is really a host bind: the
+// local driver with type none, a bind option or an absolute device path.
+func volumeDriverErrors(body string) []error {
+	var doc struct {
+		Volumes map[string]struct {
+			DriverOpts map[string]string `yaml:"driver_opts"`
+		} `yaml:"volumes"`
+	}
+	if err := yaml.Unmarshal([]byte(body), &doc); err != nil {
+		return nil
+	}
+	var errs []error
+	for name, v := range doc.Volumes {
+		o := v.DriverOpts
+		if strings.EqualFold(o["type"], "none") || strings.Contains(strings.ToLower(o["o"]), "bind") || strings.HasPrefix(o["device"], "/") {
+			errs = append(errs, fmt.Errorf("volume %s: driver_opts that bind a host path are not allowed in source templates", name))
+		}
+	}
+	return errs
 }

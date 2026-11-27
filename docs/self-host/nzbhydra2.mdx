@@ -1,0 +1,67 @@
+---
+title: "Self-host NZBHydra 2 with Docker"
+sidebarTitle: "NZBHydra 2"
+description: "A meta search for Usenet indexers that feeds Sonarr, Radarr and other tools."
+"og:url": "https://docs.levelrail.com/self-host/nzbhydra2"
+---
+
+A meta search for Usenet indexers that feeds Sonarr, Radarr and other tools.
+
+This page describes the Levelrail template for NZBHydra 2 (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/theotherp/nzbhydra2/wiki.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `nzbhydra2` | `linuxserver/nzbhydra2:9.3.4` | 5076 | `nzbhydra2_config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `nzbhydra2` | `PGID` | Preset in the template |
+| `nzbhydra2` | `PUID` | Preset in the template |
+| `nzbhydra2` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`nzbhydra2`): nzbhydra2_config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy NZBHydra 2 with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select NZBHydra 2. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy nzbhydra2 --name my-nzbhydra2
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Airsonic Advanced](/self-host/airsonic-advanced)
+- [Ampache](/self-host/ampache)
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,63 @@
+---
+title: "Self-host Dgraph with Docker"
+sidebarTitle: "Dgraph"
+description: "A distributed graph database with a GraphQL-native API."
+"og:url": "https://docs.levelrail.com/self-host/dgraph"
+---
+
+A distributed graph database with a GraphQL-native API.
+
+This page describes the Levelrail template for Dgraph (Databases). It deploys the services below as one Docker Compose app on your own server. Project site: https://dgraph.io/docs.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `dgraph` | `dgraph/standalone:v24.1.0` | 8080, 9080 | `dgraph_data -&#62; /dgraph` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`dgraph`): dgraph_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Dgraph with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Dgraph. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy dgraph --name my-dgraph
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Databases templates
+
+- [DragonflyDB](/self-host/dragonfly)
+- [GreptimeDB](/self-host/greptimedb)
+- [LibreDB Studio](/self-host/libredb-studio)
+- [Memgraph](/self-host/memgraph)
+- [Redis Stack Server](/self-host/redis-stack)
+
+All templates are listed in the [self-host gallery](/self-host).

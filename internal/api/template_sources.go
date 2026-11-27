@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/catalog/sources"
 	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -203,6 +204,57 @@ func (rt *Router) handleSyncTemplateSource(w http.ResponseWriter, r *http.Reques
 		res.Skipped = []string{}
 	}
 	writeJSON(w, http.StatusOK, templateSourceSyncResult{Source: got, Skipped: res.Skipped})
+}
+
+// installSourceTemplate installs a synced source entry (id is source/name) through
+// installTemplate. It refuses while sources are off or the entry awaits review.
+func (rt *Router) installSourceTemplate(w http.ResponseWriter, r *http.Request, id string) {
+	if !rt.templateSourcesReady(w, r) {
+		return
+	}
+	source, _, _ := strings.Cut(id, "/")
+	entries, err := rt.templateSources.ListTemplateSourceEntries(r.Context(), source)
+	if err != nil {
+		rt.internalError(w, "api: install source template: list entries failed", err)
+		return
+	}
+	for _, e := range entries {
+		if e.ID != id {
+			continue
+		}
+		if e.Review != store.TemplateReviewApproved {
+			writeError(w, http.StatusConflict, "this template changed since it was approved: review the source and approve it before installing")
+			return
+		}
+		m, err := catalog.ManifestFromSource(e.TemplateYAML, e.ComposeYAML)
+		if err != nil {
+			writeError(w, http.StatusUnprocessableEntity, "this source template no longer passes validation: "+err.Error())
+			return
+		}
+		tpl, err := m.Template()
+		if err != nil {
+			writeError(w, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
+		tpl.ID = id
+		tpl.Manifest.ID = id
+		rt.installTemplate(w, r, tpl)
+		return
+	}
+	writeError(w, http.StatusNotFound, "service template not found")
+}
+
+// handleApproveTemplateSourceEntry handles POST /api/v1/templates/sources/{name}/templates/{id}/approve.
+func (rt *Router) handleApproveTemplateSourceEntry(w http.ResponseWriter, r *http.Request) {
+	if !rt.templateSourcesReady(w, r) {
+		return
+	}
+	name := r.PathValue("name")
+	if err := rt.templateSources.ApproveTemplateSourceEntry(r.Context(), name, name+"/"+r.PathValue("id")); err != nil {
+		rt.templateSourceError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (rt *Router) failTemplateSourceSync(ctx context.Context, w http.ResponseWriter, name string, err error) {

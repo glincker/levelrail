@@ -9,12 +9,14 @@ Subcommands: delete, deploy, get, install, list, service, show
 ```
 Usage:
   levelrail-cli templates list [--custom] [flags]               browse the curated service catalog, or --custom for your own saved templates
+  levelrail-cli templates compat [flags]                       templates that could not install on this host, and what unlocks them
+  levelrail-cli templates sources add|ls|sync|rm               private git sources of templates (root, off by default)
   levelrail-cli templates search <term>... [flags]               find catalog entries by id, name, category or slogan
   levelrail-cli templates validate <template.yaml | dir>         check a community submission offline against the catalog rules
   levelrail-cli templates get <id> [flags]                     show one entry (built-in or custom), including its full compose.yaml
   levelrail-cli templates show <id> [flags]                      what a template needs (privileges, ports, secrets) and what Levelrail adds
   levelrail-cli templates deploy <id> [--name NAME] [flags]     deploy a template's compose.yaml as an app, built-in or custom
-  levelrail-cli templates install <id> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
+  levelrail-cli templates install <id|source/name> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
   levelrail-cli templates import <file | -> [--id ID] [--name NAME] [--description TEXT] [flags]   save a compose file as a custom template
   levelrail-cli templates delete <id> [flags]                    delete a custom template (see "apps save-as-template")
   levelrail-cli templates service <list|show|validate|install|deploy>   server side catalog verbs; "templates service -h" for details

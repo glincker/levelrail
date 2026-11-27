@@ -22,7 +22,7 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, templatesUsage(prog))
 		return exitOK
-	case "list":
+	case "list", "ls":
 		return runTemplatesList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compat":
 		return runTemplatesCompat(prog, args[1:], stdout, stderr, lookupEnv)
@@ -63,7 +63,7 @@ func templatesUsage(prog string) string {
   %[1]s templates get <id> [flags]                     show one entry (built-in or custom), including its full compose.yaml
   %[1]s templates show <id> [flags]                      what a template needs (privileges, ports, secrets) and what Levelrail adds
   %[1]s templates deploy <id> [--name NAME] [flags]     deploy a template's compose.yaml as an app, built-in or custom
-  %[1]s templates install <id> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
+  %[1]s templates install <id|source/name> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
   %[1]s templates import <file | -> [--id ID] [--name NAME] [--description TEXT] [flags]   save a compose file as a custom template
   %[1]s templates delete <id> [flags]                    delete a custom template (see "apps save-as-template")
   %[1]s templates service <list|show|validate|install|deploy>   server side catalog verbs; "templates service -h" for details
@@ -135,18 +135,62 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 		}
 		result = kept
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printTemplatesTable(stdout, result) })
+	sourceOf := map[string]string{}
+	if category == "" && !verifiedOnly {
+		result, sourceOf = withSourceTemplates(context.Background(), client, result)
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printTemplatesTableWithSource(stdout, result, sourceOf) })
+}
+
+// withSourceTemplates appends approved private-source entries. It is best effort:
+// sources are root only, so a caller without root just sees the built-ins.
+func withSourceTemplates(ctx context.Context, client *apiclient.Client, built []serviceTemplateListItem) ([]serviceTemplateListItem, map[string]string) {
+	sourceOf := map[string]string{}
+	srcs, err := client.ListTemplateSources(ctx)
+	if err != nil {
+		return built, sourceOf
+	}
+	for _, s := range srcs {
+		entries, err := client.ListTemplateSourceEntries(ctx, s.Name)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			name := e.Name
+			if e.Review == "needs_review" {
+				name += " [needs review]"
+			}
+			built = append(built, serviceTemplateListItem{ID: e.ID, Name: name})
+			sourceOf[e.ID] = s.Name
+		}
+	}
+	return built, sourceOf
 }
 
 func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
+	printTemplatesTableWithSource(out, templates, nil)
+}
+
+// printTemplatesTableWithSource adds a SOURCE column only when a private source contributed rows.
+func printTemplatesTableWithSource(out io.Writer, templates []serviceTemplateListItem, sourceOf map[string]string) {
 	if len(templates) == 0 {
 		_, _ = fmt.Fprintln(out, "no templates")
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tLICENSE\tTRUST\tRAM\tGPU\tVERIFIED\tDOMAIN\tUPDATED\tSLOGAN")
+	prefix, head := func(string) string { return "" }, ""
+	if len(sourceOf) > 0 {
+		head = "SOURCE\t"
+		prefix = func(id string) string {
+			if s, ok := sourceOf[id]; ok {
+				return s + "\t"
+			}
+			return "built-in\t"
+		}
+	}
+	_, _ = fmt.Fprintln(tw, head+"ID\tNAME\tCATEGORY\tLICENSE\tTRUST\tRAM\tGPU\tVERIFIED\tDOMAIN\tUPDATED\tSLOGAN")
 	for _, t := range templates {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name+deprecatedMark(t.TemplateFacts)+previewMark(t.TemplateFacts), t.Category, licenseColumn(t.License), trustColumn(t.Trust), formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), domainColumn(t.NeedsDomain), dashIfEmpty(t.UpdatedAt), t.Slogan)
+		_, _ = fmt.Fprintf(tw, prefix(t.ID)+"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name+deprecatedMark(t.TemplateFacts)+previewMark(t.TemplateFacts), t.Category, licenseColumn(t.License), trustColumn(t.Trust), formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), domainColumn(t.NeedsDomain), dashIfEmpty(t.UpdatedAt), t.Slogan)
 	}
 	_ = tw.Flush()
 }

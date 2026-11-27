@@ -147,7 +147,11 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STACK_SOLO_SELF_APPROVE` | [`stacks.solo_self_approve`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
+| `APP_TEMPLATE_CAP_DEVICES` | [`templates.cap_devices`](/runtime-settings#security) | `false` |
+| `APP_TEMPLATE_CAP_DOCKER_API` | [`templates.cap_docker_api`](/runtime-settings#security) | `false` |
+| `APP_TEMPLATE_CAP_HOST_NETWORK` | [`templates.cap_host_network`](/runtime-settings#security) | `false` |
 | `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
+| `APP_TEMPLATE_SOURCES_ENABLED` | [`templates.sources_enabled`](/runtime-settings#security) | `false` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_PAGES_TOKEN_MAX_DAYS` | [`tokens.site_deploy_max_days`](/runtime-settings#security) | `365` |
 | `APP_VAULT_ALLOW_PRIVATE_ADDRESS` | [`vault.allow_private_address`](/runtime-settings#security) | `true` |
@@ -244,6 +248,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SHELL_SECTION_TIMEOUT` | [`shell.section_timeout`](/runtime-settings#networking) | `2s` |
 | `APP_TEMPLATE_IMPORT_MAX_BYTES` | [`templates.import_max_bytes`](/runtime-settings#networking) | `262144` |
 | `APP_TEMPLATE_IMPORT_TIMEOUT` | [`templates.import_timeout`](/runtime-settings#networking) | `10s` |
+| `APP_ADVISOR_AUTO_APPLY` | [`advisor.auto_apply`](/runtime-settings#deploys) | `false` |
+| `APP_ADVISOR_IDLE_HOURS` | [`advisor.idle_hours`](/runtime-settings#deploys) | `168` |
+| `APP_ADVISOR_NODE_PRICES` | [`advisor.node_prices`](/runtime-settings#deploys) | empty |
 | `APP_IMAGE_KEEP` | [`app.image_keep`](/runtime-settings#deploys) | `0` |
 | `APP_ENV_APPLY_ON_SET` | [`apps.env_apply_on_set`](/runtime-settings#deploys) | `false` |
 | `APP_MAX_REPLICAS_PER_SERVICE` | [`apps.max_replicas_per_service`](/runtime-settings#deploys) | `100` |
@@ -519,6 +526,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
 | `APP_TEMPLATE_FILE_INPUT_MAX_BYTES` | [`templates.file_input_max_bytes`](/runtime-settings#deploys) | `16384` |
 | `APP_TEMPLATE_FIRST_BOOT_MAX_SECONDS` | [`templates.first_boot_max_seconds`](/runtime-settings#deploys) | `900` |
+| `APP_TEMPLATE_SOURCES_MAX_DEPTH` | [`templates.sources_max_depth`](/runtime-settings#deploys) | `6` |
+| `APP_TEMPLATE_SOURCES_MAX_FILES` | [`templates.sources_max_files`](/runtime-settings#deploys) | `2000` |
+| `APP_TEMPLATE_SOURCES_MAX_MB` | [`templates.sources_max_mb`](/runtime-settings#deploys) | `20` |
+| `APP_TEMPLATE_SOURCES_TIMEOUT_SECONDS` | [`templates.sources_timeout_seconds`](/runtime-settings#deploys) | `60` |
 | `APP_SAVED_VIEW_FILTER_MAX_KEYS` | [`views.filter_max_keys`](/runtime-settings#deploys) | `12` |
 | `APP_SAVED_VIEW_FILTER_VALUE_MAX_BYTES` | [`views.filter_value_max_bytes`](/runtime-settings#deploys) | `512` |
 | `APP_SAVED_VIEW_MAX_PER_USER` | [`views.max_per_user`](/runtime-settings#deploys) | `100` |

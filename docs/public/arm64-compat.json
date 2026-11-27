@@ -2,14 +2,14 @@
   "generated_at": "2026-11-20T08:25:50Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 593,
-    "images": 642,
+    "templates": 642,
+    "images": 691,
     "arm64_yes": 395,
     "arm64_no": 15,
-    "arm64_unknown": 183,
+    "arm64_unknown": 232,
     "image_arm64_yes": 436,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 191
+    "image_arm64_unknown": 240
   },
   "templates": [
     {
@@ -259,6 +259,20 @@
       "images": [
         {
           "ref": "ghcr.io/agentgateway/agentgateway:v1.7.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "airsonic-advanced",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/airsonic-advanced:11.1.4",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -1309,6 +1323,36 @@
       ]
     },
     {
+      "id": "casdoor",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "casbin/casdoor:v4.32.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:16-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "cache",
+          "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
       "id": "cassandra",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -1469,6 +1513,20 @@
       ]
     },
     {
+      "id": "chhoto-url",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "sintan1729/chhoto-url:7.11.10",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "chibisafe",
       "amd64": "yes",
       "arm64": "yes",
@@ -1536,6 +1594,20 @@
       "images": [
         {
           "ref": "chronograf:1.11.6",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "cinny",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/cinnyapp/cinny:v4.10.2",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -1667,6 +1739,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "cobalt",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/imputnet/cobalt:11",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -1902,6 +1988,20 @@
       ]
     },
     {
+      "id": "cronicle",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "soulteary/cronicle:0.9.80",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "crowdsec",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -2083,6 +2183,20 @@
       "images": [
         {
           "ref": "ghcr.io/dexidp/dex:v2.46.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "dgraph",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "dgraph/standalone:v24.1.0",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -2397,6 +2511,48 @@
       "images": [
         {
           "ref": "domoticz/domoticz:2026.4@sha256:ece392300d055395cac0b4edea4451b31f765ff5339e5597ca77371be8d7e93a",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "donetick",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "donetick/donetick:v0.1.60",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "dozzle",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "amir20/dozzle:v11.4.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "dragonfly",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/dragonflydb/dragonfly:v1.27.1",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -3452,6 +3608,20 @@
       ]
     },
     {
+      "id": "gancio",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "cisti/gancio:2.0.0-beta.12",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "gatus",
       "amd64": "yes",
       "arm64": "yes",
@@ -3868,6 +4038,20 @@
       ]
     },
     {
+      "id": "gokapi",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "f0rc3/gokapi:v2.2.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "gonic",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -3919,6 +4103,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "gotosocial",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "superseriousbusiness/gotosocial:0.22.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4022,6 +4220,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "graphite",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "graphiteapp/graphite-statsd:1.1.10-5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4149,6 +4361,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "hammond",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "alfhou/hammond:v0.0.24",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4924,6 +5150,20 @@
       ]
     },
     {
+      "id": "jdownloader",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "jlesage/jdownloader-2:v26.11.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "jellyfin",
       "amd64": "yes",
       "arm64": "yes",
@@ -5192,6 +5432,20 @@
       "images": [
         {
           "ref": "apache/kafka:3.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "kafka-ui",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "provectuslabs/kafka-ui:v0.7.2",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -5562,6 +5816,20 @@
       ]
     },
     {
+      "id": "kubo",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ipfs/kubo:v0.43.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "kutt",
       "amd64": "yes",
       "arm64": "yes",
@@ -5761,6 +6029,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "lazylibrarian",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/lazylibrarian:c5bec1de-ls409",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6563,6 +6845,20 @@
       ]
     },
     {
+      "id": "manticore",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "manticoresearch/manticore:6.3.8",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "manyfold",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -6831,6 +7127,20 @@
       ]
     },
     {
+      "id": "mediamtx",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "bluenviron/mediamtx:1.21.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "mediawiki",
       "amd64": "yes",
       "arm64": "yes",
@@ -6864,6 +7174,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "medusa",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/medusa:1.0.27",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6905,6 +7229,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "memgraph",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "memgraph/memgraph:3.14.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7033,6 +7371,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "microbin",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "danielszabo99/microbin:2.1.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7365,6 +7717,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-11-01T23:30:55Z"
+        }
+      ]
+    },
+    {
+      "id": "mumble",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mumblevoip/mumble-server:v1.6.1001",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7924,6 +8290,20 @@
       ]
     },
     {
+      "id": "ngircd",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/ngircd:27-r1-ls170",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "nocobase",
       "amd64": "yes",
       "arm64": "yes",
@@ -8191,6 +8571,20 @@
       "images": [
         {
           "ref": "nzbgetcom/nzbget:v26.3@sha256:f451d98066cbc0c108146420a61a60f7638de50e067738951461e0105eeaa56d",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "nzbhydra2",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/nzbhydra2:9.3.4",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -8755,6 +9149,20 @@
       ]
     },
     {
+      "id": "openvscode-server",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/openvscode-server:1.109.5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "orangehrm",
       "amd64": "yes",
       "arm64": "no",
@@ -9094,6 +9502,20 @@
       ]
     },
     {
+      "id": "parseable",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "parseable/parseable:v2.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "passbolt",
       "amd64": "yes",
       "arm64": "yes",
@@ -9238,6 +9660,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "perplexica",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "itzcrazykns1337/perplexica:v1.12.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9530,6 +9966,41 @@
       ]
     },
     {
+      "id": "pinry",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "getpinry/pinry:2.1.15",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "piwigo",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/piwigo:16.5.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mariadb:11.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "plane",
       "amd64": "yes",
       "arm64": "yes",
@@ -9736,6 +10207,20 @@
       ]
     },
     {
+      "id": "plik",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rootgg/plik:1.4.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "plunk",
       "amd64": "yes",
       "arm64": "yes",
@@ -9844,6 +10329,20 @@
       ]
     },
     {
+      "id": "portkey-gateway",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "portkeyai/gateway:1.15.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "postgres",
       "amd64": "unknown",
       "arm64": "unknown",
@@ -9880,6 +10379,36 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "postgrest",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "postgres:16-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "cache",
+          "checked_at": "2026-11-02T03:14:45Z"
+        },
+        {
+          "ref": "postgrest/postgrest:v16.6",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -9986,6 +10515,41 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "profilarr",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "santiagosayshey/profilarr:v1.1.5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "projectsend",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/projectsend:r2098-ls10",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "mariadb:11.4",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -10131,6 +10695,20 @@
       "images": [
         {
           "ref": "questdb/questdb:10.1.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "quickwit",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "quickwit/quickwit:0.8.2",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -10430,6 +11008,20 @@
       ]
     },
     {
+      "id": "redis-stack",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "redis/redis-stack-server:7.4.0-v8",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "redisinsight",
       "amd64": "yes",
       "arm64": "yes",
@@ -10636,6 +11228,20 @@
       ]
     },
     {
+      "id": "rqlite",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "rqlite/rqlite:10.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "rss-bridge",
       "amd64": "yes",
       "arm64": "yes",
@@ -10759,6 +11365,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-11-01T04:09:06Z"
+        }
+      ]
+    },
+    {
+      "id": "screego",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "screego/server:1.12.6",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -11001,6 +11621,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "sickgear",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/sickgear:3.37.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -11419,6 +12053,20 @@
       "images": [
         {
           "ref": "sqlpad/sqlpad:7.5.7",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "sshwifty",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "niruix/sshwifty:0.4.13-beta-release",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -12467,6 +13115,50 @@
       ]
     },
     {
+      "id": "tududi",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "chrisvel/tududi:2.1.5",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "postgres:16-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "cache",
+          "checked_at": "2026-11-02T03:14:45Z"
+        }
+      ]
+    },
+    {
+      "id": "tvheadend",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/tvheadend:8837853a-ls288",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "twenty",
       "amd64": "yes",
       "arm64": "yes",
@@ -12643,6 +13335,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "unmanic",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "josh5/unmanic:0.4.1",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -13239,6 +13945,20 @@
       ]
     },
     {
+      "id": "wg-easy",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/wg-easy/wg-easy:15.5.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "whoogle",
       "amd64": "yes",
       "arm64": "yes",
@@ -13530,6 +14250,36 @@
       ]
     },
     {
+      "id": "yopass",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "jhaals/yopass:16.3.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        },
+        {
+          "ref": "memcached:1.6-alpine",
+          "platforms": [
+            "linux/386",
+            "linux/amd64",
+            "linux/arm",
+            "linux/arm64",
+            "linux/ppc64le",
+            "linux/riscv64",
+            "linux/s390x"
+          ],
+          "amd64": "yes",
+          "arm64": "yes",
+          "source": "cache",
+          "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
       "id": "yourls",
       "amd64": "yes",
       "arm64": "yes",
@@ -13691,6 +14441,20 @@
           "arm64": "yes",
           "source": "cache",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "znc",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "linuxserver/znc:1.10.3",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

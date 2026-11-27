@@ -2666,6 +2666,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/templates/sources/{name}/templates | AbilityRoot | handleListTemplateSourceEntries |
 | POST | /api/v1/templates/sources/{name}/sync | AbilityRoot | handleSyncTemplateSource |
 | DELETE | /api/v1/templates/sources/{name} | AbilityRoot | handleDeleteTemplateSource |
+| POST | /api/v1/templates/sources/{name}/templates/{id}/approve | AbilityRoot | handleApproveTemplateSourceEntry |
 | POST | /mcp | Public |  |
 
 ## See also
