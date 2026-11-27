@@ -9,6 +9,12 @@ description: The short path to a second server, what has been verified on real i
 "og:url": "https://docs.levelrail.com/multi-node-quickstart"
 ---
 
+Outcome: a second server shows as `online` in `levelrail-cli nodes list` and can run apps.
+
+<Note>
+Before you start: a running control plane ([Getting started](/getting-started)), a second Linux server with systemd and outbound network access, and TCP 9443 open from that server to the control plane.
+</Note>
+
 This page is the short path to a second node. Each step links to the page that holds the detail, so nothing is repeated here. It also says plainly what has and has not been verified, per [Feature status](/feature-status).
 
 <Steps>

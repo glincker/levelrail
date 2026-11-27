@@ -6,6 +6,12 @@ description: "Add an EC2 instance, Google Cloud VM, VPS or home server as a node
 "og:url": "https://docs.levelrail.com/add-node-anywhere"
 ---
 
+Outcome: a server on any cloud, a VPS or a home machine joins as a node, with its provider, region and zone read and its preflight checks shown.
+
+<Note>
+Before you start: a running control plane, `APP_AGENT_ADVERTISE_HOST` set to an address the new server can reach, outbound TCP 9443 from the new server, and root access on it.
+</Note>
+
 Adding a server on any cloud, a cheap VPS or a machine at home is the same flow: pick where it runs, run one command on it, watch it connect, and read the preflight result. This page covers that flow and what the control plane does with the provider, region and zone it learns.
 
 <Warning>
@@ -51,6 +57,23 @@ levelrail-cli nodes preflight edge-1
 ```
 
 `--preflight` prints the join command, waits for the node, then prints each check and exits non-zero when one failed. `nodes preflight <id-or-name>` shows the last result; add `--wait` to wait for it.
+
+Verify it works: the node shows `online` and its preflight checks list no failure.
+
+```bash
+levelrail-cli nodes list
+levelrail-cli nodes preflight edge-1
+```
+
+<Accordion title="If the node does not connect">
+
+| What you see | What to do |
+| --- | --- |
+| The node stays `pending` or shows "Never connected" | `APP_AGENT_ADVERTISE_HOST` is still the loopback default or the agent cannot reach port 9443. Fix it, delete the node and enroll with a new token. See [Multi-node quickstart](/multi-node-quickstart#troubleshooting). |
+| The join token is refused | Tokens are single use and expire after 15 minutes by default. Mint a new one with `levelrail-cli nodes add --name edge-1`. |
+| `levelrail-cli doctor` warns about the loopback address | Set `APP_AGENT_ADVERTISE_HOST` as the warning says. |
+
+</Accordion>
 
 ## Run the agent as a service on a second host
 

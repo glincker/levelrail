@@ -10,6 +10,13 @@ description: Requirements, then every supported way to get the Levelrail control
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/ubuntu/default.svg" alt="Ubuntu" title="Ubuntu" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/debian/default.svg" alt="Debian" title="Debian" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/docker/default.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
 
+Outcome: the Levelrail control plane runs as a service on your Linux host and the dashboard answers.
+
+<Note>
+Before you start: a Linux server (`amd64` or `arm64`) with systemd and root access, 1 vCPU, 1 GB RAM and 10 GB of disk, ports 80 and 443 free, and port 8080 closed to the internet. A domain is optional. See [What you need](/what-you-need) and [Requirements](#requirements). Short path with a first app: [Getting started](/getting-started).
+</Note>
+
+
 ## Choose an install path
 
 How to get the Levelrail control plane (`levelrail`) running on a Linux host, confirm it works, and upgrade or remove it later. The node agent is `levelrail-agent`, and `levelrail-cli` is the client. All three are static Go binaries.
