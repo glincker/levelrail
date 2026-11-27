@@ -828,6 +828,7 @@ templates.sources_enabled
 templates.sources_max_depth
 templates.sources_max_files
 templates.sources_max_mb
+templates.sources_max_wire_mb
 templates.sources_timeout_seconds
 tokens.default_ttl_days
 tokens.expiry_warning_days
