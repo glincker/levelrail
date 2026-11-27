@@ -12,7 +12,7 @@ import (
 
 func TestPlatformPreflightTemplate(t *testing.T) {
 	rt := &Router{}
-	host := runtime.GOOS + "/" + runtime.GOARCH
+	host := "linux/" + runtime.GOARCH
 	if reason, _ := rt.platformPreflight(context.Background(), catalog.Template{ID: "x", Platforms: []string{host}}); reason != "" {
 		t.Errorf("matching platform refused: %s", reason)
 	}
@@ -48,5 +48,35 @@ func TestGPUTemplatePreflight(t *testing.T) {
 	}
 	if got := rt.gpuTemplatePreflight(ctx, tpl); got != "" {
 		t.Fatalf("local free GPU refused: %s", got)
+	}
+}
+
+type archPinger struct{ arch string }
+
+func (archPinger) Ping(context.Context) error          { return nil }
+func (p archPinger) DaemonArch(context.Context) string { return p.arch }
+
+// A darwin control plane runs linux containers, so the daemon arch decides.
+func TestPlatformPreflightDaemonPlatform(t *testing.T) {
+	tests := []struct {
+		name      string
+		daemon    string
+		platforms []string
+		refused   bool
+	}{
+		{"arm64 daemon, arm64 template", "arm64", []string{"linux/arm64"}, false},
+		{"aarch64 daemon, arm64 template", "aarch64", []string{"linux/arm64"}, false},
+		{"amd64 daemon, amd64 template", "x86_64", []string{"linux/amd64", "linux/arm64"}, false},
+		{"arm64 daemon, amd64 only", "arm64", []string{"linux/amd64"}, true},
+		{"darwin never matches", "arm64", []string{"darwin/arm64"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := &Router{dockerPinger: archPinger{arch: tt.daemon}}
+			reason, _ := rt.platformPreflight(context.Background(), catalog.Template{ID: "x", Platforms: tt.platforms})
+			if (reason != "") != tt.refused {
+				t.Errorf("reason = %q, refused want %v", reason, tt.refused)
+			}
+		})
 	}
 }

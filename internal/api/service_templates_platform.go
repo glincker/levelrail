@@ -20,7 +20,7 @@ import (
 // the host that will run it. It returns a plain refusal, or "" when the install can go on.
 // overridable is true only for an arch mismatch, which emulation may still serve.
 func (rt *Router) platformPreflight(ctx context.Context, tpl catalog.Template) (reason string, overridable bool) {
-	host := runtime.GOOS + "/" + runtime.GOARCH
+	host := rt.containerPlatform(ctx)
 	if len(tpl.Platforms) > 0 && !containsString(tpl.Platforms, host) {
 		return fmt.Sprintf("template %q has no %s build (verified: %s). Pick a node with a matching architecture, or pin another image tag in the template settings. To try it anyway under emulation, repeat with allow_platform_mismatch.", tpl.ID, host, strings.Join(tpl.Platforms, ", ")), true
 	}
@@ -31,6 +31,33 @@ func (rt *Router) platformPreflight(ctx context.Context, tpl catalog.Template) (
 		return reason, false
 	}
 	return "", false
+}
+
+// containerPlatform is the os/arch containers run on. Containers are always linux,
+// so a darwin or windows control plane (Docker Desktop) maps to linux plus the daemon
+// arch when the pinger reports one, else the process arch.
+func (rt *Router) containerPlatform(ctx context.Context) string {
+	arch := runtime.GOARCH
+	if src, ok := rt.dockerPinger.(interface {
+		DaemonArch(ctx context.Context) string
+	}); ok {
+		if a := normalizeDaemonArch(src.DaemonArch(ctx)); a != "" {
+			arch = a
+		}
+	}
+	return "linux/" + arch
+}
+
+// normalizeDaemonArch maps docker info names (x86_64, aarch64) to GOARCH names.
+func normalizeDaemonArch(a string) string {
+	switch strings.ToLower(strings.TrimSpace(a)) {
+	case "x86_64", "amd64":
+		return "amd64"
+	case "aarch64", "arm64":
+		return "arm64"
+	default:
+		return strings.ToLower(strings.TrimSpace(a))
+	}
 }
 
 // refuseIfTeardownPending turns the 409 a re-deploy hits right after an async
