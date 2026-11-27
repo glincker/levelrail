@@ -97,3 +97,17 @@ func (g *GrantSockets) Revoke(service string) {
 		delete(g.socks, service)
 	}
 }
+
+// Close stops every grant socket and removes the socket directory.
+func (g *GrantSockets) Close() {
+	if g == nil {
+		return
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	for name, cur := range g.socks {
+		_ = cur.srv.Close()
+		delete(g.socks, name)
+	}
+	_ = os.RemoveAll(g.dir)
+}

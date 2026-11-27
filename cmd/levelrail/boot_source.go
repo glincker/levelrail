@@ -113,6 +113,8 @@ type dynamicSourceDeps struct {
 	restartPolicy func(context.Context) string
 	// elevatedCaps reads the live elevated template capability setting.
 	elevatedCaps func(context.Context) bool
+	// dockerAPI is nil when no daemon socket could be resolved at boot.
+	dockerAPI application.DockerAPISockets
 	// dependsOnTimeout reads the live compose depends_on wait limit.
 	dependsOnTimeout func(context.Context) time.Duration
 }
@@ -352,6 +354,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	}
 	if deps.elevatedCaps != nil {
 		appOpts = append(appOpts, application.WithElevatedCaps(deps.elevatedCaps))
+	}
+	if deps.dockerAPI != nil {
+		appOpts = append(appOpts, application.WithDockerAPI(deps.dockerAPI))
 	}
 	if deps.dependsOnTimeout != nil {
 		appOpts = append(appOpts, application.WithDependsOnTimeout(deps.dependsOnTimeout))

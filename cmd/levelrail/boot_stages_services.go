@@ -455,7 +455,13 @@ func (s *bootState) startReconciler() {
 	if agentTunnels != nil {
 		s.apiRouter.SetAgentTunnels(agentTunnels.Capable)
 	}
+	var dockerAPI application.DockerAPISockets
+	if gs := newDockerAPIGrants(ctx, logger, func() *runtimesettings.Service { return s.apiRouter.RuntimeSettings() }); gs != nil {
+		dockerAPI = gs
+		s.later(gs.Close)
+	}
 	sourceDeps := dynamicSourceDeps{
+		dockerAPI:                    dockerAPI,
 		agentTunnels:                 agentTunnels,
 		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,
