@@ -115,6 +115,8 @@ type TemplateInstallRequest struct {
 	Domains map[string]string `json:"domains,omitempty"`
 	// ProjectID groups the installed services under a project.
 	ProjectID string `json:"project_id,omitempty"`
+	// AllowPlatformMismatch installs despite an unverified architecture.
+	AllowPlatformMismatch bool `json:"allow_platform_mismatch,omitempty"`
 }
 
 func profilesQuery(profiles []string) string {

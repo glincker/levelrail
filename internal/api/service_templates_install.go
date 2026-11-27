@@ -21,6 +21,8 @@ type templateInstallRequest struct {
 	Domains map[string]string `json:"domains,omitempty"`
 	// ProjectID groups the installed services under a project; empty uses the switcher's project.
 	ProjectID string `json:"project_id,omitempty"`
+	// AllowPlatformMismatch installs despite an architecture the template did not verify.
+	AllowPlatformMismatch bool `json:"allow_platform_mismatch,omitempty"`
 }
 
 func manifestIcon(m *catalog.Manifest) string {
@@ -61,6 +63,13 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 	}
 	if !installAppName.MatchString(name) {
 		writeError(w, http.StatusBadRequest, "name must start with a letter and use only lowercase letters, digits and dashes (40 characters at most)")
+		return
+	}
+	if reason, overridable := rt.platformPreflight(r.Context(), tpl); reason != "" && (!overridable || !req.AllowPlatformMismatch) {
+		writeError(w, http.StatusUnprocessableEntity, reason)
+		return
+	}
+	if rt.refuseIfTeardownPending(w, r, name) {
 		return
 	}
 	req.ProjectID = defaultProjectFor(r, req.ProjectID)
