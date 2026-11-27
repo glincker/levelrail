@@ -5,9 +5,11 @@ description: "Go from a git repository to a running app in a few steps, with det
 "og:url": "https://docs.levelrail.com/import-a-repo"
 ---
 
+After this guide you can preview what Levelrail detects in a repository (build method, port, env, services) before you create anything.
+
 Pick a repository and Levelrail reads its file tree through the provider API (it never clones or runs your code), explains what it found, asks only for what it cannot guess, and then creates the app and starts the first build. Nothing exists until you press Deploy.
 
-## The flow
+## How does the new app flow work? {#the-flow}
 
 In the dashboard, **New app** is one page with three calm steps:
 
@@ -23,7 +25,7 @@ Deploy creates the databases, the app and its connections, links the repository 
 
 The flow survives a page reload: the repository and step are kept in `sessionStorage` (never tokens or env values), and the analysis runs again.
 
-## Explain it from the CLI
+## How do I preview detection from the CLI? {#explain-it-from-the-cli}
 
 ```bash
 levelrail-cli apps analyze https://github.com/you/app [--branch main] [--dir apps/web]
@@ -46,7 +48,7 @@ It prints the detection and every reason behind it, and creates nothing. `--outp
 
 The same result comes from `POST /api/v1/git-sources/analyze` (body: `repo_url`, optional `ref` and `directory`), which reuses your connected provider credentials. It reads only and persists nothing. The older `POST /api/v1/imports/analyze` returns the same payload.
 
-## What is detected
+## What does it detect? {#what-is-detected}
 
 Next.js (App Router or Pages Router, `standalone` output, static `export`), Vite and Create React App single page apps, Astro (static or with the Node adapter), SvelteKit (static adapter or Node), Nuxt, Remix, Express, Fastify, NestJS, Django, FastAPI, Flask, Rails, Laravel, Go `net/http`, Rust axum, Spring Boot, plain static HTML, and any repository with a Dockerfile.
 
@@ -56,13 +58,13 @@ When signals conflict, the most specific framework wins: a Rails app with a `pac
 Rust has no automatic build here yet. Detection still names it and warns; add a Dockerfile and it is built from that.
 </Note>
 
-## Monorepos
+## How are monorepos handled? {#monorepos}
 
 When the repository is a workspace (pnpm, npm, yarn, bun, Go workspaces, Nx or Turborepo), the **What we found** step lists its packages. Select the ones you want and press **Create an app for each selected package**. Each becomes its own app with the package directory as the build root and its watch paths applied, so a push only redeploys what it changed. You can also press **Configure this one** to take a single package through the normal steps. See [Monorepos](/monorepos).
 
 Required environment variables are not asked for in the bulk action; add them on each app and redeploy.
 
-## Worked examples
+## What do real results look like? {#worked-examples}
 
 These are the fixtures under `test/fixtures`. Output is abridged.
 
@@ -126,7 +128,7 @@ warning: no listening port could be detected; set the port the app listens on
 
 Detection explains the setup; the build still fails at its own `RUN` step, which is what this fixture exists to show. See [When a deploy fails](/deploying-apps#when-a-deploy-fails).
 
-## Limits
+## What are the limits? {#limits}
 
 - Analysis reads at most a few dozen small files per repository (`APP_WIZARD_MAX_FILES`, `APP_WIZARD_MAX_FILE_BYTES`), so a huge tree can be partly read; a warning says so.
 - It works through the GitHub, GitLab and Gitea APIs. A host without a file API can still be connected by URL, but analysis answers that it cannot read it.

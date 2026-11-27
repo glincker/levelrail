@@ -5,19 +5,45 @@ description: "Deploy the current directory to your Levelrail server with one com
 "og:url": "https://docs.levelrail.com/deploy-from-cli"
 ---
 
-## What this does
+After this guide one command deploys the current directory to your Levelrail server, builds it there, and prints the app URL once it is healthy.
+
+## What does the deploy command do? {#what-this-does}
 
 `levelrail-cli deploy` packs a directory on your machine, uploads it to the control plane, builds it there and follows the deploy until the app is healthy. You need no git remote, no registry and no SSH access. It is the quickest way to try an app that is not in a repository yet.
 
 The directory needs a `Dockerfile` or a stack Levelrail detects (Node, Go, Python, Java and others, built with Railpack). Docker Compose projects are not supported by this command yet. For a static site, see [Drop deploy](/drop-deploy): `levelrail-cli deploy ./site --static` or a `.zip`.
 
-## Deploy a directory
+## How do I deploy a directory? {#deploy-a-directory}
 
-Sign in once (`levelrail-cli login --device`, or set `APP_API_URL` and `APP_API_TOKEN`), then run this in the project folder:
-
+<Steps>
+<Step title="Sign in once">
+<Tabs>
+<Tab title="Device code">
+```bash
+levelrail-cli login --device
+```
+</Tab>
+<Tab title="API token">
+```bash
+export APP_API_URL=https://levelrail.example.com
+export APP_API_TOKEN=...
+```
+</Tab>
+</Tabs>
+</Step>
+<Step title="Deploy from the project folder">
 ```bash
 levelrail-cli deploy
 ```
+</Step>
+<Step title="Verify the app is up">
+The command prints the app URL on stdout when the deploy is healthy. Open it, or check it from a shell:
+
+```bash
+curl -I https://demo-app.203-0-113-10.sslip.io
+```
+</Step>
+</Steps>
 
 The first run creates an app named after the directory, with the port taken from the Dockerfile `EXPOSE` line or the detected framework. Running it again uploads the new contents and deploys them to the same app. Pass a path to deploy another folder, `--app NAME` to pick the app name, and `--port N` to override the port.
 
@@ -53,7 +79,7 @@ An upload is a one-off build: pushing to the repository afterwards does not depl
 
 The exit code is 0 for a healthy deploy, 7 when the deploy failed or rolled back and a timeout code when `--timeout` (default 15 minutes) ends before the deploy finishes. The deploy itself keeps running after a timeout.
 
-## What is uploaded
+## What is uploaded? {#what-is-uploaded}
 
 Everything in the directory except:
 
@@ -69,7 +95,7 @@ A `.gitignore` rule that starts with `!` cannot bring a secret file back. Symbol
 levelrail-cli deploy --dry-run
 ```
 
-## Environment and build arguments
+## How do I set environment variables and build arguments? {#environment-and-build-arguments}
 
 ```bash
 levelrail-cli deploy --env LOG_LEVEL=info --build-env NODE_ENV=production
@@ -77,7 +103,7 @@ levelrail-cli deploy --env LOG_LEVEL=info --build-env NODE_ENV=production
 
 `--env` sets runtime variables on the app and is repeatable. `--build-env` passes Dockerfile `ARG` values to the build and is repeatable. It is refused up front, before anything is created or uploaded, for a build that has no Dockerfile; those builds read `--env` at build time (for example `NEXT_PUBLIC_*` values are inlined). For secrets use `levelrail-cli apps secrets set`, not `--env`, because env values are visible in the app's env list.
 
-## Size limits and retention
+## What are the size limits and how long are uploads kept? {#size-limits-and-retention}
 
 | Setting | Default | Where |
 | --- | --- | --- |
@@ -90,7 +116,7 @@ When the directory is over the cap the CLI stops before uploading and says which
 
 The control plane keeps each uploaded archive under its data directory for the retention period, then deletes it. Uploading identical content again reuses the stored archive. Deploy history shows each upload as "Uploaded" with the archive hash and file count, and no git commit.
 
-## Roll back or redeploy an earlier upload
+## How do I roll back or redeploy an earlier upload? {#roll-back-or-redeploy-an-earlier-upload}
 
 Every build is tagged with its archive hash, so the normal rollback works:
 
@@ -106,13 +132,13 @@ levelrail-cli deploy --app demo-app --upload-hash 3f9c1a0b
 
 This only works while the archive is still within the retention period; after that, deploy the directory again.
 
-## Security
+## What checks run on an upload? {#security}
 
 - The upload endpoint needs the `deploy` ability on the token or session, and every upload is written to the audit log. Archive contents are never logged.
 - Archives are checked before they are stored and again when extracted: absolute paths, `..` segments, symbolic links, hard links, devices and other special files are rejected, and file count and expanded size are capped so a small archive cannot expand into a disk-filling bomb.
 - Stored archives live in the control plane data directory, never in a web-served path.
 
-## Safe retries in CI
+## How do I retry safely in CI? {#safe-retries-in-ci}
 
 `apps deploy`, `apps rollback` and `apps promote` send an `Idempotency-Key` header, so a re-run of the same CI job is applied once and the first result is replayed. The key is derived from the app, the image (or target environment) and the run id: `GITHUB_RUN_ID` plus `GITHUB_RUN_ATTEMPT`, else `CI_PIPELINE_ID`, else the current minute. Pass `--idempotency-key` to set your own.
 
@@ -122,6 +148,26 @@ The CLI retries HTTP 429 and 503 only for idempotent requests or requests carryi
 - `LEVELRAIL_RETRY_MAX_WAIT`: total time spent waiting, in seconds or a duration such as `90s` (default `60s`).
 
 Responses also carry `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` (seconds until the budget is full again).
+
+## What if the deploy does not go as planned? {#troubleshooting}
+
+<AccordionGroup>
+<Accordion title="The URL refuses connections right after the first deploy">
+On the first deploy of a new domain the certificate is requested only when the app goes live, so the URL can refuse connections for up to a minute. Pass `--wait-url` to block until it is issued.
+</Accordion>
+<Accordion title="The CLI stops before uploading and names a variable">
+The directory is over the size cap. Raise the variable it names, or exclude build output in `.gitignore`, which is usually the better fix.
+</Accordion>
+<Accordion title="A .env or key file is missing from the app">
+Secret-looking files are never uploaded. Send one on purpose with `--include`, for example `--include .env`, or set secrets with `levelrail-cli apps secrets set`.
+</Accordion>
+<Accordion title="The command exits with code 7">
+The deploy failed or rolled back. Read the streamed build log, fix the cause and deploy again. A timeout ends the wait, not the deploy.
+</Accordion>
+<Accordion title="--build-env is refused">
+The build has no Dockerfile. Those builds read `--env` at build time instead.
+</Accordion>
+</AccordionGroup>
 
 ## Related
 

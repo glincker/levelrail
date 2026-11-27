@@ -4,13 +4,15 @@ description: Import an app from a repo URL, a docker run command, an image, a co
 "og:url": "https://docs.levelrail.com/importing-apps"
 ---
 
+After this guide you can turn a repository URL, an image, a compose file or a docker run command into a planned Levelrail app, and deploy it when the plan looks right.
+
 For a repository, the [New app wizard](/new-app-wizard) reads the files and pre-fills the build, port, health path, variables and databases for you.
 
 The "New app" dialog opens with one input, "Import anything". Paste or upload what you already have and Levelrail classifies it and shows a deployment plan preview before anything is created. The same flow is available from the CLI (`levelrail-cli import`), the HTTP API (`POST /api/v1/imports/plan`) and the MCP server (`plan_import`).
 
 A plan is a preview only. Deploying it uses the existing create, build and compose endpoints; there is no separate deploy path.
 
-## What you can paste
+## What can I paste? {#what-you-can-paste}
 
 | Input | Example | What the plan does |
 | --- | --- | --- |
@@ -22,7 +24,7 @@ A plan is a preview only. Deploying it uses the existing create, build and compo
 
 Classification is automatic. The web UI shows a "Looks like" hint while you type, and the server's decision is final.
 
-## Repository detection
+## How is a repository detected? {#repository-detection}
 
 For a repo URL the plan reads a small, fixed set of files over HTTPS from the host's raw-file endpoint (GitHub, GitLab including subgroups, Bitbucket, Gitea and similar). Nothing is cloned to disk and nothing from the repo is executed. Private repos cannot be read this way; connect them through a git provider first.
 
@@ -58,7 +60,7 @@ Railpack builds Ruby and PHP projects, and the import plan fills in what its sta
 
 Laravel runs `php artisan migrate --force` on every start. Set `RAILPACK_SKIP_MIGRATIONS=true` if the app has no database yet.
 
-## Buildpack apps
+## What about buildpack apps? {#buildpack-apps}
 
 An app written for a buildpack platform, with a `Procfile` and no Dockerfile, is built with Railpack. Levelrail does not run Heroku buildpacks, does not read `.buildpacks` or `project.toml`, and has no buildpack layer to select.
 
@@ -68,7 +70,7 @@ An app written for a buildpack platform, with a `Procfile` and no Dockerfile, is
 - **Build log:** the first line names the builder that ran and why. A Dockerfile build says `builder: Dockerfile (Dockerfile)`, or the path relative to the build context, for example `builder: Dockerfile (deploy/Dockerfile.prod)`. A Railpack build says `builder: Railpack (no Dockerfile in the repository)`. For a Railpack build, a second line appears when `.buildpacks`, `project.toml` or a `Procfile` is present. It lists the file names found and says `.buildpacks` and `project.toml` are not run as buildpacks. The line uses file names only, never file contents. Built and unit tested. Not yet proven on a real host: no real BuildKit build has been run with this line.
 - **Not supported:** custom buildpacks, buildpack-specific env such as `BUILDPACK_URL`, and languages Railpack does not detect. Add a Dockerfile for those.
 
-## Environment variables
+## How are environment variables handled? {#environment-variables}
 
 For repos the plan scans `.env.example`, `.env.sample`, `.env.template`, `env.example`, `.env.dist`, compose `environment:` sections and Dockerfile `ENV`. Each variable is reported as:
 
@@ -78,7 +80,7 @@ For repos the plan scans `.env.example`, `.env.sample`, `.env.template`, `env.ex
 
 The plan never echoes a secret-looking default back. Secret values you enter are stored as encrypted secrets, not plain env vars. A `-e NAME=value` in a `docker run` command that looks secret is treated as required so you re-enter it.
 
-## Docker run flags
+## Which docker run flags are read? {#docker-run-flags}
 
 Supported: `-p/--publish` (host and container ports, optional IP and protocol), `-e/--env`, `-v/--volume` (named volumes and bind mounts), `--restart`, `--name`, `-m/--memory`, `--cpus`, `--entrypoint`, the image and its command, and `--network` (only noted). The command is tokenized (quotes, backslash escapes, backslash-newline continuations) and never run through a shell.
 
@@ -105,7 +107,7 @@ Flags that are not supported are listed as warnings and ignored, never dropped s
 | `--health-cmd` and other health flags | add an HTTP health check on the app afterwards |
 | `--runtime`, `--platform`, `--cpuset-cpus`, `--memory-swap`, `--cpu-shares`, `--oom-score-adj`, `--kernel-memory`, `--storage-opt` | runtime and resource tuning |
 
-## Run an import
+## How do I run an import? {#run-an-import}
 
 <Tabs>
 <Tab title="UI">
@@ -139,7 +141,7 @@ When required variables have no value and no terminal is attached, `--deploy` fa
 </Tab>
 </Tabs>
 
-## Troubleshooting
+## What if the plan looks wrong? {#troubleshooting}
 
 ### Plan shows the wrong build method or is missing settings
 

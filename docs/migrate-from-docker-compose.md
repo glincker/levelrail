@@ -5,9 +5,11 @@ description: Turn a docker-compose.yml into Levelrail apps and managed databases
 "og:url": "https://docs.levelrail.com/migrate-from-docker-compose"
 ---
 
+After this guide the services in your Docker Compose file run on Levelrail as separate apps and managed databases, with data copied and DNS switched when you are ready.
+
 If you run a plain compose stack on a VM, there are two routes. Import the compose file to get one app per service and managed databases for the database images, or deploy the whole file as one compose app. Read the [migration overview](/migrate-to-levelrail) first for the flow and the downtime table.
 
-## Prerequisites
+## What do I need before I start? {#prerequisites}
 
 - Levelrail installed on the new server and the CLI signed in (`levelrail-cli auth login`).
 - The compose file, and for volumes and databases, shell access to the host that runs it.
@@ -20,7 +22,7 @@ If you run a plain compose stack on a VM, there are two routes. Import the compo
 | Deploy as a compose app | You want the stack to stay one unit, as it runs today | `levelrail-cli apps deploy-compose NAME --file docker-compose.yml`, see [compose apps](/compose-apps) |
 | Snapshot the running containers | The file is out of date or the images were built locally | `docker inspect $(docker ps -aq) > inspect.json`, then `--from docker --snapshot inspect.json` |
 
-## What moves
+## What moves to Levelrail? {#what-moves}
 
 | Item | Result |
 | --- | --- |
@@ -30,20 +32,20 @@ If you run a plain compose stack on a VM, there are two routes. Import the compo
 | Volumes | Named volumes and bind mounts, listed on the app |
 | Domains | Where the file's metadata names one |
 
-## What needs a manual step
+## What do I still do by hand? {#what-needs-a-manual-step}
 
 - **Services with only a `build:` block** are unsupported. Build and push an image, or create the app from its git repository.
 - **Database and volume contents**, by the copy steps below.
 - **Networks, `depends_on`, restart policy and `command` overrides** are not mapped. Set what matters on each app.
 - **Hostnames between services.** Apps reach managed databases by connection variable, not by the compose service name. Rewrite them with the mapping table in the plan.
 
-## What does not move
+## What does not move? {#what-does-not-move}
 
 - Services without an image (build only).
 - The compose network model: services do not share one bridge network by default.
 - Anything the file does not say: running data, certificates and host proxy config.
 
-## Steps
+## How do I run the migration? {#steps}
 
 <Steps>
 <Step title="Plan">
@@ -97,24 +99,35 @@ Roll back with `levelrail-cli import cutover rollback --session ID --app NAME`.
 </Step>
 </Steps>
 
-## Databases and the downtime window
+## How long is the downtime window? {#databases-and-the-downtime-window}
 
 Full dump and restore with row counts compared, repeatable, source read-only. No incremental sync. Stop the writers (`docker compose stop web`), run the final copy, start the app here, switch DNS. The window is the final copy time plus a restart. Stateless services with no volumes need no pause. See the [downtime table](/migrate-to-levelrail#what-stays-online-during-the-move).
 
-## Domains and TLS
+## How do domains and TLS switch over? {#domains-and-tls}
 
 A plain compose stack usually sits behind your own reverse proxy. Point DNS at the new server or install Levelrail in [coexist mode](/behind-an-existing-proxy). Lower the TTL to 300 seconds a day ahead and run `levelrail-cli migrate cutover` for a go or no-go per domain. See [Domains and ingress](/domains-and-ingress).
 
-## Common problems and fixes
+## What if something goes wrong? {#common-problems-and-fixes}
 
-| Problem | Fix |
-| --- | --- |
-| A service shows unsupported | It has no image. Build and push one |
-| `--snapshot FILE is required` | Pass the compose file path, or `-` to read stdin |
-| App cannot find its database | Use the connection variable from the managed database, not the old service name |
-| Volume sizes unknown | The file has no sizes. The `rsync` comparison gives file counts and bytes |
+<AccordionGroup>
+<Accordion title="A service shows unsupported">
+It has no image. Build and push one
+</Accordion>
+<Accordion title="--snapshot FILE is required">
+Pass the compose file path, or `-` to read stdin
+</Accordion>
+<Accordion title="App cannot find its database">
+Use the connection variable from the managed database, not the old service name
+</Accordion>
+<Accordion title="Volume sizes unknown">
+The file has no sizes. The `rsync` comparison gives file counts and bytes
+</Accordion>
+</AccordionGroup>
+## How do I verify and roll back? {#verify-and-roll-back}
 
-## Choose to stay if
+Run `levelrail-cli import apps --session ID --verify` before the cutover and `levelrail-cli migrate cutover --verify` after you switch DNS. To roll back, restart the old services if you paused them and point DNS back at the old server. The copy only reads the old server.
+
+## When should I stay where I am? {#choose-to-stay-if}
 
 One VM and one compose file already do the job, and you do not need TLS automation, backups or rollback beyond what you built. A compose file is a fine deployment. Move when you want those things managed. See the [comparison](/comparison).
 

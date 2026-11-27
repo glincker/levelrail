@@ -5,16 +5,18 @@ description: Import Dokploy applications, databases, env vars and domains into L
 "og:url": "https://docs.levelrail.com/migrate-from-dokploy"
 ---
 
+After this guide your Dokploy apps, databases, env vars and domains run on Levelrail, and DNS switches only after you have checked the copy.
+
 Dokploy apps and databases import over its HTTP API, read-only. Data, volumes and traffic are moved by the same steps as every other source. Read the [migration overview](/migrate-to-levelrail) first for the flow and the downtime table.
 
-## Prerequisites
+## What do I need before I start? {#prerequisites}
 
 - Levelrail installed on the new server and the CLI signed in (`levelrail-cli auth login`).
 - A Dokploy API key. It is sent in the `x-api-key` header.
 - The Dokploy URL reachable from the Levelrail control plane. For a private address, set `APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true` on the control plane and pass `--allow-private`.
 - A database user per Dokploy database, and a route from the Levelrail node to its port.
 
-## What moves
+## What moves to Levelrail? {#what-moves}
 
 | Item | Result |
 | --- | --- |
@@ -32,7 +34,7 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 | Health check | Only when it is a curl or wget style HTTP probe |
 | Databases | PostgreSQL, MySQL, MariaDB, MongoDB and Redis, created empty with the major version from the image tag |
 
-## What needs a manual step
+## What do I still do by hand? {#what-needs-a-manual-step}
 
 - **Git webhooks**: pass `--create-webhooks` with `--apply` to register one push webhook per git-sourced app after it is created. It is off by default because it writes to your git host. A hook is only created when the repository URL is https and its scheme, host and port match an authorized git connection (GitHub App, GitLab, Gitea or Bitbucket), and it goes through the existing `apps git-source register-webhook` route with your own token. The control plane generates the webhook secret, which is never printed or written to the report. A re-run does not add a second hook. Every app that is skipped gets the reason, and a failure on one app does not stop the others. Without `--apply` the report lists what would be created and writes nothing to the git host. `APP_MIGRATE_WEBHOOK_LIMIT` (default 200) caps hooks per run and `APP_MIGRATE_REPO_URL_MAX_LEN` (default 2048) caps the accepted repository URL length.
 - **Backup destinations and schedules**: each Dokploy S3 destination becomes a backup target with the same name (lowercased), endpoint, region and bucket, and each database backup schedule becomes the backup schedule of the database with the same name on Levelrail, keeping its cron and its keep-latest count as `--retain`. The keys are used only with `--apply` and `--include-secret-values`: they go straight into the normal backup target create call, which stores them encrypted, and are never printed, written to the report or journaled. Without both flags, or when Dokploy returns masked keys, the target is reported `needs_secret` with the `backup-targets create` command to run. A target or schedule whose name already exists on Levelrail is skipped with a warning, never overwritten. Imported schedules start paused; pass `--enable-backup-schedules` to keep the ones that were on in Dokploy running. Bucket names must follow the S3 naming rule; anything else is reported for review. Endpoints must be https and are checked against the import network policy (`APP_IMPORT_ALLOW_PRIVATE_NETWORKS`, `APP_IMPORT_ALLOW_LOOPBACK`); the control plane connects to the endpoint from its own network, so confirm each one before enabling schedules. Levelrail keeps one schedule per database, so a second Dokploy schedule on the same database is reported, not imported. A schedule whose database is not on Levelrail yet is reported with the `backups schedule set` command to run after the database moves. `APP_MIGRATE_BACKUP_LIMIT` (default 200) caps destinations plus schedules per run.
@@ -44,37 +46,52 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 - Health checks that are shell commands, extra ports, pre and post deploy commands.
 - Dokploy scheduled jobs are not read. Recreate them as scheduled tasks.
 
-## What does not move
+## What does not move? {#what-does-not-move}
 
 - Compose stacks whose file lives in a git repository. They are reported blocked; deploy them from git with a compose build.
 - Apps uploaded as an archive (`drop`).
 - Swarm services as such: Levelrail runs plain Docker containers, so Swarm placement and overlay networking do not carry over.
 - Certificates, DNS records, deploy history, logs and metrics.
 
-## Steps
+## How do I run the migration? {#steps}
 
 <Steps>
 <Step title="Dry run">
 
-Dashboard: Settings, Import from another platform. CLI:
-
+<Tabs>
+<Tab title="Dashboard">
+Open Settings, Import from another platform, and choose Dokploy.
+</Tab>
+<Tab title="CLI">
 ```bash
 export APP_IMPORT_SOURCE_TOKEN=...
 levelrail-cli import platform dokploy --url https://dokploy.example.com --dry-run
 ```
+</Tab>
+</Tabs>
 
 You get one row per item: ready, needs attention (with the manual step) or not supported (with the reason).
 
 </Step>
 <Step title="Import, optionally a subset">
 
+<Tabs>
+<Tab title="Import">
 ```bash
 levelrail-cli import platform dokploy --url https://dokploy.example.com --only web,api
 ```
+</Tab>
+<Tab title="Plan with fixes">
+For a plan with verdicts and one-click fixes (name, port, hold domains), use the wizard:
+
+```bash
+levelrail-cli migrate plan --platform dokploy --url https://dokploy.example.com
+levelrail-cli migrate plan --platform dokploy --url https://dokploy.example.com --apply --only ID
+```
+</Tab>
+</Tabs>
 
 Apps and databases are created empty. Re-running skips what exists. Imported apps carry the labels `import/source-id`, `import/source-platform` and `import/source-name`.
-
-For a plan with verdicts and one-click fixes (name, port, hold domains), use the wizard: `levelrail-cli migrate plan --platform dokploy --url https://dokploy.example.com`, then add `--apply --only ID`.
 
 </Step>
 <Step title="Copy databases">
@@ -111,25 +128,34 @@ The first command gives `go`, `wait`, `no-go` or `switched` per domain and print
 The dashboard's guided app wizard (stage, move images, verify, guided cutover) connects to Coolify. The CLI accepts `import apps --from dokploy`, but it has been exercised mostly with Coolify. The steps above use the importer that is built for Dokploy.
 </Note>
 
-## Databases and the downtime window
+## How long is the downtime window? {#databases-and-the-downtime-window}
 
 The copy is a full dump and restore with row count verification, repeatable, source read-only. There is no incremental sync. To avoid lost writes, pause the Dokploy app, run the final copy, start the app here, then switch DNS. The window is the final copy time plus an app restart. Time your first copy to know it. Stateless apps need no pause. See the [downtime table](/migrate-to-levelrail#what-stays-online-during-the-move).
 
-## Domains and TLS
+## How do domains and TLS switch over? {#domains-and-tls}
 
 Dokploy usually runs Traefik on ports 80 and 443. Either point DNS at a new server, or install Levelrail in [coexist mode](/behind-an-existing-proxy). Lower the TTL to 300 seconds a day ahead. Certificates are issued here on first use once DNS points here, so check the first domain before the rest. See [Domains and ingress](/domains-and-ingress).
 
-## Common problems and fixes
+## What if something goes wrong? {#common-problems-and-fixes}
 
-| Problem | Fix |
-| --- | --- |
-| The URL is refused | Allow private networks on the control plane and pass `--allow-private` |
-| `401` from Dokploy | Create a new API key and set `APP_IMPORT_SOURCE_TOKEN` |
-| Database copy fails | Check host, port and user. Target version must be the same or newer than the source |
-| App shows as unsupported | Read the reason. Archive uploads and blocked compose stacks are not imported |
-| Domain shows `wait` | Lower the TTL and wait out the old value |
-
-## Verify and roll back
+<AccordionGroup>
+<Accordion title="The URL is refused">
+Allow private networks on the control plane and pass `--allow-private`
+</Accordion>
+<Accordion title="401 from Dokploy">
+Create a new API key and set `APP_IMPORT_SOURCE_TOKEN`
+</Accordion>
+<Accordion title="Database copy fails">
+Check host, port and user. Target version must be the same or newer than the source
+</Accordion>
+<Accordion title="App shows as unsupported">
+Read the reason. Archive uploads and blocked compose stacks are not imported
+</Accordion>
+<Accordion title="Domain shows wait">
+Lower the TTL and wait out the old value
+</Accordion>
+</AccordionGroup>
+## How do I verify and roll back? {#verify-and-roll-back}
 
 Run `levelrail-cli migrate cutover --verify` after you switch DNS. It checks the certificate, the health path and DNS.
 
@@ -174,7 +200,7 @@ Targets, schedules and channels are created through the same API calls as a manu
 
 After the apply, **Undo** removes what this run created. It removes an item only when it still reads back by its recorded id with the same fingerprint, and leaves anything changed since in place. The journal behind the button is kept in the page only: closing or reloading the page drops it, and undo is then done by hand.
 
-## Choose to stay if
+## When should I stay where I am? {#choose-to-stay-if}
 
 Dokploy's Swarm multi-node scheduling and its compose workflow are what you rely on, or you cannot afford a write freeze on your databases. Levelrail does not use Swarm, and its migration path has no recorded run against a live Dokploy. See [Dokploy alternative](/dokploy-alternative) and the [comparison](/comparison).
 

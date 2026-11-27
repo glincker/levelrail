@@ -5,15 +5,17 @@ description: Move Dokku apps to Levelrail by reading the Dokku host's Docker ove
 "og:url": "https://docs.levelrail.com/migrate-from-dokku"
 ---
 
+After this guide your Dokku apps and their datastores run on Levelrail, with the old Dokku host untouched until you switch DNS.
+
 A Dokku host is a Docker host. Its apps run as plain containers, so Levelrail can read them over SSH without installing anything on the old server: the control plane opens an SSH login, uses it only to reach the Docker socket, and sends read-only requests. That is the first route on this page. If you cannot give Levelrail an SSH login, you can import one app's environment variables from a `dokku config:export` dump instead. Read the [migration overview](/migrate-to-levelrail) first for the flow and the downtime table.
 
-## Prerequisites
+## What do I need before I start? {#prerequisites}
 
 - Levelrail installed on the new server and the CLI signed in (`levelrail-cli auth login`).
 - An SSH login on the Dokku host whose user can use the Docker socket (member of the `docker` group, or root). See [Migrate over SSH](/migrate-over-ssh) for what is read and what is never done.
 - The app's git repository, or a registry image, to deploy from.
 
-## What moves
+## What moves to Levelrail? {#what-moves}
 
 | Route | What it reads | Result |
 | --- | --- | --- |
@@ -21,7 +23,7 @@ A Dokku host is a Docker host. Its apps run as plain containers, so Levelrail ca
 | Env dump (`--from dokku`) | `dokku config:export APP`, one app per run | One app with the variables. `DOKKU_*` and `GIT_REV` are dropped. Secret-looking names are masked in the plan and stored as secrets |
 | Docker snapshot (`--from docker`) | `docker inspect` output you save yourself | Same mapping as the SSH route, from a file |
 
-## What needs a manual step
+## What do I still do by hand? {#what-needs-a-manual-step}
 
 - **Domains.** They live in Dokku's stored config, which is not read. Add them after the plan with `levelrail-cli apps domains add`.
 - **Build.** Levelrail builds a Dockerfile with BuildKit, or detects the stack and builds with Railpack. It does not run Heroku buildpacks. See [Buildpack apps](/importing-apps#buildpack-apps).
@@ -30,14 +32,14 @@ A Dokku host is a Docker host. Its apps run as plain containers, so Levelrail ca
 - **Datastores** from Dokku plugins (postgres, mysql, redis and others) are copied with the database copy step below.
 - **Cron and plugin config** are not read.
 
-## What does not move
+## What does not move? {#what-does-not-move}
 
 - Dokku's proxy config, certificates from its Let's Encrypt plugin, and deploy history. Certificates are issued here on first use once DNS points here.
 - Buildpack-specific behavior. Check that the app builds with a Dockerfile or Railpack before the cutover.
 
 The Dokku routes have not been rehearsed against a live Dokku host. Read the plan before you apply it, and keep the Dokku app running until you have verified the copy.
 
-## Steps
+## How do I run the migration? {#steps}
 
 <Steps>
 <Step title="Test the SSH connection">
@@ -199,32 +201,45 @@ Each Dokku datastore plugin maps to a managed database engine, a catalog templat
 
 The database copy step handles managed engines only. Catalog templates have no dump and restore step, so stop the source service before copying its volume. `GET /api/v1/database-engines` is the live source for engines.
 
-## Databases and the downtime window
+## How long is the downtime window? {#databases-and-the-downtime-window}
 
 The copy is a full dump and restore with row counts compared and the source read-only. There is no incremental sync. Pause the Dokku app (`dokku ps:stop APP`), run the final copy, start the app here, switch DNS. The window is the final copy time plus a restart. A Dokku app that only serves from its image and has no database can move with no outage you would notice. See the [downtime table](/migrate-to-levelrail#what-stays-online-during-the-move).
 
-## Domains and TLS
+## How do domains and TLS switch over? {#domains-and-tls}
 
 Dokku's own proxy owns ports 80 and 443. Point DNS at a new server, or install Levelrail in [coexist mode](/behind-an-existing-proxy). Lower the TTL to 300 seconds a day ahead. Certificates are issued here on first use once DNS points here. See [Domains and ingress](/domains-and-ingress).
 
-## Common problems and fixes
+## What if something goes wrong? {#common-problems-and-fixes}
 
-| Problem | Fix |
-| --- | --- |
-| `--app-name is required` | The env dump route needs the app name the dump belongs to |
-| The app has no image to run | Connect the repository or set an image. The dump has only variables |
-| Build fails without a Dockerfile | Railpack detection may not match a Heroku buildpack app. Add a Dockerfile |
-| Database copy cannot connect | Expose the service port, open the firewall for the new server only |
-| Variables missing | `DOKKU_*` and `GIT_REV` are dropped on purpose in the env dump route. Set the ones your app reads |
-| SSH test fails | See the failure table in [Migrate over SSH](/migrate-over-ssh#failures-and-their-fixes) |
-| Domains are missing after the import | They are not read from Dokku. Add them with `apps domains add` |
-
-## Verify and roll back
+<AccordionGroup>
+<Accordion title="--app-name is required">
+The env dump route needs the app name the dump belongs to
+</Accordion>
+<Accordion title="The app has no image to run">
+Connect the repository or set an image. The dump has only variables
+</Accordion>
+<Accordion title="Build fails without a Dockerfile">
+Railpack detection may not match a Heroku buildpack app. Add a Dockerfile
+</Accordion>
+<Accordion title="Database copy cannot connect">
+Expose the service port, open the firewall for the new server only
+</Accordion>
+<Accordion title="Variables missing">
+`DOKKU_*` and `GIT_REV` are dropped on purpose in the env dump route. Set the ones your app reads
+</Accordion>
+<Accordion title="SSH test fails">
+See the failure table in [Migrate over SSH](/migrate-over-ssh#failures-and-their-fixes)
+</Accordion>
+<Accordion title="Domains are missing after the import">
+They are not read from Dokku. Add them with `apps domains add`
+</Accordion>
+</AccordionGroup>
+## How do I verify and roll back? {#verify-and-roll-back}
 
 Run `levelrail-cli migrate cutover --verify` after you switch DNS. It checks the certificate, the health path and DNS.
 
 The copy only reads the old server, so nothing there is changed. To roll back, restart the old app if you paused it and point DNS back at the old server.
 
-## Choose to stay if
+## When should I stay where I am? {#choose-to-stay-if}
 
 You want Dokku's git push workflow with buildpacks and a very small footprint, and it already works. Levelrail builds from Dockerfiles or Railpack and has a beta push remote. See [Dokku alternative](/dokku-alternative) and the [comparison](/comparison).

@@ -5,9 +5,11 @@ description: Move Coolify apps, databases, env vars and domains to Levelrail wit
 "og:url": "https://docs.levelrail.com/migrate-from-coolify"
 ---
 
+After this guide your Coolify apps, databases, env vars and domains run on Levelrail, and each domain switches over with a rollback while Coolify keeps serving.
+
 Coolify has the most complete path. You can stage apps, move images that were built on the Coolify host, copy databases with row count checks, and switch each domain with a rollback. Read the [migration overview](/migrate-to-levelrail) first for the flow and the downtime table. The [migration wizard](/migration-wizard) drives the whole flow from the dashboard.
 
-## Prerequisites
+## What do I need before I start? {#prerequisites}
 
 - Levelrail installed on the new server, signed in with the CLI (`levelrail-cli auth login`).
 - A Coolify API token. Use the `read:sensitive` ability, or secret values come back empty.
@@ -15,7 +17,7 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 - For apps built on the Coolify host: SSH access to it with a login that can run `docker` (root or the `docker` group).
 - For databases: a database user on each Coolify database, and a route from the Levelrail node to its port.
 
-## What moves
+## What moves to Levelrail? {#what-moves}
 
 | Item | Result |
 | --- | --- |
@@ -26,7 +28,7 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 | Scheduled tasks | Enabled tasks become scheduled jobs that run the command inside the app. Staged apps get them disabled until cutover |
 | Persistent storages | Created as empty volumes on each app |
 
-## What needs a manual step
+## What do I still do by hand? {#what-needs-a-manual-step}
 
 - **Database contents** are copied by a separate step ([below](#databases)).
 - **Volume contents** are copied by `rsync` commands you run.
@@ -40,7 +42,7 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 - **Multi-server instances**: pass `--node-map source-server=node,other=node2` to put each app on the named node. An unmapped server keeps its apps on the control plane node with a finding, and an unknown or ambiguous node name stops the run before anything is created. Placement needs a token with the root ability, checked first.
 - **Extra ports, raw host port mappings, other custom labels, tags, the Node version pin, webhooks and backup schedules** are called out as needs attention or planned items. Nothing is dropped without a row in the report. See the [gap report](/coolify-exit-gap-report).
 
-## What does not move
+## What does not move? {#what-does-not-move}
 
 - Coolify one-click services are not created as apps. `migrate coolify` reads each service's compose file and env, translates its `SERVICE_` magic variables and stages the result as `compose.yaml` under `--stage-dir` (default `./migrated/compose`), with hosts under `--domain-suffix`. Nothing is deployed. Review the file, then deploy it with `levelrail-cli compose deploy`. The file and `--apply` modes stage services. The dry-run and verify reports list them as skipped. See [one-click services to Compose](/coolify-service-to-compose). Staging is pending run against a real Coolify instance.
 - Coolify Docker Compose applications (the `dockercompose` build pack) are staged like one-click services: one `compose.yaml` under `--stage-dir` with magic variables and generated secrets resolved, plus `stack.env` (mode 0600) when env values were requested. A file that sets `privileged`, host networking, host `pid` or `ipc`, `cap_add`, `devices` or mounts the Docker socket stays blocked with the same reason a manual [compose deploy](/compose-apps) gives. Compose text and secret values never appear in the report.
@@ -87,17 +89,22 @@ Keep Coolify as the fallback:
 
 The audit behind this report, including what is not proven because no real Coolify instance was available, is in the [gap report](/coolify-exit-gap-report).
 
-## Steps
+## How do I run the migration? {#steps}
 
 <Steps>
 <Step title="Plan">
 
-Dashboard: Settings, Import from another platform, "Move apps from Coolify". CLI:
-
+<Tabs>
+<Tab title="Dashboard">
+Open Settings, Import from another platform, and choose "Move apps from Coolify".
+</Tab>
+<Tab title="CLI">
 ```bash
 export APP_IMPORT_SOURCE_TOKEN=...
 levelrail-cli import apps --from coolify --url https://coolify.example.com --plan
 ```
+</Tab>
+</Tabs>
 
 Every app and database gets a verdict (ready, ready with notes, needs attention, unsupported) with the reason. Nothing is created.
 
@@ -123,13 +130,23 @@ It runs `docker save` over SSH and checks the loaded image by content. The targe
 </Step>
 <Step title="Copy databases" id="databases">
 
+<Tabs>
+<Tab title="One database">
 ```bash
 export APP_MIGRATE_SOURCE_DB_PASSWORD=...
 levelrail-cli migrate db-copy main --host db.old.example.com --user app --database app
 levelrail-cli migrate db-status
 ```
+</Tab>
+<Tab title="A whole server">
+Use the Migration hub (same Settings page) or the CLI. Run the plan first, then apply:
 
-For a whole server with many databases, use the Migration hub (same Settings page) or `levelrail-cli migrate server --engine postgres --host db.old.example.com --user admin --password-stdin --plan`, then `--apply`.
+```bash
+printf '%s\n' "$SOURCE_DB_PASSWORD" | levelrail-cli migrate server --engine postgres --host db.old.example.com --user admin --password-stdin --plan
+printf '%s\n' "$SOURCE_DB_PASSWORD" | levelrail-cli migrate server --engine postgres --host db.old.example.com --user admin --password-stdin --apply
+```
+</Tab>
+</Tabs>
 
 </Step>
 <Step title="Copy volumes">
@@ -169,13 +186,13 @@ Stop Coolify only after a full traffic cycle and a checked backup. Download the 
 </Step>
 </Steps>
 
-## Databases
+## How are databases copied? {#databases}
 
 The copy streams `pg_dump`, `mysqldump` or `mariadb-dump`, `mongodump` or a Redis RDB snapshot from the source into the managed database, then compares row counts per table. It is safe to repeat: the restore replaces the target in one transaction. The source is only read.
 
 Coolify databases often have no published port. The Levelrail node must reach the database host and port. Publish the port in Coolify temporarily (restricted by firewall to the new server) or use the `migrate server --container` path when the database container runs on the same node.
 
-## Downtime window
+## How long is the downtime window? {#downtime-window}
 
 | Item | Window |
 | --- | --- |
@@ -185,25 +202,38 @@ Coolify databases often have no published port. The Levelrail node must reach th
 
 Pause or put the old Coolify app into maintenance mode before the final database copy, so no write lands after it.
 
-## Domains and TLS
+## How do domains and TLS switch over? {#domains-and-tls}
 
 - Lower the TTL a day ahead. `levelrail-cli migrate cutover` returns `go`, `wait` (TTL too high), `no-go` (not healthy here) or `switched` per domain.
 - The guided cutover switches a domain by the first method that applies: a connected Cloudflare or Route 53 record (previous value stored for rollback), the managed proxy route, or a record you set by hand followed by `import cutover confirm-dns`.
 - It then checks the public name and rolls back on its own if that fails within `APP_CUTOVER_VERIFY_TIMEOUT` (5 minutes).
 - Coolify's Traefik may own ports 80 and 443. Install Levelrail in [coexist mode](/behind-an-existing-proxy) first, or switch DNS to a new server.
 
-## Common problems and fixes
+## What if something goes wrong? {#common-problems-and-fixes}
 
-| Problem | Fix |
-| --- | --- |
-| The import URL is refused | The control plane blocks private addresses by default. Set `APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true` and pass `--allow-private` (same for loopback) |
-| Secrets show as empty | Create a Coolify token with `read:sensitive` and plan again |
-| A name is taken | Apply with `--collision suffix` (default) or skip it |
-| Database copy says `failed` with differing tables | Run it again. A Redis count can differ if keys expire during the copy |
-| `pg_dump` refuses the server | Create the target with the same or a newer major version |
-| Image move fails on a remote node | Move it by hand: `docker save IMAGE \| ssh TARGET docker load` |
-| Cutover reports `block` | The plan names the item and the fix. Fix it and run the dry run again |
-
+<AccordionGroup>
+<Accordion title="The import URL is refused">
+The control plane blocks private addresses by default. Set `APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true` and pass `--allow-private` (same for loopback)
+</Accordion>
+<Accordion title="Secrets show as empty">
+Create a Coolify token with `read:sensitive` and plan again
+</Accordion>
+<Accordion title="A name is taken">
+Apply with `--collision suffix` (default) or skip it
+</Accordion>
+<Accordion title="Database copy says failed with differing tables">
+Run it again. A Redis count can differ if keys expire during the copy
+</Accordion>
+<Accordion title="pg_dump refuses the server">
+Create the target with the same or a newer major version
+</Accordion>
+<Accordion title="Image move fails on a remote node">
+Move it by hand: `docker save IMAGE | ssh TARGET docker load`
+</Accordion>
+<Accordion title="Cutover reports block">
+The plan names the item and the fix. Fix it and run the dry run again
+</Accordion>
+</AccordionGroup>
 ## Resume or undo an --apply run {#apply-journal}
 
 Every `migrate coolify --apply` run writes a journal: one entry per app with each step (created, git source, node, ingress, previews, secrets, files, webhook) and its outcome. The journal holds names, step states and a fingerprint of each created app. It never holds env values, secrets, tokens, passwords or connection strings. It is written with mode `0600`, atomically, and a lock file stops two runs from using it at once. The default path is under `~/.config/<cli>/migrate-journals/`; pick one with `--journal FILE`. The path is printed at the end of the run.
@@ -225,6 +255,6 @@ levelrail-cli migrate coolify undo --journal FILE --yes     # removes what the p
 
 Undo removes only the apps the journal records as created by that run, newest first, with your own token and the normal delete route, so protected environments and delete confirmations still apply. Apps that existed before the run are never touched. An app deployed since the run is listed and skipped unless you pass `--force`. An app whose fingerprint is missing or no longer matches (it changed since the run, or the run stopped before recording it) is always skipped unless you name it with `--force-app NAME`; `--force` never overrides that. Undo checks each app again right before it deletes it. Apps have no immutable id in the API, so the fingerprint is the app's shape (image, domains, port, node, volumes and similar, never env values): if someone deletes an app and re-creates one with the same name and shape, undo cannot tell them apart, so read the plan before passing `--yes`. An app holding volume data is skipped unless you pass `--include-data` and type the number of such apps to confirm; its volumes are then deleted with it. Undo refuses a journal that is a symlink or sits in a symlinked folder, readable by others, over `APP_MIGRATE_JOURNAL_MAX_BYTES` (default 4 MiB), written for another control plane, or with a name that is not a valid app name.
 
-## Choose to stay if
+## When should I stay where I am? {#choose-to-stay-if}
 
 Coolify already does what you need and your team knows it. Levelrail is the younger project with fewer users, and its migration path has had little time on production data. If you cannot take a write freeze or test a rollback, wait. See the [comparison](/comparison) and [Coolify alternative](/coolify-alternative).

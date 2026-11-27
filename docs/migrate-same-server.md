@@ -4,13 +4,15 @@ description: "Move from Coolify, Dokploy or CapRover to Levelrail on the same ma
 "og:url": "https://docs.levelrail.com/migrate-same-server"
 ---
 
+After this guide Levelrail replaces your old platform on the same server, with the apps staged, verified and then given the server ports, and a rollback if the check fails.
+
 This is the whole story for one server that runs your old platform today and will run Levelrail tomorrow. Levelrail is installed next to the old proxy first, your apps are staged and verified without touching live traffic, and only then does it take over ports 80 and 443. The takeover is one guided action with a recorded way back.
 
 <Note>
 This page is about a single server. To pull apps onto a different server, use [Migrate to Levelrail](/migrate-to-levelrail) and its cutover section instead.
 </Note>
 
-## The path in five stages
+## What are the five stages? {#the-path-in-five-stages}
 
 | Stage | What happens | Live traffic affected |
 | --- | --- | --- |
@@ -20,7 +22,7 @@ This page is about a single server. To pull apps onto a different server, use [M
 | 4. Take over ports | The old proxy stops, Levelrail serves 80 and 443, every domain is verified | Yes, a short pause |
 | 5. Keep or roll back | The old proxy container stays stopped, never removed, so one action undoes it | Only on rollback |
 
-## 1. Install in coexist mode
+## 1. How do I install in coexist mode? {#1-install-in-coexist-mode}
 
 On a server where Coolify's Traefik (or another proxy container) holds ports 80 and 443, the installer notices and switches to coexist mode by itself. See [Server already runs a proxy](/installing#server-already-runs-a-proxy) for the full list of what changes.
 
@@ -33,11 +35,11 @@ sudo sh install.sh --coexist --domain apps.example.com
 
 In coexist mode the ingress listens on `8088` and `8443`, and the managed routes live in the old proxy's dynamic configuration (see [Run behind an existing proxy](/behind-an-existing-proxy)). The old platform keeps serving everything.
 
-## 2. Import and stage
+## 2. How do I import and stage the apps? {#2-import-and-stage}
 
 Open **Migrate** in the dashboard and follow the wizard: connect to the old platform with a read-only token, pick what to import, preflight, stage, move images, build and verify, copy volumes. Every step is described in [Migrate to Levelrail](/migrate-to-levelrail). Nothing on the old platform is written to.
 
-## 3. Verify the staged apps
+## 3. How do I verify the staged apps? {#3-verify-the-staged-apps}
 
 Enable routing for each app, then check each domain through the old proxy:
 
@@ -49,7 +51,7 @@ levelrail-cli proxy verify
 
 An app imported from Coolify keeps its Traefik labels on the old container, and those labels register a router for the same hostname Levelrail now routes. Traefik can pick the old router, so a domain looks fine while it still reaches the old container. The proxy page flags this as "the proxy answers, but not through this server's ingress". It matters only while the old proxy runs: after the takeover the old proxy is stopped and only Levelrail answers. The preflight lists every domain that is claimed twice so you know which old containers to stop on the old platform after you are happy.
 
-## 4. Take over this server's ports
+## 4. How do I take over this server's ports? {#4-take-over-this-servers-ports}
 
 Take over ports is the last step of the Migrate wizard and a tab on the Migrate page. It is root only.
 
@@ -109,26 +111,46 @@ If verification has not succeeded for every domain within the window, the run ro
 | `APP_TAKEOVER_MIN_DISK_GB` | `2` | Free disk below which the preflight blocks |
 | `APP_TAKEOVER_MIN_MEMORY_MB` | `256` | Total memory below which the preflight blocks |
 
-## 5. Rolling back
+## 5. How do I roll back? {#5-rolling-back}
 
 Click **Roll back** on the run, or run `levelrail-cli import takeover rollback`. Rollback records the intent, restarts the control plane so the previous listen addresses apply, restores the TLS settings, then starts the old proxy container again once the ports are free (it retries while they are released). It is the same path the automatic rollback takes, and repeating it is harmless.
 
 If the old proxy cannot be started, the run ends as "Needs attention" with the container names and the `docker start` command to run by hand. Every step of a run and of a rollback is written to the audit log.
 
-## What can go wrong
+## What can go wrong? {#what-can-go-wrong}
 
-| Problem | What you see | What to do |
-| --- | --- | --- |
-| A host service (nginx, Apache) holds a port | Blocker naming the process | Stop that service, then **Re-check**. The run never stops host services |
-| A container that is not a recognised proxy holds a port | Blocker | Stop it or remove its port mapping, then **Re-check** |
-| Certificates are issued on first use (HTTP-01) | Warning | Issuance needs port 80 free and DNS correct, and the old proxy's certificates are not reused, so the first visits can fail until it succeeds. Upload a certificate for important domains first, or use DNS-01 |
-| Automatic certificates are off | Blocker | Turn on ACME with a contact email in the ingress settings |
-| A domain does not resolve here | Blocker or warning | Point the A record at this server. Behind a CDN, a different address is expected |
-| The old platform starts its proxy again | Warning, or an automatic rollback | Coolify can restart its proxy when it sees it stopped. Stop the proxy from the Coolify dashboard as well |
-| The old proxy has restart policy `always` | Warning | Docker would start it again after a reboot. Set `unless-stopped` |
-| The old proxy serves domains Levelrail does not manage | Blocker | Import and route them first, or accept that they go offline |
-| systemd holds the ingress sockets | Warning | The control plane ignores them and binds 80 and 443 itself, so a restart on those ports no longer happens without a gap in service. Rollback returns to the sockets |
-| nginx or Caddy as the old proxy | Warning "Saved, not enforced" | For these two Levelrail only saves configuration snippets for you to apply, it never loads them. After the takeover only Levelrail's own routes answer |
+<AccordionGroup>
+<Accordion title="A host service (nginx, Apache) holds a port">
+What you see: Blocker naming the process. What to do: Stop that service, then **Re-check**. The run never stops host services
+</Accordion>
+<Accordion title="A container that is not a recognised proxy holds a port">
+What you see: Blocker. What to do: Stop it or remove its port mapping, then **Re-check**
+</Accordion>
+<Accordion title="Certificates are issued on first use (HTTP-01)">
+What you see: Warning. What to do: Issuance needs port 80 free and DNS correct, and the old proxy's certificates are not reused, so the first visits can fail until it succeeds. Upload a certificate for important domains first, or use DNS-01
+</Accordion>
+<Accordion title="Automatic certificates are off">
+What you see: Blocker. What to do: Turn on ACME with a contact email in the ingress settings
+</Accordion>
+<Accordion title="A domain does not resolve here">
+What you see: Blocker or warning. What to do: Point the A record at this server. Behind a CDN, a different address is expected
+</Accordion>
+<Accordion title="The old platform starts its proxy again">
+What you see: Warning, or an automatic rollback. What to do: Coolify can restart its proxy when it sees it stopped. Stop the proxy from the Coolify dashboard as well
+</Accordion>
+<Accordion title="The old proxy has restart policy always">
+What you see: Warning. What to do: Docker would start it again after a reboot. Set `unless-stopped`
+</Accordion>
+<Accordion title="The old proxy serves domains Levelrail does not manage">
+What you see: Blocker. What to do: Import and route them first, or accept that they go offline
+</Accordion>
+<Accordion title="systemd holds the ingress sockets">
+What you see: Warning. What to do: The control plane ignores them and binds 80 and 443 itself, so a restart on those ports no longer happens without a gap in service. Rollback returns to the sockets
+</Accordion>
+<Accordion title="nginx or Caddy as the old proxy">
+What you see: Warning "Saved, not enforced". What to do: For these two Levelrail only saves configuration snippets for you to apply, it never loads them. After the takeover only Levelrail's own routes answer
+</Accordion>
+</AccordionGroup>
 
 <Warning>
 HTTP-01 reachability is the real risk of a same-server takeover: the certificate authority validates over port 80 only after the old proxy has stopped. The preflight cannot prove it ahead of time. Prefer uploaded certificates for critical domains and keep the verification window long enough for issuance.
