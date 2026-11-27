@@ -1,7 +1,7 @@
 ---
 title: "Doctor and import from the command line"
 sidebarTitle: "Doctor and import CLI"
-description: Run the server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, an image, a config folder or a monorepo with levelrail-cli.
+description: "Run server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, image, config folder or monorepo with levelrail-cli."
 "og:url": "https://docs.levelrail.com/doctor-and-import"
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Move a Coolify one-click service to a Compose app"
 sidebarTitle: "Service to Compose"
-description: "How migrate coolify turns a Coolify one-click service into a Compose file, how magic variables are translated, and what you still fix by hand."
+description: "See how migrate coolify turns a Coolify one-click service into a Compose file, how magic variables are translated, and what you still fix by hand."
 "og:url": "https://docs.levelrail.com/coolify-service-to-compose"
 ---
 

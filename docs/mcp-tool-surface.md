@@ -1,8 +1,7 @@
 ---
-description: "Estimated model context cost of the MCP tool list, by toolset."
+title: "MCP tool surface"
+description: "Estimated model context cost of the Levelrail MCP tool list, by toolset, so you can choose which toolsets to enable."
 ---
-
-# MCP tool surface
 
 Estimated model context cost of the MCP tool list. Tokens are estimated as characters divided by 4 over each tool's name, description and input schema JSON.
 
@@ -14,7 +13,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | --- | ---: | ---: |
 | account | 5 | 315 |
 | alerts | 12 | 1141 |
-| apps | 19 | 2140 |
+| apps | 19 | 2272 |
 | audit | 2 | 253 |
 | backups | 14 | 992 |
 | builds | 5 | 454 |
@@ -56,7 +55,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 118 |
 | webhooks | 1 | 124 |
-| **total** | **261** | **23733** |
+| **total** | **261** | **23865** |
 
 ## Default session (progressive disclosure)
 
