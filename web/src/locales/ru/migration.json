@@ -784,7 +784,16 @@
     "unsupported": "Не перенесено",
     "instead": "Вместо этого: {{alternative}}",
     "conflicts": "Имя уже используется",
-    "deploy": "Развернуть"
+    "deploy": "Развернуть",
+    "report": {
+      "title": "Import report",
+      "fix": "Fix: {{fix}}",
+      "severity": {
+        "blocker": "Blockers",
+        "changes-behavior": "Changes behavior",
+        "ignored-safe": "Ignored, safe"
+      }
+    }
   },
   "takeover": {
     "title": "Перехват портов этого сервера",

@@ -30,12 +30,17 @@ export interface ComposeDeployResponse {
 export async function deployCompose(
   name: string,
   composeYaml: string,
+  nodeId?: string,
 ): Promise<ComposeDeployResponse> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/compose`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/yaml' },
-    body: composeYaml,
-  })
+  const query = nodeId ? `?node_id=${encodeURIComponent(nodeId)}` : ''
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/compose${query}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/yaml' },
+      body: composeYaml,
+    },
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -55,10 +60,12 @@ export function useDeployCompose() {
     mutationFn: ({
       name,
       composeYaml,
+      nodeId,
     }: {
       name: string
       composeYaml: string
-    }) => deployCompose(name, composeYaml),
+      nodeId?: string
+    }) => deployCompose(name, composeYaml, nodeId),
     onSuccess: (result) => {
       for (const service of result.services) {
         queryClient.setQueryData(appKeys.detail(service.name), service)

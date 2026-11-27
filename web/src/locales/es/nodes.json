@@ -1337,5 +1337,18 @@
     "pickerPlaceholder": "Sin grupo",
     "none": "Sin grupo",
     "pickerHint": "Las etiquetas del grupo se suman al selector de ubicación propio de esta app."
+  },
+  "nodePicker": {
+    "label": "Server",
+    "auto": "Auto (best fit)",
+    "hint": "Auto picks a server that fits. Choose one to pin it there.",
+    "gpu_one": "{{count}} GPU",
+    "gpu_other": "{{count}} GPUs",
+    "status": {
+      "pending": "pending",
+      "online": "online",
+      "offline": "offline",
+      "cordoned": "cordoned"
+    }
   }
 }

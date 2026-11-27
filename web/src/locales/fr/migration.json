@@ -782,7 +782,16 @@
     "unsupported": "Non repris",
     "instead": "À la place : {{alternative}}",
     "conflicts": "Nom déjà utilisé",
-    "deploy": "Deployer"
+    "deploy": "Deployer",
+    "report": {
+      "title": "Import report",
+      "fix": "Fix: {{fix}}",
+      "severity": {
+        "blocker": "Blockers",
+        "changes-behavior": "Changes behavior",
+        "ignored-safe": "Ignored, safe"
+      }
+    }
   },
   "takeover": {
     "title": "Reprendre les ports de ce serveur",

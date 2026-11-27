@@ -778,7 +778,16 @@
     "unsupported": "不会迁移",
     "instead": "替代方案：{{alternative}}",
     "conflicts": "名称已被使用",
-    "deploy": "部署"
+    "deploy": "部署",
+    "report": {
+      "title": "Import report",
+      "fix": "Fix: {{fix}}",
+      "severity": {
+        "blocker": "Blockers",
+        "changes-behavior": "Changes behavior",
+        "ignored-safe": "Ignored, safe"
+      }
+    }
   },
   "takeover": {
     "title": "接管此服务器的端口",

@@ -33,6 +33,7 @@ import { TemplateGeneratedField } from './TemplateGeneratedField'
 import { TemplateFileField } from './TemplateFileField'
 import { TemplateGrantDialog } from './TemplateGrantDialog'
 import { TemplateInstallBlock } from './TemplateInstallBlock'
+import { NodePicker } from '../NodePicker'
 import { ApiError } from '../../lib/apiError'
 import {
   classifyInstallBlock,
@@ -401,6 +402,14 @@ export function TemplateDeployForm({
           ))}
         </div>
       </section>
+
+      <NodePicker
+        id="template-install-node"
+        value={values.node ?? ''}
+        onChange={(node) => {
+          update({ ...values, node })
+        }}
+      />
 
       {block ? (
         <TemplateInstallBlock

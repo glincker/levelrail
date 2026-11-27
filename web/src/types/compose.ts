@@ -128,4 +128,5 @@ export interface TemplateInstallInput {
   domains?: Record<string, string>
   project_id?: string
   allow_platform_mismatch?: boolean
+  node_id?: string
 }

@@ -75,6 +75,17 @@ export interface ImportConflict {
   name: string
 }
 
+export type ImportFindingSeverity =
+  'blocker' | 'changes-behavior' | 'ignored-safe'
+
+export interface ImportFinding {
+  kind: string
+  path: string
+  reason: string
+  severity: ImportFindingSeverity
+  fix?: string
+}
+
 export interface ImportPlan {
   source: ImportSource
   suggested_name: string
@@ -90,6 +101,7 @@ export interface ImportPlan {
   secret_refs?: string[]
   unsupported?: ImportUnsupported[]
   conflicts?: ImportConflict[]
+  report?: ImportFinding[]
   /** Set only by the demo canned plan, never by the server. */
   sample?: { buildLog: string[] }
 }

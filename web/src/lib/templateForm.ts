@@ -31,6 +31,8 @@ export interface FormValues {
   domains: Record<string, string>
   /** Project id, or empty for no project. */
   project?: string
+  /** Target node id, or empty for automatic placement. */
+  node?: string
 }
 
 export type FormErrors = Record<string, string>
@@ -66,6 +68,7 @@ export function buildInstallPayload(values: FormValues): TemplateInstallInput {
     env: pick(values.env),
     domains: values.customDomain ? pick(values.domains) : {},
     project_id: values.project || undefined,
+    node_id: values.node || undefined,
   }
 }
 

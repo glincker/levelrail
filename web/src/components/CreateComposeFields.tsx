@@ -23,6 +23,7 @@ import { useFormDraft } from '../hooks/useFormDraft'
 import { useIsRoot } from '../hooks/useIsRoot'
 import { DraftRestoredNotice } from './DraftRestoredNotice'
 import { PublishedPortError } from './PublishedPortError'
+import { NodePicker } from './NodePicker'
 import { ComposePreviewPanel } from './ComposePreviewPanel'
 import { useTranslation } from 'react-i18next'
 
@@ -221,6 +222,7 @@ export function CreateComposeFields({
   const deployCompose = useDeployCompose()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [nodeId, setNodeId] = useState('')
   const {
     register,
     handleSubmit,
@@ -261,6 +263,7 @@ export function CreateComposeFields({
       {
         name: values.name.trim(),
         composeYaml: values.compose,
+        nodeId: nodeId || undefined,
       },
       { onSuccess: clearDraft },
     )
@@ -409,6 +412,8 @@ export function CreateComposeFields({
         </FieldHint>
         <FieldError errors={[formState.errors.name]} />
       </Field>
+
+      <NodePicker id="compose-node" value={nodeId} onChange={setNodeId} />
 
       <Field>
         <div className="flex items-center justify-between">

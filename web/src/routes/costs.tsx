@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CostBreakdown, CostMovers } from '../components/costs/CostBreakdown'
 import { CostBudgetsPanel } from '../components/costs/CostBudgetsPanel'
 import { CostForecastCard } from '../components/costs/CostForecastCard'
+import { CostServers } from '../components/costs/CostServers'
 import { CostIdleApps } from '../components/costs/CostIdleApps'
 import { CostTrendChart } from '../components/costs/CostTrendChart'
 import { useCostExplore } from '../queries/costExplorer'
@@ -180,6 +181,7 @@ function CostsPage() {
             <CostMovers data={data} />
           </div>
           <CostBreakdown data={data} />
+          <CostServers data={data} />
         </>
       ) : null}
       <Suspense fallback={<Skeleton className="h-24 w-full rounded-lg" />}>

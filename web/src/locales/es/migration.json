@@ -780,7 +780,16 @@
     "unsupported": "No se traslada",
     "instead": "En su lugar: {{alternative}}",
     "conflicts": "Nombre ya en uso",
-    "deploy": "Desplegar"
+    "deploy": "Desplegar",
+    "report": {
+      "title": "Import report",
+      "fix": "Fix: {{fix}}",
+      "severity": {
+        "blocker": "Blockers",
+        "changes-behavior": "Changes behavior",
+        "ignored-safe": "Ignored, safe"
+      }
+    }
   },
   "takeover": {
     "title": "Tomar los puertos de este servidor",
