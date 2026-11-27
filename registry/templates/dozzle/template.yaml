@@ -1,7 +1,7 @@
 id: dozzle
 name: Dozzle
-slogan: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain.
-description: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain.
+slogan: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.
+description: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.
 category: Monitoring
 documentation_url: https://dozzle.dev/guide/getting-started
 recommended_memory_bytes: 67108864
@@ -17,7 +17,7 @@ license_url: https://github.com/amir20/dozzle/blob/master/LICENSE
 manifest:
     id: dozzle
     name: Dozzle
-    description: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain.
+    description: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.
     icon: dozzle
     category: Monitoring
     documentation_url: https://dozzle.dev/guide/getting-started
@@ -36,14 +36,11 @@ manifest:
     aliases: []
     first_run:
         - Open the page and pick a container to watch its logs live.
-        - Dozzle has no login by default, so put it behind an authenticated domain.
+        - Dozzle has no login, so no public domain is set and it shows the logs of every app on this host. Keep it private, and add a domain only behind your own authentication.
     compose_file: compose.yaml
     recommended_memory_bytes: 67108864
     env: []
-    domains:
-        - service: dozzle
-          port: 8080
-          description: Public address of Dozzle.
+    domains: []
     healthcheck:
         service: dozzle
         port: 8080

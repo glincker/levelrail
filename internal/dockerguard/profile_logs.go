@@ -23,6 +23,8 @@ const (
 	respFilterList
 	respFilterInspect
 	respFilterEvents
+	respFilterInfo
+	respFilterInfoMin
 )
 
 type respFilterKey struct{}
@@ -45,12 +47,14 @@ func logsFilterFor(pattern string) respFilterKind {
 		return respFilterInspect
 	case "/events":
 		return respFilterEvents
+	case "/info":
+		return respFilterInfo
 	}
 	return respFilterNone
 }
 
-// filterResponse rewrites a successful logs-profile response so it never
-// carries environment, host paths or secret-looking labels.
+// filterResponse rewrites a successful response so it never carries
+// environment, command lines, host paths or secret-looking labels.
 func filterResponse(resp *http.Response) error {
 	kind := respFilterOf(resp.Request.Context())
 	if kind == respFilterNone || resp.StatusCode != http.StatusOK {
@@ -67,7 +71,13 @@ func filterResponse(resp *http.Response) error {
 	if err != nil || len(raw) > maxFilteredBody {
 		return errors.New("docker guard: response too large to filter")
 	}
-	out, err := FilterJSON(kind == respFilterList, raw)
+	var out []byte
+	switch kind {
+	case respFilterInfo, respFilterInfoMin:
+		out, err = filterInfo(raw, kind == respFilterInfo)
+	default:
+		out, err = FilterJSON(kind == respFilterList, raw)
+	}
 	if err != nil {
 		return err
 	}
@@ -77,70 +87,109 @@ func filterResponse(resp *http.Response) error {
 	return nil
 }
 
-// FilterJSON strips one inspect object, or each element of a list, down to
-// what a log viewer needs. Unknown fields pass through untouched.
+// FilterJSON rebuilds one inspect object, or each element of a list, from
+// explicit allowlists. A field not named here never reaches the client.
 func FilterJSON(list bool, raw []byte) ([]byte, error) {
 	if !list {
 		var obj map[string]json.RawMessage
 		if err := json.Unmarshal(raw, &obj); err != nil {
 			return nil, err
 		}
-		stripInspect(obj)
-		return json.Marshal(obj)
+		return json.Marshal(buildInspect(obj))
 	}
 	var items []map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &items); err != nil {
 		return nil, err
 	}
+	out := make([]map[string]json.RawMessage, 0, len(items))
 	for _, it := range items {
-		stripListItem(it)
+		out = append(out, buildListItem(it))
 	}
-	return json.Marshal(items)
+	return json.Marshal(out)
 }
 
-func stripListItem(it map[string]json.RawMessage) {
-	it["Labels"] = cleanLabels(it["Labels"])
-	if m, ok := it["Mounts"]; ok {
-		it["Mounts"] = reduceMounts(m)
-	}
-	delete(it, "HostConfig")
-}
-
-func stripInspect(obj map[string]json.RawMessage) {
-	for _, k := range []string{"ResolvConfPath", "HostnamePath", "HostsPath", "LogPath", "GraphDriver", "AppArmorProfile", "ExecIDs"} {
-		delete(obj, k)
-	}
-	if m, ok := obj["Mounts"]; ok {
-		obj["Mounts"] = reduceMounts(m)
-	}
-	obj["Config"] = editObject(obj["Config"], func(c map[string]json.RawMessage) {
-		c["Env"] = json.RawMessage("[]")
-		c["Labels"] = cleanLabels(c["Labels"])
-		delete(c, "Healthcheck")
-	})
-	obj["HostConfig"] = editObject(obj["HostConfig"], func(h map[string]json.RawMessage) {
-		delete(h, "Binds")
-		if m, ok := h["Mounts"]; ok {
-			h["Mounts"] = reduceHostMounts(m)
+// pick copies the named keys of src into a new object.
+func pick(src map[string]json.RawMessage, keys ...string) map[string]json.RawMessage {
+	out := map[string]json.RawMessage{}
+	for _, k := range keys {
+		if v, ok := src[k]; ok {
+			out[k] = v
 		}
-	})
-}
-
-func editObject(raw json.RawMessage, fn func(map[string]json.RawMessage)) json.RawMessage {
-	var m map[string]json.RawMessage
-	if len(raw) == 0 || json.Unmarshal(raw, &m) != nil || m == nil {
-		return json.RawMessage("{}")
-	}
-	fn(m)
-	out, err := json.Marshal(m)
-	if err != nil {
-		return json.RawMessage("{}")
 	}
 	return out
 }
 
-// cleanLabels drops labels whose key or value looks like a secret. Our own
-// reserved labels stay, they carry no operator data.
+func asObject(raw json.RawMessage) map[string]json.RawMessage {
+	var m map[string]json.RawMessage
+	if len(raw) == 0 || json.Unmarshal(raw, &m) != nil || m == nil {
+		return map[string]json.RawMessage{}
+	}
+	return m
+}
+
+func mustRaw(v any) json.RawMessage {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return json.RawMessage("{}")
+	}
+	return b
+}
+
+func buildListItem(it map[string]json.RawMessage) map[string]json.RawMessage {
+	out := pick(it, "Id", "Names", "Created", "State", "Status")
+	out["Image"] = cleanImage(it["Image"])
+	out["Labels"] = cleanLabels(it["Labels"])
+	out["HostConfig"] = mustRaw(pick(asObject(it["HostConfig"]), "NetworkMode"))
+	out["NetworkSettings"] = networkNames(asObject(it["NetworkSettings"])["Networks"])
+	return out
+}
+
+func buildInspect(obj map[string]json.RawMessage) map[string]json.RawMessage {
+	out := pick(obj, "Id", "Name", "Created", "RestartCount")
+	rawState := asObject(obj["State"])
+	state := pick(rawState, "Status", "Running", "Paused", "Restarting", "OOMKilled", "Dead", "ExitCode", "StartedAt", "FinishedAt")
+	if h := asObject(rawState["Health"]); len(h) > 0 {
+		state["Health"] = mustRaw(pick(h, "Status"))
+	}
+	out["State"] = mustRaw(state)
+	rawCfg := asObject(obj["Config"])
+	cfg := pick(rawCfg, "Tty")
+	cfg["Image"] = cleanImage(rawCfg["Image"])
+	cfg["Labels"] = cleanLabels(rawCfg["Labels"])
+	out["Config"] = mustRaw(cfg)
+	out["HostConfig"] = mustRaw(pick(asObject(obj["HostConfig"]), "RestartPolicy", "NetworkMode", "Memory", "NanoCpus"))
+	out["NetworkSettings"] = networkNames(asObject(obj["NetworkSettings"])["Networks"])
+	return out
+}
+
+// networkNames keeps each attached network's name and drops IPs and gateways.
+func networkNames(raw json.RawMessage) json.RawMessage {
+	nets := map[string]json.RawMessage{}
+	for name := range asObject(raw) {
+		nets[name] = json.RawMessage("{}")
+	}
+	return mustRaw(map[string]json.RawMessage{"Networks": mustRaw(nets)})
+}
+
+// cleanImage drops registry credentials a pasted image reference may carry.
+func cleanImage(raw json.RawMessage) json.RawMessage {
+	var s string
+	if json.Unmarshal(raw, &s) != nil {
+		return json.RawMessage(`""`)
+	}
+	if i := strings.Index(s, "://"); i >= 0 {
+		s = s[i+3:]
+	}
+	if host, rest, found := strings.Cut(s, "/"); found {
+		if at := strings.LastIndex(host, "@"); at >= 0 {
+			s = host[at+1:] + "/" + rest
+		}
+	}
+	return mustRaw(s)
+}
+
+// cleanLabels keeps only labels that are neither secret-looking nor host
+// paths. Our own reserved labels stay, they carry no operator data.
 func cleanLabels(raw json.RawMessage) json.RawMessage {
 	var labels map[string]string
 	if len(raw) == 0 || json.Unmarshal(raw, &labels) != nil {
@@ -148,42 +197,57 @@ func cleanLabels(raw json.RawMessage) json.RawMessage {
 	}
 	out := make(map[string]string, len(labels))
 	for k, v := range labels {
-		if !strings.HasPrefix(k, reservedLabelPrefix) && (envredact.SensitiveName(k) || envredact.SensitiveValue(k, v)) {
+		if !strings.HasPrefix(k, reservedLabelPrefix) && dropLabel(k, v) {
 			continue
 		}
 		out[k] = v
 	}
-	b, _ := json.Marshal(out)
-	return b
+	return mustRaw(out)
 }
 
-// keepFields reduces each object in a JSON array to the listed keys.
-func keepFields(raw json.RawMessage, keys ...string) json.RawMessage {
-	var in []map[string]json.RawMessage
-	if json.Unmarshal(raw, &in) != nil {
-		return json.RawMessage("[]")
+func dropLabel(k, v string) bool {
+	up := strings.ToUpper(k)
+	if strings.Contains(up, "AUTH") || strings.Contains(up, "USERS") {
+		return true
 	}
-	out := make([]map[string]json.RawMessage, 0, len(in))
-	for _, m := range in {
-		keep := map[string]json.RawMessage{}
-		for _, k := range keys {
-			if v, ok := m[k]; ok {
-				keep[k] = v
-			}
+	lk := strings.ToLower(k)
+	if strings.HasSuffix(lk, ".working_dir") || strings.HasSuffix(lk, ".config_files") {
+		return true
+	}
+	return looksLikeHostPath(v) || envredact.SensitiveName(k) || envredact.SensitiveValue(k, v)
+}
+
+// looksLikeHostPath matches absolute unix and windows paths, also in lists.
+func looksLikeHostPath(v string) bool {
+	parts := strings.FieldsFunc(v, func(r rune) bool { return r == ',' || r == ';' || r == ' ' })
+	for _, p := range parts {
+		if strings.HasPrefix(p, "/") && strings.Count(p, "/") >= 2 {
+			return true
 		}
-		out = append(out, keep)
+		if len(p) > 2 && p[1] == ':' && (p[2] == '\\' || p[2] == '/') {
+			return true
+		}
 	}
-	b, _ := json.Marshal(out)
-	return b
+	return false
 }
 
-// reduceMounts keeps type, volume name, destination and mode; host paths go.
-func reduceMounts(raw json.RawMessage) json.RawMessage {
-	return keepFields(raw, "Type", "Name", "Destination", "Mode", "RW")
-}
+// infoFields are the daemon versions and counts a viewer may read.
+var infoFields = []string{"ServerVersion", "OperatingSystem", "OSType", "Architecture", "NCPU", "MemTotal", "Containers", "ContainersRunning", "ContainersPaused", "ContainersStopped", "Images"}
 
-func reduceHostMounts(raw json.RawMessage) json.RawMessage {
-	return keepFields(raw, "Type", "Target", "ReadOnly")
+// filterInfo reduces /info to the allowlist; identity (ID, Name) is added
+// only for the logs profile, whose viewers label hosts with it.
+func filterInfo(raw []byte, withIdentity bool) ([]byte, error) {
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		return nil, err
+	}
+	out := pick(obj, infoFields...)
+	if withIdentity {
+		for k, v := range pick(obj, "ID", "Name") {
+			out[k] = v
+		}
+	}
+	return json.Marshal(out)
 }
 
 // newEventFilter re-encodes the event stream: exec events carry command
@@ -219,8 +283,8 @@ func filterEvent(ev map[string]json.RawMessage) bool {
 	if strings.HasPrefix(action, "exec_") || strings.HasPrefix(status, "exec_") {
 		return false
 	}
-	ev["Actor"] = editObject(ev["Actor"], func(a map[string]json.RawMessage) {
-		a["Attributes"] = cleanLabels(a["Attributes"])
-	})
+	actor := asObject(ev["Actor"])
+	actor["Attributes"] = cleanLabels(actor["Attributes"])
+	ev["Actor"] = mustRaw(actor)
 	return true
 }

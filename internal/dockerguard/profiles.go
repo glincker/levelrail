@@ -152,6 +152,10 @@ func (s ProfileSpec) match(method, path string) (profileEndpoint, bool) {
 		if s.Profile == ProfileLogs && e.Pattern == "/containers/*/top" {
 			continue
 		}
+		// Daemon info is for log viewers (full) and read_only (counts only).
+		if s.Profile == ProfileProject && e.Pattern == "/info" {
+			continue
+		}
 		return e, true
 	}
 	return profileEndpoint{}, false
@@ -256,6 +260,14 @@ func (g *ProfileGuard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if g.spec.Profile == ProfileLogs {
 		r = r.WithContext(withRespFilter(r.Context(), logsFilterFor(ep.Pattern)))
+		if ep.Pattern == "/containers/*/logs" {
+			// details would echo log driver extra attributes.
+			q := r.URL.Query()
+			q.Del("details")
+			r.URL.RawQuery = q.Encode()
+		}
+	} else if ep.Pattern == "/info" {
+		r = r.WithContext(withRespFilter(r.Context(), respFilterInfoMin))
 	}
 	if ep.Body != bodyNone && !g.rewriteBody(w, r, ep) {
 		return
