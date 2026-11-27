@@ -67,7 +67,12 @@ func runnableProbe(p *store.ServiceProbe, port int) *store.ServiceProbe {
 // dials its mesh address: the control plane's loopback is the wrong host.
 func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerState, p store.ServiceProbe, port int, nodeID string) (probe.Target, error) {
 	if !p.NeedsPort() {
-		return probe.Target{ContainerID: state.ID}, nil
+		t := probe.Target{ContainerID: state.ID}
+		// Best-effort TCP fallback for shell-less images where exec cannot run.
+		if addr, err := PrimaryAddr(state, port); port > 0 && nodeID == "" && err == nil {
+			t.FallbackAddr = addr
+		}
+		return t, nil
 	}
 	addr, err := PrimaryAddr(state, port)
 	if err != nil {

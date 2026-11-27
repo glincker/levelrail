@@ -106,6 +106,9 @@ type Target struct {
 	// Remote, when set, runs a TCP or HTTP attempt on the host that owns Addr
 	// instead of dialing it from this process.
 	Remote RemoteChecker
+	// FallbackAddr, when set on an exec probe target, is dialed over TCP if
+	// the command cannot run at all (shell-less image).
+	FallbackAddr string
 }
 
 // RemoteChecker runs one probe attempt on another host and returns the same
@@ -303,7 +306,11 @@ func (p *Prober) attempt(ctx context.Context, t Target, cfg Config) error {
 		return p.tcpAttempt(ctx, t.Addr, timeout)
 	}
 	if cfg.IsExec() {
-		return p.execAttempt(ctx, t.ContainerID, cfg.Exec, timeout)
+		err := p.execAttempt(ctx, t.ContainerID, cfg.Exec, timeout)
+		if err != nil && t.FallbackAddr != "" && execCannotRun(err) {
+			return p.tcpAttempt(ctx, t.FallbackAddr, timeout)
+		}
+		return err
 	}
 	return p.httpAttempt(ctx, t.Addr, cfg, timeout)
 }
