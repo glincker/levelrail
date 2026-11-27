@@ -86,6 +86,8 @@ type Config struct {
 	MirrorPrefix func(context.Context) string
 	// PidsLimit returns the live build.buildkitd_pids_limit at reconcile time; nil or 0 sets no limit.
 	PidsLimit func(context.Context) int
+	// CPUShares is the container CPU weight (APP_BUILDKIT_CPU_SHARES), below the engine default of 1024 so builds yield to the control plane; 0 leaves the default.
+	CPUShares int64
 }
 
 // SocketAddr is the unix address a BuildKit client dials.
@@ -180,6 +182,14 @@ func settingsFromEnv(get func(string) string, rootless bool) (Config, error) {
 			return Config{}, fmt.Errorf("buildkitd: bad %s %q", i.key, v)
 		}
 		*i.dst = n
+	}
+	cfg.CPUShares = defaultCPUShares
+	if v := get("APP_BUILDKIT_CPU_SHARES"); v != "" {
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || n < 0 || (n > 0 && n < 2) {
+			return Config{}, fmt.Errorf("buildkitd: bad APP_BUILDKIT_CPU_SHARES %q", v)
+		}
+		cfg.CPUShares = n
 	}
 	cfg.DiskPath = get("APP_BUILDKIT_GC_DISK_PATH")
 	durations := []struct {

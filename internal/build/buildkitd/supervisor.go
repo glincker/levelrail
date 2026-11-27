@@ -262,6 +262,7 @@ func (s *Supervisor) spec() docker.ContainerSpec {
 		Image:       s.imageRef(),
 		NetworkMode: "none",
 		PidsLimit:   s.pids,
+		CPUShares:   s.cfg.CPUShares,
 		// Platform container: it must come back after a daemon or host restart.
 		RestartPolicy: "unless-stopped",
 		Labels:        map[string]string{"levelrail.managed": "true", "levelrail.role": "buildkitd"},

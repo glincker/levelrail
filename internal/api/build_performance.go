@@ -57,8 +57,19 @@ func BuildLimitsSourceWithMemory(s BuildPerformanceStore, env build.Limits, mem 
 
 // BuildLimitsSourceWithHost also takes the base CPU cap in millicores from cpu, so a host share applies live.
 func BuildLimitsSourceWithHost(s BuildPerformanceStore, env build.Limits, mem, cpu func(context.Context) int) build.LimitsSource {
+	return BuildLimitsSourceWithParallel(s, env, mem, cpu, nil)
+}
+
+// BuildLimitsSourceWithParallel also takes the live build.max_parallel slot count from par (ok false means auto);
+// a saved build limit override still wins over it.
+func BuildLimitsSourceWithParallel(s BuildPerformanceStore, env build.Limits, mem, cpu func(context.Context) int, par func(context.Context) (int, bool)) build.LimitsSource {
 	return func(ctx context.Context, app string) build.Limits {
 		base := env
+		if par != nil {
+			if n, ok := par(ctx); ok {
+				base.MaxConcurrent = n
+			}
+		}
 		if mem != nil {
 			base.MemoryMB = mem(ctx)
 		}

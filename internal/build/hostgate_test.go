@@ -37,6 +37,16 @@ func TestDerivedMaxConcurrent(t *testing.T) {
 	}
 }
 
+func TestResolveMaxParallel(t *testing.T) {
+	for _, c := range []struct{ set, cpu, mem, want int }{
+		{0, 1, 0, 1}, {0, 2, 0, 1}, {0, 4, 0, 2}, {0, 4, 16384, 2}, {0, 8, 0, 4}, {0, 4, 4096, 1}, {3, 1, 1024, 3}, {1, 16, 65536, 1},
+	} {
+		if got := ResolveMaxParallel(c.set, c.cpu, c.mem); got != c.want {
+			t.Errorf("setting=%d cpus=%d mem=%d got %d want %d", c.set, c.cpu, c.mem, got, c.want)
+		}
+	}
+}
+
 func TestAdmitImagePullGate(t *testing.T) {
 	SetHostGate(nil)
 	if err := AdmitImagePull(context.Background(), nil); err != nil {

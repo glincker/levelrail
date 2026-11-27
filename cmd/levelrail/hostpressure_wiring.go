@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/api"
@@ -71,13 +72,24 @@ func topContainersByMemory(client *docker.Client) hostpressure.ConsumerFunc {
 	}
 }
 
-// derivedBuildLimits seeds build slots from CPU and RAM when APP_BUILD_MAX_CONCURRENT is unset; saved build limits still override it.
+// derivedBuildLimits seeds build slots from build.max_parallel (env), else CPU and RAM, when APP_BUILD_MAX_CONCURRENT is unset; saved build limits still override it.
 func derivedBuildLimits() build.Limits {
 	l := build.LimitsFromEnv(os.LookupEnv)
 	if v, ok := os.LookupEnv(build.EnvBuildMaxConcurrent); !ok || v == "" {
-		l.MaxConcurrent = build.DerivedMaxConcurrent(runtime.NumCPU(), hostMemoryMB())
+		seed, _ := strconv.Atoi(os.Getenv("APP_BUILD_MAX_PARALLEL"))
+		l.MaxConcurrent = build.ResolveMaxParallel(seed, runtime.NumCPU(), hostMemoryMB())
 	}
 	return l
+}
+
+// buildMaxParallel resolves the live build.max_parallel setting; ok is false until the settings service is bound or while it is 0 (auto).
+func buildMaxParallel(ctx context.Context) (int, bool) {
+	rs := buildMemorySettings.Load()
+	if rs == nil {
+		return 0, false
+	}
+	n := rs.Int(ctx, runtimesettings.KeyBuildMaxParallel)
+	return n, n > 0
 }
 
 // startHostPressure samples the host, feeds gauges and gates new local builds.
