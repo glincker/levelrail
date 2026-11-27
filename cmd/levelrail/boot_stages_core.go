@@ -227,7 +227,7 @@ func (s *bootState) startAgentServer() error {
 	meshEndpoints := newMeshEndpointBook(logger)
 	hostReports := agent.NewHostReportStore()
 	onboardingReports := agent.NewOnboardingStore()
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithOnboardingSink(onboardingReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithOnboardingSink(onboardingReports), agent.WithSessionObserver(meshEndpoints.Observe), agentFenceOption(db, logger))...)
 	agentServerRef.Store(agentServer)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	migrationAgent := migrateagent.NewService(db, agentCA, migrateagent.ConfigFromEnv(), logger, nil)

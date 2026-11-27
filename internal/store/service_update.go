@@ -17,7 +17,7 @@ import (
 // full-record-replace semantics.
 func (db *DB) UpdateServiceNode(ctx context.Context, name, nodeID string) error {
 	if err := db.updateServiceRow(ctx, "update node", name, `
-		UPDATE desired_services SET node_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+		UPDATE desired_services SET node_id = ?, fence_token = fence_token + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
 	`, nodeID, name); err != nil {
 		return err
 	}

@@ -21,6 +21,7 @@ const (
 	SecurityKindRenewFailed  = "renew_failed"
 	SecurityKindRevoke       = "revoke"
 	SecurityKindRenewRequest = "renew_requested"
+	SecurityKindStaleAction  = "stale_action_rejected"
 )
 
 // Node security event outcomes.

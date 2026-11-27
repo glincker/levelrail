@@ -3431,8 +3431,11 @@ func (x *PullImageRequest) GetRegistryBearer() string {
 }
 
 type RemoveVolumeRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+	FenceToken    uint64 `protobuf:"varint,2,opt,name=fence_token,json=fenceToken,proto3" json:"fence_token,omitempty"`
+	FenceTarget   string `protobuf:"bytes,3,opt,name=fence_target,json=fenceTarget,proto3" json:"fence_target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3470,6 +3473,20 @@ func (*RemoveVolumeRequest) Descriptor() ([]byte, []int) {
 func (x *RemoveVolumeRequest) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *RemoveVolumeRequest) GetFenceToken() uint64 {
+	if x != nil {
+		return x.FenceToken
+	}
+	return 0
+}
+
+func (x *RemoveVolumeRequest) GetFenceTarget() string {
+	if x != nil {
+		return x.FenceTarget
 	}
 	return ""
 }
@@ -5085,8 +5102,11 @@ func (x *CreateResponse) GetId() string {
 }
 
 type StartRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+	FenceToken    uint64 `protobuf:"varint,2,opt,name=fence_token,json=fenceToken,proto3" json:"fence_token,omitempty"`
+	FenceTarget   string `protobuf:"bytes,3,opt,name=fence_target,json=fenceTarget,proto3" json:"fence_target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5128,10 +5148,27 @@ func (x *StartRequest) GetId() string {
 	return ""
 }
 
+func (x *StartRequest) GetFenceToken() uint64 {
+	if x != nil {
+		return x.FenceToken
+	}
+	return 0
+}
+
+func (x *StartRequest) GetFenceTarget() string {
+	if x != nil {
+		return x.FenceTarget
+	}
+	return ""
+}
+
 type StopRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	TimeoutMs     int64                  `protobuf:"varint,2,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"` // internal/docker.Runtime.Stop's time.Duration, in milliseconds; negative means wait indefinitely
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TimeoutMs int64                  `protobuf:"varint,2,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"` // internal/docker.Runtime.Stop's time.Duration, in milliseconds; negative means wait indefinitely
+	// fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+	FenceToken    uint64 `protobuf:"varint,3,opt,name=fence_token,json=fenceToken,proto3" json:"fence_token,omitempty"`
+	FenceTarget   string `protobuf:"bytes,4,opt,name=fence_target,json=fenceTarget,proto3" json:"fence_target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5180,10 +5217,27 @@ func (x *StopRequest) GetTimeoutMs() int64 {
 	return 0
 }
 
+func (x *StopRequest) GetFenceToken() uint64 {
+	if x != nil {
+		return x.FenceToken
+	}
+	return 0
+}
+
+func (x *StopRequest) GetFenceTarget() string {
+	if x != nil {
+		return x.FenceTarget
+	}
+	return ""
+}
+
 type RemoveRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Force         bool                   `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Force bool                   `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
+	// fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+	FenceToken    uint64 `protobuf:"varint,3,opt,name=fence_token,json=fenceToken,proto3" json:"fence_token,omitempty"`
+	FenceTarget   string `protobuf:"bytes,4,opt,name=fence_target,json=fenceTarget,proto3" json:"fence_target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5230,6 +5284,20 @@ func (x *RemoveRequest) GetForce() bool {
 		return x.Force
 	}
 	return false
+}
+
+func (x *RemoveRequest) GetFenceToken() uint64 {
+	if x != nil {
+		return x.FenceToken
+	}
+	return 0
+}
+
+func (x *RemoveRequest) GetFenceTarget() string {
+	if x != nil {
+		return x.FenceTarget
+	}
+	return ""
 }
 
 // UpdateResourcesRequest applies new memory/CPU/swap/cpuset limits to an
@@ -5658,8 +5726,11 @@ func (x *EnsureNetworkResponse) GetId() string {
 }
 
 type RemoveNetworkRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+	FenceToken    uint64 `protobuf:"varint,2,opt,name=fence_token,json=fenceToken,proto3" json:"fence_token,omitempty"`
+	FenceTarget   string `protobuf:"bytes,3,opt,name=fence_target,json=fenceTarget,proto3" json:"fence_target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5697,6 +5768,20 @@ func (*RemoveNetworkRequest) Descriptor() ([]byte, []int) {
 func (x *RemoveNetworkRequest) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *RemoveNetworkRequest) GetFenceToken() uint64 {
+	if x != nil {
+		return x.FenceToken
+	}
+	return 0
+}
+
+func (x *RemoveNetworkRequest) GetFenceTarget() string {
+	if x != nil {
+		return x.FenceTarget
 	}
 	return ""
 }
@@ -5754,10 +5839,13 @@ func (x *NetworkConnectRequest) GetContainerId() string {
 }
 
 type NetworkDisconnectRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Network       string                 `protobuf:"bytes,1,opt,name=network,proto3" json:"network,omitempty"`
-	ContainerId   string                 `protobuf:"bytes,2,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
-	Force         bool                   `protobuf:"varint,3,opt,name=force,proto3" json:"force,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Network     string                 `protobuf:"bytes,1,opt,name=network,proto3" json:"network,omitempty"`
+	ContainerId string                 `protobuf:"bytes,2,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
+	Force       bool                   `protobuf:"varint,3,opt,name=force,proto3" json:"force,omitempty"`
+	// fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+	FenceToken    uint64 `protobuf:"varint,4,opt,name=fence_token,json=fenceToken,proto3" json:"fence_token,omitempty"`
+	FenceTarget   string `protobuf:"bytes,5,opt,name=fence_target,json=fenceTarget,proto3" json:"fence_target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5811,6 +5899,20 @@ func (x *NetworkDisconnectRequest) GetForce() bool {
 		return x.Force
 	}
 	return false
+}
+
+func (x *NetworkDisconnectRequest) GetFenceToken() uint64 {
+	if x != nil {
+		return x.FenceToken
+	}
+	return 0
+}
+
+func (x *NetworkDisconnectRequest) GetFenceTarget() string {
+	if x != nil {
+		return x.FenceTarget
+	}
+	return ""
 }
 
 type ListNetworksByPrefixRequest struct {
@@ -9130,8 +9232,11 @@ type CleanupRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	DryRun         bool                   `protobuf:"varint,1,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
 	KeepContainers []string               `protobuf:"bytes,2,rep,name=keep_containers,json=keepContainers,proto3" json:"keep_containers,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+	FenceToken    uint64 `protobuf:"varint,3,opt,name=fence_token,json=fenceToken,proto3" json:"fence_token,omitempty"`
+	FenceTarget   string `protobuf:"bytes,4,opt,name=fence_target,json=fenceTarget,proto3" json:"fence_target,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CleanupRequest) Reset() {
@@ -9176,6 +9281,20 @@ func (x *CleanupRequest) GetKeepContainers() []string {
 		return x.KeepContainers
 	}
 	return nil
+}
+
+func (x *CleanupRequest) GetFenceToken() uint64 {
+	if x != nil {
+		return x.FenceToken
+	}
+	return 0
+}
+
+func (x *CleanupRequest) GetFenceTarget() string {
+	if x != nil {
+		return x.FenceTarget
+	}
+	return ""
 }
 
 type CleanupItem struct {
@@ -9623,9 +9742,12 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x05lines\x18\x01 \x03(\v2\x1b.levelrail.agent.v1.LogLineR\x05lines\"M\n" +
 	"\x10PullImageRequest\x12\x10\n" +
 	"\x03ref\x18\x01 \x01(\tR\x03ref\x12'\n" +
-	"\x0fregistry_bearer\x18\x02 \x01(\tR\x0eregistryBearer\")\n" +
+	"\x0fregistry_bearer\x18\x02 \x01(\tR\x0eregistryBearer\"m\n" +
 	"\x13RemoveVolumeRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"\a\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
+	"\vfence_token\x18\x02 \x01(\x04R\n" +
+	"fenceToken\x12!\n" +
+	"\ffence_target\x18\x03 \x01(\tR\vfenceTarget\"\a\n" +
 	"\x05Empty\"\v\n" +
 	"\tHeartbeat\"\x86\x01\n" +
 	"\vPortBinding\x12%\n" +
@@ -9773,16 +9895,25 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\rCreateRequest\x125\n" +
 	"\x04spec\x18\x01 \x01(\v2!.levelrail.agent.v1.ContainerSpecR\x04spec\" \n" +
 	"\x0eCreateResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x1e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"b\n" +
 	"\fStartRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"<\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
+	"\vfence_token\x18\x02 \x01(\x04R\n" +
+	"fenceToken\x12!\n" +
+	"\ffence_target\x18\x03 \x01(\tR\vfenceTarget\"\x80\x01\n" +
 	"\vStopRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
-	"timeout_ms\x18\x02 \x01(\x03R\ttimeoutMs\"5\n" +
+	"timeout_ms\x18\x02 \x01(\x03R\ttimeoutMs\x12\x1f\n" +
+	"\vfence_token\x18\x03 \x01(\x04R\n" +
+	"fenceToken\x12!\n" +
+	"\ffence_target\x18\x04 \x01(\tR\vfenceTarget\"y\n" +
 	"\rRemoveRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05force\x18\x02 \x01(\bR\x05force\"e\n" +
+	"\x05force\x18\x02 \x01(\bR\x05force\x12\x1f\n" +
+	"\vfence_token\x18\x03 \x01(\x04R\n" +
+	"fenceToken\x12!\n" +
+	"\ffence_target\x18\x04 \x01(\tR\vfenceTarget\"e\n" +
 	"\x16UpdateResourcesRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12;\n" +
 	"\tresources\x18\x02 \x01(\v2\x1d.levelrail.agent.v1.ResourcesR\tresources\"'\n" +
@@ -9808,16 +9939,22 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"'\n" +
 	"\x15EnsureNetworkResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"*\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"n\n" +
 	"\x14RemoveNetworkRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"T\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
+	"\vfence_token\x18\x02 \x01(\x04R\n" +
+	"fenceToken\x12!\n" +
+	"\ffence_target\x18\x03 \x01(\tR\vfenceTarget\"T\n" +
 	"\x15NetworkConnectRequest\x12\x18\n" +
 	"\anetwork\x18\x01 \x01(\tR\anetwork\x12!\n" +
-	"\fcontainer_id\x18\x02 \x01(\tR\vcontainerId\"m\n" +
+	"\fcontainer_id\x18\x02 \x01(\tR\vcontainerId\"\xb1\x01\n" +
 	"\x18NetworkDisconnectRequest\x12\x18\n" +
 	"\anetwork\x18\x01 \x01(\tR\anetwork\x12!\n" +
 	"\fcontainer_id\x18\x02 \x01(\tR\vcontainerId\x12\x14\n" +
-	"\x05force\x18\x03 \x01(\bR\x05force\"5\n" +
+	"\x05force\x18\x03 \x01(\bR\x05force\x12\x1f\n" +
+	"\vfence_token\x18\x04 \x01(\x04R\n" +
+	"fenceToken\x12!\n" +
+	"\ffence_target\x18\x05 \x01(\tR\vfenceTarget\"5\n" +
 	"\x1bListNetworksByPrefixRequest\x12\x16\n" +
 	"\x06prefix\x18\x01 \x01(\tR\x06prefix\"[\n" +
 	"\x1cListNetworksByPrefixResponse\x12;\n" +
@@ -10082,10 +10219,13 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x05peers\x18\x02 \x03(\v2\".levelrail.agent.v1.MeshPeerStatusR\x05peers\"c\n" +
 	"\x15RotateMeshKeyResponse\x12$\n" +
 	"\x0eold_public_key\x18\x01 \x01(\tR\foldPublicKey\x12$\n" +
-	"\x0enew_public_key\x18\x02 \x01(\tR\fnewPublicKey\"R\n" +
+	"\x0enew_public_key\x18\x02 \x01(\tR\fnewPublicKey\"\x96\x01\n" +
 	"\x0eCleanupRequest\x12\x17\n" +
 	"\adry_run\x18\x01 \x01(\bR\x06dryRun\x12'\n" +
-	"\x0fkeep_containers\x18\x02 \x03(\tR\x0ekeepContainers\"p\n" +
+	"\x0fkeep_containers\x18\x02 \x03(\tR\x0ekeepContainers\x12\x1f\n" +
+	"\vfence_token\x18\x03 \x01(\x04R\n" +
+	"fenceToken\x12!\n" +
+	"\ffence_target\x18\x04 \x01(\tR\vfenceTarget\"p\n" +
 	"\vCleanupItem\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06detail\x18\x02 \x01(\tR\x06detail\x12\x1d\n" +

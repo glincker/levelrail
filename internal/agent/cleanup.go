@@ -89,9 +89,11 @@ func (t *GRPCTransport) NodeCleanup(ctx context.Context, dryRun bool, keep []str
 	if !t.caps.has(CapNodeCleanup) {
 		return nodecapacity.Result{}, ErrAgentLacksCapability
 	}
-	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{Op: &agentpb.AgentRequest_Cleanup{
-		Cleanup: &agentpb.CleanupRequest{DryRun: dryRun, KeepContainers: keep},
-	}})
+	resp, err := t.destructive(ctx, "cleanup", func(tok uint64, tg string) *agentpb.AgentRequest {
+		return &agentpb.AgentRequest{Op: &agentpb.AgentRequest_Cleanup{
+			Cleanup: &agentpb.CleanupRequest{DryRun: dryRun, KeepContainers: keep, FenceToken: tok, FenceTarget: tg},
+		}}
+	})
 	if err != nil {
 		return nodecapacity.Result{}, fmt.Errorf("agent: node cleanup: %w", err)
 	}

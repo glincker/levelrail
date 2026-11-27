@@ -212,6 +212,7 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		opts = append(opts, agent.WithMesh(holder.Current().NodeID, meshCfg.sink))
 	}
 	opts = append(opts, agent.WithHostProbe(agent.NewHostProbe(rt, agentDataDir())))
+	opts = append(opts, agent.WithFenceState(filepath.Join(agentDataDir(), "fence-tokens.json")))
 	opts = append(opts, agent.WithOnboardingProbe(
 		agent.NewOnboardingProbe(rt, agentDataDir(), meshCfg != nil, cloudmeta.SystemConfig()),
 		agent.OnboardingIntervalFromEnv(os.LookupEnv)))

@@ -17,6 +17,7 @@ account.preferences_max_bytes
 advisor.auto_apply
 advisor.idle_hours
 advisor.node_prices
+agent.fence_required
 alerting.self_heartbeat_interval
 alerting.self_heartbeat_url
 alerts.advisory_min_severity

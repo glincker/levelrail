@@ -22,6 +22,7 @@ type GRPCTransport struct {
 	// tunnels and nodeID are set by the server for a live session; nil in tests that do not tunnel.
 	tunnels *tunnelHub
 	nodeID  string
+	fence   FenceHooks
 }
 
 // capSet holds what an agent advertised in its hello. It is shared with the
@@ -140,8 +141,8 @@ func (t *GRPCTransport) Create(ctx context.Context, spec docker.ContainerSpec) (
 
 // Start implements Transport (docker.Runtime).
 func (t *GRPCTransport) Start(ctx context.Context, id string) error {
-	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
-		Op: &agentpb.AgentRequest_Start{Start: &agentpb.StartRequest{Id: id}},
+	_, err := t.destructive(ctx, "start", func(tok uint64, tg string) *agentpb.AgentRequest {
+		return &agentpb.AgentRequest{Op: &agentpb.AgentRequest_Start{Start: &agentpb.StartRequest{Id: id, FenceToken: tok, FenceTarget: tg}}}
 	})
 	return err
 }
@@ -152,16 +153,16 @@ func (t *GRPCTransport) Stop(ctx context.Context, id string, timeout time.Durati
 	if timeout < 0 {
 		ms = -1
 	}
-	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
-		Op: &agentpb.AgentRequest_Stop{Stop: &agentpb.StopRequest{Id: id, TimeoutMs: ms}},
+	_, err := t.destructive(ctx, "stop", func(tok uint64, tg string) *agentpb.AgentRequest {
+		return &agentpb.AgentRequest{Op: &agentpb.AgentRequest_Stop{Stop: &agentpb.StopRequest{Id: id, TimeoutMs: ms, FenceToken: tok, FenceTarget: tg}}}
 	})
 	return err
 }
 
 // Remove implements Transport (docker.Runtime).
 func (t *GRPCTransport) Remove(ctx context.Context, id string, force bool) error {
-	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
-		Op: &agentpb.AgentRequest_Remove{Remove: &agentpb.RemoveRequest{Id: id, Force: force}},
+	_, err := t.destructive(ctx, "remove", func(tok uint64, tg string) *agentpb.AgentRequest {
+		return &agentpb.AgentRequest{Op: &agentpb.AgentRequest_Remove{Remove: &agentpb.RemoveRequest{Id: id, Force: force, FenceToken: tok, FenceTarget: tg}}}
 	})
 	return err
 }
@@ -533,8 +534,8 @@ func (t *GRPCTransport) EnsureLabeledNetwork(ctx context.Context, name string, l
 
 // RemoveNetwork implements Transport (docker.Runtime).
 func (t *GRPCTransport) RemoveNetwork(ctx context.Context, name string) error {
-	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
-		Op: &agentpb.AgentRequest_RemoveNetwork{RemoveNetwork: &agentpb.RemoveNetworkRequest{Name: name}},
+	_, err := t.destructive(ctx, "remove_network", func(tok uint64, tg string) *agentpb.AgentRequest {
+		return &agentpb.AgentRequest{Op: &agentpb.AgentRequest_RemoveNetwork{RemoveNetwork: &agentpb.RemoveNetworkRequest{Name: name, FenceToken: tok, FenceTarget: tg}}}
 	})
 	return err
 }
@@ -549,8 +550,8 @@ func (t *GRPCTransport) NetworkConnect(ctx context.Context, network, containerID
 
 // NetworkDisconnect implements Transport (docker.Runtime).
 func (t *GRPCTransport) NetworkDisconnect(ctx context.Context, network, containerID string, force bool) error {
-	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
-		Op: &agentpb.AgentRequest_NetworkDisconnect{NetworkDisconnect: &agentpb.NetworkDisconnectRequest{Network: network, ContainerId: containerID, Force: force}},
+	_, err := t.destructive(ctx, "network_disconnect", func(tok uint64, tg string) *agentpb.AgentRequest {
+		return &agentpb.AgentRequest{Op: &agentpb.AgentRequest_NetworkDisconnect{NetworkDisconnect: &agentpb.NetworkDisconnectRequest{Network: network, ContainerId: containerID, Force: force, FenceToken: tok, FenceTarget: tg}}}
 	})
 	return err
 }

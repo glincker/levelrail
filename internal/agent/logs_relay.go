@@ -144,8 +144,8 @@ var ErrVolumeRemoveUnsupported = errors.New("agent: this node's runtime cannot r
 
 // RemoveVolume implements docker.VolumeRemover over the wire.
 func (t *GRPCTransport) RemoveVolume(ctx context.Context, name string) error {
-	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
-		Op: &agentpb.AgentRequest_RemoveVolume{RemoveVolume: &agentpb.RemoveVolumeRequest{Name: name}},
+	_, err := t.destructive(ctx, "remove_volume", func(tok uint64, tg string) *agentpb.AgentRequest {
+		return &agentpb.AgentRequest{Op: &agentpb.AgentRequest_RemoveVolume{RemoveVolume: &agentpb.RemoveVolumeRequest{Name: name, FenceToken: tok, FenceTarget: tg}}}
 	})
 	return err
 }

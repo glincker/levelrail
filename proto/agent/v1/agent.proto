@@ -484,6 +484,9 @@ message PullImageRequest {
 
 message RemoveVolumeRequest {
   string name = 1;
+  // fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+  uint64 fence_token = 2;
+  string fence_target = 3;
 }
 
 message Empty {}
@@ -708,16 +711,25 @@ message CreateResponse {
 
 message StartRequest {
   string id = 1;
+  // fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+  uint64 fence_token = 2;
+  string fence_target = 3;
 }
 
 message StopRequest {
   string id = 1;
   int64 timeout_ms = 2; // internal/docker.Runtime.Stop's time.Duration, in milliseconds; negative means wait indefinitely
+  // fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+  uint64 fence_token = 3;
+  string fence_target = 4;
 }
 
 message RemoveRequest {
   string id = 1;
   bool force = 2;
+  // fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+  uint64 fence_token = 3;
+  string fence_target = 4;
 }
 
 // UpdateResourcesRequest applies new memory/CPU/swap/cpuset limits to an
@@ -763,6 +775,9 @@ message EnsureNetworkResponse {
 
 message RemoveNetworkRequest {
   string name = 1;
+  // fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+  uint64 fence_token = 2;
+  string fence_target = 3;
 }
 
 message NetworkConnectRequest {
@@ -774,6 +789,9 @@ message NetworkDisconnectRequest {
   string network = 1;
   string container_id = 2;
   bool force = 3;
+  // fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+  uint64 fence_token = 4;
+  string fence_target = 5;
 }
 
 message ListNetworksByPrefixRequest {
@@ -1296,6 +1314,9 @@ message RotateMeshKeyResponse {
 message CleanupRequest {
   bool dry_run = 1;
   repeated string keep_containers = 2;
+  // fence_token is the control plane's placement token for fence_target; 0 means not fenced (older control plane).
+  uint64 fence_token = 3;
+  string fence_target = 4;
 }
 
 message CleanupItem {

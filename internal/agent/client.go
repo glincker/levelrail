@@ -420,6 +420,10 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 				go handleMeshStatus(ctx, mesh, req.GetRequestId(), send)
 				continue
 			}
+			if ferr := processFence.CheckRequest(req); ferr != nil {
+				send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: &agentpb.AgentResponse{RequestId: req.GetRequestId(), Error: ferr.Error()}}})
+				continue
+			}
 			go func() {
 				resp := Execute(ctx, rt, req, emitEvent)
 				send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: resp}})
