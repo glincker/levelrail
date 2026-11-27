@@ -273,6 +273,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		notices = append(notices, composeNoticeResult{Level: string(n.Level), Message: n.Message})
 	}
 
+	if n := firewallNotice(services); n != nil {
+		notices = append(notices, *n)
+	}
+
 	revision := 0
 	if stored := redactedComposeBody(rt.logger, body); stored != nil {
 		revision = rt.recordComposeRevision(r, name, stored, opts)

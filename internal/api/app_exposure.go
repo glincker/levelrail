@@ -427,9 +427,11 @@ func (rt *Router) handleSetAppExposure(w http.ResponseWriter, r *http.Request) {
 	if plan.HostPort > 0 {
 		hp := plan.HostPort
 		next.HostPort = &hp
+		next.PublishedPorts = withoutShadowedPublishedPorts(next.PublishedPorts, plan.HostPort)
 	}
 	rebase := func(fresh store.DesiredService) store.DesiredService {
 		fresh.Port, fresh.BindAddress, fresh.HostPort = next.Port, next.BindAddress, next.HostPort
+		fresh.PublishedPorts = next.PublishedPorts
 		return fresh
 	}
 	if _, err := rt.saveOwned(r.Context(), next, rebase); err != nil {
