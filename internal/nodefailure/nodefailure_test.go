@@ -61,6 +61,8 @@ type fakeExec struct {
 	volumes  map[string][]string
 	failNext bool
 	fenced   []string
+	token    map[string]uint64 // placement token, bumped by Place like UpdateServiceNode
+	fenceTok map[string]uint64 // token read when Fence ran
 	audits   int
 }
 
@@ -86,10 +88,12 @@ func (e *fakeExec) Place(_ context.Context, _, name, node string) error {
 		return errors.New("boom")
 	}
 	e.placed[name] = node
+	e.token[name]++
 	return nil
 }
 func (e *fakeExec) Fence(_ context.Context, _, name, node string) error {
 	e.fenced = append(e.fenced, name+"@"+node)
+	e.fenceTok[name] = e.token[name]
 	return nil
 }
 func (e *fakeExec) Audit(context.Context, string, string) { e.audits++ }
@@ -101,7 +105,8 @@ func setup(lastSeen time.Time, mode string) (*Controller, *fakeStore, *fakeExec,
 		policy: store.NodeFailurePolicy{Mode: mode},
 		state:  map[string]*store.NodeFailureState{},
 	}
-	fe := &fakeExec{placed: map[string]string{"web": "n1", "db-app": "n1"}, volumes: map[string][]string{"db-app": {"data"}}}
+	fe := &fakeExec{placed: map[string]string{"web": "n1", "db-app": "n1"}, volumes: map[string][]string{"db-app": {"data"}},
+		token: map[string]uint64{"web": 1, "db-app": 1}, fenceTok: map[string]uint64{}}
 	cfg := Config{Mode: store.NodeFailureModeOff, Grace: time.Minute, RecoveryHold: time.Minute, Interval: time.Second}
 	c := New(fs, fe, cfg, slog.New(slog.NewTextHandler(io.Discard, nil)), WithClock(func() time.Time { return now }))
 	return c, fs, fe, &now
@@ -176,5 +181,22 @@ func TestFencingOnReturnAndFlapHysteresis(t *testing.T) {
 	c.Tick(ctx)
 	if fs.state["n1"] != nil || !fs.nodes["n1"].Schedulable {
 		t.Fatal("state should clear and the node be uncordoned after the recovery hold")
+	}
+}
+
+func TestFenceUsesTokenBumpedByPlace(t *testing.T) {
+	seen := time.Unix(1000, 0)
+	c, fs, fe, now := setup(seen, store.NodeFailureModeAuto)
+	ctx := context.Background()
+	*now = seen.Add(2 * time.Minute)
+	c.Tick(ctx)
+	back := *now
+	fs.nodes["n1"].LastSeenAt = &back
+	c.Tick(ctx)
+	if fe.token["web"] != 2 {
+		t.Fatalf("place must bump the token once, got %d", fe.token["web"])
+	}
+	if fe.fenceTok["web"] <= 1 {
+		t.Fatalf("fence must carry a token above the pre-move one, got %d", fe.fenceTok["web"])
 	}
 }

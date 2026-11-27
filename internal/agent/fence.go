@@ -40,6 +40,19 @@ func WithFence(ctx context.Context, target string, token uint64) context.Context
 	return context.WithValue(ctx, fenceCtxKey{}, fenceInfo{target: target, token: token})
 }
 
+// FenceCtx stamps ctx with the token read for target now. Call it after any placement change
+// so a stale in-flight action keeps the older token. A read failure or a zero token leaves ctx unfenced.
+func FenceCtx(ctx context.Context, read func(context.Context, string) (uint64, error), target string) context.Context {
+	if read == nil || target == "" {
+		return ctx
+	}
+	tok, err := read(ctx, target)
+	if err != nil || tok == 0 {
+		return ctx
+	}
+	return WithFence(ctx, target, tok)
+}
+
 func fenceFrom(ctx context.Context) (fenceInfo, bool) {
 	fi, ok := ctx.Value(fenceCtxKey{}).(fenceInfo)
 	return fi, ok && fi.target != "" && fi.token > 0

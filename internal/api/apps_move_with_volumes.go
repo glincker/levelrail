@@ -221,7 +221,7 @@ func (rt *Router) runAppVolumeMove(ctx context.Context, moveID, serviceName, fro
 		if err := rt.apps.UpdateServiceSuspended(ctx, serviceName, true); err != nil {
 			return err
 		}
-		return application.New(serviceName, rt.apps, srcRuntime).Teardown(ctx)
+		return application.New(serviceName, rt.apps, srcRuntime).Teardown(rt.fenced(ctx, serviceName))
 	}) {
 		return
 	}

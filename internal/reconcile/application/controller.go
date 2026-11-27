@@ -260,8 +260,9 @@ type Controller struct {
 	hookTimeout            time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
 	wakeWindow             WakeWindowReader        // nil is valid: no short probe interval after a wake, see WithWakeProbe
 	wakeProbeInterval      time.Duration
-	liveness               *LivenessTracker // per-container liveness failure counts, in memory only, see LivenessTracker
-	instanceID             string           // empty means no instance-ownership check, see WithInstanceID
+	liveness               *LivenessTracker                                          // per-container liveness failure counts, in memory only, see LivenessTracker
+	fenceCtx               func(ctx context.Context, service string) context.Context // nil means unfenced
+	instanceID             string                                                    // empty means no instance-ownership check, see WithInstanceID
 	// egressReadyBudget/egressReadyPollInterval override
 	// defaultEgressReadyBudget/defaultEgressReadyPollInterval (egress.go);
 	// zero means "use the default", see effectiveEgressReadyBudget and
@@ -514,6 +515,12 @@ func WithInstanceID(id string) Option {
 	return func(ctrl *Controller) { ctrl.instanceID = id }
 }
 
+// WithFence stamps each pass and teardown with the service's current placement token, so a destructive call
+// that outlives a move is refused by the agent or the control plane.
+func WithFence(f func(ctx context.Context, service string) context.Context) Option {
+	return func(ctrl *Controller) { ctrl.fenceCtx = f }
+}
+
 // WithHookRunRecorder enables persisting every pre/post-deploy hook run's
 // outcome. Without one configured (the default), configured hooks still
 // execute and still gate the deploy exactly the same way; only the
@@ -621,11 +628,19 @@ func IsServiceControllerName(name string) bool {
 	return ok && svc != "" && svc != "delete-finalizer" && svc != "network-cleanup" && !strings.Contains(svc, "/")
 }
 
+func (c *Controller) fenced(ctx context.Context) context.Context {
+	if c.fenceCtx == nil {
+		return ctx
+	}
+	return c.fenceCtx(ctx, c.serviceName)
+}
+
 // ReasonMaintenanceHold is the result reason while DesiredService.MaintenanceHold is set.
 const ReasonMaintenanceHold = "MaintenanceHold"
 
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+	ctx = c.fenced(ctx)
 	started, err := c.store.GetDesiredService(ctx, c.serviceName)
 	result, rerr := c.reconcileDesired(ctx, started, err)
 	if err != nil || started == nil {
@@ -790,6 +805,7 @@ func isReady(r reconcile.Result) bool {
 // Reconcile treats ErrServiceNotFound as "not deployed yet," not "stop
 // everything," so a deleted service is never reconciled again otherwise.
 func (c *Controller) Teardown(ctx context.Context) error {
+	ctx = c.fenced(ctx)
 	if c.dockerAPI != nil {
 		c.dockerAPI.Revoke(c.serviceName)
 	}

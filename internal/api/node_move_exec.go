@@ -194,6 +194,16 @@ func (e *moveExecutor) dependents(ctx context.Context, dbName string) ([]store.D
 	return out, nil
 }
 
+// fenced stamps ctx with the app's token as recorded now, so call it after any placement change.
+func (rt *Router) fenced(ctx context.Context, name string) context.Context {
+	if r, ok := rt.apps.(interface {
+		ServiceFenceToken(ctx context.Context, name string) (uint64, error)
+	}); ok {
+		return agent.FenceCtx(ctx, r.ServiceFenceToken, name)
+	}
+	return ctx
+}
+
 func (e *moveExecutor) Stop(ctx context.Context, kind, name, nodeID string) error {
 	runtime, err := e.rt.execRuntime(nodeID)
 	if err != nil {
@@ -208,7 +218,7 @@ func (e *moveExecutor) Stop(ctx context.Context, kind, name, nodeID string) erro
 	if err := e.rt.apps.UpdateServiceSuspended(ctx, name, true); err != nil {
 		return err
 	}
-	return application.New(name, e.rt.apps, runtime).Teardown(ctx)
+	return application.New(name, e.rt.apps, runtime).Teardown(e.rt.fenced(ctx, name))
 }
 
 func (e *moveExecutor) CopyVolume(ctx context.Context, fromNodeID, toNodeID, volume string) error {
@@ -308,7 +318,7 @@ func (e *moveExecutor) RemoveFrom(ctx context.Context, kind, name, nodeID string
 		if kind == store.NodeMoveKindDatabase {
 			err = database.New(name, e.rt.databases, runtime).Teardown(ctx)
 		} else {
-			err = application.New(name, e.rt.apps, runtime).Teardown(ctx)
+			err = application.New(name, e.rt.apps, runtime).Teardown(e.rt.fenced(ctx, name))
 		}
 	}
 	if err == nil || kind == store.NodeMoveKindDatabase {

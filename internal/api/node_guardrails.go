@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/nodecapacity"
@@ -396,7 +397,8 @@ func (rt *Router) runNodeCleanup(ctx context.Context, nodeID, trigger, actor str
 	} else if c := rt.remoteCleaner(nodeID); c != nil {
 		var keep []string
 		if keep, err = rt.keepContainerNames(ctx); err == nil {
-			res, err = c.NodeCleanup(ctx, false, keep)
+			// Node scope: the millisecond stamp grows with time, so an older cleanup with a staler keep list is refused.
+			res, err = c.NodeCleanup(agent.WithFence(ctx, "node:"+nodeID, uint64(time.Now().UnixMilli())), false, keep) //nolint:gosec // UnixMilli is positive
 		}
 	} else {
 		err = errors.New("cleanup is not available on this node")

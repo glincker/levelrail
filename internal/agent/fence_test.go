@@ -119,3 +119,64 @@ func TestDestructiveRejectsStaleCompletion(t *testing.T) {
 		})
 	}
 }
+
+func TestFenceCtxAroundMove(t *testing.T) {
+	token := uint64(1)
+	read := func(context.Context, string) (uint64, error) { return token, nil }
+	caps := &capSet{}
+	caps.store([]string{CapFenceToken})
+
+	type sent struct {
+		tok    uint64
+		target string
+		err    error
+	}
+	run := func(ctx context.Context, current uint64) sent {
+		stream := newFakeSessionStream()
+		tr := newGRPCTransportWithCaps(newMux(stream), caps)
+		tr.fence = FenceHooks{Current: func(context.Context, string) (uint64, error) { return current, nil }}
+		done := make(chan error, 1)
+		go func() { done <- tr.Remove(ctx, "c1", true) }()
+		var req *agentpb.AgentRequest
+		select {
+		case msg := <-stream.sent:
+			req = msg.GetRequest()
+		case <-time.After(2 * time.Second):
+			t.Fatal("no request sent")
+		}
+		stream.recv <- &agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: &agentpb.AgentResponse{RequestId: req.GetRequestId()}}}
+		var err error
+		select {
+		case err = <-done:
+		case <-time.After(2 * time.Second):
+			t.Fatal("call did not return")
+		}
+		return sent{req.GetRemove().GetFenceToken(), req.GetRemove().GetFenceTarget(), err}
+	}
+
+	before := FenceCtx(context.Background(), read, "web")
+	token = 2 // a move bumps the placement token
+	after := FenceCtx(context.Background(), read, "web")
+
+	cases := []struct {
+		name    string
+		ctx     context.Context
+		wantTok uint64
+		wantErr error
+	}{
+		{"action after the move carries the new token", after, 2, nil},
+		{"in-flight action from before the move is rejected", before, 1, ErrStaleAction},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := run(c.ctx, token)
+			if got.tok != c.wantTok || got.target != "web" || !errors.Is(got.err, c.wantErr) {
+				t.Fatalf("token=%d target=%q err=%v, want token %d err %v", got.tok, got.target, got.err, c.wantTok, c.wantErr)
+			}
+		})
+	}
+	unfenced := FenceCtx(context.Background(), func(context.Context, string) (uint64, error) { return 0, nil }, "web")
+	if _, ok := fenceFrom(unfenced); ok {
+		t.Error("a zero token must leave the context unfenced")
+	}
+}

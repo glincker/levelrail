@@ -326,6 +326,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithConditionReader(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
+		application.WithFence(func(ctx context.Context, svc string) context.Context {
+			return agent.FenceCtx(ctx, deps.db.ServiceFenceToken, svc)
+		}),
 		application.WithLivenessTracker(deps.livenessTracker),
 		application.WithRestartBackoff(deps.restartBackoff),
 		application.WithRolloutRecorder(rolloutRecorderFor(deps.db, deps.previewNotifier)),
