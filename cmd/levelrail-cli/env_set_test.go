@@ -15,7 +15,7 @@ func TestEnvSetPrintsRebuildHint(t *testing.T) {
 		"GET /api/v1/apps/web/secrets":         []map[string]string{},
 		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
 		"GET /api/v1/apps/web/pending-changes": map[string]any{},
-		"PUT /api/v1/apps/web":                 map[string]any{"name": "web", "rebuild_required": true, "rebuild_keys": []string{"NEXT_PUBLIC_API"}},
+		"PUT /api/v1/apps/web/env":             map[string]any{"name": "web", "rebuild_required": true, "rebuild_keys": []string{"NEXT_PUBLIC_API"}},
 	}, map[string][]byte{})
 	out, _ := runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "NEXT_PUBLIC_API=https://a.example"))
 	if !strings.Contains(out, "NEXT_PUBLIC_API is baked in at build time") {
@@ -33,7 +33,7 @@ func TestEnvSetRebuildHintGitApp(t *testing.T) {
 		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
 		"GET /api/v1/apps/web/pending-changes": map[string]any{},
 		"GET /api/v1/apps/web/git-source":      map[string]any{"service_name": "web", "repo_url": "https://x/y.git", "branch": "main"},
-		"PUT /api/v1/apps/web":                 map[string]any{"name": "web", "rebuild_required": true, "rebuild_keys": []string{"VITE_API"}},
+		"PUT /api/v1/apps/web/env":             map[string]any{"name": "web", "rebuild_required": true, "rebuild_keys": []string{"VITE_API"}},
 	}, map[string][]byte{})
 	out, _ := runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "VITE_API=https://a.example"))
 	if !strings.Contains(out, "deploy web --latest") {
@@ -47,7 +47,7 @@ func envSetRoutes(extra map[string]any) map[string]any {
 		"GET /api/v1/apps/web/secrets":         []map[string]string{},
 		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
 		"GET /api/v1/apps/web/pending-changes": map[string]any{},
-		"PUT /api/v1/apps/web":                 map[string]any{"name": "web"},
+		"PUT /api/v1/apps/web/env":             map[string]any{"name": "web"},
 	}
 	maps.Copy(r, extra)
 	return r
@@ -55,11 +55,13 @@ func envSetRoutes(extra map[string]any) map[string]any {
 
 func sentEnv(t *testing.T, bodies map[string][]byte) map[string]string {
 	t.Helper()
-	var sent appResource
-	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web"], &sent); err != nil {
+	var sent struct {
+		Set map[string]string `json:"set"`
+	}
+	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web/env"], &sent); err != nil {
 		t.Fatal(err)
 	}
-	return sent.Env
+	return sent.Set
 }
 
 func TestEnvSetValueForms(t *testing.T) {
@@ -157,9 +159,15 @@ func TestEnvUnsetMultipleKeys(t *testing.T) {
 	routes := envSetRoutes(map[string]any{"GET /api/v1/apps/web": appResource{Name: "web", Image: "x:1", Port: 80, Env: map[string]string{"A": "1", "B": "2", "C": "3"}}})
 	srv := routeServer(t, routes, bodies)
 	runCLIExpectOK(t, cliArgs(srv, "env", "unset", "web", "A", "B"))
-	env := sentEnv(t, bodies)
-	if len(env) != 1 || env["C"] != "3" {
-		t.Errorf("env = %v, want only C", env)
+	var sent struct {
+		Set   map[string]string `json:"set"`
+		Unset []string          `json:"unset"`
+	}
+	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web/env"], &sent); err != nil {
+		t.Fatal(err)
+	}
+	if len(sent.Set) != 0 || strings.Join(sent.Unset, ",") != "A,B" {
+		t.Errorf("sent = %+v, want unset A,B in one call", sent)
 	}
 }
 

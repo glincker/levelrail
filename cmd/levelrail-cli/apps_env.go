@@ -183,9 +183,14 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 
 	willChange := len(plan.New) > 0 || (len(plan.Changed) > 0 && !keepExisting) || plan.movedFromEnv
 	if !dryRun && willChange {
-		app.Env = plan.Merged
-		if _, err := client.UpdateApp(ctx, name, app); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
+		var moved []string
+		for _, e := range secretEntries {
+			if _, ok := app.Env[e.Key]; ok {
+				moved = append(moved, e.Key)
+			}
+		}
+		if _, err := mergeEnv(ctx, client, name, envMergeFromPlan(plan, keepExisting, moved)); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
 		}
 		result.Applied = true
 	}

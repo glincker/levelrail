@@ -78,15 +78,7 @@ func setAppEnv(ctx context.Context, client *apiclient.Client, in setAppEnvInput)
 		}
 		return res, nil
 	}
-	app, err := client.GetApp(ctx, in.Name)
-	if err != nil {
-		return EnvChangeResult{}, fmt.Errorf("get app %q: %w", in.Name, err)
-	}
-	if app.Env == nil {
-		app.Env = map[string]string{}
-	}
-	app.Env[in.Key] = in.Value
-	saved, err := client.UpdateApp(ctx, in.Name, app)
+	saved, err := client.MergeAppEnv(ctx, in.Name, apiclient.EnvMergeRequest{Set: map[string]string{in.Key: in.Value}})
 	if err != nil {
 		return EnvChangeResult{}, fmt.Errorf("update env %q on app %q: %w", in.Key, in.Name, err)
 	}
@@ -105,17 +97,12 @@ func unsetAppEnv(ctx context.Context, client *apiclient.Client, in unsetAppEnvIn
 		}
 		return res, nil
 	}
-	app, err := client.GetApp(ctx, in.Name)
-	if err != nil {
-		return EnvChangeResult{}, fmt.Errorf("get app %q: %w", in.Name, err)
-	}
-	if _, ok := app.Env[in.Key]; !ok {
-		return EnvChangeResult{}, fmt.Errorf("app %q has no plain env var %q (pass secret true to remove a secret)", in.Name, in.Key)
-	}
-	delete(app.Env, in.Key)
-	saved, err := client.UpdateApp(ctx, in.Name, app)
+	saved, err := client.MergeAppEnv(ctx, in.Name, apiclient.EnvMergeRequest{Unset: []string{in.Key}})
 	if err != nil {
 		return EnvChangeResult{}, fmt.Errorf("update env %q on app %q: %w", in.Key, in.Name, err)
+	}
+	if len(saved.Removed) == 0 {
+		return EnvChangeResult{}, fmt.Errorf("app %q has no plain env var %q (pass secret true to remove a secret)", in.Name, in.Key)
 	}
 	res.RedeployNeeded = saved.EnvDirty
 	return res, nil

@@ -7,6 +7,8 @@ import (
 	"maps"
 	"slices"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 type envUnsetResult struct {
@@ -67,10 +69,8 @@ func runEnvUnset(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		result.Removed = append(result.Removed, k)
 	}
 	if len(result.Removed) > 0 {
-		// A nil map still clears: UpdateApp always sends env, so the last key goes too.
-		app.Env = env
-		if _, err := client.UpdateApp(ctx, name, app); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
+		if _, err := mergeEnv(ctx, client, name, apiclient.EnvMergeRequest{Unset: result.Removed}); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
 		}
 		result.Applied = true
 	}

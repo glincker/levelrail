@@ -29,12 +29,18 @@ func newSecretsImportFake(t *testing.T) (*httptest.Server, *secretsImportFake) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/web":
 			_ = json.NewEncoder(w).Encode(map[string]any{"name": "web", "image": "img", "port": 80, "env": f.env})
-		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web":
-			var app struct {
-				Env map[string]string `json:"env"`
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web/env":
+			var req struct {
+				Set   map[string]string `json:"set"`
+				Unset []string          `json:"unset"`
 			}
-			_ = json.Unmarshal(body, &app)
-			f.env = app.Env
+			_ = json.Unmarshal(body, &req)
+			for k, v := range req.Set {
+				f.env[k] = v
+			}
+			for _, k := range req.Unset {
+				delete(f.env, k)
+			}
 			_, _ = w.Write([]byte(`{"name":"web"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/web/secrets":
 			_, _ = w.Write([]byte(`[]`))

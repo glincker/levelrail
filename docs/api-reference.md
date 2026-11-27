@@ -815,6 +815,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/env/revisions/diff | AbilityReadSensitive | handleDiffEnvRevisions |
 | POST | /api/v1/apps/{name}/env/revisions/{rev}/restore | AbilityWrite | handleRestoreEnvRevision |
 | GET | /api/v1/deploys/{id}/why | AbilityRead | handleGetDeployWhy |
+| PUT | /api/v1/apps/{name}/env | AbilityWrite | handlePutAppEnv |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
