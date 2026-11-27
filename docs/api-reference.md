@@ -2659,6 +2659,7 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/node-pools/{name} | AbilityRoot | handleDeleteNodePool |
 | GET | /api/v1/external-databases/providers | AbilityRoot | handleListExternalDatabaseProviders |
 | POST | /api/v1/external-databases/parse | AbilityRoot | handleParseExternalDatabaseURL |
+| GET | /api/v1/templates/compat | AbilityRead | handleListTemplateCompat |
 | POST | /mcp | Public |  |
 
 ## See also

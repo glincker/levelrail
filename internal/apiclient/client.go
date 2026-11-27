@@ -5189,3 +5189,11 @@ func (c *Client) ListCleanupRuns(ctx context.Context, q CleanupRunsQuery) (Clean
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
+
+// ListTemplateCompat calls GET /api/v1/templates/compat: the templates that
+// could not install on this host and what unlocks each.
+func (c *Client) ListTemplateCompat(ctx context.Context) ([]TemplateCompatItem, error) {
+	var out []TemplateCompatItem
+	err := c.do(ctx, http.MethodGet, "/api/v1/templates/compat", nil, &out)
+	return out, err
+}

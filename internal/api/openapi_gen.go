@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2428 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2429 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2091,7 +2091,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityRead", Group: "Other", Handler: "handleGetQuota", Description: ""},
 	{Method: "PUT", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetQuota", Description: ""},
 	{Method: "POST", Path: "/api/v1/teams/{id}/transfer", Ability: "AbilityWrite", Group: "Other", Handler: "handleTransferTeam", Description: ""},
-	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
+	{Method: "GET", Path: "/api/v1/templates/compat", Ability: "AbilityRead", Group: "Other", Handler: "handleListTemplateCompat", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
+	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: ""},
 	{Method: "POST", Path: "/api/v1/templates/custom", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleImportCustomTemplate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/tokens/unused", Ability: "Session", Group: "Other", Handler: "handleUnusedTokens", Description: "Read-only list of idle tokens, same audience as the token list."},

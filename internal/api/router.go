@@ -168,6 +168,7 @@ type Router struct {
 	appGroups              AppGroupLister
 	appCompose             AppComposeStore
 	customTemplates        CustomTemplateStore
+	templateCompat         TemplateCompatStore
 	deploys                DeployStore
 	databases              DatabaseStore
 	auth                   AuthStore
@@ -1023,6 +1024,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appGroups:                   s,
 		appCompose:                  s,
 		customTemplates:             s,
+		templateCompat:              s,
 		deploys:                     s,
 		deployAttempts:              s,
 		probeAttempts:               s,

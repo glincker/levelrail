@@ -186,6 +186,7 @@ type Store interface {
 	AppGroupLister
 	AppComposeStore
 	CustomTemplateStore
+	TemplateCompatStore
 	DeployStore
 	DeployAttemptStore
 	ProbeAttemptStore

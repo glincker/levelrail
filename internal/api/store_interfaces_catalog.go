@@ -39,6 +39,13 @@ type CustomTemplateStore interface {
 	DeleteCustomTemplate(ctx context.Context, id string) error
 }
 
+// TemplateCompatStore keeps the local record of template install gaps.
+type TemplateCompatStore interface {
+	UpsertTemplateCompat(ctx context.Context, templateID, nodeArch, class, detail string) error
+	ClearTemplateCompat(ctx context.Context, templateID, nodeArch string) error
+	ListTemplateCompat(ctx context.Context) ([]store.TemplateCompat, error)
+}
+
 // ComposeSecretStore is the surface POST /api/v1/apps/{name}/compose
 // needs to resolve a compose file's SERVICE_ magic vars
 // (compose.ResolveMagicVars): a canonical generate-once-per-app value

@@ -182862,10 +182862,10 @@
         "x-required-ability": "write"
       }
     },
-    "/api/v1/templates/custom": {
+    "/api/v1/templates/compat": {
       "get": {
         "description": "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path.\n\nRequires the `read` ability.",
-        "operationId": "handleListCustomTemplates",
+        "operationId": "handleListTemplateCompat",
         "responses": {
           "200": {
             "content": {
@@ -182924,6 +182924,74 @@
           }
         ],
         "summary": "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app.",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "read"
+      }
+    },
+    "/api/v1/templates/custom": {
+      "get": {
+        "description": "Requires the `read` ability.",
+        "operationId": "handleListCustomTemplates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "List Custom Templates",
         "tags": [
           "Other"
         ],

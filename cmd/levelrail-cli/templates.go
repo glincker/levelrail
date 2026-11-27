@@ -24,6 +24,8 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitOK
 	case "list":
 		return runTemplatesList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "compat":
+		return runTemplatesCompat(prog, args[1:], stdout, stderr, lookupEnv)
 	case "search":
 		return runTemplatesSearch(prog, args[1:], stdout, stderr, lookupEnv)
 	case "validate":
@@ -52,6 +54,7 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 func templatesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s templates list [--custom] [flags]               browse the curated service catalog, or --custom for your own saved templates
+  %[1]s templates compat [flags]                       templates that could not install on this host, and what unlocks them
   %[1]s templates search <term>... [flags]               find catalog entries by id, name, category or slogan
   %[1]s templates validate <template.yaml | dir>         check a community submission offline against the catalog rules
   %[1]s templates get <id> [flags]                     show one entry (built-in or custom), including its full compose.yaml

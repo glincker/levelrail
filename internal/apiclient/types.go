@@ -5079,3 +5079,17 @@ type AppPreviewCard struct {
 	State    string `json:"state,omitempty"`
 	Reason   string `json:"reason,omitempty"`
 }
+
+// TemplateCompatItem mirrors internal/api's templateCompatItem: one recorded
+// install gap from GET /api/v1/templates/compat.
+type TemplateCompatItem struct {
+	TemplateID string `json:"template_id"`
+	NodeArch   string `json:"node_arch"`
+	Class      string `json:"class"`
+	Detail     string `json:"detail,omitempty"`
+	Failures   int    `json:"failures"`
+	FirstSeen  string `json:"first_seen"`
+	LastSeen   string `json:"last_seen"`
+	Cause      string `json:"cause"`
+	Fix        string `json:"fix"`
+}

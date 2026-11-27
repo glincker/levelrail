@@ -37,6 +37,12 @@ func manifestIcon(m *catalog.Manifest) string {
 // domains, then deploys it as a compose app through deployComposeBody.
 // Unlike .../deploy it is not a trial and it accepts configuration.
 func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Request) {
+	rec := &compatRecorder{ResponseWriter: w}
+	rt.installServiceTemplate(rec, r)
+	rt.recordTemplateCompat(r, r.PathValue("id"), rec)
+}
+
+func (rt *Router) installServiceTemplate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	tpl, ok := catalog.TemplateByID(id)
 	if !ok || !templateAvailable(id) {
