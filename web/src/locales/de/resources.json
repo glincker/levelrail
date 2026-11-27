@@ -144,6 +144,11 @@
       "replicas": "Mehr Traffic bewältigen: Erhöhen Sie die Anzahl der Replikate in den Deploy-Einstellungen. Jedes Replikat ist eine Kopie der App, die sich die Last teilt.",
       "autoscale": "Die App der Last folgen lassen: Aktivieren Sie unten Autoscaling und wählen Sie ein Minimum und ein Maximum. Es ist aus, bis Sie es einrichten.",
       "biggerHost": "Wechseln Sie auf einen größeren Host, wenn der Server selbst knapp wird: CPU oder Arbeitsspeicher bleiben nach dem Anpassen auf dem Host hoch, oder zusätzliche Replikate senken die Last nicht mehr. Replikate auf einem Server teilen sich diesen Server."
+    },
+    "stepper": {
+      "less": "Weniger Replikate",
+      "more": "Mehr Replikate",
+      "autoscaleOwns": "Autoscaling bestimmt die Anzahl. Aendere den Bereich oder schalte es aus, um von Hand zu steuern."
     }
   },
   "replicaTable": {

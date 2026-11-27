@@ -144,6 +144,11 @@
       "replicas": "Atender más tráfico: sube el número de réplicas en Ajustes de despliegue. Cada réplica es una copia de la app que comparte la carga.",
       "autoscale": "Seguir la carga automáticamente: activa el autoescalado más abajo y elige un mínimo y un máximo. Está desactivado hasta que lo configures.",
       "biggerHost": "Pasa a un host más grande cuando el propio servidor se quede corto: la CPU o la memoria del host sigue alta tras ajustar el límite, o más réplicas ya no bajan la carga. Las réplicas de un servidor comparten ese servidor."
+    },
+    "stepper": {
+      "less": "Menos replicas",
+      "more": "Mas replicas",
+      "autoscaleOwns": "El autoescalado fija el numero. Cambia su rango o desactivalo para ajustar a mano."
     }
   },
   "replicaTable": {

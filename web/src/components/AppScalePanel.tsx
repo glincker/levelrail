@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { InfoTip } from '@/components/kit'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AppReplicaStepper } from './AppReplicaStepper'
 import { autoscaleQueryOptions } from '../queries/autoscale'
 import {
   useAppLoadBalancer,
@@ -83,6 +84,8 @@ export function AppScalePanel({ app }: { app: AppDetail }) {
             }
           />
         </dl>
+
+        <AppReplicaStepper app={app} autoscaled={Boolean(policy)} />
 
         {app.replicas > 1 ? (
           <Alert role="status">
