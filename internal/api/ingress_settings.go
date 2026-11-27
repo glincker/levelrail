@@ -458,6 +458,9 @@ type domainResource struct {
 	Environment   string `json:"environment,omitempty"`
 	EnvironmentID string `json:"environment_id,omitempty"`
 	TLSDaysLeft   *int   `json:"tls_days_left,omitempty"`
+	// Fallback is true when the stored certificate is Caddy's untrusted
+	// local-issuer fallback instead of a public CA certificate.
+	Fallback bool `json:"fallback,omitempty"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -538,6 +541,7 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	rt.annotateDomainEnforcement(r.Context(), out)
 	rt.annotateDomainIssues(r.Context(), out)
 	rt.annotateDomainEnvAndExpiry(r.Context(), out)
+	rt.annotateDomainFallback(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 

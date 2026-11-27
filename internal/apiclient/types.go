@@ -654,6 +654,8 @@ type DomainResource struct {
 	Target string `json:"target,omitempty"`
 	// Issues are problems the last ingress pass found for this domain.
 	Issues []DomainIssue `json:"issues,omitempty"`
+	// Fallback is true when the stored certificate is the untrusted local-issuer fallback.
+	Fallback bool `json:"fallback,omitempty"`
 }
 
 // DomainIssue is one dropped or downgraded-domain finding from the ingress pass.
@@ -4405,6 +4407,7 @@ type RenewCertificateResource struct {
 	Domain               string `json:"domain"`
 	HadStoredCertificate bool   `json:"had_stored_certificate"`
 	Status               string `json:"status"`
+	DroppedFallback      bool   `json:"dropped_fallback,omitempty"`
 	Reason               string `json:"reason,omitempty"`
 	PreviousError        string `json:"previous_error,omitempty"`
 	Explanation          string `json:"explanation,omitempty"`

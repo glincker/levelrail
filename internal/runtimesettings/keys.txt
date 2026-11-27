@@ -502,6 +502,8 @@ incidents.postmortem_field_max
 ingress.body_read_timeout_seconds
 ingress.ca_switch_retry_base
 ingress.ca_switch_retry_max
+ingress.cert_fallback_retry_interval
+ingress.cert_fallback_retry_max
 ingress.cloudflare_ips_max_bytes
 ingress.cloudflare_ips_min_ranges
 ingress.cloudflare_ips_refresh

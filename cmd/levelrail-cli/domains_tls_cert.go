@@ -105,6 +105,9 @@ func runDomainsTLSCertRenew(prog string, args []string, stdout, stderr io.Writer
 
 	code := writeScheduledTaskResult(stdout, stderr, of, out, func() {
 		_, _ = fmt.Fprintf(stdout, "certificate renewal requested for domain %q (had a stored certificate: %t)\n", result.Domain, result.HadStoredCertificate)
+		if result.DroppedFallback {
+			_, _ = fmt.Fprintln(stdout, "dropped the untrusted local-issuer fallback certificate; a public certificate is requested now")
+		}
 		if result.PreviousError != "" {
 			_, _ = fmt.Fprintf(stdout, "previous CA error: %s\n", result.PreviousError)
 		}
