@@ -312,6 +312,35 @@ Every address the installer chooses (`APP_HTTP_ADDR`, `APP_INGRESS_HTTP_ADDR`, `
 
 </Accordion>
 
+### Small servers (1 to 2 GB RAM)
+
+A 1 GB or 2 GB VPS installs and runs, but a build can be killed when memory runs out. Three things help.
+
+Add swap. On a host under 2 GB with no swap, the installer asks once whether to create a swap file after the install. It asks only on an interactive terminal. In a piped or scripted install it never asks and creates nothing unless you pass `--swap`. It never touches an existing swap device, swap file or `/etc/fstab` swap line.
+
+```bash
+curl -fsSL https://levelrail.dev/install.sh | sudo sh -s -- --swap
+curl -fsSL https://levelrail.dev/install.sh | sudo sh -s -- --no-swap
+```
+
+On an existing install, preview the commands first, then apply them as root:
+
+```bash
+levelrail-cli swap
+sudo levelrail-cli swap --apply
+```
+
+The size defaults to the RAM size. Change it with `--size-mb N`, the `host.swap_size_mb` setting, or `LEVELRAIL_SWAP_MB` during install. `levelrail-cli doctor` shows a `host_swap` row.
+
+Keep builds small. `build.max_parallel` sets how many builds run at once. At 0 (the default) it follows the CPU count: 1 on a 1 or 2 vCPU host, 2 on 4 vCPUs, more on bigger hosts. The BuildKit container also runs with a low CPU weight (`build.buildkitd_cpu_shares`, default 256 against the engine default of 1024), so a build slows down before the control plane does.
+
+```bash
+levelrail-cli settings set build.max_parallel 1
+levelrail-cli settings set build.buildkitd_cpu_shares 256
+```
+
+Use the light profile: `--profile minimal` keeps single node, mesh, plugins and experimental features off. The installer suggests it when RAM is under 2 GB.
+
 ### Verifying release binaries
 
 Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control plane binary), a keyless [cosign](https://docs.sigstore.dev/cosign/overview/) signature bundle for it (`checksums.txt.sigstore.json`), and a GitHub build provenance attestation for the binaries. Releases cut before signing was added carry no bundle.
