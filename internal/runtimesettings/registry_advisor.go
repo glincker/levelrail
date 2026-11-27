@@ -2,8 +2,46 @@ package runtimesettings
 
 import (
 	"context"
+	"fmt"
+	"math"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
+
+// ParseNodePrices reads "node=amount,node=amount"; amounts must be positive and finite.
+func ParseNodePrices(v string) (map[string]float64, error) {
+	out := map[string]float64{}
+	for _, part := range strings.Split(v, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		id, amt, ok := strings.Cut(part, "=")
+		id = strings.TrimSpace(id)
+		f, err := strconv.ParseFloat(strings.TrimSpace(amt), 64)
+		if !ok || id == "" || err != nil || f <= 0 || math.IsInf(f, 0) || math.IsNaN(f) {
+			return nil, fmt.Errorf("%q must look like node=amount with a positive amount", part)
+		}
+		out[id] = f
+	}
+	return out, nil
+}
+
+// FormatNodePrices is the stable text form of ParseNodePrices.
+func FormatNodePrices(m map[string]float64) string {
+	ids := make([]string, 0, len(m))
+	for id := range m {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	parts := make([]string, 0, len(ids))
+	for _, id := range ids {
+		parts = append(parts, id+"="+strconv.FormatFloat(m[id], 'f', -1, 64))
+	}
+	return strings.Join(parts, ",")
+}
 
 // Registered keys for GET /api/v1/databases/{name}/advisor.
 const (
@@ -19,6 +57,7 @@ const (
 	KeyAdvisorCacheSeconds     = "databases.advisor_cache_seconds"
 	KeyAdvisorAutoApply        = "advisor.auto_apply"
 	KeyAdvisorIdleHours        = "advisor.idle_hours"
+	KeyAdvisorNodePrices       = "advisor.node_prices"
 	advisorLiveNote            = " The next advisor run uses a changed value."
 	advisorBytesCeil           = 1 << 50
 )
@@ -33,6 +72,12 @@ func init() {
 	registerLimit(Definition{Key: KeyAdvisorIdleHours, Category: CategoryDeploys, Default: "168", Env: "APP_ADVISOR_IDLE_HOURS", Apply: ApplyLive,
 		Title:       "Resource advisor: idle window (hours)",
 		Description: "How long an app must see no requests before the advisor suggests sleeping it. From 1 to 8760." + advisorLiveNote}, 1, 8760)
+	Register(Definition{
+		Key: KeyAdvisorNodePrices, Category: CategoryDeploys, Kind: KindString, Default: "", Env: "APP_ADVISOR_NODE_PRICES", Apply: ApplyLive,
+		CheckValue:  func(v string) error { _, err := ParseNodePrices(v); return err },
+		Title:       "Resource advisor: node monthly prices",
+		Description: "Comma separated node=amount pairs, such as local=12.50,eu-1=24. Turns reclaimable memory into a monthly saving. A node without a price shows no money figure." + advisorLiveNote,
+	})
 	def := func(key, env, dflt, title, desc string, lo, hi int) {
 		registerLimit(Definition{Key: key, Category: CategoryDeploys, Default: dflt, Env: env, Apply: ApplyLive,
 			Title: title, Description: desc + advisorLiveNote}, lo, hi)

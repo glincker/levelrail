@@ -82,6 +82,9 @@ func (rt *Router) advisorNodeOf(nodeID string) string {
 
 func (rt *Router) advisorInput(ctx context.Context, th resourceadvisor.Thresholds, now time.Time) (resourceadvisor.Input, error) {
 	in := resourceadvisor.Input{Now: now, Thresholds: th}
+	if rt.runtimeSettings != nil {
+		in.NodePrices, _ = runtimesettings.ParseNodePrices(rt.runtimeSettings.String(ctx, runtimesettings.KeyAdvisorNodePrices))
+	}
 	svcs, err := rt.apps.ListDesiredServices(ctx)
 	if err != nil {
 		return in, fmt.Errorf("resource advisor: list apps: %w", err)
