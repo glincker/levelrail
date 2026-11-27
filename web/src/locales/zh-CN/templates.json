@@ -383,7 +383,8 @@
     },
     "class": {
       "cap_add": "为一个容器添加 Linux capability。",
-      "net_admin": "可以更改容器内的网络设置。"
+      "net_admin": "可以更改容器内的网络设置。",
+      "docker_api": "通过受限代理读取此主机的 Docker 容器和日志。"
     }
   },
   "deployButton": {

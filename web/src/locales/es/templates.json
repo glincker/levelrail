@@ -393,7 +393,8 @@
     },
     "class": {
       "cap_add": "Añade capacidades de Linux a un contenedor.",
-      "net_admin": "Puede cambiar la configuración de red dentro del contenedor."
+      "net_admin": "Puede cambiar la configuración de red dentro del contenedor.",
+      "docker_api": "Lee los contenedores y registros de Docker de este host mediante un proxy acotado."
     }
   },
   "deployButton": {

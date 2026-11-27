@@ -40,6 +40,7 @@ func TestTemplates_ComposeParsesAndValidates(t *testing.T) {
 			if err != nil {
 				t.Fatalf("template %q: compose.Parse() error = %v", tpl.ID, err)
 			}
+			f.CapGrants = testCapGrants(tpl)
 			if err := f.Validate(); err != nil {
 				t.Fatalf("template %q: (*compose.File).Validate() error = %v", tpl.ID, err)
 			}
@@ -154,6 +155,14 @@ var tcpOnlyTemplates = map[string]bool{
 	"nodebb":         true, // no curl/wget in the image, a raw /dev/tcp connect is the documented check
 }
 
+// testCapGrants gives a template the grants its manifest declares, as an install would.
+func testCapGrants(tpl Template) map[string][]string {
+	if tpl.Manifest == nil {
+		return nil
+	}
+	return CapGrantMap(tpl.Manifest.DeclaredCapabilities())
+}
+
 func TestTemplates_HealthchecksBecomeActiveProbes(t *testing.T) {
 	for _, tpl := range Templates {
 		t.Run(tpl.ID, func(t *testing.T) {
@@ -161,6 +170,7 @@ func TestTemplates_HealthchecksBecomeActiveProbes(t *testing.T) {
 			if err != nil {
 				t.Fatalf("compose.Parse() error = %v", err)
 			}
+			f.CapGrants = testCapGrants(tpl)
 			services, warnings, err := compose.ToDesiredServices("test", f)
 			if err != nil {
 				t.Fatalf("compose.ToDesiredServices() error = %v", err)

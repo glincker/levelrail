@@ -1941,6 +1941,16 @@ type ServiceTemplateDetail struct {
 // TemplateManifest carries only the manifest fields the CLI acts on.
 type TemplateManifest struct {
 	ConsoleCommand []string `json:"console_command,omitempty"`
+	// Capabilities lists the elevated access the template declares, one entry per class and service.
+	Capabilities []TemplateCapability `json:"capabilities,omitempty"`
+}
+
+// TemplateCapability mirrors one declared capability of a template manifest.
+type TemplateCapability struct {
+	Class   string   `json:"class"`
+	Service string   `json:"service"`
+	Reason  string   `json:"reason"`
+	Caps    []string `json:"caps,omitempty"`
 }
 
 // TemplateRequirements mirrors internal/catalog's Requirements.

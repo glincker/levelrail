@@ -34,6 +34,8 @@ func composeFakeServer(t *testing.T, reqs *[]recordedReq) *httptest.Server {
 			_, _ = io.WriteString(w, `{"revisions":[{"revision":2,"source":"api","created_at":"2026-10-10T00:00:00Z"}]}`)
 		case r.URL.Path == "/api/v1/compose/preview":
 			_, _ = io.WriteString(w, `{"valid":false,"errors":["service \"a\": privileged: true is not allowed"],"services":[{"key":"a","image":"x"}]}`)
+		case r.URL.Path == "/api/v1/service-templates/dozzle" && r.Method == http.MethodGet:
+			_, _ = io.WriteString(w, `{"id":"dozzle","manifest":{"capabilities":[{"class":"docker_api","service":"dozzle","reason":"logs","caps":["read_only"]}]}}`)
 		case strings.HasSuffix(r.URL.Path, "/install"):
 			_, _ = io.WriteString(w, `{"app_id":"wiki","revision":1,"services":[{"name":"wiki-wiki","image":"wiki:2"}]}`)
 		default:
@@ -77,6 +79,8 @@ func TestRun_Compose(t *testing.T) {
 					t.Errorf("body = %q", body)
 				}
 			}},
+		{name: "template install needs grant", args: []string{"templates", "install", "dozzle"}, wantExit: exitUsage},
+		{name: "template install with grant", args: []string{"templates", "install", "dozzle", "--grant", "docker_api"}, wantReq: recordedReq{method: "POST", path: "/api/v1/service-templates/dozzle/install"}, wantOut: "installed from dozzle"},
 		{name: "missing app name", args: []string{"compose", "status"}, wantExit: exitUsage},
 	}
 	for _, tt := range tests {
@@ -90,10 +94,10 @@ func TestRun_Compose(t *testing.T) {
 				t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, tt.wantExit, stdout.String(), stderr.String())
 			}
 			if tt.wantReq.path != "" {
-				if len(reqs) != 1 {
-					t.Fatalf("got %d requests, want 1: %+v", len(reqs), reqs)
+				if len(reqs) == 0 {
+					t.Fatalf("got no requests, want %+v", tt.wantReq)
 				}
-				r := reqs[0]
+				r := reqs[len(reqs)-1]
 				if r.method != tt.wantReq.method || r.path != tt.wantReq.path || r.query != tt.wantReq.query {
 					t.Errorf("request = %+v, want %+v", r, tt.wantReq)
 				}

@@ -393,7 +393,8 @@
     },
     "class": {
       "cap_add": "Fügt einem Container Linux-Capabilities hinzu.",
-      "net_admin": "Kann Netzwerkeinstellungen im Container ändern."
+      "net_admin": "Kann Netzwerkeinstellungen im Container ändern.",
+      "docker_api": "Liest die Docker-Container und Logs dieses Hosts über einen eingeschränkten Proxy."
     }
   },
   "deployButton": {

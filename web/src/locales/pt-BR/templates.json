@@ -403,7 +403,8 @@
     },
     "class": {
       "cap_add": "Adiciona capabilities do Linux a um container.",
-      "net_admin": "Pode alterar configurações de rede dentro do container."
+      "net_admin": "Pode alterar configurações de rede dentro do container.",
+      "docker_api": "Lê os contêineres e logs do Docker deste host por meio de um proxy restrito."
     }
   },
   "deployButton": {

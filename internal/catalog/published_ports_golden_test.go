@@ -32,6 +32,7 @@ func TestTemplatesWithoutPublishedTCPResolveAsBefore(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", tpl.ID, err)
 		}
+		f.CapGrants = testCapGrants(tpl)
 		svcs, _, err := compose.ToDesiredServices("g", f)
 		if err != nil {
 			continue

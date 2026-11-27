@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-398 listed, 15 amd64 only, 180 unknown, of 593 templates.
+409 listed, 15 amd64 only, 180 unknown, of 604 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -93,6 +93,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `cloudbeaver` | listed | not tested |
 | `cloudflare-ddns` | listed | not tested |
 | `cloudreve` | listed | not tested |
+| `cobalt` | listed | not tested |
 | `cockpit-cms` | listed | not tested |
 | `cockroachdb` | unknown | not tested |
 | `code-server` | listed | not tested |
@@ -117,6 +118,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `ddns-updater` | unknown | not tested |
 | `deluge` | listed | not tested |
 | `dex` | unknown | not tested |
+| `dgraph` | listed | not tested |
 | `directus` | listed | pass |
 | `diun` | listed | not tested |
 | `docker-registry` | listed | pass |
@@ -128,6 +130,9 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `dokuwiki` | listed | not tested |
 | `dolibarr` | listed | not tested |
 | `domoticz` | unknown | not tested |
+| `donetick` | listed | not tested |
+| `dozzle` | listed | not tested |
+| `dragonfly` | listed | not tested |
 | `drawio` | listed | not tested |
 | `drupal` | listed | not tested |
 | `dufs` | unknown | not tested |
@@ -192,6 +197,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `goatcounter` | listed | pass |
 | `gocd` | unknown | not tested |
 | `gogs` | listed | not tested |
+| `gokapi` | listed | not tested |
 | `gonic` | unknown | not tested |
 | `gotenberg` | listed | pass |
 | `gotify` | listed | pass |
@@ -307,6 +313,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `mailhog` | amd64 only | fail |
 | `mailpit` | listed | pass |
 | `maintainerr` | listed | not tested |
+| `manticore` | listed | not tested |
 | `manyfold` | unknown | not tested |
 | `mariadb` | unknown | not tested |
 | `mariadb-adminer` | unknown | not tested |
@@ -446,6 +453,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `portainer` | listed | pass |
 | `postgres` | unknown | not tested |
 | `postgres-pgweb` | unknown | not tested |
+| `postgrest` | listed | not tested |
 | `postiz` | listed | not tested |
 | `prefect` | listed | not tested |
 | `privatebin` | listed | pass |
@@ -458,6 +466,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `qbittorrent` | listed | not tested |
 | `qdrant` | listed | not tested |
 | `questdb` | unknown | not tested |
+| `quickwit` | listed | not tested |
 | `rabbitmq` | listed | pass |
 | `radarr` | listed | not tested |
 | `radicale` | listed | pass |
@@ -518,6 +527,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `spliit` | listed | not tested |
 | `spoolman` | listed | not tested |
 | `sqlpad` | unknown | not tested |
+| `sshwifty` | listed | not tested |
 | `stable-diffusion-webui` | amd64 only | not tested |
 | `stalwart` | listed | not tested |
 | `stash` | unknown | not tested |
@@ -567,6 +577,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `triliumnext` | listed | pass |
 | `ttyd` | unknown | not tested |
 | `tubesync` | unknown | not tested |
+| `tududi` | listed | not tested |
 | `twenty` | listed | not tested |
 | `typesense` | listed | pass |
 | `ubooquity` | unknown | not tested |

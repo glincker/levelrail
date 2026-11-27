@@ -6,6 +6,5 @@ validated or loaded. When the feature lands, move the folder into `registry/temp
 
 | Template | Waiting for |
 | --- | --- |
-| dozzle | read-only, scoped Docker API access through a socket proxy |
-| dockge | scoped Docker API access (compose control) through a socket proxy |
+| dockge | not possible under the project profile: Dockge runs compose for its own stacks, which creates containers and networks named after each stack and creates volumes and pulls images, while the profile only allows creates named `<service>-dapi-*` on the app network |
 | wg-easy | an approved capability grant for NET_ADMIN, NET_RAW and SYS_MODULE |
