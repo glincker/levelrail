@@ -1,0 +1,15 @@
+id: pinry
+name: Pinry
+slogan: "A tiling image board for saving and sharing pins, self hosted."
+description: "BSD 2 Clause licensed. Create the first account on the sign up page, then turn off public sign ups in the settings."
+category: Productivity
+documentation_url: https://docs.getpinry.com/
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/pinry/pinry
+license: BSD-2-Clause
+license_class: permissive
+license_url: https://github.com/pinry/pinry/blob/master/LICENSE

@@ -1,0 +1,16 @@
+id: cinny
+name: Cinny
+slogan: "A simple, elegant Matrix client for the web."
+description: "AGPL 3.0 licensed. Point it at any Matrix homeserver from the sign in page."
+category: Communication
+documentation_url: https://github.com/cinnyapp/cinny#self-hosting
+recommended_memory_bytes: 67108864
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: cinny
+source_repo: https://github.com/cinnyapp/cinny
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/cinnyapp/cinny/blob/dev/LICENSE

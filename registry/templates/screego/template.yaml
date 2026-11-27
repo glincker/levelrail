@@ -1,0 +1,15 @@
+id: screego
+name: Screego
+slogan: "Screen sharing for developers, with low latency and no account."
+description: "GPL 3.0 licensed. Set SCREEGO_EXTERNAL_IP to the public address of the host and open UDP 3478 for the relay. Sessions are created from the web page."
+category: Communication
+documentation_url: https://screego.net/#/install
+recommended_memory_bytes: 67108864
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/screego/server
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/screego/server/blob/master/LICENSE

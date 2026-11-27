@@ -1,0 +1,15 @@
+id: plik
+name: Plik
+slogan: "A temporary file upload system with expiring, shareable links."
+description: "MIT licensed. Files and the metadata database live in one volume. Anonymous uploads are on by default, set the authentication options in the plik config to restrict them."
+category: Productivity
+documentation_url: https://github.com/root-gg/plik#readme
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/root-gg/plik
+license: MIT
+license_class: permissive
+license_url: https://github.com/root-gg/plik/blob/master/LICENSE

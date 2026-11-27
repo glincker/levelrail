@@ -1,0 +1,14 @@
+services:
+  screego:
+    image: screego/server:1.12.6
+    ports: ["5050"]
+    environment:
+      SCREEGO_SERVER_ADDRESS: 0.0.0.0:5050
+      SCREEGO_EXTERNAL_IP: 127.0.0.1
+      SCREEGO_SECRET: $SERVICE_PASSWORD_SECRET
+    healthcheck:
+      test: ["CMD", "/screego", "--help"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

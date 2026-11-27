@@ -1,0 +1,15 @@
+id: rqlite
+name: rqlite
+slogan: "A lightweight, distributed relational database built on SQLite."
+description: "MIT licensed. The HTTP API on port 4001 has no authentication in this template, keep it private or put an access proxy in front."
+category: Database
+documentation_url: https://rqlite.io/docs/
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/rqlite/rqlite
+license: MIT
+license_class: permissive
+license_url: https://github.com/rqlite/rqlite/blob/master/LICENSE
