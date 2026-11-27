@@ -2661,6 +2661,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/external-databases/providers | AbilityRoot | handleListExternalDatabaseProviders |
 | POST | /api/v1/external-databases/parse | AbilityRoot | handleParseExternalDatabaseURL |
 | GET | /api/v1/templates/compat | AbilityRead | handleListTemplateCompat |
+| GET | /api/v1/templates/sources | AbilityRoot | handleListTemplateSources |
+| POST | /api/v1/templates/sources | AbilityRoot | handleCreateTemplateSource |
+| GET | /api/v1/templates/sources/{name}/templates | AbilityRoot | handleListTemplateSourceEntries |
+| POST | /api/v1/templates/sources/{name}/sync | AbilityRoot | handleSyncTemplateSource |
+| DELETE | /api/v1/templates/sources/{name} | AbilityRoot | handleDeleteTemplateSource |
 | POST | /mcp | Public |  |
 
 ## See also

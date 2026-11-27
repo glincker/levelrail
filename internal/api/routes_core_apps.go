@@ -64,6 +64,11 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// templates captured from a running app. Deploy reuses the
 	// service-templates/{id}/deploy route above, no second deploy path.
 	mux.HandleFunc("GET /api/v1/templates/compat", rt.requireAbility(AbilityRead, rt.handleListTemplateCompat))
+	mux.HandleFunc("GET /api/v1/templates/sources", rt.requireAbility(AbilityRoot, rt.handleListTemplateSources))
+	mux.HandleFunc("POST /api/v1/templates/sources", rt.requireAbility(AbilityRoot, rt.handleCreateTemplateSource))
+	mux.HandleFunc("GET /api/v1/templates/sources/{name}/templates", rt.requireAbility(AbilityRoot, rt.handleListTemplateSourceEntries))
+	mux.HandleFunc("POST /api/v1/templates/sources/{name}/sync", rt.requireAbility(AbilityRoot, rt.handleSyncTemplateSource))
+	mux.HandleFunc("DELETE /api/v1/templates/sources/{name}", rt.requireAbility(AbilityRoot, rt.handleDeleteTemplateSource))
 	mux.HandleFunc("GET /api/v1/templates/custom", rt.requireAbility(AbilityRead, rt.handleListCustomTemplates))
 	mux.HandleFunc("POST /api/v1/templates/custom", rt.requireAbility(AbilityWriteSensitive, rt.handleImportCustomTemplate))
 	mux.HandleFunc("DELETE /api/v1/templates/custom/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteCustomTemplate))

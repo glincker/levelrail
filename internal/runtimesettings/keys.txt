@@ -14,6 +14,9 @@ abuse.shards
 abuse.suggest_burst_seconds
 abuse.suggest_client_share
 account.preferences_max_bytes
+advisor.auto_apply
+advisor.idle_hours
+advisor.node_prices
 alerting.self_heartbeat_interval
 alerting.self_heartbeat_url
 alerts.advisory_min_severity
@@ -819,6 +822,11 @@ templates.file_input_max_bytes
 templates.first_boot_max_seconds
 templates.import_max_bytes
 templates.import_timeout
+templates.sources_enabled
+templates.sources_max_depth
+templates.sources_max_files
+templates.sources_max_mb
+templates.sources_timeout_seconds
 tokens.default_ttl_days
 tokens.expiry_warning_days
 tokens.site_deploy_max_days
