@@ -1,10 +1,10 @@
 package api
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"runtime"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -18,6 +18,8 @@ type compatRecorder struct {
 	http.ResponseWriter
 	status int
 	body   []byte
+	// callerName is the requested app name, scrubbed before classifying.
+	callerName string
 }
 
 func (c *compatRecorder) WriteHeader(status int) {
@@ -52,26 +54,23 @@ func (rt *Router) recordTemplateCompat(r *http.Request, templateID string, rec *
 		if err := rt.templateCompat.ClearTemplateCompat(r.Context(), templateID, arch); err != nil {
 			rt.logger.Warn("api: install template: clear compat failed", slog.String("error", err.Error()), slog.String("template", templateID))
 		}
-	case rec.status >= http.StatusBadRequest && rec.status < http.StatusInternalServerError:
-		class, ok := failure.ClassifyCompat(string(rec.body))
+	case rec.status >= http.StatusBadRequest && rec.status < http.StatusInternalServerError && rec.status != http.StatusConflict:
+		class, ok := failure.ClassifyCompat(scrubCallerText(string(rec.body), rec.callerName))
 		if !ok {
 			return
 		}
-		if err := rt.templateCompat.UpsertTemplateCompat(r.Context(), templateID, arch, class.ID, errorTextOf(rec.body)); err != nil {
+		if err := rt.templateCompat.UpsertTemplateCompat(r.Context(), templateID, arch, class.ID, class.Cause); err != nil {
 			rt.logger.Warn("api: install template: record compat failed", slog.String("error", err.Error()), slog.String("template", templateID))
 		}
 	}
 }
 
-// errorTextOf pulls the error field out of an API error body, falling back to the raw text.
-func errorTextOf(body []byte) string {
-	var e struct {
-		Error string `json:"error"`
+// scrubCallerText removes the caller-chosen app name so it cannot fake a class keyword.
+func scrubCallerText(text, name string) string {
+	if name == "" {
+		return text
 	}
-	if err := json.Unmarshal(body, &e); err == nil && e.Error != "" {
-		return e.Error
-	}
-	return string(body)
+	return strings.ReplaceAll(text, name, "")
 }
 
 type templateCompatItem struct {

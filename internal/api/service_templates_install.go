@@ -58,6 +58,9 @@ func (rt *Router) installServiceTemplate(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
+	if rec, ok := w.(*compatRecorder); ok {
+		rec.callerName = req.Name
+	}
 	name := req.Name
 	if name == "" {
 		generated, err := rt.generateOneClickAppName(r.Context(), tpl.ID)

@@ -1,7 +1,7 @@
 services:
   wg-easy:
     image: ghcr.io/wg-easy/wg-easy:15.5.0
-    ports: ["51821", "51820/udp"]
+    ports: ["51821", "51820:51820/udp"]
     volumes:
       - etc_wireguard:/etc/wireguard
     cap_add:
