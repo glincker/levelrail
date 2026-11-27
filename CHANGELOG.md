@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.5.13](https://github.com/glincker/levelrail/compare/v1.5.12...v1.5.13) (2026-11-27)
+
+
+### Features
+
+* demo shows sample AI chat, terminal and SQL output and drops failure toasts after a read-only refusal ([d569c10](https://github.com/glincker/levelrail/commit/d569c10a5d2ec8560851d9952eff58365b764812))
+* demo shows sample results for new app, database, env save, scale, domain DNS check and empty logs ([036bda0](https://github.com/glincker/levelrail/commit/036bda00a2e064257bd56f934f10e43a3dda25a2))
+* demo shows sample results instead of read-only dead ends ([53c14fa](https://github.com/glincker/levelrail/commit/53c14fa4276fe130e4a35532b85472583ca454fc))
+
+
+### Bug Fixes
+
+* add the import sample strings and Russian plural forms to every locale ([1ce34a0](https://github.com/glincker/levelrail/commit/1ce34a09623b5af504106b955c5c9ed0458a1bc4))
+* connect the git source and register its webhook when a build carries a repo and ref ([ab1c520](https://github.com/glincker/levelrail/commit/ab1c5208840f97eb85da5f770b2df7ed9925abd5))
+* demo template deploy shows one notice and repo import returns a sample plan ([2999149](https://github.com/glincker/levelrail/commit/2999149c73746621bc707fb1aa5b02506f92635c))
+* merge env in one column-scoped transaction so env set cannot lose variables ([6cefefd](https://github.com/glincker/levelrail/commit/6cefefd45af5355acbed0b2d20844dbe54356c0e))
+* rebase or revision-check every read-modify-write desired service save so env updates are not lost ([4f14dcc](https://github.com/glincker/levelrail/commit/4f14dcc477ed569b947aa2753e9075143d3696a5))
+* replace the stored local-issuer fallback certificate and retry public issuance once DNS resolves ([abbcf00](https://github.com/glincker/levelrail/commit/abbcf00079706e1934f1f29cbc8784b6226138f3))
+* restore experimental flags after DocumentDB gate test and pin them in environment tests ([63f3f23](https://github.com/glincker/levelrail/commit/63f3f23961f15f822fc0b0b68682025441968e44))
+* revision-checked desired service saves so a deploy cannot overwrite env ([46037c6](https://github.com/glincker/levelrail/commit/46037c66605f39a638264ac5ea94daf7667dc143))
+
+
+### Documentation
+
+* add the AI install page to the nav and list the intro pages in llms.txt ([277757a](https://github.com/glincker/levelrail/commit/277757a7427b7626fbfd2a5dfd34d3fa9135bc5c))
+* add what is Levelrail, lower infrastructure cost and category comparison pages, rework introduction ([d2ab188](https://github.com/glincker/levelrail/commit/d2ab1883b3a1ce5bc46f5ec1c7e89c0b2b6ca67d))
+* importer pages, migration overview cleanup, indexability fixes ([ae7d377](https://github.com/glincker/levelrail/commit/ae7d3776bb708728c9157432f2b726d6b9e0e743))
+* install decision hub, outcome and verify steps, install with an AI agent page ([7c134d8](https://github.com/glincker/levelrail/commit/7c134d8ee14251f06700743183d0f0a70284bc27))
+* migration hub cards, Vercel page structure, front matter, llms.txt migration pages ([de67ec9](https://github.com/glincker/levelrail/commit/de67ec9b3a98bb2649a71d759957cbd9e89240bd))
+* name products in the comparison page and cost table with links to their own docs ([ca63000](https://github.com/glincker/levelrail/commit/ca630006cabbed57af812ede545a9d6a4f90149c))
+* regenerate all-pages ([67dd062](https://github.com/glincker/levelrail/commit/67dd062232a775ba63f0b3f3aa95237bd6f4343d))
+* regenerate all-pages ([7d7abbc](https://github.com/glincker/levelrail/commit/7d7abbc2b24bbe7fa402e50a144a00fcf147eee9))
+* regenerate all-pages for new overview pages ([ddc7f36](https://github.com/glincker/levelrail/commit/ddc7f3640eced8a8aba7d546a5feca8ceb5c7b27))
+* regenerate the all-pages index ([6d5fae9](https://github.com/glincker/levelrail/commit/6d5fae9993dad888f5fb966c1736ab14aac94b14))
+* restructure 12 concept pages with at-a-glance cards, tabs, tables and accordions ([33b91aa](https://github.com/glincker/levelrail/commit/33b91aa1c4090699124fbff6b1970fdf42a508ef))
+* restructure migration and import pages with outcomes, tabs, accordions and question headings ([1d72719](https://github.com/glincker/levelrail/commit/1d727198c3d2abf982588a49c146d47fe6e23a38))
+
 ## [1.5.12](https://github.com/glincker/levelrail/compare/v1.5.11...v1.5.12) (2026-11-26)
 
 
