@@ -427,6 +427,7 @@
               "catalog-index",
               "add-a-template",
               "arm-compatibility",
+              "template-capabilities",
               "templates"
             ],
             "icon": "/assets/icons/squares-four.svg"

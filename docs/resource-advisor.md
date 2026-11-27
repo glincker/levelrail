@@ -42,6 +42,17 @@ levelrail-cli advisor restore cpu_limit_missing:app:web
 
 `POST /api/v1/resource-advisor/findings/{id}/apply` without `{"confirm": true}` returns a preview (`before`, `after`, `confirm_required: true`) and changes nothing. With confirm, the limit is saved to the desired state and, when the container is running, applied to it live; otherwise it takes effect on the next start. If the setting changed after the suggestion was made, apply answers `409` and asks you to review again rather than overwrite your change.
 
+### Bulk idle sleep and prices
+
+```bash
+levelrail-cli advisor apply --kind idle --all          # preview every idle app
+levelrail-cli advisor apply --kind idle --all --yes    # turn on sleep when idle for each
+levelrail-cli advisor price local 12.50                # monthly price of a node
+levelrail-cli advisor price --clear local
+```
+
+`--kind idle --all` previews by default and changes nothing until you add `--yes`. An app counts as idle when it saw no requests for `advisor.idle_hours` (default 168, from 1 to 8760). `advisor price` writes the `advisor.node_prices` setting (comma separated `node=amount` pairs), which lets savings show as money; a node without a price shows no money figure. Both settings apply on the next advisor run.
+
 Dismiss hides a finding until you restore it. Snooze hides it for a while (7 days by default, at most 90). Both are stored per finding and everyone on the instance sees the same result.
 
 ## Who sees what
