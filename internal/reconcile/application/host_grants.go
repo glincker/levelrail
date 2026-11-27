@@ -43,6 +43,9 @@ func (c *Controller) withoutOffHostGrants(ctx context.Context, caps []string) []
 // A grant that cannot be applied returns an error, so the service never starts half granted.
 func (c *Controller) applyHostGrants(ctx context.Context, desired *store.DesiredService, spec *docker.ContainerSpec) error {
 	if dockerguard.HasHostNetworkGrant(desired.GrantedCaps) {
+		if len(plainCaps(desired.GrantedCaps)) > 0 || len(spec.CapAdd) > 0 {
+			return fmt.Errorf("host network grant for %s cannot be combined with added capabilities", desired.Name)
+		}
 		if !c.hostNetworkOn(ctx) {
 			return fmt.Errorf("host network grant for %s needs templates.cap_host_network", desired.Name)
 		}
@@ -62,5 +65,6 @@ func (c *Controller) applyHostGrants(ctx context.Context, desired *store.Desired
 		return fmt.Errorf("devices grant for %s needs templates.cap_devices", desired.Name)
 	}
 	spec.Devices = append(spec.Devices, devices...)
+	spec.GrantedDevices = append(spec.GrantedDevices, devices...)
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -169,6 +170,31 @@ func TestAppsPutNextCache(t *testing.T) {
 		}
 		if got.NextCache != tc.want {
 			t.Fatalf("%s: stored next_cache = %q, want %q", tc.name, got.NextCache, tc.want)
+		}
+	}
+}
+
+func TestPreserveUnsentAppFields_PortChangeDropsHostGrants(t *testing.T) {
+	granted := []string{"CHOWN", dockerguard.HostNetworkGrantCap, dockerguard.DeviceGrantCap("/dev/kvm")}
+	other := 9090
+	cases := []struct {
+		name string
+		mut  func(*store.DesiredService)
+		want []string
+	}{
+		{"unchanged", func(*store.DesiredService) {}, granted},
+		{"port changed", func(d *store.DesiredService) { d.Port = other }, []string{"CHOWN"}},
+		{"published ports changed", func(d *store.DesiredService) {
+			d.PublishedPorts = []store.PublishedPort{{ContainerPort: 53, Protocol: "udp"}}
+		}, []string{"CHOWN"}},
+	}
+	for _, c := range cases {
+		existing := store.DesiredService{Name: "a", Image: "x:1", Port: 8080, GrantedCaps: granted}
+		desired := store.DesiredService{Name: "a", Image: "x:1", Port: 8080}
+		c.mut(&desired)
+		preserveUnsentAppFields(&desired, existing, appResource{Name: "a"}, false)
+		if !slices.Equal(desired.GrantedCaps, c.want) {
+			t.Errorf("%s: caps = %v, want %v", c.name, desired.GrantedCaps, c.want)
 		}
 	}
 }

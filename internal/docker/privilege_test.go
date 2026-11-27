@@ -1,6 +1,9 @@
 package docker
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestParseSecurityOptions(t *testing.T) {
 	tests := []struct {
@@ -51,5 +54,25 @@ func TestDeclareCarriesSpecGrants(t *testing.T) {
 	}
 	if (&Client{}).declare(ContainerSpec{Name: "x"}) == nil {
 		t.Fatal("no declarer must still return a release func")
+	}
+}
+
+func TestDeclareOnlyGrantedDevices(t *testing.T) {
+	cases := []struct {
+		name    string
+		devices []string
+		granted []string
+		want    []string
+	}{
+		{"granted", []string{"/dev/kvm:/dev/kvm"}, []string{"/dev/kvm:/dev/kvm"}, []string{"/dev/kvm"}},
+		{"unlisted device not declared", []string{"/dev/mem"}, nil, nil},
+		{"only granted subset", []string{"/dev/kvm", "/dev/mem"}, []string{"/dev/kvm"}, []string{"/dev/kvm"}},
+	}
+	for _, c := range cases {
+		rec := &recordingDeclarer{}
+		(&Client{declarer: rec}).declare(ContainerSpec{Name: "x", Devices: c.devices, GrantedDevices: c.granted})()
+		if got := rec.got[0].Devices; !slices.Equal(got, c.want) {
+			t.Errorf("%s: declared = %v, want %v", c.name, got, c.want)
+		}
 	}
 }

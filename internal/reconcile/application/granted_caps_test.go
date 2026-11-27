@@ -5,6 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -61,5 +63,26 @@ func TestBuildJobSpec_NeverCarriesGrants(t *testing.T) {
 	}
 	if len(job.Spec.CapAdd) != 0 {
 		t.Fatalf("job CapAdd = %v, want none", job.Spec.CapAdd)
+	}
+}
+
+func TestApplyHostGrants_RefusesAddedCaps(t *testing.T) {
+	on := func(context.Context) bool { return true }
+	cases := []struct {
+		name    string
+		caps    []string
+		wantErr bool
+	}{
+		{"host network only", []string{dockerguard.HostNetworkGrantCap}, false},
+		{"with net_admin", []string{dockerguard.HostNetworkGrantCap, "NET_ADMIN"}, true},
+		{"with chown", []string{dockerguard.HostNetworkGrantCap, "CHOWN"}, true},
+	}
+	for _, c := range cases {
+		ctrl := New("a", nil, nil, WithHostGrants(on, on))
+		d := &store.DesiredService{Name: "a", GrantedCaps: c.caps}
+		err := ctrl.applyHostGrants(context.Background(), d, &docker.ContainerSpec{CapAdd: plainCaps(c.caps)})
+		if (err != nil) != c.wantErr {
+			t.Errorf("%s: err = %v, wantErr %v", c.name, err, c.wantErr)
+		}
 	}
 }

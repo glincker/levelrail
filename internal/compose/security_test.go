@@ -231,3 +231,25 @@ func TestUndeclaredCaps_SetpcapNeverCoveredByAGrant(t *testing.T) {
 		t.Errorf("a compose cap_add of SETPCAP must stay undeclared even if listed as granted, got %v", got)
 	}
 }
+
+func TestHostNetworkLayout_RefusesCapAdd(t *testing.T) {
+	cases := []struct {
+		name    string
+		service string
+		wantErr bool
+	}{
+		{"host network alone", "network_mode: host", false},
+		{"with net_admin", "network_mode: host\n    cap_add: [NET_ADMIN]", true},
+		{"with chown", "network_mode: host\n    cap_add: [CHOWN]", true},
+	}
+	for _, c := range cases {
+		f, err := Parse([]byte("services:\n  app:\n    image: nginx:alpine\n    " + c.service + "\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.CapGrants = map[string][]string{"app": {"HOST_NETWORK", "NET_ADMIN", "CHOWN"}}
+		if err := hostNetworkLayout(f, "app", f.Services["app"]); (err != nil) != c.wantErr {
+			t.Errorf("%s: err = %v, wantErr %v", c.name, err, c.wantErr)
+		}
+	}
+}

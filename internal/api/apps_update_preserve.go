@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -90,6 +91,9 @@ func preserveUnsentAppFields(desired *store.DesiredService, existing store.Desir
 	// Grants follow the template's own image and command; either changing drops them.
 	if !imageChanged && slices.Equal(desired.Command, existing.Command) {
 		desired.GrantedCaps = existing.GrantedCaps
+		if desired.Port != existing.Port || !slices.Equal(desired.PublishedPorts, existing.PublishedPorts) {
+			desired.GrantedCaps = withoutHostGrants(existing.GrantedCaps)
+		}
 	}
 	if !imageChanged {
 		desired.ImageID, desired.ImageIDRef = existing.ImageID, existing.ImageIDRef
@@ -114,4 +118,15 @@ func preserveUnsentAppFields(desired *store.DesiredService, existing store.Desir
 		refs[i].Required = required[refs[i].Name]
 	}
 	desired.SecretEnv = refs
+}
+
+// withoutHostGrants drops host network and device tokens, which are only valid for the ports they were approved with.
+func withoutHostGrants(caps []string) []string {
+	var out []string
+	for _, g := range caps {
+		if !dockerguard.IsHostNetworkGrant(g) && !dockerguard.IsDeviceGrant(g) {
+			out = append(out, g)
+		}
+	}
+	return out
 }

@@ -305,6 +305,8 @@ type ContainerSpec struct {
 	// Devices are "host[:container[:perms]]" passthrough entries, for
 	// example /dev/fuse.
 	Devices []string
+	// GrantedDevices are the Devices entries a template grant approved; only these reach the create guard.
+	GrantedDevices []string
 	// HostNetworkGranted says NetworkMode host came from a template grant, so a guard lets it through.
 	HostNetworkGranted bool
 	// Files are inline files written into the container before it starts.

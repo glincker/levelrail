@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -212,6 +213,7 @@ const (
 // container. Desired state is read fresh from ServiceStore on every
 // Reconcile, never cached.
 type Controller struct {
+	hostNetworkGrant func(ctx context.Context) bool
 	// domainLimitCeilings reads the current domain limit ceilings each pass; nil leaves stored values as saved.
 	domainLimitCeilings func(ctx context.Context) (bodyBytes int64, timeoutSeconds int)
 	// domainTuningBounds reads the current tuning bounds each pass; nil leaves stored values as saved.
@@ -379,6 +381,15 @@ func (c *Controller) isLocalNode(nodeID string) bool {
 
 // Option configures optional Controller behavior.
 type Option func(*Controller)
+
+// WithHostNetworkGrant wires the live templates.cap_host_network setting; unset fails closed.
+func WithHostNetworkGrant(on func(context.Context) bool) Option {
+	return func(ctrl *Controller) { ctrl.hostNetworkGrant = on }
+}
+
+func (c *Controller) hostNetworkOn(ctx context.Context) bool {
+	return c.hostNetworkGrant != nil && c.hostNetworkGrant(ctx)
+}
 
 // WithFirewall puts the instance firewall in front of every route.
 func WithFirewall() Option {
@@ -1484,7 +1495,7 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 	} else if dial, ok := dialAddr(state, svc.Port); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
-	} else if dial, ok := hostNetworkDial(svc, state); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
+	} else if dial, ok := hostNetworkDial(svc, state, c.hostNetworkOn(ctx)); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
@@ -1617,9 +1628,13 @@ func dialAddr(state *docker.ContainerState, port int) (string, bool) {
 }
 
 // hostNetworkDial is the backend of a host-network container: it publishes nothing,
-// so the app is reached on the loopback at its own port.
-func hostNetworkDial(svc store.DesiredService, state *docker.ContainerState) (string, bool) {
-	if state == nil || !state.Running || svc.Port == 0 || !dockerguard.HasHostNetworkGrant(svc.GrantedCaps) {
+// so the app is reached on the loopback at its own port. The setting must be on now and
+// the container really on the host network, else a stored grant alone never opens loopback.
+func hostNetworkDial(svc store.DesiredService, state *docker.ContainerState, settingOn bool) (string, bool) {
+	if state == nil || !state.Running || svc.Port == 0 || !settingOn || !dockerguard.HasHostNetworkGrant(svc.GrantedCaps) {
+		return "", false
+	}
+	if !slices.ContainsFunc(state.Networks, func(n docker.ContainerNetwork) bool { return n.Name == "host" }) {
 		return "", false
 	}
 	return "127.0.0.1:" + strconv.Itoa(svc.Port), true

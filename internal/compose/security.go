@@ -160,6 +160,9 @@ func hostNetworkLayout(f *File, name string, svc Service) error {
 	if !strings.EqualFold(strings.TrimSpace(svc.HostAccess.NetworkMode), "host") || !dockerguard.HasHostNetworkGrant(f.CapGrants[name]) {
 		return nil
 	}
+	if len(svc.HostAccess.CapAdd) > 0 {
+		return fmt.Errorf("service %q: network_mode: host cannot be combined with cap_add", name)
+	}
 	if len(f.Services) > 1 || len(svc.Networks) > 0 {
 		return fmt.Errorf("service %q: network_mode: host cannot be combined with other services or networks, the app would need the project network", name)
 	}

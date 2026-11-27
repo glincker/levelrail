@@ -45,7 +45,7 @@ func (c *Client) declare(spec ContainerSpec) func() {
 		GPU:                spec.GPU != nil,
 		CapAdd:             append([]string(nil), spec.CapAdd...),
 	}
-	for _, dev := range spec.Devices {
+	for _, dev := range spec.GrantedDevices {
 		host, _, _ := strings.Cut(dev, ":")
 		d.Devices = append(d.Devices, host)
 	}
