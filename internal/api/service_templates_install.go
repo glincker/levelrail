@@ -2,13 +2,17 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"regexp"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/GLINCKER/levelrail/internal/hostswap"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // installAppName bounds an installed stack's name: it prefixes every
@@ -114,6 +118,9 @@ func (rt *Router) installServiceTemplate(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
+	if n, ok := rt.lowMemoryNotice(tpl.RecommendedMemoryBytes); ok {
+		resp.Notices = append(resp.Notices, n)
+	}
 	if req.ProjectID != "" {
 		for _, svc := range resp.Services {
 			if err := rt.apps.UpdateServiceProject(r.Context(), svc.Name, req.ProjectID); err != nil {
@@ -139,4 +146,25 @@ func interpEnvWithoutFiles(m *catalog.Manifest, env map[string]string) map[strin
 		delete(out, k)
 	}
 	return out
+}
+
+// lowMemoryNotice is a plain warning, never a block, when a template wants more
+// RAM than the host has free.
+func (rt *Router) lowMemoryNotice(recommended int64) (composeNoticeResult, bool) {
+	if recommended <= 0 {
+		return composeNoticeResult{}, false
+	}
+	read := rt.doctorHostMemory
+	if read == nil {
+		read = func() (int64, int64, error) { return telemetry.HostMemoryBytes() }
+	}
+	_, avail, err := read()
+	if err != nil || avail <= 0 || avail >= recommended {
+		return composeNoticeResult{}, false
+	}
+	msg := fmt.Sprintf("This template recommends %s of memory and this host has %s free.", humanBytes(recommended), humanBytes(avail))
+	if hostswap.Read("").SwapBytes == 0 {
+		msg += " No swap is configured: run the CLI command 'swap' on the control plane host to see how to add a swapfile (nothing changes until you apply it)."
+	}
+	return composeNoticeResult{Level: string(compose.NoticeLevelWarning), Message: msg}, true
 }

@@ -33,6 +33,7 @@ func localDoctorReport(ctx context.Context, lookupEnv func(string) (string, bool
 	checks := []doctorCheckResource{
 		localDockerCheck(ctx, lookupEnv),
 		localDiskCheck(lookupEnv),
+		localSwapCheck(lookupEnv),
 		localPortCheck(ctx, 80),
 		localPortCheck(ctx, 443),
 	}

@@ -341,6 +341,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runGoLiveChecklist(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "swap":
+		return runSwap(prog, args[1:], stdout, stderr, lookupEnv)
 	case "setup":
 		return runSetup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "me":
@@ -620,6 +622,7 @@ Usage:
   %[1]s bench chaos <list|run|report|disk|free-space> [flags]              failure scenarios measured on local containers, recorded for the resilience report
   %[1]s resilience check [--simulate] [--fix] [flags]         will apps keep serving if the control plane is down (dry run)
   %[1]s doctor [flags]                                        health checks (same as the dashboard Doctor page), --fix applies safe fixes
+  %[1]s swap [--apply] [--size-mb N] [flags]                    low memory hosts: print the swapfile commands (dry run), --apply as root creates it
   %[1]s go-live <app> [domain] [--wait] [--timeout 5m] [flags]  the guided checklist from deploy to https, exits non-zero until live with --wait
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s me appearance [get|set <file|->|reset] [flags]       your dashboard look, synced to your account (reset needs --yes)

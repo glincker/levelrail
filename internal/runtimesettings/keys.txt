@@ -486,6 +486,7 @@ host.pressure_mem_warn
 host.pressure_resume_jitter
 host.pressure_shed_enabled
 host.protected_oom_score_adj
+host.swap_size_mb
 host.unclean_restart_window
 iac.apply_enabled
 iac.compose_max_file_kb
