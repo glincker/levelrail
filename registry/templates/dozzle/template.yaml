@@ -9,7 +9,7 @@ requires_gpu: false
 platforms:
     - linux/amd64
     - linux/arm64
-icon: file-text
+icon: dozzle
 source_repo: https://github.com/amir20/dozzle
 license: MIT
 license_class: permissive
@@ -18,7 +18,7 @@ manifest:
     id: dozzle
     name: Dozzle
     description: A small web viewer for live container logs on this host. It reads containers and logs through a read-only Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain.
-    icon: file-text
+    icon: dozzle
     category: Monitoring
     documentation_url: https://dozzle.dev/guide/getting-started
     source_repo: https://github.com/amir20/dozzle
