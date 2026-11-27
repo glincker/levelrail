@@ -753,6 +753,9 @@
     }
   },
   "importPlan": {
+    "sampleBadge": "サンプルプラン",
+    "sampleHint": "このリポジトリのサンプルプランとビルドログです。Levelrail をインストールすると実際に解析してデプロイできます。",
+    "sampleLogLabel": "サンプルビルドログ",
     "anonymousVolume": "(匿名)",
     "importingToast": "「{{name}}」をインポート中です。",
     "watching": "ビルドログを監視しています。",

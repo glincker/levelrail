@@ -757,6 +757,9 @@
     }
   },
   "importPlan": {
+    "sampleBadge": "Plano de exemplo",
+    "sampleHint": "Plano e log de build de exemplo para este repositório. Instale o Levelrail para analisá-lo e implantá-lo de verdade.",
+    "sampleLogLabel": "Log de build de exemplo",
     "anonymousVolume": "(anônimo)",
     "importingToast": "Importando \"{{name}}\".",
     "watching": "Acompanhando o log do build agora.",
