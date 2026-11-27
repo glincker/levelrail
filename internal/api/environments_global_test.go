@@ -37,7 +37,15 @@ func seedAppAndDB(t *testing.T, db *store.DB) {
 	}
 }
 
+// useGlobalEnvironments pins the flags these tests need instead of trusting leftovers.
+func useGlobalEnvironments(t *testing.T) {
+	t.Helper()
+	experimental.Set(experimental.All()...)
+	t.Cleanup(enableAllExperimental)
+}
+
 func TestListAllEnvironments(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedAppAndDB(t, db)
@@ -58,6 +66,7 @@ func TestListAllEnvironments(t *testing.T) {
 }
 
 func TestCreateGlobalEnvironment(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	tests := []struct {
@@ -117,6 +126,7 @@ func TestEnvironmentList_ReadableWithOnlyAccessRoles(t *testing.T) {
 }
 
 func TestPatchEnvironment(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := envReq(rt, cookie, http.MethodPost, "/api/v1/environments", `{"name":"Sandbox","kind":"dev"}`)
@@ -151,6 +161,7 @@ func TestPatchEnvironment(t *testing.T) {
 }
 
 func TestDeleteEnvironment_GlobalRules(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedAppAndDB(t, db)
@@ -198,6 +209,7 @@ func TestDeleteEnvironment_GlobalRules(t *testing.T) {
 }
 
 func TestPreviewEnvironmentUsesPreviewKind(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, _ := newTestRouter(t)
 	projectID, envID, err := rt.ensurePreviewEnvironmentTier(context.Background(), "web")
 	if err != nil || projectID != "preview-web" {
@@ -210,6 +222,7 @@ func TestPreviewEnvironmentUsesPreviewKind(t *testing.T) {
 }
 
 func TestMoveAppEnvironment_UnprotectedAppliesImmediately(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedAppAndDB(t, db)
@@ -230,6 +243,7 @@ func TestMoveAppEnvironment_UnprotectedAppliesImmediately(t *testing.T) {
 }
 
 func TestMoveAppEnvironment_ProtectedTargetNeedsConfirmThenApproval(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	requester := loginTestSession(t, rt, db)
 	seedAppAndDB(t, db)
@@ -263,6 +277,7 @@ func TestMoveAppEnvironment_ProtectedTargetNeedsConfirmThenApproval(t *testing.T
 }
 
 func TestMoveAppEnvironment_ProtectedSourceNeedsConfirm(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedAppAndDB(t, db)
@@ -279,6 +294,7 @@ func TestMoveAppEnvironment_ProtectedSourceNeedsConfirm(t *testing.T) {
 }
 
 func TestMoveEnvironment_FreezeBlocks(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db, cookie := newSafetyRouter(t, nil)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "pg", Engine: "postgres", Version: "16"}); err != nil {
 		t.Fatal(err)
@@ -298,6 +314,7 @@ func TestMoveEnvironment_FreezeBlocks(t *testing.T) {
 }
 
 func TestMoveDatabaseEnvironment(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	requester := loginTestSession(t, rt, db)
 	seedAppAndDB(t, db)
@@ -328,6 +345,7 @@ func TestMoveDatabaseEnvironment(t *testing.T) {
 }
 
 func TestListFiltersByEnvironment(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedAppAndDB(t, db)
@@ -373,6 +391,7 @@ func TestListFiltersByEnvironment(t *testing.T) {
 }
 
 func TestGlobalEnvironmentSupportsEnvVars(t *testing.T) {
+	useGlobalEnvironments(t)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := envReq(rt, cookie, http.MethodPut, "/api/v1/environments/env_dev/env", `{"LOG_LEVEL":"debug"}`)
