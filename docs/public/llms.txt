@@ -36,6 +36,13 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 ## Tutorials
 
 - [Getting started](https://docs.levelrail.com/getting-started): install Levelrail and deploy your first app end to end.
+- [What is Levelrail](https://docs.levelrail.com/what-is-levelrail): the problem it solves, what it introduces, and who it is for.
+- [Lower infrastructure cost](https://docs.levelrail.com/lower-infrastructure-cost): where cost drops at the infrastructure level, with a worked example from the cost reference rates.
+- [Levelrail vs other platforms](https://docs.levelrail.com/compared-with-other-approaches): comparison with managed platforms, self-hosted deploy platforms, Kubernetes platforms, Compose and scripts, and DIY stacks.
+- [Install with your AI agent](https://docs.levelrail.com/install-with-ai-agent): paste-ready prompts that install Levelrail and connect an agent over MCP.
+- [Installing](https://docs.levelrail.com/installing): one-command install on a Linux server, with the verify step.
+- [Zero to HTTPS](https://docs.levelrail.com/zero-to-https): from a fresh server to an app on a real domain with TLS.
+- [Add a node over SSH](https://docs.levelrail.com/add-node-over-ssh): grow from one server to several.
 - [All features](https://docs.levelrail.com/features): every feature by area with a stable, beta or experimental label.
 - [FAQ](https://docs.levelrail.com/faq): short answers to common questions.
 - [Alerts](https://docs.levelrail.com/alerts): notification channels, rules and the alert inbox.
