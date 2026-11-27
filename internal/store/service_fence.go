@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // ServiceFenceToken returns the placement token of a service, 0 when the service does not exist.
@@ -39,6 +40,12 @@ func nextFenceEpoch(ctx context.Context, q fenceQuerier, scope string, floor int
 		return 0, fmt.Errorf("store: advance fence epoch %s: %w", scope, err)
 	}
 	return fenceTokenValue(v), nil
+}
+
+// NextNodeFenceToken returns the next cleanup token of a node. It never goes down, and the wall clock
+// floor keeps it above the millisecond tokens older control planes already sent.
+func (db *DB) NextNodeFenceToken(ctx context.Context, nodeID string) (uint64, error) {
+	return nextFenceEpoch(ctx, db, "node:"+nodeID, time.Now().UnixMilli())
 }
 
 // withServiceFenceBump runs one placement update and stamps the row with the next epoch in one transaction.

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -309,9 +308,8 @@ func (e *moveExecutor) Ready(ctx context.Context, kind, name, nodeID string, sin
 	return false, "no running container on the target node yet", nil
 }
 
-// RemoveFrom tears down an app's containers on one node. When that node
-// is unreachable the teardown is queued with the delete finalizer, which
-// retries, so a dead source never blocks a verified move.
+// RemoveFrom tears down an app's containers on one node. A failure is returned so the move runner
+// retries with a freshly read token; an unfenced background retry could outrun a newer placement.
 func (e *moveExecutor) RemoveFrom(ctx context.Context, kind, name, nodeID string) error {
 	runtime, err := e.rt.execRuntime(nodeID)
 	if err == nil {
@@ -321,12 +319,7 @@ func (e *moveExecutor) RemoveFrom(ctx context.Context, kind, name, nodeID string
 			err = application.New(name, e.rt.apps, runtime).Teardown(e.rt.fenced(ctx, name))
 		}
 	}
-	if err == nil || kind == store.NodeMoveKindDatabase {
-		return err
-	}
-	e.rt.logger.Warn("nodemove: direct teardown failed, queued for retry", slog.String("app", name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
-	e.rt.teardownServiceContainers(name, nodeID)
-	return nil
+	return err
 }
 
 // Finalize restarts a moved database's dependents so they pick up its new

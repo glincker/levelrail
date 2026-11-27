@@ -24,8 +24,6 @@ var (
 	ErrStaleFence = errors.New("agent: stale fence token refused")
 	// ErrFenceUnsupported is returned when agent.fence_required is on and the node's agent cannot enforce tokens.
 	ErrFenceUnsupported = errors.New("agent: this node's agent does not support fence tokens and agent.fence_required is on; update the agent or turn the setting off")
-	// ErrStaleAction is returned when an action finished after its target had moved on to a newer token.
-	ErrStaleAction = errors.New("agent: stale_action_rejected: the placement changed while the action ran")
 )
 
 // FenceRecoveryHint tells an operator how to clear an agent's remembered tokens; no protocol message does it.
@@ -94,7 +92,7 @@ func (t *GRPCTransport) fenceStamp(ctx context.Context) (uint64, string, error) 
 	return fi.token, fi.target, nil
 }
 
-// destructive sends a request built with the current token and rejects a result that finished after a newer token.
+// destructive sends a request built with the current token and records a result that finished after a newer token.
 func (t *GRPCTransport) destructive(ctx context.Context, op string, build func(token uint64, target string) *agentpb.AgentRequest) (*agentpb.AgentResponse, error) {
 	token, target, err := t.fenceStamp(ctx)
 	if err != nil {
@@ -115,10 +113,10 @@ func (t *GRPCTransport) destructive(ctx context.Context, op string, build func(t
 	}
 	cur, cerr := t.fence.Current(ctx, target)
 	if cerr == nil && cur > token {
+		// The action already ran: report it as superseded, never as a failure that would be retried.
 		if t.fence.Rejected != nil {
 			t.fence.Rejected(ctx, t.nodeID, target, token, cur, op)
 		}
-		return nil, ErrStaleAction
 	}
 	return resp, nil
 }

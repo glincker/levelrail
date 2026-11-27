@@ -79,7 +79,7 @@ func TestDestructiveRejectsStaleCompletion(t *testing.T) {
 		wantErr error
 	}{
 		{"equal token completes", 4, nil},
-		{"newer record rejects the result", 5, ErrStaleAction},
+		{"newer record is reported, not failed", 5, nil},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -114,7 +114,7 @@ func TestDestructiveRejectsStaleCompletion(t *testing.T) {
 			case <-time.After(2 * time.Second):
 				t.Fatal("call did not return")
 			}
-			if (c.wantErr != nil) != (rejected == 1) {
+			if (c.current > 4) != (rejected == 1) {
 				t.Errorf("rejected events = %d", rejected)
 			}
 		})
@@ -166,7 +166,7 @@ func TestFenceCtxAroundMove(t *testing.T) {
 		wantErr error
 	}{
 		{"action after the move carries the new token", after, 2, nil},
-		{"in-flight action from before the move is rejected", before, 1, ErrStaleAction},
+		{"in-flight action from before the move is superseded", before, 1, nil},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

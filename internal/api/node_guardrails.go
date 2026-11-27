@@ -387,6 +387,21 @@ func (rt *Router) handleNodeCleanup(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, nodeCleanupResponse{Preview: res.Preview, Freed: res.FreedBytes, Error: res.Error})
 }
 
+// nodeCleanupFence stamps ctx with the next cleanup token of nodeID; without a counter the call goes unfenced.
+func (rt *Router) nodeCleanupFence(ctx context.Context, nodeID string) context.Context {
+	src, ok := rt.nodeGuard.store.(interface {
+		NextNodeFenceToken(ctx context.Context, nodeID string) (uint64, error)
+	})
+	if !ok {
+		return ctx
+	}
+	tok, err := src.NextNodeFenceToken(ctx, nodeID)
+	if err != nil || tok == 0 {
+		return ctx
+	}
+	return agent.WithFence(ctx, "node:"+nodeID, tok)
+}
+
 // runNodeCleanup removes the safe classes and records the outcome in the node's history.
 func (rt *Router) runNodeCleanup(ctx context.Context, nodeID, trigger, actor string) (nodecapacity.Result, error) {
 	started := time.Now()
@@ -397,8 +412,8 @@ func (rt *Router) runNodeCleanup(ctx context.Context, nodeID, trigger, actor str
 	} else if c := rt.remoteCleaner(nodeID); c != nil {
 		var keep []string
 		if keep, err = rt.keepContainerNames(ctx); err == nil {
-			// Node scope: the millisecond stamp grows with time, so an older cleanup with a staler keep list is refused.
-			res, err = c.NodeCleanup(agent.WithFence(ctx, "node:"+nodeID, uint64(time.Now().UnixMilli())), false, keep) //nolint:gosec // UnixMilli is positive
+			// Node scope: a persisted per-node counter, so an older cleanup with a staler keep list is refused.
+			res, err = c.NodeCleanup(rt.nodeCleanupFence(ctx, nodeID), false, keep)
 		}
 	} else {
 		err = errors.New("cleanup is not available on this node")

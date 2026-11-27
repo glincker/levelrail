@@ -2370,6 +2370,22 @@ func TestSaveDesiredService_IncarnationIsStableAcrossUpdatesAndNewPerLife(t *tes
 	}
 }
 
+func TestNextNodeFenceTokenGrows(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	a, err := db.NextNodeFenceToken(ctx, "n1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := db.NextNodeFenceToken(ctx, "n1")
+	if err != nil || b <= a {
+		t.Fatalf("second token %d must exceed %d (err %v)", b, a, err)
+	}
+	if other, err := db.NextNodeFenceToken(ctx, "n2"); err != nil || other == 0 {
+		t.Fatalf("other node token = %d, %v", other, err)
+	}
+}
+
 func TestServiceFenceTokenNeverGoesBackwards(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
