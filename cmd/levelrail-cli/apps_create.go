@@ -787,13 +787,10 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		_, _ = fmt.Fprintf(stderr, "app %q auto-placed on node %q (simple spread scheduling)\n", created.Name, created.NodeID)
 	}
 
-	if plan.Build != nil && isSSHRepoURL(plan.Build.RepoURL) {
-		if sshErr := connectSSHSource(ctx, client, prog, created.Name, plan.Build); sshErr != nil {
-			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but no build started: %w", created.Name, sshErr))
-		}
-	}
-
 	if buildErr := triggerCreatePlanBuild(ctx, client, created, plan, stderr, f.jsonOut); buildErr != nil {
+		if plan.Build != nil && isSSHRepoURL(plan.Build.RepoURL) && strings.Contains(buildErr.Error(), "deploy key") {
+			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created and its repository connected, but no build started: %w", created.Name, errors.New(sshKeyHint(prog, created.Name))))
+		}
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but the build failed: %w", created.Name, buildErr))
 	}
 
@@ -837,19 +834,9 @@ func isSSHRepoURL(repo string) bool {
 	return err == nil && u.Scheme == "ssh" && u.Hostname() != ""
 }
 
-// connectSSHSource attaches an ssh repo to the new app and refuses to build until a
-// deploy key exists, because the build would fail closed with a less helpful error.
-func connectSSHSource(ctx context.Context, client *Client, prog, name string, b *buildTriggerRequest) error {
-	if _, err := client.SetGitSource(ctx, name, apiclient.SetGitSourceRequest{RepoURL: b.RepoURL, Branch: b.Ref}); err != nil {
-		return fmt.Errorf("connect the ssh repository: %w", err)
-	}
-	if _, err := client.GetGitSSHKey(ctx, name); err != nil {
-		if !isAPINotFound(err) {
-			return fmt.Errorf("check the ssh deploy key: %w", err)
-		}
-		return fmt.Errorf("the repository is connected but %q has no SSH deploy key yet. Add the key first:\n  %[2]s apps git-source ssh-key generate %[1]s --trust-on-first-use\nadd the printed public key to the repository's deploy keys, then run:\n  %[2]s apps git-source deploy %[1]s", name, prog)
-	}
-	return nil
+// sshKeyHint tells the user how to finish an ssh create: the server connects the source but cannot build until a deploy key exists.
+func sshKeyHint(prog, name string) string {
+	return fmt.Sprintf("%[2]s apps git-source ssh-key generate %[1]s --trust-on-first-use, add the printed public key to the repository's deploy keys, then run: %[2]s apps git-source deploy %[1]s", name, prog)
 }
 
 func validatePlanVolumes(volumes []spec.Volume) error {
@@ -891,7 +878,10 @@ func triggerCreatePlanBuild(ctx context.Context, client *Client, created appReso
 		_, _ = fmt.Fprintf(stderr, "app %q created, building from %s (ref %s)...\n", created.Name, plan.Build.RepoURL, plan.Build.Ref)
 		_, _ = fmt.Fprintf(stderr, "follow it with \"apps deploys wait %s\"\n", created.Name)
 	}
-	_, err := client.TriggerBuild(ctx, created.Name, *plan.Build)
+	res, err := client.TriggerBuild(ctx, created.Name, *plan.Build)
+	if err == nil && res.GitSourceNote != "" && !jsonOut {
+		_, _ = fmt.Fprintln(stderr, res.GitSourceNote)
+	}
 	return err
 }
 

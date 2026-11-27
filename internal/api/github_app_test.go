@@ -105,10 +105,11 @@ type fakeGitHubAppClient struct {
 	branches    []githubapp.Branch
 	branchesErr error
 
-	createHookErr  error
-	createHookURL  string
-	createHookSec  string
-	createHookCall bool
+	createHookErr   error
+	createHookURL   string
+	createHookSec   string
+	createHookCall  bool
+	createHookCount int
 
 	commentErr   error
 	prComments   fakePRComments
@@ -183,6 +184,7 @@ func (f *fakeGitHubAppClient) ListBranches(_ context.Context, instanceURL, _, _,
 
 func (f *fakeGitHubAppClient) CreateRepoWebhook(_ context.Context, _, _, _, _, hookURL, secret string) error {
 	f.createHookCall = true
+	f.createHookCount++
 	f.createHookURL = hookURL
 	f.createHookSec = secret
 	return f.createHookErr

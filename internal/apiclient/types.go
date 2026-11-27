@@ -422,6 +422,8 @@ type BuildTriggerResponse struct {
 	Status        string `json:"status,omitempty"`
 	QueuePosition int    `json:"queue_position,omitempty"`
 	WaitReason    string `json:"wait_reason,omitempty"`
+	// GitSourceNote says what the build did to the app's git source.
+	GitSourceNote string `json:"git_source_note,omitempty"`
 }
 
 // DeployTriggerRequest mirrors internal/api's deployTriggerRequest
