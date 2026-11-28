@@ -151,8 +151,8 @@ func (m *Manager) fetchAndStore(ctx context.Context, keys []Key) error {
 	fetcher.LoopbackHTTP = m.DevMode
 	res, err := fetcher.Get(ctx, url, state.ETag, lim.MaxBytes)
 	if err != nil {
-		m.log().Debug("announcements: fetch failed", slog.String("error", err.Error()))
-		_ = m.Store.RecordAnnouncementFetch(ctx, "", stamp, err.Error())
+		m.log().Warn("announcements: fetch failed", slog.String("error", err.Error()))
+		_ = m.Store.RecordAnnouncementFetch(ctx, "", stamp, ErrorCode(err))
 		return err
 	}
 	if res.NotModified {
@@ -160,7 +160,8 @@ func (m *Manager) fetchAndStore(ctx context.Context, keys []Key) error {
 	}
 	sig, err := fetcher.Get(ctx, url+sigSuffix, "", lim.MaxBytes)
 	if err != nil {
-		_ = m.Store.RecordAnnouncementFetch(ctx, "", stamp, err.Error())
+		m.log().Warn("announcements: signature fetch failed", slog.String("error", err.Error()))
+		_ = m.Store.RecordAnnouncementFetch(ctx, "", stamp, ErrorCode(err))
 		return err
 	}
 	revoked, err := m.Store.ListRevokedAnnouncementKeys(ctx)
@@ -177,7 +178,7 @@ func (m *Manager) fetchAndStore(ctx context.Context, keys []Key) error {
 			return err
 		}
 		m.log().Warn("announcements: feed rejected", slog.String("reason", err.Error()))
-		_ = m.Store.RecordAnnouncementFetch(ctx, "", stamp, err.Error())
+		_ = m.Store.RecordAnnouncementFetch(ctx, "", stamp, ErrorCode(err))
 		return err
 	}
 	rows, err := rowsOf(ver)

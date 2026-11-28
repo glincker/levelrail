@@ -496,3 +496,24 @@ func TestFetcherLoopbackHTTPOnlyWhenAllowed(t *testing.T) {
 		t.Fatalf("non loopback http stays refused: %v", err)
 	}
 }
+
+func TestAnnouncementsFetchRefusesPrivateAddress(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) }))
+	defer srv.Close()
+	_, err := (Fetcher{}).Get(context.Background(), srv.URL, "", 10)
+	if !errors.Is(err, ErrFetch) {
+		t.Fatalf("err = %v, want ErrFetch for a loopback https target in release mode", err)
+	}
+	if got := ErrorCode(err); got != "fetch_failed" {
+		t.Fatalf("code = %q, want fetch_failed", got)
+	}
+}
+
+func TestAnnouncementsSafeErrorCodeHidesRawErrors(t *testing.T) {
+	if got := SafeErrorCode("dial tcp 10.0.0.5:6379: connect: refused"); got != "fetch_failed" {
+		t.Fatalf("raw error leaked: %q", got)
+	}
+	if got := SafeErrorCode("bad_signature"); got != "bad_signature" {
+		t.Fatalf("stable code changed: %q", got)
+	}
+}

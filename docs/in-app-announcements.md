@@ -58,3 +58,7 @@ Compare the public keys in `keys/roles.json` with the ones announced on the proj
 
 - [Advisory feed](/advisory-feed) matches the images your apps run against advisories you supply.
 - The [changelog](/changelog) lists every release.
+
+## Restoring a backup
+
+The newest feed sequence and the revoked key list live in the database. Restoring an older backup lowers both, so an older signed feed that has not expired yet can be accepted again until the next fetch brings in a newer one and raises the sequence. Fetch once right after a restore to close that window.

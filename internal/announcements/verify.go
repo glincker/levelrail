@@ -69,8 +69,25 @@ func ErrorCode(err error) string {
 		return "replay"
 	case errors.Is(err, ErrFeedExpired):
 		return "feed_expired"
+	case errors.Is(err, ErrNotHTTPS):
+		return "not_https"
+	case errors.Is(err, ErrFetchStatus):
+		return "fetch_status"
+	case errors.Is(err, ErrFetch):
+		return "fetch_failed"
 	}
 	return "bad_json"
+}
+
+// SafeErrorCode returns stored as-is when it is one of the stable codes, and
+// "fetch_failed" for anything else, such as a raw error an older version stored.
+func SafeErrorCode(stored string) string {
+	switch stored {
+	case "", "too_large", "bad_signature", "no_trusted_signature", "bad_schema", "replay",
+		"feed_expired", "not_https", "fetch_status", "fetch_failed", "bad_json":
+		return stored
+	}
+	return "fetch_failed"
 }
 
 // VerifyInput is everything VerifyFeed needs; it does no I/O.

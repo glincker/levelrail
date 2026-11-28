@@ -106,11 +106,13 @@ func (rt *Router) announcementViews(r *http.Request, abilities []string, now tim
 	ctx := r.Context()
 	mode := announcements.Mode(ctx, rt.runtimeSettings)
 	status.Mode = mode
-	status.AnnouncementsURL = rt.runtimeSettings.String(ctx, runtimesettings.KeyAnnouncementsURL)
+	if hasAbilityExactRoot(abilities) {
+		status.AnnouncementsURL = rt.runtimeSettings.String(ctx, runtimesettings.KeyAnnouncementsURL)
+	}
 	keys, _, _ := announcements.EffectiveKeys(devModeEnabled(), rt.runtimeSettings.List(ctx, runtimesettings.KeyAnnouncementsDevKeys))
 	status.TrustConfigured = len(keys) > 0
 	if fs, err := st.GetAnnouncementFeedState(ctx); err == nil {
-		status.Sequence, status.FetchedAt, status.VerifiedAt, status.LastError = fs.LastSequence, fs.FetchedAt, fs.VerifiedAt, fs.LastError
+		status.Sequence, status.FetchedAt, status.VerifiedAt, status.LastError = fs.LastSequence, fs.FetchedAt, fs.VerifiedAt, announcements.SafeErrorCode(fs.LastError)
 		status.Stale = fs.ExpiresAt != "" && parseStoreTime(fs.ExpiresAt).Before(now)
 	}
 	rows, err := st.ListAnnouncements(ctx)
