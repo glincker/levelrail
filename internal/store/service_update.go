@@ -236,6 +236,21 @@ func (db *DB) UpdateServiceApp(ctx context.Context, name, appID string) error {
 	`, appID, name)
 }
 
+// UpdateServiceReplicaNodes records the node of each replica index, or clears
+// the spread when nodes is empty. It leaves the fence token alone.
+func (db *DB) UpdateServiceReplicaNodes(ctx context.Context, name string, nodes []string) error {
+	if nodes == nil {
+		nodes = []string{}
+	}
+	encoded, err := json.Marshal(nodes)
+	if err != nil {
+		return fmt.Errorf("store: marshal replica_nodes for service %q: %w", name, err)
+	}
+	return db.updateServiceRow(ctx, "update replica nodes", name, `
+		UPDATE desired_services SET replica_nodes = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, string(encoded), name)
+}
+
 // UpdateServiceMaintenanceHold sets or clears (hold == "") the service's maintenance hold.
 func (db *DB) UpdateServiceMaintenanceHold(ctx context.Context, name, hold string) error {
 	res, err := db.ExecContext(ctx, `UPDATE desired_services SET maintenance_hold = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, hold, name)
