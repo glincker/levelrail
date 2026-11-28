@@ -165,7 +165,12 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		})
 		return composeDeployResponse{}, false
 	}
-	secretEnv, unresolved, err := compose.ResolveMagicVars(file, rt.generateComposeSecret(r.Context(), name), rt.persistComposeSecret(r.Context(), name))
+	// Every namespace a magic var can write is checked before anything is generated.
+	if !rt.admitComposeNamespaces(w, r, name, previousServices, file, opts.noCaller) {
+		return composeDeployResponse{}, false
+	}
+	pending := &pendingComposeSecrets{rt: rt}
+	secretEnv, unresolved, err := compose.ResolveMagicVars(file, rt.generateComposeSecret(r.Context(), name, pending), rt.persistComposeSecret(r.Context(), name, pending))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
@@ -220,15 +225,8 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		return composeDeployResponse{}, false
 	}
 	defer portsRelease()
-	serviceNames := make([]string, 0, len(services))
-	for _, svc := range services {
-		serviceNames = append(serviceNames, svc.Name)
-	}
-	if opts.noCaller {
-		if !rt.refuseForeignServiceNames(r.Context(), w, name, previousServices, serviceNames) {
-			return composeDeployResponse{}, false
-		}
-	} else if !rt.authorizeServiceNames(w, r, name, serviceNames) {
+	if err := pending.flush(r.Context()); err != nil {
+		rt.internalError(w, "api: deploy compose: save generated secrets failed", err, slog.String("name", name))
 		return composeDeployResponse{}, false
 	}
 
@@ -411,12 +409,15 @@ func (rt *Router) pruneStaleComposeServices(ctx context.Context, appName string,
 // first use. Without rt.composeSecrets configured, any compose file
 // needing a generated value fails loudly rather than deploying with a
 // broken literal token.
-func (rt *Router) generateComposeSecret(ctx context.Context, appName string) func(kind, key string, length int) (string, error) {
+func (rt *Router) generateComposeSecret(ctx context.Context, appName string, pending *pendingComposeSecrets) func(kind, key string, length int) (string, error) {
 	return func(kind, key string, length int) (string, error) {
 		if rt.composeSecrets == nil {
 			return "", fmt.Errorf("this compose file needs a generated secret (SERVICE_%s_%s) but no secrets master key is configured", kind, key)
 		}
 		storageKey := composeSecretStorageKey(kind, key)
+		if v, ok := pending.get(appName, storageKey); ok {
+			return v, nil
+		}
 		val, err := rt.composeSecrets.Resolve(ctx, appName, storageKey)
 		if err == nil {
 			return val, nil
@@ -428,9 +429,7 @@ func (rt *Router) generateComposeSecret(ctx context.Context, appName string) fun
 		if err != nil {
 			return "", err
 		}
-		if err := rt.composeSecrets.SetValue(ctx, appName, storageKey, val); err != nil {
-			return "", fmt.Errorf("save generated value for SERVICE_%s_%s: %w", kind, key, err)
-		}
+		pending.add(appName, storageKey, val)
 		return val, nil
 	}
 }
@@ -440,13 +439,71 @@ func (rt *Router) generateComposeSecret(ctx context.Context, appName string) fun
 // secret resolver reads from at container-create time
 // (internal/reconcile/application's WithSecretResolver, keyed by the
 // real service name, not by an app-wide magic-var key).
-func (rt *Router) persistComposeSecret(ctx context.Context, appName string) func(serviceKey, envKey, value string) error {
+func (rt *Router) persistComposeSecret(_ context.Context, appName string, pending *pendingComposeSecrets) func(serviceKey, envKey, value string) error {
 	return func(serviceKey, envKey, value string) error {
 		if rt.composeSecrets == nil {
 			return fmt.Errorf("no secrets master key configured")
 		}
-		return rt.composeSecrets.SetValue(ctx, appName+"-"+serviceKey, envKey, value)
+		ns := appName + "-" + serviceKey
+		if spec.IsReservedName(ns) {
+			return fmt.Errorf("namespace %q is reserved", ns)
+		}
+		pending.add(ns, envKey, value)
+		return nil
 	}
+}
+
+type pendingComposeSecret struct{ namespace, key, value string }
+
+// pendingComposeSecrets holds generated values until the deploy has passed
+// every name check, so a refused deploy leaves no secret row behind.
+type pendingComposeSecrets struct {
+	rt    *Router
+	items []pendingComposeSecret
+}
+
+func (p *pendingComposeSecrets) add(ns, key, value string) {
+	p.items = append(p.items, pendingComposeSecret{ns, key, value})
+}
+
+func (p *pendingComposeSecrets) get(ns, key string) (string, bool) {
+	for _, it := range p.items {
+		if it.namespace == ns && it.key == key {
+			return it.value, true
+		}
+	}
+	return "", false
+}
+
+func (p *pendingComposeSecrets) flush(ctx context.Context) error {
+	for _, it := range p.items {
+		if p.rt.composeSecrets == nil {
+			return fmt.Errorf("no secrets master key configured")
+		}
+		if err := p.rt.composeSecrets.SetValue(ctx, it.namespace, it.key, it.value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// admitComposeNamespaces refuses an app name or derived service name that is reserved,
+// invalid or owned by another app, before any magic var can write a secret under it.
+func (rt *Router) admitComposeNamespaces(w http.ResponseWriter, r *http.Request, name string, previous []store.DesiredService, file *compose.File, noCaller bool) bool {
+	names := make([]string, 0, len(file.Services))
+	for key := range file.Services {
+		names = append(names, name+"-"+key)
+	}
+	for _, n := range append([]string{name}, names...) {
+		if err := spec.ValidateServiceName(n); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return false
+		}
+	}
+	if noCaller {
+		return rt.refuseForeignServiceNames(r.Context(), w, name, previous, names)
+	}
+	return rt.authorizeServiceNames(w, r, name, names)
 }
 
 func composeSecretStorageKey(kind, key string) string {
