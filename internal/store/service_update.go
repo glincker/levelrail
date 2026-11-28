@@ -128,6 +128,9 @@ func (db *DB) UpdateServiceDatabaseAttachment(ctx context.Context, name string, 
 // VaultEnv entry. The read-modify-write runs in one transaction so concurrent
 // writers of other keys cannot lose each other's update.
 func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, ref *VaultEnvRef) error {
+	if err := checkEnvKeys(envVar); err != nil {
+		return err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: set vault env var for service %q: begin transaction: %w", name, err)
@@ -178,6 +181,9 @@ func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, re
 // one DatabaseEnv entry, in one transaction like SetServiceVaultEnvVar.
 // DatabaseAttachment keeps its own setter.
 func (db *DB) SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string, ref *DatabaseEnvRef) error {
+	if err := checkEnvKeys(envVar); err != nil {
+		return err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: set database env var for service %q: begin transaction: %w", name, err)

@@ -14,6 +14,9 @@ import (
 // one key reads the current set first (ListProjectEnvVars) and sends
 // the whole merged map back.
 func (db *DB) SetProjectEnvVars(ctx context.Context, projectID string, vars map[string]string) error {
+	if err := checkEnvKeys(mapKeys(vars)...); err != nil {
+		return err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: set project env vars for %q: begin transaction: %w", projectID, err)
@@ -97,6 +100,9 @@ func ProjectEnvSecretsKey(projectID string) string {
 // SetProjectEnvVars this is a single-key upsert, not a full replace, so
 // it can never clobber the project's other vars, secret or not.
 func (db *DB) SetProjectSecretEnvVar(ctx context.Context, projectID, key string) error {
+	if err := checkEnvKeys(key); err != nil {
+		return err
+	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO project_env_vars (project_id, key, value, is_secret, updated_at)
 		VALUES (?, ?, '', 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))

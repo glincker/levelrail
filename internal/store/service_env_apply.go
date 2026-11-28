@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 	"sort"
 )
 
@@ -86,6 +87,9 @@ func (db *DB) EnvVersion(ctx context.Context, name string) (int, error) {
 // secret declarations, ciphertext rows and vault references move together
 // or not at all, and the locked-secret check runs inside that transaction.
 func (db *DB) ApplyEnvPlan(ctx context.Context, name string, plan EnvPlan) (EnvApplyResult, error) {
+	if err := checkEnvKeys(slices.Concat(mapKeys(plan.Set), mapKeys(plan.SecretSet), mapKeys(plan.VaultSet), plan.Unset, plan.SecretDelete, plan.Convert)...); err != nil {
+		return EnvApplyResult{}, err
+	}
 	res, err := db.applyEnvPlanTx(ctx, name, plan)
 	if err != nil {
 		return res, err

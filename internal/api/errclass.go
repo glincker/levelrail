@@ -13,6 +13,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // Stable machine codes for known causes; clients branch on these.
@@ -23,6 +24,8 @@ const (
 	errCodeDatabaseBusy        = "database_busy"
 	errCodeRegistryUnreachable = "registry_unreachable"
 	errCodeInternal            = "internal_error"
+	errCodeEnvKeyInvalid       = "env_key_invalid"
+	errCodeEnvDualHome         = "env_dual_home"
 
 	envLeftoverVolumeTimeout = "APP_LEFTOVER_VOLUME_CHECK_TIMEOUT"
 	defaultLeftoverTimeout   = 5 * time.Second
@@ -65,6 +68,10 @@ func classifyError(err error) *typedError {
 	case errors.Is(err, docker.ErrDaemonUnresponsive) || dockerclient.IsErrConnectionFailed(err) ||
 		strings.Contains(text, "docker-guard.sock") || strings.Contains(text, "cannot connect to the docker daemon"):
 		return mk(http.StatusServiceUnavailable, errCodeDockerUnavailable, dockerUnavailableMessage, nil)
+	case errors.Is(err, store.ErrEnvKeyInvalid):
+		return mk(http.StatusBadRequest, errCodeEnvKeyInvalid, err.Error(), nil)
+	case errors.Is(err, store.ErrEnvDualHome):
+		return mk(http.StatusConflict, errCodeEnvDualHome, "a key would be both a plain variable and a secret ("+err.Error()+"); keep one", nil)
 	case strings.Contains(text, "database is locked") || strings.Contains(text, "sqlite_busy") || strings.Contains(text, "sqlite_locked"):
 		return mk(http.StatusServiceUnavailable, errCodeDatabaseBusy,
 			"The control plane database is busy. Try again in a few seconds.", nil)

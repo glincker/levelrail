@@ -179,6 +179,9 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 			return err
 		}
 	}
+	if err := checkServiceEnvSave(ctx, tx, svc); err != nil {
+		return err
+	}
 
 	res, err := tx.ExecContext(ctx, `
 		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, is_trial, template_id, pull_policy, image_id, image_id_ref, depends_on, depends_on_healthy, published_ports, files, incarnation, tolerations, affinity, next_cache, next_image_cache, run_user, working_dir, runtime_options, granted_caps, internal_dns_names, updated_at)

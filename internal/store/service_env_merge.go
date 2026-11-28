@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 )
 
 // ErrEnvKeyIsSecret is returned when a merge tries to set a key the app already stores as a secret.
@@ -59,6 +60,9 @@ func (db *DB) ReplaceServiceEnv(ctx context.Context, name string, env map[string
 }
 
 func (db *DB) mergeEnvCore(ctx context.Context, name string, set map[string]string, unset []string, replace bool) (EnvMergeResult, error) {
+	if err := checkEnvKeys(slices.Concat(mapKeys(set), unset)...); err != nil {
+		return EnvMergeResult{}, err
+	}
 	// A dedicated connection lets us issue BEGIN IMMEDIATE, which takes the write lock up front.
 	conn, err := db.Conn(ctx)
 	if err != nil {
