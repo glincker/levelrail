@@ -119,6 +119,9 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 			out.Removed = append(out.Removed, k)
 		} else {
 			out.Missing = append(out.Missing, k)
+			if slices.Contains(store.SecretEnvNames(existing.SecretEnv), k) {
+				out.Warnings = append(out.Warnings, envrules.Issue{Key: k, Code: envrules.CodeSecretOnly, Message: k + " is a secret with no plain copy; to remove it run: apps secrets delete " + name + " " + k})
+			}
 		}
 	}
 	for k := range res.After {

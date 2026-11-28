@@ -52,6 +52,10 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, dualCopyMessage(dup))
 		return
 	}
+	if msg := rt.updateEnvRefusal(r.Context(), req.Env, req.SecretEnv, existing); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	if !rt.vetSecretRefs(w, r, name, existing.EnvironmentID, existing.VaultEnv, &req) {
 		return
 	}

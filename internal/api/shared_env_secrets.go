@@ -151,7 +151,7 @@ func (rt *Router) handleSetSharedEnvSecret(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "value is required")
 		return
 	}
-	if !rt.checkOverrideEnv(r.Context(), w, key, req.Value, true) {
+	if !rt.checkSharedSecretEnv(r.Context(), w, scope, id, key, req.Value) {
 		return
 	}
 	if !rt.allowProviderRefs(w, r, req.Value) {

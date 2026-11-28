@@ -31,6 +31,7 @@ const (
 	CodeInterpolation Code = "interpolation"
 	CodeEmptyValue    Code = "empty_value"
 	CodeLegacyKey     Code = "legacy_key"
+	CodeSecretOnly    Code = "secret_only"
 )
 
 // Key policy and refuse-or-warn modes, matching the runtime setting values.

@@ -89,9 +89,53 @@ func (rt *Router) checkAppOverrideEnv(ctx context.Context, w http.ResponseWriter
 	return rt.checkEnvWrite(ctx, w, map[string]string{key: value}, existingEnv(svc), envrules.Options{Secret: secret, Multiline: true})
 }
 
-// checkOverrideEnv validates one key and value on shared-scope writers that have
-// no app to load, so legacy names pass; per-app overrides use checkAppOverrideEnv.
-func (rt *Router) checkOverrideEnv(ctx context.Context, w http.ResponseWriter, key, value string, secret bool) bool {
-	_, ok := rt.checkEnvWrite(ctx, w, map[string]string{key: value}, envrules.Existing{}, envrules.Options{Secret: secret, Multiline: true, ExistingUnknown: true})
+// updateEnvRefusal checks a full app save against the keys the app already holds,
+// so untouched legacy keys pass and only new or changed ones are held to the rules.
+func (rt *Router) updateEnvRefusal(ctx context.Context, env map[string]string, secretNames []string, existing *store.DesiredService) string {
+	ex := existingEnv(existing)
+	if msg := rt.envRefusal(ctx, env, ex, envrules.Options{Multiline: true}); msg != "" {
+		return msg
+	}
+	names := make(map[string]string, len(secretNames))
+	for _, n := range secretNames {
+		names[n] = "x"
+	}
+	return rt.envRefusal(ctx, names, ex, envrules.Options{Secret: true, Multiline: true})
+}
+
+// composeEnvRefusal checks every service of a compose deploy. Dotted names are
+// tolerated because templates ship them (Java style keys); everything else is strict.
+func (rt *Router) composeEnvRefusal(ctx context.Context, services []store.DesiredService) string {
+	for _, s := range services {
+		if msg := rt.envRefusal(ctx, s.Env, envrules.Existing{}, envrules.Options{Multiline: true, ExistingUnknown: true}); msg != "" {
+			return s.Name + ": " + msg
+		}
+	}
+	return ""
+}
+
+// cloneEnvRefusal checks the env a clone would copy; names that already exist
+// on the source are tolerated, so only genuinely unusable data is refused.
+func (rt *Router) cloneEnvRefusal(ctx context.Context, sources []store.DesiredService) string {
+	return rt.composeEnvRefusal(ctx, sources)
+}
+
+// checkSharedSecretEnv validates a shared-scope secret key against the keys the
+// scope already holds, so a legacy name that exists stays editable and new ones are strict.
+func (rt *Router) checkSharedSecretEnv(ctx context.Context, w http.ResponseWriter, scope sharedEnvSecretScope, id, key, value string) bool {
+	vars, err := scope.listAll(ctx, id)
+	if err != nil {
+		rt.internalError(w, "api: "+scope.label+" secret env: load current failed", err, slog.String("id", id))
+		return false
+	}
+	ex := envrules.Existing{Plain: map[string]string{}}
+	for _, v := range vars {
+		if v.Secret {
+			ex.Names = append(ex.Names, v.Key)
+		} else {
+			ex.Plain[v.Key] = v.Value
+		}
+	}
+	_, ok := rt.checkEnvWrite(ctx, w, map[string]string{key: value}, ex, envrules.Options{Secret: true, Multiline: true})
 	return ok
 }

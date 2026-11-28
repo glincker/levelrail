@@ -57,6 +57,9 @@ func deriveCloneDomains(source []string, o cloneDomainOpts) []string {
 // applyCloneExtras handles the options SaveDesiredService cannot: environment
 // placement and re-encrypting secret values under the clone's own slots.
 func (rt *Router) applyCloneExtras(ctx context.Context, source store.DesiredService, req cloneAppRequest) error {
+	if msg := rt.cloneEnvRefusal(ctx, []store.DesiredService{source}); msg != "" {
+		return errCloneRequest(msg)
+	}
 	if req.EnvironmentID != "" {
 		if err := rt.environments.SetServiceEnvironment(ctx, req.NewName, req.EnvironmentID); err != nil {
 			return fmt.Errorf("set environment: %w", err)

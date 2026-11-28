@@ -202,6 +202,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		services[i].IsTrial = isTrial
 		services[i].TemplateID = opts.templateID
 	}
+	if msg := rt.composeEnvRefusal(r.Context(), services); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return composeDeployResponse{}, false
+	}
 	nodePins, ok := rt.applyComposeNodeTargets(w, r, name, file, services, opts.node)
 	if !ok {
 		return composeDeployResponse{}, false

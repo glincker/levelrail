@@ -66,6 +66,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, dualCopyMessage(dup))
 		return
 	}
+	if msg := rt.bundleEnvRefusal(r.Context(), req.Env, unionSecretEnvNames(req.SecretEnv, req.Secrets)); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	if !rt.vetSecretRefs(w, r, req.Name, req.EnvironmentID, nil, &req) {
 		return
 	}
