@@ -105,14 +105,61 @@ func TestRestore_RollbackDeleteFailureKeepsLiveSecretsAndParkedCopy(t *testing.T
 		t.Fatalf("app stays live after a failed rollback: %v", err)
 	}
 	requireLiveSecrets(t, m)
-	// A purge must not drop the parked copy of a live name.
+	// The purge always drops the parked copy, but a live name keeps its live secrets.
 	if _, err := rt.SweepRecentlyDeleted(ctx, time.Now().Add(400*24*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
-	if keys, _ := db.ListSecretKeys(ctx, store.DeletedAppSecretsKey("web")); len(keys) != 2 {
-		t.Fatalf("parked keys after purge of a live name = %d, want 2", len(keys))
-	}
+	requireNoSecrets(t, db, store.DeletedAppSecretsKey("web"))
 	requireLiveSecrets(t, m)
+}
+
+func TestRecentlyDeletedPurge_DropsParkedCopyAfterFailedDrop(t *testing.T) {
+	t.Parallel()
+	rt, db, m, cookie := newSecretsRestoreRouter(t)
+	ctx := context.Background()
+	if got := secretsDo(t, rt, cookie, http.MethodDelete, "/api/v1/apps/web", ""); got != http.StatusNoContent {
+		t.Fatalf("delete = %d", got)
+	}
+	rt.secrets = failParkedDropSecrets{m}
+	if got := secretsDo(t, rt, cookie, http.MethodPost, "/api/v1/recently-deleted/app/web/restore", `{"confirm":"web"}`); got != http.StatusOK {
+		t.Fatalf("restore = %d, want 200", got)
+	}
+	if keys, _ := db.ListSecretKeys(ctx, store.DeletedAppSecretsKey("web")); len(keys) != 2 {
+		t.Fatalf("parked keys before purge = %d, want 2", len(keys))
+	}
+	if _, err := rt.SweepRecentlyDeleted(ctx, time.Now().Add(400*24*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	requireNoSecrets(t, db, store.DeletedAppSecretsKey("web"))
+	requireLiveSecrets(t, m)
+}
+
+func TestRecentlyDeletedPurge_WaitsForNameLock(t *testing.T) {
+	t.Parallel()
+	rt, db, _, cookie := newSecretsRestoreRouter(t)
+	ctx := context.Background()
+	if got := secretsDo(t, rt, cookie, http.MethodDelete, "/api/v1/apps/web", ""); got != http.StatusNoContent {
+		t.Fatalf("delete = %d", got)
+	}
+	unlock := lockAppName("web")
+	done := make(chan error, 1)
+	go func() {
+		_, err := rt.SweepRecentlyDeleted(ctx, time.Now().Add(400*24*time.Hour))
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		t.Fatalf("purge ran while a restore held the name lock: %v", err)
+	case <-time.After(200 * time.Millisecond):
+	}
+	if keys, _ := db.ListSecretKeys(ctx, store.DeletedAppSecretsKey("web")); len(keys) != 2 {
+		t.Fatalf("parked keys during held lock = %d, want 2", len(keys))
+	}
+	unlock()
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	requireNoSecrets(t, db, store.DeletedAppSecretsKey("web"))
 }
 
 func TestHardDeleteAndPurgeEraseTraceIngestToken(t *testing.T) {

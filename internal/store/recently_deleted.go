@@ -116,16 +116,17 @@ func (db *DB) PurgeRecentlyDeleted(ctx context.Context, cutoff time.Time) (int, 
 		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 	}
 	for _, n := range names {
-		// A live name keeps its history and parked values: a failed restore rollback leaves the app live.
+		// Restore copies parked values to the live name first, so the parked copy always goes.
+		if err := deleteServiceSecretsTx(ctx, tx, DeletedAppSecretsKey(n)); err != nil {
+			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+		}
+		// A live name keeps its history, trace token and function data: a failed rollback leaves the app live.
 		var live int
 		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM desired_services WHERE name = ?`, n).Scan(&live); err != nil {
 			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 		}
 		if live > 0 {
 			continue
-		}
-		if err := deleteServiceSecretsTx(ctx, tx, DeletedAppSecretsKey(n)); err != nil {
-			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 		}
 		if err := deleteServiceSecretsTx(ctx, tx, TraceIngestSecretsKey(n)); err != nil {
 			return 0, fmt.Errorf("store: purge recently deleted: %w", err)

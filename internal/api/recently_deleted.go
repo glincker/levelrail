@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
@@ -181,7 +182,7 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		err = rt.restoreDeletedApp(r.Context(), cur)
 		if err == nil {
 			restoredNeeds = undoCategoriesFromSnapshot(cur.Snapshot)
-			// The entry stays if the parked copy cannot be erased, so the purge still removes it.
+			// The entry stays if the parked copy cannot be erased, so the purge erases it later.
 			if serr := rt.dropParkedSecrets(r.Context(), name); serr != nil {
 				rt.logger.Warn("api: erase parked secrets failed", slog.String("name", name), slog.String("error", serr.Error()))
 			} else if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
@@ -371,7 +372,21 @@ func (rt *Router) SweepRecentlyDeleted(ctx context.Context, now time.Time) (int,
 	if st == nil {
 		return 0, nil
 	}
-	return st.PurgeRecentlyDeleted(ctx, now.Add(-rt.recentlyDeletedWindow(ctx)))
+	cutoff := now.Add(-rt.recentlyDeletedWindow(ctx))
+	// Hold each expiring app's name lock so a restore that already re-read its entry finishes first.
+	if all, err := st.ListRecentlyDeleted(ctx); err == nil {
+		var names []string
+		for _, e := range all {
+			if e.Kind == store.RecentlyDeletedApp && e.DeletedAt.Before(cutoff) {
+				names = append(names, e.Name)
+			}
+		}
+		sort.Strings(names)
+		for _, n := range names {
+			defer lockAppName(n)()
+		}
+	}
+	return st.PurgeRecentlyDeleted(ctx, cutoff)
 }
 
 // RunRecentlyDeletedSweeper runs SweepRecentlyDeleted hourly until ctx ends.
