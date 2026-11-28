@@ -2676,6 +2676,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/announcements/{id}/read | Session | handleAnnouncementRead |
 | POST | /api/v1/announcements/{id}/dismiss | Session | handleAnnouncementDismiss |
 | POST | /api/v1/announcements/{id}/snooze | Session | handleAnnouncementSnooze |
+| POST | /api/v1/tokens/bulk-revoke | Session | handleBulkRevokeTokens |
+| POST | /api/v1/tokens/prune | AbilityRoot | handlePruneTokens |
 | POST | /mcp | Public |  |
 
 ## See also

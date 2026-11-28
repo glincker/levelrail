@@ -10,8 +10,10 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -231,7 +233,49 @@ func (rt *Router) handleListTokens(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	writeJSON(w, http.StatusOK, out)
+	query, ok := parseTokenListQuery(r.URL.Query())
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid token list parameters")
+		return
+	}
+	if !query.Paged {
+		writeJSON(w, http.StatusOK, out)
+		return
+	}
+	rt.writeTokenListPage(r.Context(), w, out, query)
+}
+
+// writeTokenListPage answers the filtered, sorted and paged list; counts cover the filtered set before paging.
+func (rt *Router) writeTokenListPage(ctx context.Context, w http.ResponseWriter, all []tokenResource, q tokenListQuery) {
+	now := time.Now()
+	window := rt.tokenExpiryWindow(ctx)
+	matched := make([]tokenResource, 0, len(all))
+	for _, t := range all {
+		if q.Filter.matches(t, now, window) {
+			matched = append(matched, t)
+		}
+	}
+	counts := countTokenStatuses(matched, now, window)
+	if q.Groups {
+		writeJSON(w, http.StatusOK, tokenGroupsPage{Groups: groupTokensByName(matched, now, window), Total: len(matched), CountsByStatus: counts})
+		return
+	}
+	sortTokenResources(matched, q.Sort, q.Desc)
+	page := tokenListPage{Items: []tokenResource{}, Total: len(matched), CountsByStatus: counts}
+	if q.Offset < len(matched) {
+		end := min(q.Offset+q.Limit, len(matched))
+		page.Items = matched[q.Offset:end]
+		if end < len(matched) {
+			page.NextCursor = strconv.Itoa(end)
+		}
+	}
+	writeJSON(w, http.StatusOK, page)
+}
+
+// tokenExpiryWindow is how far ahead a token counts as expiring.
+func (rt *Router) tokenExpiryWindow(ctx context.Context) time.Duration {
+	days := rt.tokenSettingInt(ctx, runtimesettings.KeyTokensExpiryWarningDays)
+	return time.Duration(max(days, 1)) * hygieneDay
 }
 
 // handleRevokeToken handles DELETE /api/v1/auth/tokens/{id}. Idempotent

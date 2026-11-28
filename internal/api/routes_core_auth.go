@@ -190,6 +190,9 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/tokens/{id}/rotate", rt.sessionOrSelfToken(rt.handleRotateToken))
 	// Read-only list of idle tokens, same audience as the token list.
 	mux.HandleFunc("GET /api/v1/tokens/unused", rt.sessionOrRootToken(rt.handleUnusedTokens))
+	// Bulk revoke is session only like the single revoke; prune deletes rows so it is AbilityRoot.
+	mux.HandleFunc("POST /api/v1/tokens/bulk-revoke", rt.requireAuth(rt.handleBulkRevokeTokens))
+	mux.HandleFunc("POST /api/v1/tokens/prune", rt.requireAbility(AbilityRoot, rt.handlePruneTokens))
 	// Removing revoked tokens is irreversible bookkeeping on the token set, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/auth/tokens/cleanup", rt.requireAbility(AbilityRoot, rt.handleCleanupTokens))
 }

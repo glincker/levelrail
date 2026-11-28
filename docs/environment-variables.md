@@ -158,6 +158,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_TEMPLATE_CAP_HOST_NETWORK` | [`templates.cap_host_network`](/runtime-settings#security) | `false` |
 | `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
 | `APP_TEMPLATE_SOURCES_ENABLED` | [`templates.sources_enabled`](/runtime-settings#security) | `false` |
+| `APP_TOKENS_BULK_MAX` | [`tokens.bulk_max`](/runtime-settings#security) | `500` |
+| `APP_TOKENS_EMERGENCY_MAX_LIVE` | [`tokens.emergency_max_live`](/runtime-settings#security) | `3` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_PAGES_TOKEN_MAX_DAYS` | [`tokens.site_deploy_max_days`](/runtime-settings#security) | `365` |
 | `APP_VAULT_ALLOW_PRIVATE_ADDRESS` | [`vault.allow_private_address`](/runtime-settings#security) | `true` |

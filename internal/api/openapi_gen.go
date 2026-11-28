@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2445 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2447 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -2110,6 +2110,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/templates/sources/{name}/templates", Ability: "AbilityRoot", Group: "Other", Handler: "handleListTemplateSourceEntries", Description: ""},
 	{Method: "GET", Path: "/api/v1/templates/sources/{name}/templates/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetTemplateSourceEntry", Description: ""},
 	{Method: "POST", Path: "/api/v1/templates/sources/{name}/templates/{id}/approve", Ability: "AbilityRoot", Group: "Other", Handler: "handleApproveTemplateSourceEntry", Description: ""},
+	{Method: "POST", Path: "/api/v1/tokens/bulk-revoke", Ability: "Session", Group: "Other", Handler: "handleBulkRevokeTokens", Description: "Bulk revoke is session only like the single revoke; prune deletes rows so it is AbilityRoot."},
+	{Method: "POST", Path: "/api/v1/tokens/prune", Ability: "AbilityRoot", Group: "Other", Handler: "handlePruneTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/tokens/unused", Ability: "Session", Group: "Other", Handler: "handleUnusedTokens", Description: "Read-only list of idle tokens, same audience as the token list."},
 	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},
 	{Method: "GET", Path: "/api/v1/usage/budgets", Ability: "AbilityRead", Group: "Other", Handler: "handleListUsageBudgets", Description: ""},
