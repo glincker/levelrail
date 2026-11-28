@@ -36,6 +36,9 @@ const (
 	EnvHoldHeadroom = "APP_SLEEP_HOLD_HEADROOM"
 	// EnvWakeProbeInterval is the readiness probe interval while an app wakes.
 	EnvWakeProbeInterval = "APP_SLEEP_WAKE_PROBE_INTERVAL"
+	// EnvStackSleep makes the services of one multi-service app sleep and wake
+	// as a unit. Off by default; only apps with sleep enabled are affected.
+	EnvStackSleep = "APP_SLEEP_STACK"
 )
 
 // Defaults for the variables above. 4096 bytes per minute sits above
@@ -73,6 +76,7 @@ type Config struct {
 	HoldDefault             time.Duration
 	HoldHeadroom            float64
 	WakeProbeInterval       time.Duration
+	StackSleep              bool
 }
 
 // ConfigFromEnv reads the Env* variables, using the defaults for anything
@@ -96,6 +100,7 @@ func ConfigFromEnv(getenv func(string) string) Config {
 		HoldDefault:             envDuration(getenv, EnvHoldDefault, DefaultHoldDefault),
 		HoldHeadroom:            DefaultHoldHeadroom,
 		WakeProbeInterval:       envDuration(getenv, EnvWakeProbeInterval, DefaultWakeProbeInterval),
+		StackSleep:              stackFlag(getenv(EnvStackSleep)),
 	}
 	if f, err := strconv.ParseFloat(getenv(EnvHoldHeadroom), 64); err == nil && f >= 1 {
 		c.HoldHeadroom = f
@@ -140,4 +145,9 @@ func envDuration(getenv func(string) string, key string, def time.Duration) time
 		return d
 	}
 	return def
+}
+
+func stackFlag(v string) bool {
+	b, err := strconv.ParseBool(v)
+	return err == nil && b
 }

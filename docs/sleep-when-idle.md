@@ -55,6 +55,21 @@ For API callers that cannot retry an error page, turn on **hold requests while
 waking** (`apps sleep enable --hold`): the request waits for the start and is
 replayed. See [Functions](/functions).
 
+## Multi-service apps (stacks)
+
+Off by default. Set `APP_SLEEP_STACK=true` and the services of one
+multi-service app (a compose app or `app.yaml` with several services) sleep and
+wake as one unit instead of one by one. Only apps that already have sleep
+enabled are affected.
+
+- One idle clock: a request, network traffic, an open connection or a running
+  deploy on any service keeps the whole stack awake.
+- Sleeping stops every service, dependents first.
+- Waking starts them in `depends_on` order (database, then API, then web), and
+  visitors see the "Waking up" page until the entry service is ready.
+- A service without its own sleep setting still joins the stack and counts
+  toward its idle clock.
+
 ## Wake time
 
 Every wake is timed from the moment the request arrives to the first ready

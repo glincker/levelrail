@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -187,8 +188,14 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 			return fmt.Errorf("appsleep: read active deploys: %w", err)
 		}
 	}
-	net := s.networkActivity(ctx, settings, now)
 	cfg := s.cfg()
+	stacks, all := s.stackPlan(ctx, settings, cfg)
+	net := s.networkActivity(ctx, all, now)
+	rows := make(map[string]store.AppSleep, len(settings))
+	for _, a := range settings {
+		rows[a.ServiceName] = a
+	}
+	led := map[string]bool{}
 	var errs []error
 	for _, a := range settings {
 		svc, err := s.Apps.GetDesiredService(ctx, a.ServiceName)
@@ -238,9 +245,24 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 			s.Logger.Debug("appsleep: app cannot sleep", slog.String("app", a.ServiceName), slog.String("reason", bl[0].Code))
 			continue
 		}
-		sig := s.signals(ctx, svc, a, latest[resourceID(a.ServiceName)], now, net[a.ServiceName])
-		sig.OperationInFlight = ops[a.ServiceName]
-		d := Decide(DecideInput{Now: now, IdleMinutes: a.IdleMinutes, Since: a.Since, ObservedFrom: observed, Cooldown: cfg.WakeCooldown, Signals: sig})
+		since := a.Since
+		var sig Signals
+		if members := stacks[a.ServiceName]; len(members) > 1 {
+			// One idle clock per stack: the first opted-in member decides for all.
+			key := strings.Join(members, ",")
+			if led[key] {
+				continue
+			}
+			led[key] = true
+			var ok bool
+			if sig, since, ok = s.stackSignals(ctx, members, rows, a, latest, net, ops, now, fleet); !ok {
+				continue
+			}
+		} else {
+			sig = s.signals(ctx, svc, a, latest[resourceID(a.ServiceName)], now, net[a.ServiceName])
+			sig.OperationInFlight = ops[a.ServiceName]
+		}
+		d := Decide(DecideInput{Now: now, IdleMinutes: a.IdleMinutes, Since: since, ObservedFrom: observed, Cooldown: cfg.WakeCooldown, Signals: sig})
 		s.record(a.ServiceName, sig, d)
 		if !d.Sleep {
 			continue
@@ -402,7 +424,11 @@ func Sleep(ctx context.Context, sleep interface {
 	if err := sleep.SetAppSleeping(ctx, name, true, now); err != nil {
 		return err
 	}
-	if err := apps.UpdateServiceSuspended(ctx, name, true); err != nil {
+	stop := func() error { return apps.UpdateServiceSuspended(ctx, name, true) }
+	if ConfigFromEnv(nil).StackSleep {
+		stop = func() error { return stackStop(ctx, sleep, apps, name, now) }
+	}
+	if err := stop(); err != nil {
 		_ = sleep.SetAppSleeping(ctx, name, false, now)
 		return fmt.Errorf("stop idle app: %w", err)
 	}
@@ -463,7 +489,11 @@ func Wake(ctx context.Context, sleep interface {
 	if err := sleep.SetAppSleeping(ctx, name, false, now); err != nil {
 		return false, err
 	}
-	if err := apps.UpdateServiceSuspended(ctx, name, false); err != nil {
+	start := func() error { return apps.UpdateServiceSuspended(ctx, name, false) }
+	if ConfigFromEnv(nil).StackSleep {
+		start = func() error { return stackStart(ctx, sleep, apps, name, now) }
+	}
+	if err := start(); err != nil {
 		if rerr := sleep.SetAppSleeping(ctx, name, true, now); rerr != nil {
 			slog.Warn("appsleep: wake rollback failed", slog.String("app", name), slog.String("error", rerr.Error()))
 		}
