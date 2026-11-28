@@ -48,11 +48,9 @@ import { ResourceTiles } from './ResourceTiles'
 import { useResourceReading } from './useResourceReading'
 import { isImageDeploy } from './suggestions'
 import { TrafficTiles } from './TrafficTiles'
-import { VisitorsCard } from './VisitorsCard'
 import { StaticStatStrip } from './StaticStatStrip'
 import { RecentDeploys } from './RecentDeploys'
 import { AppDeploys } from './AppDeploys'
-import { AppRecentPreviews } from './AppRecentPreviews'
 import { AppStatusStrip } from './AppStatusStrip'
 import { AppWiring } from './AppWiring'
 import type { VisitorsWindow } from '../../queries/appVisitors'
@@ -62,6 +60,13 @@ import { useOverviewHotkeys } from './useOverviewHotkeys'
 
 // Lazy so the preview (and its iframe code) stays out of the route chunk.
 const OverviewPreview = lazy(() => import('./OverviewPreview'))
+// Below-the-fold cards load on demand to keep the overview chunk inside its budget.
+const VisitorsCard = lazy(() =>
+  import('./VisitorsCard').then((m) => ({ default: m.VisitorsCard })),
+)
+const AppRecentPreviews = lazy(() =>
+  import('./AppRecentPreviews').then((m) => ({ default: m.AppRecentPreviews })),
+)
 
 export function OverviewPage({
   app,
@@ -199,11 +204,13 @@ export function OverviewPage({
           </section>
         )}
         {layout.traffic !== 'hidden' ? (
-          <VisitorsCard
-            appName={app.name}
-            window={isStatic ? range : undefined}
-            onWindowChange={isStatic ? setRange : undefined}
-          />
+          <Suspense fallback={null}>
+            <VisitorsCard
+              appName={app.name}
+              window={isStatic ? range : undefined}
+              onWindowChange={isStatic ? setRange : undefined}
+            />
+          </Suspense>
         ) : null}
       </div>
     ),
@@ -360,7 +367,9 @@ export function OverviewPage({
         <div className="min-w-0 space-y-3">
           {preview}
           {sections.access}
-          <AppRecentPreviews name={app.name} />
+          <Suspense fallback={null}>
+            <AppRecentPreviews name={app.name} />
+          </Suspense>
         </div>
       </div>
       {sheet}
