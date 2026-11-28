@@ -77,6 +77,7 @@ var namespaceAllowlist = map[string]string{ //nolint:gosec // call site names, n
 	"api/app_import_run.go:rollbackAppImportItem":                        "acts only on a live app this import session created (label import/session equals the session id)",
 	"api/apps_compose.go:flush":                                          "REVIEW: app or service scoped, creation names go through the store name guard; this site has no own guard",
 	"api/apps_compose.go:generateComposeSecret":                          "REVIEW: app or service scoped, creation names go through the store name guard; this site has no own guard",
+	"api/apps_compose.go:rollback":                                       "deletes only the derived name-key namespaces this same deploy admitted under admitComposeNamespaces and wrote moments earlier",
 	"api/apps_compose.go:pruneStaleComposeSecretFiles":                   "touches only members of the previous deploy of the stack",
 	"api/apps_compose.go:storeComposeSecretFiles":                        "stack-svc names pass admitComposeNamespaces and authorizeServiceNames, and the store guard",
 	"api/apps_create.go:handleCreateApp":                                 "ValidateServiceName, appNameFree under lockAppName before SetValueGuarded, store repeats the name checks",
