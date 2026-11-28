@@ -420,6 +420,7 @@
             "pages": [
               "templates-and-registry",
               "private-registries",
+              "docker-hub-connection",
               "template-upgrades",
               "template-catalog",
               "deploy-button",

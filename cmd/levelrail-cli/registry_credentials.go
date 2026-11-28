@@ -34,6 +34,8 @@ func runRegistryCredentials(prog string, args []string, stdout, stderr io.Writer
 		return runRegistryCredentialsRepositories(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tags":
 		return runRegistryCredentialsTags(prog, args[1:], stdout, stderr, lookupEnv)
+	case "status", "limits":
+		return runRegistryCredentialsHub(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown registry-credentials subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, registryCredentialsUsage(prog))
@@ -52,6 +54,8 @@ func registryCredentialsUsage(prog string) string {
   %[1]s registry-credentials refresh <id> [flags]                                                              mint a new login now for an ECR, Artifact Registry or ACR credential
   %[1]s registry-credentials repositories <id> [flags]                                                         list every repository in the credential's external registry
   %[1]s registry-credentials tags <id> <repository> [flags]                                                    list every tag pushed for one repository in that registry
+  %[1]s registry-credentials status <id> [flags]                                                              check a Docker Hub token: valid, scopes, last check, pull limit
+  %[1]s registry-credentials limits <id> [flags]                                                              show the Docker Hub pull limit and what remains
 
 Run "%[1]s registry-credentials <subcommand> -h" for a subcommand's own flags.
 `, prog)
