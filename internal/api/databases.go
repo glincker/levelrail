@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -334,6 +335,14 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	if !errors.Is(err, store.ErrDatabaseNotFound) {
 		rt.logger.Error("api: create database: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+
+	if other, err := rt.nameTakenByOtherKind(r.Context(), req.Name, store.NameKindDatabase, true); err != nil {
+		rt.internalError(w, "api: create database: check name failed", err, slog.String("name", req.Name))
+		return false
+	} else if other || spec.IsReservedName(req.Name) {
+		writeError(w, http.StatusConflict, msgNameUnavailable)
 		return false
 	}
 

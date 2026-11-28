@@ -249,6 +249,11 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
 		return err
 	}
+	if other, err := rt.nameTakenByOtherKind(ctx, e.Name, store.NameKindApp, false); err != nil {
+		return err
+	} else if other {
+		return errRestoreConflict(msgNameUnavailable)
+	}
 	var svc store.DesiredService
 	if err := json.Unmarshal([]byte(e.Snapshot), &svc); err != nil {
 		return err
@@ -336,6 +341,11 @@ func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDe
 		return err
 	}
 	d.ExistingVolume = "reuse"
+	if other, err := rt.nameTakenByOtherKind(ctx, e.Name, store.NameKindDatabase, false); err != nil {
+		return err
+	} else if other {
+		return errRestoreConflict(msgNameUnavailable)
+	}
 	if err := rt.insertDesiredDatabase(ctx, d); err != nil {
 		if errors.Is(err, store.ErrDatabaseExists) {
 			return errRestoreConflict("a database named " + e.Name + " exists again; rename or delete it first")

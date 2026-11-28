@@ -241,6 +241,14 @@ func (rt *Router) appNameFree(ctx context.Context, name string) error {
 	if taken {
 		return errAppNameTaken
 	}
+	// Database credentials live under the bare database name, so an app must never share it.
+	other, err := rt.nameTakenByOtherKind(ctx, name, store.NameKindApp, true)
+	if err != nil {
+		return fmt.Errorf("check name %q: %w", name, err)
+	}
+	if other {
+		return errAppNameTaken
+	}
 	return nil
 }
 

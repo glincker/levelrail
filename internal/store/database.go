@@ -210,6 +210,9 @@ func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error 
 	if err := db.checkNewDatabaseName(ctx, d.Name); err != nil {
 		return err
 	}
+	if err := db.checkNewNameKind(ctx, d.Name, NameKindDatabase); err != nil {
+		return err
+	}
 	resourcesJSON, err := json.Marshal(d.Resources)
 	if err != nil {
 		return fmt.Errorf("store: marshal resources for database %q: %w", d.Name, err)
@@ -241,6 +244,9 @@ var ErrDatabaseExists = errors.New("store: database already exists")
 // CreateDesiredDatabase inserts a new database and fails with ErrDatabaseExists
 // if the name is taken, so two concurrent creates cannot both win.
 func (db *DB) CreateDesiredDatabase(ctx context.Context, d DesiredDatabase) error {
+	if err := db.checkNewNameKind(ctx, d.Name, NameKindDatabase); err != nil {
+		return err
+	}
 	resourcesJSON, err := json.Marshal(d.Resources)
 	if err != nil {
 		return fmt.Errorf("store: marshal resources for database %q: %w", d.Name, err)

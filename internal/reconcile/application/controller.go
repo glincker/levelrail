@@ -1706,6 +1706,9 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 		if err := c.refuseReservedSecretOwner(); err != nil {
 			return nil, err
 		}
+		if err := c.refuseDatabaseSecretOwner(ctx); err != nil {
+			return nil, err
+		}
 		if c.secretResolver == nil {
 			return nil, fmt.Errorf("service declares %d secret-backed env var(s) but no secret resolver is configured", len(desired.SecretEnv))
 		}

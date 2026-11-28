@@ -90,6 +90,8 @@ func buildExplainTable() map[string]Explanation {
 			"Add swap, lower build concurrency or set memory limits on the biggest apps, then press Re-check.", "", KindManual),
 		ex("service_name_namespace", "An app has a name with a slash or control character, or one reserved for control plane settings.", "Its secrets could share a namespace with parked or internal secrets, and its deploys are refused while it is named like one.",
 			"Move the app to a plain lowercase name, delete the old one, then press Re-check.", "", KindManual),
+		ex("name_namespace_collision", "An app, database or compose stack shares its name with another kind of resource.", "They share one secret namespace, so one can read or overwrite the other's credentials. The app is refused its database credentials while the clash exists.",
+			"Copy what you need into a uniquely named resource, delete the duplicate, then press Re-check.", "", KindManual),
 		ex("host_swap", "The host has no swap.", "A memory spike makes the kernel kill processes, including the control plane.",
 			"Add a 1 to 2 GB swap file, then press Re-check.", "", KindManual),
 		ex("build_memory", "The host has less memory than a typical web build needs.", "Builds may fail with out-of-memory errors.",

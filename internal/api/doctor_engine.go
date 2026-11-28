@@ -120,6 +120,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("certificates", doctorGroupNetwork, rt.doctorCheckCertExpiry),
 		one("certificate_budget", doctorGroupNetwork, rt.doctorCheckCertBudget),
 		one("service_name_namespace", doctorGroupSecurity, rt.doctorCheckServiceNameNamespace),
+		one("name_namespace_collision", doctorGroupSecurity, rt.doctorCheckNameNamespaceCollision),
 		one("reachability", doctorGroupNetwork, rt.doctorCheckReachability),
 
 		one("master_key_rotation", doctorGroupSecurity, rt.doctorCheckMasterKeyRotation),

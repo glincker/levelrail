@@ -500,6 +500,25 @@ func (rt *Router) admitComposeNamespaces(w http.ResponseWriter, r *http.Request,
 			return false
 		}
 	}
+	member := map[string]bool{name: true}
+	for _, p := range previous {
+		member[p.Name] = true
+	}
+	// Magic vars write under each derived name, which a database credential may already hold.
+	for _, n := range append([]string{name}, names...) {
+		if member[n] {
+			continue
+		}
+		other, err := rt.nameTakenByOtherKind(r.Context(), n, store.NameKindApp, true)
+		if err != nil {
+			rt.internalError(w, "api: deploy compose: check name", err, slog.String("name", n))
+			return false
+		}
+		if other {
+			writeError(w, http.StatusConflict, msgNameUnavailable)
+			return false
+		}
+	}
 	if noCaller {
 		return rt.refuseForeignServiceNames(r.Context(), w, name, previous, names)
 	}

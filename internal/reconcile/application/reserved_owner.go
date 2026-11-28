@@ -23,6 +23,27 @@ func (c *Controller) refuseReservedSecretOwner() error {
 	return errReservedSecretOwner
 }
 
+type databaseNameLookup interface {
+	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
+}
+
+// errDatabaseSecretOwner is returned when an app shares its name with a database, whose credentials live under that name.
+var errDatabaseSecretOwner = errors.New("app name is also a database name, so its secrets would expose database credentials; rename the app")
+
+// refuseDatabaseSecretOwner blocks secret resolution for an app named like a database.
+func (c *Controller) refuseDatabaseSecretOwner(ctx context.Context) error {
+	lookup, ok := c.store.(databaseNameLookup)
+	if !ok {
+		return nil
+	}
+	if _, err := lookup.GetDesiredDatabase(ctx, c.serviceName); err != nil {
+		return nil
+	}
+	c.recordReservedOwnerEvent()
+	slog.Warn("security: refused to resolve secrets for an app named like a database", slog.String("service", c.serviceName), slog.String("event", "database_secret_owner"))
+	return errDatabaseSecretOwner
+}
+
 // reservedOwnerEventEvery bounds the stored event to one per app per window, so a retry loop cannot flood the timeline.
 const reservedOwnerEventEvery = time.Hour
 
