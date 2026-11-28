@@ -362,3 +362,60 @@ func TestController_ImplicitLoadBalancing_LocalNodeIDIsNotRemote(t *testing.T) {
 		t.Errorf("upstreams = %+v, want 3 loopback replicas for the local node", rp.Upstreams)
 	}
 }
+
+type perNodeResolver map[string]fakeNodes
+
+func (p perNodeResolver) UpstreamHost(ctx context.Context, node string) (docker.Runtime, string, error) {
+	n, ok := p[node]
+	if !ok {
+		return nil, "", errors.New("node offline")
+	}
+	return n.UpstreamHost(ctx, node)
+}
+
+func TestController_LoadBalancer_SpreadReplicasUseRemoteUpstreams(t *testing.T) {
+	svc := lbService(3)
+	svc.ReplicaNodes = []string{"", "node-2", "node-2"}
+	local := newFakeRuntime()
+	local.seedRunning(replicaName(svc, 0), 30000)
+	remote := newFakeRuntime()
+	pub := func(port int, health string) *docker.ContainerState {
+		return &docker.ContainerState{Running: true, Health: health, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: port, HostIP: "0.0.0.0"}}}
+	}
+	remote.containers[replicaName(svc, 1)] = pub(40001, "healthy")
+	remote.containers[replicaName(svc, 2)] = pub(40002, "healthy")
+
+	tests := []struct {
+		name  string
+		setup func()
+		nodes NodeUpstreamResolver
+		want  []string
+	}{
+		{"3 replicas over 2 nodes", func() {}, perNodeResolver{"node-2": {rt: remote, host: "10.44.0.2"}}, []string{"127.0.0.1:30000", "10.44.0.2:40001", "10.44.0.2:40002"}},
+		{"unhealthy remote replica excluded", func() { remote.containers[replicaName(svc, 2)] = pub(40002, "unhealthy") }, perNodeResolver{"node-2": {rt: remote, host: "10.44.0.2"}}, []string{"127.0.0.1:30000", "10.44.0.2:40001"}},
+		{"lost node drops its replicas", func() {}, perNodeResolver{}, []string{"127.0.0.1:30000"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+			applier := &fakeApplier{}
+			c := New(&fakeStore{services: []store.DesiredService{svc}}, local, applier, WithLogger(slog.New(slog.DiscardHandler)), WithNodeUpstreams(tt.nodes))
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			rp := proxyHandler(t, applier)
+			var got []string
+			for _, u := range rp.Upstreams {
+				got = append(got, u.Dial)
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("upstreams = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Fatalf("upstreams = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}

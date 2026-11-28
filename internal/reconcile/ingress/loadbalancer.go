@@ -76,12 +76,10 @@ func implicitBalancerConfig() loadbalancer.Config {
 }
 
 func (c *Controller) withImplicitBalancers(services []store.DesiredService, configured map[string]loadbalancer.Config) map[string]loadbalancer.Config {
-	if !c.implicitLB {
-		return configured
-	}
 	var out map[string]loadbalancer.Config
 	for _, svc := range services {
-		if _, ok := configured[svc.Name]; ok || svc.Replicas <= 1 {
+		// A spread service always needs the pool, or its remote replicas would never get traffic.
+		if _, ok := configured[svc.Name]; ok || svc.Replicas <= 1 || (!c.implicitLB && len(svc.ReplicaNodes) == 0) {
 			continue
 		}
 		if out == nil {
@@ -218,8 +216,18 @@ func (c *Controller) discoverUpstreams(ctx context.Context, svc store.DesiredSer
 	for i := 0; i < replicas; i++ {
 		name := application.ReplicaContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce, i)
 		current[name] = true
-		u := loadbalancer.UpstreamObservation{Upstream: loadbalancer.Upstream{ID: loadbalancer.UpstreamID(svc.Name, i), Replica: i, NodeID: svc.NodeID}}
-		state, err := rt.InspectByName(ctx, name)
+		node := replicaNode(svc, i)
+		u := loadbalancer.UpstreamObservation{Upstream: loadbalancer.Upstream{ID: loadbalancer.UpstreamID(svc.Name, i), Replica: i, NodeID: node}}
+		repRT, repHost, note := rt, host, ""
+		if node != svc.NodeID {
+			repRT, repHost, note = c.replicaHost(ctx, svc.Name, node)
+		}
+		if repRT == nil {
+			u.Note = note
+			out = append(out, u)
+			continue
+		}
+		state, err := repRT.InspectByName(ctx, name)
 		switch {
 		case err != nil:
 			c.logger.WarnContext(ctx, "ingress: inspecting replica for load balancer failed", slog.String("service", svc.Name), slog.String("container", name), slog.String("error", err.Error()))
@@ -227,7 +235,11 @@ func (c *Controller) discoverUpstreams(ctx context.Context, svc store.DesiredSer
 		case state == nil:
 			u.Note = "not created yet"
 		default:
-			u.Dial, u.Running, u.Note = upstreamDial(state, svc.Port, host, host != localUpstreamHost)
+			u.Dial, u.Running, u.Note = upstreamDial(state, svc.Port, repHost, repHost != localUpstreamHost)
+			// A replica spread onto another node joins the pool only once its healthcheck passes.
+			if u.Running && node != svc.NodeID && state.Health != "" && state.Health != "healthy" {
+				u.Dial, u.Running, u.Note = "", false, "replica is not healthy yet"
+			}
 		}
 		out = append(out, u)
 	}
@@ -236,6 +248,31 @@ func (c *Controller) discoverUpstreams(ctx context.Context, svc store.DesiredSer
 		return out
 	}
 	return append(out, c.previousReleaseUpstreams(ctx, rt, host, svc, current, len(out))...)
+}
+
+// replicaNode is the node that runs replica i. A service without a spread plan keeps every replica on NodeID.
+func replicaNode(svc store.DesiredService, i int) string {
+	if i < len(svc.ReplicaNodes) {
+		return svc.ReplicaNodes[i]
+	}
+	return svc.NodeID
+}
+
+// replicaHost resolves the runtime and dial host of a replica's node. A nil runtime means the node is
+// unreachable (lost or no resolver), so its replicas leave the pool until it returns.
+func (c *Controller) replicaHost(ctx context.Context, service, node string) (docker.Runtime, string, string) {
+	if node == "" {
+		return c.runtime, localUpstreamHost, ""
+	}
+	if c.nodeUpstreams == nil {
+		return nil, "", "node is not reachable"
+	}
+	rt, host, err := c.nodeUpstreams.UpstreamHost(ctx, node)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolving replica node failed, leaving its replicas out of the pool", slog.String("service", service), slog.String("node", node), slog.String("error", err.Error()))
+		return nil, "", "node is not reachable"
+	}
+	return rt, host, ""
 }
 
 func anyRunning(ups []loadbalancer.UpstreamObservation) bool {
