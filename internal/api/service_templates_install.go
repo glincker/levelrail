@@ -120,6 +120,10 @@ func (rt *Router) installTemplate(w http.ResponseWriter, r *http.Request, tpl ca
 		rt.internalError(w, "api: install template: check name failed", err, slog.String("name", name))
 		return
 	}
+	if msg := rt.templateEnvRefusal(r.Context(), req.Env); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	if err := tpl.Manifest.CheckFileInputs(req.Env, rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyTemplatesFileInputMaxBytes)); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

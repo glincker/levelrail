@@ -50,6 +50,28 @@ func checkEnvKeys(w http.ResponseWriter, keys []string) bool {
 	return true
 }
 
+// envRefusal validates a set outside an HTTP response and returns the first refusal, or "".
+func (rt *Router) envRefusal(ctx context.Context, set map[string]string, ex envrules.Existing, o envrules.Options) string {
+	return envrules.Validate(set, ex, rt.envPolicy(ctx), o).Err()
+}
+
+// templateEnvRefusal checks the install form's env keys and values; the app does not exist yet.
+func (rt *Router) templateEnvRefusal(ctx context.Context, env map[string]string) string {
+	return rt.envRefusal(ctx, env, envrules.Existing{}, envrules.Options{Multiline: true})
+}
+
+// bundleEnvRefusal checks an imported bundle's plain env and its secret names.
+func (rt *Router) bundleEnvRefusal(ctx context.Context, plain map[string]string, secretNames []string) string {
+	if msg := rt.envRefusal(ctx, plain, envrules.Existing{}, envrules.Options{Multiline: true}); msg != "" {
+		return msg
+	}
+	names := make(map[string]string, len(secretNames))
+	for _, n := range secretNames {
+		names[n] = "x"
+	}
+	return rt.envRefusal(ctx, names, envrules.Existing{}, envrules.Options{Secret: true, Multiline: true})
+}
+
 // checkOverrideEnv validates one key and value on writers that do not load the
 // app's stored keys (preview, branch and PR overrides), so legacy names pass.
 func (rt *Router) checkOverrideEnv(ctx context.Context, w http.ResponseWriter, key, value string, secret bool) bool {

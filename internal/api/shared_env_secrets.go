@@ -183,6 +183,9 @@ func (rt *Router) handleSetSharedEnvSecret(w http.ResponseWriter, r *http.Reques
 func (rt *Router) handleDeleteSharedEnvSecret(w http.ResponseWriter, r *http.Request, scope sharedEnvSecretScope) {
 	id := r.PathValue("id")
 	key := r.PathValue("key")
+	if !checkEnvKeys(w, []string{key}) {
+		return
+	}
 	if !rt.loadSharedEnvScope(w, r, scope, id, "delete") {
 		return
 	}

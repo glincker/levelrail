@@ -171,6 +171,9 @@ func (rt *Router) handleDeleteSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name, key := r.PathValue("name"), r.PathValue("key")
+	if !checkEnvKeys(w, []string{key}) {
+		return
+	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

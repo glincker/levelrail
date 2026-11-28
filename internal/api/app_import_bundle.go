@@ -259,6 +259,10 @@ func (rt *Router) handleImportAppBundle(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
+	if msg := rt.bundleEnvRefusal(r.Context(), plain, secretNames); msg != "" {
+		writeError(w, http.StatusUnprocessableEntity, msg)
+		return
+	}
 	// Unset secrets become empty values, never a literal ${NAME}.
 	for _, n := range secretNames {
 		if _, ok := plain[n]; !ok {

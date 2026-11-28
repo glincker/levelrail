@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/GLINCKER/levelrail/internal/envrules"
 )
 
 var composeFileNames = []string{"docker-compose.yml", "docker-compose.yaml", "compose.yaml", "compose.yml"}
@@ -75,13 +76,22 @@ func planRepo(ctx context.Context, in Input, deps Deps) (*DeploymentPlan, error)
 // as data only.
 func inspectRepo(ctx context.Context, repoURL, ref string, read func(string) (string, bool, error), deps Deps, p *DeploymentPlan) (ServicePlan, []EnvVar, error) {
 	var envs []EnvVar
+	var reports []envrules.Report
+	defer func() {
+		if len(reports) > 0 {
+			merged := MergeReports(reports...)
+			p.EnvReport = &merged
+		}
+	}()
 	for _, f := range EnvExampleFiles {
 		text, ok, err := read(f)
 		if err != nil {
 			return ServicePlan{Build: BuildUnknown}, envs, err
 		}
 		if ok {
-			envs = append(envs, ParseEnvFile(text, f)...)
+			vars, rep := ParseEnvFileReport(text, f)
+			envs = append(envs, vars...)
+			reports = append(reports, rep)
 		}
 	}
 
