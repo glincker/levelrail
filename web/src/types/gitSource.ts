@@ -145,8 +145,10 @@ export interface GitSourceResource {
   webhook_url_source?: string
   // webhook_registration is the outcome of registering the webhook on the provider.
   webhook_registration?: {
-    state: 'registered' | 'failed'
+    state: 'registered' | 'missing' | 'failed'
     error?: string
+    // missing_permission is the exact provider permission to grant.
+    missing_permission?: string
     changed_at?: string
   }
   // poll is the missed-webhook poller's view of this source.

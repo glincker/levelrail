@@ -104,5 +104,18 @@
     "empty": "No cleanup runs recorded yet.",
     "row": "{{when}}, {{trigger}}",
     "failed": "had errors"
+  },
+  "remote": {
+    "title": "Remote nodes",
+    "description": "The last preview pass on each remote node and whether any node holds unused images over its disk budget.",
+    "loading": "Loading",
+    "lastDry": "Last preview {{when}}, {{size}} could be freed",
+    "noDry": "No preview pass yet",
+    "empty": "No remote nodes joined.",
+    "status": {
+      "ok": "Within budget",
+      "warn": "Over budget",
+      "fail": "Over budget"
+    }
   }
 }

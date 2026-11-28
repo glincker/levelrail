@@ -84,7 +84,10 @@
       "registerAgain": "Registrar de nuevo",
       "registering": "Registrando",
       "done": "Webhook registrado.",
-      "failedToast": "No se pudo registrar el webhook."
+      "failedToast": "No se pudo registrar el webhook.",
+      "missing": "El webhook aun no se ha registrado en el proveedor.",
+      "grant": "Concede este permiso y luego repara:",
+      "repair": "Reparar webhook"
     },
     "poll": {
       "last": "Última comprobación {{time}}.",

@@ -94,16 +94,28 @@ export function GitSourceReliability({
           </AlertDescription>
         </Alert>
       ) : null}
-      {reg?.state === 'failed' ? (
+      {reg && reg.state !== 'registered' ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
             className="size-6 text-tone-warning"
             aria-hidden="true"
           />
           <AlertDescription className="space-y-2">
-            <p>
-              {t('reliability.registration.failed', { error: reg.error ?? '' })}
+            <p data-testid="webhook-state">
+              {reg.state === 'missing'
+                ? t('reliability.registration.missing')
+                : t('reliability.registration.failed', {
+                    error: reg.error ?? '',
+                  })}
             </p>
+            {reg.missing_permission ? (
+              <p>
+                {t('reliability.registration.grant')}{' '}
+                <code className="rounded bg-muted px-1 font-mono text-xs">
+                  {reg.missing_permission}
+                </code>
+              </p>
+            ) : null}
             <Button
               type="button"
               size="sm"
@@ -131,7 +143,7 @@ export function GitSourceReliability({
               <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
               {register.isPending
                 ? t('reliability.registration.registering')
-                : t('reliability.registration.registerAgain')}
+                : t('reliability.registration.repair')}
             </Button>
           </AlertDescription>
         </Alert>

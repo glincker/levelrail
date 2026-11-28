@@ -104,5 +104,18 @@
     "empty": "Aún no hay limpiezas registradas.",
     "row": "{{when}}, {{trigger}}",
     "failed": "tuvo errores"
+  },
+  "remote": {
+    "title": "Nodos remotos",
+    "description": "La ultima pasada de vista previa en cada nodo remoto y si algun nodo guarda imagenes sin uso por encima de su presupuesto de disco.",
+    "loading": "Cargando",
+    "lastDry": "Ultima vista previa {{when}}, se podrian liberar {{size}}",
+    "noDry": "Aun no hay vista previa",
+    "empty": "No hay nodos remotos unidos.",
+    "status": {
+      "ok": "Dentro del presupuesto",
+      "warn": "Sobre el presupuesto",
+      "fail": "Sobre el presupuesto"
+    }
   }
 }

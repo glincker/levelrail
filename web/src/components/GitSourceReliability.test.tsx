@@ -133,7 +133,7 @@ describe('GitSourceReliability', () => {
     expect(
       screen.getByText(/was not registered on the provider: permission denied/),
     ).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Register again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Repair webhook' }))
     await waitFor(() => {
       const posted = fetchMock.mock.calls.some(
         ([u, i]) =>
@@ -142,6 +142,36 @@ describe('GitSourceReliability', () => {
           i?.method === 'POST',
       )
       expect(posted).toBe(true)
+    })
+  })
+
+  it('shows a missing registration with the permission to grant and repairs it', async () => {
+    const fetchMock = renderPanel(
+      source({
+        webhook_registration: {
+          state: 'missing',
+          missing_permission: 'Repository webhooks: Read and write',
+        },
+      }),
+      (url, init) => {
+        if (init?.method === 'POST' && url.endsWith('/webhook/register')) {
+          return json(source({ webhook_registration: { state: 'registered' } }))
+        }
+        return json({ fixes: [] })
+      },
+    )
+
+    expect(screen.getByTestId('webhook-state')).toHaveTextContent(
+      'not been registered',
+    )
+    expect(
+      screen.getByText('Repository webhooks: Read and write'),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Repair webhook' }))
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([, i]) => i?.method === 'POST')).toBe(
+        true,
+      )
     })
   })
 

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
@@ -210,6 +211,8 @@ function HistoryCard({ runs }: { runs: JanitorReport[] }) {
   )
 }
 
+const RemoteNodesCard = lazy(() => import('../janitor/RemoteNodesCard'))
+
 /** The former Janitor page, now the Disk and Docker tab of the Cleanup center. */
 export function DiskDockerTab() {
   const { t } = useTranslation('janitor')
@@ -267,6 +270,9 @@ export function DiskDockerTab() {
             policy={data.policy}
           />
           <HistoryCard runs={runs.data ?? []} />
+          <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+            <RemoteNodesCard />
+          </Suspense>
         </>
       ) : null}
     </div>
