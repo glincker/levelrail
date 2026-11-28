@@ -191,14 +191,22 @@ func TestLive_ExecTTY_RemoteInteractiveShell(t *testing.T) {
 		t.Fatalf("remote stty size = %q, want it to contain \"24 80\"", got)
 	}
 
-	// And a resize frame changes the real PTY on the far side.
+	// The node applies a resize asynchronously to the input stream, so ask until the new size shows.
 	if err := sess.Resize(ctx, docker.TTYSize{Rows: 50, Cols: 120}); err != nil {
 		t.Fatalf("Resize() error = %v", err)
 	}
-	if _, err := io.WriteString(sess, "stty size\n"); err != nil {
-		t.Fatalf("Write() after resize error = %v", err)
+	var got string
+	resizeDeadline := time.Now().Add(readUntilTimeout)
+	for {
+		if _, err := io.WriteString(sess, "echo SZ:$(stty size):Z\"\"S\n"); err != nil {
+			t.Fatalf("Write() after resize error = %v", err)
+		}
+		got = readUntilRemote(t, tr, ":ZS")
+		if strings.Contains(got, "SZ:50 120:") || time.Now().After(resizeDeadline) {
+			break
+		}
 	}
-	if got := readUntilRemote(t, tr, "50 120"); !strings.Contains(got, "50 120") {
+	if !strings.Contains(got, "SZ:50 120:") {
 		t.Fatalf("remote stty size after Resize = %q, want it to contain \"50 120\"", got)
 	}
 }
@@ -229,8 +237,10 @@ func TestLive_ExecTTY_RemoteCloseStopsProcess(t *testing.T) {
 	if _, err := io.WriteString(sess, "echo REMOTE_READY\n"); err != nil {
 		t.Fatalf("Write() error = %v", err)
 	}
-	if got := readUntilRemote(t, tr, "REMOTE_READY"); !strings.Contains(got, "REMOTE_READY") {
-		t.Fatalf("remote terminal output = %q, want it to contain REMOTE_READY", got)
+	// Close sends Ctrl-C, Ctrl-D: wait for the prompt so the shell is reading, or the terminal drops the EOF.
+	const readyPrompt = "REMOTE_READY\r\n/ # "
+	if got := readUntilRemote(t, tr, readyPrompt); !strings.Contains(got, readyPrompt) {
+		t.Fatalf("remote terminal output = %q, want it to contain REMOTE_READY and a prompt", got)
 	}
 	if err := sess.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
