@@ -115,6 +115,9 @@ func controlAllowing(allowEnvs ...string) func(address string) error {
 			return fmt.Errorf("netguard: parse dial address %q: %w", address, err)
 		}
 		if IsBlocked(ip) {
+			if len(allowEnvs) == 0 {
+				return fmt.Errorf("%w: %s", ErrBlockedAddress, ip)
+			}
 			return fmt.Errorf("%w: %s (set %s=true to allow)", ErrBlockedAddress, ip, allowEnvs[0])
 		}
 		return nil
