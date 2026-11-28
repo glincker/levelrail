@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -35,7 +36,17 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		undo, _ = rt.apps.GetDesiredService(r.Context(), name)
 	}
 	delCtx := r.Context()
+	var willNotRestore []string
 	if st := rt.recentlyDeleted(); undo != nil && st != nil && rt.recentlyDeletedWindow(delCtx) > 0 {
+		willNotRestore = rt.undoLostCategories(delCtx, *undo)
+		if len(willNotRestore) > 0 {
+			labels := make(map[string]string, len(undo.Labels)+1)
+			for k, v := range undo.Labels {
+				labels[k] = v
+			}
+			labels[undoNeedsLabel] = strings.Join(willNotRestore, ".")
+			undo.Labels = labels
+		}
 		if entry, ok := rt.deletedEntry(r, store.RecentlyDeletedApp, name, undo, ""); ok {
 			// The reservation is written under the name lock, in deleteAppGuarded, before history is relied on.
 			delCtx = withSoftDelete(store.WithKeptRevisions(delCtx), func(c context.Context) error { return st.AddRecentlyDeleted(c, entry) })
@@ -57,11 +68,16 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	rt.purgeAppAccess(name)
 	rt.nudgeReconciler()
 	if teardownErr != nil {
-		writeJSON(w, http.StatusAccepted, map[string]string{
-			"status":  "teardown_pending",
-			"message": "app deleted, but its containers are not removed yet; teardown retries automatically",
-			"error":   teardownErr.Error(),
+		writeJSON(w, http.StatusAccepted, map[string]any{
+			"status":           "teardown_pending",
+			"message":          "app deleted, but its containers are not removed yet; teardown retries automatically",
+			"error":            teardownErr.Error(),
+			"will_not_restore": nonNilStrings(willNotRestore),
 		})
+		return
+	}
+	if len(willNotRestore) > 0 {
+		writeJSON(w, http.StatusOK, map[string]any{"status": "deleted", "will_not_restore": willNotRestore})
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

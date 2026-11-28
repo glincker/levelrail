@@ -951,6 +951,8 @@ type DeleteAppResult struct {
 	Pending bool   `json:"pending"`
 	Message string `json:"message,omitempty"`
 	Error   string `json:"error,omitempty"`
+	// WillNotRestore names credential categories an undo cannot bring back.
+	WillNotRestore []string `json:"will_not_restore,omitempty"`
 }
 
 // DeleteAppResult calls DELETE /api/v1/apps/{name} and reports whether
@@ -960,11 +962,13 @@ func (c *Client) DeleteAppResult(ctx context.Context, name string) (DeleteAppRes
 		Status  string `json:"status"`
 		Message string `json:"message"`
 		Error   string `json:"error"`
+
+		WillNotRestore []string `json:"will_not_restore"`
 	}
 	if err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name), nil, &body); err != nil {
 		return DeleteAppResult{}, err
 	}
-	return DeleteAppResult{Pending: body.Status == "teardown_pending", Message: body.Message, Error: body.Error}, nil
+	return DeleteAppResult{Pending: body.Status == "teardown_pending", Message: body.Message, Error: body.Error, WillNotRestore: body.WillNotRestore}, nil
 }
 
 // GetDeployStatus calls GET /api/v1/apps/{name}/deploys: the application

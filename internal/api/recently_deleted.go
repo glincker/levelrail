@@ -146,6 +146,7 @@ func (rt *Router) handleListRecentlyDeleted(w http.ResponseWriter, r *http.Reque
 // It recreates the config and the app's secret values; the function KV token is not restored (mint a new one; its data is kept).
 func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Request) {
 	kind, name := r.PathValue("kind"), r.PathValue("name")
+	var restoredNeeds []string
 	st := rt.recentlyDeleted()
 	if st == nil || (kind != store.RecentlyDeletedApp && kind != store.RecentlyDeletedDatabase) {
 		writeError(w, http.StatusNotFound, "nothing to restore")
@@ -179,6 +180,7 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		}
 		err = rt.restoreDeletedApp(r.Context(), cur)
 		if err == nil {
+			restoredNeeds = undoCategoriesFromSnapshot(cur.Snapshot)
 			// The entry stays if the parked copy cannot be erased, so the purge still removes it.
 			if serr := rt.dropParkedSecrets(r.Context(), name); serr != nil {
 				rt.logger.Warn("api: erase parked secrets failed", slog.String("name", name), slog.String("error", serr.Error()))
@@ -228,6 +230,10 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		rt.changes.Publish(changeApps, name)
 	}
 	rt.nudgeReconciler()
+	if kind == store.RecentlyDeletedApp {
+		writeJSON(w, http.StatusOK, map[string]any{"status": "restored", "kind": kind, "name": name, "needs_attention": rt.restoreAttentionItems(name, restoredNeeds)})
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "restored", "kind": kind, "name": name})
 }
 

@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsRecentlyDeleted lists deleted apps and databases still inside the undo window, or restores one.
@@ -33,7 +36,7 @@ func appsRecentlyDeletedUsage(prog string) string {
   %[1]s apps recently-deleted restore <app|database> <name>     bring one back from its saved config
 
 The undo window is the runtime setting retention.recently_deleted_days.
-Secrets are not kept: set them again after a restore.
+Secret values come back. The deploy source, deploy token, log drain, integrations and build hooks do not; restore prints the command to recreate each.
 `, prog)
 }
 
@@ -77,10 +80,12 @@ func runAppsRecentlyDeletedRestore(prog string, args []string, stdout, stderr io
 		return exitUsage
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	if err := client.RestoreRecentlyDeleted(context.Background(), pos[0], pos[1]); err != nil {
+	res, err := client.RestoreRecentlyDeletedResult(context.Background(), pos[0], pos[1])
+	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("restore %s %q: %w", pos[0], pos[1], err))
 	}
-	_, _ = fmt.Fprintf(stdout, "restored %s %q; set its secrets again if it had any\n", pos[0], pos[1])
+	_, _ = fmt.Fprintf(stdout, "restored %s %q\n", pos[0], pos[1])
+	printRestoreAttention(stdout, res)
 	return exitOK
 }
 
@@ -96,9 +101,18 @@ func runAppsRestoreDeleted(prog string, args []string, stdout, stderr io.Writer,
 		return exitUsage
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	if err := client.RestoreRecentlyDeleted(context.Background(), "app", pos[0]); err != nil {
+	res, err := client.RestoreRecentlyDeletedResult(context.Background(), "app", pos[0])
+	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("restore app %q: %w", pos[0], err))
 	}
-	_, _ = fmt.Fprintf(stdout, "restored %q, stopped; set its secrets again, then start it\n", pos[0])
+	_, _ = fmt.Fprintf(stdout, "restored %q, stopped; start it when ready\n", pos[0])
+	printRestoreAttention(stdout, res)
 	return exitOK
+}
+
+// printRestoreAttention lists what the restore could not bring back, with the command to recreate each.
+func printRestoreAttention(w io.Writer, res apiclient.RestoreResult) {
+	for _, a := range res.NeedsAttention {
+		_, _ = fmt.Fprintf(w, "not restored: %s, recreate with: %s\n", strings.ReplaceAll(a.Category, "_", " "), a.Fix)
+	}
 }
