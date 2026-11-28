@@ -1531,7 +1531,9 @@ Usage:
   levelrail-cli apps secrets rotation <list|due|set|remove|rotate> ...      scheduled rotation policies
 
 A secret you set is injected into the app's container from the next restart
-on. Pass --apply to set to restart right away.
+on. Pass --apply to set to restart right away. If the key already exists as a
+plain variable, set replaces that plain copy in the same call, so the app never
+holds two copies.
 
 Values are never returned: list shows key names and locked state only,
 matching internal/api/secrets.go's own "never echo a value back" rule.

@@ -28,9 +28,16 @@ func newMultiPathEchoServer(t *testing.T, gotPaths *[]string) *httptest.Server {
 
 func TestRun_Templates_List(t *testing.T) {
 	var gotPath string
-	srv := newListEchoServer(t, &gotPath, []serviceTemplateListItem{
-		{ID: "postgres", Name: "Postgres", Category: "database", Slogan: "Relational database"},
-	})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The best-effort private-source lookup is root only, so it is refused here.
+		if strings.HasPrefix(r.URL.Path, "/api/v1/templates/sources") {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]serviceTemplateListItem{{ID: "postgres", Name: "Postgres", Category: "database", Slogan: "Relational database"}})
+	}))
 	defer srv.Close()
 
 	stdout, _ := runCLIExpectOK(t, []string{"templates", "list", "--api-url", srv.URL})
@@ -252,6 +259,10 @@ func TestPrintTemplateFacts_HonestWording(t *testing.T) {
 func TestRun_Templates_List_FilterQuery(t *testing.T) {
 	var gotQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/v1/templates/sources") {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
 		gotQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode([]serviceTemplateListItem{{ID: "old", Name: "Old", TemplateFacts: apiclient.TemplateFacts{Status: "deprecated", License: &apiclient.TemplateLicense{Class: "copyleft"}}}})

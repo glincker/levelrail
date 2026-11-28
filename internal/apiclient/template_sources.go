@@ -47,9 +47,7 @@ const templateSourcesPath = "/api/v1/templates/sources"
 
 // ListTemplateSources calls GET /api/v1/templates/sources.
 func (c *Client) ListTemplateSources(ctx context.Context) ([]TemplateSource, error) {
-	var out []TemplateSource
-	err := c.do(ctx, http.MethodGet, templateSourcesPath, nil, &out)
-	return out, err
+	return getJSON[[]TemplateSource](ctx, c, templateSourcesPath)
 }
 
 // CreateTemplateSource calls POST /api/v1/templates/sources.
@@ -68,9 +66,7 @@ func (c *Client) SyncTemplateSource(ctx context.Context, name string) (TemplateS
 
 // ListTemplateSourceEntries calls GET /api/v1/templates/sources/{name}/templates.
 func (c *Client) ListTemplateSourceEntries(ctx context.Context, name string) ([]TemplateSourceEntry, error) {
-	var out []TemplateSourceEntry
-	err := c.do(ctx, http.MethodGet, templateSourcesPath+"/"+PathEscape(name)+"/templates", nil, &out)
-	return out, err
+	return getJSON[[]TemplateSourceEntry](ctx, c, templateSourcesPath+"/"+PathEscape(name)+"/templates")
 }
 
 // DeleteTemplateSource calls DELETE /api/v1/templates/sources/{name}.
@@ -89,9 +85,7 @@ type TemplateSourceEntryDetail struct {
 
 // GetTemplateSourceEntry calls GET /api/v1/templates/sources/{name}/templates/{id}.
 func (c *Client) GetTemplateSourceEntry(ctx context.Context, source, id string) (TemplateSourceEntryDetail, error) {
-	var out TemplateSourceEntryDetail
-	err := c.do(ctx, http.MethodGet, templateSourcesPath+"/"+PathEscape(source)+"/templates/"+PathEscape(id), nil, &out)
-	return out, err
+	return getJSON[TemplateSourceEntryDetail](ctx, c, templateSourcesPath+"/"+PathEscape(source)+"/templates/"+PathEscape(id))
 }
 
 // ApproveTemplateSourceEntry calls POST .../approve with the content hash that was reviewed.

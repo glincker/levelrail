@@ -125,9 +125,7 @@ type SpendCapPaused struct {
 
 // ListSpendCapPaused calls GET /api/v1/costs/capped-apps.
 func (c *Client) ListSpendCapPaused(ctx context.Context) ([]SpendCapPaused, error) {
-	var out []SpendCapPaused
-	err := c.do(ctx, http.MethodGet, "/api/v1/costs/capped-apps", nil, &out)
-	return out, err
+	return getJSON[[]SpendCapPaused](ctx, c, "/api/v1/costs/capped-apps")
 }
 
 // ResumeSpendCapApp calls POST /api/v1/apps/{name}/budget/resume.
