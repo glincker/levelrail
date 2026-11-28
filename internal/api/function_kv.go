@@ -248,6 +248,9 @@ func (rt *Router) handleRotateFunctionKVToken(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusNotImplemented, "the key-value store needs the control plane master key")
 		return
 	}
+	if refuseReservedApp(w, svc.Name) {
+		return
+	}
 	token, err := kv.RotateFunctionKVToken(r.Context(), svc.Name, time.Now())
 	if err != nil {
 		rt.internalError(w, "api: rotate function kv token failed", err, slog.String("function", svc.Name))

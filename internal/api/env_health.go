@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -156,7 +157,7 @@ func checkAppEnv(svc *store.DesiredService, secretSet map[string]bool, secretsKn
 
 func (rt *Router) envFindings(ctx context.Context, svc *store.DesiredService) ([]envFindingResource, error) {
 	secretSet := map[string]bool{}
-	secretsKnown := rt.secrets != nil
+	secretsKnown := rt.secrets != nil && secrets.AppNamespace(svc.Name) == nil
 	if secretsKnown {
 		keys, err := rt.secrets.ListKeys(ctx, svc.Name)
 		if err != nil {

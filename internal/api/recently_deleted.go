@@ -336,6 +336,9 @@ func (rt *Router) clearRestoredDatabaseEntry(ctx context.Context, st recentlyDel
 }
 
 func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDeleted) (err error) {
+	if secrets.AppNamespace(e.Name) != nil {
+		return errRestoreConflict(reservedAppNameMessage)
+	}
 	var d store.DesiredDatabase
 	if err := json.Unmarshal([]byte(e.Snapshot), &d); err != nil {
 		return err

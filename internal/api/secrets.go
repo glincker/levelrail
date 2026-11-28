@@ -52,6 +52,9 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	key := r.PathValue("key")
 
+	if refuseReservedApp(w, name) {
+		return
+	}
 	app, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -174,6 +177,9 @@ func (rt *Router) handleDeleteSecret(w http.ResponseWriter, r *http.Request) {
 	if !checkEnvKeys(w, []string{key}) {
 		return
 	}
+	if refuseReservedApp(w, name) {
+		return
+	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -243,6 +249,9 @@ func (rt *Router) handleListSecrets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.PathValue("name")
+	if refuseReservedApp(w, name) {
+		return
+	}
 	_, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -288,6 +297,9 @@ func (rt *Router) handleSetSecretLock(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	key := r.PathValue("key")
 
+	if refuseReservedApp(w, name) {
+		return
+	}
 	_, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -330,6 +342,9 @@ func (rt *Router) handleSetSecretBuildTime(w http.ResponseWriter, r *http.Reques
 	name := r.PathValue("name")
 	key := r.PathValue("key")
 
+	if refuseReservedApp(w, name) {
+		return
+	}
 	_, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

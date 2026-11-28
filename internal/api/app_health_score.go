@@ -61,6 +61,9 @@ func (rt *Router) handleGetAppHealthScore(w http.ResponseWriter, r *http.Request
 	name := r.PathValue("name")
 	ctx := r.Context()
 
+	if refuseReservedApp(w, name) {
+		return
+	}
 	svc, err := rt.apps.GetDesiredService(ctx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

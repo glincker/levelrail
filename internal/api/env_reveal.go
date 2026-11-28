@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"slices"
 
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -46,7 +47,21 @@ func noStore(w http.ResponseWriter) {
 	w.Header().Set("Pragma", "no-cache")
 }
 
+const reservedAppNameMessage = "this app name is reserved by the control plane: rename or delete it"
+
+// refuseReservedApp answers 409 when an app already carries a control plane secret namespace, so no handler can read or write that namespace through the app.
+func refuseReservedApp(w http.ResponseWriter, name string) bool {
+	if secrets.AppNamespace(name) == nil {
+		return false
+	}
+	writeError(w, http.StatusConflict, reservedAppNameMessage)
+	return true
+}
+
 func (rt *Router) loadRevealApp(w http.ResponseWriter, r *http.Request, name string) (*store.DesiredService, bool) {
+	if refuseReservedApp(w, name) {
+		return nil, false
+	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

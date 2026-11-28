@@ -61,6 +61,9 @@ func appFilesResourceFrom(name string, files []store.ServiceFile) appFilesResour
 
 func (rt *Router) handleListAppFiles(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if refuseReservedApp(w, name) {
+		return
+	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -85,6 +88,9 @@ func (rt *Router) handleSetAppFile(w http.ResponseWriter, r *http.Request) {
 	updater, ok := rt.apps.(appFilesUpdater)
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "files are not supported by this store")
+		return
+	}
+	if refuseReservedApp(w, name) {
 		return
 	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
@@ -148,6 +154,9 @@ func (rt *Router) handleDeleteAppFile(w http.ResponseWriter, r *http.Request) {
 	updater, ok := rt.apps.(appFilesUpdater)
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "files are not supported by this store")
+		return
+	}
+	if refuseReservedApp(w, name) {
 		return
 	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)

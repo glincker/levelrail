@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/appwizard"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -42,6 +43,9 @@ func (rt *Router) ensureNextActionsKey(ctx context.Context, req *deploy.Request,
 		return
 	}
 	if !nextMajorAtLeast(req.SourceDir, req.Service.Build.BaseDirectory, nextActionsMinMajor) {
+		return
+	}
+	if secrets.AppNamespace(name) != nil {
 		return
 	}
 	unlock := lockAppName(name)
