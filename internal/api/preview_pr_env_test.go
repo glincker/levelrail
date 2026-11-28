@@ -202,7 +202,7 @@ func TestPreviewCleanup_Idempotent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("tracked db: %v", err)
 		}
-		runtime.seed(database.ContainerName(tracked.DatabaseName), true)
+		runtime.seed(database.ContainerName(tracked.DatabaseName))
 		allVols := databaseVolumeNames(tracked.DatabaseName)
 		vols := newFakeVolumeManager(append(allVols, "web-pr-42-data", "shared-data")...)
 		rt.orphanedVolumes = vols
