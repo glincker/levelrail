@@ -2,11 +2,13 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"sync"
 
 	"github.com/glincker/levelrail/internal/dbprovision"
+	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/store"
 )
 
@@ -14,6 +16,9 @@ const (
 	errCodeLeftoverOtherTeam    = "leftover_volume_other_team"
 	errCodeLeftoverOwnerUnknown = "leftover_volume_owner_unknown"
 	errCodeLeftoverConfirm      = "leftover_volume_confirm_required"
+
+	errCodeLeftoverNodeUnreachable = "leftover_volume_node_unreachable"
+	msgLeftoverNodeUnreachable     = "the node cannot be asked whether an earlier database left data under this name (agent offline or too old); bring the agent online or upgrade it, then retry"
 
 	msgLeftoverOtherTeam    = "a volume with this name from another team exists; choose discard or another name"
 	msgLeftoverOwnerUnknown = "a volume with this name of unknown ownership exists; choose discard or another name"
@@ -80,15 +85,58 @@ func (rt *Router) teamOfDatabase(ctx context.Context, name string) (team, projec
 	return o.TeamID, o.ProjectID
 }
 
-// leftoverVolumeState reports whether the data volume exists on the control
-// plane node; known is false when it cannot be inspected (remote node).
+// nodeVolumeLister is the agent transport's volume listing, absent on older agents.
+type nodeVolumeLister interface {
+	ListNodeVolumes(ctx context.Context) ([]docker.NamedVolume, error)
+}
+
+// remoteVolumeGate is true when a database on nodeID must be checked through its agent.
+func (rt *Router) remoteVolumeGate(nodeID string) bool {
+	return rt.orphanedVolumes != nil && !rt.isLocalNode(nodeID)
+}
+
+// listNodeVolumes lists named volumes on the node: Docker for the control plane,
+// the agent for a remote node. An agent that cannot answer is an error, never an empty list.
+func (rt *Router) listNodeVolumes(ctx context.Context, nodeID string) ([]docker.NamedVolume, error) {
+	if rt.isLocalNode(nodeID) {
+		return rt.orphanedVolumes.ListNamedVolumes(ctx)
+	}
+	runtime, err := rt.execRuntimeFor(nodeID)
+	if err != nil {
+		return nil, err
+	}
+	l, ok := runtime.(nodeVolumeLister)
+	if !ok {
+		return nil, errors.New("node cannot list volumes")
+	}
+	return l.ListNodeVolumes(ctx)
+}
+
+// removeNodeVolume deletes one unmounted volume on the node the database lives on.
+func (rt *Router) removeNodeVolume(ctx context.Context, nodeID, vol string) error {
+	if rt.isLocalNode(nodeID) {
+		return rt.orphanedVolumes.RemoveVolume(ctx, vol)
+	}
+	runtime, err := rt.execRuntimeFor(nodeID)
+	if err != nil {
+		return err
+	}
+	rm, ok := runtime.(docker.VolumeRemover)
+	if !ok {
+		return errors.New("node cannot remove volumes")
+	}
+	return rm.RemoveVolume(ctx, vol)
+}
+
+// leftoverVolumeState reports whether the data volume exists on the database's
+// node; known is false when the node cannot be asked.
 func (rt *Router) leftoverVolumeState(ctx context.Context, name, nodeID string) (present, mounted, known bool) {
-	if rt.orphanedVolumes == nil || !rt.isLocalNode(nodeID) {
+	if rt.orphanedVolumes == nil {
 		return false, false, false
 	}
 	ctx, cancel := context.WithTimeout(ctx, leftoverVolumeTimeout())
 	defer cancel()
-	vols, err := rt.orphanedVolumes.ListNamedVolumes(ctx)
+	vols, err := rt.listNodeVolumes(ctx, nodeID)
 	if err != nil {
 		return false, false, false
 	}
@@ -127,10 +175,24 @@ func (rt *Router) volumeOwnerVerdict(ctx context.Context, name, team string) vol
 // leftoverChoiceAllowed gates a reuse choice on volume ownership and writes the
 // refusal. Discard and no choice always pass: they never expose the old data.
 func (rt *Router) leftoverChoiceAllowed(w http.ResponseWriter, r *http.Request, name, nodeID, team, choice, confirm string) bool {
-	if choice != existingVolumeReuse || rt.volumeOwners() == nil {
+	if rt.volumeOwners() == nil {
 		return true
 	}
-	if present, _, known := rt.leftoverVolumeState(r.Context(), name, nodeID); known && !present {
+	remote := rt.remoteVolumeGate(nodeID)
+	present, _, known := rt.leftoverVolumeState(r.Context(), name, nodeID)
+	if remote {
+		if !known {
+			// Only the recorded owner may proceed blind: anyone else could mount old data.
+			if rt.volumeOwnerVerdict(r.Context(), name, team) == volVerdictAllowed {
+				return true
+			}
+			writeCodedError(w, http.StatusConflict, errCodeLeftoverNodeUnreachable, msgLeftoverNodeUnreachable)
+			return false
+		}
+		if !present || choice == existingVolumeDiscard {
+			return true
+		}
+	} else if choice != existingVolumeReuse || (known && !present) {
 		return true
 	}
 	switch rt.volumeOwnerVerdict(r.Context(), name, team) {
@@ -177,7 +239,7 @@ func (rt *Router) discardLeftoverVolume(r *http.Request, name, nodeID, team, pro
 	present, mounted, known := rt.leftoverVolumeState(ctx, name, nodeID)
 	wiped := known && !present
 	if known && present && !mounted {
-		if rerr := rt.orphanedVolumes.RemoveVolume(ctx, databaseVolumeNames(name)[0]); rerr != nil {
+		if rerr := rt.removeNodeVolume(ctx, nodeID, databaseVolumeNames(name)[0]); rerr != nil {
 			rt.logger.Warn("api: discard leftover volume failed", slog.String("error", rerr.Error()), slog.String("database", name))
 		} else {
 			wiped = true

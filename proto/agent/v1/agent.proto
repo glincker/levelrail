@@ -358,6 +358,9 @@ message AgentRequest {
     // PullImage pulls one image into the node's own store ahead of a move.
     // Sent only to agents advertising "image_pull".
     PullImageRequest pull_image = 30;
+    // ListVolumes reads the node's own named volumes, read only, so the control
+    // plane can check who owns a leftover one. Sent only to agents advertising "volume_list".
+    ListVolumesRequest list_volumes = 31;
   }
 }
 
@@ -393,6 +396,7 @@ message AgentResponse {
     ProbeResponse probe = 18;
     TunnelOpenResponse tunnel_open = 19;
     CleanupResponse cleanup = 20;
+    ListVolumesResponse list_volumes = 21;
   }
 }
 
@@ -480,6 +484,17 @@ message LogsResponse {
 message PullImageRequest {
   string ref = 1;
   string registry_bearer = 2;
+}
+
+message ListVolumesRequest {}
+
+message VolumeEntry {
+  string name = 1;
+  bool mounted = 2;
+}
+
+message ListVolumesResponse {
+  repeated VolumeEntry volumes = 1;
 }
 
 message RemoveVolumeRequest {

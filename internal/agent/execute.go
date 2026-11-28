@@ -220,6 +220,14 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = emptyResult()
 
+	case *agentpb.AgentRequest_ListVolumes:
+		out, err := executeListVolumes(ctx, rt)
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_ListVolumes{ListVolumes: out}
+
 	case *agentpb.AgentRequest_ListNetworksByPrefix:
 		networks, err := rt.ListNetworksByPrefix(ctx, op.ListNetworksByPrefix.GetPrefix())
 		if err != nil {
