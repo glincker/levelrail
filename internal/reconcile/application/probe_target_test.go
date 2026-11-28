@@ -30,7 +30,9 @@ func TestController_Reconcile_ExecReadiness(t *testing.T) {
 	}{
 		{name: "exit 0 deploys", wantStatus: reconcile.ConditionTrue, wantReason: "Deployed"},
 		{name: "non-zero exit names the command and output", exitCode: 2, stderr: "/var/run/postgresql:5432 - no response", wantStatus: reconcile.ConditionFalse, wantReason: "ReadinessFailed", wantMsg: `exec "pg_isready -U app" exited 2: /var/run/postgresql:5432 - no response`},
-		{name: "exec transport failure", execErr: errors.New("exec create: container paused"), wantStatus: reconcile.ConditionFalse, wantReason: "ReadinessFailed", wantMsg: "could not run: exec create: container paused"},
+		{name: "vanished container is a real failure", execErr: errors.New("exec create: no such container"), wantStatus: reconcile.ConditionFalse, wantReason: "ReadinessFailed", wantMsg: "could not run: exec create: no such container"},
+		// Shell-less image with no port to fall back to: the running state decides.
+		{name: "exec cannot run and no port falls back to running state", execErr: errors.New("exec create: container paused"), wantStatus: reconcile.ConditionTrue, wantReason: "Deployed"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
