@@ -1,0 +1,193 @@
+name: announcements-publish
+
+# Builds the feed from feed-src after a merge. Only the low tier CI key can
+# sign here (info, feature, maintenance, newsletter). Advisory and critical
+# items are never signed in CI: the maintainers sign them offline.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "feed-src/announcements/**"
+      - "feed-src/keys/**"
+  workflow_dispatch:
+
+concurrency:
+  group: announcements-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      signed: ${{ steps.sign.outputs.signed }}
+      offline: ${{ steps.sign.outputs.offline }}
+      feed_exists: ${{ steps.prev.outputs.feed_exists }}
+      sequence: ${{ steps.build.outputs.sequence }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: tools/go.mod
+          cache: false
+
+      # The feed branch is created by the owner later; without it the job
+      # still builds and reports, it just has nowhere to push.
+      - name: Fetch previous feed
+        id: prev
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${REPO}.git" feed >/dev/null 2>&1; then
+            git fetch --depth 1 "https://github.com/${REPO}.git" feed:refs/remotes/origin/feed
+            echo "feed_exists=true" >> "$GITHUB_OUTPUT"
+            if git show origin/feed:dist/feed.v1.json > "$RUNNER_TEMP/prev.json" 2>/dev/null; then
+              echo "prev=$RUNNER_TEMP/prev.json" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "feed_exists=false" >> "$GITHUB_OUTPUT"
+            echo "No feed branch yet, building only."
+          fi
+
+      - name: Validate and build
+        id: build
+        working-directory: tools
+        env:
+          PREV: ${{ steps.prev.outputs.prev }}
+        run: |
+          go run ./announce validate ../feed-src
+          args=(-dir ../feed-src/announcements -out "$RUNNER_TEMP/feed.v1.json")
+          if [ -n "$PREV" ]; then args+=(-prev "$PREV"); fi
+          go run ./announce build "${args[@]}"
+          echo "sequence=$(grep -m1 '"sequence"' "$RUNNER_TEMP/feed.v1.json" | tr -dc '0-9')" >> "$GITHUB_OUTPUT"
+          echo "digest=$(sha256sum "$RUNNER_TEMP/feed.v1.json" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      # The key is written 0600 to the runner temp dir, never printed, and
+      # removed in the final step. A missing secret skips signing cleanly.
+      - name: Sign low tiers
+        id: sign
+        working-directory: tools
+        env:
+          ANNOUNCE_SIGNING_KEY_INFO: ${{ secrets.ANNOUNCE_SIGNING_KEY_INFO }}
+        run: |
+          echo "signed=false" >> "$GITHUB_OUTPUT"
+          echo "offline=false" >> "$GITHUB_OUTPUT"
+          roles=../feed-src/keys/roles.json
+          if [ -z "$ANNOUNCE_SIGNING_KEY_INFO" ]; then
+            echo "ANNOUNCE_SIGNING_KEY_INFO is not set, skipping signing."
+            exit 0
+          fi
+          if [ ! -f "$roles" ]; then
+            echo "feed-src/keys/roles.json is missing, skipping signing."
+            exit 0
+          fi
+          umask 077
+          printf '%s' "$ANNOUNCE_SIGNING_KEY_INFO" > "$RUNNER_TEMP/ci.key"
+          set +e
+          go run ./announce sign -feed "$RUNNER_TEMP/feed.v1.json" -roles "$roles" \
+            -key "$RUNNER_TEMP/ci.key" -only-tiers info,feature,maintenance,newsletter
+          code=$?
+          set -e
+          if [ "$code" -eq 3 ]; then
+            echo "Feed holds advisory or critical items: offline signing required."
+            echo "offline=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$code" -ne 0 ]; then exit "$code"; fi
+          go run ./announce verify -feed "$RUNNER_TEMP/feed.v1.json" -roles "$roles"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/ci.key"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: announcement-feed
+          path: |
+            ${{ runner.temp }}/feed.v1.json
+            ${{ runner.temp }}/feed.v1.json.sig
+          if-no-files-found: warn
+          retention-days: 30
+
+  # Critical and advisory items wait here for the offline signing step.
+  offline-notice:
+    needs: build
+    if: ${{ needs.build.outputs.offline == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Comment on the merged PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          SEQ: ${{ needs.build.outputs.sequence }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: |
+          cat > "$RUNNER_TEMP/comment.md" <<EOF
+          Announcement feed draft (sequence ${SEQ}) holds advisory or critical items. CI does not sign them.
+
+          1. Download the artifact \`announcement-feed\` from run ${RUN_ID} and check that \`feed.v1.json\` has sha256 \`${DIGEST}\`.
+          2. On the offline machine: \`cd tools && go run ./announce sign -feed feed.v1.json -roles ../feed-src/keys/roles.json -key <key file>\`. Critical items need a second signer: repeat with \`-append -key <second key file>\` (the first signer adds \`-partial\`).
+          3. Check with \`go run ./announce verify -feed feed.v1.json -roles ../feed-src/keys/roles.json\`.
+          4. Commit \`feed.v1.json\` and \`feed.v1.json.sig\` to \`dist/\` on the \`feed\` branch.
+          EOF
+          pr=$(gh api "repos/${REPO}/commits/${SHA}/pulls" --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr comment "$pr" --repo "$REPO" --body-file "$RUNNER_TEMP/comment.md"
+          else
+            cat "$RUNNER_TEMP/comment.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # Pushes only a feed that CI could fully sign, and only if the branch exists.
+  push-feed:
+    needs: build
+    if: ${{ needs.build.outputs.signed == 'true' && needs.build.outputs.feed_exists == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feed
+          path: feedbranch
+          fetch-depth: 1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: source
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: announcement-feed
+          path: built
+
+      - name: Commit to the feed branch
+        env:
+          SEQ: ${{ needs.build.outputs.sequence }}
+        run: |
+          cd feedbranch
+          rm -rf announcements schema keys
+          cp -R ../source/feed-src/announcements ../source/feed-src/schema ../source/feed-src/keys .
+          mkdir -p dist
+          cp ../built/feed.v1.json ../built/feed.v1.json.sig dist/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Nothing to publish."; exit 0; fi
+          git commit -m "chore: publish feed sequence ${SEQ}"
+          git push origin HEAD:feed
