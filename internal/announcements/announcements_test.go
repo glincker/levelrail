@@ -135,7 +135,7 @@ func TestVerifyFeedSequenceAndExpiry(t *testing.T) {
 		t.Fatalf("same sequence is a no-op: %v", err)
 	}
 	expired := item("old", TierNewsletter)
-	expired["expires_at"] = testNow.Add(-time.Minute)
+	expired["expires_at"] = testNow.Add(-48 * time.Hour)
 	data = feedBytes(6, expired, item("live", TierNewsletter))
 	got, err := verify(t, data, sign(data, n), 5, n.key)
 	if err != nil || ids(got.Items) != "live" {

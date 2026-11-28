@@ -19,7 +19,8 @@ type Signature struct {
 // Verification errors. Callers keep the cached feed on any of them.
 var (
 	ErrNoTrustedKeys = errors.New("announcements: no trusted keys configured")
-	ErrBadSignature  = errors.New("announcements: no valid signature from a trusted key")
+	ErrBadSignature  = errors.New("announcements: a signature from a trusted key does not verify")
+	ErrNoSignature   = errors.New("announcements: no signature from a trusted key")
 	ErrReplay        = errors.New("announcements: feed sequence is older than the last accepted one")
 	ErrUnchanged     = errors.New("announcements: feed sequence already accepted")
 	ErrFeedExpired   = errors.New("announcements: feed has expired")
@@ -35,10 +36,41 @@ func ParseSignatures(b []byte) ([]Signature, error) {
 	return sigs, nil
 }
 
-// Rejection records why one item was not accepted.
+// Item drop codes, shared with the announce tool's verifier.
+const (
+	DropNotSigned = "tier_not_signed"
+	DropExpired   = "expired"
+	DropContent   = "content"
+)
+
+// Rejection records why one item was not accepted. Code is the shared drop
+// code; Reason is the human detail.
 type Rejection struct {
 	ID     string
+	Code   string
 	Reason string
+}
+
+// ErrorCode maps a whole-feed failure to the code the announce tool uses, so
+// both sides report the same outcome for the same bytes.
+func ErrorCode(err error) string {
+	switch {
+	case err == nil:
+		return ""
+	case errors.Is(err, ErrTooLarge):
+		return "too_large"
+	case errors.Is(err, ErrBadSignature):
+		return "bad_signature"
+	case errors.Is(err, ErrNoSignature), errors.Is(err, ErrNoTrustedKeys):
+		return "no_trusted_signature"
+	case errors.Is(err, ErrSchema):
+		return "bad_schema"
+	case errors.Is(err, ErrReplay), errors.Is(err, ErrUnchanged):
+		return "replay"
+	case errors.Is(err, ErrFeedExpired):
+		return "feed_expired"
+	}
+	return "bad_json"
 }
 
 // VerifyInput is everything VerifyFeed needs; it does no I/O.
@@ -82,9 +114,9 @@ func VerifyFeed(in VerifyInput) (Verified, error) {
 	if err != nil {
 		return Verified{}, err
 	}
-	signers := validSigners(in.Data, sigs, keys)
-	if len(signers) == 0 {
-		return Verified{}, ErrBadSignature
+	signers, err := validSigners(in.Data, sigs, keys)
+	if err != nil {
+		return Verified{}, err
 	}
 	feed, err := ParseFeed(in.Data, in.Limits)
 	if err != nil {
@@ -95,11 +127,8 @@ func VerifyFeed(in VerifyInput) (Verified, error) {
 	}
 	out := Verified{Feed: feed, Signers: signers}
 	for _, it := range feed.Items {
-		if !it.ExpiresAt.After(in.Now) {
-			continue
-		}
-		if err := acceptItem(it, signers, keys, in.Limits); err != nil {
-			out.Rejected = append(out.Rejected, Rejection{ID: it.ID, Reason: err.Error()})
+		if code, err := acceptItem(it, signers, keys, in); err != nil {
+			out.Rejected = append(out.Rejected, Rejection{ID: it.ID, Code: code, Reason: err.Error()})
 			continue
 		}
 		if it.Kind == KindRevokeKey {
@@ -111,23 +140,29 @@ func VerifyFeed(in VerifyInput) (Verified, error) {
 	return out, nil
 }
 
-func validSigners(data []byte, sigs []Signature, keys map[string]Key) []string {
+// validSigners skips unknown key ids (rotation) but rejects the whole feed on
+// a bad signature from a known key, the same rule the announce tool applies.
+func validSigners(data []byte, sigs []Signature, keys map[string]Key) ([]string, error) {
 	seen := map[string]bool{}
 	for _, s := range sigs {
 		k, ok := keys[s.KeyID]
-		if !ok || seen[s.KeyID] {
+		if !ok {
 			continue
 		}
-		if advisoryfeed.Verify(k.Public, data, []byte(s.Sig)) == nil {
-			seen[s.KeyID] = true
+		if advisoryfeed.Verify(k.Public, data, []byte(s.Sig)) != nil {
+			return nil, ErrBadSignature
 		}
+		seen[s.KeyID] = true
+	}
+	if len(seen) == 0 {
+		return nil, ErrNoSignature
 	}
 	out := make([]string, 0, len(seen))
 	for id := range seen {
 		out = append(out, id)
 	}
 	sort.Strings(out)
-	return out
+	return out, nil
 }
 
 func checkFeedWindow(feed Feed, in VerifyInput) error {
@@ -145,8 +180,9 @@ func checkFeedWindow(feed Feed, in VerifyInput) error {
 }
 
 // acceptItem requires enough distinct signers allowed for the item's tier,
-// then validates content, so a key cannot sign above its tier limit.
-func acceptItem(it Item, signers []string, keys map[string]Key, lim Limits) error {
+// then expiry (with clock skew), then content, so a key cannot sign above its
+// tier limit. The returned code is the shared drop code.
+func acceptItem(it Item, signers []string, keys map[string]Key, in VerifyInput) (string, error) {
 	allowed := 0
 	for _, id := range signers {
 		if keys[id].CanSign(it.Tier) {
@@ -154,7 +190,13 @@ func acceptItem(it Item, signers []string, keys map[string]Key, lim Limits) erro
 		}
 	}
 	if need := RequiredSignatures(it.Tier); allowed < need {
-		return fmt.Errorf("tier %s needs %d allowed signatures, has %d", it.Tier, need, allowed)
+		return DropNotSigned, fmt.Errorf("tier %s needs %d allowed signatures, has %d", it.Tier, need, allowed)
 	}
-	return ValidateItem(it, lim)
+	if !it.ExpiresAt.Add(in.Limits.ClockSkew).After(in.Now) {
+		return DropExpired, errors.New("item has expired")
+	}
+	if err := ValidateItem(it, in.Limits); err != nil {
+		return DropContent, err
+	}
+	return "", nil
 }
