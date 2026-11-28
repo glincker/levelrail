@@ -26,6 +26,9 @@ func (c *Controller) resolveFiles(ctx context.Context, desired *store.DesiredSer
 		}
 		content := f.Content
 		if f.Secret {
+			if err := c.refuseReservedSecretOwner(); err != nil {
+				return nil, err
+			}
 			if c.secretResolver == nil {
 				return nil, fmt.Errorf("file %q is secret but no secret resolver is configured", f.Path)
 			}

@@ -88,7 +88,7 @@ func buildExplainTable() map[string]Explanation {
 			"Stop apps you do not need or add memory or swap, then press Re-check.", "", KindManual),
 		ex("host_pressure", "The host is short of CPU or memory right now.", "New builds wait or run one at a time so the host stays reachable.",
 			"Add swap, lower build concurrency or set memory limits on the biggest apps, then press Re-check.", "", KindManual),
-		ex("service_name_namespace", "An app has a name with a slash or control character.", "Its secrets could share a namespace with parked or internal secrets.",
+		ex("service_name_namespace", "An app has a name with a slash or control character, or one reserved for control plane settings.", "Its secrets could share a namespace with parked or internal secrets, and its deploys are refused while it is named like one.",
 			"Move the app to a plain lowercase name, delete the old one, then press Re-check.", "", KindManual),
 		ex("host_swap", "The host has no swap.", "A memory spike makes the kernel kill processes, including the control plane.",
 			"Add a 1 to 2 GB swap file, then press Re-check.", "", KindManual),

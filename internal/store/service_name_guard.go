@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // ErrInvalidServiceName is returned when a new service name could collide with a secret namespace.
@@ -27,6 +29,9 @@ func ServiceNameNamespaceProblem(name string) string {
 	}
 	if strings.Contains(name, "..") {
 		return "must not contain \"..\""
+	}
+	if spec.IsReservedName(name) {
+		return "is reserved for control plane settings"
 	}
 	return ""
 }

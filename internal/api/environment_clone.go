@@ -15,6 +15,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -293,6 +294,10 @@ func (rt *Router) handleEnvironmentClone(w http.ResponseWriter, r *http.Request)
 	}
 
 	newNames, conflicts, err := rt.resolveClonedAppNames(r.Context(), source, req.NewEnvironmentName, overrides)
+	if errors.Is(err, errInvalidClonedName) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if err != nil {
 		rt.internalError(w, "api: clone environment: resolve app names failed", err, slog.String("id", id))
 		return
@@ -379,6 +384,9 @@ func (rt *Router) appsInEnvironment(ctx context.Context, env store.Environment) 
 	return out, nil
 }
 
+// errInvalidClonedName marks a new app name that breaks the service name rules.
+var errInvalidClonedName = errors.New("invalid cloned app name")
+
 // resolveClonedAppNames computes every source app's new name up front,
 // so every collision is reported together in one 409 rather than the
 // caller discovering them one failed app at a time: the same
@@ -393,6 +401,9 @@ func (rt *Router) resolveClonedAppNames(ctx context.Context, source []store.Desi
 		newName := suggestClonedAppName(svc.Name, newEnvironmentName)
 		if o, ok := overrides[svc.Name]; ok && o.NewName != "" {
 			newName = o.NewName
+		}
+		if verr := spec.ValidateServiceName(newName); verr != nil {
+			return nil, nil, fmt.Errorf("%w: app %q: %s", errInvalidClonedName, svc.Name, verr.Error())
 		}
 
 		if owner, dup := seen[newName]; dup {

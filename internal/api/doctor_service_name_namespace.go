@@ -26,7 +26,7 @@ func (rt *Router) doctorCheckServiceNameNamespace(ctx context.Context) doctorChe
 	}
 	return doctorCheckResource{
 		Code: code, Name: name, Status: doctorStatusWarn,
-		Message: fmt.Sprintf("%d app name(s) contain a slash, backslash or control character and can alias an internal secret namespace: %s", len(bad), strings.Join(bad, ", ")),
+		Message: fmt.Sprintf("%d app name(s) contain a slash, backslash or control character, or are reserved for control plane settings, and can alias an internal secret namespace: %s", len(bad), strings.Join(bad, ", ")),
 		Fix:     "Review these apps, copy what you need into a correctly named app and delete the old one.",
 	}
 }
