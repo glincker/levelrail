@@ -67,7 +67,13 @@
   "finish": {
     "deploy": "Deploy your first app",
     "guide": "Follow the setup guide for HTTPS, backups and alerts",
-    "open": "Open"
+    "open": "Open",
+    "starterLabel": "Quick starts",
+    "starter": {
+      "nginx": "Static site",
+      "postgres": "Database",
+      "uptime-kuma": "Popular"
+    }
   },
   "card": {
     "title": "Set up your dashboard",

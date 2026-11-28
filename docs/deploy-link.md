@@ -75,6 +75,8 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --template <id>
 
 The flag only changes the final message of the installer: it prints `<dashboard-url>/apps/new?deploy=1&template=<id>`, which the reader opens after creating the admin account. Nothing is deployed until they press Deploy. The same value can be set with `LEVELRAIL_TEMPLATE`.
 
+Opening `/apps/new?deploy=1&template=<id>` shows the template with its supported platforms and the grants it asks for, and a button to review and install it. The first-run setup also offers three quick starts (a static site, a database and one popular app) that open this page.
+
 ## Self-hosting the launcher
 
 `deploy.html` and `deploy.js` are plain static files under `docs/public`. Copy both, plus `badges/`, to any static host and pass that host to `--launcher`.

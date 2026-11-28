@@ -687,5 +687,14 @@
     "deploy": "Un clic lo despliega con comprobaciones de salud.",
     "address": "Las apps reciben una direccion bajo {{domain}}.",
     "label": "Lo que obtendras y otras formas de empezar"
+  },
+  "deployTemplate": {
+    "title": "Plantilla desde un enlace",
+    "install": "Revisar e instalar",
+    "platforms": "Plataformas",
+    "grants": "Permisos que pide",
+    "noGrants": "Sin permisos especiales",
+    "loading": "Cargando plantilla",
+    "notFound": "Este servidor no tiene una plantilla llamada {{id}}."
   }
 }

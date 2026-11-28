@@ -19,6 +19,10 @@ const DeployButtonBuilder = lazy(
   () => import('../../components/newapp/DeployButtonBuilder'),
 )
 
+const DeployTemplateCard = lazy(
+  () => import('../../components/newapp/DeployTemplateCard'),
+)
+
 type NewAppSearch = Record<string, string>
 
 export const Route = createFileRoute('/apps/new')({
@@ -36,6 +40,18 @@ function NewAppPage() {
   const [linkOpen, setLinkOpen] = useState(false)
   const [slot, setSlot] = useState<HTMLDivElement | null>(null)
 
+  if (prefill.active && prefill.template !== undefined) {
+    return (
+      <PageTemplate title={t('title')} description={t('description')}>
+        <div className="mx-auto w-full max-w-3xl space-y-3">
+          <DeployLinkNotice prefill={prefill} />
+          <Suspense fallback={null}>
+            <DeployTemplateCard id={prefill.template} />
+          </Suspense>
+        </div>
+      </PageTemplate>
+    )
+  }
   if (prefill.active && prefill.image !== undefined) {
     return (
       <PageTemplate title={t('title')} description={t('description')}>

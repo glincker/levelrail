@@ -67,7 +67,13 @@
   "finish": {
     "deploy": "Despliega tu primera app",
     "guide": "Sigue la guía de configuración para HTTPS, copias y alertas",
-    "open": "Abrir"
+    "open": "Abrir",
+    "starterLabel": "Inicios rápidos",
+    "starter": {
+      "nginx": "Sitio estático",
+      "postgres": "Base de datos",
+      "uptime-kuma": "Popular"
+    }
   },
   "card": {
     "title": "Configura tu panel",

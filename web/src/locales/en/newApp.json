@@ -687,5 +687,14 @@
     "deploy": "One click deploys it with health checks.",
     "address": "Apps get an address under {{domain}}.",
     "label": "What you will get and other ways in"
+  },
+  "deployTemplate": {
+    "title": "Template from a link",
+    "install": "Review and install",
+    "platforms": "Platforms",
+    "grants": "Grants it asks for",
+    "noGrants": "No special grants",
+    "loading": "Loading template",
+    "notFound": "This server has no template called {{id}}."
   }
 }

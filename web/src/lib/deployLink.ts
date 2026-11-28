@@ -21,6 +21,7 @@ export const DEPLOY_LINK_PARAMS = [
   'env',
   'health',
   'source',
+  'template',
 ] as const
 
 export interface DeployLinkPrefill {
@@ -34,6 +35,8 @@ export interface DeployLinkPrefill {
   health?: string
   sourceUrl?: string
   sourceHost?: string
+  /** Catalog template id; the page shows it for review instead of the image form. */
+  template?: string
   /** Param names that were present but rejected, for the banner. */
   ignored: string[]
 }
@@ -112,6 +115,12 @@ export function parseDeployLink(
   if (image !== undefined && image !== '') {
     if (isValidImageRef(image)) out.image = image
     else reject('image')
+  }
+
+  const template = search.template?.trim()
+  if (template !== undefined && template !== '') {
+    if (isValidAppName(template)) out.template = template
+    else reject('template')
   }
 
   const name = search.name?.trim()
