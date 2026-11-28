@@ -127,6 +127,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("secret_binding", doctorGroupSecurity, rt.doctorCheckSecretBinding),
 		one("stale_secrets", doctorGroupSecurity, rt.doctorCheckStaleSecrets),
 		one("notification_channel_secrets", doctorGroupSecurity, rt.doctorCheckNotificationChannelSecrets),
+		one("notification_channel_security_flags", doctorGroupSecurity, rt.doctorCheckNotificationChannelSecurityFlags),
 		one("notify_reachable", doctorGroupSecurity, rt.doctorCheckNotifyReachable),
 		one("secret_reveal_policy", doctorGroupSecurity, func(context.Context) doctorCheckResource { return doctorCheckSecretReveal() }),
 		one("vault_legacy_paths", doctorGroupSecurity, rt.doctorCheckVaultLegacyPaths),

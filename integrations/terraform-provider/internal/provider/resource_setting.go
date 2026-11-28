@@ -53,6 +53,7 @@ func (r *settingResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"value": schema.StringAttribute{
 				Description: "Value as text: `true`, `42`, `15m`, plain text, or a JSON array for a list setting.",
 				Required:    true,
+				Sensitive:   true,
 			},
 		},
 	}

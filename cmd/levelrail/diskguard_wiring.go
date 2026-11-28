@@ -24,7 +24,7 @@ func startDiskGuard(ctx context.Context, logger *slog.Logger, dataDir string, ch
 			return
 		}
 		for _, c := range list {
-			if !c.Enabled {
+			if !c.Enabled || c.ProjectID != "" {
 				continue
 			}
 			if err := notifier.SendNotice(ctx, c, text); err != nil {

@@ -178,6 +178,8 @@ func buildExplainTable() map[string]Explanation {
 			"Press Fix on this check for the guided step. Open each app's Environment tab and update the old values.", "secrets.stale.rotate", KindGuided),
 		ex("notification_channel_secrets", "A notification channel is missing a secret it needs.", "Alerts for it will not be delivered.",
 			"Open Settings, then Notifications, and re-enter the channel's secret.", "", KindGuided),
+		ex("notification_channel_security_flags", "Some notification channels receive sign-in notices.", "Those notices carry other users' emails, browsers and IP addresses.",
+			"Open Settings, then Notifications, and turn off the sign-in notice option on any channel whose destination you do not trust.", "", KindGuided),
 		ex("notify_reachable", "No notification channel or email provider is configured.", "You only learn about outages by looking at the dashboard.",
 			"Open Settings, then Notifications, and add a channel, or add an email provider under Settings, then Email.", "", KindGuided),
 		ex("approval_without_session", "Shows how a sign-in with no other live session of the account is handled, and which ways exist to approve one.", "With hold and no way to approve, a sign-in waits until someone runs the host command.",

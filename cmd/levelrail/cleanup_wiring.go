@@ -43,7 +43,7 @@ func channelNotice(channels keyreminder.Channels, notifier keyreminder.Notifier)
 		sent := 0
 		var lastErr error
 		for _, c := range list {
-			if !c.Enabled {
+			if !c.Enabled || c.ProjectID != "" {
 				continue
 			}
 			if err := notifier.SendNotice(ctx, c, text); err != nil {
