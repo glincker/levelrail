@@ -23,7 +23,7 @@ func TestRailpackCacheIDPreview(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv(build.EnvPreviewCacheMode, tc.mode)
-			got := railpackCacheID(ctx, Request{ServiceName: "web-pr-7", Preview: tc.preview}, "web-pr-7:abc")
+			got := railpackCacheID(ctx, Request{ServiceName: "web-pr-7", Preview: tc.preview, PreviewParent: "web"}, "web-pr-7:abc")
 			if got != tc.want {
 				t.Fatalf("got %q, want %q", got, tc.want)
 			}

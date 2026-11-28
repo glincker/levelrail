@@ -462,6 +462,10 @@ func applyNextCachePrefix(desired *store.DesiredService, req Request) {
 // id the preview cache mode asks for.
 func railpackCacheID(ctx context.Context, req Request, tag string) string {
 	if !req.Preview {
+		// An unnamed build still derives its id from the image repo in the tag.
+		if strings.TrimSpace(req.ServiceName) == "" {
+			return build.SanitizeCacheID("", tag)
+		}
 		return build.EnsureAppCacheKey(ctx, req.ServiceName)
 	}
 	parentID := ""
