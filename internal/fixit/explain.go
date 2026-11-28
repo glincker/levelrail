@@ -108,6 +108,8 @@ func buildExplainTable() map[string]Explanation {
 			"Open Resources to see which app uses the most, then lower its limit or move it to another node.", "", KindGuided),
 		ex("disk_io_latency", "Writes to disk are slow.", "Every deploy and database on this host slows down, and freeing space does not help.",
 			"Press Fix on this check for the guided step. A terminal command is shown there as a second option.", "disk.io.latency", KindGuided),
+		ex("kernel_modules", "A kernel module that an installed app needs is not loaded on this host.", "The app can fail to start or lose a feature until the module is loaded.",
+			"Open the check details to see which module is missing, load it on the host as root, then press Re-check.", "", KindManual),
 		ex("database", "The control plane database did not answer in time.", "Without it the dashboard and API cannot work.",
 			"Check the disk and memory checks first, then press Re-check. If it keeps failing, restore from the latest backup.", "", KindManual),
 		ex("idle_footprint", "The control plane uses more memory or processor than an idle install should.", "It leaves less room for your apps.",
