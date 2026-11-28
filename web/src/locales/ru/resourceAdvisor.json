@@ -216,9 +216,13 @@
     "button": "Sleep {{count}} idle apps",
     "title": "Sleep idle apps",
     "description_one": "Enable sleep when idle for {{count}} app. It wakes on the next request.",
+    "description_few": "Enable sleep when idle for {{count}} apps. They wake on the next request.",
+    "description_many": "Enable sleep when idle for {{count}} apps. They wake on the next request.",
     "description_other": "Enable sleep when idle for {{count}} apps. They wake on the next request.",
     "confirm": "Sleep these apps",
     "done_one": "Sleep enabled for {{count}} app",
+    "done_few": "Sleep enabled for {{count}} apps",
+    "done_many": "Sleep enabled for {{count}} apps",
     "done_other": "Sleep enabled for {{count}} apps",
     "failed": "Could not update: {{names}}"
   },
