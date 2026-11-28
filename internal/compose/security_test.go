@@ -19,7 +19,7 @@ func TestValidate_RejectsHostAccess(t *testing.T) {
 		{"host ipc", "ipc: host", "[host_ipc]"},
 		{"host userns", "userns_mode: host", "[host_userns]"},
 		{"cap_add", "cap_add: [SYS_ADMIN]", "cap_add: SYS_ADMIN is not allowed"},
-		{"devices", "devices: [\"/dev/kvm:/dev/kvm\"]", "devices: is not allowed"},
+		{"devices", "devices: [\"/dev/kvm:/dev/kvm\"]", "devices: /dev/kvm is not on the device allowlist"},
 		{"seccomp off", "security_opt: [\"seccomp=unconfined\"]", "[security_opt_weakened]"},
 		{"volumes_from", "volumes_from: [other]", "[volumes_from]"},
 		{"docker socket bind", "volumes: [\"/var/run/docker.sock:/var/run/docker.sock\"]", "Docker socket"},
