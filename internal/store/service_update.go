@@ -250,18 +250,48 @@ func (db *DB) UpdateServiceApp(ctx context.Context, name, appID string) error {
 }
 
 // UpdateServiceReplicaNodes records the node of each replica index, or clears
-// the spread when nodes is empty. It leaves the fence token alone.
+// the spread when nodes is empty. It bumps the fence token when a replica
+// changes node, so a late call from the old placement is refused.
 func (db *DB) UpdateServiceReplicaNodes(ctx context.Context, name string, nodes []string) error {
 	if nodes == nil {
 		nodes = []string{}
+	}
+	moved := false
+	if cur, gerr := db.GetDesiredService(ctx, name); gerr == nil {
+		moved = replicaPlacementMoved(cur, nodes)
 	}
 	encoded, err := json.Marshal(nodes)
 	if err != nil {
 		return fmt.Errorf("store: marshal replica_nodes for service %q: %w", name, err)
 	}
-	return db.updateServiceRow(ctx, "update replica nodes", name, `
+	if err := db.updateServiceRow(ctx, "update replica nodes", name, `
 		UPDATE desired_services SET replica_nodes = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
-	`, string(encoded), name)
+	`, string(encoded), name); err != nil {
+		return err
+	}
+	if moved {
+		if _, err := db.withServiceFenceBump(ctx, name, false, ""); err != nil {
+			return fmt.Errorf("store: bump fence token after replica move of %q: %w", name, err)
+		}
+	}
+	return nil
+}
+
+// replicaPlacementMoved reports whether any replica index lands on another node than it does now.
+func replicaPlacementMoved(cur *DesiredService, next []string) bool {
+	at := func(nodes []string, i int) string {
+		if i < len(nodes) {
+			return nodes[i]
+		}
+		return cur.NodeID
+	}
+	replicas := max(cur.Replicas, DefaultReplicas)
+	for i := 0; i < replicas; i++ {
+		if at(cur.ReplicaNodes, i) != at(next, i) {
+			return true
+		}
+	}
+	return false
 }
 
 // UpdateServiceMaintenanceHold sets or clears (hold == "") the service's maintenance hold.

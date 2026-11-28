@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"slices"
 	"testing"
 
 	"github.com/glincker/levelrail/internal/store"
@@ -20,6 +19,13 @@ func enableSpread(t *testing.T, rt *Router, on string) {
 	}
 }
 
+// planned applies the plan to svc the way the reconciler's commit does.
+func planned(ctx context.Context, rt *Router, svc store.DesiredService) (store.DesiredService, string) {
+	p := rt.PlanReplicaSpread(ctx, svc)
+	svc.ReplicaNodes = p.Nodes
+	return svc, p.Refusal
+}
+
 func countNodes(nodes []string) map[string]int {
 	m := map[string]int{}
 	for _, n := range nodes {
@@ -28,7 +34,7 @@ func countNodes(nodes []string) map[string]int {
 	return m
 }
 
-func TestApplyReplicaSpread_TaintedNodeGetsNone(t *testing.T) {
+func TestPlanReplicaSpread_TaintedNodeGetsNone(t *testing.T) {
 	rt, db, _ := newMultiNodeRouter(t)
 	ctx := context.Background()
 	seedMNNode(t, db, "n1", nil)
@@ -42,7 +48,7 @@ func TestApplyReplicaSpread_TaintedNodeGetsNone(t *testing.T) {
 	if err := db.SaveDesiredService(ctx, svc); err != nil {
 		t.Fatal(err)
 	}
-	got, why := rt.ApplyReplicaSpread(ctx, svc)
+	got, why := planned(ctx, rt, svc)
 	if why != "" || len(got.ReplicaNodes) != 3 {
 		t.Fatalf("plan = %v refusal %q", got.ReplicaNodes, why)
 	}
@@ -50,13 +56,9 @@ func TestApplyReplicaSpread_TaintedNodeGetsNone(t *testing.T) {
 	if c["n3"] != 0 || c["n1"]+c["n2"] != 3 || (c["n1"] != 2 && c["n2"] != 2) {
 		t.Fatalf("want 2 and 1 over n1,n2 only, got %v", c)
 	}
-	stored, err := db.GetDesiredService(ctx, "web")
-	if err != nil || !slices.Equal(stored.ReplicaNodes, got.ReplicaNodes) {
-		t.Fatalf("not persisted: %v %v", stored.ReplicaNodes, err)
-	}
 }
 
-func TestApplyReplicaSpread_NamedVolumeRefuses(t *testing.T) {
+func TestPlanReplicaSpread_NamedVolumeRefuses(t *testing.T) {
 	rt, db, _ := newMultiNodeRouter(t)
 	ctx := context.Background()
 	seedMNNode(t, db, "n1", nil)
@@ -67,13 +69,13 @@ func TestApplyReplicaSpread_NamedVolumeRefuses(t *testing.T) {
 	if err := db.SaveDesiredService(ctx, svc); err != nil {
 		t.Fatal(err)
 	}
-	got, why := rt.ApplyReplicaSpread(ctx, svc)
+	got, why := planned(ctx, rt, svc)
 	if why == "" || got.ReplicaNodes != nil {
 		t.Fatalf("want refusal and no nodes, got %v %q", got.ReplicaNodes, why)
 	}
 }
 
-func TestApplyReplicaSpread_SettingOffChangesNothing(t *testing.T) {
+func TestPlanReplicaSpread_SettingOffChangesNothing(t *testing.T) {
 	rt, db, _ := newMultiNodeRouter(t)
 	ctx := context.Background()
 	seedMNNode(t, db, "n1", nil)
@@ -82,17 +84,13 @@ func TestApplyReplicaSpread_SettingOffChangesNothing(t *testing.T) {
 	if err := db.SaveDesiredService(ctx, svc); err != nil {
 		t.Fatal(err)
 	}
-	got, why := rt.ApplyReplicaSpread(ctx, svc)
+	got, why := planned(ctx, rt, svc)
 	if why != "" || got.ReplicaNodes != nil {
 		t.Fatalf("off must be a no-op, got %v %q", got.ReplicaNodes, why)
 	}
-	stored, _ := db.GetDesiredService(ctx, "web")
-	if stored.ReplicaNodes != nil {
-		t.Fatalf("stored changed: %v", stored.ReplicaNodes)
-	}
 }
 
-func TestApplyReplicaSpread_NodeLossReplans(t *testing.T) {
+func TestPlanReplicaSpread_NodeLossReplans(t *testing.T) {
 	rt, db, _ := newMultiNodeRouter(t)
 	ctx := context.Background()
 	seedMNNode(t, db, "n1", nil)
@@ -103,14 +101,14 @@ func TestApplyReplicaSpread_NodeLossReplans(t *testing.T) {
 	if err := db.SaveDesiredService(ctx, svc); err != nil {
 		t.Fatal(err)
 	}
-	first, why := rt.ApplyReplicaSpread(ctx, svc)
+	first, why := planned(ctx, rt, svc)
 	if why != "" || len(countNodes(first.ReplicaNodes)) != 3 {
 		t.Fatalf("want one replica per node, got %v %q", first.ReplicaNodes, why)
 	}
 	if err := db.UpdateNodeStatus(ctx, "n3", store.NodeStatusOffline); err != nil {
 		t.Fatal(err)
 	}
-	second, why := rt.ApplyReplicaSpread(ctx, first)
+	second, why := planned(ctx, rt, first)
 	if why != "" || countNodes(second.ReplicaNodes)["n3"] != 0 || len(second.ReplicaNodes) != 3 {
 		t.Fatalf("lost node must be replanned away, got %v %q", second.ReplicaNodes, why)
 	}

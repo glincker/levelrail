@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/glincker/levelrail/internal/docker"
@@ -51,6 +53,7 @@ func (f *DeleteFinalizer) Name() string { return "application/delete-finalizer" 
 
 // Begin writes the tombstone for name. Call before deleting desired state.
 func (f *DeleteFinalizer) Begin(ctx context.Context, name, nodeID string) error {
+	nodeID = f.withReplicaNodes(ctx, name, nodeID)
 	if err := f.store.AddPendingTeardown(ctx, name, nodeID); err != nil {
 		return fmt.Errorf("record teardown for %q: %w", name, err)
 	}
@@ -74,14 +77,55 @@ func (f *DeleteFinalizer) Finalize(ctx context.Context, name, nodeID string) err
 }
 
 func (f *DeleteFinalizer) teardown(ctx context.Context, name, nodeID string) error {
-	runtime, err := f.resolve(nodeID)
-	if err != nil {
-		return fmt.Errorf("resolve node %q runtime: %w", nodeID, err)
+	nodes := splitTeardownNodes(nodeID)
+	// A tombstone written at delete time may list more nodes than the caller knows.
+	if pending, err := f.store.ListPendingTeardowns(ctx); err == nil {
+		for _, p := range pending {
+			if p.Name != name {
+				continue
+			}
+			for _, n := range splitTeardownNodes(p.NodeID) {
+				if !slices.Contains(nodes, n) {
+					nodes = append(nodes, n)
+				}
+			}
+		}
 	}
-	if err := New(name, f.store, runtime, f.opts...).Teardown(ctx); err != nil {
-		return fmt.Errorf("remove containers: %w", err)
+	var errs []error
+	for _, node := range nodes {
+		runtime, err := f.resolve(node)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("resolve node %q runtime: %w", node, err))
+			continue
+		}
+		if err := New(name, f.store, runtime, f.opts...).Teardown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("remove containers on node %q: %w", node, err))
+		}
 	}
-	return nil
+	return errors.Join(errs...)
+}
+
+// teardownNodeSep joins the nodes of a spread app into the tombstone's single node column.
+// Node ids never contain it, and a lone id parses back to itself.
+const teardownNodeSep = ","
+
+func splitTeardownNodes(joined string) []string {
+	return strings.Split(joined, teardownNodeSep)
+}
+
+// withReplicaNodes widens a delete of a spread app to every node that runs a replica.
+func (f *DeleteFinalizer) withReplicaNodes(ctx context.Context, name, nodeID string) string {
+	svc, err := f.store.GetDesiredService(ctx, name)
+	if err != nil || svc.NodeID != nodeID || len(svc.ReplicaNodes) == 0 {
+		return nodeID
+	}
+	nodes := []string{nodeID}
+	for _, n := range svc.ReplicaNodes {
+		if !slices.Contains(nodes, n) {
+			nodes = append(nodes, n)
+		}
+	}
+	return strings.Join(nodes, teardownNodeSep)
 }
 
 // nodeLister is satisfied by *store.DB; app services can span nodes, so the
@@ -184,7 +228,7 @@ func (f *DeleteFinalizer) Reconcile(ctx context.Context) (reconcile.Result, erro
 		if svc, err := f.store.GetDesiredService(ctx, p.Name); err == nil {
 			// Still placed on the tombstone's node: recreated under the same name, its own controller owns the containers.
 			// Placed elsewhere: a move, so the leftovers on this node still need removing.
-			if svc.NodeID == p.NodeID {
+			if svc.NodeID == splitTeardownNodes(p.NodeID)[0] {
 				if derr := f.store.DeletePendingTeardown(ctx, p.Name); derr != nil {
 					errs = append(errs, derr)
 				}
@@ -194,7 +238,7 @@ func (f *DeleteFinalizer) Reconcile(ctx context.Context) (reconcile.Result, erro
 			errs = append(errs, fmt.Errorf("load %q: %w", p.Name, err))
 			continue
 		}
-		if p.NodeID != "" {
+		if p.NodeID != "" && !strings.Contains(p.NodeID, teardownNodeSep) {
 			if _, err := f.store.GetNode(ctx, p.NodeID); errors.Is(err, store.ErrNodeNotFound) {
 				// The node was removed from the fleet: nothing left to reach. If it ever re-enrols, the orphan reaper finds what it still runs.
 				f.logger.Warn("application: dropping teardown for a removed node", slog.String("name", p.Name), slog.String("node_id", p.NodeID))

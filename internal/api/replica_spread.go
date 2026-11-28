@@ -20,7 +20,7 @@ func init() {
 		Key: KeyPlacementReplicaSpread, Category: runtimesettings.CategoryDeploys, Kind: runtimesettings.KindBool,
 		Default: "false", Env: "APP_PLACEMENT_REPLICA_SPREAD", Apply: runtimesettings.ApplyLive,
 		Title:       "Spread replicas over nodes",
-		Description: "Place each replica of a stateless app with more than one replica on a different eligible node, honoring taints, affinity and platform. Apps with volumes, local-only grants or a loopback bind address stay on one node. Off by default; read on every reconcile pass.",
+		Description: "Place each replica of a stateless app with more than one replica on a different eligible node, honoring taints, affinity and platform. Apps with volumes, local-only grants or a loopback bind address stay on one node. Experimental, off by default, stateless apps only; read on every reconcile pass. The cleanup list for a lost node is kept in memory, so a control plane restart while a node is down can leave a replica running on that node until it returns and the app is redeployed.",
 	})
 }
 

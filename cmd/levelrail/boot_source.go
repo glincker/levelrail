@@ -122,6 +122,8 @@ type dynamicSourceDeps struct {
 	dockerAPI application.DockerAPISockets
 	// dependsOnTimeout reads the live compose depends_on wait limit.
 	dependsOnTimeout func(context.Context) time.Duration
+	// spreadPlan picks replica nodes for apps under placement.replica_spread; nil keeps every replica home.
+	spreadPlan spreadPlanner
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -447,6 +449,17 @@ func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []s
 			deps.logger.Warn("skipping service for this reconcile pass: node transport unavailable",
 				slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
 			controllers = append(controllers, nodeOfflineControllerFor(ctx, deps, svc))
+			continue
+		}
+		if spreadWanted(ctx, deps, svc) {
+			plan := deps.spreadPlan
+			if plan == nil {
+				plan = func(context.Context, *store.DesiredService) ([]string, string) { return nil, "" }
+			}
+			controllers = append(controllers, spreadControllerFor(ctx, deps, svc, appOpts, snap, plan))
+			if !svc.Suspended {
+				spreadPrefetch(deps, svc, targets, svcRuntime, nodeID)
+			}
 			continue
 		}
 		svcOpts := append(appOpts[:len(appOpts):len(appOpts)], application.WithPassSnapshot(snap, nodeID), application.WithImageIDCache(deps.imageIDs, nodeID), application.WithNodeRecovering(nodeRecentlyRecovered(ctx, deps, svc.NodeID)))

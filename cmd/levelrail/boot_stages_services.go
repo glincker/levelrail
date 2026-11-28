@@ -462,6 +462,7 @@ func (s *bootState) startReconciler() {
 	}
 	sourceDeps := dynamicSourceDeps{
 		dockerAPI:                    dockerAPI,
+		spreadPlan:                   routerSpreadPlanner(s.apiRouter),
 		agentTunnels:                 agentTunnels,
 		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,

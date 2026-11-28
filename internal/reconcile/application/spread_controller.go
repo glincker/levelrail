@@ -30,6 +30,8 @@ type SpreadDeps struct {
 	Build func(node string, indexes []int, rec DeployRecorder) SpreadSub
 	// Recorder receives one deploy record per rollout, however many nodes deployed.
 	Recorder DeployRecorder
+	// Pending lists nodes that still hold replicas from an earlier plan, for cleanup retries.
+	Pending func() []string
 }
 
 // SpreadController runs one service as per-node sub controllers under a single status.
@@ -86,6 +88,13 @@ func (s *SpreadController) Reconcile(ctx context.Context) (reconcile.Result, err
 	plan := s.plan(ctx, svc)
 	groups := groupByNode(plan)
 	stale := staleNodes(svc, plan)
+	if s.deps.Pending != nil {
+		for _, node := range s.deps.Pending() {
+			if !slices.Contains(plan, node) && !slices.Contains(stale, node) {
+				stale = append(stale, node)
+			}
+		}
+	}
 	s.remember(groups, stale)
 
 	capture := &deployCapture{}
