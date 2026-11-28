@@ -176,6 +176,14 @@
   "status": {
     "chips": "Status",
     "openAnyway": "Abrir mesmo assim",
+    "openBlocked": {
+      "stopped": "{{name}} está parado, então o endereço não vai responder.",
+      "not_running": "{{name}} não está em execução, então o endereço não vai responder.",
+      "not_ready": "{{name}} ainda não está pronto, então o endereço não vai responder.",
+      "local_only": "Este endereço só funciona neste computador.",
+      "start": "Iniciar",
+      "restart": "Reiniciar"
+    },
     "reason": {
       "down": "O app está parado ou não está pronto, então este endereço ainda não vai responder.",
       "waiting_dns": "Aguardando o DNS: o domínio ainda não aponta para cá.",

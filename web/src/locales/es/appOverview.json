@@ -176,6 +176,14 @@
   "status": {
     "chips": "Estado",
     "openAnyway": "Abrir de todos modos",
+    "openBlocked": {
+      "stopped": "{{name}} está detenida, así que su dirección no responderá.",
+      "not_running": "{{name}} no se está ejecutando, así que su dirección no responderá.",
+      "not_ready": "{{name}} aún no está lista, así que su dirección no responderá.",
+      "local_only": "Esta dirección solo funciona en este equipo.",
+      "start": "Iniciar",
+      "restart": "Reiniciar"
+    },
     "reason": {
       "down": "La app está detenida o no está lista, así que esta dirección aún no responderá.",
       "waiting_dns": "Esperando al DNS: el dominio todavía no apunta aquí.",

@@ -176,6 +176,14 @@
   "status": {
     "chips": "Statut",
     "openAnyway": "Ouvrir quand même",
+    "openBlocked": {
+      "stopped": "{{name}} est arrêtée, son adresse ne répondra pas.",
+      "not_running": "{{name}} ne tourne pas, son adresse ne répondra pas.",
+      "not_ready": "{{name}} n'est pas encore prête, son adresse ne répondra pas.",
+      "local_only": "Cette adresse ne fonctionne que sur cet ordinateur.",
+      "start": "Démarrer",
+      "restart": "Redémarrer"
+    },
     "reason": {
       "down": "L'app est arrêtée ou pas prête, cette adresse ne répondra donc pas encore.",
       "waiting_dns": "En attente du DNS : le domaine ne pointe pas encore ici.",

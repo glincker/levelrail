@@ -71,19 +71,22 @@ export function HeroActions({
           {t('overview.connectGitSource')}
         </Link>
       ) : null}
-      {url && reach.state === 'down' ? (
-        <span title={tOverview(`status.reason.${reach.state}`)}>
-          <Button
-            variant="outline"
-            size="lg"
-            className="gap-2"
-            disabled
-            aria-description={tOverview(`status.reason.${reach.state}`)}
-          >
-            <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
-            <span className="max-sm:sr-only">{t('overviewHero.openApp')}</span>
-          </Button>
-        </span>
+      {url && (reach.state === 'down' || reach.state === 'local_only') ? (
+        <Button
+          variant="outline"
+          size="lg"
+          className="gap-2"
+          title={tOverview(`status.reason.${reach.state}`)}
+          onClick={actions.openApp}
+        >
+          <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
+          <span className="max-sm:sr-only">{t('overviewHero.openApp')}</span>
+          {isStatic ? null : (
+            <span className="max-lg:hidden">
+              <Kbd keys={['O']} />
+            </span>
+          )}
+        </Button>
       ) : url ? (
         <a
           href={url}

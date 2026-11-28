@@ -16,11 +16,12 @@ vi.mock('react-i18next', () => ({
 }))
 
 const redeploy = vi.fn()
+const openApp = vi.hoisted(() => vi.fn())
+const reachState = vi.hoisted(() => ({
+  value: { state: 'reachable', reason: 'ok' },
+}))
 vi.mock('./useUrlReachability', () => ({
-  useUrlReachability: () => ({
-    reach: { state: 'reachable', reason: 'ok' },
-    shareUrl: null,
-  }),
+  useUrlReachability: () => ({ reach: reachState.value, shareUrl: null }),
 }))
 vi.mock('./useOverviewActions', () => ({
   useOverviewActions: () => ({
@@ -33,7 +34,7 @@ vi.mock('./useOverviewActions', () => ({
     slowRestart: false,
     toggleRunning: vi.fn(),
     togglingRunning: false,
-    openApp: vi.fn(),
+    openApp,
     copyUrl: vi.fn(),
     copied: false,
     goToDeploys: vi.fn(),
@@ -57,6 +58,24 @@ describe('HeroActions', () => {
     )
     const link = screen.getByRole('link', { name: /open app/i })
     expect(link).toHaveAttribute('href', 'https://a.example.com')
+  })
+
+  it('routes Open app through the shared gate when the app is down', async () => {
+    reachState.value = { state: 'down', reason: 'stopped' }
+    try {
+      render(
+        <HeroActions
+          app={app}
+          url="https://a.example.com"
+          onDeploy={vi.fn()}
+        />,
+      )
+      expect(screen.queryByRole('link', { name: /open app/i })).toBeNull()
+      await userEvent.click(screen.getByRole('button', { name: /open app/i }))
+      expect(openApp).toHaveBeenCalled()
+    } finally {
+      reachState.value = { state: 'reachable', reason: 'ok' }
+    }
   })
 
   it('hides Open app without a URL', () => {

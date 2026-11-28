@@ -175,6 +175,14 @@
   "status": {
     "chips": "状态",
     "openAnyway": "仍然打开",
+    "openBlocked": {
+      "stopped": "{{name}} 已停止，该地址不会响应。",
+      "not_running": "{{name}} 未在运行，该地址不会响应。",
+      "not_ready": "{{name}} 尚未就绪，该地址不会响应。",
+      "local_only": "该地址只能在这台电脑上使用。",
+      "start": "启动",
+      "restart": "重启"
+    },
     "reason": {
       "down": "应用已停止或尚未就绪，所以此地址暂时无法响应。",
       "waiting_dns": "正在等待 DNS：该域名尚未指向这里。",
