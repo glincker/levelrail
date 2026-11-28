@@ -104,7 +104,9 @@ func registerAnnouncementCaps() {
 
 func announcementsURLCheck(canonical string) error {
 	u, err := url.Parse(strings.TrimSpace(canonical))
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil {
+	// Plain http to loopback is stored but the fetcher only follows it on dev builds.
+	loopbackHTTP := u != nil && u.Scheme == "http" && (u.Hostname() == "127.0.0.1" || u.Hostname() == "localhost")
+	if err != nil || (u.Scheme != "https" && !loopbackHTTP) || u.Host == "" || u.User != nil {
 		return fmt.Errorf("value must be an https URL without credentials")
 	}
 	return nil

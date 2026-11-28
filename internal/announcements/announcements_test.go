@@ -482,3 +482,17 @@ func TestFetcherRefusesPlainHTTP(t *testing.T) {
 		t.Fatalf("plain http must be refused: %v", err)
 	}
 }
+
+func TestFetcherLoopbackHTTPOnlyWhenAllowed(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) }))
+	defer srv.Close()
+	if _, err := (Fetcher{}).Get(context.Background(), srv.URL, "", 10); !errors.Is(err, ErrNotHTTPS) {
+		t.Fatalf("loopback http must be refused by default: %v", err)
+	}
+	if res, err := (Fetcher{LoopbackHTTP: true}).Get(context.Background(), srv.URL, "", 10); err != nil || string(res.Body) != "ok" {
+		t.Fatalf("dev loopback http: %v", err)
+	}
+	if _, err := (Fetcher{LoopbackHTTP: true}).Get(context.Background(), "http://example.invalid/f", "", 10); !errors.Is(err, ErrNotHTTPS) {
+		t.Fatalf("non loopback http stays refused: %v", err)
+	}
+}

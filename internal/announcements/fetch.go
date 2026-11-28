@@ -24,6 +24,12 @@ var ErrNotHTTPS = errors.New("announcements: feed URL must be https")
 // which honours HTTPS_PROXY.
 type Fetcher struct {
 	Client *http.Client
+	// LoopbackHTTP allows plain http to a loopback host, for dev instances only.
+	LoopbackHTTP bool
+}
+
+func isLoopbackHost(h string) bool {
+	return h == "127.0.0.1" || h == "localhost" || h == "::1"
 }
 
 func (f Fetcher) client() *http.Client {
@@ -52,7 +58,8 @@ func (f Fetcher) Get(ctx context.Context, rawURL, etag string, limit int64) (Res
 	if err != nil || u.Host == "" {
 		return Result{}, fmt.Errorf("announcements: bad feed URL")
 	}
-	if u.Scheme != "https" {
+	devLoopback := f.LoopbackHTTP && u.Scheme == "http" && isLoopbackHost(u.Hostname())
+	if u.Scheme != "https" && !devLoopback {
 		return Result{}, ErrNotHTTPS
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)

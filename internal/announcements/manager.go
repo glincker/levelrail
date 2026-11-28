@@ -147,7 +147,9 @@ func (m *Manager) fetchAndStore(ctx context.Context, keys []Key) error {
 	}
 	now := m.now()
 	stamp := store.FormatAuditTime(now)
-	res, err := m.Fetcher.Get(ctx, url, state.ETag, lim.MaxBytes)
+	fetcher := m.Fetcher
+	fetcher.LoopbackHTTP = m.DevMode
+	res, err := fetcher.Get(ctx, url, state.ETag, lim.MaxBytes)
 	if err != nil {
 		m.log().Debug("announcements: fetch failed", slog.String("error", err.Error()))
 		_ = m.Store.RecordAnnouncementFetch(ctx, "", stamp, err.Error())
@@ -156,7 +158,7 @@ func (m *Manager) fetchAndStore(ctx context.Context, keys []Key) error {
 	if res.NotModified {
 		return m.Store.RecordAnnouncementFetch(ctx, "", stamp, "")
 	}
-	sig, err := m.Fetcher.Get(ctx, url+sigSuffix, "", lim.MaxBytes)
+	sig, err := fetcher.Get(ctx, url+sigSuffix, "", lim.MaxBytes)
 	if err != nil {
 		_ = m.Store.RecordAnnouncementFetch(ctx, "", stamp, err.Error())
 		return err
