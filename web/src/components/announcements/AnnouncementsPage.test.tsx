@@ -41,9 +41,11 @@ describe('AnnouncementsPage', () => {
     expect(rows).toHaveLength(2)
     expect(rows[0]).toHaveTextContent('Upgrade now')
     expect(rows[0]).toHaveTextContent(/unread/i)
-    expect(rows[1]).toHaveTextContent('New thing')
+    const second = rows[1]
+    if (!second) throw new Error('expected a second announcement row')
+    expect(second).toHaveTextContent('New thing')
     expect(
-      within(rows[1]).queryByRole('button', { name: /mark.*read/i }),
+      within(second).queryByRole('button', { name: /mark.*read/i }),
     ).toBeNull()
   })
 

@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppDetail } from '../../types/appDetail'
 import { AppStatusStrip } from './AppStatusStrip'
 
-const reach = vi.hoisted(() => ({
+const reach = vi.hoisted<{
+  value: {
+    reach: { state: string; reason: string }
+    shareUrl: string | null
+  }
+}>(() => ({
   value: {
     reach: { state: 'reachable', reason: 'ok' },
     shareUrl: 'https://web.example.com',
