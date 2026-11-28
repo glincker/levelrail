@@ -523,6 +523,7 @@ ingress.cloudflare_ips_refresh
 ingress.cloudflare_ips_timeout
 ingress.dns01_all_hosts
 ingress.fallback_certs
+ingress.issue_for_wildcard_dns_hosts
 ingress.max_body_bytes
 ingress.max_requests_per_ip
 ingress.proxy_cert_wait

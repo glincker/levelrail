@@ -763,6 +763,12 @@ func WithIngressBoundPorts(f func() (httpPort, httpsPort int)) Option {
 	return func(rt *Router) { rt.ingressBoundPorts = f }
 }
 
+// WithCertCacheReset supplies the call that clears the live certificate cache,
+// so a renewed certificate is served without waiting for a config change.
+func WithCertCacheReset(f func(ctx context.Context) error) Option {
+	return func(rt *Router) { rt.certCacheReset = f }
+}
+
 // WithDoctorDiskWarningBytes overrides the free-space floor GET
 // /api/v1/system/doctor's disk_space check warns below. Without one
 // configured (or passed as 0), defaultDoctorDiskWarningBytes (1GiB)

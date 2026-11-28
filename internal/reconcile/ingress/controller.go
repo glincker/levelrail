@@ -310,6 +310,8 @@ type Controller struct {
 	dns01AllHosts func(context.Context) bool
 	// fallbackCerts returns the ingress.fallback_certs mode; nil means eager.
 	fallbackCerts func(context.Context) string
+	// issueWildcardDNS reports whether a fallback host may order its certificate at creation; nil means yes.
+	issueWildcardDNS func(context.Context) bool
 
 	// route53Creds, if set via WithRoute53DNSCredentials, is resolved
 	// fresh every Reconcile pass whenever store.Route53DNSSettings.
@@ -613,7 +615,15 @@ func WithFallbackCerts(fn func(context.Context) string) Option {
 	return func(c *Controller) { c.fallbackCerts = fn }
 }
 
+// WithIssueForWildcardDNSHosts supplies the live ingress.issue_for_wildcard_dns_hosts value, resolved on each pass.
+func WithIssueForWildcardDNSHosts(fn func(context.Context) bool) Option {
+	return func(c *Controller) { c.issueWildcardDNS = fn }
+}
+
 func (c *Controller) lazyFallbackCerts(ctx context.Context) bool {
+	if c.issueWildcardDNS != nil && !c.issueWildcardDNS(ctx) {
+		return true
+	}
 	return c.fallbackCerts != nil && c.fallbackCerts(ctx) == "lazy"
 }
 

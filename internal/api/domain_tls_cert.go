@@ -407,6 +407,11 @@ func (rt *Router) handleRenewDomainCertificate(w http.ResponseWriter, r *http.Re
 		ingress.DefaultACMEFailures().Clear(domain)
 	}
 
+	if rt.certCacheReset != nil {
+		if err := rt.certCacheReset(r.Context()); err != nil {
+			rt.logger.Warn("api: reset certificate cache after renewal", slog.String("domain", domain), slog.String("error", err.Error()))
+		}
+	}
 	rt.nudgeReconciler()
 	rt.logger.Info("api: domain certificate renewal requested", slog.String("domain", domain), slog.Bool("had_stored_certificate", hadCert), slog.String("reason", req.Reason))
 

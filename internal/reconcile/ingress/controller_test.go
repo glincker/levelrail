@@ -946,3 +946,31 @@ func TestController_Reconcile_LazyFallback_UserDomainSameAsFallbackStaysEager(t 
 		}
 	}
 }
+
+// With ingress.issue_for_wildcard_dns_hosts off, a new app's sslip.io host must not order a certificate at creation.
+func TestController_Reconcile_WildcardDNSIssuanceGate(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	host := "web.203-0-113-5.sslip.io"
+	for _, allow := range []bool{false, true} {
+		rt := newFakeRuntime()
+		rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 34567)
+		applier := &fakeApplier{}
+		c := New(&fakeStore{services: []store.DesiredService{desired}}, rt, applier,
+			WithLogger(slog.New(slog.DiscardHandler)), WithPublicHost("203.0.113.5"),
+			WithIssueForWildcardDNSHosts(func(context.Context) bool { return allow }))
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("Reconcile() error = %v", err)
+		}
+		var onDemand bool
+		for _, p := range applier.lastCfg.Apps.TLS.Automation.Policies {
+			for _, sub := range p.Subjects {
+				if sub == host && p.OnDemand {
+					onDemand = true
+				}
+			}
+		}
+		if onDemand == allow {
+			t.Errorf("allow=%v: on demand = %v, want %v", allow, onDemand, !allow)
+		}
+	}
+}

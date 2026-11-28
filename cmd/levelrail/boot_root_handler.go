@@ -170,6 +170,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithIngressPortOwner(ingressDriver),
 		api.WithDoctorIngressPorts(ingressPortFromAddr(ingressHTTPAddr()), ingressPortFromAddr(ingressHTTPSAddr())),
 		api.WithIngressBoundPorts(ingressDriver.BoundPorts),
+		api.WithCertCacheReset(ingressDriver.ResetCertCache),
 		api.WithDashboardListenAddr(httpAddr()),
 		api.WithDoctorNetworkTimeout(doctorNetworkTimeout(logger)),
 		api.WithDoctorPublicIPEndpoint(os.Getenv("APP_DOCTOR_PUBLIC_IP_ENDPOINT")),

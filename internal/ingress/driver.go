@@ -279,6 +279,31 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	return nil
 }
 
+// ResetCertCache drops Caddy's in-memory certificate cache and reloads the last
+// good config, so a certificate removed from storage stops being served at once.
+func (d *Driver) ResetCertCache(_ context.Context) error {
+	d.mu.Lock()
+	prev := d.lastGood
+	d.mu.Unlock()
+	if prev == nil {
+		return nil
+	}
+	var cfg Config
+	if err := json.Unmarshal(prev, &cfg); err != nil {
+		return fmt.Errorf("ingress: reset certificate cache: decode config: %w", err)
+	}
+	if err := loadConfig(emptyAppsPayload(&cfg), true); err != nil {
+		return fmt.Errorf("ingress: reset certificate cache: %w", err)
+	}
+	if err := loadConfig(prev, true); err != nil {
+		d.mu.Lock()
+		d.lastApplied = nil
+		d.mu.Unlock()
+		return fmt.Errorf("ingress: reset certificate cache: reload config: %w", err)
+	}
+	return nil
+}
+
 // Stop tears down the running Caddy instance, releasing every listener it
 // holds. Safe to call even if Apply was never called.
 func (d *Driver) Stop(ctx context.Context) error {

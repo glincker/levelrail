@@ -63,6 +63,7 @@ func (s *bootState) startCertFallbackRetry() {
 			router.AuditCertFallbackDrop(c, "system", "cert-fallback", "fallback certificate retry", domain, detail)
 		},
 		Nudge: s.engine.Nudge,
+		Evict: s.ingressDriver.ResetCertCache,
 	}
 	go r.Run(s.ctx)
 }

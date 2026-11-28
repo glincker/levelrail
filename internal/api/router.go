@@ -842,6 +842,7 @@ type Router struct {
 	ingressPortOwner             IngressPortOwner                 // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
 	doctorHTTPPort               int                              // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
 	ingressBoundPorts            func() (httpPort, httpsPort int) // live bound ports, set via WithIngressBoundPorts
+	certCacheReset               func(ctx context.Context) error  // set via WithCertCacheReset
 	doctorHTTPSPort              int                              // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookBodies                webhookBodySeen                  // recent signed webhook bodies, replay guard
 	ddnsMgr                      *ddns.Manager                    // nil serves 501 on /settings/ddns

@@ -12,6 +12,8 @@ const (
 	KeyIngressMaxBodyBytes  = "ingress.max_body_bytes"
 	KeyAccessLogRetention   = "telemetry.access_log_retention"
 	KeyIngressFallbackCerts = "ingress.fallback_certs"
+	// KeyIngressIssueForWildcardDNSHosts lets a new app's sslip.io style host order a certificate at creation.
+	KeyIngressIssueForWildcardDNSHosts = "ingress.issue_for_wildcard_dns_hosts"
 	// KeyVisitorSaltRotation sets how often the salt behind visitor hashes changes.
 	KeyVisitorSaltRotation = "telemetry.visitor_salt_rotation"
 	// KeyVisitorHistoryRetention sets how long hourly visitor rollups are kept; 0 turns persistence off.
@@ -42,6 +44,12 @@ func init() {
 		Env: "APP_INGRESS_FALLBACK_CERTS", Apply: ApplyLive, AllowedStrings: []string{FallbackCertsEager, FallbackCertsLazy},
 		Title:       "Fallback domain certificates",
 		Description: "When an app has no domain and gets an automatic sslip.io style hostname, eager orders its certificate as soon as the route exists (today's behavior) and lazy orders it on the first TLS request for that hostname. Lazy keeps a burst of new apps from spending certificate rate limits on hosts nobody opens. A saved change re-renders the ingress config at once, with no restart; domains you configured yourself are always eager.",
+	})
+	Register(Definition{
+		Key: KeyIngressIssueForWildcardDNSHosts, Category: CategoryNetworking, Kind: KindBool, Default: "false",
+		Env: "APP_INGRESS_ISSUE_FOR_WILDCARD_DNS_HOSTS", Apply: ApplyLive,
+		Title:       "Issue certificates for wildcard DNS hosts at creation",
+		Description: "When off, creating an app never orders a public certificate for its automatic sslip.io or nip.io style hostname; the order waits for the first TLS request to that host. When on, the order follows the fallback domain certificates mode. A saved change re-renders the ingress config at once, with no restart.",
 	})
 	Register(Definition{
 		Key: KeyAccessLogRetention, Category: CategoryObservability, Kind: KindDuration, Default: defaultAccessLogRetention.String(),

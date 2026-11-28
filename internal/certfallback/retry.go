@@ -19,7 +19,9 @@ type Retrier struct {
 	MaxRetries func(ctx context.Context) int
 	Audit      func(ctx context.Context, domain, detail string)
 	Nudge      func()
-	Logger     *slog.Logger
+	// Evict clears the live certificate cache after a drop so the new cert is served without a reload.
+	Evict  func(ctx context.Context) error
+	Logger *slog.Logger
 
 	mu       sync.Mutex
 	attempts map[string]int
@@ -66,6 +68,11 @@ func (r *Retrier) Pass(ctx context.Context) ([]string, error) {
 			r.Audit(ctx, d, "scheduled retry dropped the local-issuer fallback certificate")
 		}
 		dropped = append(dropped, d)
+	}
+	if len(dropped) > 0 && r.Evict != nil {
+		if err := r.Evict(ctx); err != nil {
+			r.log().Warn("certfallback: cache evict failed", slog.String("error", err.Error()))
+		}
 	}
 	if len(dropped) > 0 && r.Nudge != nil {
 		r.Nudge()

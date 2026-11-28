@@ -226,6 +226,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `LEVELRAIL_INGRESS_DIAGNOSTIC_SHOW_STATE` | [`ingress.diagnostic_show_state`](/runtime-settings#networking) | `false` |
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |
 | `APP_INGRESS_FALLBACK_CERTS` | [`ingress.fallback_certs`](/runtime-settings#networking) | `eager` |
+| `APP_INGRESS_ISSUE_FOR_WILDCARD_DNS_HOSTS` | [`ingress.issue_for_wildcard_dns_hosts`](/runtime-settings#networking) | `false` |
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_INGRESS_MAX_REQUESTS_PER_IP` | [`ingress.max_requests_per_ip`](/runtime-settings#networking) | `256` |
 | `APP_PROXY_CERT_WAIT` | [`ingress.proxy_cert_wait`](/runtime-settings#networking) | `5m0s` |

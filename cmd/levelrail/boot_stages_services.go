@@ -503,6 +503,9 @@ func (s *bootState) startReconciler() {
 		fallbackCerts: func(c context.Context) string {
 			return s.apiRouter.RuntimeSettings().String(c, runtimesettings.KeyIngressFallbackCerts)
 		},
+		issueWildcardDNS: func(c context.Context) bool {
+			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyIngressIssueForWildcardDNSHosts)
+		},
 		deployWindows: func(c context.Context) deploysafety.Windows {
 			return deployWindowsFrom(c, s.apiRouter.RuntimeSettings())
 		},
