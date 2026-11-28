@@ -55,8 +55,42 @@ func (rt *Router) resolveTemplateCapabilities(w http.ResponseWriter, r *http.Req
 			writeError(w, http.StatusForbidden, "capability "+g.Class+" needs the root ability")
 			return nil, false
 		}
+		if msg := rt.logsGrantRefusal(r.Context(), g); msg != "" {
+			writeError(w, http.StatusForbidden, msg)
+			return nil, false
+		}
 	}
 	return grants, true
+}
+
+// logsGrantExposureNotice is shown on installs that carry the logs grant on a multi team instance.
+const logsGrantExposureNotice = "The logs grant exposes the container logs of every team on this instance to anyone who can reach this app's container."
+
+func isLogsGrant(g catalog.CapabilityGrant) bool {
+	return g.Class == catalog.CapClassDockerAPI && slices.ContainsFunc(g.Caps, func(c string) bool {
+		return strings.EqualFold(strings.TrimPrefix(strings.ToUpper(c), dockerguard.GrantCapPrefix), string(dockerguard.ProfileLogs))
+	})
+}
+
+// multiTeam is true when the instance has more than one team. A failed lookup counts as multi team.
+func (rt *Router) multiTeam(ctx context.Context) bool {
+	if rt.organizations == nil {
+		return false
+	}
+	orgs, err := rt.organizations.ListOrganizations(ctx)
+	return err != nil || len(orgs) > 1
+}
+
+// logsGrantRefusal says why the logs grant may not be installed. The profile proxy cannot tell
+// teams apart (containers carry no team label), so with several teams it reads every team's logs.
+func (rt *Router) logsGrantRefusal(ctx context.Context, g catalog.CapabilityGrant) string {
+	if !isLogsGrant(g) || !rt.multiTeam(ctx) {
+		return ""
+	}
+	if rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyTemplatesLogsGrantMultiTeam) {
+		return ""
+	}
+	return "the logs grant reads every team's container logs, so it is refused while this instance has more than one team; root can allow it with templates.logs_grant_allow_multi_team"
 }
 
 // templateWithManifest resolves a catalog id, or a source/name id through the store, so a source

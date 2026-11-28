@@ -36,7 +36,7 @@ Turning a setting off cuts the grant for running apps at the next reconcile.
 
 `LOGS` is for log viewers such as Dozzle. It lists and reads the containers and log text of every app on the host. It is read only: no start, stop, exec, archive, attach, image, volume, network, secret or swarm access.
 
-Inspect and list answers are filtered on the proxy: environment variables are removed, host paths and bind sources are reduced to names, and labels that look like secrets are dropped. The Levelrail control plane and containers that do not belong to an app are not visible. Containers carry no stack marker, so the scope is every app on the host, not one stack. Logs themselves are not filtered, and they can contain secrets, so grant `LOGS` only when everyone who can open the viewer may read every app's logs. Granting needs `root`.
+Inspect and list answers are filtered on the proxy: environment variables are removed, host paths and bind sources are reduced to names, and labels that look like secrets are dropped. The Levelrail control plane and containers that do not belong to an app are not visible. Containers carry no stack marker, so the scope is every app on the host, not one stack. Logs themselves are not filtered, and they can contain secrets, so grant `LOGS` only when everyone who can open the viewer may read every app's logs. Granting needs `root`. Containers carry no team label, so `LOGS` reads every team's logs: while the instance has more than one team the install, upgrade and rollback are refused unless root turns on `templates.logs_grant_allow_multi_team`, and an allowed install says in its response that all teams' logs are exposed.
 
 ## Declaring a capability
 

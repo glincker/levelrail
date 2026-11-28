@@ -157,6 +157,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_TEMPLATE_CAP_DOCKER_API` | [`templates.cap_docker_api`](/runtime-settings#security) | `false` |
 | `APP_TEMPLATE_CAP_HOST_NETWORK` | [`templates.cap_host_network`](/runtime-settings#security) | `false` |
 | `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
+| `APP_TEMPLATE_LOGS_GRANT_ALLOW_MULTI_TEAM` | [`templates.logs_grant_allow_multi_team`](/runtime-settings#security) | `false` |
 | `APP_TEMPLATE_SOURCES_ENABLED` | [`templates.sources_enabled`](/runtime-settings#security) | `false` |
 | `APP_TOKENS_BULK_MAX` | [`tokens.bulk_max`](/runtime-settings#security) | `500` |
 | `APP_TOKENS_EMERGENCY_MAX_LIVE` | [`tokens.emergency_max_live`](/runtime-settings#security) | `3` |

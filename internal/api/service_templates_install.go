@@ -155,6 +155,12 @@ func (rt *Router) installTemplate(w http.ResponseWriter, r *http.Request, tpl ca
 	if !rt.auditCapabilityGrants(r, name, tpl.Manifest, grants) {
 		w.Header().Set("X-Audit-Incomplete", "true")
 	}
+	for _, g := range grants {
+		if isLogsGrant(g) && rt.multiTeam(r.Context()) {
+			resp.Notices = append(resp.Notices, composeNoticeResult{Level: string(compose.NoticeLevelWarning), Message: logsGrantExposureNotice})
+			break
+		}
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 

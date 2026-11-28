@@ -44,3 +44,15 @@ func init() {
 		Description: "Lets a template that declares the net_admin capability install and run with those two Linux capabilities. Off by default; turning it on needs root.",
 	})
 }
+
+// KeyTemplatesLogsGrantMultiTeam lets the logs docker_api grant be installed on an instance with several teams.
+const KeyTemplatesLogsGrantMultiTeam = "templates.logs_grant_allow_multi_team"
+
+func init() {
+	Register(Definition{
+		Key: KeyTemplatesLogsGrantMultiTeam, Category: CategorySecurity, Kind: KindBool, Default: "false",
+		Env: "APP_TEMPLATE_LOGS_GRANT_ALLOW_MULTI_TEAM", Apply: ApplyLive, Risk: RiskWeakensSecurity, TrueIsWeaker: true,
+		Title:       "Allow the logs grant on multi team instances",
+		Description: "The logs docker_api grant reads the logs of every app on the host, whatever team owns it. With more than one team, installs and upgrades that carry it are refused unless this is on. Off by default; turning it on needs root and exposes all teams' logs to whoever can reach the granted container.",
+	})
+}
