@@ -541,6 +541,18 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_TEMPLATE_SOURCES_MAX_MB` | [`templates.sources_max_mb`](/runtime-settings#deploys) | `20` |
 | `APP_TEMPLATE_SOURCES_MAX_WIRE_MB` | [`templates.sources_max_wire_mb`](/runtime-settings#deploys) | `1` |
 | `APP_TEMPLATE_SOURCES_TIMEOUT_SECONDS` | [`templates.sources_timeout_seconds`](/runtime-settings#deploys) | `60` |
+| `APP_ANNOUNCEMENTS` | [`updates.announcements`](/runtime-settings#deploys) | `off` |
+| `APP_ANNOUNCEMENTS_CLOCK_SKEW` | [`updates.announcements_clock_skew`](/runtime-settings#deploys) | `24h` |
+| `APP_ANNOUNCEMENTS_FEED_MAX_AGE` | [`updates.announcements_feed_max_age`](/runtime-settings#deploys) | `720h` |
+| `APP_ANNOUNCEMENTS_URL` | [`updates.announcements_feed_url`](/runtime-settings#deploys) | `https://raw.githubusercontent.com/glincker/levelrail/feed/feed.v1.json` |
+| `APP_ANNOUNCEMENTS_INTERVAL` | [`updates.announcements_interval`](/runtime-settings#deploys) | `6h` |
+| `APP_ANNOUNCEMENTS_JITTER` | [`updates.announcements_jitter`](/runtime-settings#deploys) | `20` |
+| `APP_ANNOUNCEMENTS_MAX_BODY` | [`updates.announcements_max_body`](/runtime-settings#deploys) | `2000` |
+| `APP_ANNOUNCEMENTS_MAX_BYTES` | [`updates.announcements_max_bytes`](/runtime-settings#deploys) | `262144` |
+| `APP_ANNOUNCEMENTS_MAX_ITEMS` | [`updates.announcements_max_items`](/runtime-settings#deploys) | `50` |
+| `APP_ANNOUNCEMENTS_MAX_TITLE` | [`updates.announcements_max_title`](/runtime-settings#deploys) | `120` |
+| `APP_ANNOUNCEMENTS_NEWSLETTER` | [`updates.announcements_newsletter`](/runtime-settings#deploys) | `true` |
+| `APP_ANNOUNCEMENTS_SNOOZE_MAX` | [`updates.announcements_snooze_max`](/runtime-settings#deploys) | `24h` |
 | `APP_SAVED_VIEW_FILTER_MAX_KEYS` | [`views.filter_max_keys`](/runtime-settings#deploys) | `12` |
 | `APP_SAVED_VIEW_FILTER_VALUE_MAX_BYTES` | [`views.filter_value_max_bytes`](/runtime-settings#deploys) | `512` |
 | `APP_SAVED_VIEW_MAX_PER_USER` | [`views.max_per_user`](/runtime-settings#deploys) | `100` |
@@ -892,6 +904,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROVISION_RESOURCES_REFRESH_MIN_INTERVAL_SECONDS` | [`provision.resources.refresh_min_interval_seconds`](/runtime-settings#experimental) | `15` |
 | `APP_PROVISION_SPEND_CACHE_TTL_SECONDS` | [`provision.spend.cache_ttl_seconds`](/runtime-settings#experimental) | `3600` |
 | `APP_PROVISION_SPEND_REFRESH_MIN_INTERVAL_SECONDS` | [`provision.spend.refresh_min_interval_seconds`](/runtime-settings#experimental) | `300` |
+| `APP_ANNOUNCEMENTS_DEV_KEYS` | [`updates.announcements_dev_keys`](/runtime-settings#experimental) | empty |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
 
