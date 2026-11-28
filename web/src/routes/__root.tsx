@@ -5,6 +5,7 @@ import {
   createRootRouteWithContext,
   Outlet,
   redirect,
+  useRouterState,
 } from '@tanstack/react-router'
 import { getStoredUsername } from '../lib/authStore'
 import { useAuthUsername } from '../hooks/useAuthUsername'
@@ -25,6 +26,7 @@ import { BottomTabBar } from '../components/shell/BottomTabBar'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
 import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
+import { useResetMainScroll } from '../components/shell/useResetMainScroll'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { Toaster } from '../components/ui/toast'
 
@@ -198,6 +200,9 @@ function AppShell() {
     setStageOverlayOpen(true)
   }, [])
   useShortcuts({ onOpenStageOverlay: openStageOverlay })
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const hash = useRouterState({ select: (s) => s.location.hash })
+  useResetMainScroll(pathname, hash)
 
   if (!username) {
     return <Outlet />
