@@ -29,6 +29,9 @@ type hubApplyRequest struct {
 // them with bounded concurrency. The source is only ever read.
 func (rt *Router) handleApplyHubSession(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if !rt.hubCallerOwns(w, r, id) {
+		return
+	}
 	var req hubApplyRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxHubBody)).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -118,8 +121,8 @@ func (rt *Router) handleApplyHubSession(w http.ResponseWriter, r *http.Request) 
 // hubEnsureTarget creates the managed database for an item when it does not
 // exist yet. An existing one is only reused if this migration created it.
 func (rt *Router) hubEnsureTarget(ctx context.Context, sess store.MigrationSession, it *store.MigrationItem) error {
-	if _, err := rt.databases.GetDesiredDatabase(ctx, it.TargetName); err == nil {
-		if !it.CreatedTarget {
+	if live, err := rt.databases.GetDesiredDatabase(ctx, it.TargetName); err == nil {
+		if !it.CreatedTarget || live.Engine != sess.Engine || !rt.hubState.targetMatches(sess.ID, it.SourceDB, live.InstanceID) {
 			return fmt.Errorf("database %q already exists and was not created by this migration", it.TargetName)
 		}
 		return nil
@@ -137,6 +140,9 @@ func (rt *Router) hubEnsureTarget(ctx context.Context, sess store.MigrationSessi
 	}
 	if err := rt.migrationHub.MarkMigrationItemTargetCreated(ctx, sess.ID, it.SourceDB, it.TargetVersion); err != nil {
 		return fmt.Errorf("record database %q: %w", it.TargetName, err)
+	}
+	if live, err := rt.databases.GetDesiredDatabase(ctx, it.TargetName); err == nil {
+		rt.hubState.setTarget(sess.ID, it.SourceDB, live.InstanceID)
 	}
 	it.CreatedTarget = true
 	return nil
@@ -267,6 +273,9 @@ func (rt *Router) handleHubReveal(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Router) writeHubConnection(w http.ResponseWriter, r *http.Request, reveal bool) {
 	id, source := r.PathValue("id"), r.PathValue("db")
+	if reveal && !rt.hubCallerOwns(w, r, id) {
+		return
+	}
 	items, err := rt.migrationHub.ListMigrationItems(r.Context(), id)
 	if err != nil {
 		rt.internalError(w, "api: migration hub: load items failed", err, slog.String("session_id", id))
@@ -287,6 +296,10 @@ func (rt *Router) writeHubConnection(w http.ResponseWriter, r *http.Request, rev
 		rt.internalError(w, "api: migration hub: load session failed", err, slog.String("session_id", id))
 		return
 	}
+	if reveal && !rt.hubTargetIsOurs(r.Context(), sess, *item) {
+		writeError(w, http.StatusNotFound, "no verified database for this source database yet")
+		return
+	}
 	conn, ok := rt.buildHubConnection(r.Context(), sess.Engine, item.TargetName, reveal)
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane")
@@ -296,4 +309,14 @@ func (rt *Router) writeHubConnection(w http.ResponseWriter, r *http.Request, rev
 		rt.logger.Info("api: migration hub: connection secret revealed", slog.String("session_id", id), slog.String("database", item.TargetName))
 	}
 	writeJSON(w, http.StatusOK, conn)
+}
+
+// hubTargetIsOurs allows a secret reveal only for a database this migration
+// created, still live as the same instance and engine.
+func (rt *Router) hubTargetIsOurs(ctx context.Context, sess store.MigrationSession, it store.MigrationItem) bool {
+	if !it.CreatedTarget {
+		return false
+	}
+	live, err := rt.databases.GetDesiredDatabase(ctx, it.TargetName)
+	return err == nil && live.Engine == sess.Engine && rt.hubState.targetMatches(sess.ID, it.SourceDB, live.InstanceID)
 }
