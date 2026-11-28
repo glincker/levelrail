@@ -1,0 +1,35 @@
+services:
+  web:
+    image: ghcr.io/nikkurkov/sitewatcher:sha-e2bae0f9da05bd91d695c6a6b8fb5241c37a5fc5
+    command: ["sitewatcher", "web"]
+    restart: unless-stopped
+    ports: ["8080"]
+    environment:
+      DATABASE_PATH: /data/sitewatcher.db
+      SITEWATCHER_WEB_BIND: 0.0.0.0
+      SITEWATCHER_WEB_ALLOWED_HOSTS: ${SERVICE_FQDN_WEB:-localhost}
+    volumes:
+      - sitewatcher_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  worker:
+    image: ghcr.io/nikkurkov/sitewatcher:sha-e2bae0f9da05bd91d695c6a6b8fb5241c37a5fc5
+    command: ["sitewatcher", "worker"]
+    restart: unless-stopped
+    environment:
+      DATABASE_PATH: /data/sitewatcher.db
+    volumes:
+      - sitewatcher_data:/data
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys; sys.exit(0 if os.path.exists('/data/sitewatcher.db') else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

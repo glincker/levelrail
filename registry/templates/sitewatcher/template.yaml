@@ -1,0 +1,15 @@
+id: sitewatcher
+name: SiteWatcher
+slogan: Track uptime, response times, TLS certificate expiry and domain registration expiry, and publish status pages.
+description: MIT licensed. A web dashboard and a monitoring worker share one SQLite database on a persistent volume, with no external database or cache. After the first deploy, open the web service terminal and run sitewatcher setup once to create the owner.
+category: Monitoring
+documentation_url: https://github.com/NikKurkov/sitewatcher/blob/main/docs/usage.en.md
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/NikKurkov/sitewatcher
+license: MIT
+license_class: permissive
+license_url: https://github.com/NikKurkov/sitewatcher/blob/main/LICENSE
