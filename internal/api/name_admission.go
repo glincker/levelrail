@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"sort"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -101,4 +102,54 @@ func (rt *Router) dropUnsavedSecrets(ctx context.Context, fresh []string, writte
 			rt.logger.Warn("api: drop unsaved secret failed", "service", s.service, "key", s.key, "error", err.Error())
 		}
 	}
+}
+
+// previewShapedName matches "<x>-pr-<n>" and "<x>-pr-<n>-<key>", the names only the preview system may create.
+var previewShapedName = regexp.MustCompile(`^.+-pr-[0-9]+(-.+)?$`)
+
+type previewSystemKey struct{}
+
+// withPreviewSystem marks a context so appNameFree accepts preview-shaped names.
+func withPreviewSystem(ctx context.Context) context.Context {
+	return context.WithValue(ctx, previewSystemKey{}, true)
+}
+
+func previewShapedNameRefused(ctx context.Context, name string) bool {
+	if v, _ := ctx.Value(previewSystemKey{}).(bool); v {
+		return false
+	}
+	return previewShapedName.MatchString(name)
+}
+
+// lockAdmitPreviewServices locks and admits every service name a multi-service preview will deploy.
+// A name that is already a member of the preview app passes; any other existing name belongs to someone else.
+func (rt *Router) lockAdmitPreviewServices(ctx context.Context, previewName string, keys []string) (func(), error) {
+	names := make([]string, 0, len(keys))
+	for _, k := range keys {
+		names = append(names, previewName+"-"+k)
+	}
+	sort.Strings(names)
+	members := map[string]bool{}
+	if existing, err := rt.appGroups.ListServicesByApp(ctx, previewName); err == nil {
+		for _, m := range existing {
+			members[m.Name] = true
+		}
+	}
+	var unlocks []func()
+	release := func() {
+		for i := len(unlocks) - 1; i >= 0; i-- {
+			unlocks[i]()
+		}
+	}
+	for _, n := range names {
+		unlocks = append(unlocks, lockAppName(n))
+		if members[n] {
+			continue
+		}
+		if err := rt.appNameFree(withPreviewSystem(ctx), n); err != nil {
+			release()
+			return nil, fmt.Errorf("preview service name %q: %w", n, err)
+		}
+	}
+	return release, nil
 }

@@ -469,6 +469,16 @@ func (rt *Router) deployPreviewMulti(ctx context.Context, appName, previewName s
 		services[k] = svc
 	}
 
+	keys := make([]string, 0, len(services))
+	for k := range services {
+		keys = append(keys, k)
+	}
+	release, err := rt.lockAdmitPreviewServices(ctx, previewName, keys)
+	if err != nil {
+		return "", false, err
+	}
+	defer release()
+
 	outcomes, err := rt.builder.DeploySpec(ctx, deploy.MultiRequest{
 		AppName: previewName, Services: services, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepoBase: previewName, Preview: true, PreviewParent: appName,
 	}, nil)

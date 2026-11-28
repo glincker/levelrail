@@ -226,7 +226,7 @@ var errAppNameTaken = errors.New("an app with this name already exists")
 // appNameFree re-checks a new app name; callers hold lockAppName(name) so the
 // check and the write cannot interleave with another create.
 func (rt *Router) appNameFree(ctx context.Context, name string) error {
-	if spec.IsReservedName(name) || rt.deletedNameReserved(ctx, name) {
+	if spec.IsReservedName(name) || previewShapedNameRefused(ctx, name) || rt.deletedNameReserved(ctx, name) {
 		return errAppNameTaken
 	}
 	if _, err := rt.apps.GetDesiredService(ctx, name); err == nil {
