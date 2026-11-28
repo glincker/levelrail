@@ -167,8 +167,10 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		unlock := lockAppName(name)
 		err = rt.restoreDeletedApp(r.Context(), e)
 		if err == nil {
-			// A failed clear leaves a row the purge skips while the app is live, and the name is taken anyway.
-			if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
+			// The entry stays if the parked copy cannot be erased, so the purge still removes it.
+			if serr := rt.dropParkedSecrets(r.Context(), name); serr != nil {
+				rt.logger.Warn("api: erase parked secrets failed", slog.String("name", name), slog.String("error", serr.Error()))
+			} else if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
 				rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
 			}
 		}
@@ -221,7 +223,7 @@ type errRestoreConflict string
 
 func (e errRestoreConflict) Error() string { return string(e) }
 
-func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted) error {
+func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted) (err error) {
 	if _, err := rt.apps.GetDesiredService(ctx, e.Name); err == nil {
 		return errRestoreConflict("an app named " + e.Name + " exists again; rename or delete it first")
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
@@ -233,6 +235,25 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 	}
 	node, project := svc.NodeID, svc.ProjectID
 	svc.AppID = ""
+	if err := rt.restoreParkedSecrets(ctx, e.Name); err != nil {
+		return err
+	}
+	saved := false
+	// A half-restored app would block the retry, so a failure puts it back to deleted; the parked secrets stay.
+	defer func() {
+		if err == nil {
+			return
+		}
+		bg := context.WithoutCancel(ctx)
+		if saved {
+			if derr := rt.apps.DeleteDesiredService(store.WithKeptRevisions(bg), e.Name); derr != nil {
+				rt.logger.Warn("api: roll back failed app restore", slog.String("name", e.Name), slog.String("error", derr.Error()))
+			}
+		}
+		if rt.secrets != nil {
+			_ = rt.secrets.DeleteAll(bg, e.Name)
+		}
+	}()
 	if err := rt.apps.SaveDesiredService(ctx, svc); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
@@ -240,6 +261,7 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 		}
 		return err
 	}
+	saved = true
 	if project != "" {
 		if err := rt.apps.UpdateServiceProject(ctx, e.Name, project); err != nil {
 			return err

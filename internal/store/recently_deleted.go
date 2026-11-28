@@ -14,6 +14,10 @@ const (
 	RecentlyDeletedDatabase = "database"
 )
 
+// DeletedAppSecretsKey is the secrets namespace that holds a soft-deleted app's
+// values for the undo window. App names cannot contain a slash, so it never collides.
+func DeletedAppSecretsKey(name string) string { return "deleted-app/" + name }
+
 // ErrRecentlyDeletedNotFound is returned when no undo entry exists for the name.
 var ErrRecentlyDeletedNotFound = errors.New("store: recently deleted entry not found")
 
@@ -112,6 +116,10 @@ func (db *DB) PurgeRecentlyDeleted(ctx context.Context, cutoff time.Time) (int, 
 		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 	}
 	for _, n := range names {
+		// The retained secret values go with the entry, live name or not.
+		if err := deleteServiceSecretsTx(ctx, tx, DeletedAppSecretsKey(n)); err != nil {
+			return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+		}
 		// A restored app that kept its undo row must not lose its history.
 		var live int
 		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM desired_services WHERE name = ?`, n).Scan(&live); err != nil {

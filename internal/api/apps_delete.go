@@ -152,6 +152,12 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 			return nil, err
 		}
 	}
+	// Copy the secret values aside for undo while the app is still whole, so a failure here changes nothing.
+	if soft != nil {
+		if err := rt.parkAppSecrets(ctx, name); err != nil {
+			return nil, fmt.Errorf("keep secrets of %q for undo: %w", name, err)
+		}
+	}
 	// Read before the row delete: it also drops the app's deploy attempts, and their deploy-url rows with them.
 	copies := rt.retainedSiblingRows(ctx, name)
 	// Integration rows cascade with the service, so list them first.
@@ -159,6 +165,9 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	// Erase right after the row is gone, under the name lock (held since the
 	// load): a same-name create cannot write secrets this cleanup then removes.
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
+		if soft != nil {
+			_ = rt.dropParkedSecrets(context.WithoutCancel(ctx), name)
+		}
 		if soft == nil {
 			return nil, fmt.Errorf("delete app %q: function data was already removed, repeat the delete to finish: %w", name, err)
 		}
@@ -288,6 +297,45 @@ func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNa
 		}
 	}
 	rt.eraseGitSourceSecrets(ctx, name)
+}
+
+// namespaceCopier is the secrets manager's copy between namespaces.
+type namespaceCopier interface {
+	CopyNamespace(ctx context.Context, from, to string) error
+}
+
+// parkAppSecrets keeps a re-encrypted copy of the app's secret values under its
+// deletion namespace. Nothing reads that namespace but the restore and the purge.
+func (rt *Router) parkAppSecrets(ctx context.Context, name string) error {
+	c, ok := rt.secrets.(namespaceCopier)
+	if !ok {
+		return nil
+	}
+	ns := store.DeletedAppSecretsKey(name)
+	if err := rt.secrets.DeleteAll(ctx, ns); err != nil {
+		return err
+	}
+	return c.CopyNamespace(ctx, name, ns)
+}
+
+// dropParkedSecrets erases the values parked for an undo.
+func (rt *Router) dropParkedSecrets(ctx context.Context, name string) error {
+	if rt.secrets == nil {
+		return nil
+	}
+	return rt.secrets.DeleteAll(ctx, store.DeletedAppSecretsKey(name))
+}
+
+// restoreParkedSecrets puts the parked values back under the app's own namespace; the parked copy stays until the restore completes.
+func (rt *Router) restoreParkedSecrets(ctx context.Context, name string) error {
+	c, ok := rt.secrets.(namespaceCopier)
+	if !ok {
+		return nil
+	}
+	if err := rt.secrets.DeleteAll(ctx, name); err != nil {
+		return err
+	}
+	return c.CopyNamespace(ctx, store.DeletedAppSecretsKey(name), name)
 }
 
 // eraseGitSourceSecrets drops a git source's deploy token and webhook
