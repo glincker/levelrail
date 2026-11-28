@@ -110,6 +110,9 @@ var tenantSessionOnly = map[string]string{
 	"DELETE /api/v1/settings/push-subscriptions/{id}":          "deletes only the caller's own subscription",
 	"GET /api/v1/tokens/unused":                                "lists idle tokens owned by the caller only, metadata without secrets",
 	"POST /api/v1/attention/dismiss":                           "stores the caller's own dismissal of an item it can already see",
+	"POST /api/v1/announcements/{id}/read":                     "marks the caller's own read state of an announcement it can already see",
+	"POST /api/v1/announcements/{id}/dismiss":                  "stores the caller's own dismissal of an announcement it can already see",
+	"POST /api/v1/announcements/{id}/snooze":                   "hides an announcement it can already see for the caller only, critical snoozes are audited",
 }
 
 func routeIsTenantOpen(key, path string) bool {

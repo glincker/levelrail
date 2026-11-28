@@ -258,6 +258,9 @@ var restExemptions = restExemptionSet(map[string][]string{
 	},
 	"per-user UI state or notification preference, no shared platform state": {
 		"POST /api/v1/attention/dismiss",
+		"POST /api/v1/announcements/{id}/read",
+		"POST /api/v1/announcements/{id}/dismiss",
+		"POST /api/v1/announcements/{id}/snooze",
 		"POST /api/v1/settings/push-subscriptions",
 		"DELETE /api/v1/settings/push-subscriptions/{id}",
 		"POST /api/v1/auth/logout",

@@ -851,6 +851,7 @@ type Router struct {
 	monitors                     MonitorService           // nil is valid: monitor routes return 404 (monitors setting off)
 	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
 	appSummaryCache              summaryCache             // live restarts and db size for the apps list
+	announcementsState           announcementsHolder      // lazily built poller for the signed announcement feed
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
 	changes                      changeBus                // topic nudges for GET /api/v1/events/changes; the zero value is ready
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above

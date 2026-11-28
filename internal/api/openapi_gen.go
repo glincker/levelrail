@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2440 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2445 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1211,6 +1211,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/alert-silences/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleExpireAlertSilence", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertTemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/analysis/reports/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetAnalysisReport", Description: ""},
+	{Method: "GET", Path: "/api/v1/announcements", Ability: "AbilityRead", Group: "Other", Handler: "handleListAnnouncements", Description: ""},
+	{Method: "GET", Path: "/api/v1/announcements/banner", Ability: "AbilityRead", Group: "Other", Handler: "handleAnnouncementBanner", Description: ""},
+	{Method: "POST", Path: "/api/v1/announcements/{id}/dismiss", Ability: "Session", Group: "Other", Handler: "handleAnnouncementDismiss", Description: ""},
+	{Method: "POST", Path: "/api/v1/announcements/{id}/read", Ability: "Session", Group: "Other", Handler: "handleAnnouncementRead", Description: ""},
+	{Method: "POST", Path: "/api/v1/announcements/{id}/snooze", Ability: "Session", Group: "Other", Handler: "handleAnnouncementSnooze", Description: ""},
 	{Method: "GET", Path: "/api/v1/app-types", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppTypes", Description: ""},
 	{Method: "POST", Path: "/api/v1/app-types", Ability: "AbilityRoot", Group: "Other", Handler: "handleSaveAppType", Description: ""},
 	{Method: "POST", Path: "/api/v1/app-types/{name}/check", Ability: "AbilityRead", Group: "Other", Handler: "handleCheckAppType", Description: ""},

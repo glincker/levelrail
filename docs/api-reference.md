@@ -2671,6 +2671,11 @@ Routes that do not fit an existing group.
 | POST | /api/v1/templates/sources/{name}/templates/{id}/approve | AbilityRoot | handleApproveTemplateSourceEntry |
 | GET | /api/v1/templates/sources/{name}/templates/{id} | AbilityRoot | handleGetTemplateSourceEntry |
 | GET | /api/v1/costs/capped-apps | AbilityRead | handleListSpendCapPaused |
+| GET | /api/v1/announcements | AbilityRead | handleListAnnouncements |
+| GET | /api/v1/announcements/banner | AbilityRead | handleAnnouncementBanner |
+| POST | /api/v1/announcements/{id}/read | Session | handleAnnouncementRead |
+| POST | /api/v1/announcements/{id}/dismiss | Session | handleAnnouncementDismiss |
+| POST | /api/v1/announcements/{id}/snooze | Session | handleAnnouncementSnooze |
 | POST | /mcp | Public |  |
 
 ## See also

@@ -512,6 +512,9 @@ func (s *bootState) startSchedulers() {
 	// Only checks when an operator has opted into auto_update_enabled.
 	startUpgradeScheduler(ctx, logger, apiRouter)
 	updateCheckScheduler := updatecheck.NewScheduler(db, logger, b.RepoSlug())
+	if m := apiRouter.Announcements(); m != nil {
+		updateCheckScheduler.Announcements = m
+	}
 	go func() {
 		if err := updateCheckScheduler.Run(ctx, updateCheckInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("update check scheduler stopped", slog.String("error", err.Error()))
