@@ -37,6 +37,8 @@ const (
 	AppEventScanGateOverride = "scan_gate_override"
 	// AppEventReservedSecretOwner marks the reconciler refusing secrets to an app named like a control plane namespace.
 	AppEventReservedSecretOwner = "reserved_secret_owner"
+	// AppEventDatabaseRefRefused marks the reconciler refusing a database reference bound to another database instance or team.
+	AppEventDatabaseRefRefused = "database_ref_refused"
 )
 
 const (

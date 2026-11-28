@@ -223,12 +223,14 @@ type Controller struct {
 	store       ServiceStore
 	// reservedOwnerEventAt coalesces the stored reserved-name refusal event.
 	reservedOwnerEventAt atomic.Int64
-	runtime              docker.Runtime
-	snap                 *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
-	snapNode             string
-	imageIDs             *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
-	imageNode            string
-	httpClient           *http.Client
+	// databaseRefEventAt coalesces the stored database reference refusal event.
+	databaseRefEventAt atomic.Int64
+	runtime            docker.Runtime
+	snap               *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
+	snapNode           string
+	imageIDs           *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
+	imageNode          string
+	httpClient         *http.Client
 	// probeUnreachableLogged keeps an unreachable-node warning to one per outage.
 	probeUnreachableLogged atomic.Bool
 	probeLimits            probe.Limits
@@ -1992,7 +1994,7 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 
 	env := make(map[string]string, len(desired.DatabaseEnv)+1)
 	for envVar, ref := range desired.DatabaseEnv {
-		value, err := c.resolveDatabaseField(ctx, desired.NodeID, ref.Database, ref.Field)
+		value, err := c.resolveDatabaseField(ctx, desired.NodeID, ref.Database, ref.Field, ref.Instance)
 		if err != nil {
 			return nil, fmt.Errorf("env var %q: %w", envVar, err)
 		}
@@ -2000,7 +2002,7 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 	}
 
 	if att := desired.DatabaseAttachment; att != nil {
-		value, err := c.resolveDatabaseField(ctx, desired.NodeID, att.DatabaseName, att.Field)
+		value, err := c.resolveDatabaseField(ctx, desired.NodeID, att.DatabaseName, att.Field, att.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("database attachment (env var %q): %w", att.EnvVar, err)
 		}
@@ -2040,7 +2042,7 @@ func DatabaseHost(dbName, zone string) string {
 // postgresCredentialsFor and its siblings); password comes from the same
 // internal/secrets storage those generators already write to
 // (database.PasswordSecretKey).
-func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName, field string) (string, error) {
+func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName, field, instance string) (string, error) {
 	ext, err := c.lookupExternal(ctx, dbName)
 	if err != nil {
 		return "", err
@@ -2054,6 +2056,9 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	}
 	if err != nil {
 		return "", fmt.Errorf("get database %q: %w", dbName, err)
+	}
+	if err := c.checkDatabaseRefBinding(ctx, dbName, instance, desiredDB); err != nil {
+		return "", err
 	}
 	if !database.SupportsField(desiredDB.Engine, field) {
 		return "", fmt.Errorf("field %q is not supported for %s databases", field, desiredDB.Engine)

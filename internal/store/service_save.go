@@ -68,7 +68,7 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	if err != nil {
 		return fmt.Errorf("store: marshal secret_env for service %q: %w", svc.Name, err)
 	}
-	databaseEnv := svc.DatabaseEnv
+	databaseEnv := db.stampDatabaseRefs(ctx, svc.Name, svc.DatabaseEnv)
 	if databaseEnv == nil {
 		databaseEnv = map[string]DatabaseEnvRef{}
 	}

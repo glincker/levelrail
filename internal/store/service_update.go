@@ -113,15 +113,18 @@ func (db *DB) updateServiceRow(ctx context.Context, what, name, query string, ar
 // UpdateServiceStorageTarget already establishes for StorageTargetID.
 // att nil clears the attachment (all three columns back to ”).
 func (db *DB) UpdateServiceDatabaseAttachment(ctx context.Context, name string, att *DatabaseAttachment) error {
-	var dbName, envVar, field string
+	var dbName, envVar, field, instance string
 	if att != nil {
-		dbName, envVar, field = att.DatabaseName, att.EnvVar, att.Field
+		dbName, envVar, field, instance = att.DatabaseName, att.EnvVar, att.Field, att.InstanceID
+		if instance == "" {
+			instance = databaseInstanceOf(ctx, db, dbName)
+		}
 	}
 	return db.updateServiceRow(ctx, "update database attachment", name, `
 		UPDATE desired_services
-		SET database_attachment_name = ?, database_attachment_env_var = ?, database_attachment_field = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		SET database_attachment_name = ?, database_attachment_env_var = ?, database_attachment_field = ?, database_attachment_instance = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 		WHERE name = ?
-	`, dbName, envVar, field, name)
+	`, dbName, envVar, field, instance, name)
 }
 
 // SetServiceVaultEnvVar adds, replaces (ref non-nil) or removes (ref nil) one
@@ -210,7 +213,11 @@ func (db *DB) SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string,
 	if ref == nil {
 		delete(databaseEnv, envVar)
 	} else {
-		databaseEnv[envVar] = *ref
+		stamped := *ref
+		if stamped.Instance == "" {
+			stamped.Instance = databaseInstanceOf(ctx, tx, stamped.Database)
+		}
+		databaseEnv[envVar] = stamped
 	}
 
 	updated, err := json.Marshal(databaseEnv)

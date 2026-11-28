@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
-	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/quota"
@@ -555,7 +554,11 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if len(users) > 0 {
-			writeError(w, http.StatusConflict, "database is used by apps ("+strings.Join(users, ", ")+"); detach them or retry with force=true")
+			msg, ok := rt.databaseInUseMessage(w, r, users)
+			if !ok {
+				return
+			}
+			writeError(w, http.StatusConflict, msg)
 			return
 		}
 	}
@@ -605,6 +608,7 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rowGone = true
+	rt.invalidateDatabaseRefs(r.Context(), w, r, name)
 	// Under the name lock, right after the row went: a same-name create cannot write what this erase removes.
 	var credErr error
 	if !undoKept || parked {
