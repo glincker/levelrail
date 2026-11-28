@@ -188,6 +188,8 @@ func buildExplainTable() map[string]Explanation {
 			"Open Settings, then Security, and set secret reveal to require step-up.", "", KindGuided),
 		ex("legacy_tokens", "Some API tokens use the old format.", "They cannot be limited or tracked like current tokens.",
 			nextFixButton+"It converts them without changing their values. "+nextCLIFix, "tokens.legacy.migrate", KindAuto),
+		ex("vault_legacy_paths", "Some apps read a legacy Vault path that no one has approved.", "Those apps are refused at start, because the platform credential would read a path outside the allowed prefixes.",
+			"Open Settings, then Security and runtime, and add the path's prefix to the legacy Vault prefixes, or move the variable to a secret connection.", "", KindGuided),
 		ex("git_connections", "A Git connection lost its access.", "The next deploy from that repository will fail.",
 			"Open Settings, then Git connections, and press Reconnect.", "", KindGuided),
 		ex("token_hygiene", "Some API tokens never expire or are unused.", "A leaked token keeps working.",

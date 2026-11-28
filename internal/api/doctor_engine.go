@@ -129,6 +129,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("notification_channel_secrets", doctorGroupSecurity, rt.doctorCheckNotificationChannelSecrets),
 		one("notify_reachable", doctorGroupSecurity, rt.doctorCheckNotifyReachable),
 		one("secret_reveal_policy", doctorGroupSecurity, func(context.Context) doctorCheckResource { return doctorCheckSecretReveal() }),
+		one("vault_legacy_paths", doctorGroupSecurity, rt.doctorCheckVaultLegacyPaths),
 		one("legacy_tokens", doctorGroupSecurity, rt.doctorCheckLegacyTokens),
 		one("git_connections", doctorGroupSecurity, rt.doctorCheckGitConnections),
 		one("git_oauth_refresh", doctorGroupSecurity, rt.doctorCheckGitOAuthRefresh),
