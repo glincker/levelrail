@@ -4,7 +4,6 @@ go 1.27.4
 
 require (
 	filippo.io/age v1.3.2
-	github.com/glincker/levelrail/kit v0.0.0
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.19
@@ -32,9 +31,9 @@ require (
 	github.com/descope/virtualwebauthn v1.0.5
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v29.9.3+incompatible
-	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.8.2
 	github.com/gliderlabs/ssh v0.3.8
+	github.com/glincker/levelrail/kit v0.0.0
 	github.com/glincker/theauth-go/storage/sqlite v0.2.0
 	github.com/glincker/theauth-go/v2 v2.13.0
 	github.com/go-git/go-git/v5 v5.19.3
@@ -54,6 +53,8 @@ require (
 	github.com/mholt/caddy-ratelimit v0.1.0
 	github.com/miekg/dns v1.1.73
 	github.com/moby/buildkit v0.35.0
+	github.com/moby/moby/api v1.57.0
+	github.com/moby/moby/client v0.6.3
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/opencontainers/go-digest v1.0.0
@@ -261,9 +262,7 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
-	github.com/moby/sys/atomicwriter v0.1.0 // indirect
 	github.com/moby/sys/signal v0.7.1 // indirect
-	github.com/moby/term v0.5.2 // indirect
 	github.com/morikuni/aec v1.1.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
