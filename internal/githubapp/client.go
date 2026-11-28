@@ -452,6 +452,29 @@ func (c *Client) CreateRepoWebhook(ctx context.Context, instanceURL, token, owne
 	return c.doWithBody(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, bearerPrefix+token, body)
 }
 
+// RepoWebhook is one existing hook on a repository, reduced to what a
+// repair needs to tell whether the control plane's hook is already there.
+type RepoWebhook struct {
+	ID     int64 `json:"id"`
+	Active bool  `json:"active"`
+	Config struct {
+		URL string `json:"url"`
+	} `json:"config"`
+}
+
+// ListRepoWebhooks lists the hooks on owner/repo so a repair can skip creating
+// a second one. A 403 maps to ErrPermissionDenied like CreateRepoWebhook.
+func (c *Client) ListRepoWebhooks(ctx context.Context, instanceURL, token, owner, repo string) ([]RepoWebhook, error) {
+	var out []RepoWebhook
+	path := fmt.Sprintf("/repos/%s/%s/hooks?per_page=100", url.PathEscape(owner), url.PathEscape(repo))
+	err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodGet, path, bearerPrefix+token, &out)
+	var apiErr *apiError
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusForbidden {
+		return nil, fmt.Errorf("%w: %w", ErrPermissionDenied, apiErr)
+	}
+	return out, err
+}
+
 type createIssueCommentRequest struct {
 	Body string `json:"body"`
 }

@@ -120,9 +120,12 @@ func (rt *Router) gitSourceWebhookStatus(ctx context.Context, name string) webho
 }
 
 type gitWebhookRegistrationResource struct {
-	State     string     `json:"state"`
-	Error     string     `json:"error,omitempty"`
-	ChangedAt *time.Time `json:"changed_at,omitempty"`
+	// State is registered, missing (never attempted) or failed.
+	State string `json:"state"`
+	Error string `json:"error,omitempty"`
+	// MissingPermission names the provider permission to grant when the failure is a permission one.
+	MissingPermission string     `json:"missing_permission,omitempty"`
+	ChangedAt         *time.Time `json:"changed_at,omitempty"`
 }
 
 type gitPollStatusResource struct {
@@ -157,7 +160,9 @@ func (rt *Router) gitSourceResourceFor(ctx context.Context, g store.GitSource, h
 		return res
 	}
 	if rel.WebhookState != "" {
-		res.WebhookRegistration = &gitWebhookRegistrationResource{State: rel.WebhookState, Error: rel.WebhookError, ChangedAt: timePtrUTC(rel.WebhookChangedAt)}
+		res.WebhookRegistration = &gitWebhookRegistrationResource{State: rel.WebhookState, Error: rel.WebhookError, MissingPermission: missingHookPermission(rel.WebhookError), ChangedAt: timePtrUTC(rel.WebhookChangedAt)}
+	} else {
+		res.WebhookRegistration = &gitWebhookRegistrationResource{State: gitWebhookStateMissing}
 	}
 	res.Poll = &gitPollStatusResource{
 		Enabled:      rt.gitPollConfig(ctx).Enabled && effectiveGitSourceTriggerMode(g.TriggerMode) != "release",
@@ -187,6 +192,42 @@ func (rt *Router) recordWebhookRegistration(ctx context.Context, name string, re
 	if err := rt.gitRel.SetGitSourceWebhookState(ctx, name, state, msg, time.Now()); err != nil {
 		rt.logger.Warn("api: record webhook registration failed", slog.String("name", name), slog.String("error", err.Error()))
 	}
+}
+
+const (
+	gitWebhookStateMissing = "missing"
+	errHooksPermissionText = "this github app installation lacks the repository hooks permission; reinstall the app to grant it"
+	// hooksPermissionName is the GitHub App permission to grant, as the app settings page labels it.
+	hooksPermissionName = "Repository webhooks: Read and write"
+)
+
+func missingHookPermission(errText string) string {
+	if strings.Contains(errText, "lacks the repository hooks permission") {
+		return hooksPermissionName
+	}
+	return ""
+}
+
+// repoWebhookLister is optional on the GitHub client so fakes without it keep compiling.
+type repoWebhookLister interface {
+	ListRepoWebhooks(ctx context.Context, instanceURL, token, owner, repo string) ([]githubapp.RepoWebhook, error)
+}
+
+func (rt *Router) githubHookExists(ctx context.Context, instanceURL, token, owner, repo, hookURL string) (bool, error) {
+	l, ok := rt.githubAppClient.(repoWebhookLister)
+	if !ok {
+		return false, nil
+	}
+	hooks, err := l.ListRepoWebhooks(ctx, instanceURL, token, owner, repo)
+	if err != nil {
+		return false, err
+	}
+	for _, h := range hooks {
+		if h.Config.URL == hookURL {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 var (
@@ -269,9 +310,19 @@ func (rt *Router) registerHookGitHub(ctx context.Context, host, path, hookURL, s
 	if err != nil {
 		return true, err
 	}
+	exists, err := rt.githubHookExists(ctx, instanceURL, token, owner, repo, hookURL)
+	if err != nil {
+		if errors.Is(err, githubapp.ErrPermissionDenied) {
+			return true, errors.New(errHooksPermissionText)
+		}
+		return true, err
+	}
+	if exists {
+		return true, nil
+	}
 	if err := rt.githubAppClient.CreateRepoWebhook(ctx, instanceURL, token, owner, repo, hookURL, secret); err != nil {
 		if errors.Is(err, githubapp.ErrPermissionDenied) {
-			return true, errors.New("this github app installation lacks the repository hooks permission; reinstall the app to grant it")
+			return true, errors.New(errHooksPermissionText)
 		}
 		return true, err
 	}

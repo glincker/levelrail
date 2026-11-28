@@ -72,6 +72,7 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source affected <name> --files a,b [flags]             dry run: which packages a change would redeploy
   %[1]s apps git-source settings <name> [flags]                         set push path filters and forge status reporting
   %[1]s apps git-source webhook <name> [--rotate] [flags]               print the URL, content type and events for the provider
+  %[1]s apps git-source webhook repair <name> [flags]                   list hooks, create the push webhook only if missing
   %[1]s apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once
   %[1]s apps git-source register-webhook <name> [flags]                 register the push webhook on the provider again
   %[1]s apps git-source ssh-key show|generate|rotate|delete <name> [flags]  manage the SSH deploy key for a private repo
@@ -309,6 +310,9 @@ func printGitSourceReliability(out io.Writer, gs gitSourceResource) {
 		line := "webhook:        " + r.State
 		if r.Error != "" {
 			line += " (" + r.Error + ")"
+		}
+		if r.MissingPermission != "" {
+			line += "\n                grant the permission: " + r.MissingPermission
 		}
 		_, _ = fmt.Fprintln(out, line)
 	}

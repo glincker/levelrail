@@ -24,6 +24,10 @@ func absoluteWebhookURL(base, raw string) string {
 }
 
 func runAppsGitSourceWebhook(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	// "repair" re-uses the idempotent register call, which lists hooks before creating one.
+	if len(args) > 1 && args[0] == "repair" {
+		return runAppsGitSourceRegisterWebhook(prog, args[1:], stdout, stderr, lookupEnv)
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps git-source webhook", "print the webhook settings as JSON to stdout and nothing else", stderr)
 	var rotate bool
 	fs.BoolVar(&rotate, "rotate", false, "mint a fresh secret and print it once (the old one stops verifying)")

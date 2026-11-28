@@ -115,9 +115,10 @@ func (c *Client) ListGitRepos(ctx context.Context, p GitRepoListParams) (GitRepo
 
 // GitWebhookRegistrationResource mirrors internal/api's gitWebhookRegistrationResource.
 type GitWebhookRegistrationResource struct {
-	State     string     `json:"state"`
-	Error     string     `json:"error,omitempty"`
-	ChangedAt *time.Time `json:"changed_at,omitempty"`
+	State             string     `json:"state"`
+	Error             string     `json:"error,omitempty"`
+	MissingPermission string     `json:"missing_permission,omitempty"`
+	ChangedAt         *time.Time `json:"changed_at,omitempty"`
 }
 
 // GitPollStatusResource mirrors internal/api's gitPollStatusResource.
