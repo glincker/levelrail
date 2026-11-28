@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	dockernetwork "github.com/docker/docker/api/types/network"
+	dockernetwork "github.com/moby/moby/api/types/network"
 )
 
 // jsonError writes a Docker Engine API style error body, the shape

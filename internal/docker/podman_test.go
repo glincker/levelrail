@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
+	dockertypes "github.com/moby/moby/api/types"
 )
 
 func TestRuntimeKindLabel(t *testing.T) {

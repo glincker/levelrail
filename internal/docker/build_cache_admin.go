@@ -6,9 +6,9 @@ import (
 	"sort"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/build"
-	"github.com/docker/docker/api/types/filters"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/build"
 )
 
 // BuildCacheRecord is one BuildKit cache record with the fields the build center shows.
@@ -32,7 +32,7 @@ type BuildCacheAdmin interface {
 
 // BuildCacheRecords lists every cache record in the daemon's BuildKit instance, largest first.
 func (c *Client) BuildCacheRecords(ctx context.Context) ([]BuildCacheRecord, error) {
-	du, err := c.cli.DiskUsage(ctx, dockertypes.DiskUsageOptions{})
+	du, err := c.cli.DiskUsage(ctx, dockerclient.DiskUsageOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("docker: build cache records: %w", err)
 	}
@@ -59,7 +59,7 @@ func (c *Client) BuildCacheRecords(ctx context.Context) ([]BuildCacheRecord, err
 func (c *Client) PruneBuildCacheOlderThan(ctx context.Context, olderThan time.Duration) (PruneBuildCacheResult, error) {
 	report, err := c.cli.BuildCachePrune(ctx, build.CachePruneOptions{
 		All:     true,
-		Filters: filters.NewArgs(filters.Arg("until", olderThan.String())),
+		Filters: dockerclient.Filters{}.Add("until", olderThan.String()),
 	})
 	if err != nil {
 		return PruneBuildCacheResult{}, fmt.Errorf("docker: prune build cache: %w", err)

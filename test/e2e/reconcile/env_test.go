@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/build"
 	"github.com/glincker/levelrail/internal/reconcile/application"
@@ -62,7 +62,7 @@ func TestEnv_Live_PlainAndSecretResolveInContainer(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = dockerCli.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = dockerCli.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	cleanupContainers(context.Background(), t, runtime, serviceName)

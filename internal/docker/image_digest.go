@@ -8,7 +8,7 @@ import (
 
 	cerrdefs "github.com/containerd/errdefs"
 	"github.com/distribution/reference"
-	"github.com/docker/docker/api/types/registry"
+	"github.com/moby/moby/api/pkg/authconfig"
 )
 
 // ImageSource says where ResolveImage got an image's content identity.
@@ -99,7 +99,7 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 
 	encoded := ""
 	if auth != nil {
-		encoded, err = registry.EncodeAuthConfig(auth.authConfig())
+		encoded, err = authconfig.Encode(auth.authConfig())
 		if err != nil {
 			return ResolvedImage{}, fmt.Errorf("docker: resolve image %q: encode auth: %w", ref, err)
 		}

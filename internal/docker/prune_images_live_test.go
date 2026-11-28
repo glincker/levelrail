@@ -7,8 +7,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/docker/docker/api/types/build"
-	"github.com/docker/docker/api/types/image"
+	dockerclient "github.com/moby/moby/client"
 )
 
 func buildMarkerImage(ctx context.Context, t *testing.T, c *Client, tag, marker string) string {
@@ -25,7 +24,7 @@ func buildMarkerImage(ctx context.Context, t *testing.T, c *Client, tag, marker 
 	if err := tw.Close(); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.cli.ImageBuild(ctx, &buf, build.ImageBuildOptions{Tags: []string{tag}, Remove: true, ForceRemove: true})
+	resp, err := c.cli.ImageBuild(ctx, &buf, dockerclient.ImageBuildOptions{Tags: []string{tag}, Remove: true, ForceRemove: true})
 	if err != nil {
 		t.Fatalf("build %s: %v", tag, err)
 	}
@@ -35,7 +34,9 @@ func buildMarkerImage(ctx context.Context, t *testing.T, c *Client, tag, marker 
 	if err != nil {
 		t.Fatalf("inspect built %s: %v", tag, err)
 	}
-	t.Cleanup(func() { _, _ = c.cli.ImageRemove(context.Background(), img.ID, image.RemoveOptions{Force: true}) })
+	t.Cleanup(func() {
+		_, _ = c.cli.ImageRemove(context.Background(), img.ID, dockerclient.ImageRemoveOptions{Force: true})
+	})
 	return img.ID
 }
 
@@ -66,7 +67,7 @@ func TestClient_Prune_Live_KeepsPinnedAndInUseImages(t *testing.T) {
 	// The :live tag moves to new content, leaving the running container on an untagged image.
 	newID := buildMarkerImage(ctx, t, c, "levelrail-test-prune/app:live", "newer")
 	orphanID := buildMarkerImage(ctx, t, c, "levelrail-test-prune/orphan:x", "orphan")
-	if _, err := c.cli.ImageRemove(ctx, "levelrail-test-prune/orphan:x", image.RemoveOptions{}); err != nil {
+	if _, err := c.cli.ImageRemove(ctx, "levelrail-test-prune/orphan:x", dockerclient.ImageRemoveOptions{}); err != nil {
 		t.Fatalf("untag orphan image: %v", err)
 	}
 	_ = newID

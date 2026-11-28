@@ -17,8 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/volume"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/brand"
@@ -367,7 +366,7 @@ func teardownTemplateDeploy(ctx context.Context, t *testing.T, svcStore *store.D
 // Docker API error.
 func listVolumesByPrefix(ctx context.Context, t *testing.T, dockerCli *dockerclient.Client, prefix string) []string {
 	t.Helper()
-	resp, err := dockerCli.VolumeList(ctx, volume.ListOptions{})
+	resp, err := dockerCli.VolumeList(ctx, dockerclient.VolumeListOptions{})
 	if err != nil {
 		t.Errorf("VolumeList() error = %v", err)
 		return nil

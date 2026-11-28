@@ -10,7 +10,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/registry"
+	"github.com/moby/moby/api/types/registry"
 )
 
 // PortBinding maps one container port to a host port. In a ContainerSpec,

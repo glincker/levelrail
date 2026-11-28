@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/spec"
 )
@@ -47,13 +46,13 @@ func TestClient_ListNamedVolumes_Live(t *testing.T) {
 		t.Fatalf("create container mounting volume: %v", err)
 	}
 	t.Cleanup(func() {
-		_ = c.cli.ContainerRemove(context.Background(), ctrID, container.RemoveOptions{Force: true})
+		_ = c.cli.ContainerRemove(context.Background(), ctrID, dockerclient.ContainerRemoveOptions{Force: true})
 	})
 	if err := c.Start(ctx, ctrID); err != nil {
 		t.Fatalf("start container mounting volume: %v", err)
 	}
 
-	anonResp, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{})
+	anonResp, err := c.cli.VolumeCreate(ctx, dockerclient.VolumeCreateOptions{})
 	if err != nil {
 		t.Fatalf("create anonymous volume: %v", err)
 	}
@@ -115,7 +114,7 @@ func TestClient_ListNamedVolumes_Live_ScopesToOwnInstanceLabel(t *testing.T) {
 	t.Cleanup(func() { _ = base.cli.VolumeRemove(context.Background(), ownName, true) })
 
 	otherName := "app-levelrail-test-orphan-scope-other-data"
-	if _, err := base.cli.VolumeCreate(ctx, volume.CreateOptions{
+	if _, err := base.cli.VolumeCreate(ctx, dockerclient.VolumeCreateOptions{
 		Name:   otherName,
 		Labels: map[string]string{spec.InstanceLabelKey: "instance-b"},
 	}); err != nil {
@@ -166,7 +165,7 @@ func TestClient_RemoveVolume_Live(t *testing.T) {
 		t.Fatalf("RemoveVolume: %v", err)
 	}
 
-	vols, err := c.cli.VolumeList(ctx, volume.ListOptions{})
+	vols, err := c.cli.VolumeList(ctx, dockerclient.VolumeListOptions{})
 	if err != nil {
 		t.Fatalf("list volumes after remove: %v", err)
 	}

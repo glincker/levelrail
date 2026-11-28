@@ -7,8 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 )
 
 // LocalNetwork is one network a container is attached to and the address it
@@ -57,7 +59,7 @@ type LocalContainer struct {
 
 // ListLocalContainers returns every container on the daemon, running or not.
 func (c *Client) ListLocalContainers(ctx context.Context) ([]LocalContainer, error) {
-	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true})
+	summaries, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers: %w", err)
 	}
@@ -75,8 +77,8 @@ func localFromSummary(s container.Summary) LocalContainer {
 	}
 	if s.NetworkSettings != nil {
 		for name, ep := range s.NetworkSettings.Networks {
-			if ep != nil && ep.IPAddress != "" {
-				lc.Networks = append(lc.Networks, LocalNetwork{Name: name, IP: ep.IPAddress, Gateway: ep.Gateway})
+			if ep != nil && ep.IPAddress.IsValid() {
+				lc.Networks = append(lc.Networks, LocalNetwork{Name: name, IP: ep.IPAddress, Gateway: addrStr(ep.Gateway)})
 			}
 		}
 	}
@@ -114,7 +116,7 @@ func localFromInspect(resp container.InspectResponse) LocalContainer {
 		lc.Args = append(lc.Args, resp.Config.Entrypoint...)
 		lc.Args = append(lc.Args, resp.Config.Cmd...)
 	}
-	if resp.ContainerJSONBase != nil {
+	if resp != nil {
 		lc.Name = strings.TrimPrefix(resp.Name, "/")
 		lc.Running = resp.State != nil && resp.State.Running
 		if len(lc.Args) == 0 {
@@ -131,8 +133,8 @@ func localFromInspect(resp container.InspectResponse) LocalContainer {
 	}
 	if resp.NetworkSettings != nil {
 		for name, ep := range resp.NetworkSettings.Networks {
-			if ep != nil && ep.IPAddress != "" {
-				lc.Networks = append(lc.Networks, LocalNetwork{Name: name, IP: ep.IPAddress, Gateway: ep.Gateway})
+			if ep != nil && ep.IPAddress.IsValid() {
+				lc.Networks = append(lc.Networks, LocalNetwork{Name: name, IP: ep.IPAddress, Gateway: addrStr(ep.Gateway)})
 			}
 		}
 		lc.setMappings(mappingsFromPortMap(resp.NetworkSettings.Ports))
@@ -141,7 +143,7 @@ func localFromInspect(resp container.InspectResponse) LocalContainer {
 	return lc
 }
 
-func mappingsFromPortMap(pm nat.PortMap) []PortMapping {
+func mappingsFromPortMap(pm network.PortMap) []PortMapping {
 	var out []PortMapping
 	for port, bindings := range pm {
 		for _, b := range bindings {
@@ -149,7 +151,7 @@ func mappingsFromPortMap(pm nat.PortMap) []PortMapping {
 			if err != nil || public == 0 {
 				continue
 			}
-			out = append(out, PortMapping{Private: port.Int(), Public: public})
+			out = append(out, PortMapping{Private: int(port.Num()), Public: public})
 		}
 	}
 	return out

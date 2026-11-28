@@ -19,8 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/brand"
@@ -206,11 +205,11 @@ func TestRollbackCutover_Live_NoDroppedRequests(t *testing.T) {
 		cctx, ccancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer ccancel()
 		cleanupContainers(cctx, t, rt, rbService)
-		images, _ := cli.ImageList(cctx, image.ListOptions{})
+		images, _ := cli.ImageList(cctx, dockerclient.ImageListOptions{})
 		for _, img := range images {
 			for _, tag := range img.RepoTags {
 				if strings.HasPrefix(tag, rbRepo+":") || strings.HasPrefix(tag, "lrtest-rbcut/") {
-					_, _ = cli.ImageRemove(cctx, tag, image.RemoveOptions{})
+					_, _ = cli.ImageRemove(cctx, tag, dockerclient.ImageRemoveOptions{})
 				}
 			}
 		}

@@ -4,17 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // AppContainerIPs maps each running app container's network IPs to its app name.
 func (c *Client) AppContainerIPs(ctx context.Context) (map[string]string, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("label", containerAppLabel)
 	f.Add("status", "running")
 	c.instanceLabelFilter(f)
-	list, err := c.cli.ContainerList(ctx, container.ListOptions{Filters: f})
+	list, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list app containers for ip map: %w", err)
 	}
@@ -25,7 +24,7 @@ func (c *Client) AppContainerIPs(ctx context.Context) (map[string]string, error)
 			continue
 		}
 		for _, n := range s.NetworkSettings.Networks {
-			if n != nil && n.IPAddress != "" {
+			if n != nil && n.IPAddress.IsValid() {
 				out[n.IPAddress] = app
 			}
 		}

@@ -6,8 +6,9 @@ import (
 	"strings"
 	"time"
 
+	dockerclient "github.com/moby/moby/client"
+
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
 )
 
 const (
@@ -58,11 +59,11 @@ func (c *Client) isPodman(ctx context.Context) bool {
 // force-remove can leave a running container published after a restart.
 func (c *Client) removePodman(ctx context.Context, id string) error {
 	seconds := int(envDuration(envPodmanStopTimeout, defaultPodmanStopTimeout).Seconds())
-	err := c.cli.ContainerStop(ctx, id, container.StopOptions{Timeout: &seconds})
+	err := c.cli.ContainerStop(ctx, id, dockerclient.ContainerStopOptions{Timeout: &seconds})
 	if err != nil && !cerrdefs.IsNotFound(err) && !cerrdefs.IsNotModified(err) && !strings.Contains(err.Error(), "not running") {
 		return fmt.Errorf("docker: stop container %s before removal: %w", id, err)
 	}
-	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: true}); err != nil {
+	if err := c.cli.ContainerRemove(ctx, id, dockerclient.ContainerRemoveOptions{Force: true}); err != nil {
 		if cerrdefs.IsNotFound(err) {
 			return nil
 		}

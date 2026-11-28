@@ -11,12 +11,11 @@ import (
 	"testing"
 	"time"
 
-	dockercontainer "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	bkclient "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/solver/pb"
+	dockercontainer "github.com/moby/moby/api/types/container"
+	dockerclient "github.com/moby/moby/client"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -257,7 +256,7 @@ func TestClient_BuildRailpack_Live_Node(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -296,7 +295,7 @@ func TestClient_BuildRailpack_Live_Go(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -335,7 +334,7 @@ func TestClient_BuildRailpack_Live_Java(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -379,7 +378,7 @@ func TestClient_BuildRailpack_Live_Python(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -420,7 +419,7 @@ func TestClient_BuildRailpack_Live_Ruby(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -453,7 +452,7 @@ func TestClient_BuildRailpack_Live_PHP(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)

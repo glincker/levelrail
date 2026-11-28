@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	dockerclient "github.com/docker/docker/client"
-	dockerbuildkit "github.com/docker/docker/client/buildkit"
 	bkclient "github.com/moby/buildkit/client"
+	"github.com/moby/moby/api/types/container"
+	dockerclient "github.com/moby/moby/client"
 
+	"github.com/glincker/levelrail/internal/build"
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/dockertest"
 )
@@ -85,7 +85,7 @@ func TestGuard_Live_RealDaemon(t *testing.T) {
 	defer func() { _ = raw.Close() }()
 	_, err = raw.ContainerCreate(ctx, &container.Config{Image: "hello-world:latest"}, &container.HostConfig{Privileged: true}, nil, nil, name+"-priv")
 	if err == nil {
-		_ = raw.ContainerRemove(ctx, name+"-priv", container.RemoveOptions{Force: true})
+		_ = raw.ContainerRemove(ctx, name+"-priv", dockerclient.ContainerRemoveOptions{Force: true})
 		t.Fatal("privileged create reached the daemon in enforce mode")
 	}
 	if !strings.Contains(err.Error(), RulePrivileged) {
@@ -95,7 +95,7 @@ func TestGuard_Live_RealDaemon(t *testing.T) {
 		t.Fatal("denied container exists on the daemon")
 	}
 
-	bk, err := bkclient.New(ctx, "", dockerbuildkit.ClientOpts(raw)...)
+	bk, err := bkclient.New(ctx, "", build.HijackClientOpts(raw)...)
 	if err != nil {
 		t.Fatalf("buildkit through the guard: %v", err)
 	}

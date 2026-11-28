@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/docker"

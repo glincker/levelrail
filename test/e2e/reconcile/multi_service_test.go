@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/deploy"
 	"github.com/glincker/levelrail/internal/docker"
@@ -55,8 +55,8 @@ func TestDeploySpec_Live_MultiServiceFanOut(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = env.DockerCli.ImageRemove(cleanupCtx, webTag, image.RemoveOptions{Force: true})
-		_, _ = env.DockerCli.ImageRemove(cleanupCtx, workerTag, image.RemoveOptions{Force: true})
+		_, _ = env.DockerCli.ImageRemove(cleanupCtx, webTag, dockerclient.ImageRemoveOptions{Force: true})
+		_, _ = env.DockerCli.ImageRemove(cleanupCtx, workerTag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	webServiceName := appName + "-web"

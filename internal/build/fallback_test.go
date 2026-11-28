@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/pkg/stdcopy"
 	bkclient "github.com/moby/buildkit/client"
+	"github.com/moby/moby/api/pkg/stdcopy"
 	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 

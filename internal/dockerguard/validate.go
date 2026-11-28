@@ -6,9 +6,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
 
 	"github.com/glincker/levelrail/internal/docker"
 )
@@ -202,14 +203,14 @@ func validateUpdate(u container.UpdateConfig) []Violation {
 	return checkDevices(u.Resources, docker.CreateDeclaration{})
 }
 
-func validateExec(e container.ExecOptions) []Violation {
+func validateExec(e dockerclient.ExecCreateOptions) []Violation {
 	if e.Privileged {
 		return []Violation{violation(RuleExecPrivileged, "exec Privileged is never allowed")}
 	}
 	return nil
 }
 
-func validateVolume(v volume.CreateOptions) []Violation {
+func validateVolume(v dockerclient.VolumeCreateOptions) []Violation {
 	if bindDriverOpts(v.DriverOpts) {
 		return []Violation{violation(RuleVolumeBindDriverOpt, "volume %s uses bind driver options", v.Name)}
 	}

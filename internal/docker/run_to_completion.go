@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/pkg/stdcopy"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
 )
 
 // RunOutcome is what a run-to-completion container produced.
@@ -115,7 +117,7 @@ func (c *Client) RunToCompletion(ctx context.Context, spec ContainerSpec, maxOut
 	if info, err := c.cli.ContainerInspect(lctx, id); err == nil && info.State != nil {
 		out.OOMKilled = info.State.OOMKilled
 	}
-	logs, err := c.cli.ContainerLogs(lctx, id, container.LogsOptions{ShowStdout: true, ShowStderr: true})
+	logs, err := c.cli.ContainerLogs(lctx, id, dockerclient.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
 		if runErr == nil {
 			runErr = fmt.Errorf("read job container %q logs: %w", spec.Name, err)

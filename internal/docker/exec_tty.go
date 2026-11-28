@@ -8,9 +8,7 @@ import (
 	"sync"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 )
 
 var _ TTYRuntime = (*Client)(nil)
@@ -38,7 +36,7 @@ func (c *Client) ExecTTY(ctx context.Context, containerID string, opts ExecTTYOp
 		return nil, fmt.Errorf("docker: exec tty in %s: no command given", containerID)
 	}
 
-	createOpts := container.ExecOptions{
+	createOpts := dockerclient.ExecCreateOptions{
 		Cmd:          opts.Cmd,
 		Env:          opts.Env,
 		User:         opts.User,
@@ -57,7 +55,7 @@ func (c *Client) ExecTTY(ctx context.Context, containerID string, opts ExecTTYOp
 		return nil, fmt.Errorf("docker: exec tty create %v in %s: %w", opts.Cmd, containerID, err)
 	}
 
-	attached, err := c.cli.ContainerExecAttach(ctx, created.ID, container.ExecAttachOptions{
+	attached, err := c.cli.ContainerExecAttach(ctx, created.ID, dockerclient.ExecAttachOptions{
 		Tty:         true,
 		ConsoleSize: createOpts.ConsoleSize,
 	})
@@ -82,7 +80,7 @@ type ttySession struct {
 	execID    string
 	container string
 	cmd       []string
-	attached  dockertypes.HijackedResponse
+	attached  dockerclient.HijackedResponse
 
 	closeOnce sync.Once
 	closed    chan struct{}
@@ -125,7 +123,7 @@ func (s *ttySession) Resize(ctx context.Context, size TTYSize) error {
 	if size.Rows == 0 || size.Cols == 0 {
 		return fmt.Errorf("docker: exec tty resize %s: rows and cols must both be positive", s.execID)
 	}
-	if err := s.cli.ContainerExecResize(ctx, s.execID, container.ResizeOptions{
+	if err := s.cli.ContainerExecResize(ctx, s.execID, dockerclient.ExecResizeOptions{
 		Height: uint(size.Rows),
 		Width:  uint(size.Cols),
 	}); err != nil {

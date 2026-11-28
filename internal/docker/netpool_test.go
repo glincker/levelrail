@@ -7,7 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	dockernetwork "github.com/docker/docker/api/types/network"
+	dockerclient "github.com/moby/moby/client"
+
+	dockernetwork "github.com/moby/moby/api/types/network"
 )
 
 func pfx(s string) netip.Prefix { return netip.MustParsePrefix(s) }
@@ -74,11 +76,11 @@ type fakeNetAPI struct {
 	created   []string
 }
 
-func (f *fakeNetAPI) NetworkList(context.Context, dockernetwork.ListOptions) ([]dockernetwork.Summary, error) {
+func (f *fakeNetAPI) NetworkList(context.Context, dockerclient.NetworkListOptions) ([]dockernetwork.Summary, error) {
 	return f.existing, nil
 }
 
-func (f *fakeNetAPI) NetworkCreate(_ context.Context, _ string, o dockernetwork.CreateOptions) (dockernetwork.CreateResponse, error) {
+func (f *fakeNetAPI) NetworkCreate(_ context.Context, _ string, o dockerclient.NetworkCreateOptions) (dockernetwork.CreateResponse, error) {
 	if len(f.createErr) > 0 {
 		err := f.createErr[0]
 		f.createErr = f.createErr[1:]

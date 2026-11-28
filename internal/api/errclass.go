@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/store"

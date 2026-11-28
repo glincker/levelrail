@@ -7,8 +7,10 @@ import (
 	"io"
 	"os"
 
+	dockerclient "github.com/moby/moby/client"
+
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 )
 
 // Archive copy errors callers can match.
@@ -51,7 +53,7 @@ func (c *Client) CopyFromContainer(ctx context.Context, containerID, path string
 // CopyToContainer implements ArchiveRuntime over PUT /containers/{id}/archive.
 func (c *Client) CopyToContainer(ctx context.Context, containerID, dir string, content io.Reader, maxBytes int64) error {
 	body := CapReader(content, maxBytes)
-	if err := c.cli.CopyToContainer(ctx, containerID, dir, body, container.CopyToContainerOptions{}); err != nil {
+	if err := c.cli.CopyToContainer(ctx, containerID, dir, body, dockerclient.CopyToContainerOptions{}); err != nil {
 		if errors.Is(err, ErrArchiveTooLarge) {
 			return ErrArchiveTooLarge
 		}

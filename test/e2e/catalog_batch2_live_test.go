@@ -16,9 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/brand"
@@ -139,7 +138,7 @@ func bootFailureLogs(cli *client.Client, name string) string {
 	maxBytes := envInt("LEVELRAIL_E2E_BOOT_LOG_MAX_BYTES", 8192)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	rc, err := cli.ContainerLogs(ctx, name, container.LogsOptions{ShowStdout: true, ShowStderr: true, Tail: strconv.Itoa(tail)})
+	rc, err := cli.ContainerLogs(ctx, name, dockerclient.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Tail: strconv.Itoa(tail)})
 	if err != nil {
 		return "(logs unavailable: " + err.Error() + ")"
 	}

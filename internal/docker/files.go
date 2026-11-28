@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // FileMount is one inline file placed in a container before it starts.
@@ -31,7 +31,7 @@ func (c *Client) writeFilesBeforeStart(ctx context.Context, id string, files []F
 	if err != nil {
 		return err
 	}
-	if err := c.cli.CopyToContainer(ctx, id, "/", archive, container.CopyToContainerOptions{}); err != nil {
+	if err := c.cli.CopyToContainer(ctx, id, "/", archive, dockerclient.CopyToContainerOptions{}); err != nil {
 		return fmt.Errorf("docker: write %d file(s) into container: %w", len(files), err)
 	}
 	return nil

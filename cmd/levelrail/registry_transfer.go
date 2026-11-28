@@ -15,9 +15,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
-	dockerclient "github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/registry"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/build"
 	registryreconcile "github.com/glincker/levelrail/internal/reconcile/registry"
@@ -193,7 +192,7 @@ func (t *registryTransfer) pull(cli *dockerclient.Client) func(ctx context.Conte
 			return errors.New("registry transfer: encode pull auth")
 		}
 		byDigest := repo + "@" + digest
-		rc, err := cli.ImagePull(ctx, byDigest, image.PullOptions{RegistryAuth: auth})
+		rc, err := cli.ImagePull(ctx, byDigest, dockerclient.ImagePullOptions{RegistryAuth: auth})
 		if err != nil {
 			return fmt.Errorf("registry transfer: pull by digest: %w", err)
 		}

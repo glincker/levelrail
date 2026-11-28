@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/apiclient"
 	"github.com/glincker/levelrail/internal/build"
@@ -57,7 +57,7 @@ func TestBreakGlass_Live_AgentSurvivesControlPlaneDeath(t *testing.T) {
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = env.DockerCli.ImageRemove(ctx, tag, image.RemoveOptions{Force: true})
+		_, _ = env.DockerCli.ImageRemove(ctx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 	cleanupContainers(context.Background(), t, env.Runtime, serviceName)
 	t.Cleanup(func() { cleanupContainers(context.Background(), t, env.Runtime, serviceName) })

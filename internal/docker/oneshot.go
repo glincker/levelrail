@@ -9,8 +9,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/pkg/stdcopy"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
 )
 
 // OneShotSpec describes a run-to-completion container: it is created,
@@ -77,12 +79,12 @@ func (c *Client) RunOneShot(ctx context.Context, spec OneShotSpec) (OneShotResul
 		if err != nil {
 			return OneShotResult{}, err
 		}
-		if err := c.cli.CopyToContainer(ctx, resp.ID, "/", archive, container.CopyToContainerOptions{}); err != nil {
+		if err := c.cli.CopyToContainer(ctx, resp.ID, "/", archive, dockerclient.CopyToContainerOptions{}); err != nil {
 			return OneShotResult{}, fmt.Errorf("docker: copy %q into one-shot container %q: %w", path, spec.Name, err)
 		}
 	}
 	waitCh, errCh := c.cli.ContainerWait(ctx, resp.ID, container.WaitConditionNextExit)
-	if err := c.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if err := c.cli.ContainerStart(ctx, resp.ID, dockerclient.ContainerStartOptions{}); err != nil {
 		return OneShotResult{}, fmt.Errorf("docker: start one-shot container %q: %w", spec.Name, err)
 	}
 	var exit int64
@@ -95,7 +97,7 @@ func (c *Client) RunOneShot(ctx context.Context, spec OneShotSpec) (OneShotResul
 		return OneShotResult{}, fmt.Errorf("docker: one-shot container %q: %w", spec.Name, ctx.Err())
 	}
 
-	logs, err := c.cli.ContainerLogs(ctx, resp.ID, container.LogsOptions{ShowStdout: true, ShowStderr: true})
+	logs, err := c.cli.ContainerLogs(ctx, resp.ID, dockerclient.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
 		return OneShotResult{}, fmt.Errorf("docker: read one-shot container %q logs: %w", spec.Name, err)
 	}
@@ -114,7 +116,7 @@ func (c *Client) RunOneShot(ctx context.Context, spec OneShotSpec) (OneShotResul
 func (c *Client) removeQuietly(id string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_ = c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: true, RemoveVolumes: true}) // best effort; the orphan sweep is the backstop
+	_ = c.cli.ContainerRemove(ctx, id, dockerclient.ContainerRemoveOptions{Force: true, RemoveVolumes: true}) // best effort; the orphan sweep is the backstop
 }
 
 func singleFileTar(path string, data []byte) (io.Reader, error) {

@@ -21,10 +21,9 @@ import (
 	"testing"
 	"time"
 
-	dockersdk "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/strslice"
-	dockerclient "github.com/docker/docker/client"
+	dockersdk "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/strslice"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/brand"
@@ -80,7 +79,7 @@ func TestLogArchive_Live_ContainerLogsToHTTPDownload(t *testing.T) {
 	ctx := context.Background()
 	const marker = "levelrail-log-archive-e2e-marker-9c41"
 
-	pullReader, err := dockerCli.ImagePull(ctx, "busybox:latest", image.PullOptions{})
+	pullReader, err := dockerCli.ImagePull(ctx, "busybox:latest", dockerclient.ImagePullOptions{})
 	if err != nil {
 		t.Fatalf("ImagePull() error = %v", err)
 	}

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	dockerclient "github.com/moby/moby/client"
+
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/filters"
-	dockernetwork "github.com/docker/docker/api/types/network"
 )
 
 const (
@@ -116,9 +116,9 @@ func (c *Client) DescribeNetworks(ctx context.Context, prefix string) ([]Network
 // DescribeNetworksSelective implements SelectiveNetworkDescriber. A network
 // needAttached declines is reported with Attached zero, taken from the list.
 func (c *Client) DescribeNetworksSelective(ctx context.Context, prefix string, needAttached func(name string, labels map[string]string) bool) ([]NetworkDetail, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("name", prefix)
-	list, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{Filters: f})
+	list, err := c.cli.NetworkList(ctx, dockerclient.NetworkListOptions{Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list networks with prefix %q: %w", prefix, err)
 	}
@@ -129,7 +129,7 @@ func (c *Client) DescribeNetworksSelective(ctx context.Context, prefix string, n
 		}
 		insp := n
 		if needAttached(n.Name, n.Labels) {
-			insp, err = c.cli.NetworkInspect(ctx, n.ID, dockernetwork.InspectOptions{})
+			insp, err = c.cli.NetworkInspect(ctx, n.ID, dockerclient.NetworkInspectOptions{})
 			if err != nil {
 				if cerrdefs.IsNotFound(err) {
 					continue
@@ -149,7 +149,7 @@ func (c *Client) DescribeNetworksSelective(ctx context.Context, prefix string, n
 
 // RemoveNetworkIfEmpty implements NetworkAdmin: it never disconnects.
 func (c *Client) RemoveNetworkIfEmpty(ctx context.Context, name string) (bool, error) {
-	insp, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	insp, err := c.cli.NetworkInspect(ctx, name, dockerclient.NetworkInspectOptions{})
 	if err != nil {
 		if cerrdefs.IsNotFound(err) {
 			return false, nil
@@ -173,7 +173,7 @@ func (c *Client) NetworkPoolUsage(ctx context.Context) (PoolUsage, error) {
 	if c.pool == nil {
 		return PoolUsage{}, nil
 	}
-	nets, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{})
+	nets, err := c.cli.NetworkList(ctx, dockerclient.NetworkListOptions{})
 	if err != nil {
 		return PoolUsage{}, fmt.Errorf("docker: list networks: %w", err)
 	}

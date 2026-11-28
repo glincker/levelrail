@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	dockerclient "github.com/docker/docker/client"
-	dockerbuildkit "github.com/docker/docker/client/buildkit"
 	bkclient "github.com/moby/buildkit/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/build/buildkitd"
 )
@@ -20,7 +19,7 @@ import (
 // bare buildkitd gRPC endpoint of its own. BuildKit runs inside dockerd
 // and is only reachable by hijacking the daemon's HTTP connection at the
 // /grpc endpoint, exactly the way `docker buildx build` reaches it when
-// using the default driver. That is what dockerbuildkit.ClientOpts wires
+// using the default driver. That is what HijackClientOpts wires
 // up below, using the same *dockerclient.Client already used to talk to
 // the Engine API elsewhere in this codebase (see internal/docker).
 //
@@ -89,7 +88,7 @@ func NewClient(ctx context.Context, docker *dockerclient.Client, opts ...Option)
 		return nil, fmt.Errorf("build: new client: docker client is required")
 	}
 
-	bk, err := bkclient.New(ctx, "", dockerbuildkit.ClientOpts(docker)...)
+	bk, err := bkclient.New(ctx, "", HijackClientOpts(docker)...)
 	if err != nil {
 		return nil, fmt.Errorf("build: connect to buildkit via docker daemon: %w", err)
 	}

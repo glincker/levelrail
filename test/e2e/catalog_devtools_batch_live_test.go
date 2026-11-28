@@ -14,8 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/volume"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/brand"
@@ -163,7 +164,7 @@ type composeDeployResponseMirror struct {
 func removeAppVolumes(ctx context.Context, t *testing.T, cli volumeRemover, appID string) {
 	t.Helper()
 	prefix := "app-" + appID + "-"
-	list, err := cli.VolumeList(ctx, volume.ListOptions{Filters: filters.NewArgs()})
+	list, err := cli.VolumeList(ctx, dockerclient.VolumeListOptions{Filters: dockerclient.Filters{}})
 	if err != nil {
 		t.Logf("removeAppVolumes: VolumeList() error = %v", err)
 		return
@@ -183,6 +184,6 @@ func removeAppVolumes(ctx context.Context, t *testing.T, cli volumeRemover, appI
 // package's full concrete type just to call two methods already used
 // elsewhere in this package (live_api_helpers.go's removeContainerAndVolumes).
 type volumeRemover interface {
-	VolumeList(ctx context.Context, options volume.ListOptions) (volume.ListResponse, error)
+	VolumeList(ctx context.Context, options dockerclient.VolumeListOptions) (volume.ListResponse, error)
 	VolumeRemove(ctx context.Context, volumeID string, force bool) error
 }

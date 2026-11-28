@@ -6,13 +6,14 @@ import (
 	"regexp"
 	"strings"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/build"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
+
+	dockertypes "github.com/moby/moby/api/types"
+	"github.com/moby/moby/api/types/build"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/volume"
 )
 
 // This file adds manual maintenance operations (disk usage reporting
@@ -76,7 +77,7 @@ type DiskUsage struct {
 // See the DiskUsage type's own doc comment for why this is a different
 // number from the control plane's own DataDir usage.
 func (c *Client) DiskUsage(ctx context.Context) (DiskUsage, error) {
-	du, err := c.cli.DiskUsage(ctx, dockertypes.DiskUsageOptions{})
+	du, err := c.cli.DiskUsage(ctx, dockerclient.DiskUsageOptions{})
 	if err != nil {
 		return DiskUsage{}, fmt.Errorf("docker: disk usage: %w", err)
 	}
@@ -89,74 +90,17 @@ func (c *Client) DiskUsage(ctx context.Context) (DiskUsage, error) {
 // sums a different du field into different DiskUsage fields), so each
 // gets its own small helper below rather than one function summing all
 // four in turn.
-func aggregateDiskUsage(du dockertypes.DiskUsage) DiskUsage {
-	imagesTotal, imagesReclaimable := aggregateImagesUsage(du.Images)
-	containersTotal, containersReclaimable := aggregateContainersUsage(du.Containers)
-	volumesTotal, volumesReclaimable := aggregateVolumesUsage(du.Volumes)
-	buildCacheTotal, buildCacheReclaimable := aggregateBuildCacheUsage(du.BuildCache)
+func aggregateDiskUsage(du dockerclient.DiskUsageResult) DiskUsage {
 	return DiskUsage{
-		ImagesTotalBytes:           imagesTotal,
-		ImagesReclaimableBytes:     imagesReclaimable,
-		ContainersTotalBytes:       containersTotal,
-		ContainersReclaimableBytes: containersReclaimable,
-		VolumesTotalBytes:          volumesTotal,
-		VolumesReclaimableBytes:    volumesReclaimable,
-		BuildCacheTotalBytes:       buildCacheTotal,
-		BuildCacheReclaimableBytes: buildCacheReclaimable,
+		ImagesTotalBytes:           du.Images.TotalSize,
+		ImagesReclaimableBytes:     du.Images.Reclaimable,
+		ContainersTotalBytes:       du.Containers.TotalSize,
+		ContainersReclaimableBytes: du.Containers.Reclaimable,
+		VolumesTotalBytes:          du.Volumes.TotalSize,
+		VolumesReclaimableBytes:    du.Volumes.Reclaimable,
+		BuildCacheTotalBytes:       du.BuildCache.TotalSize,
+		BuildCacheReclaimableBytes: du.BuildCache.Reclaimable,
 	}
-}
-
-func aggregateImagesUsage(images []*image.Summary) (total, reclaimable int64) {
-	for _, img := range images {
-		if img == nil {
-			continue
-		}
-		total += img.Size
-		if img.Containers == 0 {
-			reclaimable += img.Size
-		}
-	}
-	return total, reclaimable
-}
-
-func aggregateContainersUsage(containers []*container.Summary) (total, reclaimable int64) {
-	for _, ctr := range containers {
-		if ctr == nil {
-			continue
-		}
-		total += ctr.SizeRw
-		if ctr.State != "running" {
-			reclaimable += ctr.SizeRw
-		}
-	}
-	return total, reclaimable
-}
-
-func aggregateVolumesUsage(volumes []*volume.Volume) (total, reclaimable int64) {
-	for _, vol := range volumes {
-		size := volumeSize(vol)
-		if size < 0 {
-			continue // "not available" for this volume driver, not zero
-		}
-		total += size
-		if vol.UsageData != nil && vol.UsageData.RefCount == 0 {
-			reclaimable += size
-		}
-	}
-	return total, reclaimable
-}
-
-func aggregateBuildCacheUsage(records []*build.CacheRecord) (total, reclaimable int64) {
-	for _, bc := range records {
-		if bc == nil {
-			continue
-		}
-		total += bc.Size
-		if !bc.InUse {
-			reclaimable += bc.Size
-		}
-	}
-	return total, reclaimable
 }
 
 // volumeSize returns v's on-disk size, or -1 if unknown/unavailable
@@ -226,11 +170,11 @@ func containerSummaryName(cs container.Summary) string {
 // daemon whose name is not in keep, using a direct list-then-remove
 // sequence (each already-stopped container removed individually) rather.
 func (c *Client) PruneContainers(ctx context.Context, keep []string) (PruneContainersResult, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("status", "exited")
 	f.Add("status", "created")
 	c.instanceLabelFilter(f)
-	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Size: true, Filters: f})
+	summaries, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Size: true, Filters: f})
 	if err != nil {
 		return PruneContainersResult{}, fmt.Errorf("docker: list stopped containers: %w", err)
 	}
@@ -238,7 +182,7 @@ func (c *Client) PruneContainers(ctx context.Context, keep []string) (PruneConta
 	var result PruneContainersResult
 	var firstErr error
 	for _, cs := range stoppedNotKept(summaries, keep) {
-		if err := c.cli.ContainerRemove(ctx, cs.ID, container.RemoveOptions{}); err != nil {
+		if err := c.cli.ContainerRemove(ctx, cs.ID, dockerclient.ContainerRemoveOptions{}); err != nil {
 			if firstErr == nil {
 				firstErr = fmt.Errorf("remove stopped container %s: %w", containerSummaryName(cs), err)
 			}
@@ -262,7 +206,7 @@ type PruneImagesResult struct {
 // referenced by any container, Docker's own conservative default for
 // `docker image prune` (no -a flag). The "dangling" filter is set.
 func (c *Client) PruneDanglingImages(ctx context.Context) (PruneImagesResult, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("dangling", "true")
 	report, err := c.cli.ImagesPrune(ctx, f)
 	if err != nil {
@@ -326,16 +270,16 @@ func (c *Client) ListDanglingAnonymousVolumes(ctx context.Context) ([]AnonymousV
 	if err != nil {
 		return nil, err
 	}
-	vols, err := c.cli.VolumeList(ctx, volume.ListOptions{})
+	vols, err := c.cli.VolumeList(ctx, dockerclient.VolumeListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list volumes: %w", err)
 	}
 	var out []AnonymousVolume
 	for _, v := range vols.Volumes {
-		if v == nil || !isAnonymousVolumeName(v.Name) || inUse[v.Name] {
+		if !isAnonymousVolumeName(v.Name) || inUse[v.Name] {
 			continue
 		}
-		out = append(out, AnonymousVolume{Name: v.Name, SizeBytes: volumeSize(v)})
+		out = append(out, AnonymousVolume{Name: v.Name, SizeBytes: volumeSize(&v)})
 	}
 	return out, nil
 }
@@ -347,7 +291,7 @@ func (c *Client) ListDanglingAnonymousVolumes(ctx context.Context) ([]AnonymousV
 // whichever unused/dangling accounting the Engine API's own volume
 // endpoints happen to apply server-side.
 func (c *Client) mountedVolumeNames(ctx context.Context) (map[string]bool, error) {
-	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true})
+	summaries, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers for volume usage: %w", err)
 	}
@@ -386,7 +330,7 @@ type PruneBuildCacheResult struct {
 // control-plane instance has in flight keeps its cache records InUse
 // regardless of which instance started it.
 func (c *Client) PruneBuildCache(ctx context.Context) (PruneBuildCacheResult, error) {
-	report, err := c.cli.BuildCachePrune(ctx, build.CachePruneOptions{All: false})
+	report, err := c.cli.BuildCachePrune(ctx, dockerclient.BuildCachePruneOptions{All: false})
 	if err != nil {
 		return PruneBuildCacheResult{}, fmt.Errorf("docker: prune build cache: %w", err)
 	}

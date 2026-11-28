@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
+
+	dockertypes "github.com/moby/moby/api/types"
+	"github.com/moby/moby/api/types/volume"
 )
 
 // NamedVolume is one of this project's own named (non-anonymous) Docker
@@ -71,7 +73,7 @@ func isProjectNamedVolume(name string) bool {
 // no-op on this check: every project-named volume is a candidate,
 // mirroring PruneAnonymousVolumes' own "empty means no scoping" fallback.
 func (c *Client) ListNamedVolumes(ctx context.Context) ([]NamedVolume, error) {
-	vols, err := c.cli.VolumeList(ctx, volume.ListOptions{})
+	vols, err := c.cli.VolumeList(ctx, dockerclient.VolumeListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list volumes: %w", err)
 	}
@@ -83,11 +85,10 @@ func (c *Client) ListNamedVolumes(ctx context.Context) ([]NamedVolume, error) {
 	// VolumeList carries no sizes; the disk usage call does. A failure
 	// leaves sizes unknown (-1), never zero.
 	sizes := map[string]int64{}
-	if du, duErr := c.cli.DiskUsage(ctx, dockertypes.DiskUsageOptions{Types: []dockertypes.DiskUsageObject{dockertypes.VolumeObject}}); duErr == nil {
-		for _, v := range du.Volumes {
-			if v != nil {
-				sizes[v.Name] = volumeSize(v)
-			}
+	if du, duErr := c.cli.DiskUsage(ctx, dockerclient.DiskUsageOptions{Volumes: true}); duErr == nil {
+		for i := range du.Volumes.Items {
+			v := &du.Volumes.Items[i]
+			sizes[v.Name] = volumeSize(v)
 		}
 	}
 

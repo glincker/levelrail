@@ -10,8 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/secretmask"
 )
@@ -109,7 +108,7 @@ func TestClient_Build_Live(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -177,7 +176,7 @@ func TestClient_Build_Live_CacheAccelerates(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

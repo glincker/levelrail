@@ -5,10 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // TestClient_Prune_Live_RemovesOnlyGenuineGarbage is the live proof this
@@ -115,9 +112,9 @@ func TestClient_Prune_Live_RemovesOnlyGenuineGarbage(t *testing.T) {
 		t.Fatalf("tag dangling image: %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = c.cli.ImageRemove(context.Background(), danglingTag, image.RemoveOptions{Force: true})
+		_, _ = c.cli.ImageRemove(context.Background(), danglingTag, dockerclient.ImageRemoveOptions{Force: true})
 	})
-	if _, err := c.cli.ImageRemove(ctx, danglingTag, image.RemoveOptions{}); err != nil {
+	if _, err := c.cli.ImageRemove(ctx, danglingTag, dockerclient.ImageRemoveOptions{}); err != nil {
 		t.Fatalf("untag dangling image (leaving a dangling record behind): %v", err)
 	}
 
@@ -140,13 +137,13 @@ func TestClient_Prune_Live_RemovesOnlyGenuineGarbage(t *testing.T) {
 		t.Fatalf("create container mounting named volume: %v", err)
 	}
 	t.Cleanup(func() {
-		_ = c.cli.ContainerRemove(context.Background(), namedVolID, container.RemoveOptions{Force: true})
+		_ = c.cli.ContainerRemove(context.Background(), namedVolID, dockerclient.ContainerRemoveOptions{Force: true})
 	})
 	if err := c.Start(ctx, namedVolID); err != nil {
 		t.Fatalf("start container mounting named volume: %v", err)
 	}
 
-	anonVolResp, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{}) // no Name: Docker assigns the anonymous 64-hex id
+	anonVolResp, err := c.cli.VolumeCreate(ctx, dockerclient.VolumeCreateOptions{}) // no Name: Docker assigns the anonymous 64-hex id
 	if err != nil {
 		t.Fatalf("create anonymous volume: %v", err)
 	}
@@ -185,9 +182,9 @@ func TestClient_Prune_Live_RemovesOnlyGenuineGarbage(t *testing.T) {
 		t.Errorf("nginx:alpine tag itself was removed by Prune: %v, want a tagged image to never be touched by PruneDanglingImages", err)
 	}
 	danglingStillPresent := false
-	danglingArgs := filters.NewArgs()
+	danglingArgs := dockerclient.Filters{}
 	danglingArgs.Add("dangling", "true")
-	images, err := c.cli.ImageList(ctx, image.ListOptions{All: true, Filters: danglingArgs})
+	images, err := c.cli.ImageList(ctx, dockerclient.ImageListOptions{All: true, Filters: danglingArgs})
 	if err != nil {
 		t.Fatalf("list dangling images after prune: %v", err)
 	}
@@ -204,7 +201,7 @@ func TestClient_Prune_Live_RemovesOnlyGenuineGarbage(t *testing.T) {
 		t.Errorf("a dangling image record still exists after Prune, want none: %+v", images)
 	}
 
-	if vols, err := c.cli.VolumeList(ctx, volume.ListOptions{}); err != nil {
+	if vols, err := c.cli.VolumeList(ctx, dockerclient.VolumeListOptions{}); err != nil {
 		t.Fatalf("list volumes after prune: %v", err)
 	} else {
 		var sawNamed, sawAnon bool

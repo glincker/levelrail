@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/build"
 	"github.com/glincker/levelrail/internal/ingress"
@@ -43,7 +43,7 @@ func TestMaintenanceMode_Live_TogglesResponseWithoutStoppingContainer(t *testing
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = env.DockerCli.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = env.DockerCli.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 	cleanupContainers(context.Background(), t, env.Runtime, serviceName)
 	t.Cleanup(func() { cleanupContainers(context.Background(), t, env.Runtime, serviceName) })

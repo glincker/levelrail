@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 )
 
 // ReadOnlyRootfsLabelKey records an app's explicit read-only root choice

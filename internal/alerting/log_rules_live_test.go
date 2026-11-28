@@ -8,10 +8,9 @@ import (
 	"testing"
 	"time"
 
-	dockersdk "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/strslice"
-	dockerclient "github.com/docker/docker/client"
+	dockersdk "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/strslice"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/dockertest"
@@ -40,7 +39,7 @@ func TestLogRules_Live_RealContainerSignaturesAndAlert(t *testing.T) {
 	t.Cleanup(func() { _ = raw.Close() })
 
 	ctx := context.Background()
-	rd, err := raw.ImagePull(ctx, "busybox:latest", image.PullOptions{})
+	rd, err := raw.ImagePull(ctx, "busybox:latest", dockerclient.ImagePullOptions{})
 	if err != nil {
 		t.Fatalf("ImagePull: %v", err)
 	}

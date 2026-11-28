@@ -3,15 +3,16 @@ package docker
 import (
 	"context"
 	"fmt"
+	"net/netip"
 	"sort"
 	"strings"
 	"time"
 
+	dockerclient "github.com/moby/moby/client"
+
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 )
 
 // BrowserSpec describes a short-lived, locked-down container that exposes
@@ -51,7 +52,7 @@ type LabeledContainer struct {
 	Labels  map[string]string
 }
 
-func browserHostConfig(spec BrowserSpec, port nat.Port) *container.HostConfig {
+func browserHostConfig(spec BrowserSpec, port network.Port) *container.HostConfig {
 	hc := &container.HostConfig{
 		AutoRemove:     true,
 		ReadonlyRootfs: true,
@@ -59,7 +60,7 @@ func browserHostConfig(spec BrowserSpec, port nat.Port) *container.HostConfig {
 		SecurityOpt:    []string{securityOptNoNewPrivileges},
 		RestartPolicy:  container.RestartPolicy{Name: container.RestartPolicyDisabled},
 		Tmpfs:          spec.Tmpfs,
-		PortBindings:   nat.PortMap{port: []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: ""}}},
+		PortBindings:   network.PortMap{port: []network.PortBinding{{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: ""}}},
 		Resources: container.Resources{
 			Memory:     spec.MemoryBytes,
 			MemorySwap: spec.MemoryBytes,
@@ -84,7 +85,7 @@ func browserHostConfig(spec BrowserSpec, port nat.Port) *container.HostConfig {
 // debug port is published. The image must already exist locally. The caller
 // must Close the Browser; the container also removes itself once stopped.
 func (c *Client) StartBrowser(ctx context.Context, spec BrowserSpec) (*Browser, error) {
-	port, err := nat.NewPort("tcp", fmt.Sprint(spec.DebugPort))
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", spec.DebugPort))
 	if err != nil {
 		return nil, fmt.Errorf("docker: browser debug port %d: %w", spec.DebugPort, err)
 	}
@@ -94,14 +95,14 @@ func (c *Client) StartBrowser(ctx context.Context, spec BrowserSpec) (*Browser, 
 		Env:          toDockerEnv(spec.Env),
 		Labels:       c.withInstanceLabel(spec.Labels),
 		User:         spec.User,
-		ExposedPorts: nat.PortSet{port: struct{}{}},
+		ExposedPorts: network.PortSet{port: struct{}{}},
 	}
 	resp, err := c.cli.ContainerCreate(ctx, cfg, browserHostConfig(spec, port), nil, nil, spec.Name)
 	if err != nil {
 		return nil, fmt.Errorf("docker: create browser container %q: %w", spec.Name, err)
 	}
 	b := &Browser{ID: resp.ID, c: c}
-	if err := c.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if err := c.cli.ContainerStart(ctx, resp.ID, dockerclient.ContainerStartOptions{}); err != nil {
 		b.Close()
 		return nil, fmt.Errorf("docker: start browser container %q: %w", spec.Name, err)
 	}
@@ -126,7 +127,7 @@ func (b *Browser) Endpoint() string { return b.Addr }
 func (b *Browser) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_ = b.c.cli.ContainerRemove(ctx, b.ID, container.RemoveOptions{Force: true}) // best effort; the orphan sweep is the backstop
+	_ = b.c.cli.ContainerRemove(ctx, b.ID, dockerclient.ContainerRemoveOptions{Force: true}) // best effort; the orphan sweep is the backstop
 }
 
 // EnsureImageID makes ref available locally and returns its image ID. pulled
@@ -150,10 +151,10 @@ func (c *Client) EnsureImageID(ctx context.Context, ref string) (id string, pull
 // ListContainersByLabel lists containers in any state carrying label
 // (key=value), scoped to this Client's instance label when configured.
 func (c *Client) ListContainersByLabel(ctx context.Context, label string) ([]LabeledContainer, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("label", label)
 	c.instanceLabelFilter(f)
-	list, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	list, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers by label %q: %w", label, err)
 	}
@@ -171,9 +172,9 @@ func (c *Client) ListContainersByLabel(ctx context.Context, label string) ([]Lab
 
 // ImageInUse reports whether any container, in any state, was created from imageID.
 func (c *Client) ImageInUse(ctx context.Context, imageID string) (bool, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("ancestor", imageID)
-	list, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f, Limit: 1})
+	list, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: f, Limit: 1})
 	if err != nil {
 		return false, fmt.Errorf("docker: list containers of image %q: %w", imageID, err)
 	}
@@ -183,7 +184,7 @@ func (c *Client) ImageInUse(ctx context.Context, imageID string) (bool, error) {
 // RemoveImageByID removes an image without force, so Docker itself refuses
 // while anything still uses it. A missing image is not an error.
 func (c *Client) RemoveImageByID(ctx context.Context, imageID string) error {
-	_, err := c.cli.ImageRemove(ctx, imageID, image.RemoveOptions{Force: false, PruneChildren: true})
+	_, err := c.cli.ImageRemove(ctx, imageID, dockerclient.ImageRemoveOptions{Force: false, PruneChildren: true})
 	if err != nil && !cerrdefs.IsNotFound(err) {
 		return fmt.Errorf("docker: remove image %q: %w", imageID, err)
 	}

@@ -21,8 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 	"google.golang.org/grpc"
 
 	"github.com/glincker/levelrail/internal/agent"
@@ -173,7 +172,7 @@ func TestNodePlacement_Live_EachControllerUsesItsOwnRuntime(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = dockerCli.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = dockerCli.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	cleanupContainers(context.Background(), t, rtA, serviceName)

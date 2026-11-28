@@ -14,10 +14,9 @@ import (
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	dockerclient "github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
 	bkclient "github.com/moby/buildkit/client"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	dockerclient "github.com/moby/moby/client"
 	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -189,13 +188,13 @@ func newManagedBuilderClient(ctx context.Context, docker *dockerclient.Client, c
 // dialBuildctlStdio opens one exec session whose stdin and stdout carry the
 // BuildKit gRPC stream.
 func dialBuildctlStdio(ctx context.Context, docker *dockerclient.Client, name string) (net.Conn, error) {
-	ex, err := docker.ContainerExecCreate(ctx, name, container.ExecOptions{
+	ex, err := docker.ContainerExecCreate(ctx, name, dockerclient.ExecCreateOptions{
 		Cmd: []string{"buildctl", "dial-stdio"}, AttachStdin: true, AttachStdout: true, AttachStderr: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("build: create buildctl exec: %w", err)
 	}
-	hj, err := docker.ContainerExecAttach(ctx, ex.ID, container.ExecAttachOptions{})
+	hj, err := docker.ContainerExecAttach(ctx, ex.ID, dockerclient.ExecAttachOptions{})
 	if err != nil {
 		detail := ""
 		if ins, ierr := docker.ContainerExecInspect(ctx, ex.ID); ierr == nil {
@@ -283,7 +282,7 @@ func (c *stdioConn) SetWriteDeadline(time.Time) error { return nil }
 // RemoveManagedBuilder deletes the managed builder container and its cache
 // volume, for tests and operator cleanup.
 func RemoveManagedBuilder(ctx context.Context, docker *dockerclient.Client) error {
-	err := docker.ContainerRemove(ctx, buildkitd.ContainerName, container.RemoveOptions{Force: true})
+	err := docker.ContainerRemove(ctx, buildkitd.ContainerName, dockerclient.ContainerRemoveOptions{Force: true})
 	if err != nil && !isNotFound(err) {
 		return err
 	}

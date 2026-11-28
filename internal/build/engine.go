@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/docker/docker/api/types"
+	"github.com/moby/moby/api/types"
 )
 
 // ErrBuildEngineUnsupported means the container engine cannot host a source

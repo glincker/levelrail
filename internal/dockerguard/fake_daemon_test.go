@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // fakeDaemon is a tiny Engine API stand-in on a Unix socket: enough

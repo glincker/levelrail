@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 	"google.golang.org/grpc"
 
 	"github.com/glincker/levelrail/internal/agent"

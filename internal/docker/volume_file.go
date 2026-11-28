@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
 )
 
 // ReadVolumeFile reads one small file from a named volume through a created,
@@ -22,7 +24,7 @@ func (c *Client) ReadVolumeFile(ctx context.Context, volumeName, relPath string)
 		return nil, fmt.Errorf("create reader for volume %q: %w", volumeName, err)
 	}
 	defer func() {
-		_ = c.cli.ContainerRemove(context.Background(), resp.ID, container.RemoveOptions{Force: true})
+		_ = c.cli.ContainerRemove(context.Background(), resp.ID, dockerclient.ContainerRemoveOptions{Force: true})
 	}()
 	return c.readContainerFile(ctx, resp.ID, "/v/"+relPath)
 }

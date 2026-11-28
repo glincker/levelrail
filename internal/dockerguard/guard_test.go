@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/events"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
 
 	"github.com/glincker/levelrail/internal/docker"
 )
@@ -36,7 +37,7 @@ func TestGuardStreamsEvents(t *testing.T) {
 	h := startGuard(t, ModeEnforce)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	msgs, errs := h.sdk(t).Events(ctx, events.ListOptions{})
+	msgs, errs := h.sdk(t).Events(ctx, dockerclient.EventsListOptions{})
 	for i := 0; i < 3; i++ {
 		select {
 		case m := <-msgs:
@@ -55,7 +56,7 @@ func TestGuardLogsFollowFlushesBeforeStreamEnds(t *testing.T) {
 	h := startGuard(t, ModeEnforce)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	rc, err := h.sdk(t).ContainerLogs(ctx, "c1", container.LogsOptions{ShowStdout: true, Follow: true})
+	rc, err := h.sdk(t).ContainerLogs(ctx, "c1", dockerclient.ContainerLogsOptions{ShowStdout: true, Follow: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,11 +78,11 @@ func TestGuardExecHijack(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cli := h.sdk(t)
-	created, err := cli.ContainerExecCreate(ctx, "c1", container.ExecOptions{Cmd: []string{"cat"}, AttachStdin: true, AttachStdout: true})
+	created, err := cli.ContainerExecCreate(ctx, "c1", dockerclient.ExecCreateOptions{Cmd: []string{"cat"}, AttachStdin: true, AttachStdout: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := cli.ContainerExecAttach(ctx, created.ID, container.ExecAttachOptions{})
+	resp, err := cli.ContainerExecAttach(ctx, created.ID, dockerclient.ExecAttachOptions{})
 	if err != nil {
 		t.Fatalf("exec attach through guard: %v", err)
 	}

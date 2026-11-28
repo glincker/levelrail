@@ -11,10 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/build"
 )
@@ -124,7 +123,7 @@ func TestLive_WizardAnalysisBuildsAndRunsFixture(t *testing.T) {
 	t.Cleanup(func() {
 		c, done := context.WithTimeout(context.Background(), 20*time.Second)
 		defer done()
-		_, _ = docker.ImageRemove(c, tag, image.RemoveOptions{Force: true})
+		_, _ = docker.ImageRemove(c, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 	contextDir := root
 	if a.Build.BaseDirectory != "" {
@@ -150,9 +149,9 @@ func TestLive_WizardAnalysisBuildsAndRunsFixture(t *testing.T) {
 	t.Cleanup(func() {
 		c, done := context.WithTimeout(context.Background(), 20*time.Second)
 		defer done()
-		_ = docker.ContainerRemove(c, created.ID, container.RemoveOptions{Force: true})
+		_ = docker.ContainerRemove(c, created.ID, dockerclient.ContainerRemoveOptions{Force: true})
 	})
-	if err := docker.ContainerStart(ctx, created.ID, container.StartOptions{}); err != nil {
+	if err := docker.ContainerStart(ctx, created.ID, dockerclient.ContainerStartOptions{}); err != nil {
 		t.Fatalf("ContainerStart() error = %v", err)
 	}
 	info, err := docker.ContainerInspect(ctx, created.ID)

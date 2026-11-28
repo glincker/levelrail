@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	dockerclient "github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/alerting"
 	"github.com/glincker/levelrail/internal/bench"
@@ -359,9 +359,9 @@ func scratchUsage(ctx context.Context, cli *dockerclient.Client, name, fill stri
 		return zero, fmt.Errorf("create scratch container: %w", err)
 	}
 	defer func() {
-		_ = cli.ContainerRemove(context.Background(), created.ID, container.RemoveOptions{Force: true})
+		_ = cli.ContainerRemove(context.Background(), created.ID, dockerclient.ContainerRemoveOptions{Force: true})
 	}()
-	if err := cli.ContainerStart(ctx, created.ID, container.StartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctx, created.ID, dockerclient.ContainerStartOptions{}); err != nil {
 		return zero, fmt.Errorf("start scratch container: %w", err)
 	}
 	waitC, errC := cli.ContainerWait(ctx, created.ID, container.WaitConditionNotRunning)
@@ -372,7 +372,7 @@ func scratchUsage(ctx context.Context, cli *dockerclient.Client, name, fill stri
 	case <-time.After(60 * time.Second):
 		return zero, fmt.Errorf("scratch container did not finish")
 	}
-	logs, err := cli.ContainerLogs(ctx, created.ID, container.LogsOptions{ShowStdout: true})
+	logs, err := cli.ContainerLogs(ctx, created.ID, dockerclient.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		return zero, err
 	}

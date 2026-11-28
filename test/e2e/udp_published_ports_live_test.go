@@ -12,9 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/brand"
@@ -282,7 +280,7 @@ func serviceContainers(t *testing.T, cli *dockerclient.Client) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	list, err := cli.ContainerList(ctx, container.ListOptions{All: true, Filters: filters.NewArgs(filters.Arg("name", e2eUDPService))})
+	list, err := cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: dockerclient.Filters{}.Add("name", e2eUDPService)})
 	if err != nil {
 		return err.Error()
 	}
@@ -297,7 +295,7 @@ func runningContainerID(t *testing.T, cli *dockerclient.Client) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	list, err := cli.ContainerList(ctx, container.ListOptions{Filters: filters.NewArgs(filters.Arg("name", e2eUDPService))})
+	list, err := cli.ContainerList(ctx, dockerclient.ContainerListOptions{Filters: dockerclient.Filters{}.Add("name", e2eUDPService)})
 	if err != nil || len(list) != 1 {
 		t.Fatalf("ContainerList: %d running (err %v), want 1", len(list), err)
 	}
@@ -309,7 +307,7 @@ func udpBindings(t *testing.T, cli *dockerclient.Client) []string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	list, err := cli.ContainerList(ctx, container.ListOptions{Filters: filters.NewArgs(filters.Arg("name", e2eUDPService))})
+	list, err := cli.ContainerList(ctx, dockerclient.ContainerListOptions{Filters: dockerclient.Filters{}.Add("name", e2eUDPService)})
 	if err != nil {
 		t.Fatalf("ContainerList: %v", err)
 	}

@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
 
 	"github.com/glincker/levelrail/internal/docker"
 )
@@ -133,14 +134,14 @@ func TestValidateOtherBodies(t *testing.T) {
 		got  []Violation
 		want string
 	}{
-		{name: "exec plain allowed", got: validateExec(container.ExecOptions{Cmd: []string{"sh"}})},
-		{name: "exec privileged denied", got: validateExec(container.ExecOptions{Privileged: true}), want: RuleExecPrivileged},
+		{name: "exec plain allowed", got: validateExec(dockerclient.ExecCreateOptions{Cmd: []string{"sh"}})},
+		{name: "exec privileged denied", got: validateExec(dockerclient.ExecCreateOptions{Privileged: true}), want: RuleExecPrivileged},
 		{name: "update resources allowed", got: validateUpdate(container.UpdateConfig{Resources: container.Resources{Memory: 1 << 20}})},
 		{name: "update devices denied", got: validateUpdate(container.UpdateConfig{Resources: container.Resources{Devices: []container.DeviceMapping{{PathOnHost: "/dev/sda"}}}}), want: RuleDevices},
 		{name: "update cgroup rules denied", got: validateUpdate(container.UpdateConfig{Resources: container.Resources{DeviceCgroupRules: []string{"a *:* rwm"}}}), want: RuleDeviceCgroupRules},
-		{name: "volume plain allowed", got: validateVolume(volume.CreateOptions{Name: "v"})},
-		{name: "volume nfs allowed", got: validateVolume(volume.CreateOptions{Name: "v", DriverOpts: map[string]string{"type": "nfs", "o": "addr=10.0.0.2,rw", "device": ":/export"}})},
-		{name: "volume bind denied", got: validateVolume(volume.CreateOptions{Name: "v", DriverOpts: map[string]string{"type": "none", "O": "rbind,ro", "device": "/"}}), want: RuleVolumeBindDriverOpt},
+		{name: "volume plain allowed", got: validateVolume(dockerclient.VolumeCreateOptions{Name: "v"})},
+		{name: "volume nfs allowed", got: validateVolume(dockerclient.VolumeCreateOptions{Name: "v", DriverOpts: map[string]string{"type": "nfs", "o": "addr=10.0.0.2,rw", "device": ":/export"}})},
+		{name: "volume bind denied", got: validateVolume(dockerclient.VolumeCreateOptions{Name: "v", DriverOpts: map[string]string{"type": "none", "O": "rbind,ro", "device": "/"}}), want: RuleVolumeBindDriverOpt},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

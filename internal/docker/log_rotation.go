@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 )
 
 // LogRotation is the json-file rotation applied to containers created from now on. Zero in either field leaves the daemon default.

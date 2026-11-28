@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // inspectBatchSize bounds the name filters in one list request.
@@ -25,12 +24,12 @@ func (c *Client) InspectManyByName(ctx context.Context, names []string) (map[str
 	}
 	for start := 0; start < len(names); start += inspectBatchSize {
 		end := min(start+inspectBatchSize, len(names))
-		f := filters.NewArgs()
+		f := dockerclient.Filters{}
 		for _, n := range names[start:end] {
 			f.Add("name", "^/"+n+"$")
 		}
 		c.instanceLabelFilter(f)
-		summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+		summaries, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: f})
 		if err != nil {
 			return nil, fmt.Errorf("docker: list %d containers by name: %w", end-start, err)
 		}

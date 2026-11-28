@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/pkg/stdcopy"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/pkg/stdcopy"
 )
 
 // maxTailBytes bounds what one TailLogs call reads, so a runaway log line cannot bloat a failure record.
@@ -18,7 +19,7 @@ var errTailFull = errors.New("log tail cap reached")
 
 // TailLogs returns the last lines of a container's combined output through the Engine API, without timestamps.
 func (c *Client) TailLogs(ctx context.Context, name string, lines int) (string, error) {
-	rc, err := c.cli.ContainerLogs(ctx, name, container.LogsOptions{
+	rc, err := c.cli.ContainerLogs(ctx, name, dockerclient.ContainerLogsOptions{
 		ShowStdout: true, ShowStderr: true, Tail: strconv.Itoa(lines),
 	})
 	if err != nil {

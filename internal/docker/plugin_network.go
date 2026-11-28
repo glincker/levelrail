@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	dockerclient "github.com/moby/moby/client"
+
 	cerrdefs "github.com/containerd/errdefs"
-	dockernetwork "github.com/docker/docker/api/types/network"
+	dockernetwork "github.com/moby/moby/api/types/network"
 )
 
 const iccOption = "com.docker.network.bridge.enable_icc"
@@ -31,7 +33,7 @@ func (o IsolatedNetworkOptions) matches(in dockernetwork.Inspect) bool {
 // disconnected by a replacement. An existing network that differs is kept
 // unless opts.Recreate is set, so a default install never loses connectivity.
 func (c *Client) EnsureIsolatedNetwork(ctx context.Context, name string, opts IsolatedNetworkOptions) (string, bool, error) {
-	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockerclient.NetworkInspectOptions{})
 	switch {
 	case err == nil:
 		if opts.matches(inspect) || !opts.Recreate {
@@ -44,7 +46,7 @@ func (c *Client) EnsureIsolatedNetwork(ctx context.Context, name string, opts Is
 		return "", false, fmt.Errorf("docker: inspect network %q: %w", name, err)
 	}
 
-	create := dockernetwork.CreateOptions{Driver: "bridge", Labels: c.networkLabels(name), Internal: opts.Internal}
+	create := dockerclient.NetworkCreateOptions{Driver: "bridge", Labels: c.networkLabels(name), Internal: opts.Internal}
 	if opts.DisableICC {
 		create.Options = map[string]string{iccOption: "false"}
 	}

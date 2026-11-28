@@ -9,11 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/network"
-	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // dindNode is one Docker-in-Docker daemon standing in for a separate host.
@@ -52,7 +51,7 @@ func ensureHostImage(ctx context.Context, t *testing.T, cli *dockerclient.Client
 	if _, err := cli.ImageInspect(ctx, ref); err == nil {
 		return
 	}
-	rc, err := cli.ImagePull(ctx, ref, image.PullOptions{})
+	rc, err := cli.ImagePull(ctx, ref, dockerclient.ImagePullOptions{})
 	if err != nil {
 		t.Fatalf("pull %s: %v", ref, err)
 	}
@@ -68,10 +67,10 @@ func startDindNodes(ctx context.Context, t *testing.T, cli *dockerclient.Client,
 		ensureHostImage(ctx, t, cli, ref)
 	}
 	for i := 0; i < n; i++ {
-		_ = cli.ContainerRemove(ctx, fmt.Sprintf("lr-multinode-live-%d", i), container.RemoveOptions{Force: true, RemoveVolumes: true})
+		_ = cli.ContainerRemove(ctx, fmt.Sprintf("lr-multinode-live-%d", i), dockerclient.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
 	}
 	_ = cli.NetworkRemove(ctx, dindNetwork)
-	if _, err := cli.NetworkCreate(ctx, dindNetwork, network.CreateOptions{}); err != nil {
+	if _, err := cli.NetworkCreate(ctx, dindNetwork, dockerclient.NetworkCreateOptions{}); err != nil {
 		t.Fatalf("create network: %v", err)
 	}
 	t.Cleanup(func() { _ = cli.NetworkRemove(context.Background(), dindNetwork) })
@@ -79,7 +78,7 @@ func startDindNodes(ctx context.Context, t *testing.T, cli *dockerclient.Client,
 	nodes := make([]dindNode, 0, n)
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("lr-multinode-live-%d", i)
-		_ = cli.ContainerRemove(ctx, name, container.RemoveOptions{Force: true, RemoveVolumes: true})
+		_ = cli.ContainerRemove(ctx, name, dockerclient.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
 		created, err := cli.ContainerCreate(ctx,
 			&container.Config{Image: dindImage, Env: []string{"DOCKER_TLS_CERTDIR="}, Cmd: []string{"--host=tcp://0.0.0.0:2375", "--tls=false"},
 				ExposedPorts: nat.PortSet{"2375/tcp": {}}},
@@ -89,9 +88,9 @@ func startDindNodes(ctx context.Context, t *testing.T, cli *dockerclient.Client,
 			t.Fatalf("create %s: %v", name, err)
 		}
 		t.Cleanup(func() {
-			_ = cli.ContainerRemove(context.Background(), created.ID, container.RemoveOptions{Force: true, RemoveVolumes: true})
+			_ = cli.ContainerRemove(context.Background(), created.ID, dockerclient.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
 		})
-		if err := cli.ContainerStart(ctx, created.ID, container.StartOptions{}); err != nil {
+		if err := cli.ContainerStart(ctx, created.ID, dockerclient.ContainerStartOptions{}); err != nil {
 			t.Fatalf("start %s: %v", name, err)
 		}
 		info, err := cli.ContainerInspect(ctx, created.ID)

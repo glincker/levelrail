@@ -6,8 +6,9 @@ import (
 	"sort"
 	"time"
 
+	dockerclient "github.com/moby/moby/client"
+
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/image"
 )
 
 // ImageRecord is one local image as the Engine API reports it.
@@ -40,7 +41,7 @@ type ImageInventory interface {
 // ListAllImages returns every local image with its size, digests and the
 // number of containers using it, newest first.
 func (c *Client) ListAllImages(ctx context.Context) ([]ImageRecord, error) {
-	summaries, err := c.cli.ImageList(ctx, image.ListOptions{SharedSize: true})
+	summaries, err := c.cli.ImageList(ctx, dockerclient.ImageListOptions{SharedSize: true})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list all images: %w", err)
 	}
@@ -76,7 +77,7 @@ func (c *Client) ImageLayerHistory(ctx context.Context, ref string) ([]ImageLaye
 // RemoveImage deletes an image by ID without force, so Docker refuses when a
 // container still uses it. A missing image is not an error.
 func (c *Client) RemoveImage(ctx context.Context, id string) error {
-	_, err := c.cli.ImageRemove(ctx, id, image.RemoveOptions{Force: false, PruneChildren: false})
+	_, err := c.cli.ImageRemove(ctx, id, dockerclient.ImageRemoveOptions{Force: false, PruneChildren: false})
 	if err != nil && !cerrdefs.IsNotFound(err) {
 		return fmt.Errorf("docker: remove image %q: %w", id, err)
 	}

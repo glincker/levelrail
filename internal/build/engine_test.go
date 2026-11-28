@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/docker/docker/api/types"
+	"github.com/moby/moby/api/types"
 )
 
 type fakeEngine struct {

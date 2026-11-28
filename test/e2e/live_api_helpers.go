@@ -10,8 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/api"
 )
@@ -86,7 +85,7 @@ const e2eHTTPTimeout = 10 * time.Second
 func removeContainerAndVolumes(cli *dockerclient.Client, containerName string, namedVolumes ...string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	_ = cli.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true, RemoveVolumes: true})
+	_ = cli.ContainerRemove(ctx, containerName, dockerclient.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
 	for _, name := range namedVolumes {
 		_ = cli.VolumeRemove(ctx, name, true)
 	}

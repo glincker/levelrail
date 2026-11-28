@@ -11,9 +11,10 @@ import (
 	"time"
 	"unicode/utf8"
 
+	dockerclient "github.com/moby/moby/client"
+
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
+	"github.com/moby/moby/api/types/container"
 )
 
 // HealthOutputMaxBytes bounds the probe output line carried per container:
@@ -96,14 +97,14 @@ func (c *Client) InspectContainerDetails(ctx context.Context, q DetailQuery) ([]
 	if q.NamePrefix == "" || q.LabelKey == "" || q.LabelValue == "" {
 		return nil, ErrDetailUnscoped
 	}
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("name", "^/"+regexp.QuoteMeta(q.NamePrefix))
 	f.Add("label", q.LabelKey+"="+q.LabelValue)
 	c.instanceLabelFilter(f)
 	for _, id := range q.IDs {
 		f.Add("id", id)
 	}
-	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	summaries, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers for inspect: %w", err)
 	}
@@ -148,7 +149,7 @@ func firstName(names []string) string {
 // detailFromInspect copies only allowlisted fields out of a full inspect.
 func detailFromInspect(resp container.InspectResponse, labelKey string) ContainerDetail {
 	d := ContainerDetail{Ports: []PortBinding{}, Networks: []ContainerNetworkDetail{}, Mounts: []ContainerMountDetail{}}
-	if b := resp.ContainerJSONBase; b != nil {
+	if b := resp; b != nil {
 		d.ID, d.Name, d.ImageID, d.RestartCount = b.ID, strings.TrimPrefix(b.Name, "/"), b.Image, b.RestartCount
 		if st := b.State; st != nil {
 			d.State = st.Status
@@ -175,7 +176,7 @@ func detailFromInspect(resp container.InspectResponse, labelKey string) Containe
 		for port, bindings := range ns.Ports {
 			for _, pb := range bindings {
 				hp, _ := strconv.Atoi(pb.HostPort)
-				d.Ports = append(d.Ports, PortBinding{ContainerPort: port.Int(), HostPort: hp, HostIP: pb.HostIP, Protocol: port.Proto()})
+				d.Ports = append(d.Ports, PortBinding{ContainerPort: int(port.Num()), HostPort: hp, HostIP: addrStr(pb.HostIP), Protocol: string(port.Proto())})
 			}
 		}
 		sort.Slice(d.Ports, func(i, j int) bool { return d.Ports[i].ContainerPort < d.Ports[j].ContainerPort })

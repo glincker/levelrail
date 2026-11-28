@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	dockerclient "github.com/moby/moby/client"
+
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/image"
 )
 
 // ImagePinner adds and removes extra tags on local images, so content a
@@ -27,7 +28,7 @@ func (c *Client) TagImage(ctx context.Context, source, target string) error {
 // ref was its last reference and no container uses it. A missing ref is
 // not an error.
 func (c *Client) UntagImage(ctx context.Context, ref string) error {
-	_, err := c.cli.ImageRemove(ctx, ref, image.RemoveOptions{Force: false, PruneChildren: false})
+	_, err := c.cli.ImageRemove(ctx, ref, dockerclient.ImageRemoveOptions{Force: false, PruneChildren: false})
 	if err != nil && !cerrdefs.IsNotFound(err) {
 		return fmt.Errorf("docker: untag %q: %w", ref, err)
 	}

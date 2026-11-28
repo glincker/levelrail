@@ -16,10 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/network"
+	dockerclient "github.com/moby/moby/client"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -335,19 +333,19 @@ func cleanupDocker(t *testing.T, live liveBuildEnv, names ...string) {
 		defer cancel()
 		for _, name := range names {
 			cleanupContainers(ctx, t, live.Runtime, name)
-			imgs, err := live.DockerCli.ImageList(ctx, image.ListOptions{
-				Filters: filters.NewArgs(filters.Arg("reference", agentLoopImageNS+"/"+name)),
+			imgs, err := live.DockerCli.ImageList(ctx, dockerclient.ImageListOptions{
+				Filters: dockerclient.Filters{}.Add("reference", agentLoopImageNS+"/"+name),
 			})
 			if err != nil {
 				continue
 			}
 			for _, img := range imgs {
-				_, _ = live.DockerCli.ImageRemove(ctx, img.ID, image.RemoveOptions{Force: true, PruneChildren: true})
+				_, _ = live.DockerCli.ImageRemove(ctx, img.ID, dockerclient.ImageRemoveOptions{Force: true, PruneChildren: true})
 			}
 			// Leaked per-app networks exhaust Docker's address pools after a
 			// few dozen runs.
-			nets, err := live.DockerCli.NetworkList(ctx, network.ListOptions{
-				Filters: filters.NewArgs(filters.Arg("name", name)),
+			nets, err := live.DockerCli.NetworkList(ctx, dockerclient.NetworkListOptions{
+				Filters: dockerclient.Filters{}.Add("name", name),
 			})
 			if err != nil {
 				continue
@@ -373,9 +371,9 @@ func logContainers(t *testing.T, live liveBuildEnv, names ...string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for _, name := range names {
-		list, err := live.DockerCli.ContainerList(ctx, container.ListOptions{
+		list, err := live.DockerCli.ContainerList(ctx, dockerclient.ContainerListOptions{
 			All:     true,
-			Filters: filters.NewArgs(filters.Arg("name", name)),
+			Filters: dockerclient.Filters{}.Add("name", name),
 		})
 		if err != nil {
 			continue

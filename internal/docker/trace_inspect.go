@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
+	dockerclient "github.com/moby/moby/client"
+
 	"github.com/distribution/reference"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/api/types/filters"
+	"github.com/moby/moby/api/types/events"
 )
 
 // ImageDetails is what a deploy trace reports about a local image.
@@ -100,10 +101,10 @@ type LifecycleWatcher interface {
 
 // WatchContainer implements LifecycleWatcher.
 func (c *Client) WatchContainer(ctx context.Context, name string) (<-chan LifecycleEvent, <-chan error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("type", string(events.ContainerEventType))
 	f.Add("container", name)
-	raw, rawErrs := c.cli.Events(ctx, events.ListOptions{Filters: f, Since: strconv.FormatInt(time.Now().Unix(), 10)})
+	raw, rawErrs := c.cli.Events(ctx, dockerclient.EventsListOptions{Filters: f, Since: strconv.FormatInt(time.Now().Unix(), 10)})
 
 	out := make(chan LifecycleEvent, 32)
 	outErr := make(chan error, 1)

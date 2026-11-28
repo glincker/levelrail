@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/netip"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	dockernetwork "github.com/docker/docker/api/types/network"
+	dockerclient "github.com/moby/moby/client"
+
+	dockernetwork "github.com/moby/moby/api/types/network"
 )
 
 // bridgeNameOption is the label Docker uses for a network's host interface name.
@@ -23,7 +23,7 @@ type ManagedBridge struct {
 
 // ManagedBridges lists the default bridge plus the bridge networks this instance created, IPv4 only.
 func (c *Client) ManagedBridges(ctx context.Context) ([]ManagedBridge, error) {
-	nets, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{})
+	nets, err := c.cli.NetworkList(ctx, dockerclient.NetworkListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list networks for bridges: %w", err)
 	}
@@ -79,11 +79,11 @@ func shortID(id string) string {
 
 // DNSUsage counts running app containers and how many have a DNS server in addrs.
 func (c *Client) DNSUsage(ctx context.Context, addrs map[string]bool) (using, total int, err error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("label", containerAppLabel)
 	f.Add("status", "running")
 	c.instanceLabelFilter(f)
-	list, err := c.cli.ContainerList(ctx, container.ListOptions{Filters: f})
+	list, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{Filters: f})
 	if err != nil {
 		return 0, 0, fmt.Errorf("docker: list app containers for dns usage: %w", err)
 	}

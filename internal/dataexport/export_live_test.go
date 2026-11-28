@@ -15,11 +15,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/strslice"
-	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/strslice"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/dockertest"
@@ -41,7 +40,7 @@ func freePort(t *testing.T) int {
 
 func pull(ctx context.Context, t *testing.T, cli *dockerclient.Client, ref string) {
 	t.Helper()
-	r, err := cli.ImagePull(ctx, ref, image.PullOptions{})
+	r, err := cli.ImagePull(ctx, ref, dockerclient.ImagePullOptions{})
 	if err != nil {
 		t.Skipf("cannot pull %s (offline?): %v", ref, err)
 	}
@@ -50,7 +49,7 @@ func pull(ctx context.Context, t *testing.T, cli *dockerclient.Client, ref strin
 }
 
 func removeContainer(cli *dockerclient.Client, id string) {
-	_ = cli.ContainerRemove(context.Background(), id, container.RemoveOptions{Force: true})
+	_ = cli.ContainerRemove(context.Background(), id, dockerclient.ContainerRemoveOptions{Force: true})
 }
 
 // TestExport_Live_LogsReachLokiAndAuditReachesSink drives the real path: a
@@ -88,7 +87,7 @@ func TestExport_Live_LogsReachLokiAndAuditReachesSink(t *testing.T) {
 		t.Fatalf("create loki: %v", err)
 	}
 	t.Cleanup(func() { removeContainer(raw, loki.ID) })
-	if err := raw.ContainerStart(ctx, loki.ID, container.StartOptions{}); err != nil {
+	if err := raw.ContainerStart(ctx, loki.ID, dockerclient.ContainerStartOptions{}); err != nil {
 		t.Fatalf("start loki: %v", err)
 	}
 	lokiURL := fmt.Sprintf("http://127.0.0.1:%d", port)
@@ -151,7 +150,7 @@ func TestExport_Live_LogsReachLokiAndAuditReachesSink(t *testing.T) {
 		t.Fatalf("create app container: %v", err)
 	}
 	t.Cleanup(func() { removeContainer(raw, app.ID) })
-	if err := raw.ContainerStart(ctx, app.ID, container.StartOptions{}); err != nil {
+	if err := raw.ContainerStart(ctx, app.ID, dockerclient.ContainerStartOptions{}); err != nil {
 		t.Fatal(err)
 	}
 	collector := telemetry.NewLogCollector(dc, tdb, broadcaster, nil)

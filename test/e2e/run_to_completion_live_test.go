@@ -10,9 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/brand"
@@ -118,7 +116,7 @@ func (s *rtcStack) containers(name string) []rtcContainer {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	prefix := s.svc(name) + "-"
-	list, err := s.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: filters.NewArgs(filters.Arg("name", prefix))})
+	list, err := s.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: dockerclient.Filters{}.Add("name", prefix)})
 	if err != nil {
 		s.t.Fatalf("ContainerList(%s): %v", prefix, err)
 	}

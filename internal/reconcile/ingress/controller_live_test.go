@@ -13,8 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/dockertest"
@@ -247,7 +246,7 @@ func pullIfMissing(ctx context.Context, t *testing.T, cli *dockerclient.Client, 
 	if err == nil {
 		return nil
 	}
-	rc, err := cli.ImagePull(ctx, ref, image.PullOptions{})
+	rc, err := cli.ImagePull(ctx, ref, dockerclient.ImagePullOptions{})
 	if err != nil {
 		return err
 	}

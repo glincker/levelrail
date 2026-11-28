@@ -7,8 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -101,7 +100,7 @@ func TestLive_RemoteBuildDispatch(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		_, _ = rawCli.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+		_, _ = rawCli.ImageRemove(cleanupCtx, tag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	buildCtx, cancelBuild := context.WithTimeout(context.Background(), 3*time.Minute)

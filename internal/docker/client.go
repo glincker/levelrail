@@ -16,24 +16,22 @@ import (
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/mount"
-	dockernetwork "github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/registry"
-	dockerclient "github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/pkg/authconfig"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/events"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
+	dockernetwork "github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/api/types/registry"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // Client is the real Runtime implementation, talking to the Docker Engine
 // API over the local socket. It never shells out to the `docker` CLI,
 // per the project's Docker Engine API only rule.
 type Client struct {
-	cli   *dockerclient.Client
+	cli   engine
 	guard *guardTransport
 	cdi   cdiCache
 	// instanceLabelKey/instanceLabelValue, when both set (WithInstanceLabel),
@@ -120,10 +118,10 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
 	_ = probe.Close()
-	c.cli = cli
+	c.cli = engine{cli}
 	c.guard = guard
 	c.stop = make(chan struct{})
-	negotiateUpFront(cli, envDuration(envBootTimeout, defaultBootTimeout), c.stop)
+	negotiateUpFront(c.cli, envDuration(envBootTimeout, defaultBootTimeout), c.stop)
 	return c, nil
 }
 
@@ -154,7 +152,7 @@ func (c *Client) hasInstanceLabel() bool {
 // Engine API list filter, when configured, scoping f to only resources
 // this instance created. A no-op otherwise, so callers can always call
 // this unconditionally.
-func (c *Client) instanceLabelFilter(f filters.Args) {
+func (c *Client) instanceLabelFilter(f dockerclient.Filters) {
 	if c.hasInstanceLabel() {
 		f.Add("label", c.instanceLabelKey+"="+c.instanceLabelValue)
 	}
@@ -267,10 +265,10 @@ func (c *Client) TestRegistryAuth(ctx context.Context, host, username, password 
 // restart-in-place), see internal/spec.InstanceLabelKey's own doc
 // comment.
 func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerState, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("name", "^/"+name+"$") // anchored: Docker's name filter is a substring match otherwise
 	c.instanceLabelFilter(f)
-	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	summaries, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers named %q: %w", name, err)
 	}
@@ -295,7 +293,7 @@ func (c *Client) configuredPorts(ctx context.Context, id string) []PortBinding {
 	for port, bindings := range resp.HostConfig.PortBindings {
 		for _, b := range bindings {
 			hp, _ := strconv.Atoi(b.HostPort)
-			out = append(out, PortBinding{ContainerPort: port.Int(), HostPort: hp, HostIP: b.HostIP, Protocol: port.Proto()})
+			out = append(out, PortBinding{ContainerPort: int(port.Num()), HostPort: hp, HostIP: addrStr(b.HostIP), Protocol: string(port.Proto())})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool {
@@ -351,9 +349,9 @@ func (c *Client) InspectExitState(ctx context.Context, name string) (*ExitState,
 // match, the same "list broadly, filter narrowly at the call site"
 // split NetworkInfo.Labels/NetworkCleanupController use for networks.
 func (c *Client) ListByPrefix(ctx context.Context, prefix string) ([]ContainerState, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("name", "^/"+prefix) // no trailing $: prefix match, not exact
-	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	summaries, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers with prefix %q: %w", prefix, err)
 	}
@@ -398,7 +396,7 @@ func summaryNetworks(s container.Summary) []ContainerNetwork {
 	for name, ep := range s.NetworkSettings.Networks {
 		n := ContainerNetwork{Name: name}
 		if ep != nil {
-			n.IPAddress = ep.IPAddress
+			n.IPAddress = addrStr(ep.IPAddress)
 		}
 		out = append(out, n)
 	}
@@ -406,7 +404,7 @@ func summaryNetworks(s container.Summary) []ContainerNetwork {
 	return out
 }
 
-func observedPorts(ports []container.Port) []PortBinding {
+func observedPorts(ports []container.PortSummary) []PortBinding {
 	// Docker reports one entry per (IP, port) combination: a container
 	// created with no explicit HostIP (every container before
 	// migrations/0103_service_bind_address.sql and 0099's own database
@@ -426,7 +424,7 @@ func observedPorts(ports []container.Port) []PortBinding {
 		binding := PortBinding{
 			ContainerPort: int(p.PrivatePort),
 			HostPort:      int(p.PublicPort),
-			HostIP:        p.IP,
+			HostIP:        addrStr(p.IP),
 			Protocol:      p.Type,
 		}
 		if seen[binding] {
@@ -523,7 +521,7 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 
 // EnsureLabeledNetwork implements LabeledNetworkEnsurer; an existing network keeps its labels.
 func (c *Client) EnsureLabeledNetwork(ctx context.Context, name string, extra map[string]string) (string, error) {
-	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockerclient.NetworkInspectOptions{})
 	if err == nil {
 		return inspect.ID, nil
 	}
@@ -539,7 +537,7 @@ func (c *Client) EnsureLabeledNetwork(ctx context.Context, name string, extra ma
 		}
 		return id, nil
 	}
-	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{Driver: "bridge", Labels: labels})
+	resp, err := c.cli.NetworkCreate(ctx, name, dockerclient.NetworkCreateOptions{Driver: "bridge", Labels: labels})
 	if err != nil {
 		if IsPoolExhausted(err) {
 			return "", &PoolExhaustedError{Daemon: true, InUse: c.countNetworks(ctx)}
@@ -565,7 +563,7 @@ func mergeNetworkLabels(own, extra map[string]string) map[string]string {
 }
 
 func (c *Client) countNetworks(ctx context.Context) int {
-	nets, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{})
+	nets, err := c.cli.NetworkList(ctx, dockerclient.NetworkListOptions{})
 	if err != nil {
 		return 0
 	}
@@ -610,7 +608,7 @@ func (c *Client) managedEndpoint(ctx context.Context, containerID string) (manag
 }
 
 func (c *Client) removeNetwork(ctx context.Context, name string, onlyManaged bool) error {
-	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockerclient.NetworkInspectOptions{})
 	if err == nil && onlyManaged {
 		for containerID := range inspect.Containers {
 			managed, gone, mErr := c.managedEndpoint(ctx, containerID)
@@ -650,7 +648,7 @@ func (c *Client) removeNetwork(ctx context.Context, name string, onlyManaged boo
 // and each entry's own Name field, confirmed live: a name-keyed-only
 // check let a real "already exists" error through on the second call.
 func (c *Client) NetworkConnect(ctx context.Context, name, containerID string) error {
-	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockerclient.NetworkInspectOptions{})
 	if err != nil {
 		return fmt.Errorf("docker: inspect network %q before connect: %w", name, err)
 	}
@@ -705,9 +703,9 @@ func (c *Client) NetworkDisconnect(ctx context.Context, name, containerID string
 // caller today) applies its own instance check against the returned
 // NetworkInfo.Labels before treating anything as orphaned.
 func (c *Client) ListNetworksByPrefix(ctx context.Context, prefix string) ([]NetworkInfo, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("name", prefix) // Docker's network name filter is a substring match; narrowed by the prefix check below
-	networks, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{Filters: f})
+	networks, err := c.cli.NetworkList(ctx, dockerclient.NetworkListOptions{Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list networks with prefix %q: %w", prefix, err)
 	}
@@ -727,7 +725,7 @@ func (c *Client) ListNetworksByPrefix(ctx context.Context, prefix string) ([]Net
 // of Create so its own now-linear body isn't cluttered by this
 // construction, and so a future caller (none today) could reuse the same
 // spec-to-HostConfig mapping without duplicating it.
-func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.HostConfig {
+func buildHostConfig(spec ContainerSpec, portBindings network.PortMap) *container.HostConfig {
 	hostConfig := &container.HostConfig{
 		PortBindings: portBindings,
 		// Explicitly "no": the reconciler, not Docker, decides whether a
@@ -850,7 +848,7 @@ func (c *Client) DockerRootDir(ctx context.Context) (string, error) {
 // container-reachable address for the mesh DNS server, since no
 // WireGuard mesh IP is bound to anything yet.
 func (c *Client) BridgeGatewayIP(ctx context.Context) (string, error) {
-	inspect, err := c.cli.NetworkInspect(ctx, "bridge", dockernetwork.InspectOptions{})
+	inspect, err := c.cli.NetworkInspect(ctx, "bridge", dockerclient.NetworkInspectOptions{})
 	if err != nil {
 		return "", fmt.Errorf("docker: inspect bridge network: %w", err)
 	}
@@ -867,26 +865,26 @@ func gatewayIPFromNetworkInspect(cfg []dockernetwork.IPAMConfig) (string, error)
 	}
 	for _, c := range cfg {
 		if c.Gateway != "" {
-			return c.Gateway, nil
+			return addrStr(c.Gateway), nil
 		}
 	}
 	return "", fmt.Errorf("docker: bridge network IPAM config has no gateway")
 }
 
-func toDockerPorts(ports []PortBinding) (nat.PortSet, nat.PortMap, error) {
+func toDockerPorts(ports []PortBinding) (network.PortSet, network.PortMap, error) {
 	if len(ports) == 0 {
 		return nil, nil, nil
 	}
 
-	exposed := make(nat.PortSet, len(ports))
-	bindings := make(nat.PortMap, len(ports))
+	exposed := make(network.PortSet, len(ports))
+	bindings := make(network.PortMap, len(ports))
 
 	for _, p := range ports {
 		proto := p.Protocol
 		if proto == "" {
 			proto = "tcp"
 		}
-		natPort, err := nat.NewPort(proto, strconv.Itoa(p.ContainerPort))
+		natPort, err := network.ParsePort(strconv.Itoa(p.ContainerPort) + "/" + proto)
 		if err != nil {
 			return nil, nil, fmt.Errorf("port %d/%s: %w", p.ContainerPort, proto, err)
 		}
@@ -897,7 +895,7 @@ func toDockerPorts(ports []PortBinding) (nat.PortSet, nat.PortMap, error) {
 		if p.HostPort != 0 {
 			hostPort = strconv.Itoa(p.HostPort)
 		}
-		bindings[natPort] = append(bindings[natPort], nat.PortBinding{HostIP: p.HostIP, HostPort: hostPort})
+		bindings[natPort] = append(bindings[natPort], network.PortBinding{HostIP: parseHostIP(p.HostIP), HostPort: hostPort})
 	}
 
 	return exposed, bindings, nil
@@ -949,7 +947,7 @@ func toDockerEnv(env map[string]string) []string {
 
 // Start implements Runtime.
 func (c *Client) Start(ctx context.Context, id string) error {
-	if err := c.cli.ContainerStart(ctx, id, container.StartOptions{}); err != nil {
+	if err := c.cli.ContainerStart(ctx, id, dockerclient.ContainerStartOptions{}); err != nil {
 		return fmt.Errorf("docker: start container %s: %w", id, err)
 	}
 	return nil
@@ -958,7 +956,7 @@ func (c *Client) Start(ctx context.Context, id string) error {
 // Stop implements Runtime.
 func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) error {
 	timeout = c.configuredStopTimeout(ctx, id, timeout)
-	opts := container.StopOptions{}
+	opts := dockerclient.ContainerStopOptions{}
 	if timeout >= 0 {
 		seconds := int(timeout.Seconds())
 		opts.Timeout = &seconds
@@ -977,7 +975,7 @@ func (c *Client) Remove(ctx context.Context, id string, force bool) error {
 	if force && c.isPodman(ctx) {
 		return c.removePodman(ctx, id)
 	}
-	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: force}); err != nil {
+	if err := c.cli.ContainerRemove(ctx, id, dockerclient.ContainerRemoveOptions{Force: force}); err != nil {
 		if strings.Contains(err.Error(), "already in progress") && c.waitContainerGone(ctx, id) {
 			return nil
 		}
@@ -1170,20 +1168,20 @@ func (c *Client) ExecWithInput(ctx context.Context, containerID string, cmd []st
 // set, is a single boolean parameter rather than two near-identical
 // copies of ContainerExecCreate/ContainerExecAttach drifting apart over
 // time.
-func (c *Client) execCreateAttach(ctx context.Context, containerID string, cmd []string, attachStdin bool) (execID string, attached dockertypes.HijackedResponse, err error) {
-	created, err := c.cli.ContainerExecCreate(ctx, containerID, container.ExecOptions{
+func (c *Client) execCreateAttach(ctx context.Context, containerID string, cmd []string, attachStdin bool) (execID string, attached dockerclient.HijackedResponse, err error) {
+	created, err := c.cli.ContainerExecCreate(ctx, containerID, dockerclient.ExecCreateOptions{
 		Cmd:          cmd,
 		AttachStdin:  attachStdin,
 		AttachStdout: true,
 		AttachStderr: true,
 	})
 	if err != nil {
-		return "", dockertypes.HijackedResponse{}, fmt.Errorf("docker: exec create %v in %s: %w", cmd, containerID, err)
+		return "", dockerclient.HijackedResponse{}, fmt.Errorf("docker: exec create %v in %s: %w", cmd, containerID, err)
 	}
 
-	attached, err = c.cli.ContainerExecAttach(ctx, created.ID, container.ExecAttachOptions{})
+	attached, err = c.cli.ContainerExecAttach(ctx, created.ID, dockerclient.ExecAttachOptions{})
 	if err != nil {
-		return "", dockertypes.HijackedResponse{}, fmt.Errorf("docker: exec attach %v in %s: %w", cmd, containerID, err)
+		return "", dockerclient.HijackedResponse{}, fmt.Errorf("docker: exec attach %v in %s: %w", cmd, containerID, err)
 	}
 	return created.ID, attached, nil
 }
@@ -1223,7 +1221,7 @@ func (e *ExecExitError) Error() string {
 // would otherwise look identical to one that succeeded with an empty
 // dump, and that distinction is exactly what a backup caller needs to
 // tell "empty database" apart from "the dump silently failed."
-func (c *Client) streamExecOutput(ctx context.Context, containerID, execID string, cmd []string, attached dockertypes.HijackedResponse, pw *io.PipeWriter) {
+func (c *Client) streamExecOutput(ctx context.Context, containerID, execID string, cmd []string, attached dockerclient.HijackedResponse, pw *io.PipeWriter) {
 	defer attached.Close()
 
 	stderr := &cappedBuffer{limit: execStderrCap}
@@ -1291,9 +1289,9 @@ func (c *Client) ensureImagePlatform(ctx context.Context, ref string, auth *Regi
 var pulls = newPullGroup()
 
 func (c *Client) pullImage(ctx context.Context, ref string, auth *RegistryAuth, onPull func(PullEvent), platform string) error {
-	pullOpts := image.PullOptions{Platform: platform}
+	pullOpts := dockerclient.ImagePullOptions{Platform: platform}
 	if auth != nil {
-		encoded, err := registry.EncodeAuthConfig(auth.authConfig())
+		encoded, err := authconfig.Encode(auth.authConfig())
 		if err != nil {
 			return fmt.Errorf("docker: encode registry auth for image %q: %w", ref, err)
 		}
@@ -1320,10 +1318,10 @@ func (c *Client) pullImage(ctx context.Context, ref string, auth *RegistryAuth, 
 
 // ListImages implements Runtime.
 func (c *Client) ListImages(ctx context.Context, repo string) ([]ImageInfo, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("reference", repo)
 
-	summaries, err := c.cli.ImageList(ctx, image.ListOptions{Filters: f})
+	summaries, err := c.cli.ImageList(ctx, dockerclient.ImageListOptions{Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list images for %q: %w", repo, err)
 	}
@@ -1343,10 +1341,10 @@ func (c *Client) ListImages(ctx context.Context, repo string) ([]ImageInfo, erro
 
 // Events implements Runtime.
 func (c *Client) Events(ctx context.Context) (<-chan Event, <-chan error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("type", string(events.ContainerEventType))
 
-	rawEvents, rawErrs := c.cli.Events(ctx, events.ListOptions{Filters: f})
+	rawEvents, rawErrs := c.cli.Events(ctx, dockerclient.EventsListOptions{Filters: f})
 
 	out := make(chan Event)
 	outErr := make(chan error, 1)

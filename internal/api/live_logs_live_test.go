@@ -11,10 +11,9 @@ import (
 	"testing"
 	"time"
 
-	dockersdk "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/strslice"
-	dockerclient "github.com/docker/docker/client"
+	dockersdk "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/strslice"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/dockertest"
@@ -71,7 +70,7 @@ func TestHandleLiveLogStream_Live_BlueGreenOverlap_HidesDeadContainerFromCurrent
 	}
 	t.Cleanup(func() { _ = rawCli.Close() })
 
-	pullReader, err := rawCli.ImagePull(ctx, "busybox:latest", image.PullOptions{})
+	pullReader, err := rawCli.ImagePull(ctx, "busybox:latest", dockerclient.ImagePullOptions{})
 	if err != nil {
 		t.Fatalf("ImagePull() error = %v", err)
 	}

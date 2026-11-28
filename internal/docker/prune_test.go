@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/build"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/volume"
+	dockertypes "github.com/moby/moby/api/types"
+	"github.com/moby/moby/api/types/build"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/volume"
 )
 
 // anonID64 is a well-formed Docker anonymous-volume ID shape: exactly

@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
 )
 
 func TestHardeningApply_Matrix(t *testing.T) {

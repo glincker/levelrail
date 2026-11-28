@@ -17,8 +17,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
 )
 
 // Guard is the policy-enforcing reverse proxy. It is an http.Handler; Serve
@@ -194,13 +195,13 @@ func (g *Guard) validateBody(kind bodyKind, raw []byte, name string) ([]byte, []
 		}
 		return reencode(req, validateUpdate(req))
 	case bodyExecCreate:
-		var req container.ExecOptions
+		var req dockerclient.ExecCreateOptions
 		if err := json.Unmarshal(raw, &req); err != nil {
 			return invalid(err)
 		}
 		return reencode(req, validateExec(req))
 	case bodyVolumeCreate:
-		var req volume.CreateOptions
+		var req dockerclient.VolumeCreateOptions
 		if err := json.Unmarshal(raw, &req); err != nil {
 			return invalid(err)
 		}

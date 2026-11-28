@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/dockertest"

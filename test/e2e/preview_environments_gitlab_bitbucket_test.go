@@ -38,7 +38,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
+	dockerclient "github.com/moby/moby/client"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
@@ -95,8 +96,8 @@ func newLivePreviewFixture(t *testing.T, appName string, prNumber int, adminUser
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = dockerCli.ImageRemove(cleanupCtx, tagA, image.RemoveOptions{Force: true})
-		_, _ = dockerCli.ImageRemove(cleanupCtx, tagB, image.RemoveOptions{Force: true})
+		_, _ = dockerCli.ImageRemove(cleanupCtx, tagA, dockerclient.ImageRemoveOptions{Force: true})
+		_, _ = dockerCli.ImageRemove(cleanupCtx, tagB, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	// Registered after the image cleanup so it runs first (t.Cleanup is

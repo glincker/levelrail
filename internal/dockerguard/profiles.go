@@ -15,8 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
 
 	"github.com/glincker/levelrail/internal/docker"
 )
@@ -301,7 +303,7 @@ func (g *ProfileGuard) rewriteBody(w http.ResponseWriter, r *http.Request, ep pr
 		vs = append(vs, g.policy.validateCreate(req, docker.CreateDeclaration{})...)
 		out, vs = reencode(req, vs)
 	case bodyExecCreate:
-		var req container.ExecOptions
+		var req dockerclient.ExecCreateOptions
 		if json.Unmarshal(raw, &req) != nil {
 			g.deny(w, RuleBodyInvalid, "request body is not an exec create")
 			return false

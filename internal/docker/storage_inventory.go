@@ -6,10 +6,9 @@ import (
 	"strings"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
+
+	dockertypes "github.com/moby/moby/api/types"
 )
 
 // InventoryVolume is one Docker volume of any name, unlike NamedVolume which
@@ -34,7 +33,7 @@ type InventoryContainer struct {
 // ListAllVolumes returns every volume on the daemon with its size and
 // whether any container mounts it. A failed size query leaves sizes unknown.
 func (c *Client) ListAllVolumes(ctx context.Context) ([]InventoryVolume, error) {
-	vols, err := c.cli.VolumeList(ctx, volume.ListOptions{})
+	vols, err := c.cli.VolumeList(ctx, dockerclient.VolumeListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list volumes: %w", err)
 	}
@@ -43,11 +42,10 @@ func (c *Client) ListAllVolumes(ctx context.Context) ([]InventoryVolume, error) 
 		return nil, err
 	}
 	sizes := map[string]int64{}
-	if du, duErr := c.cli.DiskUsage(ctx, dockertypes.DiskUsageOptions{Types: []dockertypes.DiskUsageObject{dockertypes.VolumeObject}}); duErr == nil {
-		for _, v := range du.Volumes {
-			if v != nil {
-				sizes[v.Name] = volumeSize(v)
-			}
+	if du, duErr := c.cli.DiskUsage(ctx, dockerclient.DiskUsageOptions{Volumes: true}); duErr == nil {
+		for i := range du.Volumes.Items {
+			v := &du.Volumes.Items[i]
+			sizes[v.Name] = volumeSize(v)
 		}
 	}
 	out := make([]InventoryVolume, 0, len(vols.Volumes))
@@ -66,11 +64,11 @@ func (c *Client) ListAllVolumes(ctx context.Context) ([]InventoryVolume, error) 
 // ListStoppedContainers returns exited and created containers of this
 // instance with their size and, from an inspect, when they stopped.
 func (c *Client) ListStoppedContainers(ctx context.Context) ([]InventoryContainer, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("status", "exited")
 	f.Add("status", "created")
 	c.instanceLabelFilter(f)
-	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Size: true, Filters: f})
+	summaries, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Size: true, Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list stopped containers: %w", err)
 	}

@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // Label keys stamped on a volume when it is created for an owner.
@@ -90,9 +88,9 @@ func checkVolumeUsers(name string, want VolumeOwner, users []map[string]string) 
 // volumeUserLabels returns the labels of every container, running or
 // stopped, that mounts the named volume.
 func (c *Client) volumeUserLabels(ctx context.Context, name string) ([]map[string]string, error) {
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	f.Add("volume", name)
-	list, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	list, err := c.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true, Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers using volume %q: %w", name, err)
 	}
@@ -107,7 +105,7 @@ func (c *Client) volumeUserLabels(ctx context.Context, name string) ([]map[strin
 // existing one with the same owner label, or with none when no other app's
 // container uses it.
 func (c *Client) EnsureOwnedVolume(ctx context.Context, name string, owner VolumeOwner) error {
-	v, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{
+	v, err := c.cli.VolumeCreate(ctx, dockerclient.VolumeCreateOptions{
 		Name:   name,
 		Labels: c.withInstanceLabel(owner.labels()),
 	})

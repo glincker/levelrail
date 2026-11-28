@@ -11,8 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
 )
 
 // A new named volume mounted at a path the image does not contain is created
@@ -229,9 +231,9 @@ func (c *Client) chownVolume(ctx context.Context, volumeName string, uid, gid in
 		return fmt.Errorf("create chown helper for volume %q: %w", volumeName, err)
 	}
 	defer func() {
-		_ = c.cli.ContainerRemove(context.Background(), resp.ID, container.RemoveOptions{Force: true})
+		_ = c.cli.ContainerRemove(context.Background(), resp.ID, dockerclient.ContainerRemoveOptions{Force: true})
 	}()
-	if err := c.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if err := c.cli.ContainerStart(ctx, resp.ID, dockerclient.ContainerStartOptions{}); err != nil {
 		return fmt.Errorf("start chown helper for volume %q: %w", volumeName, err)
 	}
 	waitCh, errCh := c.cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)

@@ -10,8 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/build"
-	"github.com/docker/docker/api/types/image"
+	dockerclient "github.com/moby/moby/client"
 )
 
 func buildScratchImage(ctx context.Context, t *testing.T, c *Client, tag string) string {
@@ -30,7 +29,7 @@ func buildScratchImage(ctx context.Context, t *testing.T, c *Client, tag string)
 	if err := tw.Close(); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.cli.ImageBuild(ctx, &buf, build.ImageBuildOptions{Tags: []string{tag}, Remove: true, ForceRemove: true})
+	resp, err := c.cli.ImageBuild(ctx, &buf, dockerclient.ImageBuildOptions{Tags: []string{tag}, Remove: true, ForceRemove: true})
 	if err != nil {
 		t.Fatalf("build %s: %v", tag, err)
 	}
@@ -49,7 +48,9 @@ func TestClient_LoadImage_Live_RoundTripKeepsImageID(t *testing.T) {
 	ctx := context.Background()
 	tag := "lr-imagemove-live:" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	wantID := buildScratchImage(ctx, t, c, tag)
-	t.Cleanup(func() { _, _ = c.cli.ImageRemove(context.Background(), wantID, image.RemoveOptions{Force: true}) })
+	t.Cleanup(func() {
+		_, _ = c.cli.ImageRemove(context.Background(), wantID, dockerclient.ImageRemoveOptions{Force: true})
+	})
 
 	rc, err := c.cli.ImageSave(ctx, []string{tag})
 	if err != nil {
@@ -60,7 +61,7 @@ func TestClient_LoadImage_Live_RoundTripKeepsImageID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read save stream: %v", err)
 	}
-	if _, err := c.cli.ImageRemove(ctx, wantID, image.RemoveOptions{Force: true}); err != nil {
+	if _, err := c.cli.ImageRemove(ctx, wantID, dockerclient.ImageRemoveOptions{Force: true}); err != nil {
 		t.Fatalf("remove: %v", err)
 	}
 	if id, _ := c.InspectImageID(ctx, tag); id != "" {

@@ -1,8 +1,8 @@
 package docker
 
 import (
-	"github.com/docker/docker/api/types/blkiodev"
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/blkiodev"
+	"github.com/moby/moby/api/types/container"
 )
 
 // applyIOLimits sets per-device read and write rate caps. Without a resolved

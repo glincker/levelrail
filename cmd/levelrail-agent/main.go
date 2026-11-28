@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/glincker/levelrail/internal/cloudmeta"
 	"io"
 	"log/slog"
 	"os"
@@ -18,7 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	dockerclient "github.com/docker/docker/client"
+	"github.com/glincker/levelrail/internal/cloudmeta"
+
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/agent"
 	"github.com/glincker/levelrail/internal/build"

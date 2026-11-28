@@ -11,9 +11,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // Environment override and default for the size cap on an extracted static build.
@@ -58,7 +57,7 @@ func (e *ImageExtractor) ExtractDir(ctx context.Context, tag, srcPath, destDir s
 	defer func() {
 		rmCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), recordTimeout)
 		defer cancel()
-		_ = e.docker.ContainerRemove(rmCtx, created.ID, container.RemoveOptions{Force: true})
+		_ = e.docker.ContainerRemove(rmCtx, created.ID, dockerclient.ContainerRemoveOptions{Force: true})
 	}()
 	rc, _, err := e.docker.CopyFromContainer(ctx, created.ID, path.Join(srcPath, "."))
 	if err != nil {
@@ -71,7 +70,7 @@ func (e *ImageExtractor) ExtractDir(ctx context.Context, tag, srcPath, destDir s
 func (e *ImageExtractor) removeImage(tag string) {
 	ctx, cancel := context.WithTimeout(context.Background(), recordTimeout)
 	defer cancel()
-	_, _ = e.docker.ImageRemove(ctx, tag, image.RemoveOptions{PruneChildren: true})
+	_, _ = e.docker.ImageRemove(ctx, tag, dockerclient.ImageRemoveOptions{PruneChildren: true})
 }
 
 // UntarConfined unpacks regular files and directories of r under destDir,

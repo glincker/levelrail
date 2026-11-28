@@ -5,11 +5,9 @@ import (
 	"io"
 
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/volume"
-	dockerclient "github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	dockerclient "github.com/moby/moby/client"
 )
 
 type dockerEngine struct{ cli *dockerclient.Client }
@@ -61,7 +59,7 @@ func (d dockerEngine) CreateContainer(ctx context.Context, s CreateSpec) (string
 }
 
 func (d dockerEngine) StartContainer(ctx context.Context, id string) error {
-	err := d.cli.ContainerStart(ctx, id, container.StartOptions{})
+	err := d.cli.ContainerStart(ctx, id, dockerclient.ContainerStartOptions{})
 	if cerrdefs.IsNotModified(err) {
 		return nil
 	}
@@ -69,7 +67,7 @@ func (d dockerEngine) StartContainer(ctx context.Context, id string) error {
 }
 
 func (d dockerEngine) PutFiles(ctx context.Context, id, dir string, body io.Reader) error {
-	return d.cli.CopyToContainer(ctx, id, dir, body, container.CopyToContainerOptions{})
+	return d.cli.CopyToContainer(ctx, id, dir, body, dockerclient.CopyToContainerOptions{})
 }
 
 func (d dockerEngine) HasImage(ctx context.Context, ref string) (bool, error) {
@@ -81,7 +79,7 @@ func (d dockerEngine) HasImage(ctx context.Context, ref string) (bool, error) {
 }
 
 func (d dockerEngine) PullImage(ctx context.Context, ref string) error {
-	rc, err := d.cli.ImagePull(ctx, ref, image.PullOptions{})
+	rc, err := d.cli.ImagePull(ctx, ref, dockerclient.ImagePullOptions{})
 	if err != nil {
 		return err
 	}
@@ -101,6 +99,6 @@ func (d dockerEngine) InspectVolume(ctx context.Context, name string) (map[strin
 }
 
 func (d dockerEngine) CreateVolume(ctx context.Context, name string, labels map[string]string) error {
-	_, err := d.cli.VolumeCreate(ctx, volume.CreateOptions{Name: name, Labels: labels})
+	_, err := d.cli.VolumeCreate(ctx, dockerclient.VolumeCreateOptions{Name: name, Labels: labels})
 	return err
 }

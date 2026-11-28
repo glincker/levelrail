@@ -9,8 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/pkg/stdcopy"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/pkg/stdcopy"
 )
 
 // LogLine is one demultiplexed, timestamped line of container log output.
@@ -38,7 +39,7 @@ func (c *Client) Logs(ctx context.Context, containerID string, follow bool, sinc
 	out := make(chan LogLine)
 	errCh := make(chan error, 1)
 
-	opts := container.LogsOptions{
+	opts := dockerclient.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Follow:     follow,

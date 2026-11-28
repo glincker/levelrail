@@ -6,8 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/agent"
 	"github.com/glincker/levelrail/internal/build"
@@ -30,7 +29,7 @@ func buildWarmOption(settings *runtimesettings.Service, registry *agent.Registry
 func warmPull(registry *agent.Registry, local *dockerclient.Client) func(ctx context.Context, nodeID, ref string) error {
 	return func(ctx context.Context, nodeID, ref string) error {
 		if nodeID == "" {
-			rc, err := local.ImagePull(ctx, ref, image.PullOptions{})
+			rc, err := local.ImagePull(ctx, ref, dockerclient.ImagePullOptions{})
 			if err != nil {
 				return fmt.Errorf("pull %s: %w", ref, err)
 			}

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/strslice"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/strslice"
 )
 
 // TestClient_Logs_Live proves Logs actually demultiplexes a real

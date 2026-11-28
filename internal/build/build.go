@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"time"
 
-	dockerclient "github.com/docker/docker/client"
 	bkclient "github.com/moby/buildkit/client"
+	dockerclient "github.com/moby/moby/client"
 	"github.com/opencontainers/go-digest"
 	"golang.org/x/sync/errgroup"
 

@@ -3,7 +3,7 @@ package live
 import (
 	"context"
 
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/benchreport"
 )

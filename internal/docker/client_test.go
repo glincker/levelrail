@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/mount"
-	dockernetwork "github.com/docker/docker/api/types/network"
+	dockerclient "github.com/moby/moby/client"
+
 	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/events"
+	"github.com/moby/moby/api/types/mount"
+	dockernetwork "github.com/moby/moby/api/types/network"
 )
 
 func TestToDockerPorts(t *testing.T) {
@@ -531,7 +532,7 @@ func TestClient_WithInstanceLabel_MergesIntoLabels(t *testing.T) {
 
 func TestClient_InstanceLabelFilter(t *testing.T) {
 	unconfigured := &Client{}
-	f := filters.NewArgs()
+	f := dockerclient.Filters{}
 	unconfigured.instanceLabelFilter(f)
 	if f.Len() != 0 {
 		t.Errorf("instanceLabelFilter() on an unconfigured Client added a filter, want none: %+v", f)
@@ -539,7 +540,7 @@ func TestClient_InstanceLabelFilter(t *testing.T) {
 
 	c := &Client{}
 	WithInstanceLabel("platform-reserved.instance", "inst_a")(c)
-	f2 := filters.NewArgs()
+	f2 := dockerclient.Filters{}
 	c.instanceLabelFilter(f2)
 	got := f2.Get("label")
 	want := []string{"platform-reserved.instance=inst_a"}

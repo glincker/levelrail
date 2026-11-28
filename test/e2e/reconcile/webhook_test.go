@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
+	dockerclient "github.com/moby/moby/client"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
@@ -81,7 +82,7 @@ func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cleanupCancel()
-		_, _ = rawCli.ImageRemove(cleanupCtx, builtTag, image.RemoveOptions{Force: true})
+		_, _ = rawCli.ImageRemove(cleanupCtx, builtTag, dockerclient.ImageRemoveOptions{Force: true})
 	})
 
 	// Registered after the image cleanup so it runs first (t.Cleanup is

@@ -20,7 +20,7 @@ func TestImportGraphExcludesWritePaths(t *testing.T) {
 	forbidden := []string{
 		mod + "internal/docker", mod + "internal/dockerguard", mod + "internal/reconcile", mod + "internal/build",
 		mod + "internal/agent", mod + "internal/agent/agentpb", mod + "internal/placement", mod + "internal/store",
-		"github.com/docker/docker/client", "os/exec",
+		"github.com/moby/moby/client", "os/exec",
 	}
 	cases := []struct {
 		pkg   string

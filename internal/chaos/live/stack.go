@@ -18,8 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/deploy"
 	"github.com/glincker/levelrail/internal/deploysafety"
@@ -321,11 +320,11 @@ func (s *Stack) Close() {
 		s.removeContainers(cctx)
 	}
 	if s.cli != nil {
-		images, _ := s.cli.ImageList(cctx, image.ListOptions{})
+		images, _ := s.cli.ImageList(cctx, dockerclient.ImageListOptions{})
 		for _, img := range images {
 			for _, tag := range img.RepoTags {
 				if strings.HasPrefix(tag, s.Prefix) {
-					_, _ = s.cli.ImageRemove(cctx, tag, image.RemoveOptions{})
+					_, _ = s.cli.ImageRemove(cctx, tag, dockerclient.ImageRemoveOptions{})
 				}
 			}
 		}

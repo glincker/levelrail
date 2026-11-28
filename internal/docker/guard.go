@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
+	dockerclient "github.com/moby/moby/client"
 )
 
 const (
@@ -123,8 +123,8 @@ func (c *closeCancel) Close() error {
 
 // negotiator is the slice of the SDK client that API version negotiation needs.
 type negotiator interface {
-	Ping(ctx context.Context) (dockertypes.Ping, error)
-	NegotiateAPIVersionPing(dockertypes.Ping)
+	Ping(ctx context.Context) (dockerclient.PingResult, error)
+	NegotiateAPIVersionPing(dockerclient.PingResult)
 }
 
 // negotiateUpFront negotiates the API version once with a bounded wait. If

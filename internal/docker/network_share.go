@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // Network share protocols NetworkShareDriverOpts understands. Mirrors
@@ -70,7 +70,7 @@ func (c *Client) EnsureNetworkVolume(ctx context.Context, name string, opts Netw
 	if err != nil {
 		return err
 	}
-	if _, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{
+	if _, err := c.cli.VolumeCreate(ctx, dockerclient.VolumeCreateOptions{
 		Name:       name,
 		Driver:     "local",
 		DriverOpts: driverOpts,

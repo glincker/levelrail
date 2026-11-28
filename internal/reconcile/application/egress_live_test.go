@@ -7,8 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/dockertest"
@@ -207,7 +206,7 @@ func pullRefIfMissing(ctx context.Context, cli *dockerclient.Client, ref string)
 	if _, err := cli.ImageInspect(ctx, ref); err == nil {
 		return nil
 	}
-	rc, err := cli.ImagePull(ctx, ref, image.PullOptions{})
+	rc, err := cli.ImagePull(ctx, ref, dockerclient.ImagePullOptions{})
 	if err != nil {
 		return err
 	}

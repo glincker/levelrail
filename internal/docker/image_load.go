@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // ImageLoader loads a `docker save` tar stream into the node's image store.

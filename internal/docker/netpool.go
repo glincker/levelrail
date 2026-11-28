@@ -11,8 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/api/types/filters"
-	dockernetwork "github.com/docker/docker/api/types/network"
+	dockerclient "github.com/moby/moby/client"
+
+	dockernetwork "github.com/moby/moby/api/types/network"
 )
 
 const (
@@ -138,8 +139,8 @@ func IsPoolExhausted(err error) bool {
 
 // networkAPI is the slice of the Engine client the allocator needs.
 type networkAPI interface {
-	NetworkList(ctx context.Context, options dockernetwork.ListOptions) ([]dockernetwork.Summary, error)
-	NetworkCreate(ctx context.Context, name string, options dockernetwork.CreateOptions) (dockernetwork.CreateResponse, error)
+	NetworkList(ctx context.Context, options dockerclient.NetworkListOptions) ([]dockernetwork.Summary, error)
+	NetworkCreate(ctx context.Context, name string, options dockerclient.NetworkCreateOptions) (dockernetwork.CreateResponse, error)
 }
 
 // hostPrefixes returns host-visible prefixes (interface addresses and
@@ -211,7 +212,7 @@ func (a *poolAllocator) create(ctx context.Context, api networkAPI, pool Network
 
 	var rejected []netip.Prefix
 	for attempt := 0; attempt < maxAllocAttempts; attempt++ {
-		nets, err := api.NetworkList(ctx, dockernetwork.ListOptions{Filters: filters.NewArgs()})
+		nets, err := api.NetworkList(ctx, dockerclient.NetworkListOptions{Filters: dockerclient.Filters{}})
 		if err != nil {
 			return "", fmt.Errorf("docker: list networks for subnet allocation: %w", err)
 		}
@@ -224,7 +225,7 @@ func (a *poolAllocator) create(ctx context.Context, api networkAPI, pool Network
 		if !ok {
 			return "", &PoolExhaustedError{Pool: pool.Base.String(), InUse: poolUsage(pool, nets), Capacity: pool.Capacity()}
 		}
-		resp, err := api.NetworkCreate(ctx, name, dockernetwork.CreateOptions{
+		resp, err := api.NetworkCreate(ctx, name, dockerclient.NetworkCreateOptions{
 			Driver: "bridge",
 			Labels: labels,
 			IPAM:   &dockernetwork.IPAM{Config: []dockernetwork.IPAMConfig{{Subnet: subnet.String()}}},

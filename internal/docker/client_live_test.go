@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	dockernetwork "github.com/docker/docker/api/types/network"
+	dockerclient "github.com/moby/moby/client"
+
+	"github.com/moby/moby/api/types/container"
 
 	"github.com/glincker/levelrail/internal/dockertest"
 )
@@ -403,7 +404,7 @@ func TestClient_RemoveNetwork_Live_DisconnectsAttachedContainersFirst(t *testing
 	if err := c.RemoveNetwork(ctx, netName); err != nil {
 		t.Fatalf("RemoveNetwork() with a still-attached container error = %v, want nil", err)
 	}
-	if _, err := c.cli.NetworkInspect(ctx, netName, dockernetwork.InspectOptions{}); err == nil {
+	if _, err := c.cli.NetworkInspect(ctx, netName, dockerclient.NetworkInspectOptions{}); err == nil {
 		t.Error("network still exists after RemoveNetwork")
 	}
 }
@@ -800,7 +801,7 @@ func removeIfExists(ctx context.Context, t *testing.T, c *Client, name string) {
 	if err != nil || state == nil {
 		return
 	}
-	_ = c.cli.ContainerRemove(ctx, state.ID, container.RemoveOptions{Force: true})
+	_ = c.cli.ContainerRemove(ctx, state.ID, dockerclient.ContainerRemoveOptions{Force: true})
 }
 
 // TestClient_Ping_Live proves Ping succeeds against a real reachable

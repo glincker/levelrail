@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	dockerclient "github.com/docker/docker/client"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // TestNewClient_CacheValidation exercises NewClient's cache-option
