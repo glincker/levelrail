@@ -16297,11 +16297,11 @@
    "id": "dozzle",
    "aliases": [],
    "name": "Dozzle",
-   "slogan": "A small web viewer for live container logs on this host. It reads containers and logs through a read-only Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain.",
-   "description": "A small web viewer for live container logs on this host. It reads containers and logs through a read-only Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain.",
+   "slogan": "A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.",
+   "description": "A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.",
    "first_run": [
     "Open the page and pick a container to watch its logs live.",
-    "Dozzle has no login by default, so put it behind an authenticated domain."
+    "Dozzle has no login, so no public domain is set and it shows the logs of every app on this host. Keep it private, and add a domain only behind your own authentication."
    ],
    "category": "Monitoring",
    "status": "active",
@@ -91968,8 +91968,9 @@
    "aliases": [],
    "name": "WireGuard Easy",
    "slogan": "A WireGuard VPN server with a web UI for managing clients.",
-   "description": "Needs NET_ADMIN and NET_RAW under a reviewed grant, plus the WireGuard kernel module already loaded on the host (modprobe wireguard). The VPN listens on UDP 51820, open that port in the firewall and forward it to the host. The web UI needs HTTPS, so open it through a domain. Create the admin account on first visit. AGPL v3 licence.",
+   "description": "A WireGuard VPN server with a web UI for managing clients.",
    "first_run": [
+    "Needs NET_ADMIN and NET_RAW under a reviewed grant, and the WireGuard kernel module loaded on the host (modprobe wireguard).",
     "Open the web UI through your domain and create the admin account.",
     "Open UDP 51820 in the firewall and forward it to this host."
    ],

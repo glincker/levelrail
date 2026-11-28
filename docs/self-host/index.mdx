@@ -499,7 +499,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Chronograf](/self-host/chronograf): A web interface to explore, graph and alert on time series stored in InfluxDB. Add your InfluxDB connection from the first screen; it has no login of its own, so restrict who can reach it.
 - [Dashdot](/self-host/dashdot): A clean dashboard that shows CPU, memory, network and storage use of the host it runs on.
 - [Diun](/self-host/diun): Watches your running containers and notifies you the moment a new image tag is published.
-- [Dozzle](/self-host/dozzle): A small web viewer for live container logs on this host. It reads containers and logs through a read-only Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain.
+- [Dozzle](/self-host/dozzle): A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.
 - [Fluent Bit](/self-host/fluent-bit): Lightweight log and metrics processor and forwarder. The install form carries fluent-bit.conf as an editable file, so it starts listening for forwarded records with a health endpoint.
 - [Gatus](/self-host/gatus): Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services.
 - [Glances](/self-host/glances): A cross-platform system monitor showing CPU, memory, disk, and network at a glance.

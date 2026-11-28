@@ -1,11 +1,11 @@
 ---
 title: "Self-host Dozzle with Docker"
 sidebarTitle: "Dozzle"
-description: "A small web viewer for live container logs on this host. It reads containers and logs through a read-only Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain."
+description: "A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login."
 "og:url": "https://docs.levelrail.com/self-host/dozzle"
 ---
 
-A small web viewer for live container logs on this host. It reads containers and logs through a read-only Docker API proxy, never the raw socket, and has no login by default, so put it behind an authenticated domain.
+A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.
 
 This page describes the Levelrail template for Dozzle (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://dozzle.dev/guide/getting-started.
 
