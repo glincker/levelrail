@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/envrules"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -13,6 +14,13 @@ import (
 // request body.
 type setAppPreviewEnvOverrideRequest struct {
 	Value string `json:"value"`
+}
+
+// previewEnvOverrideResponse echoes the stored override plus any non-blocking env warnings.
+type previewEnvOverrideResponse struct {
+	Key      string           `json:"key"`
+	Value    string           `json:"value"`
+	Warnings []envrules.Issue `json:"warnings,omitempty"`
 }
 
 // handleSetAppPreviewEnvOverride handles
@@ -40,7 +48,8 @@ func (rt *Router) handleSetAppPreviewEnvOverride(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if !rt.checkOverrideEnv(r.Context(), w, key, req.Value, false) {
+	warnings, ok := rt.checkAppOverrideEnv(r.Context(), w, name, key, req.Value, false)
+	if !ok {
 		return
 	}
 
@@ -52,7 +61,7 @@ func (rt *Router) handleSetAppPreviewEnvOverride(w http.ResponseWriter, r *http.
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"key": key, "value": req.Value})
+	writeJSON(w, http.StatusOK, previewEnvOverrideResponse{Key: key, Value: req.Value, Warnings: warnings})
 }
 
 // handleClearAppPreviewEnvOverride handles

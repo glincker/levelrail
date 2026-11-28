@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/envrules"
@@ -72,8 +74,23 @@ func (rt *Router) bundleEnvRefusal(ctx context.Context, plain map[string]string,
 	return rt.envRefusal(ctx, names, envrules.Existing{}, envrules.Options{Secret: true, Multiline: true})
 }
 
-// checkOverrideEnv validates one key and value on writers that do not load the
-// app's stored keys (preview, branch and PR overrides), so legacy names pass.
+// checkAppOverrideEnv validates a preview, branch or PR override against the app's
+// stored keys, so it refuses and accepts exactly what PUT env does. It answers 404
+// for a missing app and returns false whenever it already wrote the response.
+func (rt *Router) checkAppOverrideEnv(ctx context.Context, w http.ResponseWriter, name, key, value string, secret bool) ([]envrules.Issue, bool) {
+	svc, err := rt.apps.GetDesiredService(ctx, name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return nil, false
+	} else if err != nil {
+		rt.internalError(w, "api: load app for env override failed", err, slog.String("name", name))
+		return nil, false
+	}
+	return rt.checkEnvWrite(ctx, w, map[string]string{key: value}, existingEnv(svc), envrules.Options{Secret: secret, Multiline: true})
+}
+
+// checkOverrideEnv validates one key and value on shared-scope writers that have
+// no app to load, so legacy names pass; per-app overrides use checkAppOverrideEnv.
 func (rt *Router) checkOverrideEnv(ctx context.Context, w http.ResponseWriter, key, value string, secret bool) bool {
 	_, ok := rt.checkEnvWrite(ctx, w, map[string]string{key: value}, envrules.Existing{}, envrules.Options{Secret: secret, Multiline: true, ExistingUnknown: true})
 	return ok
