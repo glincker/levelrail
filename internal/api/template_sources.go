@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"regexp"
@@ -309,9 +308,13 @@ func (rt *Router) handleApproveTemplateSourceEntry(w http.ResponseWriter, r *htt
 	if !rt.templateSourcesReady(w, r) {
 		return
 	}
-	var req templateSourceApproveRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil || req.ContentHash == "" {
-		writeError(w, http.StatusBadRequest, "content_hash is required: read the entry first and approve the hash you reviewed")
+	const hashMsg = "content_hash is required: read the entry first and approve the hash you reviewed"
+	req, ok := decodeJSON[templateSourceApproveRequest](w, r, 1<<16, decodeMessage(hashMsg))
+	if !ok {
+		return
+	}
+	if req.ContentHash == "" {
+		writeError(w, http.StatusBadRequest, hashMsg)
 		return
 	}
 	name := r.PathValue("name")

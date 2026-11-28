@@ -112,8 +112,7 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if _, err := remover.RemoveServicePlainEnvKey(r.Context(), name, key); err != nil {
-			rt.logger.Error("api: set secret: remove plain copy failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
-			writeError(w, http.StatusInternalServerError, "the secret was saved but the plain copy was not removed, retry the request")
+			rt.internalError(w, "api: set secret: the secret was saved but the plain copy was not removed", err, slog.String("name", name), slog.String("key", key))
 			return
 		}
 	}

@@ -17,7 +17,9 @@ import (
 // against a real router and store. It proves the wire flow only: a real phone
 // run (app, camera, push) stays a separate needs-real-host item.
 func TestMobileAPI_Live_PairAndRevoke(t *testing.T) {
-	t.Setenv(experimental.EnvVar, string(experimental.MobileAPI))
+	// The env is read once per process, so set the feature directly.
+	experimental.Set(experimental.MobileAPI)
+	t.Cleanup(experimental.Reset)
 	db := openLiveStore(t)
 	dataDir := t.TempDir()
 	setupToken, _, err := api.EnsureSetupToken(context.Background(), db, dataDir)

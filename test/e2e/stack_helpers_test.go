@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/glincker/levelrail/internal/api"
 	"github.com/glincker/levelrail/internal/store"
@@ -50,4 +51,13 @@ func (m *memSecrets) ExistsForServices(_ context.Context, svcs []string, key str
 		_, out[s] = m.values[s+"/"+key]
 	}
 	return out, nil
+}
+
+func (m *memSecrets) DeleteAll(_ context.Context, svc string) error {
+	for k := range m.values {
+		if strings.HasPrefix(k, svc+"/") {
+			delete(m.values, k)
+		}
+	}
+	return nil
 }

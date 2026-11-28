@@ -181,12 +181,12 @@ func TestHostFirewallStatus_ListsUDPPublishedPorts(t *testing.T) {
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithHostFirewallRunner(f.run, f.lookPath))
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveApp(t.Context(), store.App{ID: "dns", Name: "dns", CreatedAt: "2026-01-01T00:00:00Z", UpdatedAt: "2026-01-01T00:00:00Z"}); err != nil {
+	if err := db.SaveApp(t.Context(), store.App{ID: "udpsvc", Name: "udpsvc", CreatedAt: "2026-01-01T00:00:00Z", UpdatedAt: "2026-01-01T00:00:00Z"}); err != nil {
 		t.Fatal(err)
 	}
 	pinned := 8080
 	for _, svc := range []store.DesiredService{
-		{Name: "dns-server", AppID: "dns", Image: "img", Port: 8080, HostPort: &pinned, BindAddress: bindaddr.Public, PublishedPorts: []store.PublishedPort{
+		{Name: "udp-server", AppID: "udpsvc", Image: "img", Port: 8080, HostPort: &pinned, BindAddress: bindaddr.Public, PublishedPorts: []store.PublishedPort{
 			{ContainerPort: 53, HostPort: 53, Protocol: "udp"}, {ContainerPort: 51820, HostPort: 51820, Protocol: "udp"},
 		}},
 		{Name: "local", Image: "img", Port: 80, PublishedPorts: []store.PublishedPort{{ContainerPort: 5353, HostPort: 5353, Protocol: "udp"}}},
@@ -202,9 +202,9 @@ func TestHostFirewallStatus_ListsUDPPublishedPorts(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 	want := []hostFirewallPublishedPort{
-		{Port: 8080, Protocol: "tcp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true, Filtered: true},
-		{Port: 53, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true, Filtered: true},
-		{Port: 51820, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: false, Filtered: true},
+		{Port: 8080, Protocol: "tcp", App: "udpsvc", Service: "udp-server", BindAddress: bindaddr.Public, Allowed: true, Filtered: true},
+		{Port: 53, Protocol: "udp", App: "udpsvc", Service: "udp-server", BindAddress: bindaddr.Public, Allowed: true, Filtered: true},
+		{Port: 51820, Protocol: "udp", App: "udpsvc", Service: "udp-server", BindAddress: bindaddr.Public, Allowed: false, Filtered: true},
 		{Port: 5353, Protocol: "udp", App: "local", Service: "local", BindAddress: bindaddr.Private, Allowed: false, Filtered: true},
 	}
 	for _, w := range want {

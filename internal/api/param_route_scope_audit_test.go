@@ -94,6 +94,14 @@ func TestParamRoutesAreScopedOrAllowlisted(t *testing.T) {
 // paramRouteScopeAllowlist maps routes that check ownership inside the handler
 // (or are public by design) to a short reason. Shrink it, never grow it silently.
 var paramRouteScopeAllowlist = map[string]string{ //nolint:gosec // route names and reasons, no credentials
+	"DELETE /api/v1/templates/sources/{name}":                                               "{name} is an instance template source, root ability required",
+	"GET /api/v1/templates/sources/{name}/templates":                                        "{name} is an instance template source, root ability required",
+	"GET /api/v1/templates/sources/{name}/templates/{id}":                                   "{name} is an instance template source, root ability required",
+	"POST /api/v1/templates/sources/{name}/sync":                                            "{name} is an instance template source, root ability required",
+	"POST /api/v1/templates/sources/{name}/templates/{id}/approve":                          "{name} is an instance template source, root ability required",
+	"POST /api/v1/announcements/{id}/dismiss":                                               "{id} is a feed notice id, handler acts only on notices the caller can see",
+	"POST /api/v1/announcements/{id}/read":                                                  "{id} is a feed notice id, handler acts only on notices the caller can see",
+	"POST /api/v1/announcements/{id}/snooze":                                                "{id} is a feed notice id, handler acts only on notices the caller can see",
 	"GET /api/v1/database-engines/{id}/latest":                                              "{id} is a global engine registry id, not a tenant resource",
 	"GET /api/v1/deploys/{id}/why":                                                          "deploy id resolves to its app and callerAppVisibility answers 404 for unreadable apps",
 	"POST /api/v1/recently-deleted/{kind}/{name}/restore":                                   "a deleted app has no environment to resolve; the handler checks the original team, write ability, deny policies and confirm",

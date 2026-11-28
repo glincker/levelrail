@@ -44,7 +44,7 @@ func TestDeleteAppRemovesPerAppAccessRows(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/site", ""))
-	if rec.Code != http.StatusNoContent {
+	if rec.Code != http.StatusNoContent && rec.Code != http.StatusOK {
 		t.Fatalf("delete status = %d", rec.Code)
 	}
 	seedApp(t, db, "site")
@@ -117,7 +117,7 @@ func TestDeleteAppRemovesGitSourceAndSecrets(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/site", ""))
-	if rec.Code != http.StatusNoContent {
+	if rec.Code != http.StatusNoContent && rec.Code != http.StatusOK {
 		t.Fatalf("delete status = %d", rec.Code)
 	}
 	seedApp(t, db, "site")

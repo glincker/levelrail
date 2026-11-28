@@ -210,7 +210,7 @@ node-providers node-provisions nodes notification-channels observability onboard
 pipeline-runs pipelines plugin-keys plugin-marketplace plugin-panels plugins preflight previews private-networks
 project-templates projects prometheus recently-deleted registry registry-credentials registry-vendors resilience roles scheduled-maintenance scim
 search secret-rotation security service-templates settings setup silences ssh-node-provisions sso stack-templates stacks
-static-sites status-page status-reasons storage storage-env-keys system tags teams templates updates usage users`)
+static-sites status-page status-reasons storage storage-env-keys system tags teams templates tokens updates usage users`)
 
 func orgRouteClass(key, pattern string) string {
 	_, path, _ := strings.Cut(key, " ")

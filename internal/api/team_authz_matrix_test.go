@@ -111,6 +111,8 @@ var tenantSessionOnly = map[string]string{
 	"GET /api/v1/tokens/unused":                                "lists idle tokens owned by the caller only, metadata without secrets",
 	"POST /api/v1/tokens/bulk-revoke":                          "session only, a non-root caller can revoke only its own tokens",
 	"POST /api/v1/attention/dismiss":                           "stores the caller's own dismissal of an item it can already see",
+	"GET /api/v1/announcements":                                "the signed feed filtered to the caller's own abilities and read state",
+	"GET /api/v1/announcements/banner":                         "critical notices the caller can see and has not snoozed",
 	"POST /api/v1/announcements/{id}/read":                     "marks the caller's own read state of an announcement it can already see",
 	"POST /api/v1/announcements/{id}/dismiss":                  "stores the caller's own dismissal of an announcement it can already see",
 	"POST /api/v1/announcements/{id}/snooze":                   "hides an announcement it can already see for the caller only, critical snoozes are audited",

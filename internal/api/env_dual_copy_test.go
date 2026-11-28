@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -84,7 +85,15 @@ func TestDualCopyWriterPaths(t *testing.T) {
 
 func TestDualCopyDoctorListsExistingOverlap(t *testing.T) {
 	rt, db := newTestRouterWithSecrets(t, &fakeSecretSetter{})
-	seedDualCopyApp(t, db, map[string]string{"K": "v"}, "K")
+	seedDualCopyApp(t, db, map[string]string{"K": "v"})
+	// The store refuses a new overlap, so write the legacy row directly.
+	refs, err := json.Marshal(store.SecretEnvRefsFromNames([]string{"K"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(context.Background(), `UPDATE desired_services SET secret_env = ? WHERE name = 'web'`, string(refs)); err != nil {
+		t.Fatal(err)
+	}
 	res := rt.doctorCheckEnvDualCopy(context.Background())
 	if res.Status != doctorStatusWarn || !strings.Contains(res.Message, "apps env unset web K") {
 		t.Fatalf("got %+v", res)

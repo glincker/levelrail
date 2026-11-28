@@ -65,6 +65,7 @@ func TestListRoutesReturnEmptyArrays(t *testing.T) {
 var nullableFieldAllowlist = map[string]bool{
 	"/api/v1/auth/login-options sso_route":                   true,
 	"/api/v1/deployments/summary failure_rate_24h":           true,
+	"/api/v1/resource-advisor/summary monthly_savings":       true,
 	"/api/v1/git/repos next_offset":                          true,
 	"/api/v1/settings/ingress/edge idle_timeout_secs":        true,
 	"/api/v1/settings/ingress/edge max_body_bytes":           true,
