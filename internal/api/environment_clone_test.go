@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -448,5 +449,70 @@ func TestHandleEnvironmentClone_CopySecretValues_RealSecretsManager(t *testing.T
 	sourceValue, err := manager.Resolve(ctx, "web", "API_KEY")
 	if err != nil || sourceValue != "sk-source-value" {
 		t.Errorf("source secret changed: value=%q err=%v", sourceValue, err)
+	}
+}
+
+// Every new clone name goes through the service name rules, and a refused clone writes nothing.
+func TestHandleEnvironmentClone_RejectsInvalidNewAppNames(t *testing.T) {
+	long := strings.Repeat("a", 64)
+	cases := []struct {
+		name, body string
+	}{
+		{"uppercase", `{"new_environment_name":"eu","apps":[{"source_app":"web","new_name":"Web-EU"}]}`},
+		{"dots", `{"new_environment_name":"eu","apps":[{"source_app":"web","new_name":"web.eu"}]}`},
+		{"standalone prefix", `{"new_environment_name":"eu","apps":[{"source_app":"web","new_name":"_standalone"}]}`},
+		{"over 63 chars", `{"new_environment_name":"eu","apps":[{"source_app":"web","new_name":"` + long + `"}]}`},
+		{"division slash lookalike", "{\"new_environment_name\":\"eu\",\"apps\":[{\"source_app\":\"web\",\"new_name\":\"web∕eu\"}]}"},
+		{"fullwidth solidus lookalike", "{\"new_environment_name\":\"eu\",\"apps\":[{\"source_app\":\"web\",\"new_name\":\"web／eu\"}]}"},
+		{"derived name over the limit", `{"new_environment_name":"` + strings.Repeat("e", 62) + `"}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			seedCloneFixture(t, db)
+			assertCloneRefusedWithNothingCreated(t, rt, db, cookie, tc.body)
+		})
+	}
+}
+
+func TestHandleEnvironmentClone_RejectsReservedDerivedName(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedCloneFixture(t, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "email", Image: "levelrail/mail:1", Port: 25}); err != nil {
+		t.Fatalf("seed email: %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "email", "proj_1"); err != nil {
+		t.Fatalf("project email: %v", err)
+	}
+	if err := db.SetServiceEnvironment(ctx, "email", "env_src"); err != nil {
+		t.Fatalf("tag email: %v", err)
+	}
+	assertCloneRefusedWithNothingCreated(t, rt, db, cookie, `{"new_environment_name":"settings"}`)
+}
+
+func assertCloneRefusedWithNothingCreated(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie, body string) {
+	t.Helper()
+	ctx := context.Background()
+	envs, err := db.ListEnvironmentsByProject(ctx, "proj_1")
+	if err != nil {
+		t.Fatalf("list environments: %v", err)
+	}
+	apps, err := db.ListDesiredServices(ctx)
+	if err != nil {
+		t.Fatalf("list apps: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/environments/env_src/clone", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body = %s", rec.Code, rec.Body.String())
+	}
+	if after, _ := db.ListEnvironmentsByProject(ctx, "proj_1"); len(after) != len(envs) {
+		t.Fatalf("environments %d -> %d, a refused clone must create none", len(envs), len(after))
+	}
+	if after, _ := db.ListDesiredServices(ctx); len(after) != len(apps) {
+		t.Fatalf("apps %d -> %d, a refused clone must create none", len(apps), len(after))
 	}
 }

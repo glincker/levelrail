@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -163,5 +164,66 @@ func TestRestoreDeletedApp_FailureMidwayKeepsRetainedSecrets(t *testing.T) {
 	}
 	if got, err := m.Resolve(ctx, "web", "SEC_A"); err != nil || got != "alpha-value" {
 		t.Fatalf("SEC_A after retry = %q, %v", got, err)
+	}
+}
+
+func TestRestoreDeletedApp_KeepsBuildTimeFlagAndFileSlots(t *testing.T) {
+	t.Parallel()
+	rt, db, m, cookie := newSecretsRestoreRouter(t)
+	ctx := context.Background()
+	slot := store.FileSecretKey("/etc/app/tls.pem")
+	if err := m.SetValue(ctx, "web", slot, "pem-body"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetSecretBuildTime(ctx, "web", "SEC_A", true); err != nil {
+		t.Fatal(err)
+	}
+	if got := secretsDo(t, rt, cookie, http.MethodDelete, "/api/v1/apps/web", ""); got != http.StatusNoContent {
+		t.Fatalf("delete = %d", got)
+	}
+	if got := secretsDo(t, rt, cookie, http.MethodPost, "/api/v1/recently-deleted/app/web/restore", `{"confirm":"web"}`); got != http.StatusOK {
+		t.Fatalf("restore = %d", got)
+	}
+	if exists, bt, err := db.GetSecretBuildTime(ctx, "web", "SEC_A"); err != nil || !exists || !bt {
+		t.Fatalf("SEC_A build_time = %v, %v, %v, want true", exists, bt, err)
+	}
+	if _, bt, _ := db.GetSecretBuildTime(ctx, "web", "SEC_B"); bt {
+		t.Fatal("SEC_B gained a build_time flag it never had")
+	}
+	if got, err := m.Resolve(ctx, "web", slot); err != nil || got != "pem-body" {
+		t.Fatalf("file slot = %q, %v, want pem-body", got, err)
+	}
+}
+
+func TestSoftDeleteAndRestore_ReportWillNotRestoreAndNeedsAttention(t *testing.T) {
+	t.Parallel()
+	rt, db, _, cookie := newSecretsRestoreRouter(t)
+	ctx := context.Background()
+	drain := &store.LogDrain{Type: store.LogDrainHTTP, Target: "https://logs.example.com/in", Enabled: true}
+	if err := db.UpdateServiceLogDrain(ctx, "web", drain); err != nil {
+		t.Fatal(err)
+	}
+	call := func(method, target, body string) (int, map[string]json.RawMessage) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, target, body))
+		var out map[string]json.RawMessage
+		_ = json.Unmarshal(rec.Body.Bytes(), &out)
+		return rec.Code, out
+	}
+	code, del := call(http.MethodDelete, "/api/v1/apps/web", "")
+	if code != http.StatusOK {
+		t.Fatalf("delete = %d, want 200 with will_not_restore", code)
+	}
+	var lost []string
+	if err := json.Unmarshal(del["will_not_restore"], &lost); err != nil || len(lost) != 1 || lost[0] != undoLogDrain {
+		t.Fatalf("will_not_restore = %s, want [%s]", del["will_not_restore"], undoLogDrain)
+	}
+	code, res := call(http.MethodPost, "/api/v1/recently-deleted/app/web/restore", `{"confirm":"web"}`)
+	if code != http.StatusOK {
+		t.Fatalf("restore = %d", code)
+	}
+	var items []restoreAttentionItem
+	if err := json.Unmarshal(res["needs_attention"], &items); err != nil || len(items) != 1 || items[0].Category != undoLogDrain || items[0].Fix == "" {
+		t.Fatalf("needs_attention = %s, want one log_drain item with a fix", res["needs_attention"])
 	}
 }

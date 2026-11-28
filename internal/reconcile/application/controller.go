@@ -221,12 +221,14 @@ type Controller struct {
 	serviceName string
 	conditions  ConditionReader
 	store       ServiceStore
-	runtime     docker.Runtime
-	snap        *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
-	snapNode    string
-	imageIDs    *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
-	imageNode   string
-	httpClient  *http.Client
+	// reservedOwnerEventAt coalesces the stored reserved-name refusal event.
+	reservedOwnerEventAt atomic.Int64
+	runtime              docker.Runtime
+	snap                 *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
+	snapNode             string
+	imageIDs             *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
+	imageNode            string
+	httpClient           *http.Client
 	// probeUnreachableLogged keeps an unreachable-node warning to one per outage.
 	probeUnreachableLogged atomic.Bool
 	probeLimits            probe.Limits

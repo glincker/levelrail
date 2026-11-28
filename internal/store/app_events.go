@@ -35,6 +35,8 @@ const (
 	AppEventPublishHeld   = "publish_held"
 	// AppEventScanGateOverride marks an operator letting a scan-blocked release through.
 	AppEventScanGateOverride = "scan_gate_override"
+	// AppEventReservedSecretOwner marks the reconciler refusing secrets to an app named like a control plane namespace.
+	AppEventReservedSecretOwner = "reserved_secret_owner"
 )
 
 const (
