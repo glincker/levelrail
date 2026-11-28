@@ -38,7 +38,9 @@ func (rt *Router) latestProvision(ctx context.Context, name string) (dbprovision
 	if err != nil || id == "" {
 		return dbprovision.Attempt{}, false, err
 	}
-	return dbprovision.View(id, events), true, nil
+	a := dbprovision.View(id, events)
+	rt.redactLeftoverPrompt(ctx, name, &a)
+	return a, true, nil
 }
 
 func (rt *Router) handleGetDatabaseProvision(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +97,8 @@ func (rt *Router) handleDatabaseProvisionStream(w http.ResponseWriter, r *http.R
 type retryProvisionRequest struct {
 	Fix     string `json:"fix"`
 	Confirm bool   `json:"confirm"`
+	// ConfirmVolume is the database name, for a root reuse of an unowned volume.
+	ConfirmVolume string `json:"confirm_volume"`
 }
 
 func (rt *Router) handleRetryDatabaseProvision(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +109,8 @@ func (rt *Router) handleRetryDatabaseProvision(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusNotImplemented, "provisioning progress is not available")
 		return
 	}
-	if _, ok := rt.pendingDatabaseOrWrite(w, r, name); !ok {
+	pend, ok := rt.pendingDatabaseOrWrite(w, r, name)
+	if !ok {
 		return
 	}
 	choice := ""
@@ -118,6 +123,13 @@ func (rt *Router) handleRetryDatabaseProvision(w http.ResponseWriter, r *http.Re
 		choice = existingVolumeDiscard
 	case dbprovision.FixReuseVolume:
 		choice = existingVolumeReuse
+	}
+	team, project := rt.teamOfDatabase(r.Context(), name)
+	if !rt.leftoverChoiceAllowed(w, r, name, pend.NodeID, team, choice, req.ConfirmVolume) {
+		return
+	}
+	if choice == existingVolumeDiscard {
+		rt.discardLeftoverVolume(r, name, pend.NodeID, team, project)
 	}
 	if choice != "" {
 		s, ok := rt.databases.(existingVolumeSetter)

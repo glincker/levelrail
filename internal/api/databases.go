@@ -56,6 +56,9 @@ type databaseResource struct {
 	// database of the same name left behind (see database_leftover_volume.go).
 	// It is stored with the record and applied by the reconciler.
 	ExistingVolume string `json:"existing_volume,omitempty"`
+	// ConfirmVolume is request-only: the database name, required for a root caller
+	// to reuse a kept volume whose owner was never recorded.
+	ConfirmVolume string `json:"confirm_volume,omitempty"`
 	// ProvisionState is response-only: "pending" or "failed" while the
 	// database has no running container yet, empty once it is created.
 	ProvisionState  string `json:"provision_state,omitempty"`
@@ -355,6 +358,9 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		return false
 	}
 
+	if !rt.leftoverChoiceAllowed(w, r, req.Name, req.NodeID, rt.teamOfProjectID(r.Context(), req.ProjectID), req.ExistingVolume, req.ConfirmVolume) {
+		return false
+	}
 	if rt.refuseIncompatibleLeftover(w, r, req) {
 		return false
 	}
@@ -390,6 +396,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return false
 	}
+	rt.recordDatabaseVolumeOwner(r, req.Name, req.NodeID, req.ProjectID, req.ExistingVolume)
 	req.ExistingVolume = ""
 	req.ProvisionState = provisionStatePending
 	rt.enableTLSAtCreate(r.Context(), req.Name, req.Engine)
