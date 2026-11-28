@@ -1392,6 +1392,13 @@ levelrail-cli event-webhooks delete <id>
 ```
 Signed outbound event webhooks with a delivery log. `create` and `rotate-secret` print the signing secret once. See [Event webhooks](/event-webhooks).
 
+## Instance ID
+
+```
+levelrail-cli instance show [--json]
+```
+Prints the server's Instance ID, its fingerprint, the Backup set ID (the name of the backup storage path), the server version and whether this profile is pinned to the server. The Instance ID identifies the server to your own tools, labels its Docker resources and binds CLI tokens to it. It is an identifier, not a secret, and Levelrail never sends it in the update check or the announcement fetch. A support bundle (`doctor --bundle`) carries the Instance ID and fingerprint, never a key.
+
 ## Scheduled maintenance
 
 ```

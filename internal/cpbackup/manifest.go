@@ -25,12 +25,14 @@ const (
 // Manifest describes one off-box backup. It is stored unencrypted beside the
 // ciphertext and holds no key material.
 type Manifest struct {
-	ManifestVersion int       `json:"manifest_version"`
-	InstallID       string    `json:"install_id"`
-	Key             string    `json:"key"`
-	CreatedAt       time.Time `json:"created_at"`
-	BinaryVersion   string    `json:"binary_version"`
-	SchemaVersion   int       `json:"schema_version"`
+	ManifestVersion int    `json:"manifest_version"`
+	InstallID       string `json:"install_id"`
+	// InstanceID is the control plane Instance ID at backup time; older manifests omit it.
+	InstanceID    string    `json:"instance_id,omitempty"`
+	Key           string    `json:"key"`
+	CreatedAt     time.Time `json:"created_at"`
+	BinaryVersion string    `json:"binary_version"`
+	SchemaVersion int       `json:"schema_version"`
 	// MigrationsApplied is the row count of the snapshot's schema_migrations.
 	MigrationsApplied int    `json:"migrations_applied"`
 	SHA256            string `json:"sha256"`

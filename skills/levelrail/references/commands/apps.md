@@ -1446,7 +1446,7 @@ Usage:
   levelrail-cli apps recently-deleted restore <app|database> <name>     bring one back from its saved config
 
 The undo window is the runtime setting retention.recently_deleted_days.
-Secrets are not kept: set them again after a restore.
+Secret values come back. The deploy source, deploy token, log drain, integrations and build hooks do not; restore prints the command to recreate each.
 ```
 
 ## levelrail-cli apps runtime

@@ -138,6 +138,11 @@ func runDoctorBundle(ctx context.Context, path, prog, tokenFlag, apiURLFlag, pro
 		meta["mode"] = "control plane"
 		token = resolveToken(tokenFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv))
 		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+		if id, err := client.GetInstanceIdentity(ctx); err != nil {
+			failures = append(failures, "instance id: "+err.Error())
+		} else {
+			meta["instance_id"], meta["fingerprint"] = id.InstanceID, id.Fingerprint
+		}
 		if up, err := client.GetUpdates(ctx); err != nil {
 			failures = append(failures, "server version: "+err.Error())
 		} else {

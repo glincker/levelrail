@@ -190,7 +190,8 @@ func Restore(ctx context.Context, src Source, opts RestoreOptions) (RestoreRepor
 	if err := checkInstall(ctx, m, restored, opts); err != nil {
 		return rep, err
 	}
-	rep.Checks = append(rep.Checks, Check{Name: "install_id", OK: true, Detail: "install id matches"})
+	rep.Checks = append(rep.Checks, Check{Name: "install_id", OK: true, Detail: "backup set id matches"})
+	rep.Checks = append(rep.Checks, instanceCheck(ctx, m, restored, opts.LivePath))
 	if opts.DryRun {
 		return rep, nil
 	}
@@ -289,12 +290,57 @@ func checkInstall(ctx context.Context, m Manifest, restored string, opts Restore
 		return nil
 	}
 	if inner := readInstallID(ctx, restored); inner != "" && inner != m.InstallID {
-		return fmt.Errorf("%w: manifest says %s but the database says %s; use --force-install-id to override", ErrInstallMismatch, m.InstallID, inner)
+		return fmt.Errorf("%w: backup set id: manifest says %s but the database says %s; use --force-install-id to override", ErrInstallMismatch, m.InstallID, inner)
 	}
 	if local := readInstallID(ctx, opts.LivePath); local != "" && local != m.InstallID {
-		return fmt.Errorf("%w: this server is %s but the backup is from %s; use --force-install-id to override", ErrInstallMismatch, local, m.InstallID)
+		return fmt.Errorf("%w: backup set id: this server is %s but the backup is from %s (%s); use --force-install-id to override", ErrInstallMismatch, local, m.InstallID, instancePair(ctx, m, restored, opts.LivePath))
 	}
 	return nil
+}
+
+func backupInstanceID(ctx context.Context, m Manifest, restored string) string {
+	if m.InstanceID != "" {
+		return m.InstanceID
+	}
+	return readInstanceID(ctx, restored)
+}
+
+func instancePair(ctx context.Context, m Manifest, restored, live string) string {
+	from, here := backupInstanceID(ctx, m, restored), readInstanceID(ctx, live)
+	return fmt.Sprintf("backup from Instance ID %s, this server %s", orUnknown(from), orUnknown(here))
+}
+
+func orUnknown(id string) string {
+	if id == "" {
+		return "unknown"
+	}
+	return id
+}
+
+// instanceCheck reports the Instance ID pair; a different server needs "same instance" confirmed after the restore.
+func instanceCheck(ctx context.Context, m Manifest, restored, live string) Check {
+	from, here := backupInstanceID(ctx, m, restored), readInstanceID(ctx, live)
+	detail := instancePair(ctx, m, restored, live)
+	if from != "" && here != "" && from != here {
+		detail += "; confirm \"same instance\" in Settings or with confirm-same if this is the same server moved"
+	}
+	return Check{Name: "instance_id", OK: true, Detail: detail}
+}
+
+func readInstanceID(ctx context.Context, path string) string {
+	if _, err := os.Stat(path); err != nil {
+		return ""
+	}
+	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro")
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = db.Close() }()
+	var id string
+	if err := db.QueryRowContext(ctx, `SELECT instance_id FROM instance_identity WHERE id = 1`).Scan(&id); err != nil {
+		return ""
+	}
+	return id
 }
 
 func readInstallID(ctx context.Context, path string) string {

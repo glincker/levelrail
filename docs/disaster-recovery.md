@@ -175,9 +175,9 @@ levelrail restore --from s3://my-bucket/cp-backups/<install-id>/ --identity back
 
 `--from` ending in `/` picks the newest complete backup under that prefix. A full key restores that one, and a local `.db.age` file (with its `.json` beside it) works too. Add `--dry-run` to download, verify, and decrypt the backup and run `integrity_check` without touching the live database.
 
-The command checks, in order: the manifest, the ciphertext SHA-256 and size against the manifest, decryption, the plaintext SHA-256, SQLite `integrity_check`, that the schema is not newer than this binary (otherwise it refuses, run a newer release), and that the backup's install id matches (this server's, if it has a database, and the one recorded inside the backup). It then writes the new database to a temporary file in the data directory, syncs it, keeps the current database as `levelrail.db.pre-restore` (and its `-wal` and `-shm` files) using hard links, and renames the new file over the live name in one step. A crash at any earlier point leaves the old database untouched. An earlier `.pre-restore` copy is kept under a timestamped name.
+The command checks, in order: the manifest, the ciphertext SHA-256 and size against the manifest, decryption, the plaintext SHA-256, SQLite `integrity_check`, that the schema is not newer than this binary (otherwise it refuses, run a newer release), and that the backup's Backup set ID (the `install_id` field) matches (this server's, if it has a database, and the one recorded inside the backup). It then writes the new database to a temporary file in the data directory, syncs it, keeps the current database as `levelrail.db.pre-restore` (and its `-wal` and `-shm` files) using hard links, and renames the new file over the live name in one step. A crash at any earlier point leaves the old database untouched. An earlier `.pre-restore` copy is kept under a timestamped name.
 
-`--force-install-id` accepts a backup from a different install (moving to a new install id on purpose). `--endpoint`, `--region` and `--path-style` describe the bucket; credentials come from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+`--force-install-id` accepts a backup from a different install (moving to a new Backup set ID on purpose). `--endpoint`, `--region` and `--path-style` describe the bucket; credentials come from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
 Every step above, and the failure cases (an interrupted restore, a tampered backup, a wrong key, a newer schema, a mismatched install), is exercised by a test that runs in CI against an in-memory S3 server and generated keys.
 
@@ -208,7 +208,7 @@ after stopping the original control plane. Replace the placeholders.
 
 What you need before the disaster: the age private key (`backup-identity.txt`),
 `escrow.age`, the bucket name, endpoint and access keys of the backup bucket,
-and the install id (the `cp-backups/<install-id>/` prefix in the bucket;
+and the Backup set ID (the `cp-backups/<install-id>/` prefix in the bucket;
 `levelrail-cli control-plane-backups list --offbox` shows it while the old server
 still answers).
 
@@ -234,7 +234,7 @@ You get `master.key`, `agent-ca.crt.pem`, and `agent-ca.key.pem`, mode `0600`, a
 </Step>
 <Step title="Rehearse">
 
-A dry run touches nothing and checks the manifest, checksum, decryption, `integrity_check`, schema, and install id:
+A dry run touches nothing and checks the manifest, checksum, decryption, `integrity_check`, schema, and Backup set ID:
 
 ```bash
 export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=...

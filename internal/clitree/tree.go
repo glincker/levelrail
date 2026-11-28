@@ -492,6 +492,7 @@ var Tree = map[string]*Node{
 	"observability":  {Subs: map[string]*Node{"presets": nil, "add": nil, "test": nil, "list": nil, "rm": nil}},
 	"otel":           {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "add": nil, "test": nil, "remove": nil}}}},
 	"policy":         {Subs: map[string]*Node{"list": nil, "set": nil, "check": nil}},
+	"instance":       {Subs: map[string]*Node{"show": nil}},
 	"app-types":      {Subs: map[string]*Node{"list": nil, "apply": nil, "check": nil}},
 	"cdn":            {Subs: map[string]*Node{"overview": nil}},
 	"event-webhooks": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "deliveries": nil, "replay": nil, "enable": nil, "disable": nil, "rotate-secret": nil, "delete": nil}},
