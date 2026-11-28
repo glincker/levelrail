@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -8,8 +9,31 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// envReplaceStore is the column-scoped writer that sets the plain env exactly.
+type envReplaceStore interface {
+	ReplaceServiceEnv(ctx context.Context, name string, env map[string]string) (store.EnvMergeResult, error)
+}
+
+// restoreMaySetSensitive is false when the snapshot adds or changes a
+// sensitive-class key and the caller lacks write:sensitive.
+func (rt *Router) restoreMaySetSensitive(r *http.Request, cur, snap map[string]string) bool {
+	if rt.callerHasAbility(r, AbilityWriteSensitive) {
+		return true
+	}
+	for k, v := range snap {
+		if old, had := cur[k]; had && old == v {
+			continue
+		}
+		if sensitive, _ := envredact.Classify(k, v, nil); sensitive {
+			return false
+		}
+	}
+	return true
+}
 
 const envChangeSourceRestore = "restore"
 
@@ -31,6 +55,9 @@ type envRevisionRestoreResource struct {
 // It writes the old env as a new revision, so history is never rewritten.
 func (rt *Router) handleRestoreEnvRevision(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if rt.refuseIfProtected(w, r, name) {
+		return
+	}
 	var req envRevisionRestoreRequest
 	if !decodeReq(w, r, &req) {
 		return
@@ -76,19 +103,17 @@ func (rt *Router) handleRestoreEnvRevision(w http.ResponseWriter, r *http.Reques
 	if updated.Env == nil {
 		updated.Env = map[string]string{}
 	}
-	merger, ok := rt.apps.(envMergeStore)
+	if !rt.restoreMaySetSensitive(r, svc.Env, updated.Env) {
+		writeError(w, http.StatusForbidden, "restoring this revision changes sensitive variables; it needs the write:sensitive ability")
+		return
+	}
+	replacer, ok := rt.apps.(envReplaceStore)
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "env merge is not available on this control plane")
 		return
 	}
-	var drop []string
-	for k := range svc.Env {
-		if _, keep := updated.Env[k]; !keep {
-			drop = append(drop, k)
-		}
-	}
-	// Column-scoped so a concurrent spec write cannot undo or be undone by the restore.
-	merged, err := merger.MergeServiceEnv(r.Context(), name, updated.Env, drop)
+	// The drop list is computed inside the write, so a concurrent env change cannot be missed.
+	merged, err := replacer.ReplaceServiceEnv(r.Context(), name, updated.Env)
 	if errors.Is(err, store.ErrEnvKeyIsSecret) {
 		writeError(w, http.StatusConflict, "a restored key is now stored as a secret; remove the secret first")
 		return

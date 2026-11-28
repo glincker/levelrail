@@ -40,6 +40,25 @@ func (db *DB) MergeServiceEnv(ctx context.Context, name string, set map[string]s
 }
 
 func (db *DB) mergeServiceEnvTx(ctx context.Context, name string, set map[string]string, unset []string) (EnvMergeResult, error) {
+	return db.mergeEnvCore(ctx, name, set, unset, false)
+}
+
+// ReplaceServiceEnv makes the plain env exactly env; the drop list is computed
+// inside the write transaction so it matches the env the write sees.
+func (db *DB) ReplaceServiceEnv(ctx context.Context, name string, env map[string]string) (EnvMergeResult, error) {
+	res, err := db.mergeEnvCore(ctx, name, env, nil, true)
+	if err != nil {
+		return res, err
+	}
+	if res.Changed {
+		if err := db.noteAppChange(ctx, name); err != nil {
+			return res, err
+		}
+	}
+	return res, nil
+}
+
+func (db *DB) mergeEnvCore(ctx context.Context, name string, set map[string]string, unset []string, replace bool) (EnvMergeResult, error) {
 	// A dedicated connection lets us issue BEGIN IMMEDIATE, which takes the write lock up front.
 	conn, err := db.Conn(ctx)
 	if err != nil {
@@ -83,6 +102,13 @@ func (db *DB) mergeServiceEnvTx(ctx context.Context, name string, set map[string
 		}
 	}
 
+	if replace {
+		for k := range current {
+			if _, keep := set[k]; !keep {
+				unset = append(unset, k)
+			}
+		}
+	}
 	next := maps.Clone(nonNilMap(current))
 	for k, v := range set {
 		next[k] = v
