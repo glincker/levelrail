@@ -115,8 +115,8 @@ func (db *DB) DeleteSpendCap(ctx context.Context, app string, ev spendcap.Event)
 func (db *DB) GetSpendCapState(ctx context.Context, app string) (spendcap.State, bool, error) {
 	var st spendcap.State
 	var at string
-	err := db.QueryRowContext(ctx, `SELECT app_name, period, enforced, nudged, highest, pct, egress_bytes, cost, updated_at FROM app_spend_cap_state WHERE app_name = ?`, app).
-		Scan(&st.App, &st.Period, &st.Enforced, &st.Nudged, &st.Highest, &st.Pct, &st.EgressBytes, &st.Cost, &at)
+	err := db.QueryRowContext(ctx, `SELECT app_name, period, enforced, nudged, highest, pct, egress_bytes, cost, updated_at, stop_state FROM app_spend_cap_state WHERE app_name = ?`, app).
+		Scan(&st.App, &st.Period, &st.Enforced, &st.Nudged, &st.Highest, &st.Pct, &st.EgressBytes, &st.Cost, &at, &st.StopState)
 	if errors.Is(err, sql.ErrNoRows) {
 		return st, false, nil
 	}
@@ -135,11 +135,11 @@ func (db *DB) SaveSpendCapState(ctx context.Context, st spendcap.State, events [
 	}
 	defer func() { _ = tx.Rollback() }()
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO app_spend_cap_state (app_name, period, enforced, nudged, highest, pct, egress_bytes, cost, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO app_spend_cap_state (app_name, period, enforced, nudged, highest, pct, egress_bytes, cost, updated_at, stop_state)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(app_name) DO UPDATE SET period = excluded.period, enforced = excluded.enforced, nudged = excluded.nudged,
-			highest = excluded.highest, pct = excluded.pct, egress_bytes = excluded.egress_bytes, cost = excluded.cost, updated_at = excluded.updated_at`,
-		st.App, st.Period, st.Enforced, st.Nudged, st.Highest, st.Pct, st.EgressBytes, st.Cost, st.UpdatedAt.UTC().Format(time.RFC3339))
+			highest = excluded.highest, pct = excluded.pct, egress_bytes = excluded.egress_bytes, cost = excluded.cost, updated_at = excluded.updated_at, stop_state = excluded.stop_state`,
+		st.App, st.Period, st.Enforced, st.Nudged, st.Highest, st.Pct, st.EgressBytes, st.Cost, st.UpdatedAt.UTC().Format(time.RFC3339), st.StopState)
 	if err != nil {
 		return fmt.Errorf("store: save spend cap state %q: %w", st.App, err)
 	}
@@ -244,4 +244,36 @@ func (db *DB) ActiveSpendOverride(ctx context.Context, app string, now time.Time
 	o.CreatedAt, _ = time.Parse(time.RFC3339, created)
 	o.ExpiresAt, _ = time.Parse(time.RFC3339, expires)
 	return o, true, nil
+}
+
+// SpendCapped reports whether the cap controller holds name stopped, so a
+// request or a schedule must not wake it.
+func (db *DB) SpendCapped(ctx context.Context, name string) (bool, error) {
+	var n int
+	err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM app_spend_cap_state WHERE app_name = ? AND stop_state = ?`, name, spendcap.StopPaused).Scan(&n)
+	if err != nil {
+		return false, fmt.Errorf("store: spend capped %q: %w", name, err)
+	}
+	return n > 0, nil
+}
+
+// ListSpendCapPaused lists the apps the cap controller currently holds stopped.
+func (db *DB) ListSpendCapPaused(ctx context.Context) ([]spendcap.State, error) {
+	rows, err := db.QueryContext(ctx, `SELECT app_name, period, pct, updated_at FROM app_spend_cap_state WHERE stop_state = ? ORDER BY app_name`, spendcap.StopPaused)
+	if err != nil {
+		return nil, fmt.Errorf("store: list cap paused apps: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []spendcap.State
+	for rows.Next() {
+		var st spendcap.State
+		var at string
+		if err := rows.Scan(&st.App, &st.Period, &st.Pct, &at); err != nil {
+			return nil, fmt.Errorf("store: scan cap paused app: %w", err)
+		}
+		st.UpdatedAt, _ = time.Parse(time.RFC3339, at)
+		st.StopState = spendcap.StopPaused
+		out = append(out, st)
+	}
+	return out, rows.Err()
 }

@@ -30,6 +30,8 @@ You pick one action per app:
 | `throttle` | Each client address is limited to a number of requests per second (default 5). |
 | `pause` | The app's domains answer with a short "temporarily unavailable" page and a 503 until the month rolls over or you raise the limit. |
 
+Turn on the runtime setting `spend.pause_stops_apps` (off by default) and `pause` also stops the app's containers. A capped app is not woken by requests or a schedule. It starts again when the month rolls over or the limit is raised, or by hand with `spend caps resume app NAME --reason TEXT` (root). `spend caps paused` and `GET /api/v1/costs/capped-apps` list the apps a cap holds stopped.
+
 Throttling limits request rate per client. It slows heavy callers but is not a bandwidth cap, so a few clients pulling large files can still use a lot of egress. Use `pause` when the limit must hold.
 
 If a domain already has a stricter rate limit, throttle never loosens it. If a domain is already in maintenance mode, your own page is kept.

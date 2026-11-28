@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2437 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2439 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -157,6 +157,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/budget/dry-run", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppSpendDryRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/budget/override", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendOverride", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/budget/resume", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapResume", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-cache", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppBuildCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-cache", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildCache", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/build-cache/reclaim", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleReclaimAppBuildCache", Description: ""},
@@ -1419,6 +1420,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/costs/budgets/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCostBudget", Description: ""},
 	{Method: "PUT", Path: "/api/v1/costs/budgets/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateCostBudget", Description: ""},
 	{Method: "POST", Path: "/api/v1/costs/budgets/{id}/dry-run", Ability: "AbilityRead", Group: "Other", Handler: "handleCostBudgetDryRun", Description: ""},
+	{Method: "GET", Path: "/api/v1/costs/capped-apps", Ability: "AbilityRead", Group: "Other", Handler: "handleListSpendCapPaused", Description: ""},
 	{Method: "GET", Path: "/api/v1/costs/explore", Ability: "AbilityRead", Group: "Other", Handler: "handleCostExplore", Description: ""},
 	{Method: "GET", Path: "/api/v1/dashboards", Ability: "AbilityRead", Group: "Other", Handler: "handleListDashboards", Description: ""},
 	{Method: "POST", Path: "/api/v1/dashboards", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateDashboard", Description: ""},

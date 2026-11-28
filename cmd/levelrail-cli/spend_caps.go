@@ -25,6 +25,8 @@ func spendUsage(prog string) string {
   %[1]s spend caps rm app|project NAME
   %[1]s spend caps dry-run app|project NAME
   %[1]s spend caps override app NAME --reason TEXT
+  %[1]s spend caps paused
+  %[1]s spend caps resume app NAME --reason TEXT
 
 A cap alerts at each warn level once a month. In block_deploys mode, new
 deploys are refused at 100%% until the month rolls over, the cap is raised,
@@ -58,7 +60,7 @@ func runSpendCapsVerb(prog string, args []string, stdout, stderr io.Writer, look
 		return exitUsage
 	}
 	switch args[0] {
-	case "list", "status", "set", "rm", "dry-run", "override":
+	case "list", "status", "set", "rm", "dry-run", "override", "paused", "resume":
 		return runSpendCaps(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown spend caps subcommand %q\n\n", prog, args[0])
@@ -95,7 +97,10 @@ func runSpendCaps(prog, verb string, args []string, stdout, stderr io.Writer, lo
 	if verb == "list" {
 		return spendCapsList(ctx, client, stdout, stderr, jsonOut, of)
 	}
-	if len(rest) != 2 || (rest[0] != spendScopeApp && rest[0] != spendScopeProject) || (verb == "override" && rest[0] != spendScopeApp) {
+	if verb == "paused" {
+		return spendCapsPaused(ctx, client, stdout, stderr, jsonOut, of)
+	}
+	if len(rest) != 2 || (rest[0] != spendScopeApp && rest[0] != spendScopeProject) || ((verb == "override" || verb == "resume") && rest[0] != spendScopeApp) {
 		_, _ = fmt.Fprint(stderr, spendUsage(prog))
 		return exitUsage
 	}
@@ -105,6 +110,17 @@ func runSpendCaps(prog, verb string, args []string, stdout, stderr io.Writer, lo
 	}
 
 	switch verb {
+	case "resume":
+		if strings.TrimSpace(*reason) == "" {
+			_, _ = fmt.Fprintln(stderr, "a resume needs --reason")
+			return exitUsage
+		}
+		if err := client.ResumeSpendCapApp(ctx, name, *reason); err != nil {
+			return fail("resume", err)
+		}
+		return writeScheduledTaskResult(stdout, stderr, of, map[string]string{"app": name, "status": "resumed"}, func() {
+			_, _ = fmt.Fprintf(stdout, "%s started; it stays up until the limit lifts or the month rolls over\n", name)
+		})
 	case "override":
 		if strings.TrimSpace(*reason) == "" {
 			_, _ = fmt.Fprintln(stderr, "an override needs --reason")
@@ -323,6 +339,28 @@ func printSpendForecast(out io.Writer, b apiclient.AppBudget) {
 		}
 		_, _ = fmt.Fprintln(out, line)
 	}
+}
+
+func spendCapsPaused(ctx context.Context, client *Client, stdout, stderr io.Writer, jsonOut bool, of outputFlags) int {
+	apps, err := client.ListSpendCapPaused(ctx)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list paused apps: %w", err))
+	}
+	if apps == nil {
+		apps = []apiclient.SpendCapPaused{}
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, apps, func() {
+		if len(apps) == 0 {
+			_, _ = fmt.Fprintln(stdout, "no apps are stopped by a spend cap")
+			return
+		}
+		w := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
+		_, _ = fmt.Fprintln(w, "APP\tPERIOD\tUSED\tSINCE")
+		for _, a := range apps {
+			_, _ = fmt.Fprintf(w, "%s\t%s\t%.0f%%\t%s\n", a.App, a.Period, a.Pct, a.Since.Format("2006-01-02 15:04"))
+		}
+		_ = w.Flush()
+	})
 }
 
 func spendCapsList(ctx context.Context, client *Client, stdout, stderr io.Writer, jsonOut bool, of outputFlags) int {

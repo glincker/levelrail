@@ -54,7 +54,9 @@ func (rt *Router) spendCaps() *spendcap.Controller {
 	}
 	return &spendcap.Controller{
 		Store: st, Usage: rt, Logger: rt.logger,
-		Nudge: func(context.Context) error { rt.nudgeReconciler(); return nil },
+		Nudge:    func(context.Context) error { rt.nudgeReconciler(); return nil },
+		Sleeper:  capSleeper{rt: rt},
+		StopApps: rt.spendPauseStops,
 	}
 }
 
