@@ -34,6 +34,9 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	if err := db.checkNewNameKind(ctx, svc.Name, NameKindApp); err != nil {
 		return err
 	}
+	if err := db.checkStackNameNotDatabase(ctx, svc); err != nil {
+		return err
+	}
 	if err := db.checkDesiredImage(ctx, svc); err != nil {
 		return err
 	}

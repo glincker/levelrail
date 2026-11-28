@@ -138,6 +138,15 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
 	}
+	// Every derived name is held from validation to the flush, so another team cannot take one in between.
+	derived := make([]string, 0, len(file.Services))
+	for key := range file.Services {
+		derived = append(derived, name+"-"+key)
+	}
+	slices.Sort(derived)
+	for _, n := range derived {
+		defer lockAppName(n)()
+	}
 
 	// Loaded before this deploy writes anything: staleComposeServices
 	// below needs the previous member list to diff against, and name is
@@ -475,14 +484,44 @@ func (p *pendingComposeSecrets) get(ns, key string) (string, bool) {
 	return "", false
 }
 
-func (p *pendingComposeSecrets) flush(ctx context.Context) error {
-	for _, it := range p.items {
-		if p.rt.composeSecrets == nil {
-			return fmt.Errorf("no secrets master key configured")
+type writtenComposeSecret struct {
+	item    pendingComposeSecret
+	prior   string
+	existed bool
+}
+
+// rollback undoes written values in reverse order, best effort per row.
+func (p *pendingComposeSecrets) rollback(ctx context.Context, done []writtenComposeSecret) {
+	for i := len(done) - 1; i >= 0; i-- {
+		w := done[i]
+		var err error
+		switch {
+		case w.existed:
+			err = p.rt.composeSecrets.SetValue(ctx, w.item.namespace, w.item.key, w.prior)
+		default:
+			if d, ok := p.rt.composeSecrets.(composeSecretDeleter); ok {
+				err = d.DeleteValue(ctx, w.item.namespace, w.item.key)
+			}
 		}
+		if err != nil {
+			p.rt.logger.Warn("api: deploy compose: roll back generated secret failed", slog.String("namespace", w.item.namespace), slog.String("error", err.Error()))
+		}
+	}
+}
+
+// flush is all or nothing: a failed write restores or removes every value this deploy already wrote.
+func (p *pendingComposeSecrets) flush(ctx context.Context) error {
+	if len(p.items) > 0 && p.rt.composeSecrets == nil {
+		return fmt.Errorf("no secrets master key configured")
+	}
+	var done []writtenComposeSecret
+	for _, it := range p.items {
+		prior, perr := p.rt.composeSecrets.Resolve(ctx, it.namespace, it.key)
 		if err := p.rt.composeSecrets.SetValue(ctx, it.namespace, it.key, it.value); err != nil {
+			p.rollback(context.WithoutCancel(ctx), done)
 			return err
 		}
+		done = append(done, writtenComposeSecret{item: it, prior: prior, existed: perr == nil && prior != ""})
 	}
 	return nil
 }
@@ -505,6 +544,10 @@ func (rt *Router) admitComposeNamespaces(w http.ResponseWriter, r *http.Request,
 		member[p.Name] = true
 	}
 	// Magic vars write under each derived name, which a database credential may already hold.
+	if len(previous) == 0 {
+		// A new stack name has no member row yet, so only this check keeps it off a database name.
+		delete(member, name)
+	}
 	for _, n := range append([]string{name}, names...) {
 		if member[n] {
 			continue

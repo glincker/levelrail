@@ -165,3 +165,25 @@ func (c NameCollision) String() string {
 	}
 	return c.Name + " (" + strings.Join(parts, ", ") + ")"
 }
+
+// checkStackNameNotDatabase refuses a new stack member whose stack name is a database name,
+// since the stack's generated values would land in the database's credential namespace.
+func (db *DB) checkStackNameNotDatabase(ctx context.Context, svc DesiredService) error {
+	if svc.AppID == "" || svc.AppID == svc.Name {
+		return nil
+	}
+	var exists, member bool
+	if err := db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM desired_services WHERE name = ?)`, svc.Name).Scan(&member); err != nil {
+		return fmt.Errorf("store: check name %q: %w", svc.Name, err)
+	}
+	if member {
+		return nil
+	}
+	if err := db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM desired_databases WHERE name = ?)`, svc.AppID).Scan(&exists); err != nil {
+		return fmt.Errorf("store: check name %q: %w", svc.AppID, err)
+	}
+	if exists {
+		return fmt.Errorf("%w: %q", ErrNameTaken, svc.AppID)
+	}
+	return nil
+}

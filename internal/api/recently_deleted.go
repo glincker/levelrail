@@ -195,7 +195,7 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		if !rt.authorizeDatabaseRestore(w, r, e.Name) {
 			return
 		}
-		unlock := lockAppName("database:" + name)
+		unlock := lockAppName(name)
 		// Re-read under the lock so a concurrent restore or purge cannot be restored twice.
 		cur, lerr := rt.liveDeleted(r.Context(), kind, name)
 		switch {

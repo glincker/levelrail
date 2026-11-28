@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -95,5 +97,64 @@ func TestNameNamespace_StoreGuardsEveryWriter(t *testing.T) {
 	}
 	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "web", Engine: "postgres", Version: "16"}); !errors.Is(err, store.ErrNameTaken) {
 		t.Fatalf("SaveDesiredDatabase err = %v, want ErrNameTaken", err)
+	}
+}
+
+func TestComposeDeployRacingAppCreateHasOneWinner(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	for i := 0; i < 8; i++ {
+		stack := fmt.Sprintf("race%d", i)
+		derived := stack + "-web"
+		start := make(chan struct{})
+		var wg sync.WaitGroup
+		var composeCode, createCode int
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			<-start
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/"+stack+"/compose", webOnlyComposeYAML))
+			composeCode = rec.Code
+		}()
+		go func() {
+			defer wg.Done()
+			<-start
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"`+derived+`","image":"levelrail/x:1","port":4000}`))
+			createCode = rec.Code
+		}()
+		close(start)
+		wg.Wait()
+
+		composeOK := composeCode == http.StatusOK
+		createOK := createCode == http.StatusCreated || createCode == http.StatusOK
+		// An admin caller may legitimately overwrite its own app, so both can succeed in create-then-compose order.
+		if !composeOK && !createOK {
+			t.Fatalf("%s: compose=%d create=%d, want at least one winner", derived, composeCode, createCode)
+		}
+		members, err := db.ListServicesByApp(context.Background(), stack)
+		if err != nil {
+			t.Fatalf("list members: %v", err)
+		}
+		if !composeOK && len(members) != 0 {
+			t.Fatalf("%s: losing compose deploy wrote %d service(s)", derived, len(members))
+		}
+	}
+}
+
+func TestNameNamespace_ComposeStackNamedLikeDatabaseRefused(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.CreateDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "pg1", Engine: "postgres", Version: "16"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/pg1/compose", webOnlyComposeYAML))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409; body = %s", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetAppByName(context.Background(), "pg1"); err == nil {
+		t.Fatal("app row was created for a stack named like a database")
 	}
 }

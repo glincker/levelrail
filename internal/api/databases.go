@@ -468,7 +468,15 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	defer lockAppName("database:" + req.Name)()
+	defer lockAppName(req.Name)()
+	// The earlier check ran unlocked; an app create may have taken the name since.
+	if other, err := rt.nameTakenByOtherKind(r.Context(), req.Name, store.NameKindDatabase, true); err != nil {
+		rt.internalError(w, "api: create database: recheck name failed", err, slog.String("name", req.Name))
+		return
+	} else if other {
+		writeError(w, http.StatusConflict, msgNameUnavailable)
+		return
+	}
 	if base, reserved := rt.reservedBranchName(r.Context(), req.Name); reserved {
 		writeError(w, http.StatusConflict, "name is reserved for pull request branches of database "+base+", choose another name")
 		return
@@ -519,7 +527,7 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 // The data volume is kept on delete, so a mistaken delete never destroys data.
 func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	defer lockAppName("database:" + name)()
+	defer lockAppName(name)()
 
 	existing, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {

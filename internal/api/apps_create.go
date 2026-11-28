@@ -159,6 +159,9 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// Before admission: a registry round trip must not hold the port lock.
 	resolution, createTrace := rt.resolveCreateImage(r.Context(), &desired)
 
+	// Taken before the port and quota locks: a compose deploy holds this name first, then those.
+	unlockName := lockAppName(req.Name)
+	defer unlockName()
 	admitted := req.toDesiredService()
 	admitted.NodeID = req.NodeID
 	portsRelease, portsOK := rt.admitPublishedPorts(w, r, req.Name, nil, []store.DesiredService{admitted})
@@ -182,8 +185,6 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// internal/store's service_secret_values table has no foreign key to
 	// desired_services, so this ordering is safe even though the service
 	// row below doesn't exist yet.
-	unlockName := lockAppName(req.Name)
-	defer unlockName()
 	// The checks above ran unlocked; a clone or compose deploy may have taken the name since.
 	if ferr := rt.appNameFree(r.Context(), req.Name); errors.Is(ferr, errAppNameTaken) {
 		writeError(w, http.StatusConflict, "an app with this name already exists")
