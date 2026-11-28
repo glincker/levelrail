@@ -8,6 +8,7 @@ internal/build 50
 internal/build/buildkitd 51
 internal/build/cachebudget 52
 internal/canarypolicy 201
+internal/catalog 21
 internal/changes 25
 internal/chaos 191
 internal/cloudflareips 24
@@ -23,10 +24,12 @@ internal/deploytrace 48
 internal/diagnose 25
 internal/dnszones 26
 internal/docker 211
-internal/dockerguard 75
+# dockerguard 78: internal/catalog now imports it for the grant tier lists (template capability grants).
+internal/dockerguard 78
 internal/edgefw 21
 internal/email 35
-internal/envredact 76
+# envredact 99: leaf package that dockerguard now imports for log label redaction, so it inherits dockerguard's dependents.
+internal/envredact 99
 internal/experimental 32
 internal/extdb 36
 internal/footprint 203

@@ -1,6 +1,21 @@
 package spec
 
-import "strings"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// ErrReservedNamespace is returned when app scoped code names a control plane namespace.
+var ErrReservedNamespace = errors.New("secrets: namespace is reserved for the control plane")
+
+// AppNamespace refuses a reserved name. It lives here so packages that only need the guard do not import internal/secrets.
+func AppNamespace(name string) error {
+	if IsReservedName(name) {
+		return fmt.Errorf("%w: %q", ErrReservedNamespace, name)
+	}
+	return nil
+}
 
 // reservedNames are the control plane secret namespaces that have no slash,
 // so an app name could otherwise take one and resolve its secrets. This is the
