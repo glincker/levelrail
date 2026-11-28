@@ -16,6 +16,7 @@ import (
 func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens list", "print tokens as a JSON array to stdout and nothing else", stderr)
 	tokenFlagP := fs.String("token", "", "API token with root ability (skips the password prompt; overrides "+apiTokenEnvHelp+" and the credentials file)")
+	qf := bindTokenQueryFlags(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -33,8 +34,16 @@ func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupE
 	of := outputFlags{format, *queryFlagP}
 
 	ctx := context.Background()
+	rawQuery, qerr := qf.encode()
+	if qerr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, qerr)
+		return exitValidation
+	}
 	if tok := listTokenAuth(*tokenFlagP, *usernameP, *passwordP, *profileFlagP, prog, lookupEnv); tok != "" {
 		client := NewClient(resolveAPIURL(*apiURLFlagP, lookupEnv, prog, resolveProfile(*profileFlagP, lookupEnv)), tok)
+		if rawQuery != "" {
+			return printTokenPage(stdout, stderr, of, qf.groups, func() (json.RawMessage, error) { return client.ListTokensQuery(ctx, rawQuery) })
+		}
 		raw, err := client.ListTokensRaw(ctx)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list tokens: %w", err))
@@ -50,6 +59,9 @@ func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
+	if rawQuery != "" {
+		return printTokenPage(stdout, stderr, of, qf.groups, func() (json.RawMessage, error) { return sessionClient.ListTokensQuery(ctx, rawQuery) })
+	}
 	tokens, err := sessionClient.ListTokens(ctx)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list tokens: %w", err))
@@ -104,12 +116,22 @@ func printTokensTable(out io.Writer, tokens []tokenResource) {
 func tokensListUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s tokens list [flags]
+  %[1]s tokens ls [flags]
 
-Lists every API token (never a secret value). Authenticates with a stored
+"ls" is the same command. Lists every API token (never a secret value). Authenticates with a stored
 or --token API token holding root, else a session login (--username/--password,
 prompted if omitted).
 
 Flags:
+  --status string            active, expiring, expired or revoked
+  --name string              exact token name
+  --q string                 name contains this text
+  --ability string           holds this ability
+  --kind string              emergency, agent, system or user
+  --sort string              name, created, last_used or expires
+  --order string             asc or desc
+  --limit int                most rows to print (the server caps it)
+  --groups                   one row per name with counts instead of one per token
   --token string             API token with root ability (skips the password prompt)
   --username string          admin username (prompted if omitted)
   --password string          admin password (prompted without echo if omitted)

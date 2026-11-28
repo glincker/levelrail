@@ -156,6 +156,7 @@ type tokenResource struct {
 	RevokedAt  *time.Time  `json:"revoked_at,omitempty"`
 	RevokesAt  *time.Time  `json:"revokes_at,omitempty"`
 	Agent      *tokenAgent `json:"agent,omitempty"`
+	Status     string      `json:"status,omitempty"`
 }
 
 // tokenAgent mirrors internal/api's agentIdentity.
@@ -199,6 +200,20 @@ func (c *authSessionClient) CreateToken(ctx context.Context, req createTokenRequ
 func (c *authSessionClient) ListTokens(ctx context.Context) ([]tokenResource, error) {
 	var out []tokenResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/auth/tokens", nil, &out)
+	return out, err
+}
+
+// ListTokensQuery calls GET /api/v1/auth/tokens with filter, sort and page parameters already encoded.
+func (c *authSessionClient) ListTokensQuery(ctx context.Context, rawQuery string) (json.RawMessage, error) {
+	var out json.RawMessage
+	err := c.do(ctx, http.MethodGet, "/api/v1/auth/tokens?"+rawQuery, nil, &out)
+	return out, err
+}
+
+// BulkRevokeTokens calls POST /api/v1/tokens/bulk-revoke, session only.
+func (c *authSessionClient) BulkRevokeTokens(ctx context.Context, req bulkRevokeRequest) (bulkRevokeResponse, error) {
+	var out bulkRevokeResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/tokens/bulk-revoke", req, &out)
 	return out, err
 }
 

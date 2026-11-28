@@ -897,8 +897,13 @@ List configured credentials profiles with API URL, whether each holds a token, i
 ```
 levelrail-cli tokens create --name NAME (--abilities LIST | --preset observer|deployer|operator) [--agent NAME] [--agent-description TEXT] [flags]
 levelrail-cli tokens list [flags]
-levelrail-cli tokens revoke <id> [flags]
+levelrail-cli tokens ls [--status S] [--name N] [--q Q] [--ability A] [--kind K] [--sort S] [--order O] [--limit N] [--groups] [--json]
+levelrail-cli tokens revoke <id>... [flags]
+levelrail-cli tokens revoke --expired | --name N | --kind K | --filter 'k=v,...' [--dry-run] [--yes]
+levelrail-cli tokens prune [--older-than 30d] [--dry-run] [--yes]
 levelrail-cli tokens cleanup [--older-than-days N] [--yes] [flags]
+
+`ls` is `list` with filters: `--status` takes active, expiring, expired or revoked, `--kind` takes emergency, agent, system or user, and `--sort` takes name, created, last_used or expires. It prints status, name, abilities, created, last used and expires, plus counts by status. `--groups` prints one row per name with counts. Revoking several ids, or by `--expired`, `--name`, `--kind` or `--filter` (keys q, status, ability, name, kind, expires_before), always previews first, prints the count and up to 10 names, and asks to confirm unless `--yes` is given. `--dry-run` stops after the preview. A bulk revoke skips revoked tokens and the token making the call, is refused above the `tokens.bulk_max` setting, and needs a signed-in session: pass `--username` and `--password`, because an API token (including a saved one) is refused with a message saying so. `prune` previews and then deletes revoked and expired tokens older than the window (default 90d), and needs a root API token.
 ```
 `tokens create` requires a username and password (prompted if omitted, never prompted in CI mode), because that route is session only server side. `revoke` first tries the API token from `--token`, `LEVELRAIL_TOKEN`, `APP_API_TOKEN` or the saved profile, and asks for `--username` and `--password` only when the server refuses a token. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret. `cleanup` permanently removes revoked tokens that were revoked more than `--older-than-days` days ago (default 90 when the flag is omitted; `0` removes every revoked token and needs `--yes`) and prints how many it removed; unlike the other subcommands it takes a root API token (`--token` or the stored one) instead of a password, and it never touches an active token. The dashboard setting **Delete revoked API tokens after** (Settings, API tokens) does the same on a schedule.
 
