@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // resolveUpdateWindow validates the window fields of a set request. Omitted

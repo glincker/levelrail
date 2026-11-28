@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Another team's app or database answers exactly like a missing one, for cookies and scoped tokens alike.

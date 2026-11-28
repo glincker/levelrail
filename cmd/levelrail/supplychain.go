@@ -7,11 +7,11 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/profile"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/supplychain"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/profile"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/supplychain"
 )
 
 type supplyChainResolver struct {

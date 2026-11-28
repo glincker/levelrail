@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
 )
 
 const contractVersion = 1

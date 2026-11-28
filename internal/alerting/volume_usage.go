@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // KindVolumeUsage fires when a volume's used percent meets the configured threshold.

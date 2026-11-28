@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/diagnose"
-	"github.com/GLINCKER/levelrail/internal/repolayout"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/diagnose"
+	"github.com/glincker/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // addBuildSourceFacts records the git source's build settings and the

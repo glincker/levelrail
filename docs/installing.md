@@ -312,6 +312,35 @@ Every address the installer chooses (`APP_HTTP_ADDR`, `APP_INGRESS_HTTP_ADDR`, `
 
 </Accordion>
 
+### Small servers (1 to 2 GB RAM)
+
+A 1 GB or 2 GB VPS installs and runs, but a build can be killed when memory runs out. Three things help.
+
+Add swap. On a host under 2 GB with no swap, the installer asks once whether to create a swap file after the install. It asks only on an interactive terminal. In a piped or scripted install it never asks and creates nothing unless you pass `--swap`. It never touches an existing swap device, swap file or `/etc/fstab` swap line.
+
+```bash
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --swap
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --no-swap
+```
+
+On an existing install, preview the commands first, then apply them as root:
+
+```bash
+levelrail-cli swap
+sudo levelrail-cli swap --apply
+```
+
+The size defaults to the RAM size. Change it with `--size-mb N`, the `host.swap_size_mb` setting, or `LEVELRAIL_SWAP_MB` during install. `levelrail-cli doctor` shows a `host_swap` row.
+
+Keep builds small. `build.max_parallel` sets how many builds run at once. At 0 (the default) it follows the CPU count: 1 on a 1 or 2 vCPU host, 2 on 4 vCPUs, more on bigger hosts. The BuildKit container also runs with a low CPU weight (`build.buildkitd_cpu_shares`, default 256 against the engine default of 1024), so a build slows down before the control plane does.
+
+```bash
+levelrail-cli settings set build.max_parallel 1
+levelrail-cli settings set build.buildkitd_cpu_shares 256
+```
+
+Use the light profile: `--profile minimal` keeps single node, mesh, plugins and experimental features off. The installer suggests it when RAM is under 2 GB.
+
 ### Verifying release binaries
 
 Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control plane binary), a keyless [cosign](https://docs.sigstore.dev/cosign/overview/) signature bundle for it (`checksums.txt.sigstore.json`), and a GitHub build provenance attestation for the binaries. Releases cut before signing was added carry no bundle.
@@ -540,7 +569,7 @@ See the [CLI reference](/cli-reference) for every command.
 | Homebrew (macOS and Linux) | `brew install glincker/tap/levelrail-cli` |
 | Scoop and winget (Windows) | See [Install on Windows and Linux](#install-on-windows-and-linux). Use the PowerShell installer above until then. |
 | npm, yarn or pnpm | `npx levelrail-cli <command>` or `npm install --global levelrail-cli` ([details](#use-the-cli-from-npm)) |
-| Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
+| Go | `go install github.com/glincker/levelrail/cmd/levelrail-cli@latest` |
 | Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
 
 Every release asset is listed in `checksums.txt`, which is signed with cosign and has a build provenance attestation. Windows binaries are published from the release after `v0.2.0-beta.15`; before that, run the install script from WSL.
@@ -591,6 +620,23 @@ yarn and pnpm use the same registry: `yarn dlx levelrail-cli` and `pnpm dlx leve
 - Platforms: Linux, macOS and Windows, on amd64 and arm64. The launcher package pulls the matching `levelrail-cli-<os>-<arch>` package as an optional dependency. There is no install script.
 - Provenance: packages are published from the release workflow with npm trusted publishing. Check them with `npm audit signatures` in a project that depends on `levelrail-cli`.
 - Pin the version to your server's version in CI so the client and the control plane stay in step.
+
+## Install channels
+
+Every channel below is published by the release workflow, so it follows each release without manual steps.
+
+| Channel | Command | Where it updates from |
+| --- | --- | --- |
+| GitHub Releases | `gh release download <tag> --repo glincker/levelrail` | Every release tag, with `checksums.txt`, cosign signatures and build provenance |
+| GHCR | `docker pull ghcr.io/glincker/levelrail` (also `levelrail-agent`) | Every release tag, multi-arch, cosign signed |
+| Docker Hub | `docker pull levelrail/levelrail` (also `levelrail-agent`) | Mirror of the GHCR image with the same digest |
+| npm (CLI) | `npm install --global levelrail-cli` | Every release, published with provenance |
+| npm (MCP server) | `npx levelrail-mcp` | Releases that change the MCP server |
+| MCP Registry | `io.github.glincker/levelrail` | Stable releases of the MCP server |
+| Homebrew | `brew install glincker/tap/levelrail-cli` (also `levelrail-agent`) | The `glincker/homebrew-tap` formulas, updated on each release |
+| Scoop (Windows) | `scoop bucket add glincker https://github.com/glincker/scoop-bucket` then `scoop install levelrail-cli` | The `glincker/scoop-bucket` manifest, updated on each stable release |
+| AUR and Nix files | `gh release download <tag> --repo glincker/levelrail --pattern 'levelrail-cli*'` | A `PKGBUILD` and a `flake.nix` attached to each release, to copy into your own package |
+| Terraform and OpenTofu provider | `source = "registry.terraform.io/glincker/levelrail"` | The `glincker/terraform-provider-levelrail` mirror, tagged when the provider changes |
 
 ## Verifying the install
 

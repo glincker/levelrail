@@ -1,16 +1,13 @@
-import { Suspense, lazy, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAppNetwork } from '../../queries/appNetwork'
+import { AppQrPanel } from './AppQrPanel'
+import { useUrlReachability } from '../overview/useUrlReachability'
+import { useAppUrl } from '../overview/useAppUrl'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployAttempt } from '../../types/deployAttempt'
 
-// Lazy so the QR encoder stays out of the main bundle.
-const QrCodeSvg = lazy(() => import('../security/QrCodeSvg'))
-
-const QR_SIZE = 112
 const storageKey = (app: string) => `launch-success-dismissed:${app}`
 
 function readDismissed(app: string): boolean {
@@ -31,70 +28,30 @@ export function LaunchSuccessCard({
   attempts: DeployAttempt[]
 }) {
   const { t } = useTranslation('appSetup')
-  const { data: network } = useAppNetwork(app.name)
+  const url = useAppUrl(app)
   const [dismissed, setDismissed] = useState(() => readDismissed(app.name))
-  const [copied, setCopied] = useState(false)
   const succeeded = attempts.filter((a) => a.status === 'succeeded').length
-  const [domain] = app.domains ?? []
-  const url = domain ? `https://${domain}` : network?.fallback_url
+  const { reach, shareUrl } = useUrlReachability(app, url)
   if (dismissed || succeeded !== 1 || attempts[0]?.status !== 'succeeded') {
     return null
   }
-  if (!url) return null
+  // Only a ready app earns the success banner; a down or pending one stays quiet.
+  if (!url || (reach.state !== 'reachable' && reach.state !== 'local_only')) {
+    return null
+  }
   return (
     <section
       aria-label={t('launch.title')}
-      className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card px-4 py-3"
+      className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3"
     >
-      <div className="rounded-lg bg-white p-2">
-        <Suspense
-          fallback={
-            <Skeleton
-              className="size-[112px]"
-              role="img"
-              aria-label={t('launch.qrLoading')}
-            />
-          }
-        >
-          <QrCodeSvg value={url} size={QR_SIZE} label={t('launch.qrLabel')} />
-        </Suspense>
-      </div>
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-0 flex-1 space-y-2">
         <p className="text-sm font-medium">{t('launch.title')}</p>
-        <p className="text-muted-foreground text-xs">{t('launch.body')}</p>
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="block truncate text-sm underline"
-        >
-          {url}
-        </a>
-        <div className="flex flex-wrap gap-2 pt-1">
-          <Button
-            type="button"
-            size="sm"
-            onClick={() =>
-              void navigator.clipboard.writeText(url).then(() => {
-                setCopied(true)
-              })
-            }
-          >
-            {copied ? t('launch.copied') : t('launch.copy')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              void navigator.clipboard.writeText(
-                `${t('launch.shareText', { name: app.name })} ${url}`,
-              )
-            }
-          >
-            {t('launch.share')}
-          </Button>
-        </div>
+        <AppQrPanel
+          appName={app.name}
+          url={url}
+          shareUrl={shareUrl}
+          reach={reach}
+        />
       </div>
       <Button
         type="button"

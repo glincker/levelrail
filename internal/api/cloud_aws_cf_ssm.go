@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/cloudfront"
-	"github.com/GLINCKER/levelrail/internal/awsx/ssm"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/awsx/cloudfront"
+	"github.com/glincker/levelrail/internal/awsx/ssm"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // Registered here, not in the shared map literal, so this slice does not collide with other services.

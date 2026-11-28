@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // unusedTokenResource is the list shape for an idle token: metadata only, never the secret.
@@ -35,6 +35,23 @@ func holdsSensitiveAbility(abilities []string) bool {
 // tokenLive is true for a token that is neither revoked nor expired.
 func tokenLive(t store.APIToken, now time.Time) bool {
 	return t.RevokedAt == nil && (t.ExpiresAt == nil || t.ExpiresAt.After(now))
+}
+
+// Token statuses reported by the list; revoked wins over expired.
+const (
+	tokenStatusActive  = "active"
+	tokenStatusExpired = "expired"
+	tokenStatusRevoked = "revoked"
+)
+
+func tokenStatus(t store.APIToken, now time.Time) string {
+	switch {
+	case t.RevokedAt != nil:
+		return tokenStatusRevoked
+	case t.ExpiresAt != nil && !t.ExpiresAt.After(now):
+		return tokenStatusExpired
+	}
+	return tokenStatusActive
 }
 
 // unusedTokens returns live tokens idle for at least days; a never-used token

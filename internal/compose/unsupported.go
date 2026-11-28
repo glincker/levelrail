@@ -42,7 +42,6 @@ var alternatives = map[string]string{
 	"logging":                              "logs are collected by the platform; read them with the logs commands",
 	"links":                                "services reach each other by service name; remove it",
 	"external_links":                       "services reach each other by service name; remove it",
-	"platform":                             "build or pull the image for the server's architecture",
 	"scale":                                "use deploy.replicas",
 	"build":                                "declare a pre-built image: or use a git deploy with build.type: compose",
 	"mem_reservation":                      "remove it; only a hard memory limit is applied",

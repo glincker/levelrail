@@ -18,16 +18,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/dnsstatus"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/profile"
-	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/dnsstatus"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/profile"
+	meshreconcile "github.com/glincker/levelrail/internal/reconcile/mesh"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

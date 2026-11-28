@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/pinned"
+	"github.com/glincker/levelrail/internal/agent/pinned"
 )
 
 // ErrInvalidCSR is returned by SignClientCSR for a malformed request, a bad

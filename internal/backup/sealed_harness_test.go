@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // memObjects is an in-memory bucket usable as Uploader, Downloader,

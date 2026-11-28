@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 func TestPipeline_Deploy_Dockerfile_ReusesUnchangedBuild(t *testing.T) {

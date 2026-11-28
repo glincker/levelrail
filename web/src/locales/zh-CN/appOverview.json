@@ -171,5 +171,43 @@
   "trafficUnavailable": "实时流量数据暂时不可用。",
   "trafficRetry": "重试",
   "noTrafficTitle": "暂无流量",
-  "noTrafficHint": "发送一个请求即可查看实时数据。"
+  "noTrafficHint": "发送一个请求即可查看实时数据。",
+  "status": {
+    "chips": "状态",
+    "openAnyway": "仍然打开",
+    "reason": {
+      "down": "应用已停止或尚未就绪，所以此地址暂时无法响应。",
+      "waiting_dns": "正在等待 DNS：该域名尚未指向这里。",
+      "local_only": "此地址仅在这台电脑上可用。",
+      "unknown": "尚未能检查应用地址。"
+    },
+    "chip": {
+      "down": "未就绪",
+      "waiting_dns": "等待 DNS",
+      "local_only": "仅限这台电脑",
+      "unknown": "未检查"
+    },
+    "qr": {
+      "open": "显示二维码",
+      "title": "此应用的二维码",
+      "fallback": "此应用仅限本地访问。请改为扫描这个公开地址。"
+    },
+    "deploy": {
+      "title": "最近一次部署"
+    },
+    "health": {
+      "title": "健康检查",
+      "on": "已启用健康检查",
+      "none": "没有健康检查",
+      "add": "添加健康检查",
+      "dismiss": "忽略健康检查建议"
+    },
+    "warnings": {
+      "label_other": "{{count}} 条警告",
+      "title_other": "{{count}} 条警告，打开健康状态"
+    },
+    "resources": "资源",
+    "domains": "域名",
+    "addDomain": "添加域名"
+  }
 }

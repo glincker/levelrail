@@ -1,0 +1,16 @@
+services:
+  gokapi:
+    image: f0rc3/gokapi:v2.2.4
+    ports: ["53842"]
+    volumes:
+      - gokapi_data:/app/data
+      - gokapi_config:/app/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:53842/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+volumes:
+  gokapi_data:
+  gokapi_config:

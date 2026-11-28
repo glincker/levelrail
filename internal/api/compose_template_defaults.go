@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // templateMemoryHeadroom: a recommendation is a working-set estimate, so the cap leaves room for peaks (a Node app aborted at exactly the recommended size).

@@ -1,0 +1,15 @@
+id: cronicle
+name: Cronicle
+slogan: A multi-server task scheduler and runner with a web UI, live logs and history.
+description: MIT licensed. Web UI on port 3012. Default login is admin with password admin, change it on first sign-in.
+category: Automation
+documentation_url: https://github.com/jhuckaby/Cronicle
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/jhuckaby/Cronicle
+license: MIT
+license_class: permissive
+license_url: https://github.com/jhuckaby/Cronicle/blob/master/LICENSE.md

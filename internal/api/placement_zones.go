@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/placement"
 )
 
 type zoneNodeResource struct {

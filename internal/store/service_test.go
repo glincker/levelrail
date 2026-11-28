@@ -403,6 +403,43 @@ func TestSaveDesiredService_NewService_DefaultsToLocalNode(t *testing.T) {
 	}
 }
 
+func TestServiceFenceTokenBumpsOnMove(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatal(err)
+	}
+	tok := func() uint64 {
+		v, err := db.ServiceFenceToken(ctx, "web")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return v
+	}
+	first := tok()
+	if first == 0 {
+		t.Fatal("a created service starts with a token above 0")
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatal(err)
+	}
+	if got := tok(); got != first+1 {
+		t.Fatalf("token after move = %d, want %d", got, first+1)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatal(err)
+	}
+	if got := tok(); got != first+1 {
+		t.Fatalf("a redeploy must not reset the token, got %d", got)
+	}
+	if got, err := db.BumpServiceFenceToken(ctx, "web"); err != nil || got != first+2 {
+		t.Fatalf("bump = %d, %v", got, err)
+	}
+	if err := db.UpdateServiceNode(ctx, "missing", "node-1"); err == nil {
+		t.Fatal("moving a missing service must fail")
+	}
+}
+
 func TestUpdateServiceNode(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
@@ -2330,5 +2367,55 @@ func TestSaveDesiredService_IncarnationIsStableAcrossUpdatesAndNewPerLife(t *tes
 	next, _ := db.GetDesiredService(ctx, "web")
 	if next.Incarnation == "" || next.Incarnation == first.Incarnation {
 		t.Errorf("recreated app incarnation = %q, want a new id", next.Incarnation)
+	}
+}
+
+func TestNextNodeFenceTokenGrows(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	a, err := db.NextNodeFenceToken(ctx, "n1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := db.NextNodeFenceToken(ctx, "n1")
+	if err != nil || b <= a {
+		t.Fatalf("second token %d must exceed %d (err %v)", b, a, err)
+	}
+	if other, err := db.NextNodeFenceToken(ctx, "n2"); err != nil || other == 0 {
+		t.Fatalf("other node token = %d, %v", other, err)
+	}
+}
+
+func TestServiceFenceTokenNeverGoesBackwards(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	tokOf := func(name string) uint64 {
+		v, err := db.ServiceFenceToken(ctx, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return v
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatal(err)
+	}
+	before := tokOf("web")
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatal(err)
+	}
+	if got := tokOf("web"); got <= before {
+		t.Fatalf("recreated service token %d must exceed %d", got, before)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "api", Image: "img:v1", Port: 8081}); err != nil {
+		t.Fatal(err)
+	}
+	if tokOf("api") <= tokOf("web") {
+		t.Fatal("a second service must draw a later epoch")
 	}
 }

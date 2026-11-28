@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // BootConfig is what a binary passes to Boot.
@@ -135,6 +135,7 @@ func start(ctx context.Context, cfg BootConfig, lookup func(string) (string, boo
 	hardening, _ := docker.HardeningFromEnv(runtime)
 	policy := PolicyFromHardening(hardening, tunables, append([]string{cfg.DataDir}, cfg.ExtraProtected...)...)
 	policy.ResolveSymlinks = cfg.ResolveSymlinks
+	policy.GrantSocketDir = GrantSocketDir(cfg.DataDir)
 	g := New(Config{Mode: mode, Upstream: upstream, Policy: policy, Grants: grants, Tunables: tunables, Sink: cfg.Sink, Logger: logger})
 	return Listen(ctx, g, socket)
 }

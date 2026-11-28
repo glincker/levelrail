@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
 )
 
 // FileEntry is one object found by ListFiles.

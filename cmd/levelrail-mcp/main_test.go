@@ -5,7 +5,7 @@ import (
 	"flag"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/mcptools"
+	"github.com/glincker/levelrail/internal/mcptools"
 )
 
 // parseFlagsTestCase is TestParseFlags' table type, named (rather than

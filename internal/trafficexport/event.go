@@ -3,7 +3,7 @@ package trafficexport
 import (
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/ingress"
 )
 
 // Event is the vendor-neutral record of one finished edge request. It never

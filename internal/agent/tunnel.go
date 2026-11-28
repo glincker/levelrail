@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 // CapIngressTunnel means the agent can carry ingress traffic to its own
@@ -30,7 +30,7 @@ var ErrTunnelUnsupported = errors.New("agent: ingress tunnel unsupported")
 // agentCapabilities lists what this agent binary advertises; the tunnel
 // capability follows the feature flag so a default install never offers it.
 func agentCapabilities() []string {
-	caps := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush, CapRegistryBearer, CapHostProbe, CapNodeCleanup, CapImagePull}
+	caps := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush, CapRegistryBearer, CapHostProbe, CapNodeCleanup, CapImagePull, CapFenceToken}
 	if experimental.Enabled(experimental.AgentIngressTunnel) {
 		caps = append(caps, CapIngressTunnel)
 	}

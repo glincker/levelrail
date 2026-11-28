@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func dbBulkCall(t *testing.T, rt *Router, cookie *http.Cookie, body string) (int, bulkDatabasesResponse) {

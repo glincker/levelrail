@@ -7,21 +7,22 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/costbudget"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/costbudget"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 // CostExploration is GET /api/v1/costs/explore.
 type CostExploration struct {
 	usagecost.Exploration
-	Granularity        string            `json:"granularity"`
-	Currency           string            `json:"currency"`
-	Period             usagecost.Period  `json:"period"`
-	Labels             map[string]string `json:"labels"`
-	Forecast           *usagecost.Band   `json:"forecast,omitempty"`
-	Configured         bool              `json:"configured"`
-	TelemetryAvailable bool              `json:"telemetry_available"`
-	GeneratedAt        string            `json:"generated_at"`
+	Granularity        string                  `json:"granularity"`
+	Currency           string                  `json:"currency"`
+	Period             usagecost.Period        `json:"period"`
+	Labels             map[string]string       `json:"labels"`
+	Forecast           *usagecost.Band         `json:"forecast,omitempty"`
+	Servers            []usagecost.ServerShare `json:"servers"`
+	Configured         bool                    `json:"configured"`
+	TelemetryAvailable bool                    `json:"telemetry_available"`
+	GeneratedAt        string                  `json:"generated_at"`
 }
 
 // CostExploreQuery selects what the explorer aggregates.

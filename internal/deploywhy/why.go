@@ -39,6 +39,10 @@ type Input struct {
 	Templates        []Template
 	BaselineID       string
 	BaselineTemplate []Template
+	Cause            *Cause
+	TailLines        []string
+	TailMax          int
+	Changes          Changes
 }
 
 // Report is the verdict and its evidence.
@@ -51,6 +55,10 @@ type Report struct {
 	BaselineID       string     `json:"baseline_deploy_id,omitempty"`
 	NewTemplateCount int        `json:"new_template_count"`
 	NewTemplates     []Template `json:"new_templates"`
+	Cause            *Cause     `json:"cause,omitempty"`
+	Tail             []TailLine `json:"tail,omitempty"`
+	Changes          Changes    `json:"changes"`
+	Summary          []string   `json:"summary"`
 }
 
 // Compute picks the verdict. A template is new when the last good deploy has no cluster with the same id.
@@ -67,7 +75,8 @@ func Compute(in Input) Report {
 	}
 	sort.SliceStable(fresh, func(i, j int) bool { return fresh[i].Count > fresh[j].Count })
 	r := Report{DeployID: in.DeployID, ExitCode: in.ExitCode, OOMKilled: in.OOMKilled, Health: in.Health,
-		BaselineID: in.BaselineID, NewTemplateCount: len(fresh), NewTemplates: fresh}
+		BaselineID: in.BaselineID, NewTemplateCount: len(fresh), NewTemplates: fresh,
+		Cause: in.Cause, Tail: CollapseTail(in.TailLines, in.TailMax), Changes: in.Changes}
 	switch {
 	case in.OOMKilled:
 		r.Verdict = VerdictOOMKilled
@@ -82,5 +91,6 @@ func Compute(in Input) Report {
 	default:
 		r.Verdict = VerdictOK
 	}
+	r.Summary = Summarize(r)
 	return r
 }

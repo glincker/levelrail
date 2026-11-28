@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // runtimeGOOS is a seam so tests can grade support for any platform.

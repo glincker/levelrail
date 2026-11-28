@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/stackdrift"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/stackdrift"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // The shared drift token lives APP_STACK_DRIFT_TOKEN_TTL (default 2h) and

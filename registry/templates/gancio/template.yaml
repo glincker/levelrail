@@ -1,0 +1,15 @@
+id: gancio
+name: Gancio
+slogan: A shared agenda for local communities, with events, federation and no tracking.
+description: AGPL 3.0 licensed. The first visit runs a setup wizard to name the instance and create the admin account. Uses SQLite on the data volume.
+category: Communication
+documentation_url: https://gancio.org/install/docker
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://framagit.org/les/gancio
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://framagit.org/les/gancio/-/blob/master/LICENSE

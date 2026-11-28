@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnsinspect"
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/dnsinspect"
+	"github.com/glincker/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 const (

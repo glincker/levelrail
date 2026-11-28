@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cigate"
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/cigate"
+	"github.com/glincker/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 const gateSHA = "0123456789abcdef0123456789abcdef01234567"

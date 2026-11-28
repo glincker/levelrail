@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/stackdetect"
+	"github.com/glincker/levelrail/kit/stackdetect"
 )
 
 var nonNameChars = regexp.MustCompile(`[^a-z0-9]+`)

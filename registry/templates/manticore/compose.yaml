@@ -1,0 +1,14 @@
+services:
+  manticore:
+    image: manticoresearch/manticore:6.3.8
+    ports: ["9308", "9306"]
+    volumes:
+      - manticore_data:/var/lib/manticore
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:9308/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+volumes:
+  manticore_data:

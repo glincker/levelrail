@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretconn"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretconn"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // SecretConnectionService is the connection surface the handlers need; *secretconn.Service satisfies it.

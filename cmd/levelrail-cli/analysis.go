@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAnalysis dispatches `analysis list <app>`, `analysis show <id>` (read only) and `analysis run <app>`.

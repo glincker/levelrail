@@ -3,8 +3,8 @@ package application
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestEphemeralPublishDrifted(t *testing.T) {

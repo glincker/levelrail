@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/brand"
 )
 
 // Handler serves the embedded frontend. If this binary wasn't built

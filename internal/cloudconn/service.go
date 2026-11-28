@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Errors the API maps to status codes.

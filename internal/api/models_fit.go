@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/models"
 )
 
 type modelFitRequest struct {

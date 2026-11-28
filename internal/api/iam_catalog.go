@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/dbauthz"
+	"github.com/glincker/levelrail/internal/dbauthz"
 )
 
 const (

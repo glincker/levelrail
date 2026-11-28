@@ -12,7 +12,7 @@ import (
 
 	"github.com/caddyserver/caddy/v2"
 
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 func pngBytes(t *testing.T, w, h int) []byte {

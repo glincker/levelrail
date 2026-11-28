@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 // Live tests hit the real gitlab.com. They run only when LEVELRAIL_GITLAB_LIVE_TOKEN

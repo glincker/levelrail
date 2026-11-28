@@ -1,0 +1,15 @@
+id: gokapi
+name: Gokapi
+slogan: A lightweight self-hosted file sharing server with expiring download links.
+description: AGPL 3.0 licensed. The first visit opens a setup wizard where you choose the admin account and storage options.
+category: Storage
+documentation_url: https://gokapi.readthedocs.io
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/Forceu/Gokapi
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/Forceu/Gokapi/blob/master/LICENSE

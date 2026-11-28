@@ -14,11 +14,11 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/GLINCKER/levelrail/internal/cliconsole"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cliconsole"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const foreignOrigin = "http://evil.example"

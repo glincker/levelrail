@@ -18,7 +18,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/localmode"
+	"github.com/glincker/levelrail/internal/localmode"
 )
 
 const (

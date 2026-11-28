@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // DesiredService is what the application controller reconciles running
@@ -130,6 +130,9 @@ type DesiredService struct {
 	// They are kept as JSON so this package stays free of placement types.
 	Tolerations json.RawMessage
 	Affinity    json.RawMessage
+	// ReplicaNodes is the node id of each replica index when replicas are spread;
+	// nil keeps every replica on NodeID. Written by UpdateServiceReplicaNodes only, never by a save.
+	ReplicaNodes []string
 	// InternalDNSNames are extra names under the mesh zone that resolve like the app's own name.
 	InternalDNSNames []string
 	// Rev is the row revision as read. With CheckRev set, a save is rejected with

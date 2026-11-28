@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploy/secretscan"
+	"github.com/glincker/levelrail/internal/deploy/secretscan"
 )
 
 const secretScanBodyLimit = 4 << 10

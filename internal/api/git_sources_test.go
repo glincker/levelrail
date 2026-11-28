@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Hand-written fake for GitSourceSecrets. Unlike the other secret fakes, Resolve and Exists are read back in this package.

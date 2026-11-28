@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // staticSiteHookStore is the optional deploy hook half of the static site store.

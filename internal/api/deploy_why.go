@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploywhy"
-	"github.com/GLINCKER/levelrail/internal/lognorm"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploywhy"
+	"github.com/glincker/levelrail/internal/lognorm"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DeployLogTemplateStore persists mined log clusters per deploy. *store.DB satisfies it.
@@ -41,6 +41,12 @@ func (rt *Router) handleGetDeployWhy(w http.ResponseWriter, r *http.Request) {
 	if base, found := rt.lastGoodAttempt(ctx, a); found {
 		in.BaselineID = base.ID
 		in.BaselineTemplate = rt.deployTemplates(ctx, base)
+		in.Changes = whyChanges(a, base)
+	}
+	if in.Failed {
+		in.Cause = rt.whyCause(ctx, a)
+		in.TailLines = rt.whyTailLines(ctx, a)
+		in.TailMax = failureOptions().MaxLines
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, deploywhy.Compute(in))

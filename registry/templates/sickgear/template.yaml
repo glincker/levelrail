@@ -1,0 +1,15 @@
+id: sickgear
+name: SickGear
+slogan: An automatic TV show downloader and library manager with a modern web UI.
+description: GPL 3.0 licensed. Web UI on port 8081. Connect a download client and a media folder in the settings.
+category: Media
+documentation_url: https://github.com/SickGear/SickGear/wiki
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/SickGear/SickGear
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/SickGear/SickGear/blob/main/LICENSE.txt

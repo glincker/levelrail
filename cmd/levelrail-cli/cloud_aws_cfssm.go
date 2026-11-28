@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runCloudAWSCFSSM handles the cloudfront and ssm verbs. Both stay off until their runtime flags are on.

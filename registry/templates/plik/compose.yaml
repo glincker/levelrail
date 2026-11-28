@@ -1,0 +1,17 @@
+services:
+  plik:
+    image: rootgg/plik:1.4.3
+    ports: ["8080"]
+    environment:
+      PLIKD_DATA_BACKEND_CONFIG: '{"Directory":"/data/files"}'
+      PLIKD_METADATA_BACKEND_CONFIG: '{"Driver":"sqlite3","ConnectionString":"/data/plik.db","Debug":false}'
+    volumes:
+      - plik_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/version || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+volumes:
+  plik_data:

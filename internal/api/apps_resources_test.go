@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/quota"
 )
 
 func TestAppResources_RejectsNegativeAndOversizeShm(t *testing.T) {

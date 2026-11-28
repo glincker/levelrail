@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/models"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type stubEndpointChecker struct{ res models.EndpointProbe }

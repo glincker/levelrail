@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/alerting"
 )
 
 // doctorCheckDatabaseAlerts is one row listing the databases that are breaching a health alert rule right now.

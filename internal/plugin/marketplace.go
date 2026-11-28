@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 // Marketplace errors beyond the index ones. Callers match with errors.Is.

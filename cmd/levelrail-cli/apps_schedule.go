@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAppsSchedule dispatches "apps schedule set|get|history <app> [flags]".

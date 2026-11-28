@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // AuditEntry is one recorded request that passed internal/api's

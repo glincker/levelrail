@@ -108,6 +108,7 @@
     "linesLabel": "Últimas líneas de registro del contenedor que falla",
     "noLines": "No se capturaron líneas de registro para este fallo.",
     "openFullLogs": "Abrir registros completos",
-    "crashSummary": "{{count}} reinicios en los últimos {{minutes}} minutos."
+    "crashSummary": "{{count}} reinicios en los últimos {{minutes}} minutos.",
+    "sectionWarnings": "Advertencias ({{count}})"
   }
 }

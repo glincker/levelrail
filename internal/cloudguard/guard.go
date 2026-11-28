@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cloudspend"
+	"github.com/glincker/levelrail/internal/cloudspend"
 )
 
 // Config holds the live guard settings. Zero values mean no limit, except

@@ -1277,7 +1277,7 @@ const file_proto_agent_v1_migration_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason2\xc8\x01\n" +
 	"\x10MigrationService\x12W\n" +
 	"\x06Enroll\x12%.levelrail.migration.v1.EnrollRequest\x1a&.levelrail.migration.v1.EnrollResponse\x12[\n" +
-	"\aSession\x12$.levelrail.migration.v1.AgentMessage\x1a&.levelrail.migration.v1.ControlMessage(\x010\x01BFZDgithub.com/GLINCKER/levelrail/internal/agent/migrationpb;migrationpbb\x06proto3"
+	"\aSession\x12$.levelrail.migration.v1.AgentMessage\x1a&.levelrail.migration.v1.ControlMessage(\x010\x01BFZDgithub.com/glincker/levelrail/internal/agent/migrationpb;migrationpbb\x06proto3"
 
 var (
 	file_proto_agent_v1_migration_proto_rawDescOnce sync.Once

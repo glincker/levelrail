@@ -12,7 +12,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/email"
 )
 
 func newTestDeployNotifyDB(t *testing.T) *DB {

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestAuthEngineOptionsBuildsTheEngine(t *testing.T) {

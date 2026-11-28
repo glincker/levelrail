@@ -11,10 +11,10 @@ import (
 
 	vaultapi "github.com/hashicorp/vault/api"
 
-	"github.com/GLINCKER/levelrail/internal/secretprovider"
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/glincker/levelrail/internal/secretprovider"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/vault"
 )
 
 // Prober is the optional read-only health check of a provider. It must not

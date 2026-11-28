@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/pathfilter"
+	"github.com/glincker/levelrail/kit/pathfilter"
 )
 
 // EnvMaxPackages caps how many workspace packages one analysis returns.

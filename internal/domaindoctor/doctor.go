@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/fixit"
 )
 
 // State is the outcome of one check.

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/alerting"
 )
 
 func newInboxRouter(t *testing.T) (*Router, *alerting.DB, *http.Cookie) {

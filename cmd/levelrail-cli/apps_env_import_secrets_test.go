@@ -29,19 +29,23 @@ func newSecretsImportFake(t *testing.T) (*httptest.Server, *secretsImportFake) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/web":
 			_ = json.NewEncoder(w).Encode(map[string]any{"name": "web", "image": "img", "port": 80, "env": f.env})
-		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web/env":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/apps/web/env/apply":
 			var req struct {
-				Set   map[string]string `json:"set"`
-				Unset []string          `json:"unset"`
+				Set       map[string]string `json:"set"`
+				Unset     []string          `json:"unset"`
+				SecretSet map[string]string `json:"secret_set"`
 			}
 			_ = json.Unmarshal(body, &req)
 			for k, v := range req.Set {
 				f.env[k] = v
 			}
+			for k, v := range req.SecretSet {
+				f.secrets[k] = v
+			}
 			for _, k := range req.Unset {
 				delete(f.env, k)
 			}
-			_, _ = w.Write([]byte(`{"name":"web"}`))
+			_, _ = w.Write([]byte(`{"app":"web","changed":true,"env_version":5,"plan":[]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/web/secrets":
 			_, _ = w.Write([]byte(`[]`))
 		case r.Method == http.MethodPut && strings.HasPrefix(r.URL.Path, "/api/v1/apps/web/secrets/"):

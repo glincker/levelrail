@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/awsxtest"
+	"github.com/glincker/levelrail/internal/awsx/awsxtest"
 )
 
 func metricResult(id string, vals ...string) string {

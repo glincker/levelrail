@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/store/storetest"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store/storetest"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 func TestVendorEndpoint(t *testing.T) {

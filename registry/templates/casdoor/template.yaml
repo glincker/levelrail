@@ -1,0 +1,15 @@
+id: casdoor
+name: Casdoor
+slogan: An identity and SSO platform with OAuth 2, OIDC, SAML and LDAP support.
+description: Apache 2.0 licensed. Uses a bundled PostgreSQL database. Default admin login is built-in/admin with password 123, change it on first sign-in.
+category: Security
+documentation_url: https://casdoor.org/docs/overview
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/casdoor/casdoor
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/casdoor/casdoor/blob/master/LICENSE

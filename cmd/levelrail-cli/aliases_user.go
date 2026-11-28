@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 const userAliasesFile = "aliases.json"

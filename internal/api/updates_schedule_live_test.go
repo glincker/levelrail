@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/internal/upgradesched"
-	"github.com/GLINCKER/levelrail/internal/version"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/upgradesched"
+	"github.com/glincker/levelrail/internal/version"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // TestLiveScheduledUpgradeFromBlockerToApplied drives the whole path over

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/integrity"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/integrity"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestPolicyBackoffIsBoundedExponential(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 
 	"github.com/libdns/libdns"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/plugin"
+	"github.com/glincker/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/plugin"
 )
 
 // errDNSNotConfirmed means a plugin accepted a write but did not serve the record afterwards.

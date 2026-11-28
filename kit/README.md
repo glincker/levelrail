@@ -5,10 +5,10 @@ Small, dependency-free Go packages for infrastructure tooling: SSRF-safe outboun
 ## Install
 
 ```
-go get github.com/GLINCKER/levelrail/kit@latest
+go get github.com/glincker/levelrail/kit@latest
 ```
 
-Requires Go 1.24 or newer. Import a single package, for example `github.com/GLINCKER/levelrail/kit/cronexpr`.
+Requires Go 1.24 or newer. Import a single package, for example `github.com/glincker/levelrail/kit/cronexpr`.
 
 ## Packages
 

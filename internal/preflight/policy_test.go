@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/policy"
 )
 
 func TestPolicyChecks(t *testing.T) {

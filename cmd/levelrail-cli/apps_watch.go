@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAppsWatch dispatches "apps watch get|set|stop <name>".

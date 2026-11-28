@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const forkApprovalWarning = "Approving deploys code from a fork. It runs on this server without this app's environment variables or secrets unless you also pass --share-secrets, so read the change first. Only the current commit deploys; a later push from the fork needs a new approval."

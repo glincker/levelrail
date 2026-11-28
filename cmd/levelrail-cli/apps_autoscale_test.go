@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 const autoscaleStatusJSON = `{"app":"web","min_replicas":2,"max_replicas":6,"metric":"cpu_percent","target":60,

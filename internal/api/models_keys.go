@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/models"
 )
 
 type modelKeyResource struct {

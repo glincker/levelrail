@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func mintToken(t *testing.T, rt *Router, cookie *http.Cookie, body string) (int, createTokenResponse) {

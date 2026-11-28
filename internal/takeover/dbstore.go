@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Rows is the control plane database surface DBStore needs; *store.DB provides it.

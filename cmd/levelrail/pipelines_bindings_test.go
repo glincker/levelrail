@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/release"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/release"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const pipelineDigest = "sha256:2222222222222222222222222222222222222222222222222222222222222222"

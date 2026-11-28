@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // alertMailRenderer renders alert and deploy emails through the operator-editable templates; any miss falls back to plain text.

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 func TestStackSettingAudit(t *testing.T) {

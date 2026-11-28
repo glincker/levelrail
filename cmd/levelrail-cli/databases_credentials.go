@@ -7,7 +7,7 @@ import (
 
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const databasesCredentialsLabel = "databases credentials"

@@ -5,7 +5,7 @@ import (
 	"hash/fnv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/ingress"
 )
 
 // Access answers the edge traffic questions with deterministic fictional

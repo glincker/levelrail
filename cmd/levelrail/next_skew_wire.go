@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	ingressreconcile "github.com/glincker/levelrail/internal/reconcile/ingress"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var nextSkewOnce sync.Once

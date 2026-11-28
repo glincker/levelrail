@@ -27,6 +27,9 @@ type EnvMergeResult struct {
 // only the env column, so a concurrent full-spec write cannot lose these keys.
 func (c *Client) MergeAppEnv(ctx context.Context, name string, req EnvMergeRequest) (EnvMergeResult, error) {
 	var out EnvMergeResult
+	if err := PrecheckEnv(req.Set, false); err != nil {
+		return out, err
+	}
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/env", req, &out)
 	return out, err
 }

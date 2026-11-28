@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // splitScrapedFlag routes `apps metrics --scraped` to the app's own scraped series.

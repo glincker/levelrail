@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/oidc"
+	"github.com/glincker/levelrail/internal/oidc"
 )
 
 // defaultOIDCJWKSRatePerMinute bounds the unauthenticated JWKS endpoint:

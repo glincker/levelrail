@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/store/storetest"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store/storetest"
 )
 
 func testSigner() *Signer { return NewSigner([]byte("0123456789abcdef0123456789abcdef")) }

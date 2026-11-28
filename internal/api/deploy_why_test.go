@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploywhy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploywhy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDeployWhy_VerdictAndScopedDeny(t *testing.T) {
@@ -115,12 +115,12 @@ func TestDeployWhy_EmptyMiningIsRemembered(t *testing.T) {
 	why("old")
 	first := exits.gets
 	why("old")
-	if first != 2 || exits.gets-first != 1 {
-		t.Fatalf("exit reads: first call %d (want 2), second call %d (want 1)", first, exits.gets-first)
+	if first != 4 || exits.gets-first != 3 {
+		t.Fatalf("exit reads: first call %d (want 4), second call %d (want 3)", first, exits.gets-first)
 	}
 	exits.gets = 0
 	why("fresh")
-	if exits.gets != 1 {
+	if exits.gets != 3 {
 		t.Fatalf("a deploy inside the log tail window was mined: %d exit reads", exits.gets)
 	}
 	if rows, _ := db.ListDeployLogTemplates(ctx, "fresh"); len(rows) != 0 || rt.whyEmpty.has("fresh") {

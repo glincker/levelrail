@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/appsleep"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/appsleep"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func init() {

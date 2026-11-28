@@ -3,8 +3,8 @@ package application
 import (
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // applyRuntimeOptions copies the validated runtime block onto the container
@@ -18,6 +18,7 @@ func applyRuntimeOptions(s *docker.ContainerSpec, r *spec.RuntimeOptions) {
 	s.ExtraHosts = append([]string(nil), r.ExtraHosts...)
 	s.PidsLimit = int64(r.PidsLimit)
 	s.StopTimeoutSeconds = r.StopTimeout
+	s.Platform = r.Platform
 	if len(r.Sysctls) > 0 {
 		s.Sysctls = r.Sysctls
 	}

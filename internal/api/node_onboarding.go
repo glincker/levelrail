@@ -3,16 +3,16 @@ package api
 import (
 	"context"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 	"log/slog"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

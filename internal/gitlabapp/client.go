@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 // Client is a small, purpose-built GitLab REST/OAuth client, not a

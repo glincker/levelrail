@@ -9,8 +9,8 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // IngressSettingsStore is the store surface the ingress settings

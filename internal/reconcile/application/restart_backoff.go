@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploysafety"
 )
 
 const reasonCrashLoopBackOff = deploysafety.ReasonCrashLoopBackOff

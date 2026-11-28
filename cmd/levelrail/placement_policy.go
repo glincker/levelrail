@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/placement"
 )
 
 // placementPolicyFromEnv reads the overcommit and headroom settings. An

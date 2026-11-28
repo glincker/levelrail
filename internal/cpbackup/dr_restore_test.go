@@ -11,7 +11,7 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func restoreFrom(t *testing.T, e *drEnv, key, live string, mut func(*RestoreOptions)) (RestoreReport, error) {

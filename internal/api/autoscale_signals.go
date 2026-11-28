@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/spendcap"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // autoscaleSignals reads the observed world for the autoscale controller.

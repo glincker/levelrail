@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/oidc"
+	"github.com/glincker/levelrail/internal/oidc"
 )
 
 type fakeOIDCJWKS struct {

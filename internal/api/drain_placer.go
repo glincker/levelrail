@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/gpu"
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // drainBlocked is an app a drain could not move.

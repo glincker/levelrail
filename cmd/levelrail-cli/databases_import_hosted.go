@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const hostedFrozenRefusal = "writes to the source are not frozen: put the old app in maintenance mode and pass --writes-frozen before moving"

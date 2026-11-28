@@ -21,8 +21,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/dockerguard"
 )
 
 // Problem is one rule violation in one template folder.
@@ -295,7 +296,30 @@ func validateFolder(folder, id string, cats map[string]bool) []Problem {
 		add(ruleFields, "missing required field compose (%s)", catalog.RegistryComposeFile)
 		return ps
 	}
-	return append(ps, validateCompose(id, body)...)
+	return append(ps, validateCompose(id, body, dockerAPIGrants(raw))...)
+}
+
+// dockerAPIGrants maps each service to the docker_api grant its manifest declares, so the
+// socket mount check treats it like a real install would.
+func dockerAPIGrants(metaYAML []byte) map[string][]string {
+	var doc struct {
+		Manifest struct {
+			Capabilities []catalog.ManifestCapability `yaml:"capabilities"`
+		} `yaml:"manifest"`
+	}
+	if yaml.Unmarshal(metaYAML, &doc) != nil {
+		return nil
+	}
+	out := map[string][]string{}
+	for _, c := range doc.Manifest.Capabilities {
+		if c.Class != catalog.CapClassDockerAPI {
+			continue
+		}
+		for _, cp := range c.Caps {
+			out[c.Service] = append(out[c.Service], dockerguard.GrantCapPrefix+strings.ToUpper(cp))
+		}
+	}
+	return out
 }
 
 // validateMarketplace requires the facts the catalog index prints for a
@@ -322,13 +346,14 @@ func validateMarketplace(id string, m meta) []Problem {
 	return ps
 }
 
-func validateCompose(id string, body []byte) []Problem {
+func validateCompose(id string, body []byte, grants map[string][]string) []Problem {
 	var ps []Problem
 	add := func(rule, format string, args ...any) {
 		ps = append(ps, Problem{Template: id, Rule: rule, Message: fmt.Sprintf(format, args...)})
 	}
 	f, err := compose.Parse(body)
 	if err == nil {
+		f.CapGrants = grants
 		err = f.Validate()
 	}
 	if err != nil {
@@ -363,7 +388,7 @@ func validateCompose(id string, body []byte) []Problem {
 			add(ruleSecurity, "service %s: host network is not allowed", n)
 		}
 		for _, src := range bindSources(svc["volumes"]) {
-			if isHostRoot(src) || isDockerSocket(src) {
+			if isHostRoot(src) || (isDockerSocket(src) && len(grants[n]) == 0) {
 				add(ruleSecurity, "service %s: mounting %s is never allowed", n, src)
 			}
 		}

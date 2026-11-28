@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func getPage(t *testing.T, rt *Router, cookie *http.Cookie, path string) (*httptest.ResponseRecorder, string) {

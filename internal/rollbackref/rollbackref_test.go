@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type inspector struct{ id string }

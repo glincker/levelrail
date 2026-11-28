@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ocisign"
-	"github.com/GLINCKER/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/ocisign"
+	"github.com/glincker/levelrail/internal/secretsource"
 )
 
 // File names inside a materialized OCI credential directory.

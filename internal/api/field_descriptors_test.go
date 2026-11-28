@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/fielddesc"
 )
 
 // A key the registry marks secret must never appear in the read shape.

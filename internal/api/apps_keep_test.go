@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestHandleKeepTrialApp(t *testing.T) {

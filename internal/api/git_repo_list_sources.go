@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
-	"github.com/GLINCKER/levelrail/internal/bitbucketserver"
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/internal/repolist"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bitbucketapp"
+	"github.com/glincker/levelrail/internal/bitbucketserver"
+	"github.com/glincker/levelrail/internal/giteaapp"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/repolist"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Provider names accepted by the repository list endpoints, and the cache

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx"
 )
 
 // Call is one request the fake server received.

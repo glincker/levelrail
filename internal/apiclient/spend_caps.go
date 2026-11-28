@@ -3,9 +3,10 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 // AppBudget is GET/PUT /api/v1/apps/{name}/budget.
@@ -111,6 +112,25 @@ func (c *Client) DryRunCostBudget(ctx context.Context, id string) (SpendDryRun, 
 	var out SpendDryRun
 	err := c.do(ctx, http.MethodPost, "/api/v1/costs/budgets/"+PathEscape(id)+"/dry-run", nil, &out)
 	return out, err
+}
+
+// SpendCapPaused is one app a spend cap holds stopped.
+type SpendCapPaused struct {
+	App     string    `json:"app"`
+	Period  string    `json:"period"`
+	Pct     float64   `json:"pct"`
+	Since   time.Time `json:"since"`
+	Message string    `json:"message"`
+}
+
+// ListSpendCapPaused calls GET /api/v1/costs/capped-apps.
+func (c *Client) ListSpendCapPaused(ctx context.Context) ([]SpendCapPaused, error) {
+	return getJSON[[]SpendCapPaused](ctx, c, "/api/v1/costs/capped-apps")
+}
+
+// ResumeSpendCapApp calls POST /api/v1/apps/{name}/budget/resume.
+func (c *Client) ResumeSpendCapApp(ctx context.Context, app, reason string) error {
+	return c.do(ctx, http.MethodPost, appBudgetPath(app)+"/resume", map[string]string{"reason": reason}, nil)
 }
 
 // OverrideSpendGuard calls POST /api/v1/apps/{name}/budget/override.

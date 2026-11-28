@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 func putLimit(t *testing.T, rt *Router, cookie *http.Cookie, key, value string) int {

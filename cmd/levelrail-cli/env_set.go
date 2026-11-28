@@ -27,6 +27,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	fs.BoolVar(&allowFiles, "allow-file-values", false, "let KEY=@/path, @./path and @~/path read the value from a local file")
 	fs.BoolVar(&apply, "apply", false, "restart the app now so the new env reaches the running container")
 	fs.BoolVar(&noApply, "no-apply", false, "leave the change pending even when apps.env_apply_on_set is on")
+	retry := bindEnvRetryFlags(fs, lookupEnv)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, envSetUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonOutP, outputP, queryP}, prog, stderr)
 	if !ok {
@@ -85,7 +86,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		if !quiet {
 			printEnvNameDiff(stderr, plan.New, plan.Changed, nil)
 		}
-		saved, err := mergeEnv(ctx, client, name, envMergeFromPlan(plan, false, nil))
+		saved, err := mergeEnv(ctx, client, prog, name, app, *retry, envMergeFromPlan(plan, false, nil))
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
@@ -290,6 +291,8 @@ Flags:
   --apply             restart the app now so the new env reaches the running container
   --no-apply          leave the change pending even when apps.env_apply_on_set is on
   --quiet             skip the names-only diff printed before the change is applied
+  --retries int       retries when only other keys changed (default 5, env LEVELRAIL_ENV_RETRIES)
+  --no-retry          exit 8 at the first stale-version conflict instead of retrying
   --token string      API token (default: %[2]s env var, then the credentials file)
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")

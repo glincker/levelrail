@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 
-	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
+	"github.com/glincker/levelrail/internal/resourceadvisor"
 )
 
 // AdvisorFinding is one finding as GET /api/v1/resource-advisor/findings returns it.

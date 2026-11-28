@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/repolist"
+	"github.com/glincker/levelrail/internal/repolist"
 )
 
 func newRepoCacheForTest() *repolist.Cache {

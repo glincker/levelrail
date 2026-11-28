@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/frameworks"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/frameworks"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // applyFrameworkPreset fills the git-build flags a preset knows (port, build

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // Store persists supply chain metadata; *SQLStore satisfies it.

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -18,6 +18,8 @@ type setAppEnvInput struct {
 	Value  string `json:"value" jsonschema:"the value to store; never returned or logged"`
 	Secret bool   `json:"secret,omitempty" jsonschema:"store as a write-only encrypted secret, not a plain env var"`
 	Force  bool   `json:"force,omitempty" jsonschema:"secret only: overwrite even if the key is locked"`
+	// ExpectedVersion is the env_version from get_app_env; a newer env is a conflict, nothing is changed.
+	ExpectedVersion *int `json:"expected_version,omitempty" jsonschema:"env_version read with get_app_env; if the env changed since, the call fails and changes nothing"`
 }
 
 type unsetAppEnvInput struct {
@@ -25,6 +27,8 @@ type unsetAppEnvInput struct {
 	Key    string `json:"key" jsonschema:"the environment variable name to remove"`
 	Secret bool   `json:"secret,omitempty" jsonschema:"remove a secret (and undeclare it) instead of a plain env var"`
 	Force  bool   `json:"force,omitempty" jsonschema:"secret only: remove even if the key is locked"`
+	// ExpectedVersion is the env_version from get_app_env; a newer env is a conflict, nothing is changed.
+	ExpectedVersion *int `json:"expected_version,omitempty" jsonschema:"env_version read with get_app_env; if the env changed since, the call fails and changes nothing"`
 }
 
 // EnvChangeResult reports which key changed, never any value.
@@ -72,17 +76,16 @@ func setAppEnv(ctx context.Context, client *apiclient.Client, in setAppEnvInput)
 		return EnvChangeResult{}, err
 	}
 	res := EnvChangeResult{Name: in.Name, Key: in.Key, Secret: in.Secret, RedeployNeeded: true, Hint: envDeployHint}
+	req := apiclient.EnvApplyRequest{ExpectedVersion: in.ExpectedVersion}
 	if in.Secret {
-		if err := client.SetSecret(ctx, in.Name, in.Key, in.Value, in.Force); err != nil {
-			return EnvChangeResult{}, fmt.Errorf("set secret %q on app %q: %w", in.Key, in.Name, err)
-		}
-		return res, nil
+		req.SecretSet = map[string]string{in.Key: in.Value}
+		req.OverwriteLocked = in.Force
+	} else {
+		req.Set = map[string]string{in.Key: in.Value}
 	}
-	saved, err := client.MergeAppEnv(ctx, in.Name, apiclient.EnvMergeRequest{Set: map[string]string{in.Key: in.Value}})
-	if err != nil {
-		return EnvChangeResult{}, fmt.Errorf("update env %q on app %q: %w", in.Key, in.Name, err)
+	if _, err := client.ApplyAppEnv(ctx, in.Name, req); err != nil {
+		return EnvChangeResult{}, envApplyError("update", in.Key, in.Name, err)
 	}
-	res.RedeployNeeded = saved.EnvDirty
 	return res, nil
 }
 
@@ -91,19 +94,28 @@ func unsetAppEnv(ctx context.Context, client *apiclient.Client, in unsetAppEnvIn
 		return EnvChangeResult{}, err
 	}
 	res := EnvChangeResult{Name: in.Name, Key: in.Key, Secret: in.Secret, RedeployNeeded: true, Hint: envDeployHint}
+	req := apiclient.EnvApplyRequest{ExpectedVersion: in.ExpectedVersion}
 	if in.Secret {
-		if err := client.DeleteSecret(ctx, in.Name, in.Key, in.Force); err != nil {
-			return EnvChangeResult{}, fmt.Errorf("delete secret %q on app %q: %w", in.Key, in.Name, err)
-		}
-		return res, nil
+		req.SecretDelete = []string{in.Key}
+		req.OverwriteLocked = in.Force
+	} else {
+		req.Unset = []string{in.Key}
 	}
-	saved, err := client.MergeAppEnv(ctx, in.Name, apiclient.EnvMergeRequest{Unset: []string{in.Key}})
+	saved, err := client.ApplyAppEnv(ctx, in.Name, req)
 	if err != nil {
-		return EnvChangeResult{}, fmt.Errorf("update env %q on app %q: %w", in.Key, in.Name, err)
+		return EnvChangeResult{}, envApplyError("update", in.Key, in.Name, err)
 	}
-	if len(saved.Removed) == 0 {
+	if !in.Secret && !saved.Changed {
 		return EnvChangeResult{}, fmt.Errorf("app %q has no plain env var %q (pass secret true to remove a secret)", in.Name, in.Key)
 	}
-	res.RedeployNeeded = saved.EnvDirty
 	return res, nil
+}
+
+// envApplyError names the recovery step for a stale expected_version; messages never carry a value.
+func envApplyError(verb, key, app string, err error) error {
+	var conflict *apiclient.EnvVersionConflictError
+	if errors.As(err, &conflict) {
+		return fmt.Errorf("env of app %q changed since expected_version, nothing was changed: call get_app_env for the current env_version and retry: %w", app, err)
+	}
+	return fmt.Errorf("%s env %q on app %q: %w", verb, key, app, err)
 }

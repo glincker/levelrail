@@ -8,11 +8,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/nodecapacity"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/nodecapacity"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // buildRunnerNodeSource lists the control plane and every build node with the facts routing and the runner view need.

@@ -171,5 +171,43 @@
   "trafficUnavailable": "ライブのトラフィック数値は現在利用できません。",
   "trafficRetry": "再試行",
   "noTrafficTitle": "まだトラフィックがありません",
-  "noTrafficHint": "リクエストを送信すると、ライブの数値が表示されます。"
+  "noTrafficHint": "リクエストを送信すると、ライブの数値が表示されます。",
+  "status": {
+    "chips": "ステータス",
+    "openAnyway": "このまま開く",
+    "reason": {
+      "down": "アプリが停止しているか準備できていないため、このアドレスはまだ応答しません。",
+      "waiting_dns": "DNS待ち: ドメインがまだここを指していません。",
+      "local_only": "このアドレスはこのコンピュータでのみ使えます。",
+      "unknown": "アプリのアドレスをまだ確認できていません。"
+    },
+    "chip": {
+      "down": "未準備",
+      "waiting_dns": "DNS待ち",
+      "local_only": "このコンピュータのみ",
+      "unknown": "未確認"
+    },
+    "qr": {
+      "open": "QRコードを表示",
+      "title": "このアプリのQRコード",
+      "fallback": "このアプリはローカルです。代わりにこの公開アドレスをスキャンしてください。"
+    },
+    "deploy": {
+      "title": "最新のデプロイ"
+    },
+    "health": {
+      "title": "ヘルスチェック",
+      "on": "ヘルスチェック有効",
+      "none": "ヘルスチェックなし",
+      "add": "ヘルスチェックを追加",
+      "dismiss": "ヘルスチェックの提案を閉じる"
+    },
+    "warnings": {
+      "label_other": "警告{{count}}件",
+      "title_other": "警告{{count}}件、ヘルスを開く"
+    },
+    "resources": "リソース",
+    "domains": "ドメイン",
+    "addDomain": "ドメインを追加"
+  }
 }

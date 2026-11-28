@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
-	"github.com/GLINCKER/levelrail/internal/awsx/awsxtest"
+	"github.com/glincker/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx/awsxtest"
 )
 
 func TestLookupEventsShapeAndOrder(t *testing.T) {

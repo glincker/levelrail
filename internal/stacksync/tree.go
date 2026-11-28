@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 // File is one document read from the checkout; Name is relative to the sync path.

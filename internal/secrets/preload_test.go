@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 func TestPreloadRegistersEverySecretAndToleratesBadRows(t *testing.T) {

@@ -7,8 +7,9 @@ import (
 	"log/slog"
 	"maps"
 
-	"github.com/GLINCKER/levelrail/internal/importplan"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/importplan"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (
@@ -34,8 +35,8 @@ func validateBulkResources(req bulkAppsRequest) error {
 			return errors.New("set-cpu needs nano_cpus above zero")
 		}
 	case bulkActionSetEnv:
-		if !bundleEnvKeyRe.MatchString(req.EnvKey) {
-			return errors.New("set-env needs env_key made of letters, digits and underscores, not starting with a digit")
+		if msg := envrules.Validate(map[string]string{req.EnvKey: ""}, envrules.Existing{}, envrules.DefaultPolicy(), envrules.Options{Multiline: true, ExistingUnknown: true}).Err(); msg != "" {
+			return errors.New("set-env: " + msg)
 		}
 		if req.EnvValue == nil {
 			return errors.New("set-env needs env_value")
@@ -75,6 +76,9 @@ func (rt *Router) bulkResources(ctx context.Context, req bulkAppsRequest, svc st
 	case bulkActionSetEnv:
 		if bulkEnvKeyIsReference(svc, req.EnvKey) {
 			return bulkStatusSkipped, req.EnvKey + " is set from a secret, vault or database reference", "", ""
+		}
+		if msg := rt.bulkEnvRefusal(ctx, req.EnvKey, *req.EnvValue, &svc); msg != "" {
+			return bulkStatusSkipped, msg, "", ""
 		}
 		old, had := svc.Env[req.EnvKey]
 		before = "(unset)"
@@ -180,4 +184,9 @@ func formatBulkCPU(n int64) string {
 		return "unlimited"
 	}
 	return fmt.Sprintf("%g CPU", float64(n)/nanoCPUsPerCore)
+}
+
+// bulkEnvRefusal applies the shared env rules to one key set on one app, against what it holds.
+func (rt *Router) bulkEnvRefusal(ctx context.Context, key, value string, svc *store.DesiredService) string {
+	return rt.envRefusal(ctx, map[string]string{key: value}, existingEnv(svc), envrules.Options{Multiline: true})
 }

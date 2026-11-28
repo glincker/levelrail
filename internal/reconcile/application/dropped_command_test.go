@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // An app update that loses its command leaves an HTTP service whose image

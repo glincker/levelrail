@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/policy"
 )
 
 // Env names for the feature flag and its limits.

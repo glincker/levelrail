@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 // memoryLimit and cpuLimit are raw bytes and nanoCPUs, though the update schema types them as strings.

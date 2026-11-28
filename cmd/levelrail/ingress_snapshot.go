@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 // setupIngressSnapshot keeps the last applied route table on disk and serves it

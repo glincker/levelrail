@@ -108,6 +108,7 @@
     "linesLabel": "Letzte Logzeilen des fehlerhaften Containers",
     "noLines": "Für diesen Fehler wurden keine Logzeilen erfasst.",
     "openFullLogs": "Vollständige Logs öffnen",
-    "crashSummary": "{{count}} Neustarts in den letzten {{minutes}} Minuten."
+    "crashSummary": "{{count}} Neustarts in den letzten {{minutes}} Minuten.",
+    "sectionWarnings": "Warnungen ({{count}})"
   }
 }

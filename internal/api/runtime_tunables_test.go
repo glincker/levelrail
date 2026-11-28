@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cdn"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/cdn"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 func TestTunablesEnvSeedsThenSavedWins(t *testing.T) {

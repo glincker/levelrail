@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/rightsizing"
 )
 
 // Engine names, matching store.Engine*; kept local so this package stays pure.

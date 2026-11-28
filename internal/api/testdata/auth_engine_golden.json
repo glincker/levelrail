@@ -29,6 +29,7 @@
       "expires_at": "\u003cexpires_at\u003e",
       "id": "\u003cid\u003e",
       "name": "reader",
+      "status": "active",
       "token": "\u003ctoken\u003e"
     }
   },
@@ -49,6 +50,7 @@
       "expires_at": "\u003cexpires_at\u003e",
       "id": "\u003cid\u003e",
       "name": "bot",
+      "status": "active",
       "token": "\u003ctoken\u003e"
     }
   },
@@ -69,7 +71,8 @@
         "created_at": "\u003ccreated_at\u003e",
         "expires_at": "\u003cexpires_at\u003e",
         "id": "\u003cid\u003e",
-        "name": "bot"
+        "name": "bot",
+        "status": "active"
       },
       {
         "abilities": [
@@ -79,7 +82,8 @@
         "created_at": "\u003ccreated_at\u003e",
         "expires_at": "\u003cexpires_at\u003e",
         "id": "\u003cid\u003e",
-        "name": "reader"
+        "name": "reader",
+        "status": "active"
       }
     ]
   },
@@ -146,7 +150,8 @@
         "created_at": "\u003ccreated_at\u003e",
         "expires_at": "\u003cexpires_at\u003e",
         "id": "\u003cid\u003e",
-        "name": "bot"
+        "name": "bot",
+        "status": "active"
       },
       {
         "abilities": [
@@ -160,7 +165,8 @@
         "last_ip": "192.0.2.1",
         "last_used_at": "\u003clast_used_at\u003e",
         "name": "reader",
-        "revoked_at": "\u003crevoked_at\u003e"
+        "revoked_at": "\u003crevoked_at\u003e",
+        "status": "revoked"
       }
     ]
   },
@@ -237,6 +243,7 @@
       "expires_at": "\u003cexpires_at\u003e",
       "id": "\u003cid\u003e",
       "name": "\u003cname\u003e",
+      "status": "active",
       "token": "\u003ctoken\u003e"
     }
   },

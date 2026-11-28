@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // asleepGuard mirrors the store: the sleeping mark persists independently of Suspended.

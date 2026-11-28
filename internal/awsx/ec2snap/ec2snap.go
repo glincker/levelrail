@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
-	"github.com/GLINCKER/levelrail/internal/cloudguard"
-	"github.com/GLINCKER/levelrail/internal/cloudspend"
+	"github.com/glincker/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/cloudguard"
+	"github.com/glincker/levelrail/internal/cloudspend"
 )
 
 // Service is the EC2 Query API.

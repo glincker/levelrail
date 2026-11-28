@@ -201,6 +201,9 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	}
 	// A soft delete keeps history for a restore; the name stays reserved so no new app inherits it.
 	if !revisionsKept(ctx) {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM service_instances WHERE name = ?`, name); err != nil {
+			return fmt.Errorf("store: delete desired service %q: %w", name, err)
+		}
 		if err := dropAppRevisions(ctx, tx, name); err != nil {
 			return fmt.Errorf("store: delete desired service %q: %w", name, err)
 		}

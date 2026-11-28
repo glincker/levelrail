@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/catalog"
 )
 
 // errRateLimited stops the whole run so partial results are saved instead of hammering a registry.

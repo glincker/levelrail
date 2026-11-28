@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // emailBrandingResource is the wire shape for the branding endpoints. The server never fetches logo_url,

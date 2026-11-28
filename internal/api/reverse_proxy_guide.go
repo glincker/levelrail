@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/proxycoexist"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/proxycoexist"
 )
 
 type reverseProxyHolder = proxycoexist.Holder

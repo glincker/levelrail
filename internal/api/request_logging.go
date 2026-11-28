@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // defaultSlowRequestThreshold/defaultCriticalRequestThreshold are

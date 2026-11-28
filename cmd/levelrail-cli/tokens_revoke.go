@@ -15,6 +15,12 @@ import (
 func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens revoke", "print a JSON result object to stdout and nothing else", stderr)
 	tokenFlagP := fs.String("token", "", "API token to revoke with, instead of a password login (overrides "+apiTokenEnvHelp+" and the credentials file)")
+	expiredP := fs.Bool("expired", false, "revoke every expired token")
+	nameP := fs.String("name", "", "revoke every token with this exact name")
+	kindP := fs.String("kind", "", "revoke every token of this kind: emergency, agent, system or user")
+	filterP := fs.String("filter", "", "revoke tokens matching key=value pairs, comma separated (q, status, ability, name, kind, expires_before)")
+	dryRunP := fs.Bool("dry-run", false, "only show how many tokens would be revoked")
+	yesP := fs.Bool("yes", false, "skip the confirmation question")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensRevokeUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -32,8 +38,24 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 	of := outputFlags{format, *queryFlagP}
 
 	rest := fs.Args()
+	filter, ferr := bulkFilterFromFlags(*expiredP, *nameP, *kindP, *filterP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	if !filter.empty() || len(rest) > 1 {
+		if !filter.empty() && len(rest) > 0 {
+			_, _ = fmt.Fprintf(stderr, "%s: pass token ids or a filter, not both\n", prog)
+			return exitValidation
+		}
+		bo := bulkRevokeOpts{ids: rest, dryRun: *dryRunP, yes: *yesP}
+		if !filter.empty() {
+			bo.filter = &filter
+		}
+		return revokeBulk(prog, bo, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, *tokenFlagP, of, lookupEnv, stdin, stdout, stderr)
+	}
 	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: tokens revoke requires exactly one token id\n\n", prog)
+		_, _ = fmt.Fprintf(stderr, "%s: tokens revoke requires a token id, several ids, or a filter such as --expired\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
@@ -67,9 +89,68 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 	return writeScheduledTaskResult(stdout, stderr, of, map[string]string{"id": id, "status": "revoked"}, func() { _, _ = fmt.Fprintf(stdout, "token %q revoked\n", id) })
 }
 
+// bulkFilterFromFlags merges the shortcut flags into --filter, returning nil when no filter was asked for.
+func bulkFilterFromFlags(expired bool, name, kind, raw string) (bulkRevokeFilter, error) {
+	f, err := parseTokenFilter(raw)
+	if err != nil {
+		return f, err
+	}
+	if expired {
+		f.Status = "expired"
+	}
+	if name != "" {
+		f.Name = name
+	}
+	if kind != "" {
+		f.Kind = kind
+	}
+	return f, nil
+}
+
+// revokeBulk needs a signed-in session: the server refuses bulk revoke for an API token.
+func revokeBulk(prog string, o bulkRevokeOpts, sf sessionFlags, tokenFlag string, of outputFlags, lookupEnv func(string) (string, bool), stdin io.Reader, stdout, stderr io.Writer) int {
+	if listTokenAuth(tokenFlag, sf.username, sf.password, sf.profileFlag, prog, lookupEnv) != "" {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, bulkRevokeAPITokenMessage)
+		return exitValidation
+	}
+	ctx := context.Background()
+	sc, _, err := loggedInSessionClient(ctx, sf, prog, lookupEnv, stdin, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, of.Format == "json", err)
+	}
+	res, err := runBulkRevoke(ctx, sc, o, stdin, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, of.Format == "json", err)
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+		switch {
+		case res.Count == 0:
+			_, _ = fmt.Fprintln(stdout, "no tokens match, nothing to revoke")
+		case res.DryRun:
+			_, _ = fmt.Fprintf(stdout, "%d tokens would be revoked: %s%s\n", res.Count, strings.Join(res.Sample, ", "), moreLabel(res.Count, len(res.Sample)))
+		default:
+			_, _ = fmt.Fprintf(stdout, "revoked %d tokens\n", res.Revoked)
+		}
+	})
+}
+
 func tokensRevokeUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s tokens revoke <id> [flags]
+  %[1]s tokens revoke <id>... [flags]
+  %[1]s tokens revoke --expired | --name NAME | --kind KIND | --filter 'k=v,...' [--dry-run] [--yes]
+
+Several ids or any filter flag revoke in bulk. Bulk revoke needs a signed-in
+session (--username/--password), never an API token. It always previews first,
+prints the count and a sample of names, asks to confirm unless --yes is given,
+and skips revoked tokens and the token making the call.
+
+Bulk flags:
+  --expired                  revoke every expired token
+  --name string              revoke every token with this exact name
+  --kind string              emergency, agent, system or user
+  --filter string            key=value pairs, comma separated: q, status, ability, name, kind, expires_before
+  --dry-run                  only show the count and sample
+  --yes                      skip the confirmation question
 
 Revokes one API token by id (idempotent: revoking an already-revoked id
 also reports success). Uses the API token from --token, %[4]s or the saved

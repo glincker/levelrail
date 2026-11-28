@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 var pagesURLNameStrip = regexp.MustCompile(`(?i)\.(zip|tar\.gz|tgz)$`)

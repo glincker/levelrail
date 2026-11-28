@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/configtranslate"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/configtranslate"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 func runConfigCmd(t *testing.T, env map[string]string, args ...string) (int, string, string) {

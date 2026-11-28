@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestAutoscaleLifecycle(t *testing.T) {

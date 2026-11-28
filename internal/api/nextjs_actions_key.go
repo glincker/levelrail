@@ -12,11 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/appwizard"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/appwizard"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // nextActionsKeyEnv is the variable Next.js reads for the Server Actions key.
@@ -42,6 +43,9 @@ func (rt *Router) ensureNextActionsKey(ctx context.Context, req *deploy.Request,
 		return
 	}
 	if !nextMajorAtLeast(req.SourceDir, req.Service.Build.BaseDirectory, nextActionsMinMajor) {
+		return
+	}
+	if secrets.AppNamespace(name) != nil {
 		return
 	}
 	unlock := lockAppName(name)

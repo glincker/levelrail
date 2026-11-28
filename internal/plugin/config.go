@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/egress"
+	"github.com/glincker/levelrail/internal/plugin/egress"
 )
 
 // Environment variables that tune the plugin runtime.

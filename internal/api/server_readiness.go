@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/serverready"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/serverready"
 )
 
 var readinessDomainPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$`)

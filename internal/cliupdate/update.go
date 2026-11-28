@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 // Actions reported in Result.Action.

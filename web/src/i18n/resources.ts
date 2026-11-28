@@ -56,6 +56,7 @@ import type gitConnect from '../locales/en/gitConnect.json'
 import type certBudget from '../locales/en/certBudget.json'
 import type appRows from '../locales/en/appRows.json'
 import type tokensNotices from '../locales/en/tokensNotices.json'
+import type tokenList from '../locales/en/tokenList.json'
 import type firstRun from '../locales/en/firstRun.json'
 import type newAppNoGit from '../locales/en/newAppNoGit.json'
 import type appOverview from '../locales/en/appOverview.json'
@@ -68,6 +69,7 @@ import type migration from '../locales/en/migration.json'
 import type migrate from '../locales/en/migrate.json'
 import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
+import type announcements from '../locales/en/announcements.json'
 import type updates from '../locales/en/updates.json'
 import type upgradeSafety from '../locales/en/upgradeSafety.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
@@ -243,6 +245,7 @@ declare module 'i18next' {
       certBudget: typeof certBudget
       appRows: typeof appRows
       tokensNotices: typeof tokensNotices
+      tokenList: typeof tokenList
       firstRun: typeof firstRun
       newAppNoGit: typeof newAppNoGit
       appOverview: typeof appOverview
@@ -256,6 +259,7 @@ declare module 'i18next' {
       domains: typeof domains
       attention: typeof attention
       updates: typeof updates
+      announcements: typeof announcements
       upgradeSafety: typeof upgradeSafety
       infraCanvas: typeof infraCanvas
       canvas: typeof canvas

@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fallbackDomainSuffix is sslip.io's own wildcard DNS convention: any

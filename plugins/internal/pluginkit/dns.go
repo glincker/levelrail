@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
 )
 
 // DNSCall is the config and per-call credential every DNS operation receives.

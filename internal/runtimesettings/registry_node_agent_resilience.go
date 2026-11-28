@@ -1,6 +1,6 @@
 package runtimesettings
 
-import "github.com/GLINCKER/levelrail/internal/updatewindow"
+import "github.com/glincker/levelrail/internal/updatewindow"
 
 // Agent offline buffer and self-update health limits.
 const (
@@ -13,6 +13,7 @@ const (
 	KeyAgentUpdateHeldNodes    = "nodes.agent_update_held_nodes"
 	KeyAgentUpdateForceNodes   = "nodes.agent_update_force_nodes"
 	KeyNodeDrainStallSeconds   = "nodes.drain_stall_seconds"
+	KeyAgentFenceRequired      = "agent.fence_required"
 	agentBufferItemsCeiling    = 100000
 	agentBufferBytesCeiling    = 256 << 20
 	agentUpdateFailuresCeiling = 20
@@ -71,6 +72,12 @@ func init() {
 		Env: "APP_NODE_AGENT_UPDATE_FORCE_NODES", Apply: ApplyLive,
 		Title:       "Agent update anyway queue",
 		Description: "Node ids with a one-time Update anyway request. Each entry is cleared when that agent picks it up; it never turns on automatic updates.",
+	})
+	Register(Definition{
+		Key: KeyAgentFenceRequired, Category: CategoryObservability, Kind: KindBool, Default: "false",
+		Env: "APP_AGENT_FENCE_REQUIRED", Apply: ApplyLive,
+		Title:       "Require fence tokens on agents",
+		Description: "When on, stop, remove and cleanup requests are refused for nodes whose agent does not understand fence tokens, so a paused node can never replay a stale action. Off keeps mixed-version fleets working; turn it on once every agent is updated.",
 	})
 	Register(Definition{
 		Key: KeyNodeDrainStallSeconds, Category: CategoryObservability, Kind: KindInt, Default: "600",

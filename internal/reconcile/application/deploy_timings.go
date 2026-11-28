@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploysafety"
 )
 
 // WithDeployWindows reads the drain, stable, watch and hold timings on every

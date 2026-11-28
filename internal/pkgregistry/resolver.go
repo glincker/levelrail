@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Source is the store surface the resolver reads.

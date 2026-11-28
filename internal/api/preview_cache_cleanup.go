@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // dropPreviewBuildCache removes the BuildKit cache mounts of a torn down preview.
@@ -25,7 +25,7 @@ func (rt *Router) dropPreviewBuildCache(ctx context.Context, previewAppID string
 	var siblings []string
 	if all, err := rt.apps.ListDesiredServices(ctx); err == nil {
 		for _, s := range all {
-			if sid := build.SanitizeCacheID(s.Name, ""); sid != "" && sid != id {
+			if sid := build.AppCacheKey(ctx, s.Name); sid != "" && sid != id {
 				siblings = append(siblings, sid)
 			}
 		}

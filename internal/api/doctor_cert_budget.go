@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/certflow"
+	"github.com/glincker/levelrail/internal/certflow"
 )
 
 func (rt *Router) doctorCheckCertBudget(ctx context.Context) doctorCheckResource {

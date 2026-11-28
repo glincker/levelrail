@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 type capBudgetSource struct {

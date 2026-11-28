@@ -7,7 +7,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 var advisorSeverityRank = map[string]int{"info": 1, "warn": 2, "critical": 3}

@@ -1,0 +1,18 @@
+services:
+  cronicle:
+    image: soulteary/cronicle:0.9.80
+    ports: ["3012"]
+    volumes:
+      - cronicle_data:/opt/cronicle/data
+      - cronicle_logs:/opt/cronicle/logs
+      - cronicle_plugins:/opt/cronicle/plugins
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3012/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+volumes:
+  cronicle_data:
+  cronicle_logs:
+  cronicle_plugins:

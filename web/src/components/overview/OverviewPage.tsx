@@ -33,7 +33,6 @@ import { UploadSourceCard } from './UploadSourceCard'
 import { latestUpload } from './uploadSource'
 import { LogsTail } from './LogsTail'
 import { OverviewHero } from './OverviewHero'
-import { OverviewQuickLinks } from './OverviewQuickLinks'
 import { OverviewSuggestions } from './OverviewSuggestions'
 import { useOverviewSuggestions } from './useOverviewSuggestions'
 import { RecommendedSetup } from './RecommendedSetup'
@@ -49,12 +48,10 @@ import { ResourceTiles } from './ResourceTiles'
 import { useResourceReading } from './useResourceReading'
 import { isImageDeploy } from './suggestions'
 import { TrafficTiles } from './TrafficTiles'
-import { VisitorsCard } from './VisitorsCard'
 import { StaticStatStrip } from './StaticStatStrip'
 import { RecentDeploys } from './RecentDeploys'
 import { AppDeploys } from './AppDeploys'
-import { AppRecentPreviews } from './AppRecentPreviews'
-import { AppSummaryStrip } from './AppSummaryStrip'
+import { AppStatusStrip } from './AppStatusStrip'
 import { AppWiring } from './AppWiring'
 import type { VisitorsWindow } from '../../queries/appVisitors'
 import { useAppUrl } from './useAppUrl'
@@ -63,6 +60,13 @@ import { useOverviewHotkeys } from './useOverviewHotkeys'
 
 // Lazy so the preview (and its iframe code) stays out of the route chunk.
 const OverviewPreview = lazy(() => import('./OverviewPreview'))
+// Below-the-fold cards load on demand to keep the overview chunk inside its budget.
+const VisitorsCard = lazy(() =>
+  import('./VisitorsCard').then((m) => ({ default: m.VisitorsCard })),
+)
+const AppRecentPreviews = lazy(() =>
+  import('./AppRecentPreviews').then((m) => ({ default: m.AppRecentPreviews })),
+)
 
 export function OverviewPage({
   app,
@@ -200,11 +204,13 @@ export function OverviewPage({
           </section>
         )}
         {layout.traffic !== 'hidden' ? (
-          <VisitorsCard
-            appName={app.name}
-            window={isStatic ? range : undefined}
-            onWindowChange={isStatic ? setRange : undefined}
-          />
+          <Suspense fallback={null}>
+            <VisitorsCard
+              appName={app.name}
+              window={isStatic ? range : undefined}
+              onWindowChange={isStatic ? setRange : undefined}
+            />
+          </Suspense>
         ) : null}
       </div>
     ),
@@ -294,7 +300,7 @@ export function OverviewPage({
       preview={isStatic ? preview : undefined}
       summary={
         isStatic ? undefined : (
-          <AppSummaryStrip
+          <AppStatusStrip
             app={app}
             attempts={attempts}
             url={openUrl}
@@ -310,6 +316,7 @@ export function OverviewPage({
       latest={latest}
       omit={[
         'add_domain',
+        'add_health_check',
         ...(diagnosisShown ? (['failed_deploy'] as const) : []),
         // A static site has no process to probe.
         ...(isStatic ? (['add_health_check'] as const) : []),
@@ -340,12 +347,6 @@ export function OverviewPage({
     <div className="space-y-3">
       {actions.confirmDialog}
       {hero}
-      <OverviewQuickLinks
-        app={app}
-        reading={reading}
-        latest={latest}
-        isStatic={isStatic}
-      />
       {next}
       {top.map((id) => (
         <Fragment key={id}>{sections[id]}</Fragment>
@@ -366,7 +367,9 @@ export function OverviewPage({
         <div className="min-w-0 space-y-3">
           {preview}
           {sections.access}
-          <AppRecentPreviews name={app.name} />
+          <Suspense fallback={null}>
+            <AppRecentPreviews name={app.name} />
+          </Suspense>
         </div>
       </div>
       {sheet}

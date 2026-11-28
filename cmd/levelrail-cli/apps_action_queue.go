@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // appAction runs the plain call, or the queue-while-offline variant when asked.

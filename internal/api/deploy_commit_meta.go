@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/sourceupload"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/sourceupload"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 type commitMeta struct {

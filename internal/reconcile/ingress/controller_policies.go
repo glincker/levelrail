@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // TrafficPolicyStore is optional on ServiceStore: a store without it (most

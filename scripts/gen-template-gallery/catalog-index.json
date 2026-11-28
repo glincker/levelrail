@@ -1450,6 +1450,124 @@
    }
   },
   {
+   "id": "airsonic-advanced",
+   "aliases": [],
+   "name": "Airsonic Advanced",
+   "slogan": "A web based music streamer for your own library with Subsonic API clients.",
+   "description": "GPL 3.0 licensed. Web UI on port 4040. Default login is admin with password admin, change it on first sign-in.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/airsonic-advanced/airsonic-advanced",
+   "documentation_url": "https://airsonic-advanced.github.io/airsonic-advanced",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/airsonic-advanced/airsonic-advanced/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "airsonic-advanced",
+     "image": "linuxserver/airsonic-advanced",
+     "tag": "11.1.4",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "airsonic-advanced",
+     "image": "linuxserver/airsonic-advanced:11.1.4",
+     "ports": [
+      4040
+     ],
+     "volumes": [
+      "airsonic_advanced_config -> /config",
+      "airsonic_advanced_music -> /music",
+      "airsonic_advanced_playlists -> /playlists",
+      "airsonic_advanced_podcasts -> /podcasts"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "airsonic-advanced",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "airsonic-advanced",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "airsonic-advanced",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "airsonic-advanced"
+      ],
+      "detail": "airsonic_advanced_config, airsonic_advanced_music, airsonic_advanced_playlists, airsonic_advanced_podcasts",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "alertmanager",
    "aliases": [],
    "name": "Alertmanager",
@@ -8361,6 +8479,180 @@
    }
   },
   {
+   "id": "casdoor",
+   "aliases": [],
+   "name": "Casdoor",
+   "slogan": "An identity and SSO platform with OAuth 2, OIDC, SAML and LDAP support.",
+   "description": "Apache 2.0 licensed. Uses a bundled PostgreSQL database. Default admin login is built-in/admin with password 123, change it on first sign-in.",
+   "first_run": [],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/casdoor/casdoor",
+   "documentation_url": "https://casdoor.org/docs/overview",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/casdoor/casdoor/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "casdoor",
+     "image": "casbin/casdoor",
+     "tag": "v4.32.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "16-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "casdoor",
+     "image": "casbin/casdoor:v4.32.0",
+     "ports": [
+      8000
+     ],
+     "volumes": []
+    },
+    {
+     "name": "db",
+     "image": "postgres:16-alpine",
+     "ports": [],
+     "volumes": [
+      "casdoor_data -> /var/lib/postgresql/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "casdoor",
+     "name": "RUNNING_IN_DOCKER",
+     "kind": "preset"
+    },
+    {
+     "service": "casdoor",
+     "name": "dataSourceName",
+     "kind": "generated"
+    },
+    {
+     "service": "casdoor",
+     "name": "dbName",
+     "kind": "preset"
+    },
+    {
+     "service": "casdoor",
+     "name": "driverName",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "casdoor",
+       "db"
+      ],
+      "detail": "POSTGRES_PASSWORD, dataSourceName",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "casdoor_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "cassandra",
    "aliases": [],
    "name": "Apache Cassandra",
@@ -9290,6 +9582,129 @@
    }
   },
   {
+   "id": "chhoto-url",
+   "aliases": [],
+   "name": "Chhoto URL",
+   "slogan": "A very small self-hosted URL shortener with a simple web UI.",
+   "description": "MIT licensed. Sign in with the generated password from the deployment variables.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/SinTan1729/chhoto-url",
+   "documentation_url": "https://github.com/SinTan1729/chhoto-url",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/SinTan1729/chhoto-url/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "chhoto",
+     "image": "sintan1729/chhoto-url",
+     "tag": "7.11.10",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 32,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "chhoto",
+     "image": "sintan1729/chhoto-url:7.11.10",
+     "ports": [
+      4567
+     ],
+     "volumes": [
+      "chhoto_db -> /db"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "chhoto",
+     "name": "db_url",
+     "kind": "preset"
+    },
+    {
+     "service": "chhoto",
+     "name": "password",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "chhoto"
+      ],
+      "detail": "password",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "chhoto"
+      ],
+      "detail": "chhoto_db",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "chibisafe",
    "aliases": [],
    "name": "Chibisafe",
@@ -9740,6 +10155,89 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "cinny",
+   "aliases": [],
+   "name": "Cinny",
+   "slogan": "A simple, elegant Matrix client for the web.",
+   "description": "AGPL 3.0 licensed. Point it at any Matrix homeserver from the sign in page.",
+   "first_run": [],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/cinnyapp/cinny",
+   "documentation_url": "https://github.com/cinnyapp/cinny#self-hosting",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/cinnyapp/cinny/blob/dev/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "cinny",
+     "image": "ghcr.io/cinnyapp/cinny",
+     "tag": "v4.10.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "cinny",
+     "image": "ghcr.io/cinnyapp/cinny:v4.10.2",
+     "ports": [
+      80
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "health_gated_deploy",
@@ -10464,6 +10962,95 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "cobalt",
+   "aliases": [],
+   "name": "Cobalt API",
+   "slogan": "A media downloader API that turns links into clean files with no ads or trackers.",
+   "description": "AGPL 3.0 licensed. This is the API on port 9000. Pair it with a Cobalt web frontend or any compatible client.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/imputnet/cobalt",
+   "documentation_url": "https://github.com/imputnet/cobalt/blob/main/docs/run-an-instance.md",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/imputnet/cobalt/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "cobalt",
+     "image": "ghcr.io/imputnet/cobalt",
+     "tag": "11",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "cobalt",
+     "image": "ghcr.io/imputnet/cobalt:11",
+     "ports": [
+      9000
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "cobalt",
+     "name": "API_URL",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "health_gated_deploy",
@@ -12188,6 +12775,107 @@
    }
   },
   {
+   "id": "cronicle",
+   "aliases": [],
+   "name": "Cronicle",
+   "slogan": "A multi-server task scheduler and runner with a web UI, live logs and history.",
+   "description": "MIT licensed. Web UI on port 3012. Default login is admin with password admin, change it on first sign-in.",
+   "first_run": [],
+   "category": "Automation",
+   "status": "active",
+   "source_repo": "https://github.com/jhuckaby/Cronicle",
+   "documentation_url": "https://github.com/jhuckaby/Cronicle",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/jhuckaby/Cronicle/blob/master/LICENSE.md"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "cronicle",
+     "image": "soulteary/cronicle",
+     "tag": "0.9.80",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "cronicle",
+     "image": "soulteary/cronicle:0.9.80",
+     "ports": [
+      3012
+     ],
+     "volumes": [
+      "cronicle_data -> /opt/cronicle/data",
+      "cronicle_logs -> /opt/cronicle/logs",
+      "cronicle_plugins -> /opt/cronicle/plugins"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "cronicle"
+      ],
+      "detail": "cronicle_data, cronicle_logs, cronicle_plugins",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "crowdsec",
    "aliases": [],
    "name": "CrowdSec Local API",
@@ -13480,6 +14168,106 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "dgraph",
+   "aliases": [],
+   "name": "Dgraph",
+   "slogan": "A distributed graph database with a GraphQL-native API.",
+   "description": "Apache 2.0 licensed. Runs the all-in-one standalone image. GraphQL and HTTP on port 8080, gRPC on 9080. No authentication by default, keep the ports private.",
+   "first_run": [],
+   "category": "Databases",
+   "status": "active",
+   "source_repo": "https://github.com/dgraph-io/dgraph",
+   "documentation_url": "https://dgraph.io/docs",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/dgraph-io/dgraph/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "dgraph",
+     "image": "dgraph/standalone",
+     "tag": "v24.1.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "dgraph",
+     "image": "dgraph/standalone:v24.1.0",
+     "ports": [
+      8080,
+      9080
+     ],
+     "volumes": [
+      "dgraph_data -> /dgraph"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "dgraph"
+      ],
+      "detail": "dgraph_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
      },
      {
       "code": "rollback",
@@ -15352,6 +16140,351 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "donetick",
+   "aliases": [],
+   "name": "Donetick",
+   "slogan": "A shared chore and task tracker for households and teams with recurring schedules.",
+   "description": "AGPL 3.0 licensed. Uses SQLite on a volume. Create the first account from the sign-up page.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/donetick/donetick",
+   "documentation_url": "https://docs.donetick.com",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/donetick/donetick/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "donetick",
+     "image": "donetick/donetick",
+     "tag": "v0.1.60",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "donetick",
+     "image": "donetick/donetick:v0.1.60",
+     "ports": [
+      2021
+     ],
+     "volumes": [
+      "donetick_config -> /usr/src/app/config",
+      "donetick_data -> /donetick-data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "donetick",
+     "name": "DT_ENV",
+     "kind": "preset"
+    },
+    {
+     "service": "donetick",
+     "name": "DT_JWT_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "donetick",
+     "name": "DT_SQLITE_PATH",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "donetick"
+      ],
+      "detail": "DT_JWT_SECRET",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "donetick"
+      ],
+      "detail": "donetick_config, donetick_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "dozzle",
+   "aliases": [],
+   "name": "Dozzle",
+   "slogan": "A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.",
+   "description": "A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.",
+   "first_run": [
+    "Open the page and pick a container to watch its logs live.",
+    "Dozzle has no login, so no public domain is set and it shows the logs of every app on this host. Keep it private, and add a domain only behind your own authentication."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/amir20/dozzle",
+   "documentation_url": "https://dozzle.dev/guide/getting-started",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/amir20/dozzle/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "dozzle",
+     "image": "amir20/dozzle",
+     "tag": "v11.4.3",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "dozzle",
+     "image": "amir20/dozzle:v11.4.3",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "host path -> /var/run/docker.sock"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "elevated",
+    "findings": [
+     {
+      "code": "docker_socket",
+      "severity": "elevated",
+      "services": [
+       "dozzle"
+      ],
+      "detail": "/var/run/docker.sock",
+      "message": "Mounts the Docker socket, which is equivalent to root on the host"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "dragonfly",
+   "aliases": [],
+   "name": "DragonflyDB",
+   "slogan": "A multi-threaded, Redis and Memcached compatible in-memory data store.",
+   "description": "Source-available (BSL 1.1). Speaks the Redis protocol on port 6379. The generated password is required to connect.",
+   "first_run": [],
+   "category": "Databases",
+   "status": "active",
+   "source_repo": "https://github.com/dragonflydb/dragonfly",
+   "documentation_url": "https://www.dragonflydb.io/docs",
+   "license": {
+    "spdx": "BUSL-1.1",
+    "class": "source-available",
+    "url": "https://github.com/dragonflydb/dragonfly/blob/main/LICENSE.md"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "dragonfly",
+     "image": "ghcr.io/dragonflydb/dragonfly",
+     "tag": "v1.27.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "dragonfly",
+     "image": "ghcr.io/dragonflydb/dragonfly:v1.27.1",
+     "ports": [
+      6379
+     ],
+     "volumes": [
+      "dragonfly_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "dragonfly",
+     "name": "DFLY_requirepass",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "dragonfly"
+      ],
+      "detail": "DFLY_requirepass",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "dragonfly"
+      ],
+      "detail": "dragonfly_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -22288,6 +23421,121 @@
    }
   },
   {
+   "id": "gancio",
+   "aliases": [],
+   "name": "Gancio",
+   "slogan": "A shared agenda for local communities, with events, federation and no tracking.",
+   "description": "AGPL 3.0 licensed. The first visit runs a setup wizard to name the instance and create the admin account. Uses SQLite on the data volume.",
+   "first_run": [],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://framagit.org/les/gancio",
+   "documentation_url": "https://gancio.org/install/docker",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://framagit.org/les/gancio/-/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "gancio",
+     "image": "cisti/gancio",
+     "tag": "2.0.0-beta.12",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "gancio",
+     "image": "cisti/gancio:2.0.0-beta.12",
+     "ports": [
+      13120
+     ],
+     "volumes": [
+      "gancio_data -> /home/node/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "gancio",
+     "name": "GANCIO_DATA",
+     "kind": "preset"
+    },
+    {
+     "service": "gancio",
+     "name": "GANCIO_DB_DIALECT",
+     "kind": "preset"
+    },
+    {
+     "service": "gancio",
+     "name": "GANCIO_DB_STORAGE",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "gancio"
+      ],
+      "detail": "gancio_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "gatus",
    "aliases": [],
    "name": "Gatus",
@@ -24766,6 +26014,106 @@
    }
   },
   {
+   "id": "gokapi",
+   "aliases": [],
+   "name": "Gokapi",
+   "slogan": "A lightweight self-hosted file sharing server with expiring download links.",
+   "description": "AGPL 3.0 licensed. The first visit opens a setup wizard where you choose the admin account and storage options.",
+   "first_run": [],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/Forceu/Gokapi",
+   "documentation_url": "https://gokapi.readthedocs.io",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/Forceu/Gokapi/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "gokapi",
+     "image": "f0rc3/gokapi",
+     "tag": "v2.2.4",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "gokapi",
+     "image": "f0rc3/gokapi:v2.2.4",
+     "ports": [
+      53842
+     ],
+     "volumes": [
+      "gokapi_data -> /app/data",
+      "gokapi_config -> /app/config"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "gokapi"
+      ],
+      "detail": "gokapi_config, gokapi_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "gonic",
    "aliases": [],
    "name": "gonic",
@@ -25136,6 +26484,136 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "gotosocial",
+   "aliases": [],
+   "name": "GoToSocial",
+   "slogan": "A lightweight ActivityPub social network server with Mastodon-compatible clients.",
+   "description": "AGPL 3.0 licensed. Set the public host name before first start, it cannot be changed later. Create the first account with the gotosocial admin account create command inside the container.",
+   "first_run": [],
+   "category": "Social",
+   "status": "active",
+   "source_repo": "https://github.com/superseriousbusiness/gotosocial",
+   "documentation_url": "https://docs.gotosocial.org",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/superseriousbusiness/gotosocial/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "gotosocial",
+     "image": "superseriousbusiness/gotosocial",
+     "tag": "0.22.3",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "gotosocial",
+     "image": "superseriousbusiness/gotosocial:0.22.3",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "gotosocial_data -> /gotosocial/storage"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "gotosocial",
+     "name": "GTS_DB_ADDRESS",
+     "kind": "preset"
+    },
+    {
+     "service": "gotosocial",
+     "name": "GTS_DB_TYPE",
+     "kind": "preset"
+    },
+    {
+     "service": "gotosocial",
+     "name": "GTS_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "gotosocial",
+     "name": "GTS_LETSENCRYPT_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "gotosocial",
+     "name": "GTS_STORAGE_LOCAL_BASE_PATH",
+     "kind": "preset"
+    },
+    {
+     "service": "gotosocial",
+     "name": "GTS_TRUSTED_PROXIES",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "gotosocial"
+      ],
+      "detail": "gotosocial_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -25766,6 +27244,107 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "graphite",
+   "aliases": [],
+   "name": "Graphite",
+   "slogan": "A time-series metrics store and graphing web app with a StatsD listener.",
+   "description": "Apache 2.0 licensed. Web UI on port 80, plaintext carbon on 2003 and StatsD on UDP 8125 inside the container network. Default login for the admin UI is root.",
+   "first_run": [],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/graphite-project/graphite-web",
+   "documentation_url": "https://graphite.readthedocs.io",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/graphite-project/graphite-web/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "graphite",
+     "image": "graphiteapp/graphite-statsd",
+     "tag": "1.1.10-5",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "graphite",
+     "image": "graphiteapp/graphite-statsd:1.1.10-5",
+     "ports": [
+      80,
+      2003
+     ],
+     "volumes": [
+      "graphite_conf -> /opt/graphite/conf",
+      "graphite_storage -> /opt/graphite/storage"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "graphite"
+      ],
+      "detail": "graphite_conf, graphite_storage",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -26539,6 +28118,125 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "hammond",
+   "aliases": [],
+   "name": "Hammond",
+   "slogan": "A vehicle expense tracker for fuel, service and other costs with charts.",
+   "description": "MIT licensed. Uses SQLite on a volume. Create the first account from the sign-up page.",
+   "first_run": [],
+   "category": "Finance",
+   "status": "active",
+   "source_repo": "https://github.com/alfhou/hammond",
+   "documentation_url": "https://github.com/alfhou/hammond",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/alfhou/hammond/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "hammond",
+     "image": "alfhou/hammond",
+     "tag": "v0.0.24",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "hammond",
+     "image": "alfhou/hammond:v0.0.24",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "hammond_config -> /config",
+      "hammond_assets -> /assets"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "hammond",
+     "name": "JWT_SECRET",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "hammond"
+      ],
+      "detail": "JWT_SECRET",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "hammond"
+      ],
+      "detail": "hammond_assets, hammond_config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -31265,6 +32963,106 @@
    }
   },
   {
+   "id": "jdownloader",
+   "aliases": [],
+   "name": "JDownloader 2",
+   "slogan": "A download manager with link grabbing and one-click hosters, run in a browser.",
+   "description": "Freeware, the container packaging is MIT. The desktop is served in the browser on port 5800, no password by default, keep it private or put an auth proxy in front.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/jlesage/docker-jdownloader-2",
+   "documentation_url": "https://github.com/jlesage/docker-jdownloader-2",
+   "license": {
+    "spdx": "LicenseRef-JDownloader-EULA",
+    "class": "source-available",
+    "url": "https://jdownloader.org/legal/terms"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "jdownloader",
+     "image": "jlesage/jdownloader-2",
+     "tag": "v26.11.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "jdownloader",
+     "image": "jlesage/jdownloader-2:v26.11.2",
+     "ports": [
+      5800
+     ],
+     "volumes": [
+      "jdownloader_config -> /config",
+      "jdownloader_output -> /output"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "jdownloader"
+      ],
+      "detail": "jdownloader_config, jdownloader_output",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "jellyfin",
    "aliases": [],
    "name": "Jellyfin",
@@ -33078,6 +34876,139 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "kafka-ui",
+   "aliases": [],
+   "name": "Kafka UI",
+   "slogan": "A web UI for inspecting topics, consumers and messages in Apache Kafka clusters.",
+   "description": "Apache 2.0 licensed. Add clusters in the settings page after sign-in. Dynamic configuration is on, and the generated admin password is in the deployment variables.",
+   "first_run": [],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/provectus/kafka-ui",
+   "documentation_url": "https://docs.kafka-ui.provectus.io",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/provectus/kafka-ui/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kafka-ui",
+     "image": "provectuslabs/kafka-ui",
+     "tag": "v0.7.2",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "kafka-ui",
+     "image": "provectuslabs/kafka-ui:v0.7.2",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "kafka_ui_config -> /etc/kafkaui"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "kafka-ui",
+     "name": "AUTH_TYPE",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka-ui",
+     "name": "DYNAMIC_CONFIG_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka-ui",
+     "name": "SPRING_SECURITY_USER_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka-ui",
+     "name": "SPRING_SECURITY_USER_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "kafka-ui"
+      ],
+      "detail": "SPRING_SECURITY_USER_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "kafka-ui"
+      ],
+      "detail": "kafka_ui_config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -35572,6 +37503,112 @@
    }
   },
   {
+   "id": "kubo",
+   "aliases": [],
+   "name": "Kubo",
+   "slogan": "The reference IPFS node: a peer to peer file store with a local HTTP gateway.",
+   "description": "MIT and Apache 2.0 licensed. The gateway listens on 8080 and the swarm on 4001. The admin API stays inside the container, so reach it with docker exec or the app terminal.",
+   "first_run": [],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/ipfs/kubo",
+   "documentation_url": "https://docs.ipfs.tech/install/run-ipfs-inside-docker/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/ipfs/kubo/blob/master/LICENSE-MIT"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kubo",
+     "image": "ipfs/kubo",
+     "tag": "v0.43.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "kubo",
+     "image": "ipfs/kubo:v0.43.2",
+     "ports": [
+      8080,
+      4001
+     ],
+     "volumes": [
+      "kubo_data -> /data/ipfs"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "kubo",
+     "name": "IPFS_PROFILE",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "kubo"
+      ],
+      "detail": "kubo_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "kutt",
    "aliases": [],
    "name": "Kutt",
@@ -36723,6 +38760,123 @@
        "languagetool"
       ],
       "detail": "ngrams",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "lazylibrarian",
+   "aliases": [],
+   "name": "LazyLibrarian",
+   "slogan": "A book library manager that finds, downloads and sorts ebooks and audiobooks.",
+   "description": "GPL 3.0 licensed. Web UI on port 5299. Connect a download client and a book folder in the settings.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://gitlab.com/LazyLibrarian/LazyLibrarian",
+   "documentation_url": "https://lazylibrarian.gitlab.io",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://gitlab.com/LazyLibrarian/LazyLibrarian/-/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "lazylibrarian",
+     "image": "linuxserver/lazylibrarian",
+     "tag": "c5bec1de-ls409",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "lazylibrarian",
+     "image": "linuxserver/lazylibrarian:c5bec1de-ls409",
+     "ports": [
+      5299
+     ],
+     "volumes": [
+      "lazylibrarian_config -> /config",
+      "lazylibrarian_downloads -> /downloads",
+      "lazylibrarian_books -> /books"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "lazylibrarian",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "lazylibrarian",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "lazylibrarian",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "lazylibrarian"
+      ],
+      "detail": "lazylibrarian_books, lazylibrarian_config, lazylibrarian_downloads",
       "message": "Stores data in named volumes"
      }
     ],
@@ -42274,6 +44428,106 @@
    }
   },
   {
+   "id": "manticore",
+   "aliases": [],
+   "name": "Manticore Search",
+   "slogan": "A fast full-text and vector search database with a SQL and HTTP interface.",
+   "description": "GPL 3.0 licensed. HTTP API on port 9308 and MySQL protocol on port 9306. No authentication by default, keep the ports private.",
+   "first_run": [],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/manticoresoftware/manticoresearch",
+   "documentation_url": "https://manual.manticoresearch.com",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/manticoresoftware/manticoresearch/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "manticore",
+     "image": "manticoresearch/manticore",
+     "tag": "6.3.8",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "manticore",
+     "image": "manticoresearch/manticore:6.3.8",
+     "ports": [
+      9308,
+      9306
+     ],
+     "volumes": [
+      "manticore_data -> /var/lib/manticore"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "manticore"
+      ],
+      "detail": "manticore_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "manyfold",
    "aliases": [],
    "name": "Manyfold",
@@ -44064,6 +46318,103 @@
    }
   },
   {
+   "id": "mediamtx",
+   "aliases": [],
+   "name": "MediaMTX",
+   "slogan": "A ready to use media server and proxy for RTSP, WebRTC, HLS, SRT and RTMP streams.",
+   "description": "MIT licensed. Publish on RTSP 8554, watch over HLS 8888 or WebRTC 8889. The control API on 9997 is on and unauthenticated, keep it private.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/bluenviron/mediamtx",
+   "documentation_url": "https://github.com/bluenviron/mediamtx#readme",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/bluenviron/mediamtx/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mediamtx",
+     "image": "bluenviron/mediamtx",
+     "tag": "1.21.4",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "mediamtx",
+     "image": "bluenviron/mediamtx:1.21.4",
+     "ports": [
+      9997,
+      8554,
+      8888,
+      8889
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "mediamtx",
+     "name": "MTX_API",
+     "kind": "preset"
+    },
+    {
+     "service": "mediamtx",
+     "name": "MTX_API_ADDRESS",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "mediawiki",
    "aliases": [],
    "name": "MediaWiki",
@@ -44205,6 +46556,123 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "medusa",
+   "aliases": [],
+   "name": "Medusa",
+   "slogan": "An automatic TV show downloader and library manager.",
+   "description": "GPL 3.0 licensed. Web UI on port 8081. Connect a download client and a media folder in the settings.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/pymedusa/Medusa",
+   "documentation_url": "https://github.com/pymedusa/Medusa/wiki",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/pymedusa/Medusa/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "medusa",
+     "image": "linuxserver/medusa",
+     "tag": "1.0.27",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "medusa",
+     "image": "linuxserver/medusa:1.0.27",
+     "ports": [
+      8081
+     ],
+     "volumes": [
+      "medusa_config -> /config",
+      "medusa_downloads -> /downloads",
+      "medusa_tv -> /tv"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "medusa",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "medusa",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "medusa",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "medusa"
+      ],
+      "detail": "medusa_config, medusa_downloads, medusa_tv",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -44451,6 +46919,105 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "memgraph",
+   "aliases": [],
+   "name": "Memgraph",
+   "slogan": "An in-memory graph database that speaks Cypher over the Bolt protocol.",
+   "description": "Source-available (BSL 1.1 community edition). Bolt on port 7687. No authentication by default, keep the port private or create users with Cypher.",
+   "first_run": [],
+   "category": "Databases",
+   "status": "active",
+   "source_repo": "https://github.com/memgraph/memgraph",
+   "documentation_url": "https://memgraph.com/docs",
+   "license": {
+    "spdx": "BUSL-1.1",
+    "class": "source-available",
+    "url": "https://github.com/memgraph/memgraph/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "memgraph",
+     "image": "memgraph/memgraph",
+     "tag": "3.14.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "memgraph",
+     "image": "memgraph/memgraph:3.14.0",
+     "ports": [
+      7687
+     ],
+     "volumes": [
+      "memgraph_data -> /var/lib/memgraph"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "memgraph"
+      ],
+      "detail": "memgraph_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "health_gated_deploy",
@@ -45365,6 +47932,144 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "microbin",
+   "aliases": [],
+   "name": "MicroBin",
+   "slogan": "A tiny self-hosted pastebin and file sharing server with expiring links.",
+   "description": "BSD 3 Clause licensed. Admin and uploader passwords are generated; read them from the deployment variables.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/szabodanika/microbin",
+   "documentation_url": "https://microbin.eu",
+   "license": {
+    "spdx": "BSD-3-Clause",
+    "class": "permissive",
+    "url": "https://github.com/szabodanika/microbin/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "microbin",
+     "image": "danielszabo99/microbin",
+     "tag": "2.1.4",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "microbin",
+     "image": "danielszabo99/microbin:2.1.4",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "microbin_data -> /app/microbin_data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "microbin",
+     "name": "MICROBIN_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "microbin",
+     "name": "MICROBIN_ADMIN_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "microbin",
+     "name": "MICROBIN_DATA_DIR",
+     "kind": "preset"
+    },
+    {
+     "service": "microbin",
+     "name": "MICROBIN_PUBLIC_PATH",
+     "kind": "preset"
+    },
+    {
+     "service": "microbin",
+     "name": "MICROBIN_UPLOADER_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "microbin"
+      ],
+      "detail": "MICROBIN_ADMIN_PASSWORD, MICROBIN_UPLOADER_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "microbin"
+      ],
+      "detail": "microbin_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -47842,6 +50547,124 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mumble",
+   "aliases": [],
+   "name": "Mumble Server",
+   "slogan": "Low latency, high quality voice chat server for gaming and teams.",
+   "description": "BSD 3 Clause licensed. Voice uses port 64738 over TCP and UDP, open both in the firewall. The generated SuperUser password is in the deployment variables.",
+   "first_run": [],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/mumble-voip/mumble",
+   "documentation_url": "https://www.mumble.info/documentation/",
+   "license": {
+    "spdx": "BSD-3-Clause",
+    "class": "permissive",
+    "url": "https://github.com/mumble-voip/mumble/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mumble",
+     "image": "mumblevoip/mumble-server",
+     "tag": "v1.6.1001",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "mumble",
+     "image": "mumblevoip/mumble-server:v1.6.1001",
+     "ports": [
+      64738
+     ],
+     "volumes": [
+      "mumble_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "mumble",
+     "name": "MUMBLE_SUPERUSER_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "mumble"
+      ],
+      "detail": "MUMBLE_SUPERUSER_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mumble"
+      ],
+      "detail": "mumble_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -51269,6 +54092,121 @@
    }
   },
   {
+   "id": "ngircd",
+   "aliases": [],
+   "name": "ngIRCd",
+   "slogan": "A lightweight IRC server for private chat networks.",
+   "description": "GPL 2.0 licensed. Plain IRC on port 6667. Edit the config volume to set the server name, operators and passwords.",
+   "first_run": [],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/ngircd/ngircd",
+   "documentation_url": "https://ngircd.barton.de/documentation.php",
+   "license": {
+    "spdx": "GPL-2.0-or-later",
+    "class": "copyleft",
+    "url": "https://github.com/ngircd/ngircd/blob/master/COPYING"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ngircd",
+     "image": "linuxserver/ngircd",
+     "tag": "27-r1-ls170",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "ngircd",
+     "image": "linuxserver/ngircd:27-r1-ls170",
+     "ports": [
+      6667
+     ],
+     "volumes": [
+      "ngircd_config -> /config"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "ngircd",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "ngircd",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "ngircd",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "ngircd"
+      ],
+      "detail": "ngircd_config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "nocobase",
    "aliases": [],
    "name": "NocoBase",
@@ -53245,6 +56183,121 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "nzbhydra2",
+   "aliases": [],
+   "name": "NZBHydra 2",
+   "slogan": "A meta search for Usenet indexers that feeds Sonarr, Radarr and other tools.",
+   "description": "Apache 2.0 licensed. Web UI on port 5076. Add your indexers under Config, then point the arr apps at this address.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/theotherp/nzbhydra2",
+   "documentation_url": "https://github.com/theotherp/nzbhydra2/wiki",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/theotherp/nzbhydra2/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "nzbhydra2",
+     "image": "linuxserver/nzbhydra2",
+     "tag": "9.3.4",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "nzbhydra2",
+     "image": "linuxserver/nzbhydra2:9.3.4",
+     "ports": [
+      5076
+     ],
+     "volumes": [
+      "nzbhydra2_config -> /config"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "nzbhydra2",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "nzbhydra2",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "nzbhydra2",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "nzbhydra2"
+      ],
+      "detail": "nzbhydra2_config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -57104,6 +60157,139 @@
    }
   },
   {
+   "id": "openvscode-server",
+   "aliases": [],
+   "name": "OpenVSCode Server",
+   "slogan": "Visual Studio Code in the browser, served from your own host.",
+   "description": "MIT licensed. Open the page with ?tkn= and the generated connection token from the deployment variables.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/gitpod-io/openvscode-server",
+   "documentation_url": "https://github.com/gitpod-io/openvscode-server",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/gitpod-io/openvscode-server/blob/main/LICENSE.txt"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "openvscode-server",
+     "image": "linuxserver/openvscode-server",
+     "tag": "1.109.5",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "openvscode-server",
+     "image": "linuxserver/openvscode-server:1.109.5",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "openvscode_server_config -> /config"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "openvscode-server",
+     "name": "CONNECTION_TOKEN",
+     "kind": "generated"
+    },
+    {
+     "service": "openvscode-server",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "openvscode-server",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "openvscode-server",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "openvscode-server"
+      ],
+      "detail": "CONNECTION_TOKEN",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "openvscode-server"
+      ],
+      "detail": "openvscode_server_config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "orangehrm",
    "aliases": [],
    "name": "OrangeHRM",
@@ -59328,6 +62514,145 @@
    }
   },
   {
+   "id": "parseable",
+   "aliases": [],
+   "name": "Parseable",
+   "slogan": "A lightweight log analytics and observability platform in one binary.",
+   "description": "AGPL 3.0 licensed. Runs on local disk storage. Sign in as admin with the generated password from the deployment variables, then send logs to the ingest API.",
+   "first_run": [],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/parseablehq/parseable",
+   "documentation_url": "https://www.parseable.com/docs",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/parseablehq/parseable/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "parseable",
+     "image": "parseable/parseable",
+     "tag": "v2.8.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "parseable",
+     "image": "parseable/parseable:v2.8.0",
+     "ports": [
+      8000
+     ],
+     "volumes": [
+      "parseable_data -> /parseable/data",
+      "parseable_staging -> /parseable/staging"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "parseable",
+     "name": "P_ADDR",
+     "kind": "preset"
+    },
+    {
+     "service": "parseable",
+     "name": "P_FS_DIR",
+     "kind": "preset"
+    },
+    {
+     "service": "parseable",
+     "name": "P_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "parseable",
+     "name": "P_STAGING_DIR",
+     "kind": "preset"
+    },
+    {
+     "service": "parseable",
+     "name": "P_USERNAME",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "parseable"
+      ],
+      "detail": "P_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "parseable"
+      ],
+      "detail": "parseable_data, parseable_staging",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "passbolt",
    "aliases": [],
    "name": "Passbolt",
@@ -60129,6 +63454,112 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "perplexica",
+   "aliases": [],
+   "name": "Perplexica",
+   "slogan": "An AI answer engine that searches the web and cites sources, with its own SearXNG bundled.",
+   "description": "MIT licensed. Open the setup screen and add a model provider such as a local Ollama endpoint or an API key. CPU only, no GPU needed on this side.",
+   "first_run": [],
+   "category": "AI",
+   "status": "active",
+   "source_repo": "https://github.com/ItzCrazyKns/Perplexica",
+   "documentation_url": "https://github.com/ItzCrazyKns/Perplexica",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/ItzCrazyKns/Perplexica/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "perplexica",
+     "image": "itzcrazykns1337/perplexica",
+     "tag": "v1.12.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "perplexica",
+     "image": "itzcrazykns1337/perplexica:v1.12.0",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "perplexica_data -> /home/perplexica/data",
+      "perplexica_uploads -> /home/perplexica/uploads"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "perplexica",
+     "name": "HOSTNAME",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "perplexica"
+      ],
+      "detail": "perplexica_data, perplexica_uploads",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -62156,6 +65587,273 @@
    }
   },
   {
+   "id": "pinry",
+   "aliases": [],
+   "name": "Pinry",
+   "slogan": "A tiling image board for saving and sharing pins, self hosted.",
+   "description": "BSD 2 Clause licensed. Create the first account on the sign up page, then turn off public sign ups in the settings.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/pinry/pinry",
+   "documentation_url": "https://docs.getpinry.com/",
+   "license": {
+    "spdx": "BSD-2-Clause",
+    "class": "permissive",
+    "url": "https://github.com/pinry/pinry/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "pinry",
+     "image": "getpinry/pinry",
+     "tag": "2.1.15",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "pinry",
+     "image": "getpinry/pinry:2.1.15",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "pinry_data -> /data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "pinry"
+      ],
+      "detail": "pinry_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "piwigo",
+   "aliases": [],
+   "name": "Piwigo",
+   "slogan": "A mature photo gallery with albums, tags, plugins and themes.",
+   "description": "GPL 2.0 licensed. Open the page to run the installer. Use database host db, database piwigo, user piwigo and the generated database password from the deployment variables.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/Piwigo/Piwigo",
+   "documentation_url": "https://piwigo.org/doc",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Piwigo/Piwigo/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11.4",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "piwigo",
+     "image": "linuxserver/piwigo",
+     "tag": "16.5.0",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "mariadb:11.4",
+     "ports": [],
+     "volumes": [
+      "piwigo_db -> /var/lib/mysql"
+     ]
+    },
+    {
+     "name": "piwigo",
+     "image": "linuxserver/piwigo:16.5.0",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "piwigo_config -> /config",
+      "piwigo_gallery -> /gallery"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "MARIADB_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "piwigo",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "piwigo",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "piwigo",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "piwigo"
+      ],
+      "detail": "piwigo_config, piwigo_db, piwigo_gallery",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "plane",
    "aliases": [],
    "name": "Plane",
@@ -63175,6 +66873,116 @@
    }
   },
   {
+   "id": "plik",
+   "aliases": [],
+   "name": "Plik",
+   "slogan": "A temporary file upload system with expiring, shareable links.",
+   "description": "MIT licensed. Files and the metadata database live in one volume. Anonymous uploads are on by default, set the authentication options in the plik config to restrict them.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/root-gg/plik",
+   "documentation_url": "https://github.com/root-gg/plik#readme",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/root-gg/plik/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "plik",
+     "image": "rootgg/plik",
+     "tag": "1.4.3",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "plik",
+     "image": "rootgg/plik:1.4.3",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "plik_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "plik",
+     "name": "PLIKD_DATA_BACKEND_CONFIG",
+     "kind": "preset"
+    },
+    {
+     "service": "plik",
+     "name": "PLIKD_METADATA_BACKEND_CONFIG",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "plik"
+      ],
+      "detail": "plik_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "plunk",
    "aliases": [],
    "name": "Plunk",
@@ -63839,6 +67647,89 @@
    }
   },
   {
+   "id": "portkey-gateway",
+   "aliases": [],
+   "name": "Portkey AI Gateway",
+   "slogan": "A fast gateway that routes one OpenAI-style API to over 200 model providers with retries and fallbacks.",
+   "description": "MIT licensed. Pass provider keys per request with the x-portkey-provider and Authorization headers; nothing is stored.",
+   "first_run": [],
+   "category": "AI",
+   "status": "active",
+   "source_repo": "https://github.com/Portkey-AI/gateway",
+   "documentation_url": "https://portkey.ai/docs/product/ai-gateway",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/Portkey-AI/gateway/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "gateway",
+     "image": "portkeyai/gateway",
+     "tag": "1.15.2",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "gateway",
+     "image": "portkeyai/gateway:1.15.2",
+     "ports": [
+      8787
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "postgres",
    "aliases": [],
    "name": "PostgreSQL",
@@ -64100,6 +67991,190 @@
        "db"
       ],
       "detail": "pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "postgrest",
+   "aliases": [],
+   "name": "PostgREST",
+   "slogan": "Serve a PostgreSQL database as a REST API with no glue code.",
+   "description": "MIT licensed. Ships with a PostgreSQL 16 database and exposes the public schema through the anon role. It connects as the database owner and switches role per request, so create a least-privilege authenticator role for production. Add your own roles and schemas before exposing it.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/PostgREST/postgrest",
+   "documentation_url": "https://docs.postgrest.org",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/PostgREST/postgrest/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "16-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "postgrest",
+     "image": "postgrest/postgrest",
+     "tag": "v16.6",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:16-alpine",
+     "ports": [],
+     "volumes": [
+      "postgrest_db -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "postgrest",
+     "image": "postgrest/postgrest:v16.6",
+     "ports": [
+      3000
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "postgrest",
+     "name": "PGRST_ADMIN_SERVER_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "postgrest",
+     "name": "PGRST_DB_ANON_ROLE",
+     "kind": "preset"
+    },
+    {
+     "service": "postgrest",
+     "name": "PGRST_DB_SCHEMAS",
+     "kind": "preset"
+    },
+    {
+     "service": "postgrest",
+     "name": "PGRST_DB_URI",
+     "kind": "generated"
+    },
+    {
+     "service": "postgrest",
+     "name": "PGRST_JWT_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "postgrest",
+     "name": "PGRST_SERVER_HOST",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "postgrest"
+      ],
+      "detail": "PGRST_DB_URI, PGRST_JWT_SECRET, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "postgrest_db",
       "message": "Stores data in named volumes"
      }
     ],
@@ -64655,6 +68730,273 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "profilarr",
+   "aliases": [],
+   "name": "Profilarr",
+   "slogan": "Manage and sync quality profiles and custom formats across Sonarr and Radarr.",
+   "description": "AGPL 3.0 licensed. Add your Sonarr and Radarr URLs and API keys in the web UI after the first visit.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/Dictionarry-Hub/profilarr",
+   "documentation_url": "https://github.com/Dictionarry-Hub/profilarr",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/Dictionarry-Hub/profilarr/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "profilarr",
+     "image": "santiagosayshey/profilarr",
+     "tag": "v1.1.5",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "profilarr",
+     "image": "santiagosayshey/profilarr:v1.1.5",
+     "ports": [
+      6868
+     ],
+     "volumes": [
+      "profilarr_config -> /config"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "profilarr"
+      ],
+      "detail": "profilarr_config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "projectsend",
+   "aliases": [],
+   "name": "ProjectSend",
+   "slogan": "A client file sharing portal where you upload files for named clients and groups.",
+   "description": "GPL 2.0 licensed. Open the page to run the installer. Use database host db, database projectsend, user projectsend and the generated database password from the deployment variables.",
+   "first_run": [],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/projectsend/projectsend",
+   "documentation_url": "https://docs.projectsend.org",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/projectsend/projectsend/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11.4",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "projectsend",
+     "image": "linuxserver/projectsend",
+     "tag": "r2098-ls10",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "mariadb:11.4",
+     "ports": [],
+     "volumes": [
+      "projectsend_db -> /var/lib/mysql"
+     ]
+    },
+    {
+     "name": "projectsend",
+     "image": "linuxserver/projectsend:r2098-ls10",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "projectsend_config -> /config",
+      "projectsend_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "MARIADB_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "projectsend",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "projectsend",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "projectsend",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "projectsend"
+      ],
+      "detail": "projectsend_config, projectsend_data, projectsend_db",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -65727,6 +70069,111 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "quickwit",
+   "aliases": [],
+   "name": "Quickwit",
+   "slogan": "A cloud-native search engine for logs and traces that keeps data on cheap object storage.",
+   "description": "Apache 2.0 licensed. Runs a single node with local file storage. REST API and UI on port 7280.",
+   "first_run": [],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/quickwit-oss/quickwit",
+   "documentation_url": "https://quickwit.io/docs",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/quickwit-oss/quickwit/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "quickwit",
+     "image": "quickwit/quickwit",
+     "tag": "0.8.2",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "quickwit",
+     "image": "quickwit/quickwit:0.8.2",
+     "ports": [
+      7280
+     ],
+     "volumes": [
+      "quickwit_data -> /quickwit/qwdata"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "quickwit",
+     "name": "QW_ENABLE_OPENTELEMETRY_OTLP_EXPORTER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "quickwit"
+      ],
+      "detail": "quickwit_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -67755,6 +72202,129 @@
    }
   },
   {
+   "id": "redis-stack",
+   "aliases": [],
+   "name": "Redis Stack Server",
+   "slogan": "Redis with JSON, search, time series and probabilistic modules built in.",
+   "description": "Source-available modules on top of Redis. Speaks the Redis protocol on port 6379. The generated password is required to connect.",
+   "first_run": [],
+   "category": "Databases",
+   "status": "active",
+   "source_repo": "https://github.com/redis-stack/redis-stack",
+   "documentation_url": "https://redis.io/docs/latest/operate/oss_and_stack",
+   "license": {
+    "spdx": "LicenseRef-Redis-Stack",
+    "class": "source-available",
+    "url": "https://redis.io/legal/licenses"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "redis-stack",
+     "image": "redis/redis-stack-server",
+     "tag": "7.4.0-v8",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "redis-stack",
+     "image": "redis/redis-stack-server:7.4.0-v8",
+     "ports": [
+      6379
+     ],
+     "volumes": [
+      "redis_stack_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "redis-stack",
+     "name": "REDISCLI_AUTH",
+     "kind": "generated"
+    },
+    {
+     "service": "redis-stack",
+     "name": "REDIS_ARGS",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "redis-stack"
+      ],
+      "detail": "REDISCLI_AUTH, REDIS_ARGS",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "redis-stack"
+      ],
+      "detail": "redis_stack_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "redisinsight",
    "aliases": [],
    "name": "RedisInsight",
@@ -69067,6 +73637,105 @@
    }
   },
   {
+   "id": "rqlite",
+   "aliases": [],
+   "name": "rqlite",
+   "slogan": "A lightweight, distributed relational database built on SQLite.",
+   "description": "MIT licensed. The HTTP API on port 4001 has no authentication in this template, keep it private or put an access proxy in front.",
+   "first_run": [],
+   "category": "Database",
+   "status": "active",
+   "source_repo": "https://github.com/rqlite/rqlite",
+   "documentation_url": "https://rqlite.io/docs/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/rqlite/rqlite/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "rqlite",
+     "image": "rqlite/rqlite",
+     "tag": "10.8.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "rqlite",
+     "image": "rqlite/rqlite:10.8.0",
+     "ports": [
+      4001
+     ],
+     "volumes": [
+      "rqlite_data -> /rqlite/file"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "rqlite"
+      ],
+      "detail": "rqlite_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "rss-bridge",
    "aliases": [],
    "name": "RSS-Bridge",
@@ -69845,6 +74514,119 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "screego",
+   "aliases": [],
+   "name": "Screego",
+   "slogan": "Screen sharing for developers, with low latency and no account.",
+   "description": "GPL 3.0 licensed. Set SCREEGO_EXTERNAL_IP to the public address of the host and open UDP 3478 for the relay. Sessions are created from the web page.",
+   "first_run": [],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/screego/server",
+   "documentation_url": "https://screego.net/#/install",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/screego/server/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "screego",
+     "image": "screego/server",
+     "tag": "1.12.6",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "screego",
+     "image": "screego/server:1.12.6",
+     "ports": [
+      5050
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "screego",
+     "name": "SCREEGO_EXTERNAL_IP",
+     "kind": "preset"
+    },
+    {
+     "service": "screego",
+     "name": "SCREEGO_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "screego",
+     "name": "SCREEGO_SERVER_ADDRESS",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "screego"
+      ],
+      "detail": "SCREEGO_SECRET",
+      "message": "Passwords and keys are generated at deploy time"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "health_gated_deploy",
@@ -71459,6 +76241,123 @@
        "shlink"
       ],
       "detail": "shlink_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "sickgear",
+   "aliases": [],
+   "name": "SickGear",
+   "slogan": "An automatic TV show downloader and library manager with a modern web UI.",
+   "description": "GPL 3.0 licensed. Web UI on port 8081. Connect a download client and a media folder in the settings.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/SickGear/SickGear",
+   "documentation_url": "https://github.com/SickGear/SickGear/wiki",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/SickGear/SickGear/blob/main/LICENSE.txt"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "sickgear",
+     "image": "linuxserver/sickgear",
+     "tag": "3.37.1",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "sickgear",
+     "image": "linuxserver/sickgear:3.37.1",
+     "ports": [
+      8081
+     ],
+     "volumes": [
+      "sickgear_config -> /config",
+      "sickgear_tv -> /tv",
+      "sickgear_downloads -> /downloads"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "sickgear",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "sickgear",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "sickgear",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "sickgear"
+      ],
+      "detail": "sickgear_config, sickgear_downloads, sickgear_tv",
       "message": "Stores data in named volumes"
      }
     ],
@@ -74505,6 +79404,109 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "sshwifty",
+   "aliases": [],
+   "name": "Sshwifty",
+   "slogan": "A web based SSH and Telnet client you can open from any browser.",
+   "description": "AGPL 3.0 licensed. Open the page and enter the host to connect to. The shared access key is generated and shown in the deployment variables.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/nirui/sshwifty",
+   "documentation_url": "https://github.com/nirui/sshwifty",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/nirui/sshwifty/blob/master/LICENSE.md"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "sshwifty",
+     "image": "niruix/sshwifty",
+     "tag": "0.4.13-beta-release",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "sshwifty",
+     "image": "niruix/sshwifty:0.4.13-beta-release",
+     "ports": [
+      8182
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "sshwifty",
+     "name": "SSHWIFTY_SHAREDKEY",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "sshwifty"
+      ],
+      "detail": "SSHWIFTY_SHAREDKEY",
+      "message": "Passwords and keys are generated at deploy time"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
      },
      {
       "code": "rollback",
@@ -81501,6 +86503,304 @@
    }
   },
   {
+   "id": "tududi",
+   "aliases": [],
+   "name": "Tududi",
+   "slogan": "A self-hosted task and project manager with areas, notes and recurring tasks.",
+   "description": "MIT licensed. Uses a bundled PostgreSQL database. Sign in as admin@example.com with the generated admin password from the deployment variables.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/chrisvel/tududi",
+   "documentation_url": "https://github.com/chrisvel/tududi",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/chrisvel/tududi/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "16-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "tududi",
+     "image": "chrisvel/tududi",
+     "tag": "2.1.5",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:16-alpine",
+     "ports": [],
+     "volumes": [
+      "tududi_db -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "tududi",
+     "image": "chrisvel/tududi:2.1.5",
+     "ports": [
+      3002
+     ],
+     "volumes": [
+      "tududi_uploads -> /app/backend/uploads"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "tududi",
+     "name": "DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "tududi",
+     "name": "TUDUDI_ALLOWED_ORIGINS",
+     "kind": "preset"
+    },
+    {
+     "service": "tududi",
+     "name": "TUDUDI_SESSION_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "tududi",
+     "name": "TUDUDI_USER_EMAIL",
+     "kind": "preset"
+    },
+    {
+     "service": "tududi",
+     "name": "TUDUDI_USER_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "tududi"
+      ],
+      "detail": "DATABASE_URL, TUDUDI_SESSION_SECRET, TUDUDI_USER_PASSWORD, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "tududi"
+      ],
+      "detail": "tududi_db, tududi_uploads",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tvheadend",
+   "aliases": [],
+   "name": "Tvheadend",
+   "slogan": "A TV streaming server and recorder for live TV, DVB tuners and IPTV.",
+   "description": "GPL 3.0 licensed. Web UI on port 9981. Add tuners or IPTV networks in the configuration. Hardware tuners need device access that is not enabled here.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/tvheadend/tvheadend",
+   "documentation_url": "https://docs.tvheadend.org",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/tvheadend/tvheadend/blob/master/LICENSE.md"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "tvheadend",
+     "image": "linuxserver/tvheadend",
+     "tag": "8837853a-ls288",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "tvheadend",
+     "image": "linuxserver/tvheadend:8837853a-ls288",
+     "ports": [
+      9981
+     ],
+     "volumes": [
+      "tvheadend_config -> /config",
+      "tvheadend_recordings -> /recordings"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "tvheadend",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "tvheadend",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "tvheadend",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "tvheadend"
+      ],
+      "detail": "tvheadend_config, tvheadend_recordings",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "twenty",
    "aliases": [],
    "name": "Twenty CRM",
@@ -82543,6 +87843,107 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "unmanic",
+   "aliases": [],
+   "name": "Unmanic",
+   "slogan": "Automatically optimise and convert your media library with a plugin-driven worker queue.",
+   "description": "GPL 3.0 licensed. Mount your media into the container and add the library path in the web UI. CPU transcoding only here.",
+   "first_run": [],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/Unmanic/unmanic",
+   "documentation_url": "https://docs.unmanic.app",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/Unmanic/unmanic/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "unmanic",
+     "image": "josh5/unmanic",
+     "tag": "0.4.1",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "unmanic",
+     "image": "josh5/unmanic:0.4.1",
+     "ports": [
+      8888
+     ],
+     "volumes": [
+      "unmanic_config -> /config",
+      "unmanic_library -> /library",
+      "unmanic_cache -> /tmp/unmanic"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "unmanic"
+      ],
+      "detail": "unmanic_cache, unmanic_config, unmanic_library",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -86563,6 +91964,128 @@
    }
   },
   {
+   "id": "wg-easy",
+   "aliases": [],
+   "name": "WireGuard Easy",
+   "slogan": "A WireGuard VPN server with a web UI for managing clients.",
+   "description": "A WireGuard VPN server with a web UI for managing clients.",
+   "first_run": [
+    "Needs NET_ADMIN and NET_RAW under a reviewed grant, and the WireGuard kernel module loaded on the host (modprobe wireguard).",
+    "Open the web UI through your domain and create the admin account.",
+    "Open UDP 51820 in the firewall and forward it to this host."
+   ],
+   "category": "Networking",
+   "status": "active",
+   "source_repo": "https://github.com/wg-easy/wg-easy",
+   "documentation_url": "https://wg-easy.github.io/wg-easy/latest/",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/wg-easy/wg-easy/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "wg-easy",
+     "image": "ghcr.io/wg-easy/wg-easy",
+     "tag": "15.5.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "wg-easy",
+     "image": "ghcr.io/wg-easy/wg-easy:15.5.0",
+     "ports": [
+      51821,
+      51820
+     ],
+     "volumes": [
+      "etc_wireguard -> /etc/wireguard"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "elevated",
+    "findings": [
+     {
+      "code": "cap_add",
+      "severity": "elevated",
+      "services": [
+       "wg-easy"
+      ],
+      "detail": "NET_ADMIN, NET_RAW",
+      "message": "Adds extra Linux capabilities"
+     },
+     {
+      "code": "published_ports",
+      "severity": "info",
+      "services": [
+       "wg-easy"
+      ],
+      "detail": "51820:51820",
+      "message": "Publishes ports directly on the host"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "wg-easy"
+      ],
+      "detail": "etc_wireguard",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "whoogle",
    "aliases": [],
    "name": "Whoogle Search",
@@ -88212,6 +93735,123 @@
    }
   },
   {
+   "id": "yopass",
+   "aliases": [],
+   "name": "Yopass",
+   "slogan": "Share secrets and passwords through one-time, encrypted links.",
+   "description": "Apache 2.0 licensed. Secrets are encrypted in the browser and kept in a bundled Memcached for a limited time.",
+   "first_run": [],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/jhaals/yopass",
+   "documentation_url": "https://github.com/jhaals/yopass",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/jhaals/yopass/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "memcached",
+     "image": "memcached",
+     "tag": "1.6-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "yopass",
+     "image": "jhaals/yopass",
+     "tag": "16.3.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "memcached",
+     "image": "memcached:1.6-alpine",
+     "ports": [],
+     "volumes": []
+    },
+    {
+     "name": "yopass",
+     "image": "jhaals/yopass:16.3.0",
+     "ports": [
+      1337
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "memcached"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "yourls",
    "aliases": [],
    "name": "YOURLS",
@@ -89180,6 +94820,121 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "znc",
+   "aliases": [],
+   "name": "ZNC",
+   "slogan": "An IRC bouncer that stays connected and replays the messages you missed.",
+   "description": "Apache 2.0 licensed. First start writes a default config, sign in on port 6501 as admin with password admin and change it right away.",
+   "first_run": [],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/znc/znc",
+   "documentation_url": "https://wiki.znc.in/ZNC",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/znc/znc/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "maintainers"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "znc",
+     "image": "linuxserver/znc",
+     "tag": "1.10.3",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "znc",
+     "image": "linuxserver/znc:1.10.3",
+     "ports": [
+      6501
+     ],
+     "volumes": [
+      "znc_config -> /config"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "znc",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "znc",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "znc",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "znc"
+      ],
+      "detail": "znc_config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",

@@ -1,7 +1,7 @@
 package staticroutes
 
 import (
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // Input is what a deploy hands to Compile.

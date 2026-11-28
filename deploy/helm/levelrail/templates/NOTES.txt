@@ -1,0 +1,6 @@
+Levelrail is starting. Reach the dashboard with:
+
+  kubectl port-forward svc/{{ include "levelrail.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+
+Then open http://localhost:{{ .Values.service.port }}. Set APP_ADMIN_USERNAME and
+APP_ADMIN_PASSWORD through existingSecret to choose the first admin account.

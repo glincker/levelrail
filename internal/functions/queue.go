@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Headers sent on every queued call so the handler can correlate and deduplicate it.

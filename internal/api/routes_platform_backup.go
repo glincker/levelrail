@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/dbauthz"
+	"github.com/glincker/levelrail/internal/dbauthz"
 )
 
 // registerBackupRoutes registers the databases, backups, restore and usage routes.

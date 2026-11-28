@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 // Trust levels. Every entry is at least listed.

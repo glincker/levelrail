@@ -8,7 +8,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/brand"
 )
 
 const shell = `<html><head><meta name="description" content="x" /><meta property="og:title" content="x" /><title>Dashboard</title></head><body></body></html>`

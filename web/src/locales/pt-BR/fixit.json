@@ -109,6 +109,7 @@
     "linesLabel": "Últimas linhas de log do container com falha",
     "noLines": "Nenhuma linha de log foi capturada para esta falha.",
     "openFullLogs": "Abrir logs completos",
-    "crashSummary": "{{count}} reinicializações nos últimos {{minutes}} minutos."
+    "crashSummary": "{{count}} reinicializações nos últimos {{minutes}} minutos.",
+    "sectionWarnings": "Avisos ({{count}})"
   }
 }

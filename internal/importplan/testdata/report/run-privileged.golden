@@ -1,0 +1,8 @@
+changes-behavior | docker-run | --cap-add | adding Linux capabilities is not supported | declare the capability as a grant in the manifest; ungranted capabilities are dropped
+changes-behavior | docker-run | --network host | host networking is not supported; ports are published instead | publish the needed ports with -p; host networking needs a host_network grant
+changes-behavior | docker-run | --pid host | sharing the host PID namespace is not supported | set it on the app after creating it, or leave it out
+changes-behavior | docker-run | --privileged | privileged containers are not supported | remove it, or grant only the specific capability the app needs in its manifest
+changes-behavior | docker-run | -p | no -p flag was given, so no container port is known; set one before deploying | set it on the app after creating it, or leave it out
+changes-behavior | docker-run | -v /var/run/docker.sock | bind mount /var/run/docker.sock needs root approval to create | set it on the app after creating it, or leave it out
+changes-behavior | docker-run | -v docker.sock | this mounts the Docker socket, which gives the container control of the host; review before deploying | remove it unless the app must control Docker; it gives the container control of the host
+ignored-safe | docker-run | image | image uses the latest tag, which can change between deploys; pin a version or digest for repeatable rollbacks | safe to leave out

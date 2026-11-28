@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 func reportWith(rps, warm float64, status string, repeat int) Report {

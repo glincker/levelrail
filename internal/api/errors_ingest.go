@@ -15,10 +15,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/erroringest"
-	"github.com/GLINCKER/levelrail/internal/monitor"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/erroringest"
+	"github.com/glincker/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 const (

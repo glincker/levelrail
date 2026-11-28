@@ -9,8 +9,8 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 
-	"github.com/GLINCKER/levelrail/internal/abuse"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/abuse"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 func init() {

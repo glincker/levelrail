@@ -13,8 +13,8 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/GLINCKER/levelrail/internal/cliconsole"
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/cliconsole"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 func TestCLIConsole_SessionRunsAndRevokes(t *testing.T) {

@@ -41,9 +41,9 @@ linters:
             - "**/cmd/levelrail-mcp/**"
             - "!**/cmd/levelrail-cli/functions_dev.go"
           deny:
-            - pkg: github.com/GLINCKER/levelrail/internal/store
+            - pkg: github.com/glincker/levelrail/internal/store
               desc: the CLI and MCP server talk to the API over HTTP only
-            - pkg: github.com/GLINCKER/levelrail/internal/docker
+            - pkg: github.com/glincker/levelrail/internal/docker
               desc: the CLI and MCP server talk to the API over HTTP only
     nolintlint:
       require-explanation: true

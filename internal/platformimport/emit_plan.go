@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/envredact"
 )
 
 var connectionKeyRe = regexp.MustCompile(`(?i)^(database|redis|mongo|mongodb|db|postgres|postgresql|mysql)(_[a-z]+)?_(url|uri)$`)

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbupgrade"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbupgrade"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newUpgradeTestRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {

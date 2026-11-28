@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/supplychain"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/supplychain"
 )
 
 const testSPDX = `{"spdxVersion":"SPDX-2.3","packages":[{"SPDXID":"p1","name":"musl","versionInfo":"1.2","licenseConcluded":"MIT","externalRefs":[{"referenceType":"purl","referenceLocator":"pkg:apk/alpine/musl@1.2"}]},{"SPDXID":"p2","name":"busybox","versionInfo":"1.36"}]}`

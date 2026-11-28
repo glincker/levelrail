@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/appwizard"
+	"github.com/glincker/levelrail/internal/appwizard"
 )
 
 // Env vars bounding one preview.

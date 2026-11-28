@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func testGitCheckout(ctx context.Context, repoURL, ref string) (string, string, func(), error) {

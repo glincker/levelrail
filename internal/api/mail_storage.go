@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/mailbackup"
-	"github.com/GLINCKER/levelrail/internal/mailstorage"
+	"github.com/glincker/levelrail/internal/mailbackup"
+	"github.com/glincker/levelrail/internal/mailstorage"
 )
 
 const (

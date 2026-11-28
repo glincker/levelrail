@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var postureNow = time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)

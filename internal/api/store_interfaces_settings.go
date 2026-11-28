@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EmailSettingsStore is the store surface GET/PUT

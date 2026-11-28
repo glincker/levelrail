@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/plugin/egress"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/plugin/egress"
 )
 
 // Containers is the slice of the Docker wrapper the runtime uses.

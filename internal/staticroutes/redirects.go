@@ -1,7 +1,7 @@
 package staticroutes
 
 import (
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 func isRedirectStatus(s int) bool { return spec.IsStaticRedirectStatus(s) }

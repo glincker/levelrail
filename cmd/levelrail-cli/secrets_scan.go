@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/deploy/secretscan"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/deploy/secretscan"
 )
 
 func secretsScanUsage(prog string) string {

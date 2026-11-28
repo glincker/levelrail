@@ -698,6 +698,10 @@
         "title": "Updates",
         "description": "Current version and available releases."
       },
+      "announcements": {
+        "title": "Announcements",
+        "description": "Signed notices from the Levelrail project and the feed opt-in."
+      },
       "beta-features": {
         "title": "Beta features",
         "description": "Switch on features that work but are still being tuned."
@@ -1836,8 +1840,11 @@
       "title": "This server",
       "body": "The CLI pins this identity at login and refuses to send a token to any other server. Compare the fingerprint with what the CLI prints.",
       "name": "Name",
-      "id": "Instance",
+      "id": "Instance ID",
       "fingerprint": "Fingerprint",
+      "backupSetId": "Backup set ID",
+      "copy": "Copy",
+      "copied": "Instance ID copied",
       "movedTitle": "This instance was restored onto a new host",
       "movedBody": "Its identity changed, so CLI tokens issued before the move are refused. If this is the same instance (a restore or migration you made), confirm it to accept those tokens again. If you did not move it, leave it and log in to the CLI again.",
       "confirmLabel": "Type \"{{phrase}}\" to confirm",

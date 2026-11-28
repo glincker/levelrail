@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendcap"
 )
 
 const domainsLimitsJSONUsage = "print the domain limits as JSON to stdout and nothing else"

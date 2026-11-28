@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/supplychain"
+	"github.com/glincker/levelrail/internal/supplychain"
 )
 
 // supplyChainDefaultResource is the instance-wide scan policy apps inherit when they have none of their own.

@@ -4,22 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/gpu"
-	"github.com/GLINCKER/levelrail/internal/models"
-	"github.com/GLINCKER/levelrail/internal/nodemove"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/nodemove"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // moveExecutor implements nodemove.Executor and nodemove.DrainPlanner
@@ -194,6 +193,16 @@ func (e *moveExecutor) dependents(ctx context.Context, dbName string) ([]store.D
 	return out, nil
 }
 
+// fenced stamps ctx with the app's token as recorded now, so call it after any placement change.
+func (rt *Router) fenced(ctx context.Context, name string) context.Context {
+	if r, ok := rt.apps.(interface {
+		ServiceFenceToken(ctx context.Context, name string) (uint64, error)
+	}); ok {
+		return agent.FenceCtx(ctx, r.ServiceFenceToken, name)
+	}
+	return ctx
+}
+
 func (e *moveExecutor) Stop(ctx context.Context, kind, name, nodeID string) error {
 	runtime, err := e.rt.execRuntime(nodeID)
 	if err != nil {
@@ -208,7 +217,7 @@ func (e *moveExecutor) Stop(ctx context.Context, kind, name, nodeID string) erro
 	if err := e.rt.apps.UpdateServiceSuspended(ctx, name, true); err != nil {
 		return err
 	}
-	return application.New(name, e.rt.apps, runtime).Teardown(ctx)
+	return application.New(name, e.rt.apps, runtime).Teardown(e.rt.fenced(ctx, name))
 }
 
 func (e *moveExecutor) CopyVolume(ctx context.Context, fromNodeID, toNodeID, volume string) error {
@@ -299,24 +308,18 @@ func (e *moveExecutor) Ready(ctx context.Context, kind, name, nodeID string, sin
 	return false, "no running container on the target node yet", nil
 }
 
-// RemoveFrom tears down an app's containers on one node. When that node
-// is unreachable the teardown is queued with the delete finalizer, which
-// retries, so a dead source never blocks a verified move.
+// RemoveFrom tears down an app's containers on one node. A failure is returned so the move runner
+// retries with a freshly read token; an unfenced background retry could outrun a newer placement.
 func (e *moveExecutor) RemoveFrom(ctx context.Context, kind, name, nodeID string) error {
 	runtime, err := e.rt.execRuntime(nodeID)
 	if err == nil {
 		if kind == store.NodeMoveKindDatabase {
 			err = database.New(name, e.rt.databases, runtime).Teardown(ctx)
 		} else {
-			err = application.New(name, e.rt.apps, runtime).Teardown(ctx)
+			err = application.New(name, e.rt.apps, runtime).Teardown(e.rt.fenced(ctx, name))
 		}
 	}
-	if err == nil || kind == store.NodeMoveKindDatabase {
-		return err
-	}
-	e.rt.logger.Warn("nodemove: direct teardown failed, queued for retry", slog.String("app", name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
-	e.rt.teardownServiceContainers(name, nodeID)
-	return nil
+	return err
 }
 
 // Finalize restarts a moved database's dependents so they pick up its new

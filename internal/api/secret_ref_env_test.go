@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func putRefAs(rt *Router, tok, body string) *httptest.ResponseRecorder {
@@ -44,9 +44,12 @@ func TestSecretRefEnvNeedsRootAndIsStoredAsReference(t *testing.T) {
 	if got := saved.VaultEnv["API_KEY"].SecretRef(); got != "secret://prod/apps/web#api" {
 		t.Fatalf("stored reference = %q", got)
 	}
-	// The legacy form is unchanged and needs no root.
-	if rec := putRefAs(rt, writer, `{"path":"a","key":"b"}`); rec.Code != http.StatusOK {
-		t.Fatalf("legacy vault form = %d: %s", rec.Code, rec.Body.String())
+	// The legacy form needs root unless the path sits inside an allowed prefix.
+	if rec := putRefAs(rt, writer, `{"path":"a","key":"b"}`); rec.Code != http.StatusForbidden {
+		t.Fatalf("legacy vault form as writer = %d, want 403", rec.Code)
+	}
+	if rec := putRefAs(rt, root, `{"path":"a","key":"b"}`); rec.Code != http.StatusOK {
+		t.Fatalf("legacy vault form as root = %d: %s", rec.Code, rec.Body.String())
 	}
 }
 

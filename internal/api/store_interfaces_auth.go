@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AuthStore is the store surface the auth handlers need.

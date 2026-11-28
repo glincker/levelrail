@@ -17,9 +17,9 @@ import (
 
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // backupTargetTestTimeout bounds the synchronous connectivity check

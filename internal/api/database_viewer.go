@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbviewer"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbviewer"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Credentials stay in the container: the control plane only execs the engine's own client there.

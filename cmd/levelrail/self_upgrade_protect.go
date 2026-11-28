@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os/exec"
 
-	"github.com/GLINCKER/levelrail/internal/hostprotect"
+	"github.com/glincker/levelrail/internal/hostprotect"
 )
 
 // applyHostProtection writes the OOM drop-in before the upgrade's own restart, so

@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/changes"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/version"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/version"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // LogsSource is the narrow surface Engine needs to attach log lines to

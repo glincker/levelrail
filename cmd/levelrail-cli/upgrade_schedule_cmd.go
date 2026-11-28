@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runUpgradeSubcommand handles "upgrade schedule|auto|backup-now". It reports

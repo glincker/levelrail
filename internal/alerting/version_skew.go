@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // VersionSkewSettingsSource is the narrow store surface EvaluateVersionSkew needs.

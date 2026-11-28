@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/secretsource"
 )
 
 // secretRefFlag is NAME=secret://conn/path#key, repeatable. A literal value is

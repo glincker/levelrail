@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/glincker/levelrail/internal/envrules"
 	"log/slog"
 	"net/http"
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type setSecretRequest struct {
@@ -51,6 +52,9 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	key := r.PathValue("key")
 
+	if refuseReservedApp(w, name) {
+		return
+	}
 	app, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -67,6 +71,9 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Value == "" {
 		writeError(w, http.StatusBadRequest, "value is required")
+		return
+	}
+	if _, ok := rt.checkEnvWrite(r.Context(), w, map[string]string{key: req.Value}, existingEnv(app), envrules.Options{Secret: true, Multiline: true}); !ok {
 		return
 	}
 	if !rt.enforceSecretPolicy(r.Context(), w, app.EnvironmentID, []string{key}) {
@@ -96,9 +103,35 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "the secret value was saved but declaring the key failed, retry the request")
 		return
 	}
-	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: "Secret set: " + key})
+	_, hadPlain := app.Env[key]
+	if hadPlain {
+		// Store and declare come first so a failure here never loses the old plain value.
+		remover, ok := rt.apps.(plainEnvKeyRemover)
+		if !ok {
+			writeError(w, http.StatusNotImplemented, "this key exists as a plain variable and this control plane cannot convert it; run apps env unset first")
+			return
+		}
+		if _, err := remover.RemoveServicePlainEnvKey(r.Context(), name, key); err != nil {
+			rt.internalError(w, "api: set secret: the secret was saved but the plain copy was not removed", err, slog.String("name", name), slog.String("key", key))
+			return
+		}
+	}
+	title := "Secret set: " + key
+	if hadPlain {
+		title = "Plain variable replaced by secret: " + key
+	}
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: title})
 	rt.nudgeReconciler()
+	if hadPlain {
+		writeJSON(w, http.StatusOK, setSecretResponse{ReplacedPlainEnv: true})
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// setSecretResponse is sent only when the key also existed as a plain variable.
+type setSecretResponse struct {
+	ReplacedPlainEnv bool `json:"replaced_plain_env"`
 }
 
 // secretEnvDeclarer and secretValueDeleter are the narrow store writes behind
@@ -140,6 +173,12 @@ func (rt *Router) handleDeleteSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name, key := r.PathValue("name"), r.PathValue("key")
+	if !checkEnvKeys(w, []string{key}) {
+		return
+	}
+	if refuseReservedApp(w, name) {
+		return
+	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -209,6 +248,9 @@ func (rt *Router) handleListSecrets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.PathValue("name")
+	if refuseReservedApp(w, name) {
+		return
+	}
 	_, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -254,6 +296,9 @@ func (rt *Router) handleSetSecretLock(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	key := r.PathValue("key")
 
+	if refuseReservedApp(w, name) {
+		return
+	}
 	_, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -296,6 +341,9 @@ func (rt *Router) handleSetSecretBuildTime(w http.ResponseWriter, r *http.Reques
 	name := r.PathValue("name")
 	key := r.PathValue("key")
 
+	if refuseReservedApp(w, name) {
+		return
+	}
 	_, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

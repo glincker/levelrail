@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/abuse"
+	"github.com/glincker/levelrail/internal/abuse"
 )
 
 // TestAbuseDefense_Live boots the embedded Caddy with the abuse handler and

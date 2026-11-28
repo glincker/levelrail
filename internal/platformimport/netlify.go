@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // NetlifyTOMLToEmit converts a netlify.toml into a static site App: the build

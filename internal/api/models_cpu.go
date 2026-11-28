@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/models"
 )
 
 // ModelCPUService is the CPU-mode surface of the model service, asserted

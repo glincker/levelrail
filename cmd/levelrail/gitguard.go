@@ -10,9 +10,9 @@ import (
 	gitclient "github.com/go-git/go-git/v5/plumbing/transport/client"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 
-	"github.com/GLINCKER/levelrail/internal/gitsshkey"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/gitsshkey"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // gitAllowPrivateEnv lets git fetches reach private addresses (a LAN Gitea)

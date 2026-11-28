@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/registryvendor"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/dockerhub"
+	"github.com/glincker/levelrail/internal/registryvendor"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/dockerhub"
 )
 
 // defaultDoctorRegistryPort is the TLS port every OCI registry this

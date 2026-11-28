@@ -107,6 +107,7 @@
     "linesLabel": "失敗したコンテナの直近のログ行",
     "noLines": "この失敗について、ログ行は取得されませんでした。",
     "openFullLogs": "すべてのログを開く",
-    "crashSummary": "直近{{minutes}}分間に{{count}}回再起動しました。"
+    "crashSummary": "直近{{minutes}}分間に{{count}}回再起動しました。",
+    "sectionWarnings": "警告({{count}})"
   }
 }

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/statuspage"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/statuspage"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // statusDailySource is optional on the store so existing fakes keep working.

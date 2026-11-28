@@ -12,29 +12,29 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/autoscale"
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/changelog"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/deploylog"
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/localmode"
-	"github.com/GLINCKER/levelrail/internal/pkgregistry"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/supplychain"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/changelog"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploylog"
+	"github.com/glincker/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/localmode"
+	"github.com/glincker/levelrail/internal/pkgregistry"
+	"github.com/glincker/levelrail/internal/reconcile"
+	registryreconcile "github.com/glincker/levelrail/internal/reconcile/registry"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/supplychain"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 var brandFallbackLogged sync.Once
@@ -250,7 +250,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deployOpts = append(deployOpts, gateOpt)
 	}
 	memGuard := build.MemGuardFromEnv(os.LookupEnv)
-	limitsSource := api.BuildLimitsSourceWithHost(db, derivedBuildLimits(), buildMemoryCap(memGuard), buildCPUCap(buildCPUPercentSeed()))
+	limitsSource := api.BuildLimitsSourceWithParallel(db, derivedBuildLimits(), buildMemoryCap(memGuard), buildCPUCap(buildCPUPercentSeed()), buildMaxParallel)
 	var limiter *build.Limiter
 	warmSettings := runtimesettings.New(db, os.LookupEnv)
 	routerOpts := []build.RouterOption{buildWarmOption(warmSettings, agentRegistry, rawDockerCli)}

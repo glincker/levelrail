@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DestinationLister is the slice of internal/dataexport the read only

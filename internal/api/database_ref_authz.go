@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // authorizeDatabaseRefs checks the caller may see each named database and

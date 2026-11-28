@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cdn"
+	"github.com/glincker/levelrail/internal/cdn"
 )
 
 const (

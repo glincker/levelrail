@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/k8sconn"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	secretsvc "github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/k8sconn"
+	"github.com/glincker/levelrail/internal/secretmask"
+	secretsvc "github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

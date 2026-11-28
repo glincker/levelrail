@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/api"
 )
 
 const defaultGateSweepInterval = time.Hour

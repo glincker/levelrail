@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // recoverInterruptedDeploys settles deploys the previous process left running

@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/vault"
 )
 
 // A Vault value and credential must reach only the container env: never logs, conditions or the stored desired state.

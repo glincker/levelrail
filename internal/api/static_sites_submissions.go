@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // siteSubmissionResource is one stored post tagged with the form it came from.

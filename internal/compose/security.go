@@ -3,9 +3,10 @@ package compose
 import (
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/dockerguard"
 )
 
 // HostAccess holds the service keys that widen a container's reach into
@@ -33,13 +34,41 @@ func validateHostAccess(f *File) []error {
 		for _, msg := range hostAccessViolations(svc, f.CapGrants[name], f.DropUngrantedCaps) {
 			errs = append(errs, fmt.Errorf("service %q: %s", name, msg))
 		}
+		if err := hostNetworkLayout(f, name, svc); err != nil {
+			errs = append(errs, err)
+		}
 		for _, v := range svc.Volumes {
-			if v.HostPath != "" && isDockerSocket(v.HostPath) {
-				errs = append(errs, fmt.Errorf("service %q: mounting the Docker socket (%s) is never allowed: it grants root on the host [%s]", name, v.HostPath, dockerguard.RuleBindSensitive))
+			if v.HostPath == "" || !isDockerSocket(v.HostPath) {
+				continue
 			}
+			if socketGrantCovers(f, name, v) {
+				continue
+			}
+			errs = append(errs, fmt.Errorf("service %q: mounting the Docker socket (%s) is never allowed without a docker_api grant: it grants root on the host [%s]", name, v.HostPath, dockerguard.RuleBindSensitive))
 		}
 	}
 	return errs
+}
+
+// dockerAPISocketPath is where a granted service sees its own scoped socket.
+const dockerAPISocketPath = "/var/run/docker.sock"
+
+// socketGrantCovers reports whether a docker.sock volume is fine: the service holds a
+// docker_api grant, or a rollback is dropping an ungranted one. Only the standard
+// host path qualifies, and it is never mounted for real: the reconciler swaps in the grant's own socket.
+func socketGrantCovers(f *File, name string, v Volume) bool {
+	if !isStandardDockerSocket(v.HostPath) || path.Clean(v.ContainerPath) != dockerAPISocketPath {
+		return false
+	}
+	if _, ok := dockerguard.ProfileFromCaps(f.CapGrants[name]); ok {
+		return true
+	}
+	return f.DropUngrantedCaps
+}
+
+func isStandardDockerSocket(hostPath string) bool {
+	p := path.Clean(hostPath)
+	return p == "/var/run/docker.sock" || p == "/run/docker.sock"
 }
 
 func hostAccessViolations(svc Service, granted []string, dropUngranted bool) []string {
@@ -50,7 +79,9 @@ func hostAccessViolations(svc Service, granted []string, dropUngranted bool) []s
 	}
 	switch strings.ToLower(strings.TrimSpace(h.NetworkMode)) {
 	case "host":
-		out = append(out, fmt.Sprintf("network_mode: host is not allowed; publish a port or add a domain instead [%s]", dockerguard.RuleNetworkHost))
+		if !dockerguard.HasHostNetworkGrant(granted) && !dropUngranted {
+			out = append(out, fmt.Sprintf("network_mode: host is not allowed without a host_network grant; publish a port or add a domain instead [%s]", dockerguard.RuleNetworkHost))
+		}
 	case "none", "", "bridge":
 	default:
 		out = append(out, fmt.Sprintf("network_mode: %q is not supported; every service already shares the app network", h.NetworkMode))
@@ -69,9 +100,7 @@ func hostAccessViolations(svc Service, granted []string, dropUngranted bool) []s
 	if denied := undeclaredCaps(h.CapAdd, granted, dropUngranted); len(denied) > 0 {
 		out = append(out, fmt.Sprintf("cap_add: %s is not allowed unless the manifest declares it as a capability [%s]", strings.Join(denied, ", "), dockerguard.RuleCapAdd))
 	}
-	if len(h.Devices) > 0 {
-		out = append(out, fmt.Sprintf("devices: is not allowed; GPUs go through deploy.resources.reservations.devices [%s]", dockerguard.RuleDevices))
-	}
+	out = append(out, deviceViolations(h.Devices, granted, dropUngranted)...)
 	for _, opt := range h.SecurityOpt {
 		if weakensSecurity(opt) {
 			out = append(out, fmt.Sprintf("security_opt: %q weakens container isolation and is not allowed [%s]", opt, dockerguard.RuleSecurityOpt))
@@ -81,6 +110,63 @@ func hostAccessViolations(svc Service, granted []string, dropUngranted bool) []s
 		out = append(out, fmt.Sprintf("volumes_from: is not allowed; declare a named volume on both services instead [%s]", dockerguard.RuleVolumesFrom))
 	}
 	return out
+}
+
+// DevicePaths returns the host path of each plain "host[:container[:perms]]" devices entry.
+// Entries in any other form, or that remap the node or ask for odd permissions, are left out.
+func DevicePaths(devs []any) []string {
+	var out []string
+	for _, d := range devs {
+		s, ok := d.(string)
+		if !ok {
+			continue
+		}
+		parts := strings.SplitN(s, ":", 3)
+		if len(parts) > 1 && parts[1] != "" && parts[1] != parts[0] {
+			continue
+		}
+		if len(parts) > 2 && strings.Trim(parts[2], "rwm") != "" {
+			continue
+		}
+		out = append(out, parts[0])
+	}
+	return out
+}
+
+func deviceViolations(devs []any, granted []string, dropUngranted bool) []string {
+	if len(devs) == 0 {
+		return nil
+	}
+	var out []string
+	paths := DevicePaths(devs)
+	if len(paths) != len(devs) {
+		out = append(out, fmt.Sprintf("devices: only plain host paths without a remap are supported [%s]", dockerguard.RuleDevices))
+	}
+	held := dockerguard.DevicesFromCaps(granted)
+	for _, p := range paths {
+		switch {
+		case !dockerguard.GrantableDevice(p):
+			out = append(out, fmt.Sprintf("devices: %s is not on the device allowlist (/dev/dri, /dev/ttyUSB*, /dev/ttyACM*, /dev/video*) [%s]", p, dockerguard.RuleDevices))
+		case !slices.Contains(held, p) && !dropUngranted:
+			out = append(out, fmt.Sprintf("devices: %s is not allowed without a devices grant; GPUs go through deploy.resources.reservations.devices [%s]", p, dockerguard.RuleDevices))
+		}
+	}
+	return out
+}
+
+// hostNetworkLayout refuses host networking for an app that also needs the project network,
+// since a host-network container is on neither side of it.
+func hostNetworkLayout(f *File, name string, svc Service) error {
+	if !strings.EqualFold(strings.TrimSpace(svc.HostAccess.NetworkMode), "host") || !dockerguard.HasHostNetworkGrant(f.CapGrants[name]) {
+		return nil
+	}
+	if len(svc.HostAccess.CapAdd) > 0 {
+		return fmt.Errorf("service %q: network_mode: host cannot be combined with cap_add", name)
+	}
+	if len(f.Services) > 1 || len(svc.Networks) > 0 {
+		return fmt.Errorf("service %q: network_mode: host cannot be combined with other services or networks, the app would need the project network", name)
+	}
+	return nil
 }
 
 // weakensSecurity mirrors the socket proxy: only no-new-privileges is

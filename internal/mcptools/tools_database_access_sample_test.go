@@ -3,7 +3,7 @@ package mcptools
 import (
 	"encoding/json"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func sampleNetwork() apiclient.DatabaseNetwork {

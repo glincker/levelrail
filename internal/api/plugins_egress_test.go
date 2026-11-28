@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/egress"
+	"github.com/glincker/levelrail/internal/plugin/egress"
 )
 
 func TestSummarizeDenialsTotalsByReasonAndLatest(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EnvBindings selects the rollout mode: off (default), shadow or on.

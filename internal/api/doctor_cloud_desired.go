@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bindaddr"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // desiredCloudPorts lists ports the platform intends to expose that a container

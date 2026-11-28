@@ -1,0 +1,20 @@
+services:
+  donetick:
+    image: donetick/donetick:v0.1.60
+    ports: ["2021"]
+    environment:
+      DT_ENV: selfhosted
+      DT_SQLITE_PATH: /usr/src/app/config/donetick.db
+      DT_JWT_SECRET: $SERVICE_PASSWORD_64_JWT
+    volumes:
+      - donetick_config:/usr/src/app/config
+      - donetick_data:/donetick-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:2021/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+volumes:
+  donetick_config:
+  donetick_data:

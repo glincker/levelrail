@@ -28,6 +28,7 @@ type DeployWhy struct {
 	BaselineID       string              `json:"baseline_deploy_id,omitempty"`
 	NewTemplateCount int                 `json:"new_template_count"`
 	NewTemplates     []DeployWhyTemplate `json:"new_templates"`
+	Summary          []string            `json:"summary,omitempty"`
 }
 
 // DeployWhy calls GET /api/v1/deploys/{id}/why.

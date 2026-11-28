@@ -2,9 +2,10 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fileSecretStore struct {
@@ -31,6 +32,24 @@ func (v *fileSecretVault) DeleteValue(_ context.Context, _, k string) error {
 	return nil
 }
 
+type refuseNames struct{}
+
+func (refuseNames) AdmitNewServiceName(context.Context, string) error {
+	return errors.New("name refused")
+}
+
+func TestPersistFileSecretsRefusedNameWritesNothing(t *testing.T) {
+	vault := &fileSecretVault{vals: map[string]string{}}
+	p := &Pipeline{store: &fileSecretStore{}, secrets: vault, names: refuseNames{}}
+	svc := store.DesiredService{Name: "vault", Files: []store.ServiceFile{{Path: "/k", Secret: true, Content: "s3"}}}
+	if _, err := p.persistFileSecrets(context.Background(), &svc); err == nil {
+		t.Fatal("a refused name must fail the deploy")
+	}
+	if len(vault.vals) != 0 {
+		t.Fatalf("refused name left secret rows: %v", vault.vals)
+	}
+}
+
 func TestPersistFileSecretsDropsRemovedSecretFile(t *testing.T) {
 	ctx := context.Background()
 	vault := &fileSecretVault{vals: map[string]string{}}
@@ -39,7 +58,7 @@ func TestPersistFileSecretsDropsRemovedSecretFile(t *testing.T) {
 	key := store.FileSecretKey("/etc/app/key.pem")
 
 	with := store.DesiredService{Name: "web", Files: []store.ServiceFile{{Path: "/etc/app/key.pem", Secret: true, Content: "s3"}}}
-	if err := p.persistFileSecrets(ctx, &with); err != nil {
+	if _, err := p.persistFileSecrets(ctx, &with); err != nil {
 		t.Fatal(err)
 	}
 	if vault.vals[key] != "s3" || with.Files[0].Content != "" {
@@ -48,7 +67,7 @@ func TestPersistFileSecretsDropsRemovedSecretFile(t *testing.T) {
 	st.prev = &with
 
 	without := store.DesiredService{Name: "web"}
-	if err := p.persistFileSecrets(ctx, &without); err != nil {
+	if _, err := p.persistFileSecrets(ctx, &without); err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := vault.vals[key]; ok {
@@ -58,7 +77,7 @@ func TestPersistFileSecretsDropsRemovedSecretFile(t *testing.T) {
 
 	// Reusing the path with no content must not bring the old value back.
 	reuse := store.DesiredService{Name: "web", Files: []store.ServiceFile{{Path: "/etc/app/key.pem", Secret: true}}}
-	if err := p.persistFileSecrets(ctx, &reuse); err != nil {
+	if _, err := p.persistFileSecrets(ctx, &reuse); err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := vault.vals[key]; ok {

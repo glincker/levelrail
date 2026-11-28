@@ -5,7 +5,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/GLINCKER/levelrail/terraform-provider/internal/provider"
+	"github.com/glincker/levelrail/terraform-provider/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/heartbeat"
+	"github.com/glincker/levelrail/internal/heartbeat"
 )
 
 // SetHeartbeat enables /api/v1/settings/heartbeat; without it the routes answer 501.

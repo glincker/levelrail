@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/scheduledtask"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/scheduledtask"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const composeScheduleStack = "services:\n  web:\n    image: nginx:1.27\n  worker:\n    image: busybox:1\n"

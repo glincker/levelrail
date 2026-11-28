@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/monitor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeGuard struct {

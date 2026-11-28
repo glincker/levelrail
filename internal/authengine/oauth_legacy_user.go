@@ -11,9 +11,9 @@ import (
 
 	"github.com/glincker/theauth-go/v2/crypto"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 // ResolveOAuthUser returns the platform user id behind a library OAuth account

@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/registry"
+	"github.com/glincker/levelrail/registry"
 )
 
 func TestResolveTemplate_ServesRegistryOnlyIDs(t *testing.T) {

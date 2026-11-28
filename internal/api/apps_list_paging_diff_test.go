@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // oracleListVisibleApps is the pre-change scoped path: load every match, gate in memory, page the slice.

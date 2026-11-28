@@ -1,0 +1,14 @@
+services:
+  dgraph:
+    image: dgraph/standalone:v24.1.0
+    ports: ["8080", "9080"]
+    volumes:
+      - dgraph_data:/dgraph
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+volumes:
+  dgraph_data:

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/fielddesc"
 )
 
 // Provider-specific flags are packed into --notify-url for the API, so operators do not need the wire format.

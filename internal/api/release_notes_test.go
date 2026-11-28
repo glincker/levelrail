@@ -2,13 +2,13 @@ package api
 
 import (
 	"context"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/repolayout"
 )
 
 func TestParseConventionalSubject(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/store/storetest"
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store/storetest"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 func openDB(t *testing.T) *store.DB {

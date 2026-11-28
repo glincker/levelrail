@@ -7,8 +7,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // MeshApplier is satisfied by *network.LocalSink's ApplyMesh and RotateKey methods, with no adapter.

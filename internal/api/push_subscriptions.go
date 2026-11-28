@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webpush"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webpush"
 )
 
 // This file is browser push notification subscriptions (Settings ->

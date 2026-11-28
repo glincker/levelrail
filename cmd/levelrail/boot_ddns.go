@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/ddns"
+	"github.com/glincker/levelrail/internal/ddns"
 )
 
 // startDDNS runs the dynamic DNS updater from the stored setting; env only seeds the defaults.

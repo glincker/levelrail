@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/changes"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 type fakeChangeSource struct {

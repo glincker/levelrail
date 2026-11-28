@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 // Validator for the agent skills in skills/. Caps (override with env):

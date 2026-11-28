@@ -4,6 +4,7 @@ import type {
   DeviceActivityItem,
   DeviceAuthRequest,
 } from '../queries/deviceAuth'
+import { announcementPlainText } from './announcementMarkdown'
 import type { AttentionFeedItem } from '../queries/attentionFeed'
 import type { DeployApprovalResource } from '../types/deployApproval'
 import type { NodeResource } from '../types/nodeDetail'
@@ -205,6 +206,12 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
       case 'token_expired':
       case 'token_expired_in_use':
         return { ...base, ...tokenCopy(f, p, name, t) }
+      case 'announcement':
+        return {
+          ...base,
+          title: f.title || f.subject,
+          detail: announcementPlainText(f.detail),
+        }
       case 'git_connection_reauth':
         return {
           ...base,

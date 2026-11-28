@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/domaindoctor"
 )
 
 func diagnoseRouter(t *testing.T) (*Router, *http.Cookie) {

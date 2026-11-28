@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/api"
 )
 
 const (

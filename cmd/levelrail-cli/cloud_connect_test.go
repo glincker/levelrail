@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/cloudconn"
 )
 
 const (

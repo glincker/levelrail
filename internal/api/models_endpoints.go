@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/models"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EndpointService is the external endpoint surface of the model service.

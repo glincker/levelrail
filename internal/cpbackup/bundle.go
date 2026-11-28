@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (
@@ -167,6 +167,7 @@ type payload struct {
 	bundleKind      string
 	schemaVersion   int
 	migrations      int
+	instanceID      string
 }
 
 // buildPayload snapshots the databases into tmp and returns the file to seal.
@@ -182,6 +183,7 @@ func (s *Service) buildPayload(ctx context.Context, tmp string) (payload, error)
 	if p.migrations, err = inspectMigrationCount(ctx, p.snapshot); err != nil {
 		return p, err
 	}
+	p.instanceID = readInstanceID(ctx, p.snapshot)
 	alertSnap := filepath.Join(tmp, "alerting-snapshot.db")
 	has, err := snapshotAlerting(ctx, s.DataDir, alertSnap)
 	if err != nil {

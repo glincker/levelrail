@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runDNSQueries prints recent mesh DNS queries (beta, needs dns.query_log_enabled).

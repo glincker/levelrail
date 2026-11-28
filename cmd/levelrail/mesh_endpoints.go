@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // endpointRecorder is the part of network.Coordinator the book feeds.

@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/otlpingest"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/otlpingest"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 
 // traceIngestSecret is where an app's OTLP ingest key lives, never in the
 // desired_services row.
-func traceIngestSecretsKey(app string) string { return "trace-ingest/" + app }
+func traceIngestSecretsKey(app string) string { return store.TraceIngestSecretsKey(app) }
 
 const traceIngestKeyName = "key"
 

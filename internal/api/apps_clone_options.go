@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const cloneRollbackTimeout = 30 * time.Second
@@ -57,6 +57,9 @@ func deriveCloneDomains(source []string, o cloneDomainOpts) []string {
 // applyCloneExtras handles the options SaveDesiredService cannot: environment
 // placement and re-encrypting secret values under the clone's own slots.
 func (rt *Router) applyCloneExtras(ctx context.Context, source store.DesiredService, req cloneAppRequest) error {
+	if msg := rt.cloneEnvRefusal(ctx, []store.DesiredService{source}); msg != "" {
+		return errCloneRequest(msg)
+	}
 	if req.EnvironmentID != "" {
 		if err := rt.environments.SetServiceEnvironment(ctx, req.NewName, req.EnvironmentID); err != nil {
 			return fmt.Errorf("set environment: %w", err)
@@ -64,6 +67,9 @@ func (rt *Router) applyCloneExtras(ctx context.Context, source store.DesiredServ
 	}
 	if !req.CopySecrets {
 		return nil
+	}
+	if err := errors.Join(secrets.AppNamespace(source.Name), secrets.AppNamespace(req.NewName)); err != nil {
+		return err
 	}
 	for _, ref := range source.SecretEnv {
 		value, err := rt.secrets.Resolve(ctx, source.Name, ref.Name)
@@ -102,7 +108,7 @@ func (rt *Router) validateCloneEnvironment(ctx context.Context, source store.Des
 func (rt *Router) rollbackClone(reqCtx context.Context, name string) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(reqCtx), cloneRollbackTimeout)
 	defer cancel()
-	if rt.secrets != nil {
+	if rt.secrets != nil && secrets.AppNamespace(name) == nil {
 		if err := rt.secrets.DeleteAll(ctx, name); err != nil {
 			rt.logger.Error("api: clone app: roll back secrets failed", slog.String("error", err.Error()), slog.String("new_name", name))
 		}

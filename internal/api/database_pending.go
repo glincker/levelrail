@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/dbprovision"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbprovision"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (
@@ -120,6 +120,7 @@ type updatePendingDatabaseRequest struct {
 	BackupRetain     int                     `json:"backup_retain"`
 	BackupRetainDays int                     `json:"backup_retain_days"`
 	ExistingVolume   string                  `json:"existing_volume"`
+	ConfirmVolume    string                  `json:"confirm_volume"`
 }
 
 // handleUpdatePendingDatabase handles PUT /api/v1/databases/{name}/pending-settings:
@@ -147,6 +148,10 @@ func (rt *Router) handleUpdatePendingDatabase(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusBadRequest, "existing_volume must be \"reuse\" or \"discard\"")
 		return
 	}
+	team, project := rt.teamOfDatabase(r.Context(), name)
+	if !rt.leftoverChoiceAllowed(w, r, name, d.NodeID, team, choice, req.ConfirmVolume) {
+		return
+	}
 	if !rt.validateCreateBackup(w, r, databaseResource{
 		Engine: d.Engine, BackupTargetID: req.BackupTargetID, BackupSchedule: req.BackupSchedule,
 		BackupRetain: req.BackupRetain, BackupRetainDays: req.BackupRetainDays,
@@ -167,6 +172,9 @@ func (rt *Router) handleUpdatePendingDatabase(w http.ResponseWriter, r *http.Req
 	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, req.BackupTargetID, req.BackupSchedule, req.BackupRetain, req.BackupRetainDays); err != nil {
 		rt.internalError(w, "api: update pending database: backup schedule failed", err, slog.String("name", name))
 		return
+	}
+	if choice == existingVolumeDiscard {
+		rt.discardLeftoverVolume(r, name, d.NodeID, team, project)
 	}
 	if choice != "" {
 		if s, ok := rt.databases.(existingVolumeSetter); ok {

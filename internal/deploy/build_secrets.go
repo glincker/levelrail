@@ -3,12 +3,13 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"github.com/glincker/levelrail/internal/spec"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/pkgregistry"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/pkgregistry"
 )
 
 // BuildSecretSource supplies the private package registry config a
@@ -61,6 +62,9 @@ func (p *Pipeline) applyBuildSecrets(ctx context.Context, serviceName string, na
 	var out pkgregistry.Output
 	if p.buildSecrets != nil {
 		var err error
+		if err = spec.AppNamespace(serviceName); err != nil {
+			return nil, fmt.Errorf("package registry secrets: %w", err)
+		}
 		out, err = p.buildSecrets.BuildSecrets(ctx, serviceName)
 		if err != nil {
 			return nil, fmt.Errorf("package registry secrets: %w", err)

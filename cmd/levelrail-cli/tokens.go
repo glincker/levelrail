@@ -19,7 +19,9 @@ func runTokens(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return exitOK
 	case "create":
 		return runTokensCreate(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
-	case "list":
+	case "prune":
+		return runTokensPrune(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "list", "ls":
 		return runTokensList(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "revoke":
 		return runTokensRevoke(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
@@ -42,7 +44,10 @@ func tokensUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s tokens create --name NAME --abilities LIST [flags]   mint a new API token
   %[1]s tokens list [flags]                                       list tokens (never shows a secret)
-  %[1]s tokens revoke <id> [flags]                              revoke a token
+  %[1]s tokens ls [--status S] [--groups] [flags]                 same as list, with filters and one row per name
+  %[1]s tokens revoke <id>... [flags]                           revoke tokens
+  %[1]s tokens revoke --expired|--name N|--kind K [--yes]       revoke many, previews first (needs a sign-in)
+  %[1]s tokens prune [--older-than 30d] [--dry-run] [--yes]     delete old revoked and expired tokens (root API token)
   %[1]s tokens rotate <id|name> [flags]                  replace a token, old one works for a grace period
   %[1]s tokens unused [flags]                                     list tokens idle past tokens.unused_alert_days
   %[1]s tokens scrape [--rotate]                                  create the Prometheus scrape token, print a scrape config

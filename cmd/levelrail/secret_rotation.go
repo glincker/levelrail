@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/secretrotation"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/secretrotation"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // startSecretRotation enables rotation policies and runs their sweep. It is a

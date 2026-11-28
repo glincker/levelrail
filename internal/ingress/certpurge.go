@@ -8,7 +8,7 @@ import (
 
 	"github.com/caddyserver/certmagic"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const certPurgeMarkerKey = "levelrail/cert-purge-issuer"

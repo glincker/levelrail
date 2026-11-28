@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
-	"github.com/GLINCKER/levelrail/internal/registryvendor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/registryvendor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // maxDetail bounds a stored error text shown as health detail.

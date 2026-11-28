@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/provision"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/dnsstatus"
+	"github.com/glincker/levelrail/internal/dnsstatus"
 )
 
 // DNSStatusReport is the response of GET /api/v1/domains/dns-status and /api/v1/mail/dns/status.

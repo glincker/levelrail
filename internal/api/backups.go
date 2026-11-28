@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/diskguard"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // databaseContainerName mirrors internal/reconcile/database's own
@@ -205,6 +205,8 @@ type backupHistoryResource struct {
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
 	// Codec is "zstd+age" for an encrypted object, empty for a raw one.
 	Codec string `json:"codec,omitempty"`
+	// UnownedLegacy marks a volume backup from before app instances were recorded, shown to root only.
+	UnownedLegacy bool `json:"unowned_legacy,omitempty"`
 	// HookOutput is a failing volume hook's masked output, filled only for
 	// callers who may change that app's hooks.
 	HookOutput string `json:"hook_output,omitempty"`
@@ -349,7 +351,8 @@ const (
 func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
@@ -369,6 +372,9 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 	}
 	out := make([]backupHistoryResource, 0, len(history))
 	for _, h := range history {
+		if !db.OwnsBackup(h.InstanceID, h.StartedAt) {
+			continue
+		}
 		out = append(out, toBackupHistoryResource(h))
 	}
 	rt.attachBackupLabels(r.Context(), out)

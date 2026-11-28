@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
+	"github.com/glincker/levelrail/internal/giteaapp"
 )
 
 func TestGiteaCapabilitiesFromPermissions(t *testing.T) {

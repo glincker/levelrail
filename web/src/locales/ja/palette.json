@@ -180,6 +180,7 @@
       "settings-users": "サインインできる人と、そのロールです。",
       "settings-audit-log": "誰がいつ何を変更したかの記録です。",
       "settings-updates": "プラットフォームの更新を確認し、適用します。",
+      "settings-announcements": "セキュリティ通知、新機能、ニュースレター。",
       "settings-dr-report": "現在復元できるものと、その鮮度です。",
       "settings-heartbeat": "スケジュールに従ってモニターにpingを送り、途絶えたらアラームを出します。",
       "settings-deploy-policies": "デプロイの前に、CIのチェックと承認を必須にします。",

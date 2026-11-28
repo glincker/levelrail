@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // buildMemorySettings is bound once the API router exists; until then the env seed applies.

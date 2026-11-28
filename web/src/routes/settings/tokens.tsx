@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { lazy, Suspense, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { KeyGlassIcon } from '@thesvg/ui-react'
-import { tokenListQueryOptions } from '../../queries/tokens'
-import { TokenTable } from '../../components/TokenTable'
+import {
+  rootTokensQueryOptions,
+  tokenCountsQueryOptions,
+} from '../../queries/tokenList'
 import { CreateTokenDialog } from '../../components/CreateTokenDialog'
-import { RevokedTokensCard } from '../../components/RevokedTokensCard'
 import { useBrand } from '../../hooks/useBrand'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
@@ -13,35 +14,33 @@ import { Badge } from '@/components/ui/badge'
 import { useTokenExpiryPolicy } from '../../hooks/useTokenExpiryPolicy'
 import { TokensNotices } from '../../components/tokens/TokensNotices'
 import { useTranslation } from 'react-i18next'
-import { showRevokedTokens } from '../../lib/settingsPageState'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
+import type { StatusFilter } from '../../components/tokens/TokensToolbar'
 
-const DAY_MS = 24 * 60 * 60 * 1000
+const TokensExplorer = lazy(() =>
+  import('../../components/tokens/TokensExplorer').then((m) => ({
+    default: m.TokensExplorer,
+  })),
+)
 
 // Account-level, so it lives under routes/settings/. The loader primes
 // the cache; the component only reads it.
 export const Route = createFileRoute('/settings/tokens')({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(tokenListQueryOptions()),
+    queryClient.ensureQueryData(tokenCountsQueryOptions({})),
   component: TokensPage,
   pendingComponent: TokensPending,
 })
 
 function TokensPage() {
   const { t } = useTranslation('settings')
-  const { data: tokens } = useSuspenseQuery(tokenListQueryOptions())
   const brand = useBrand()
-  const active = tokens.filter((tok) => !tok.revoked_at)
-  const longLivedRoot = active.filter(
-    (tok) => tok.abilities.includes('root') && !tok.expires_at,
-  ).length
   const policy = useTokenExpiryPolicy()
-  const [now] = useState(() => Date.now())
-  const soonCutoff = now + policy.soonDays * DAY_MS
   const { t: te } = useTranslation('tokenExpiry')
-  const expiringSoon = active.filter(
-    (tok) => tok.expires_at && Date.parse(tok.expires_at) < soonCutoff,
-  ).length
+  const [status, setStatus] = useState<StatusFilter>('active')
+  const counts = useQuery(tokenCountsQueryOptions({})).data?.counts
+  const longLivedRoot = useQuery(rootTokensQueryOptions()).data ?? 0
+  const active = counts?.active ?? 0
 
   return (
     <PageTemplate
@@ -52,16 +51,19 @@ function TokensPage() {
       helpPath="/api-reference"
       helpLabel={t('tokensPage.help')}
       status={
-        <Badge variant={active.length > 0 ? 'success' : 'muted'}>
-          {t('tokensPage.activeCount', { count: active.length })}
+        <Badge variant={active > 0 ? 'success' : 'muted'}>
+          {t('tokensPage.activeCount', { count: active })}
         </Badge>
       }
       actions={<CreateTokenDialog />}
       banners={
         <TokensNotices
-          expiringSoon={expiringSoon}
+          expiringSoon={counts?.expiring ?? 0}
+          soonDays={policy.soonDays}
           longLivedRoot={longLivedRoot}
-          active={active}
+          onReviewExpiring={() => {
+            setStatus('expiring')
+          }}
         />
       }
     >
@@ -80,22 +82,19 @@ function TokensPage() {
           {te('policy', { windows: policy.windows, grace: policy.grace })}
         </p>
       ) : null}
-      <TokenTable tokens={active} />
-      {showRevokedTokens(tokens.length - active.length) ? (
-        <RevokedTokensCard tokens={tokens} />
-      ) : null}
+      <Suspense fallback={<TableSkeleton columnCount={6} />}>
+        <TokensExplorer status={status} onStatus={setStatus} />
+      </Suspense>
     </PageTemplate>
   )
 }
 
-// Route-level fallback for the loader's pending phase, matching
-// TokenTable's own 8-column shape so the skeleton doesn't jump when real
-// rows swap in.
+// Route-level fallback for the loader's pending phase.
 function TokensPending() {
   return (
     <div className="space-y-6">
       <SettingsPageTitle id="tokens" />
-      <TableSkeleton columnCount={8} />
+      <TableSkeleton columnCount={6} />
     </div>
   )
 }

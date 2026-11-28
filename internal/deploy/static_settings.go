@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // applyStaticSiteSettings lets the per-site dashboard overrides replace the

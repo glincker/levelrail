@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const secretRefNeedsRoot = "a secret reference can only be set by root unless its connection allows your environment and the path through allowed_envs and allowed_prefixes"
@@ -145,6 +145,11 @@ func (rt *Router) vetSecretRefs(w http.ResponseWriter, r *http.Request, app, env
 			return false
 		}
 		req.Env, req.VaultEnv = env, vault
+	}
+	for k, v := range req.VaultEnv {
+		if v.Conn == "" && existing[k] != v.store() && !rt.allowLegacyVaultPath(w, r, existing[k], v.Path) {
+			return false
+		}
 	}
 	refs, err := secretRefsOf(req.VaultEnv)
 	if err != nil {

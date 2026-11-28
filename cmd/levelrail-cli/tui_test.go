@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/tui"
+	"github.com/glincker/levelrail/internal/tui"
 )
 
 func noEnv(string) (string, bool) { return "", false }

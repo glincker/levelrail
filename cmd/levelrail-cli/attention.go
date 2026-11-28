@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/attention"
 )
 
 const attentionSeverityWidth = len("SEVERITY")

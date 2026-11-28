@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/dnsnames"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/dnsnames"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // checkAppDNSNames normalizes and vets the extra internal names of an app. Clearing is always allowed.

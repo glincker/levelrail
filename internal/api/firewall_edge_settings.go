@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/edgefw"
+	"github.com/glincker/levelrail/internal/edgefw"
 )
 
 type firewallSettingsResource struct {

@@ -6,11 +6,11 @@ import (
 	"net/mail"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const weeklyDigestCheckEvery = 10 * time.Minute
@@ -39,7 +39,7 @@ func wireWeeklyDigest(ctx context.Context, logger *slog.Logger, router *api.Rout
 	}
 	src := alerting.WeeklySources{
 		Services: db, Attempts: db, Databases: db, Backups: db, Certs: db, Nodes: db,
-		Metrics: metrics, Tracker: tracker, Logger: logger,
+		Metrics: metrics, Tracker: tracker, Advisor: router.AdvisorDigestTotals, Logger: logger,
 	}
 	router.SetAlertDigestPreview(func(c context.Context) (string, string, error) {
 		subject, text, _ := alerting.RenderWeeklyDigest(alerting.CollectWeeklyFacts(c, src, time.Now()))

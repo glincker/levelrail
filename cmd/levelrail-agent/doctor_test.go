@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/nodepreflight"
 )
 
 func TestLocalDoctorChecksDropsRemoteOnes(t *testing.T) {

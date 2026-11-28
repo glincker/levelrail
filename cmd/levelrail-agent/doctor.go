@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/cloudmeta"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/cloudmeta"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/nodepreflight"
 )
 
 const doctorTimeout = 20 * time.Second

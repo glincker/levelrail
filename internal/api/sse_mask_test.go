@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 func TestMaskedSSEMasksAcrossLinesAndFlushesOnIdle(t *testing.T) {

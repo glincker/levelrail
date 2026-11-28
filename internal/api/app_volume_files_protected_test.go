@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/mailcert"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/mailcert"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // The marker stands in for key bytes; no real key is needed to prove the routes refuse.

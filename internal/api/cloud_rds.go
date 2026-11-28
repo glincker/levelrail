@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/rds"
-	"github.com/GLINCKER/levelrail/internal/cloudspend"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/awsx/rds"
+	"github.com/glincker/levelrail/internal/cloudspend"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type rdsInstanceWire struct {

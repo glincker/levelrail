@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbaccess"
+	"github.com/glincker/levelrail/internal/dbaccess"
 )
 
 type databaseScopeRequest struct {

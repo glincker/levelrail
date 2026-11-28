@@ -1,0 +1,15 @@
+id: gotosocial
+name: GoToSocial
+slogan: A lightweight ActivityPub social network server with Mastodon-compatible clients.
+description: AGPL 3.0 licensed. Set the public host name before first start, it cannot be changed later. Create the first account with the gotosocial admin account create command inside the container.
+category: Social
+documentation_url: https://docs.gotosocial.org
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/superseriousbusiness/gotosocial
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/superseriousbusiness/gotosocial/blob/main/LICENSE

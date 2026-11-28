@@ -180,6 +180,7 @@
       "settings-users": "Personen, die sich anmelden können, und ihre Rollen.",
       "settings-audit-log": "Wer was wann geändert hat.",
       "settings-updates": "Plattform-Updates suchen und anwenden.",
+      "settings-announcements": "Sicherheitshinweise, Neuerungen und der Newsletter.",
       "settings-dr-report": "Was heute wiederhergestellt werden kann und wie aktuell es ist.",
       "settings-heartbeat": "Einen Monitor nach Zeitplan anpingen, damit Stille einen Alarm auslöst.",
       "settings-deploy-policies": "CI-Prüfungen und Freigaben vor einem Deployment verlangen.",

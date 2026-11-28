@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Consistency labels a branch dump records, so a best effort copy is never presented as a snapshot.

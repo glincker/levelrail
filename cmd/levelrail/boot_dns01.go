@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/certfallback"
-	"github.com/GLINCKER/levelrail/internal/cloudflareips"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/certfallback"
+	"github.com/glincker/levelrail/internal/cloudflareips"
+	"github.com/glincker/levelrail/internal/ingress"
+	ingressreconcile "github.com/glincker/levelrail/internal/reconcile/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // setupDNS01Check lets the settings API refuse enabling DNS-01 for every host while no provider is connected.

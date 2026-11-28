@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 // StaticSiteSettings is a static site's stored overrides and what it serves now.

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/ingress"
 )
 
 const maxTrafficTopPaths = 10

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/extdb"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/extdb"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ExternalDatabaseStore is the one read needed to resolve a { from: ... }

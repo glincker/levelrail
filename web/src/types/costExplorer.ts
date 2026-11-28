@@ -27,6 +27,22 @@ export interface CostForecastBand {
   samples: number
 }
 
+// internal/usagecost/servers.go: one row per server, with each app's slice of its bill.
+export interface CostServerApp {
+  kind: string
+  name: string
+  share: number | null
+  share_pct: number | null
+  monthly_saving: number | null
+}
+
+export interface CostServer {
+  node_id: string
+  monthly_price: number | null
+  idle_share: number | null
+  apps: CostServerApp[] | null
+}
+
 export interface CostExploration {
   group_by: CostGroupBy
   granularity: CostGranularity
@@ -41,6 +57,7 @@ export interface CostExploration {
   movers: CostSeries[]
   labels: Record<string, string>
   forecast?: CostForecastBand
+  servers?: CostServer[] | null
   configured: boolean
   telemetry_available: boolean
   generated_at: string

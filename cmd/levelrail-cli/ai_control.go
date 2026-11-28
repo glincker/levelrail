@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAIControl implements "ai-control status|set|revoke-agents": the server enforced switch for agent and AI access (internal/api/ai_control.go).

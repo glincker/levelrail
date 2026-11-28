@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // CopyVolume copies every file of src into dst, keeping modes and owners.

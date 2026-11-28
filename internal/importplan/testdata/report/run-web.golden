@@ -1,0 +1,6 @@
+changes-behavior | docker-run | --health-cmd | custom health commands are not imported, add an HTTP health check after creating the app | add an HTTP health check after creating the app
+changes-behavior | docker-run | -p (extra ports) | only the first published port is routed through the ingress; other ports are published on the host | set it on the app after creating it, or leave it out
+changes-behavior | docker-run | -v /srv/site | bind mount /srv/site needs root approval to create | set it on the app after creating it, or leave it out
+ignored-safe | docker-run | --platform | platform overrides are not supported | pin the platform on the app after creating it
+ignored-safe | docker-run | -p 9090 | no host port is set, so the port is reachable through ingress and the app network only | use -p HOST:CONTAINER if it must be published on the node
+ignored-safe | docker-run | image | image uses the latest tag, which can change between deploys; pin a version or digest for repeatable rollbacks | safe to leave out

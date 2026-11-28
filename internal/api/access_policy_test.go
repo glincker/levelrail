@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func sessPolicyReq(t *testing.T, cookie *http.Cookie, method, path, body, remote string) *http.Request {

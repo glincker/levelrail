@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 // nullObjectID is the oldObjectId or newObjectId Azure DevOps reports for a created or deleted ref.

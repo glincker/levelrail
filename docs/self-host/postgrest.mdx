@@ -1,0 +1,76 @@
+---
+title: "Self-host PostgREST with Docker"
+sidebarTitle: "PostgREST"
+description: "Serve a PostgreSQL database as a REST API with no glue code."
+"og:url": "https://docs.levelrail.com/self-host/postgrest"
+---
+
+Serve a PostgreSQL database as a REST API with no glue code.
+
+This page describes the Levelrail template for PostgREST (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.postgrest.org.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `postgrest_db -&#62; /var/lib/postgresql/data` |
+| `postgrest` | `postgrest/postgrest:v16.6` | 3000 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `postgrest` | `PGRST_ADMIN_SERVER_PORT` | Preset in the template |
+| `postgrest` | `PGRST_DB_ANON_ROLE` | Preset in the template |
+| `postgrest` | `PGRST_DB_SCHEMAS` | Preset in the template |
+| `postgrest` | `PGRST_DB_URI` | Generated at deploy |
+| `postgrest` | `PGRST_JWT_SECRET` | Generated at deploy |
+| `postgrest` | `PGRST_SERVER_HOST` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `postgrest`): PGRST_DB_URI, PGRST_JWT_SECRET, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`): postgrest_db.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy PostgREST with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select PostgREST. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy postgrest --name my-postgrest
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

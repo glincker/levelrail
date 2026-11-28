@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Package note (projects.go): a project is the repo plan's Phase 4 note

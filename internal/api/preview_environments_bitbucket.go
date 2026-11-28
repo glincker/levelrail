@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bitbucketapp"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // previewBitbucketTarget resolves an access token and gs's own

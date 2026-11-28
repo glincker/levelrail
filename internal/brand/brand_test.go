@@ -25,7 +25,7 @@ name: Levelrail
 short_name: Levelrail
 binary_name: levelrail
 domain: glinr.com/levelrail
-support_url: https://github.com/GLINCKER/levelrail/issues
+support_url: https://github.com/glincker/levelrail/issues
 support_email: support@levelrail.com
 docs_url: https://glinr.com/levelrail/docs
 `

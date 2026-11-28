@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // RunStore persists the latest report so it survives a restart mid-recovery.

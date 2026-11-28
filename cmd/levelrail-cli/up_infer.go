@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/defparse"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/kit/stackdetect"
+	"github.com/glincker/levelrail/internal/defparse"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/kit/stackdetect"
 )
 
 // Where each inferred value came from, printed so the operator knows what to override.

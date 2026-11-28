@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 type fakeBudgets struct{ statuses []usagecost.BudgetStatus }

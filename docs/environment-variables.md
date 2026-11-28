@@ -98,6 +98,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CREDENTIAL_ROTATION_GRACE` | [`credential_expiry.rotation_grace`](/runtime-settings#security) | `24h` |
 | `APP_EXTERNAL_DB_PROBE_CONCURRENCY` | [`databases.external_probe_concurrency`](/runtime-settings#security) | `2` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
+| `APP_ENV_DANGEROUS_KEYS_MODE` | [`env.dangerous_keys_mode`](/runtime-settings#security) | `refuse` |
+| `APP_ENV_KEY_MAX_LENGTH` | [`env.key_max_length`](/runtime-settings#security) | `255` |
+| `APP_ENV_KEY_POLICY` | [`env.key_policy`](/runtime-settings#security) | `legacy` |
+| `APP_ENV_PATH_OVERRIDE_MODE` | [`env.path_override_mode`](/runtime-settings#security) | `warn` |
+| `APP_ENV_RESERVED_PREFIXES` | [`env.reserved_prefixes`](/runtime-settings#security) | `LEVELRAIL_` |
+| `APP_ENV_VALUE_MAX_BYTES` | [`env.value_max_bytes`](/runtime-settings#security) | `65536` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_FIXIT_MAX_PER_HOUR` | [`fixit.max_per_hour`](/runtime-settings#security) | `0` |
 | `APP_GIT_LFS_HOSTS` | [`git.lfs_hosts`](/runtime-settings#security) | empty |
@@ -147,10 +153,18 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STACK_SOLO_SELF_APPROVE` | [`stacks.solo_self_approve`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
 | `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
+| `APP_TEMPLATE_CAP_DEVICES` | [`templates.cap_devices`](/runtime-settings#security) | `false` |
+| `APP_TEMPLATE_CAP_DOCKER_API` | [`templates.cap_docker_api`](/runtime-settings#security) | `false` |
+| `APP_TEMPLATE_CAP_HOST_NETWORK` | [`templates.cap_host_network`](/runtime-settings#security) | `false` |
 | `APP_TEMPLATE_CAP_NET_ADMIN` | [`templates.capability_net_admin_enabled`](/runtime-settings#security) | `false` |
+| `APP_TEMPLATE_LOGS_GRANT_ALLOW_MULTI_TEAM` | [`templates.logs_grant_allow_multi_team`](/runtime-settings#security) | `false` |
+| `APP_TEMPLATE_SOURCES_ENABLED` | [`templates.sources_enabled`](/runtime-settings#security) | `false` |
+| `APP_TOKENS_BULK_MAX` | [`tokens.bulk_max`](/runtime-settings#security) | `500` |
+| `APP_TOKENS_EMERGENCY_MAX_LIVE` | [`tokens.emergency_max_live`](/runtime-settings#security) | `3` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_PAGES_TOKEN_MAX_DAYS` | [`tokens.site_deploy_max_days`](/runtime-settings#security) | `365` |
 | `APP_VAULT_ALLOW_PRIVATE_ADDRESS` | [`vault.allow_private_address`](/runtime-settings#security) | `true` |
+| `APP_VAULT_LEGACY_ALLOWED_PREFIXES` | [`vault.legacy_allowed_prefixes`](/runtime-settings#security) | empty |
 | `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
 | `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
@@ -244,6 +258,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_SHELL_SECTION_TIMEOUT` | [`shell.section_timeout`](/runtime-settings#networking) | `2s` |
 | `APP_TEMPLATE_IMPORT_MAX_BYTES` | [`templates.import_max_bytes`](/runtime-settings#networking) | `262144` |
 | `APP_TEMPLATE_IMPORT_TIMEOUT` | [`templates.import_timeout`](/runtime-settings#networking) | `10s` |
+| `APP_ADVISOR_AUTO_APPLY` | [`advisor.auto_apply`](/runtime-settings#deploys) | `false` |
+| `APP_ADVISOR_IDLE_HOURS` | [`advisor.idle_hours`](/runtime-settings#deploys) | `168` |
+| `APP_ADVISOR_NODE_PRICES` | [`advisor.node_prices`](/runtime-settings#deploys) | empty |
 | `APP_IMAGE_KEEP` | [`app.image_keep`](/runtime-settings#deploys) | `0` |
 | `APP_ENV_APPLY_ON_SET` | [`apps.env_apply_on_set`](/runtime-settings#deploys) | `false` |
 | `APP_MAX_REPLICAS_PER_SERVICE` | [`apps.max_replicas_per_service`](/runtime-settings#deploys) | `100` |
@@ -296,6 +313,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILDKIT_PROBE_TIMEOUT` | [`build.buildkit_probe_timeout`](/runtime-settings#deploys) | `10s` |
 | `APP_BUILDKIT_READY_TIMEOUT` | [`build.buildkit_ready_timeout`](/runtime-settings#deploys) | `90s` |
 | `APP_BUILDKIT_RETRY_INTERVAL` | [`build.buildkit_retry_interval`](/runtime-settings#deploys) | `1s` |
+| `APP_BUILDKIT_CPU_SHARES` | [`build.buildkitd_cpu_shares`](/runtime-settings#deploys) | `256` |
 | `APP_BUILDKIT_PIDS_LIMIT` | [`build.buildkitd_pids_limit`](/runtime-settings#deploys) | `4096` |
 | `APP_BUILD_CACHE_APP_QUOTA_GB` | [`build.cache_app_quota_gb`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_CACHE_BUDGET` | [`build.cache_budget`](/runtime-settings#deploys) | `auto` |
@@ -306,6 +324,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_CACHE_RECLAIM_TIMEOUT` | [`build.cache_reclaim_timeout`](/runtime-settings#deploys) | `2m` |
 | `APP_BUILD_CPU_PERCENT` | [`build.cpu_percent`](/runtime-settings#deploys) | `75` |
 | `APP_BUILD_FAIR_SHARE` | [`build.fair_share`](/runtime-settings#deploys) | `true` |
+| `APP_BUILD_MAX_PARALLEL` | [`build.max_parallel`](/runtime-settings#deploys) | `0` |
 | `APP_BUILD_MEMORY_PERCENT` | [`build.memory_percent`](/runtime-settings#deploys) | `60` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_PERSONAL_BUILDER_SCOPE` | [`build.personal_builder_scope`](/runtime-settings#deploys) | `owner` |
@@ -455,6 +474,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PAGES_PREVIEW_MAX_PER_SITE` | [`pages.preview_max_per_site`](/runtime-settings#deploys) | `20` |
 | `APP_PAGES_SERVING_WAIT` | [`pages.serving_wait`](/runtime-settings#deploys) | `8s` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
+| `APP_PLACEMENT_REPLICA_SPREAD` | [`placement.replica_spread`](/runtime-settings#deploys) | `false` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
 | `APP_PREVIEW_BROWSER_CPU_MILLIS` | [`preview.browser_cpu_millis`](/runtime-settings#deploys) | `1000` |
 | `APP_PREVIEW_MEMORY_MB` | [`preview.browser_memory_mb`](/runtime-settings#deploys) | `512` |
@@ -500,6 +520,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RUNTIME_TMPFS_MAX_BYTES` | [`runtime.tmpfs_max_bytes`](/runtime-settings#deploys) | `1073741824` |
 | `APP_RUNTIME_ULIMIT_BYTES_MAX` | [`runtime.ulimit_bytes_max`](/runtime-settings#deploys) | `1073741824` |
 | `APP_RUNTIME_ULIMIT_COUNT_MAX` | [`runtime.ulimit_count_max`](/runtime-settings#deploys) | `4194304` |
+| `APP_SPEND_PAUSE_STOPS_APPS` | [`spend.pause_stops_apps`](/runtime-settings#deploys) | `false` |
 | `APP_STACK_APPROVAL_TTL` | [`stacks.approval_ttl`](/runtime-settings#deploys) | `24h` |
 | `APP_STACK_DRIFT_INTERVAL` | [`stacks.drift_interval_seconds`](/runtime-settings#deploys) | `900` |
 | `APP_STACK_HISTORY_LIMIT` | [`stacks.history_limit`](/runtime-settings#deploys) | `50` |
@@ -519,6 +540,23 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_MAX_TAGS_PER_RESOURCE` | [`tags.max_per_resource`](/runtime-settings#deploys) | `20` |
 | `APP_TEMPLATE_FILE_INPUT_MAX_BYTES` | [`templates.file_input_max_bytes`](/runtime-settings#deploys) | `16384` |
 | `APP_TEMPLATE_FIRST_BOOT_MAX_SECONDS` | [`templates.first_boot_max_seconds`](/runtime-settings#deploys) | `900` |
+| `APP_TEMPLATE_SOURCES_MAX_DEPTH` | [`templates.sources_max_depth`](/runtime-settings#deploys) | `6` |
+| `APP_TEMPLATE_SOURCES_MAX_FILES` | [`templates.sources_max_files`](/runtime-settings#deploys) | `2000` |
+| `APP_TEMPLATE_SOURCES_MAX_MB` | [`templates.sources_max_mb`](/runtime-settings#deploys) | `20` |
+| `APP_TEMPLATE_SOURCES_MAX_WIRE_MB` | [`templates.sources_max_wire_mb`](/runtime-settings#deploys) | `1` |
+| `APP_TEMPLATE_SOURCES_TIMEOUT_SECONDS` | [`templates.sources_timeout_seconds`](/runtime-settings#deploys) | `60` |
+| `APP_ANNOUNCEMENTS` | [`updates.announcements`](/runtime-settings#deploys) | `off` |
+| `APP_ANNOUNCEMENTS_CLOCK_SKEW` | [`updates.announcements_clock_skew`](/runtime-settings#deploys) | `24h` |
+| `APP_ANNOUNCEMENTS_FEED_MAX_AGE` | [`updates.announcements_feed_max_age`](/runtime-settings#deploys) | `720h` |
+| `APP_ANNOUNCEMENTS_URL` | [`updates.announcements_feed_url`](/runtime-settings#deploys) | `https://raw.githubusercontent.com/glincker/levelrail/feed/feed.v1.json` |
+| `APP_ANNOUNCEMENTS_INTERVAL` | [`updates.announcements_interval`](/runtime-settings#deploys) | `6h` |
+| `APP_ANNOUNCEMENTS_JITTER` | [`updates.announcements_jitter`](/runtime-settings#deploys) | `20` |
+| `APP_ANNOUNCEMENTS_MAX_BODY` | [`updates.announcements_max_body`](/runtime-settings#deploys) | `2000` |
+| `APP_ANNOUNCEMENTS_MAX_BYTES` | [`updates.announcements_max_bytes`](/runtime-settings#deploys) | `262144` |
+| `APP_ANNOUNCEMENTS_MAX_ITEMS` | [`updates.announcements_max_items`](/runtime-settings#deploys) | `50` |
+| `APP_ANNOUNCEMENTS_MAX_TITLE` | [`updates.announcements_max_title`](/runtime-settings#deploys) | `120` |
+| `APP_ANNOUNCEMENTS_NEWSLETTER` | [`updates.announcements_newsletter`](/runtime-settings#deploys) | `true` |
+| `APP_ANNOUNCEMENTS_SNOOZE_MAX` | [`updates.announcements_snooze_max`](/runtime-settings#deploys) | `24h` |
 | `APP_SAVED_VIEW_FILTER_MAX_KEYS` | [`views.filter_max_keys`](/runtime-settings#deploys) | `12` |
 | `APP_SAVED_VIEW_FILTER_VALUE_MAX_BYTES` | [`views.filter_value_max_bytes`](/runtime-settings#deploys) | `512` |
 | `APP_SAVED_VIEW_MAX_PER_USER` | [`views.max_per_user`](/runtime-settings#deploys) | `100` |
@@ -528,6 +566,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
+| `APP_AGENT_FENCE_REQUIRED` | [`agent.fence_required`](/runtime-settings#observability) | `false` |
 | `APP_ALERTING_SELF_HEARTBEAT_INTERVAL` | [`alerting.self_heartbeat_interval`](/runtime-settings#observability) | `60` |
 | `APP_ALERTING_SELF_HEARTBEAT_URL` | [`alerting.self_heartbeat_url`](/runtime-settings#observability) | empty |
 | `APP_ALERTS_ADVISORY_MIN_SEVERITY` | [`alerts.advisory_min_severity`](/runtime-settings#observability) | `high` |
@@ -673,6 +712,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_HOST_PRESSURE_RESUME_JITTER` | [`host.pressure_resume_jitter`](/runtime-settings#observability) | `30s` |
 | `APP_HOST_PRESSURE_SHED_ENABLED` | [`host.pressure_shed_enabled`](/runtime-settings#observability) | `true` |
 | `APP_PROTECTED_OOM_SCORE_ADJ` | [`host.protected_oom_score_adj`](/runtime-settings#observability) | `-500` |
+| `APP_HOST_SWAP_SIZE_MB` | [`host.swap_size_mb`](/runtime-settings#observability) | `0` |
 | `APP_UNCLEAN_RESTART_WINDOW` | [`host.unclean_restart_window`](/runtime-settings#observability) | `72h` |
 | `APP_INCIDENT_POSTMORTEM_ACTION_ITEMS_MAX` | [`incidents.postmortem_action_items_max`](/runtime-settings#observability) | `50` |
 | `APP_INCIDENT_POSTMORTEM_BODY_MAX` | [`incidents.postmortem_body_max`](/runtime-settings#observability) | `1048576` |
@@ -868,6 +908,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROVISION_RESOURCES_REFRESH_MIN_INTERVAL_SECONDS` | [`provision.resources.refresh_min_interval_seconds`](/runtime-settings#experimental) | `15` |
 | `APP_PROVISION_SPEND_CACHE_TTL_SECONDS` | [`provision.spend.cache_ttl_seconds`](/runtime-settings#experimental) | `3600` |
 | `APP_PROVISION_SPEND_REFRESH_MIN_INTERVAL_SECONDS` | [`provision.spend.refresh_min_interval_seconds`](/runtime-settings#experimental) | `300` |
+| `APP_ANNOUNCEMENTS_DEV_KEYS` | [`updates.announcements_dev_keys`](/runtime-settings#experimental) | empty |
 | `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
 

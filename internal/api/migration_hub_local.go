@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/datamigrate"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/datamigrate"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // LocalContainerLister is implemented by the real Docker client. A runtime

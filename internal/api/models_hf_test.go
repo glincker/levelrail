@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/models"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func hubFixture(t *testing.T) string {

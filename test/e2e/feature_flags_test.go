@@ -20,11 +20,11 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/mcptools"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/mcptools"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (
@@ -237,7 +237,7 @@ func createE2EToken(t *testing.T, admin *http.Client, baseURL, name, abilities s
 func buildE2ECLI(t *testing.T) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "e2e-cli")
-	cmd := exec.Command("go", "build", "-o", bin, "github.com/GLINCKER/levelrail/cmd/levelrail-cli") //nolint:gosec,noctx // fixed arguments, one-shot build in a test
+	cmd := exec.Command("go", "build", "-o", bin, "github.com/glincker/levelrail/cmd/levelrail-cli") //nolint:gosec,noctx // fixed arguments, one-shot build in a test
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Skipf("cannot build the CLI in this environment: %v\n%s", err, out)
 	}

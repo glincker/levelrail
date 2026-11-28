@@ -12,7 +12,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Stack OIDC trusts (ADR 042): an admin binds a CI identity to one stack and the verbs it may

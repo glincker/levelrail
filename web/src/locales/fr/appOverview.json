@@ -172,5 +172,45 @@
   "trafficUnavailable": "Les chiffres du trafic en direct sont indisponibles pour le moment.",
   "trafficRetry": "Réessayer",
   "noTrafficTitle": "Pas encore de trafic",
-  "noTrafficHint": "Envoyez une requête pour voir les chiffres en direct."
+  "noTrafficHint": "Envoyez une requête pour voir les chiffres en direct.",
+  "status": {
+    "chips": "Statut",
+    "openAnyway": "Ouvrir quand même",
+    "reason": {
+      "down": "L'app est arrêtée ou pas prête, cette adresse ne répondra donc pas encore.",
+      "waiting_dns": "En attente du DNS : le domaine ne pointe pas encore ici.",
+      "local_only": "Cette adresse ne fonctionne que sur cet ordinateur.",
+      "unknown": "L'adresse de l'app n'a pas encore pu être vérifiée."
+    },
+    "chip": {
+      "down": "Pas prête",
+      "waiting_dns": "En attente du DNS",
+      "local_only": "Cet ordinateur seulement",
+      "unknown": "Non vérifiée"
+    },
+    "qr": {
+      "open": "Afficher le QR code",
+      "title": "QR code de cette app",
+      "fallback": "Cette app est locale. Scannez plutôt cette adresse publique."
+    },
+    "deploy": {
+      "title": "Dernier déploiement"
+    },
+    "health": {
+      "title": "Vérifications d'état",
+      "on": "Vérification d'état activée",
+      "none": "Aucune vérification d'état",
+      "add": "Ajouter une vérification d'état",
+      "dismiss": "Masquer la suggestion de vérification d'état"
+    },
+    "warnings": {
+      "label_one": "{{count}} avertissement",
+      "label_other": "{{count}} avertissements",
+      "title_one": "{{count}} avertissement, ouvrir l'état",
+      "title_other": "{{count}} avertissements, ouvrir l'état"
+    },
+    "resources": "Ressources",
+    "domains": "Domaines",
+    "addDomain": "Ajouter un domaine"
+  }
 }

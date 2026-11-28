@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/mailrecords"
 )
 
 // DNSHostDetection is the response of GET /api/v1/domains/dns-provider and /api/v1/mail/dns/provider.

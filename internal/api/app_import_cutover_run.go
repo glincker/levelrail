@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cutover"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cutover"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Env knobs bounding a cutover run.

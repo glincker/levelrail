@@ -244,7 +244,7 @@ retry cannot hide there.
 
 ## The kit module
 
-`kit/` is a nested Go module (`github.com/GLINCKER/levelrail/kit`), so
+`kit/` is a nested Go module (`github.com/glincker/levelrail/kit`), so
 `go test ./...`, `go vet ./...` and `golangci-lint run` from the repo root
 never reach it. It has its own lane instead:
 

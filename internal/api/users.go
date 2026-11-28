@@ -10,8 +10,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // userResource is the wire shape for a user in list/create responses:

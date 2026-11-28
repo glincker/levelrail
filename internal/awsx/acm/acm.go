@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
-	"github.com/GLINCKER/levelrail/internal/cloudguard"
+	"github.com/glincker/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/cloudguard"
 )
 
 // Service is the ACM API (target prefix checked against the botocore model).

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbaudit"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbaudit"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type auditTestSettings struct {

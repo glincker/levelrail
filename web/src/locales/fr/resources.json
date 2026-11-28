@@ -145,6 +145,11 @@
       "replicas": "Gérez plus de trafic : augmentez le nombre de réplicas dans les paramètres de déploiement. Chaque réplica est une copie de l'app qui partage la charge.",
       "autoscale": "Laissez l'app suivre la charge : activez l'autoscaling ci-dessous et choisissez un minimum et un maximum. Il est désactivé tant que vous ne le configurez pas.",
       "biggerHost": "Passez à un hôte plus gros quand le serveur lui-même manque de ressources : le CPU ou la mémoire reste élevé sur l'hôte après le redimensionnement, ou l'ajout de réplicas ne réduit plus la charge. Les réplicas d'un même serveur partagent ce serveur."
+    },
+    "stepper": {
+      "less": "Moins de replicas",
+      "more": "Plus de replicas",
+      "autoscaleOwns": "L'autoscaling fixe le nombre. Modifiez sa plage ou desactivez-le pour ajuster a la main."
     }
   },
   "replicaTable": {

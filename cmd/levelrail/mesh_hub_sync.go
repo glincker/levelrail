@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // meshHubSyncer keeps the hub's observed endpoint equal to what the advertise

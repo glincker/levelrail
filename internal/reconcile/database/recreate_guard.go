@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile"
 )
 
 // Env knobs for the recreate loop guard. A replace beyond the limit inside the

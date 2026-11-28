@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/exposure"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/orphans"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bindaddr"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/exposure"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/orphans"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ExposureStore is the store surface the exposure handlers need.

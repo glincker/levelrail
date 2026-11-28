@@ -8,7 +8,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/stackdetect"
+	"github.com/glincker/levelrail/kit/stackdetect"
 )
 
 type appDetectResult struct {

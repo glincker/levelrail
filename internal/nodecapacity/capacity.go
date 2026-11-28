@@ -4,7 +4,7 @@ package nodecapacity
 import (
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Env names for the default thresholds, all percentages.

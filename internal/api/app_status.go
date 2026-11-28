@@ -1,6 +1,6 @@
 package api
 
-import "github.com/GLINCKER/levelrail/internal/reconcile"
+import "github.com/glincker/levelrail/internal/reconcile"
 
 // Mirrors web/src/lib/appStatus.ts summarizeAppStatus, so the labels and variants must be kept in sync.
 type appStatusSummary struct {

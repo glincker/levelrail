@@ -3,7 +3,7 @@ package runtimesettings
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/abuse"
+	"github.com/glincker/levelrail/internal/abuse"
 )
 
 func TestAbuseSettingsMatchLimitsDefaults(t *testing.T) {

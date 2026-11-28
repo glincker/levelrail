@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/imagelife"
-	"github.com/GLINCKER/levelrail/internal/release"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/imagelife"
+	"github.com/glincker/levelrail/internal/release"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const releaseDigest1 = "sha256:1111111111111111111111111111111111111111111111111111111111111111"

@@ -15,8 +15,8 @@ import (
 	dockerbuildkit "github.com/docker/docker/client/buildkit"
 	bkclient "github.com/moby/buildkit/client"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockertest"
 )
 
 // TestGuard_Live_RealDaemon drives a real daemon through an enforcing guard:

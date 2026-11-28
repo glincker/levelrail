@@ -8,8 +8,8 @@ package e2e
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/appwizard"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/appwizard"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 type staticMatrixEntry struct {

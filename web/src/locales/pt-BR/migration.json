@@ -782,7 +782,16 @@
     "unsupported": "Não migrado",
     "instead": "Em vez disso: {{alternative}}",
     "conflicts": "Nome já em uso",
-    "deploy": "Fazer deploy"
+    "deploy": "Fazer deploy",
+    "report": {
+      "title": "Import report",
+      "fix": "Fix: {{fix}}",
+      "severity": {
+        "blocker": "Blockers",
+        "changes-behavior": "Changes behavior",
+        "ignored-safe": "Ignored, safe"
+      }
+    }
   },
   "takeover": {
     "title": "Assumir as portas deste servidor",

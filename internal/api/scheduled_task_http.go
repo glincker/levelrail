@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ScheduledTaskHTTPStore persists the request an http-mode job sends. It is

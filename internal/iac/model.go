@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/envredact"
 )
 
 // Resource is one desired object in canonical form, ready to compare with

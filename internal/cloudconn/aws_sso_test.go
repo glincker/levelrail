@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/secretsource"
 )
 
 // fakeSSO serves the OIDC and portal endpoints on one test server.

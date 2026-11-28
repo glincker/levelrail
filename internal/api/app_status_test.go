@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile"
 )
 
 func TestSummarizeAppConditions(t *testing.T) {

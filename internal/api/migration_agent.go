@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/migrateagent"
-	"github.com/GLINCKER/levelrail/internal/migrationplan"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/migrateagent"
+	"github.com/glincker/levelrail/internal/migrationplan"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // MigrationAgentService is the control plane side of the read-only migration

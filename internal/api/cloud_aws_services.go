@@ -13,18 +13,18 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
-	"github.com/GLINCKER/levelrail/internal/awsx/acm"
-	"github.com/GLINCKER/levelrail/internal/awsx/cloudtrail"
-	"github.com/GLINCKER/levelrail/internal/awsx/ecr"
-	"github.com/GLINCKER/levelrail/internal/awsx/rds"
-	"github.com/GLINCKER/levelrail/internal/awsx/secrets"
-	"github.com/GLINCKER/levelrail/internal/awsx/ssm"
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
-	"github.com/GLINCKER/levelrail/internal/cloudguard"
-	"github.com/GLINCKER/levelrail/internal/cloudspend"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx/acm"
+	"github.com/glincker/levelrail/internal/awsx/cloudtrail"
+	"github.com/glincker/levelrail/internal/awsx/ecr"
+	"github.com/glincker/levelrail/internal/awsx/rds"
+	"github.com/glincker/levelrail/internal/awsx/secrets"
+	"github.com/glincker/levelrail/internal/awsx/ssm"
+	"github.com/glincker/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/cloudguard"
+	"github.com/glincker/levelrail/internal/cloudspend"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // newAWSXClient is the seam tests replace to point the modules at a fake endpoint.

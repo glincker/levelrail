@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/pipeline"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/pipeline"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // PipelineRunEnv gives a pull request pipeline run the PREVIEW_PR_NUMBER,

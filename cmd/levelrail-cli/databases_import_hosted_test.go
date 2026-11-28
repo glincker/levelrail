@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const hostedCLIURL = "postgres://app:s3cr3tPw@db.example.com:5432/d1" //nolint:gosec // fake credential

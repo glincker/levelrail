@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type prPreviewEnvResource struct {
@@ -20,6 +21,8 @@ type prPreviewEnvResource struct {
 	Value     string `json:"value"`
 	Secret    bool   `json:"secret"`
 	UpdatedAt string `json:"updated_at"`
+	// Warnings is only set on a write response.
+	Warnings []envrules.Issue `json:"warnings,omitempty"`
 }
 
 type setPRPreviewEnvRequest struct {
@@ -84,11 +87,8 @@ func (rt *Router) handleSetPRPreviewEnv(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "value is required for a secret override")
 		return
 	}
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
-	} else if err != nil {
-		rt.internalError(w, "api: set pr preview env: load app failed", err, slog.String("name", name))
+	warnings, ok := rt.checkAppOverrideEnv(r.Context(), w, name, req.Key, req.Value, req.Secret)
+	if !ok {
 		return
 	}
 
@@ -112,7 +112,7 @@ func (rt *Router) handleSetPRPreviewEnv(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: set pr preview env failed", err, slog.String("name", name), slog.String("key", req.Key))
 		return
 	}
-	writeJSON(w, http.StatusOK, prPreviewEnvResource{ID: id, Key: req.Key, Value: value, Secret: req.Secret, UpdatedAt: time.Now().UTC().Format(time.RFC3339)})
+	writeJSON(w, http.StatusOK, prPreviewEnvResource{ID: id, Key: req.Key, Value: value, Secret: req.Secret, UpdatedAt: time.Now().UTC().Format(time.RFC3339), Warnings: warnings})
 }
 
 // handleDeletePRPreviewEnv handles DELETE .../previews/{number}/env/{id}.

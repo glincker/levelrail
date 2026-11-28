@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/bitbucketapp"
+	"github.com/glincker/levelrail/internal/giteaapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
 )
 
 type fakeHost struct {

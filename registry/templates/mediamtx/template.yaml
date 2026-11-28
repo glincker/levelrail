@@ -1,0 +1,15 @@
+id: mediamtx
+name: MediaMTX
+slogan: A ready to use media server and proxy for RTSP, WebRTC, HLS, SRT and RTMP streams.
+description: MIT licensed. Publish on RTSP 8554, watch over HLS 8888 or WebRTC 8889. The control API on 9997 is on and unauthenticated, keep it private.
+category: Media
+documentation_url: https://github.com/bluenviron/mediamtx#readme
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/bluenviron/mediamtx
+license: MIT
+license_class: permissive
+license_url: https://github.com/bluenviron/mediamtx/blob/main/LICENSE

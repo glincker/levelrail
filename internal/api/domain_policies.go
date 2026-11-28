@@ -12,8 +12,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // DomainTrafficPolicyStore is the store surface for the per-domain traffic

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // goneAfterFirstStore serves the desired row once, then reports it deleted, like a delete landing mid-deploy.

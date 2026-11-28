@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/stackdrift"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/stackdrift"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // startStackDrift records, on an interval, whether each stack's latest applied

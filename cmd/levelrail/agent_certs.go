@@ -4,9 +4,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/api"
 )
 
 // agentCertServerOptions reads the agent certificate and security event env vars (ADR 021).

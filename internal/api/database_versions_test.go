@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbcatalogbuild"
-	"github.com/GLINCKER/levelrail/internal/dbupgrade"
+	"github.com/glincker/levelrail/internal/dbcatalogbuild"
+	"github.com/glincker/levelrail/internal/dbupgrade"
 )
 
 type fakeVersionCatalog struct {

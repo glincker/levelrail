@@ -8,8 +8,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Actions only root may hold. They are not grantable, see store.CloudGrantActions.

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://levelrail.com/schemas/announcement.v1.schema.json",
+  "title": "Levelrail announcement item",
+  "description": "One announcement file under announcements/YYYY/<id>.json. The file name without .json must equal id, and the folder year must equal the year of issued_at. tools/announce validate enforces everything here plus the content rules that JSON Schema cannot express.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "tier", "kind", "title", "body", "issued_at", "expires_at"],
+  "properties": {
+    "id": {
+      "description": "Stable unique id, lowercase letters, digits and dashes, 3 to 80 characters. Convention: YYYY-MM-DD-short-slug. An id never comes back once it left the feed.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,79}$"
+    },
+    "tier": {
+      "description": "critical: both security keys must sign, root only, cannot be dismissed while it applies. advisory: one security key, root only. feature, maintenance, info, newsletter: the CI key may sign, shown to every signed in user.",
+      "enum": ["critical", "advisory", "feature", "maintenance", "info", "newsletter"]
+    },
+    "kind": {
+      "description": "announcement is normal content. revoke_key marks key revoke_key_id as revoked on instances and must be tier critical.",
+      "enum": ["announcement", "revoke_key"]
+    },
+    "title": {
+      "description": "Plain text, one line, at most 120 characters. No HTML, no markdown links.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "body": {
+      "description": "At most 2000 characters. Markdown subset: paragraphs, **bold**, *em*, inline code, '-' lists and [text](https://allowlisted-url) links. No HTML, images, fenced code blocks, shell commands, secrets or non allowlisted links.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "applies_to": {
+      "description": "Semver range over the instance version, space or comma separated constraints with <, <=, >, >=, = (for example '>=1.5.0 <1.5.14'). Required for critical and advisory. A wildcard or a range that matches nothing is rejected.",
+      "type": "string",
+      "maxLength": 80
+    },
+    "channels": {
+      "description": "Update channels the item targets. Empty or missing means all.",
+      "type": "array",
+      "items": { "enum": ["stable", "beta", "edge"] },
+      "uniqueItems": true
+    },
+    "requires_flags": {
+      "description": "Optional feature flags that must be on for the instance to see the item.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$" },
+      "uniqueItems": true
+    },
+    "cta": {
+      "description": "Internal route for the call to action. Never a URL. Newsletter items cannot carry one.",
+      "enum": ["updates", "settings"]
+    },
+    "links": {
+      "description": "At most 5 links. https only; host levelrail.com, or github.com under /glincker/. No query string, fragment, port or credentials.",
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "url"],
+        "properties": {
+          "text": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "url": { "type": "string", "pattern": "^https://" }
+        }
+      }
+    },
+    "i18n": {
+      "description": "Optional translations keyed by language tag. English title and body stay required and are the fallback. Translations obey the same content rules.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "body"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "body": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      }
+    },
+    "revoke_key_id": {
+      "description": "Only for kind revoke_key: the key id to revoke.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,16}$"
+    },
+    "issued_at": {
+      "description": "RFC 3339 time the item was written. Not in the future.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "description": "RFC 3339 time after which instances stop showing the item. After issued_at and at most 366 days later.",
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

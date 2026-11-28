@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 const (

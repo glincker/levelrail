@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/fielddesc"
 )
 
 // Every descriptor flag must register on a flag set. Locale keys, docs rows and the flag or

@@ -1,6 +1,6 @@
 package preflight
 
-import "github.com/GLINCKER/levelrail/internal/policy"
+import "github.com/glincker/levelrail/internal/policy"
 
 // checkPolicy turns guardrail violations into checks: enforce fails, warn
 // warns. A clean subject adds no check, so apps without rules see no noise.

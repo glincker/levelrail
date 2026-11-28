@@ -1,6 +1,6 @@
 package ingress
 
-import "github.com/GLINCKER/levelrail/internal/loadbalancer"
+import "github.com/glincker/levelrail/internal/loadbalancer"
 
 // NewLBRoute translates a load balancer config and its discovered upstreams
 // into Caddy route settings. It returns nil when there are no upstreams.

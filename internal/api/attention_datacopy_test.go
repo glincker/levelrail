@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDataCopyFeed_StaleAndDismissal(t *testing.T) {

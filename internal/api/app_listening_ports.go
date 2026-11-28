@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Listen verdicts for the domain wizard's container port step.

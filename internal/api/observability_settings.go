@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // prometheusRemoteReadPath is the address handlePrometheusRead serves,

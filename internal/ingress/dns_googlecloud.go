@@ -7,7 +7,7 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	"github.com/libdns/libdns"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/dnsrecords"
 )
 
 // GoogleCloudDNSProvider is the wire shape for the in-repo Caddy module

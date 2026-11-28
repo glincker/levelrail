@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgradesched"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/upgradesched"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 const (

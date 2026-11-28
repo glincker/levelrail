@@ -10,9 +10,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // The real transport talks to the real agent handler over bufconn: a tunnel

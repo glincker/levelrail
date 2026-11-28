@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // runAppsDeploySpec deploys every service in app.yaml under one app, unlike

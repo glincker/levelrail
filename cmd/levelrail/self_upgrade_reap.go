@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 const reapBootTimeout = 30 * time.Second

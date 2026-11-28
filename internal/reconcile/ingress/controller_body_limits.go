@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AppIngressLimitLister is optional on ServiceStore: without it every app

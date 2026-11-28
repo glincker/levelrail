@@ -20,7 +20,7 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/vmruntime"
+	"github.com/glincker/levelrail/internal/vmruntime"
 )
 
 const testToken = "tok-abcdef-123456"

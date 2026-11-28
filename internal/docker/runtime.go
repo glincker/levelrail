@@ -305,6 +305,10 @@ type ContainerSpec struct {
 	// Devices are "host[:container[:perms]]" passthrough entries, for
 	// example /dev/fuse.
 	Devices []string
+	// GrantedDevices are the Devices entries a template grant approved; only these reach the create guard.
+	GrantedDevices []string
+	// HostNetworkGranted says NetworkMode host came from a template grant, so a guard lets it through.
+	HostNetworkGranted bool
 	// Files are inline files written into the container before it starts.
 	Files []FileMount
 	// Tmpfs is "path:opts" in-memory mounts; the spec layer requires a size.
@@ -315,6 +319,8 @@ type ContainerSpec struct {
 	Init bool
 	// StopTimeoutSeconds is applied at create and used by Stop; nil keeps the caller's grace.
 	StopTimeoutSeconds *int
+	// Platform pins the image architecture ("linux/amd64"); empty uses the node default.
+	Platform string
 	// Sysctls are namespaced kernel settings, already limited to a safe list upstream.
 	Sysctls map[string]string
 	// CapDrop lists capabilities removed on top of any hardening profile.
@@ -332,7 +338,7 @@ type Ulimit struct {
 // older agent would silently drop, so it must fail closed instead.
 func (s ContainerSpec) NeedsRuntimeCapability() bool {
 	return len(s.Tmpfs) > 0 || len(s.Ulimits) > 0 || s.Init || s.StopTimeoutSeconds != nil ||
-		len(s.Sysctls) > 0 || len(s.CapDrop) > 0 || s.PidsLimit > 0
+		len(s.Sysctls) > 0 || len(s.CapDrop) > 0 || s.PidsLimit > 0 || s.Platform != ""
 }
 
 // NeedsFilesCapability reports whether the spec carries files an agent that

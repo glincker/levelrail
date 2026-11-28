@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 func TestCompletionTree_HidesDisabledExperimental(t *testing.T) {

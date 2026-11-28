@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // MemoryStore is a Store that keeps snapshots in process memory, for a

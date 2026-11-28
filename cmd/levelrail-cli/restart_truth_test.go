@@ -88,13 +88,13 @@ func TestEnvUnsetClearsKeys(t *testing.T) {
 					_ = json.NewEncoder(w).Encode(map[string]any{"name": "web", "image": "x:1", "env": tc.env, "secret_env": []string{"TOKEN"}})
 				case r.URL.Path == "/api/v1/apps/web/env/bound":
 					_, _ = io.WriteString(w, `[]`)
-				case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web/env":
+				case r.Method == http.MethodPost && r.URL.Path == "/api/v1/apps/web/env/apply":
 					var body struct {
 						Unset json.RawMessage `json:"unset"`
 					}
 					_ = json.NewDecoder(r.Body).Decode(&body)
 					putEnv = string(body.Unset)
-					_, _ = io.WriteString(w, `{"name":"web"}`)
+					_, _ = io.WriteString(w, `{"app":"web","changed":true,"env_version":5,"plan":[]}`)
 				case r.URL.Path == "/api/v1/apps/web/pending-changes":
 					_, _ = io.WriteString(w, `{"pending":false}`)
 				default:

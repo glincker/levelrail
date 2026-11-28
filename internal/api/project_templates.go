@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/projecttpl"
+	"github.com/glincker/levelrail/internal/projecttpl"
 )
 
 type renderProjectTemplateRequest struct {

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EventStore persists sleep history and mirrors slept and woke into the app timeline.

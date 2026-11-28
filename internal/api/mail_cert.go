@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/mailcert"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/volumefiles"
+	"github.com/glincker/levelrail/internal/mailcert"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/volumefiles"
 )
 
 const (

@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 type fakeLatestLister struct {

@@ -10,7 +10,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/volume"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // Violation is one rule a request breaks. Reason names fields and host
@@ -53,7 +53,7 @@ func (p Policy) validateCreate(req container.CreateRequest, grant docker.CreateD
 			out = append(out, violation(RuleContainerNS, "HostConfig.%s joins another container's namespace, which can expose a platform container", ns.field))
 		}
 	}
-	if strings.EqualFold(strings.TrimSpace(string(hc.NetworkMode)), "host") && (!grant.HostNetwork || !p.AllowHostNetwork) {
+	if strings.EqualFold(strings.TrimSpace(string(hc.NetworkMode)), "host") && (!grant.HostNetwork || (!p.AllowHostNetwork && !grant.HostNetworkGranted)) {
 		out = append(out, violation(RuleNetworkHost, "HostConfig.NetworkMode=host needs a declared host network and %s=true", EnvAllowHostNetwork))
 	}
 	out = append(out, p.checkCaps(hc.CapAdd, grant)...)
@@ -105,6 +105,9 @@ func checkDevices(r container.Resources, grant docker.CreateDeclaration) []Viola
 		out = append(out, violation(RuleDevices, "DeviceRequests need a GPU declared by the app spec"))
 	}
 	for _, d := range r.Devices {
+		if GrantableDevice(d.PathOnHost) && slices.Contains(grant.Devices, d.PathOnHost) {
+			continue
+		}
 		gpuNode := slices.ContainsFunc(gpuDevicePrefixes, func(pfx string) bool { return strings.HasPrefix(filepath.Clean(d.PathOnHost), pfx) })
 		if !grant.GPU || !gpuNode {
 			out = append(out, violation(RuleDevices, "Devices %s is not a GPU node of a GPU-declared app", d.PathOnHost))

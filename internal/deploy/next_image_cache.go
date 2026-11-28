@@ -5,8 +5,8 @@ import (
 
 	rpbuildkit "github.com/railwayapp/railpack/buildkit"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // nextImageCacheRel is where Next.js writes optimised images, relative to the

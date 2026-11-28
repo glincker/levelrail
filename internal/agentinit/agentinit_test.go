@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/kit/stackdetect"
+	"github.com/glincker/levelrail/kit/stackdetect"
 )
 
 var update = flag.Bool("update", false, "rewrite golden files")

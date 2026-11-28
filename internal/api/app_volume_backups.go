@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ServiceVolumeBackupHistoryStore is the store surface the volume backup history handler needs.
@@ -101,7 +101,11 @@ func (rt *Router) handleListVolumeBackupHistory(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	history, err := rt.serviceVolumeBackupHistory.ListServiceVolumeBackupHistory(r.Context(), serviceName, volumeName, limit, before)
+	ctx := r.Context()
+	if rt.callerIsRoot(r) {
+		ctx = store.WithLegacyBackups(ctx)
+	}
+	history, err := rt.serviceVolumeBackupHistory.ListServiceVolumeBackupHistory(ctx, serviceName, volumeName, limit, before)
 	if err != nil {
 		rt.internalError(w, "api: list volume backup history failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
@@ -111,6 +115,7 @@ func (rt *Router) handleListVolumeBackupHistory(w http.ResponseWriter, r *http.R
 	out := make([]backupHistoryResource, 0, len(history))
 	for _, h := range history {
 		res := toBackupHistoryResource(h)
+		res.UnownedLegacy = h.InstanceID == ""
 		if mayEdit && h.Status == store.BackupStatusFailed {
 			if _, o, err := outputs.GetBackupHookOutput(r.Context(), h.ID); err == nil {
 				res.HookOutput = o
@@ -256,6 +261,9 @@ func (rt *Router) loadVolumeBackupHistory(w http.ResponseWriter, r *http.Request
 	}
 	if h.ServiceName != serviceName || h.VolumeName != volumeName {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", historyID, serviceName, volumeName))
+		return store.BackupHistory{}, false
+	}
+	if rt.refuseForeignVolumeBackup(w, r, serviceName, h) {
 		return store.BackupHistory{}, false
 	}
 	return h, true

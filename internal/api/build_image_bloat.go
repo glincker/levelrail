@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // bloatLayerLookups bounds how many flagged builds one response inspects, since each reads two image histories.

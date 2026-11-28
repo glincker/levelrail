@@ -27,6 +27,7 @@ import {
   isKnownKind,
 } from '../../lib/resourceAdvisor'
 import { formatBytes, formatNanoCpus } from '../../lib/format'
+import { formatMonthlySaving } from './recommendationFormat'
 import type { AdvisorFinding } from '../../types/resourceAdvisor'
 
 function useFindingTitle(f: AdvisorFinding): string {
@@ -153,6 +154,18 @@ export function FindingCard({ finding: f }: { finding: AdvisorFinding }) {
         {saving > 0 ? (
           <Badge variant="success">
             {t('finding.saving', { amount: formatBytes(saving) })}
+          </Badge>
+        ) : null}
+        {f.reclaimable_mb ? (
+          <Badge variant="success">
+            {t('finding.reclaimable', { mb: f.reclaimable_mb })}
+          </Badge>
+        ) : null}
+        {formatMonthlySaving(f.impact.monthly_saving) ? (
+          <Badge variant="success">
+            {t('finding.monthly', {
+              amount: formatMonthlySaving(f.impact.monthly_saving),
+            })}
           </Badge>
         ) : null}
         {f.impact.exhaustion_at ? (

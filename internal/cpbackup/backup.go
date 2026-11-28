@@ -155,7 +155,7 @@ func (s *Service) runBackup(ctx context.Context, slot, started time.Time) (Manif
 		return Manifest{}, err
 	}
 	m := Manifest{
-		ManifestVersion: formatFor(pl.bundleKind), InstallID: installID, Key: dataKey, CreatedAt: started,
+		ManifestVersion: formatFor(pl.bundleKind), InstallID: installID, InstanceID: pl.instanceID, Key: dataKey, CreatedAt: started,
 		BinaryVersion: s.BinaryVersion, SchemaVersion: pl.schemaVersion, MigrationsApplied: pl.migrations,
 		SHA256: sl.SHA256, SizeBytes: sl.Size, PlainSHA256: sl.PlainSHA256, PlainSizeBytes: sl.PlainSize,
 		Compression: "gzip", Encryption: "age", RecipientCount: len(recipients),

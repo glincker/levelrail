@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // nodeResourceUsagePlacedMetrics is the subset of nodeSummableMetrics

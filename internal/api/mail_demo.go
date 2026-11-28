@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/mail"
-	"github.com/GLINCKER/levelrail/internal/mail/demo"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/bindaddr"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/mail"
+	"github.com/glincker/levelrail/internal/mail/demo"
+	"github.com/glincker/levelrail/internal/mailrecords"
 )
 
 // mailDemo is the dev-only fake mail world. rt.mail.demo stays nil unless

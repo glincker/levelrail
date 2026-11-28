@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 )
 
 const orphanGrace = 5 * time.Minute

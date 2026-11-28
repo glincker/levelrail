@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 func ExampleSchedule_Next() {

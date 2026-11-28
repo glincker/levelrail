@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/objectstore"
 )
 
 const restoreUsage = `usage: levelrail restore --from <s3://bucket/key | s3://bucket/prefix/ | file> --identity <file> [flags]

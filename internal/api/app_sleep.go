@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/appsleep"
-	"github.com/GLINCKER/levelrail/internal/functions"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/appsleep"
+	"github.com/glincker/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AppSleepStore is the store surface the sleep routes need.
@@ -235,6 +235,10 @@ func (rt *Router) handleWakeApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
+	if rt.spendCapped(r.Context(), name) {
+		writeError(w, http.StatusConflict, "app is stopped by its spend cap; raise the limit or resume it from the budget")
+		return
+	}
 	prev, _ := rt.appSleep.GetAppSleep(r.Context(), name)
 	start := time.Now()
 	woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, start)
@@ -278,6 +282,10 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 	name := r.Header.Get(ingress.WakeAppHeader)
 	if rt.retainedWakeBlocked(r.Context(), name) {
 		http.NotFound(w, r)
+		return
+	}
+	if rt.spendCapped(r.Context(), name) {
+		writeSleepingNoWake(w)
 		return
 	}
 	if !looksLikeBrowserVisit(r) && rt.isDeployURLCopy(r.Context(), name) {

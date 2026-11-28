@@ -20,7 +20,7 @@ shift
 [ "$#" -gt 0 ] || set -- ./...
 cd "$(git rev-parse --show-toplevel)"
 
-api_pkg="github.com/GLINCKER/levelrail/internal/api"
+api_pkg="github.com/glincker/levelrail/internal/api"
 
 uses_docker() {
 	local dir="$1"
@@ -36,7 +36,7 @@ uses_docker() {
 heavy_file=scripts/ci-heavy-packages.txt
 is_heavy() {
 	[ -f "$heavy_file" ] || return 1
-	grep -vE '^(#|$)' "$heavy_file" | grep -qxF "${1#github.com/GLINCKER/levelrail/}"
+	grep -vE '^(#|$)' "$heavy_file" | grep -qxF "${1#github.com/glincker/levelrail/}"
 }
 
 is_concurrent() {

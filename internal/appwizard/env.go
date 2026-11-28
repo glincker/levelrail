@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/importplan"
+	"github.com/glincker/levelrail/internal/importplan"
 )
 
 const sourceREADME = "README.md"

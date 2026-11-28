@@ -1,0 +1,16 @@
+services:
+  mumble:
+    image: mumblevoip/mumble-server:v1.6.1001
+    ports: ["64738"]
+    environment:
+      MUMBLE_SUPERUSER_PASSWORD: $SERVICE_PASSWORD_SUPERUSER
+    volumes:
+      - mumble_data:/data
+    healthcheck:
+      test: ["CMD", "mumble-server", "--version"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+volumes:
+  mumble_data:

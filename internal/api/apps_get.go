@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // handleGetApp handles GET /api/v1/apps/{name}.
@@ -33,6 +33,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
+	resource.EnvVersion = rt.envVersionOf(r.Context(), name)
 	resource.AppKind, resource.KindSource = classifyApp(kindInputFor(*svc, rt.appHasJobs(r.Context(), name)))
 	rt.attachSecretPolicy(r.Context(), &resource, *svc)
 	pendingImage := ""

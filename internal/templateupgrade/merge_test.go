@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 const mergeBase = "services:\n  web:\n    image: app:1.0.0\n    environment:\n      MODE: base\n      KEEP: base\n"

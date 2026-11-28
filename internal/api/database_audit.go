@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbaudit"
-	"github.com/GLINCKER/levelrail/internal/dbauthz"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbaudit"
+	"github.com/glincker/levelrail/internal/dbauthz"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DatabaseStatementAuditStore is the store surface the audit read route needs.

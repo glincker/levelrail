@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/hostfw"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/hostfw"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // meshGatewayDNS runs the per-bridge resolver and its host firewall rule behind a live setting.

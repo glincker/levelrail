@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const sshCLIKey = "-----BEGIN OPENSSH PRIVATE KEY-----\nsecret-cli-key\n-----END OPENSSH PRIVATE KEY-----\n"

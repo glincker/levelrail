@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/fielddesc"
 )
 
 const domainsGoogleCloudDNSJSONUsage = "print the result as JSON to stdout and nothing else"

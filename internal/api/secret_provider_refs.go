@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/secretprovider"
+	"github.com/glincker/levelrail/internal/secretprovider"
 )
 
 const providerRefNeedsRoot = "a secret provider reference (doppler://, infisical:// or op://) can only be set by root, the tier that manages secret providers"

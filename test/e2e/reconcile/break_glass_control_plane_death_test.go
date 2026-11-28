@@ -29,9 +29,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/test/e2e/testenv"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/test/e2e/testenv"
 )
 
 const breakGlassToken = "dev-root-token" //nolint:gosec // dev-mode fixture token from test/fixtures/dev-fixtures.yml

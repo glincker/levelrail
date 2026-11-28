@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 // PreviewLimits caps simultaneous live preview environments. Zero means
@@ -200,6 +200,17 @@ func (rt *Router) beginPreview(ctx context.Context, appName string, gs store.Git
 	}
 
 	settings := rt.previewSettings(ctx, appName)
+	if len(gs.Services) > 0 {
+		keys := make([]string, 0, len(gs.Services))
+		for k := range withoutExcludedServices(gs.Services, settings.ExcludeServices) {
+			keys = append(keys, k)
+		}
+		release, aerr := rt.lockAdmitPreviewServices(ctx, previewName, keys)
+		if aerr != nil {
+			return nil, true, http.StatusConflict, "refused: " + aerr.Error() + "\n"
+		}
+		release()
+	}
 	base := store.PreviewEnvironment{
 		AppName: appName, PRNumber: ev.Number, PreviewAppID: previewName, Branch: ev.HeadRef, HeadSHA: ev.HeadSHA,
 		Status: store.PreviewStatusDeploying, IsFork: ev.IsFork(), HeadRepo: ev.HeadRepoFullName,

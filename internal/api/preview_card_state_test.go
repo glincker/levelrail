@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/preview"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/preview"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // stateStub answers CardStates and records which apps were asked about.

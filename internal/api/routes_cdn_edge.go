@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cdn"
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/cdn"
+	"github.com/glincker/levelrail/internal/ingress"
 )
 
 // registerCDNEdgeRoutes wires the per-app edge status and the guided setup.

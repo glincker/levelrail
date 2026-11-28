@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/monitor"
 )
 
 // MonitorHeartbeats is the optional heartbeat half of the monitor engine.

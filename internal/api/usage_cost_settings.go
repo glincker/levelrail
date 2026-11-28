@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 type usageNodeInfo struct {

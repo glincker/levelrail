@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/glincker/levelrail/internal/envrules"
 	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // envMergeStore is the column-scoped env writer; *store.DB satisfies it.
@@ -33,6 +34,9 @@ type envMergeResource struct {
 	Missing     []string `json:"missing"`
 	Keys        []string `json:"keys"`
 	RebuildKeys []string `json:"rebuild_keys,omitempty"`
+	EnvVersion  int      `json:"env_version,omitempty"`
+	// Warnings are findings on the written keys that did not block the write; no values.
+	Warnings []envrules.Issue `json:"warnings,omitempty"`
 }
 
 // handlePutAppEnv handles PUT /api/v1/apps/{name}/env: a batch of set and unset
@@ -84,6 +88,10 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: env merge: read app failed", err, slog.String("name", name))
 		return
 	}
+	warnings, ok := rt.checkEnvWrite(r.Context(), w, req.Set, existingEnv(existing), envrules.Options{Multiline: true})
+	if !ok {
+		return
+	}
 	if !rt.enforceSecretPolicy(r.Context(), w, existing.EnvironmentID, literalSecretKeys(req.Set, existing.Env, rt.envOverrides(r.Context(), name))) {
 		return
 	}
@@ -93,14 +101,14 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, store.ErrEnvKeyIsSecret) {
-		writeError(w, http.StatusConflict, "a key is stored as a secret; change it with the secrets endpoint")
+		writeError(w, http.StatusConflict, "a key is stored as a secret; change it with PUT /api/v1/apps/{name}/secrets/{key} (CLI: apps secrets set), or drop the secret first with apps secrets delete")
 		return
 	}
 	if err != nil {
 		rt.internalError(w, "api: env merge failed", err, slog.String("name", name))
 		return
 	}
-	out := envMergeResource{App: name, Changed: res.Changed, EnvDirty: res.EnvDirty, Set: []string{}, Removed: []string{}, Missing: []string{}, Keys: []string{}}
+	out := envMergeResource{Warnings: warnings, App: name, Changed: res.Changed, EnvDirty: res.EnvDirty, Set: []string{}, Removed: []string{}, Missing: []string{}, Keys: []string{}}
 	for k, v := range req.Set {
 		if old, had := res.Before[k]; !had || old != v {
 			out.Set = append(out.Set, k)
@@ -111,6 +119,9 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 			out.Removed = append(out.Removed, k)
 		} else {
 			out.Missing = append(out.Missing, k)
+			if slices.Contains(store.SecretEnvNames(existing.SecretEnv), k) {
+				out.Warnings = append(out.Warnings, envrules.Issue{Key: k, Code: envrules.CodeSecretOnly, Message: k + " is a secret with no plain copy; to remove it run: apps secrets delete " + name + " " + k})
+			}
 		}
 	}
 	for k := range res.After {
@@ -125,6 +136,7 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 		rt.nudgeReconciler()
 		rt.changes.Publish(changeApps, name)
 	}
+	out.EnvVersion = rt.envVersionOf(r.Context(), name)
 	rt.auditEnvMerge(r, out)
 	writeJSON(w, http.StatusOK, out)
 }

@@ -39,7 +39,7 @@ names="$(cd internal/api && "$work/api.test" -test.list '.*' | grep -E '^(Test|E
 if [ -f .github/flaky-tests.txt ]; then
 	while read -r qpkg qtest _; do
 		case "$qpkg" in '' | '#'*) continue ;; esac
-		[ "$qpkg" = "github.com/GLINCKER/levelrail/internal/api" ] || continue
+		[ "$qpkg" = "github.com/glincker/levelrail/internal/api" ] || continue
 		names="$(grep -vxF "$qtest" <<<"$names" || true)"
 	done <.github/flaky-tests.txt
 fi

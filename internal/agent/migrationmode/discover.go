@@ -9,7 +9,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
 )
 
 // databaseImages maps an image base name to the engine it serves, so databases

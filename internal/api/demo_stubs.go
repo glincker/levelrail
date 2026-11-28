@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/version"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/version"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // demoDoctorReport is the fixed doctor result the demo serves instead of

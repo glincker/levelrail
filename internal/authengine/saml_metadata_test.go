@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/authengine"
 )
 
 func testCert(t *testing.T, cn string, notBefore, notAfter time.Time) *x509.Certificate {

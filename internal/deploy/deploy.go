@@ -15,12 +15,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/extdb"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/extdb"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ImageBuilder is the narrow surface this package needs from
@@ -186,6 +186,8 @@ type Request struct {
 	// Preview marks a pull request preview build, which may not use
 	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
 	Preview bool
+	// PreviewParent is the production app a preview belongs to, from the preview record.
+	PreviewParent string
 	// ProxyAuthorizer vets each app a static site's proxy rules name and
 	// returns its scope. Nil refuses every proxy rule.
 	ProxyAuthorizer ProxyAuthorizer
@@ -244,6 +246,7 @@ type Pipeline struct {
 	registryAuth RegistryAuthSource    // nil resolves private images without credentials
 	ordered      OrderedStore          // nil disables the stale-deploy guard
 	ports        PortAdmitter          // nil skips host port admission (tests, demo)
+	names        NameAdmitter          // nil skips name admission before file secrets (tests, demo)
 	attempts     AttemptRecorder       // nil skips recording digests on attempts
 
 	buildSecretValues BuildSecretValues // nil: build.secrets is rejected at deploy

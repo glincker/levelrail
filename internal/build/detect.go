@@ -19,8 +19,8 @@ import (
 	"github.com/railwayapp/railpack/core"
 	rpapp "github.com/railwayapp/railpack/core/app"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/frameworks"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/frameworks"
 )
 
 // detectCloneTimeout bounds the whole clone+inspect call: a pre-flight

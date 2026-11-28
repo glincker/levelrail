@@ -9,8 +9,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/statuspage"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/statuspage"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // IncidentPostmortemStore is the postmortem persistence. *store.DB satisfies it next to IncidentStore.

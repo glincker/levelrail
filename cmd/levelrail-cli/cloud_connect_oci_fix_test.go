@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/secretsource"
 )
 
 const tParentComp = "ocid1.compartment.oc1..aaaaaaaaparent01"

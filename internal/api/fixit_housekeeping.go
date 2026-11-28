@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/fixit"
 )
 
 func (rt *Router) doctorCheckHardeningNow(context.Context) doctorCheckResource {

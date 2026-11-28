@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/dbauthz"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbauthz"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // dbPolicyEngine adapts the router's IAM evaluation to dbauthz.PolicyEngine.

@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 const (

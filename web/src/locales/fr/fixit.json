@@ -109,6 +109,7 @@
     "linesLabel": "Dernières lignes de log du conteneur en échec",
     "noLines": "Aucune ligne de log n'a été capturée pour cet échec.",
     "openFullLogs": "Ouvrir les logs complets",
-    "crashSummary": "{{count}} redémarrages au cours des {{minutes}} dernières minutes."
+    "crashSummary": "{{count}} redémarrages au cours des {{minutes}} dernières minutes.",
+    "sectionWarnings": "Avertissements ({{count}})"
   }
 }

@@ -1,0 +1,67 @@
+---
+title: "Self-host LazyLibrarian with Docker"
+sidebarTitle: "LazyLibrarian"
+description: "A book library manager that finds, downloads and sorts ebooks and audiobooks."
+"og:url": "https://docs.levelrail.com/self-host/lazylibrarian"
+---
+
+A book library manager that finds, downloads and sorts ebooks and audiobooks.
+
+This page describes the Levelrail template for LazyLibrarian (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://lazylibrarian.gitlab.io.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `lazylibrarian` | `linuxserver/lazylibrarian:c5bec1de-ls409` | 5299 | `lazylibrarian_config -&#62; /config`<br />`lazylibrarian_downloads -&#62; /downloads`<br />`lazylibrarian_books -&#62; /books` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `lazylibrarian` | `PGID` | Preset in the template |
+| `lazylibrarian` | `PUID` | Preset in the template |
+| `lazylibrarian` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`lazylibrarian`): lazylibrarian_books, lazylibrarian_config, lazylibrarian_downloads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy LazyLibrarian with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select LazyLibrarian. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy lazylibrarian --name my-lazylibrarian
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Airsonic Advanced](/self-host/airsonic-advanced)
+- [Ampache](/self-host/ampache)
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+
+All templates are listed in the [self-host gallery](/self-host).

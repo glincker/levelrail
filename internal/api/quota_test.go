@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/quota"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func quotaFixture(t *testing.T) (*Router, *store.DB, *http.Cookie, string) {

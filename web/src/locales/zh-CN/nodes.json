@@ -1321,5 +1321,18 @@
     "pickerPlaceholder": "无节点池",
     "none": "无节点池",
     "pickerHint": "节点池的标签会合并到此应用自己的放置选择器中。"
+  },
+  "nodePicker": {
+    "label": "Server",
+    "auto": "Auto (best fit)",
+    "hint": "Auto picks a server that fits. Choose one to pin it there.",
+    "gpu_one": "{{count}} GPU",
+    "gpu_other": "{{count}} GPUs",
+    "status": {
+      "pending": "pending",
+      "online": "online",
+      "offline": "offline",
+      "cordoned": "cordoned"
+    }
   }
 }

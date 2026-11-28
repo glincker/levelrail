@@ -10,8 +10,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // errBuildCancelled ends a build the control plane gave up on, so the

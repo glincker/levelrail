@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/semver"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/kit/semver"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // Install states reported by the update preflight and release list.

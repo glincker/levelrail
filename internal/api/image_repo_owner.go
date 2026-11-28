@@ -9,8 +9,8 @@ import (
 
 	"github.com/distribution/reference"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // normalizeImageRepo folds docker.io/library prefixes and case so spellings of one repo compare equal.

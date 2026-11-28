@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runNodesReenrollToken implements "nodes reenroll-token <id>": POST

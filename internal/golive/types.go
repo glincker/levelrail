@@ -7,10 +7,10 @@ package golive
 import (
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
-	"github.com/GLINCKER/levelrail/internal/fixit"
-	"github.com/GLINCKER/levelrail/internal/hostfw"
-	"github.com/GLINCKER/levelrail/internal/hostprovider"
+	"github.com/glincker/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/hostfw"
+	"github.com/glincker/levelrail/internal/hostprovider"
 )
 
 // Step ids, in checklist order.

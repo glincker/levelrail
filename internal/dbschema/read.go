@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/dbviewer"
+	"github.com/glincker/levelrail/internal/dbviewer"
 )
 
 // ErrUnsupported reports an engine the reader has no catalog queries for.

@@ -3,8 +3,8 @@ package api
 import (
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 func init() {

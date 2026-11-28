@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakeheroku"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/platformimport/fakeheroku"
 )
 
 func readEmitted(t *testing.T, dir string) map[string]string {

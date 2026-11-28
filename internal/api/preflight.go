@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gpu"
-	"github.com/GLINCKER/levelrail/internal/policy"
-	"github.com/GLINCKER/levelrail/internal/preflight"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/preflight"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 const (

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // appIPMap caches container IP to app name, rebuilt lazily so the DNS hot path never waits on Docker.

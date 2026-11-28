@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/changelog"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/changelog"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 // Default and max page size for GET /api/v1/changelog's ?limit=.

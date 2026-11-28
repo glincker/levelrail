@@ -13,8 +13,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ticker"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/ticker"
 )
 
 // DirName is the backup directory's name under the data dir.

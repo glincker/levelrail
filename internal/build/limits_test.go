@@ -3,7 +3,7 @@ package build
 import (
 	"context"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/testutil"
+	"github.com/glincker/levelrail/internal/testutil"
 	"os"
 	"path/filepath"
 	"strings"

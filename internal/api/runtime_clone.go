@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // cloneRuntime deep-copies the options so an edited clone never aliases its source.

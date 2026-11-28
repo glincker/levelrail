@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // This file (logs.go) is the node-local log store: read a container's

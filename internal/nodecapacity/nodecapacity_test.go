@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/janitor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestEvaluate(t *testing.T) {

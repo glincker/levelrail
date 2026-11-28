@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/alerting"
 )
 
 // incidentAlertSource is the slice of the alerting store the incident guard reads.

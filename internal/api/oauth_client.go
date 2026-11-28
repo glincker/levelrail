@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 	"golang.org/x/oauth2"
 	xgithub "golang.org/x/oauth2/github"
 	xgoogle "golang.org/x/oauth2/google"

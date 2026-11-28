@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/changes"
-	"github.com/GLINCKER/levelrail/internal/maintenance"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/maintenance"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // maxSilenceDuration caps a single silence so a typo cannot mute alerts for months.

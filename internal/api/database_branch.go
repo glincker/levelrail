@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/dbbranch"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/dbbranch"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // databaseBranchRequest is POST /api/v1/databases/{name}/branches. Exactly

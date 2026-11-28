@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const loopbackTestIP = "127.0.0.1:4000"

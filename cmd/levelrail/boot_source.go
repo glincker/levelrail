@@ -4,46 +4,46 @@ import (
 	"context"
 
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 	"log/slog"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/appsleep"
-	"github.com/GLINCKER/levelrail/internal/canary"
-	"github.com/GLINCKER/levelrail/internal/dbprovision"
-	"github.com/GLINCKER/levelrail/internal/deployurls"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/janitor"
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
-	"github.com/GLINCKER/levelrail/internal/models"
-	"github.com/GLINCKER/levelrail/internal/orphans"
-	"github.com/GLINCKER/levelrail/internal/privnet"
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	exposurereconcile "github.com/GLINCKER/levelrail/internal/reconcile/exposure"
-	firewallreconcile "github.com/GLINCKER/levelrail/internal/reconcile/firewall"
-	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
-	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
-	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
-	proxyroutesreconcile "github.com/GLINCKER/levelrail/internal/reconcile/proxyroutes"
-	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
-	"github.com/GLINCKER/levelrail/internal/secretprovider"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/sharedenv"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/vault"
-	"github.com/GLINCKER/levelrail/kit/firewall"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/appsleep"
+	"github.com/glincker/levelrail/internal/canary"
+	"github.com/glincker/levelrail/internal/dbprovision"
+	"github.com/glincker/levelrail/internal/deployurls"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/experimental"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/orphans"
+	"github.com/glincker/levelrail/internal/privnet"
+	"github.com/glincker/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/reconcile/cloudflaretunnel"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	exposurereconcile "github.com/glincker/levelrail/internal/reconcile/exposure"
+	firewallreconcile "github.com/glincker/levelrail/internal/reconcile/firewall"
+	ingressreconcile "github.com/glincker/levelrail/internal/reconcile/ingress"
+	meshreconcile "github.com/glincker/levelrail/internal/reconcile/mesh"
+	"github.com/glincker/levelrail/internal/reconcile/nodehealth"
+	proxyroutesreconcile "github.com/glincker/levelrail/internal/reconcile/proxyroutes"
+	registryreconcile "github.com/glincker/levelrail/internal/reconcile/registry"
+	"github.com/glincker/levelrail/internal/secretprovider"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/sharedenv"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/vault"
+	"github.com/glincker/levelrail/kit/firewall"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // Re-lists desired state on every call, so it is level-triggered by construction.
@@ -113,6 +113,11 @@ type dynamicSourceDeps struct {
 	restartPolicy func(context.Context) string
 	// elevatedCaps reads the live elevated template capability setting.
 	elevatedCaps func(context.Context) bool
+	// hostNetworkGrant and devicesGrant read the live host grant settings.
+	hostNetworkGrant func(context.Context) bool
+	devicesGrant     func(context.Context) bool
+	// dockerAPI is nil when no daemon socket could be resolved at boot.
+	dockerAPI application.DockerAPISockets
 	// dependsOnTimeout reads the live compose depends_on wait limit.
 	dependsOnTimeout func(context.Context) time.Duration
 }
@@ -153,6 +158,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithDNS01HostLister(deps.db),
 			ingressreconcile.WithAuditRecorder(deps.db),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
+			ingressreconcile.WithHostNetworkGrant(deps.hostNetworkGrant),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
 			ingressAdminOption(),
 			ingressreconcile.WithHTTPRedirect(deps.httpRedirect),
@@ -304,6 +310,12 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithDatabaseScope(deps.db),
 		application.WithVaultSettings(deps.db),
 		application.WithSecretSources(currentSecretSources),
+		application.WithLegacyVaultPrefixes(func(ctx context.Context) []string {
+			if s := deps.settingsService(); s != nil {
+				return s.List(ctx, runtimesettings.KeyVaultLegacyAllowedPrefixes)
+			}
+			return nil
+		}),
 		application.WithVaultResolver(vault.NewResolverWith(vault.TunablesFrom(deps.settingsService()))),
 		application.WithRegistryCredentials(deps.db),
 		application.WithRegistryPullTokens(func(image string) (string, bool, error) {
@@ -320,6 +332,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithConditionReader(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
+		application.WithFence(func(ctx context.Context, svc string) context.Context {
+			return agent.FenceCtx(ctx, deps.db.ServiceFenceToken, svc)
+		}),
 		application.WithLivenessTracker(deps.livenessTracker),
 		application.WithRestartBackoff(deps.restartBackoff),
 		application.WithRolloutRecorder(rolloutRecorderFor(deps.db, deps.previewNotifier)),
@@ -352,6 +367,12 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	}
 	if deps.elevatedCaps != nil {
 		appOpts = append(appOpts, application.WithElevatedCaps(deps.elevatedCaps))
+	}
+	if deps.hostNetworkGrant != nil || deps.devicesGrant != nil {
+		appOpts = append(appOpts, application.WithHostGrants(deps.hostNetworkGrant, deps.devicesGrant))
+	}
+	if deps.dockerAPI != nil {
+		appOpts = append(appOpts, application.WithDockerAPI(deps.dockerAPI))
 	}
 	if deps.dependsOnTimeout != nil {
 		appOpts = append(appOpts, application.WithDependsOnTimeout(deps.dependsOnTimeout))

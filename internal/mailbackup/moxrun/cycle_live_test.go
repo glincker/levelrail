@@ -10,8 +10,8 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/mailbackup"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/mailbackup"
 )
 
 // cycleInit is a cut-down mail template start: quickstart once, hand both

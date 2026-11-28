@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // certWeeklyIssueWarn reads the warning threshold at call time; without a

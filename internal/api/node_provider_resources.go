@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 const (

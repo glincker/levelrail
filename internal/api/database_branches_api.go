@@ -16,11 +16,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbauthz"
-	"github.com/GLINCKER/levelrail/internal/dbbranch"
-	"github.com/GLINCKER/levelrail/internal/diskguard"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbauthz"
+	"github.com/glincker/levelrail/internal/dbbranch"
+	"github.com/glincker/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Audit actions of the branch lifecycle. Details carry names and modes, never row data.
@@ -590,7 +590,7 @@ func (rt *Router) discardBranchDatabase(ctx context.Context, name, nodeID string
 // TeardownBranchDatabase deletes a branch database and its data volume. The store refuses a protected
 // branch or one with live children, and the branch row goes with the database. It backs the expiry job.
 func (rt *Router) TeardownBranchDatabase(ctx context.Context, name string) error {
-	defer lockAppName("database:" + name)()
+	defer lockAppName(name)()
 	d, err := rt.databases.GetDesiredDatabase(ctx, name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		return nil
@@ -614,7 +614,7 @@ func (rt *Router) TeardownBranchDatabase(ctx context.Context, name string) error
 // CleanupFailedBranchDatabase removes the container and volume of a failed branch and suspends the
 // database so it is not recreated. Both rows stay until the branch is deleted or failed_retention ends.
 func (rt *Router) CleanupFailedBranchDatabase(ctx context.Context, name string) error {
-	defer lockAppName("database:" + name)()
+	defer lockAppName(name)()
 	d, err := rt.databases.GetDesiredDatabase(ctx, name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		return nil

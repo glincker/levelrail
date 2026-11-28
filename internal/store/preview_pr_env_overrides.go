@@ -37,6 +37,9 @@ func PRPreviewEnvSecretsKey(serviceName string, prNumber int) string {
 // SetPRPreviewEnvOverride upserts one override keyed on (service, pr, key) and
 // returns its id. The caller encrypts a secret's real value separately.
 func (db *DB) SetPRPreviewEnvOverride(ctx context.Context, serviceName string, prNumber int, key, value string, secret bool) (string, error) {
+	if err := checkEnvKeys(key); err != nil {
+		return "", err
+	}
 	if secret {
 		value = ""
 	}

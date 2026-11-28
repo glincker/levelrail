@@ -1,0 +1,16 @@
+id: dgraph
+name: Dgraph
+slogan: A distributed graph database with a GraphQL-native API.
+description: Apache 2.0 licensed. Runs the all-in-one standalone image. GraphQL and HTTP on port 8080, gRPC on 9080. No authentication by default, keep the ports private.
+category: Databases
+documentation_url: https://dgraph.io/docs
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: dgraph
+source_repo: https://github.com/dgraph-io/dgraph
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/dgraph-io/dgraph/blob/main/LICENSE

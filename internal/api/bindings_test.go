@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func bindingsDo(t *testing.T, rt *Router, method, path, token, body string) *httptest.ResponseRecorder {

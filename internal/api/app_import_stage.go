@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/appimport"
-	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/appimport"
+	"github.com/glincker/levelrail/internal/gitprovider/reporef"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const connectionFieldURL = "url"

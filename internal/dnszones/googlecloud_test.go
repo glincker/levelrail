@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones/gcdtest"
+	"github.com/glincker/levelrail/internal/dnszones/gcdtest"
 )
 
 func newGCDClient(srv *gcdtest.Server) *GoogleCloud {

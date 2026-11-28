@@ -16,7 +16,7 @@ func depsOf(t *testing.T, pkg string) []string {
 }
 
 func TestImportGraphExcludesWritePaths(t *testing.T) {
-	const mod = "github.com/GLINCKER/levelrail/"
+	const mod = "github.com/glincker/levelrail/"
 	forbidden := []string{
 		mod + "internal/docker", mod + "internal/dockerguard", mod + "internal/reconcile", mod + "internal/build",
 		mod + "internal/agent", mod + "internal/agent/agentpb", mod + "internal/placement", mod + "internal/store",
@@ -26,8 +26,8 @@ func TestImportGraphExcludesWritePaths(t *testing.T) {
 		pkg   string
 		allow map[string]bool
 	}{
-		{"github.com/GLINCKER/levelrail/internal/agent/migrationmode", nil},
-		{"github.com/GLINCKER/levelrail/cmd/levelrail-migrate", map[string]bool{"os/exec": true}},
+		{"github.com/glincker/levelrail/internal/agent/migrationmode", nil},
+		{"github.com/glincker/levelrail/cmd/levelrail-migrate", map[string]bool{"os/exec": true}},
 	}
 	for _, tc := range cases {
 		deps := depsOf(t, tc.pkg)

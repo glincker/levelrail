@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/mail"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/mail"
 )
 
 // TestLiveMoxSystemEmailSubmission proves the system email path against a throwaway mox: a generated

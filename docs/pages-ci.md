@@ -45,7 +45,7 @@ Download, verify, run. Pin the release tag.
 ```bash
 TAG=v1.5.7
 ASSET=levelrail-cli-linux-amd64
-BASE=https://github.com/GLINCKER/levelrail/releases/download/$TAG
+BASE=https://github.com/glincker/levelrail/releases/download/$TAG
 curl -fsSLO "$BASE/$ASSET" && curl -fsSLO "$BASE/checksums.txt"
 grep " $ASSET\$" checksums.txt | sha256sum -c -
 chmod +x "$ASSET"

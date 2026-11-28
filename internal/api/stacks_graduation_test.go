@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 func stackPlanRaw(t *testing.T, rt *Router, cookie *http.Cookie, docs string, extra map[string]any) string {

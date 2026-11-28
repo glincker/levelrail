@@ -15,8 +15,8 @@ import (
 	"unicode"
 
 	// The api package registers its own settings in init, so import it for the full registry.
-	_ "github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	_ "github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 func writeRefFixture(t *testing.T, dir, rel, body string) {

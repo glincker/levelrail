@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/search"
+	"github.com/glincker/levelrail/internal/search"
 )
 
 // searchService builds the index service on first use; it stays nil when the

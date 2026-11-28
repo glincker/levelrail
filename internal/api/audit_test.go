@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func listAuditLog(t *testing.T, rt *Router, cookie *http.Cookie) []auditLogEntryResource {

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/fixit"
 )
 
 // doctorNoCTAAllowlist freezes the warn-capable doctor code paths that still

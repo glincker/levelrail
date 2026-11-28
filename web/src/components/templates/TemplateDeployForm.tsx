@@ -31,6 +31,15 @@ import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { TemplateGeneratedField } from './TemplateGeneratedField'
 import { TemplateFileField } from './TemplateFileField'
+import { TemplateGrantDialog } from './TemplateGrantDialog'
+import { TemplateInstallBlock } from './TemplateInstallBlock'
+import { NodePicker } from '../NodePicker'
+import { ApiError } from '../../lib/apiError'
+import {
+  classifyInstallBlock,
+  grantsToReview,
+} from '../../lib/templatePlatform'
+import type { TemplateCapability } from '../../queries/serviceTemplates'
 
 function EnvField({
   prompt,
@@ -95,8 +104,10 @@ function EnvField({
 /** Inline install form for a manifest template: required first, generated secrets, optional collapsed, one Deploy button. */
 export function TemplateDeployForm({
   manifest,
+  capabilities,
 }: {
   manifest: TemplateManifest
+  capabilities?: TemplateCapability[]
 }) {
   const { t } = useTranslation('templates')
   const navigate = useNavigate()
@@ -120,6 +131,9 @@ export function TemplateDeployForm({
   const [errors, setErrors] = useState<FormErrors>({})
   const [optionalOpen, setOptionalOpen] = useState(false)
   const [attempted, setAttempted] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [allowMismatch, setAllowMismatch] = useState(false)
+  const reviewed = grantsToReview(capabilities)
 
   const update = (next: FormValues) => {
     setValues(next)
@@ -137,26 +151,45 @@ export function TemplateDeployForm({
       if (found.name !== undefined) setOptionalOpen(true)
       return
     }
-    install.mutate(buildInstallPayload(values), {
-      onSuccess: (res) => {
-        draft.clearOnSuccess()
-        toast.add({
-          title: t('form.success', { app: res.app_id }),
-          type: 'success',
-        })
-        const first = res.services[0]
-        if (first) {
-          void navigate({
-            to: '/apps/$name/services',
-            params: { name: first.name },
-          })
-        }
+    if (reviewed.length > 0) {
+      setReviewOpen(true)
+      return
+    }
+    runInstall()
+  }
+
+  const runInstall = () => {
+    setReviewOpen(false)
+    install.mutate(
+      {
+        ...buildInstallPayload(values),
+        ...(allowMismatch ? { allow_platform_mismatch: true } : {}),
       },
-    })
+      {
+        onSuccess: (res) => {
+          draft.clearOnSuccess()
+          toast.add({
+            title: t('form.success', { app: res.app_id }),
+            type: 'success',
+          })
+          const first = res.services[0]
+          if (first) {
+            void navigate({
+              to: '/apps/$name/services',
+              params: { name: first.name },
+            })
+          }
+        },
+      },
+    )
   }
 
   // The API names the offending key in its byte-limit error; show it at that field.
   const apiMessage = install.isError ? install.error.message : ''
+  const block =
+    install.error instanceof ApiError
+      ? classifyInstallBlock(install.error.status, apiMessage)
+      : null
   const fileSizeError = (key: string): string | undefined =>
     apiMessage.includes(key) && /byte limit/.test(apiMessage)
       ? apiMessage
@@ -370,7 +403,22 @@ export function TemplateDeployForm({
         </div>
       </section>
 
-      {install.isError && !prompts.some((p) => fileSizeError(p.key)) ? (
+      <NodePicker
+        id="template-install-node"
+        value={values.node ?? ''}
+        onChange={(node) => {
+          update({ ...values, node })
+        }}
+      />
+
+      {block ? (
+        <TemplateInstallBlock
+          block={block}
+          message={apiMessage}
+          allowMismatch={allowMismatch}
+          onAllowMismatch={setAllowMismatch}
+        />
+      ) : install.isError && !prompts.some((p) => fileSizeError(p.key)) ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{install.error.message}</AlertDescription>
@@ -394,6 +442,13 @@ export function TemplateDeployForm({
           {install.isPending ? t('form.deploying') : t('form.deploy')}
         </Button>
       </div>
+      <TemplateGrantDialog
+        grants={reviewed}
+        open={reviewOpen}
+        pending={install.isPending}
+        onOpenChange={setReviewOpen}
+        onConfirm={runInstall}
+      />
     </form>
   )
 }

@@ -18,12 +18,12 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/gitsshkey"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/gitsshkey"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 // errGitSourceKindConflict keeps a compose source and a single-service source off one app.
@@ -226,7 +226,7 @@ var errAppNameTaken = errors.New("an app with this name already exists")
 // appNameFree re-checks a new app name; callers hold lockAppName(name) so the
 // check and the write cannot interleave with another create.
 func (rt *Router) appNameFree(ctx context.Context, name string) error {
-	if spec.IsReservedName(name) || rt.deletedNameReserved(ctx, name) {
+	if spec.IsReservedName(name) || previewShapedNameRefused(ctx, name) || rt.deletedNameReserved(ctx, name) {
 		return errAppNameTaken
 	}
 	if _, err := rt.apps.GetDesiredService(ctx, name); err == nil {
@@ -241,7 +241,16 @@ func (rt *Router) appNameFree(ctx context.Context, name string) error {
 	if taken {
 		return errAppNameTaken
 	}
-	return nil
+	// Database credentials live under the bare database name, so an app must never share it.
+	other, err := rt.nameTakenByOtherKind(ctx, name, store.NameKindApp, true)
+	if err != nil {
+		return fmt.Errorf("check name %q: %w", name, err)
+	}
+	if other {
+		return errAppNameTaken
+	}
+	// The caller holds the name lock, so values a deleted database or app left here are wiped before the new owner reads them.
+	return rt.clearStaleSecretNamespace(ctx, name)
 }
 
 func (rt *Router) loadComposeGitSource(w http.ResponseWriter, r *http.Request, name string) (*store.GitSource, bool) {

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 )
 
 // ErrEnvKeyIsSecret is returned when a merge tries to set a key the app already stores as a secret.
@@ -40,6 +41,28 @@ func (db *DB) MergeServiceEnv(ctx context.Context, name string, set map[string]s
 }
 
 func (db *DB) mergeServiceEnvTx(ctx context.Context, name string, set map[string]string, unset []string) (EnvMergeResult, error) {
+	return db.mergeEnvCore(ctx, name, set, unset, false)
+}
+
+// ReplaceServiceEnv makes the plain env exactly env; the drop list is computed
+// inside the write transaction so it matches the env the write sees.
+func (db *DB) ReplaceServiceEnv(ctx context.Context, name string, env map[string]string) (EnvMergeResult, error) {
+	res, err := db.mergeEnvCore(ctx, name, env, nil, true)
+	if err != nil {
+		return res, err
+	}
+	if res.Changed {
+		if err := db.noteAppChange(ctx, name); err != nil {
+			return res, err
+		}
+	}
+	return res, nil
+}
+
+func (db *DB) mergeEnvCore(ctx context.Context, name string, set map[string]string, unset []string, replace bool) (EnvMergeResult, error) {
+	if err := checkEnvKeys(slices.Concat(mapKeys(set), unset)...); err != nil {
+		return EnvMergeResult{}, err
+	}
 	// A dedicated connection lets us issue BEGIN IMMEDIATE, which takes the write lock up front.
 	conn, err := db.Conn(ctx)
 	if err != nil {
@@ -83,6 +106,13 @@ func (db *DB) mergeServiceEnvTx(ctx context.Context, name string, set map[string
 		}
 	}
 
+	if replace {
+		for k := range current {
+			if _, keep := set[k]; !keep {
+				unset = append(unset, k)
+			}
+		}
+	}
 	next := maps.Clone(nonNilMap(current))
 	for k, v := range set {
 		next[k] = v
@@ -102,7 +132,7 @@ func (db *DB) mergeServiceEnvTx(ctx context.Context, name string, set map[string
 		return EnvMergeResult{}, fmt.Errorf("store: merge env for %q: marshal: %w", name, err)
 	}
 	// env_dirty stays set until a restart recreates the container, the same latch the update endpoint keeps.
-	if _, err := conn.ExecContext(ctx, `UPDATE desired_services SET env = ?, env_dirty = 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, string(nextJSON), name); err != nil {
+	if _, err := conn.ExecContext(ctx, `UPDATE desired_services SET env = ?, env_dirty = 1, env_version = env_version + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, string(nextJSON), name); err != nil {
 		return EnvMergeResult{}, fmt.Errorf("store: merge env for %q: write: %w", name, err)
 	}
 	if _, err := conn.ExecContext(ctx, `COMMIT`); err != nil {

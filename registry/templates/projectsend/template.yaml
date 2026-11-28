@@ -1,0 +1,15 @@
+id: projectsend
+name: ProjectSend
+slogan: A client file sharing portal where you upload files for named clients and groups.
+description: GPL 2.0 licensed. Open the page to run the installer. Use database host db, database projectsend, user projectsend and the generated database password from the deployment variables.
+category: Storage
+documentation_url: https://docs.projectsend.org
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/projectsend/projectsend
+license: GPL-2.0-only
+license_class: copyleft
+license_url: https://github.com/projectsend/projectsend/blob/master/LICENSE

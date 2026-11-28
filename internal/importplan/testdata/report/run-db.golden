@@ -1,0 +1,5 @@
+changes-behavior | docker-run | --env-file | --env-file prod.env cannot be read from here, paste its variables into the env table | set it on the app after creating it, or leave it out
+changes-behavior | docker-run | -e POSTGRES_PASSWORD | -e POSTGRES_PASSWORD looks like a secret, so its value is not echoed back; enter it again | set it on the app after creating it, or leave it out
+changes-behavior | docker-run | -e TZ | -e TZ takes its value from the host shell, enter a value in the plan | set it on the app after creating it, or leave it out
+ignored-safe | docker-run | --hostname | custom hostnames are not supported | safe to leave out
+ignored-safe | docker-run | --label | labels are not imported | safe to leave out

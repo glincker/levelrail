@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rollback"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/rollback"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type verifyFixture struct {

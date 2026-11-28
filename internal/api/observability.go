@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dataexport"
-	"github.com/GLINCKER/levelrail/internal/observability"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dataexport"
+	"github.com/glincker/levelrail/internal/observability"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // presetSignalView is what a form needs to know about a signal.

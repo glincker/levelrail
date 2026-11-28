@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 func TestStaticRoutesEndpoints(t *testing.T) {

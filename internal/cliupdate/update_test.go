@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 const testAsset = "tool-cli-linux-amd64"

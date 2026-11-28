@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/diskhistory"
+	"github.com/glincker/levelrail/internal/diskhistory"
 )
 
 type fakeDiskHistory struct{ samples []diskhistory.Sample }

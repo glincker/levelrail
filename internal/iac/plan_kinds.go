@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/loadbalancer"
 )
 
 var additiveEnv = map[string]bool{"env": true}

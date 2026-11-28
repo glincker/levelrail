@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/timeutil"
+	"github.com/glincker/levelrail/kit/timeutil"
 )
 
 // APIToken is one non-interactive credential, the backend auth

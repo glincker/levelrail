@@ -3,15 +3,15 @@ package api
 import (
 	"errors"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/spool"
+	"github.com/glincker/levelrail/internal/spool"
 	"io"
 	"log/slog"
 	"mime"
 	"net/http"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/sourceupload"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/sourceupload"
 )
 
 // isZipUpload reports whether the request body is a zip rather than the CLI's gzip tar.

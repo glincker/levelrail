@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // resolveFiles turns the stored file list into mounts. A secret file is
@@ -26,6 +26,9 @@ func (c *Controller) resolveFiles(ctx context.Context, desired *store.DesiredSer
 		}
 		content := f.Content
 		if f.Secret {
+			if err := c.refuseReservedSecretOwner(); err != nil {
+				return nil, err
+			}
 			if c.secretResolver == nil {
 				return nil, fmt.Errorf("file %q is secret but no secret resolver is configured", f.Path)
 			}

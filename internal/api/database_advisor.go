@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbadvisor"
-	"github.com/GLINCKER/levelrail/internal/dbviewer"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbadvisor"
+	"github.com/glincker/levelrail/internal/dbviewer"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // advisorMaxConcurrent bounds advisor runs per database so repeated calls cannot pile onto one server.

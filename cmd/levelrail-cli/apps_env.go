@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -20,6 +20,8 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsEnvUsage(prog))
 		return exitOK
+	case "apply":
+		return runEnvApply(prog, args[1:], stdout, stderr, lookupEnv)
 	case "import":
 		return runAppsEnvImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
@@ -100,12 +102,15 @@ type envImportResult struct {
 	// SecretsSet counts keys written to the secret store.
 	SecretsSet int           `json:"secrets_set"`
 	Plan       envImportPlan `json:"plan"`
+	// EnvReport lists accepted keys, rejected lines with reasons and warnings; never a value.
+	EnvReport *envImportReport `json:"env_report,omitempty"`
 }
 
 func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps env import", "print the import plan as JSON to stdout and nothing else", stderr)
 	var file string
-	var dryRun, keepExisting, apply, noApply, allSecrets, allPlain bool
+	var dryRun, keepExisting, apply, noApply, allSecrets, allPlain, strict bool
+	fs.BoolVar(&strict, "strict", false, "exit non-zero and import nothing when any line or key is rejected (default: import the valid keys)")
 	var secretPatterns string
 	fs.BoolVar(&allSecrets, "all-secrets", false, "send every imported key to the secret store")
 	fs.BoolVar(&allPlain, "all-plain", false, "send every imported key to plain env, even ones that look sensitive")
@@ -115,6 +120,7 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 	fs.StringVar(&file, "file", "", "path to the .env file to import (required)")
 	fs.BoolVar(&dryRun, "dry-run", false, "show what would change without saving")
 	fs.BoolVar(&keepExisting, "keep-existing", false, "leave keys that already exist with a different value untouched")
+	retry := bindEnvRetryFlags(fs, lookupEnv)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps env import <name> --file .env [flags]\n\nMerges a .env file into the app. Keys that look sensitive go to the secret\nstore and the rest to plain env; --all-secrets and --all-plain override that, and --secret-pattern GLOBS adds key globs to the secret store.\nKeys already set as secrets are skipped. Only key names are printed. Env changes take effect on the next restart,\nor now with --apply.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -168,7 +174,14 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 		}
 	}
 
-	plainEntries, secretEntries := routeEnvImport(parseEnvFileBytes(data), secretKeys, mode, splitCSV(secretPatterns))
+	scanned, report := scanEnvFile(data)
+	if len(report.Accepted) == 0 && len(report.Rejected) > 0 || strict && len(report.Rejected) > 0 {
+		failed := envImportResult{App: name, DryRun: dryRun, EnvReport: &report}
+		_ = writeScheduledTaskResult(stdout, stderr, of, failed, func() { printEnvImportReport(stdout, report) })
+		_, _ = fmt.Fprintf(stderr, "%s: nothing was imported, %d line(s) or key(s) were rejected (see the report above)\n", prog, len(report.Rejected))
+		return exitValidation
+	}
+	plainEntries, secretEntries := routeEnvImport(scanned, secretKeys, mode, splitCSV(secretPatterns))
 	plan := planEnvImport(app.Env, plainEntries, secretKeys, keepExisting)
 	for _, e := range secretEntries {
 		plan.ToSecret = append(plan.ToSecret, e.Key)
@@ -178,7 +191,7 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 			plan.movedFromEnv = true
 		}
 	}
-	result := envImportResult{App: name, DryRun: dryRun, Plan: plan}
+	result := envImportResult{App: name, DryRun: dryRun, Plan: plan, EnvReport: &report}
 	warnEnvSecrets(ctx, client, stderr, name, plan)
 
 	willChange := len(plan.New) > 0 || (len(plan.Changed) > 0 && !keepExisting) || plan.movedFromEnv
@@ -189,15 +202,16 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 				moved = append(moved, e.Key)
 			}
 		}
-		if _, err := mergeEnv(ctx, client, name, envMergeFromPlan(plan, keepExisting, moved)); err != nil {
+		if _, err := mergeEnv(ctx, client, prog, name, app, *retry, envMergeFromPlan(plan, keepExisting, moved)); err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
 		result.Applied = true
 	}
 	var failed []string
 	if !dryRun {
+		ver := &envVersionTracker{}
 		for _, e := range secretEntries {
-			if err := client.SetSecret(ctx, name, e.Key, e.Value, false); err != nil {
+			if _, err := setSecretMaybeBuildTime(client, prog, name, e.Key, e.Value, false, false, ver, *retry); err != nil {
 				_, _ = fmt.Fprintf(stderr, "secret %q for app %q: %v\n", e.Key, name, err)
 				failed = append(failed, e.Key)
 				continue
@@ -228,6 +242,9 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 }
 
 func printEnvImportHuman(w io.Writer, name string, r envImportResult) {
+	if r.EnvReport != nil && (len(r.EnvReport.Rejected) > 0 || len(r.EnvReport.Warnings) > 0) {
+		printEnvImportReport(w, *r.EnvReport)
+	}
 	rows := []struct {
 		mark string
 		desc string

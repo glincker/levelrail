@@ -39,7 +39,7 @@ full=false
 if [ "${NIGHTLY_FULL:-}" = true ] || [ "${NIGHTLY_RACE_ALL:-}" = true ]; then full=true; fi
 flags='-shuffle=on -timeout=40m'
 if $full; then flags='-race -shuffle=on -timeout=75m'; fi
-if has ALL || [ "$pkgs" = "ALL" ] || has github.com/GLINCKER/levelrail/internal/api; then
+if has ALL || [ "$pkgs" = "ALL" ] || has github.com/glincker/levelrail/internal/api; then
 	for i in 1 2 3 4; do lanes+=("{\"lane\":\"api-$i\",\"group\":\"api\",\"shard\":\"$i/4\",\"flags\":\"$flags\"}"); done
 fi
 if $full; then

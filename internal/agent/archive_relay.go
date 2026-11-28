@@ -5,8 +5,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // attachArchive serves a tar copy over the exec frame stream: copy-out

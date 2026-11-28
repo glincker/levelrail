@@ -1187,6 +1187,18 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     settingsArea: 'updates',
   },
   {
+    id: 'settings-announcements',
+    path: '/settings/announcements',
+    area: 'settings-updates',
+    titleKey: 'settings:nav.items.announcements.title',
+    icon: 'Bell',
+    helpPath: null,
+    gated: null,
+    palette: true,
+    sidebar: false,
+    settingsArea: 'updates',
+  },
+  {
     id: 'settings-containers',
     path: '/settings/containers',
     area: 'settings-advanced',

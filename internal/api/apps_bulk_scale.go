@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // validateBulkScale checks the request shape once; per-app rules (autoscale,

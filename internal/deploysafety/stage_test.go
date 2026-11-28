@@ -3,7 +3,7 @@ package deploysafety
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func ev(phase, status string) store.DeployGateEvent {

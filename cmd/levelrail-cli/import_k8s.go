@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/k8simport"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/k8simport"
 )
 
 func importK8sUsage(prog string) string {

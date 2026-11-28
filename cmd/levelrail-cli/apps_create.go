@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
-	"github.com/GLINCKER/levelrail/internal/healthpreset"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/gitprovider/reporef"
+	"github.com/glincker/levelrail/internal/healthpreset"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // createFlags is the raw flag input to "apps create", before any mode inference or defaulting.

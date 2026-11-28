@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runCloudAWSLightsail handles the lightsail verb. It stays off until its runtime flag is on.

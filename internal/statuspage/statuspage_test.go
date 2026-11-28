@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var now0 = time.Date(2026, 9, 25, 12, 0, 0, 0, time.UTC)

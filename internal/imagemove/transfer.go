@@ -8,7 +8,7 @@ import (
 	"slices"
 	"sync/atomic"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // ErrTooLarge is returned when the stream passes the size bound.

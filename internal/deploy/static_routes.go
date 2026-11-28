@@ -9,11 +9,11 @@ import (
 	"os"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/pages"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // StaticSiteSettingsReader is optionally implemented by the static site store

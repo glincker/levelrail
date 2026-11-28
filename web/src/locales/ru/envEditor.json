@@ -213,5 +213,17 @@
     "started": "Пересборка «{{name}}» из исходников.",
     "view": "Открыть сборку",
     "noGitSource": "Git-источник не подключён. Запустите levelrail-cli deploy из папки проекта, чтобы применить изменение, или пересоберите образ там, где он собирается, потому что значение вшито в образ."
+  },
+  "conflict": {
+    "title": "The environment changed while you were editing",
+    "description": "Your draft is kept. Tick the keys where your value should win; the others take the current server value.",
+    "changed": "changed",
+    "secretChanged": "secret changed",
+    "reload": "Reload theirs",
+    "keepMine": "Keep mine",
+    "remote": "Changed by someone else. Your draft is kept.",
+    "lockedReplace": "Replace locked secret {{key}}",
+    "lockedTitle": "Locked secrets need an explicit tick to be replaced or deleted.",
+    "restartNeeded": "Restart needed for the running app to pick this up."
   }
 }

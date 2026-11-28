@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/awsxtest"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/awsx/awsxtest"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 func TestCloudFrontRoutes_FlagOffAndInvalidate(t *testing.T) {

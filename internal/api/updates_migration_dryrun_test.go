@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 func TestMigrationDryRunEndpoint(t *testing.T) {

@@ -14,6 +14,8 @@ Usage:
   levelrail-cli spend caps rm app|project NAME
   levelrail-cli spend caps dry-run app|project NAME
   levelrail-cli spend caps override app NAME --reason TEXT
+  levelrail-cli spend caps paused
+  levelrail-cli spend caps resume app NAME --reason TEXT
 
 A cap alerts at each warn level once a month. In block_deploys mode, new
 deploys are refused at 100% until the month rolls over, the cap is raised,
@@ -24,7 +26,7 @@ for app caps only. Setting block_deploys needs a root token.
 
 ## levelrail-cli spend caps
 
-Subcommands: dry-run, list, override, rm, set, status
+Subcommands: dry-run, list, override, paused, resume, rm, set, status
 
 ```
 levelrail-cli: unknown spend caps subcommand "--help"
@@ -36,6 +38,8 @@ Usage:
   levelrail-cli spend caps rm app|project NAME
   levelrail-cli spend caps dry-run app|project NAME
   levelrail-cli spend caps override app NAME --reason TEXT
+  levelrail-cli spend caps paused
+  levelrail-cli spend caps resume app NAME --reason TEXT
 
 A cap alerts at each warn level once a month. In block_deploys mode, new
 deploys are refused at 100% until the month rolls over, the cap is raised,

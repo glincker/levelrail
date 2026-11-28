@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
 )
 
 func gcRequest(t *testing.T, rt *Router, cookie *http.Cookie, method, path, body string) *httptest.ResponseRecorder {

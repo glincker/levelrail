@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // databaseVisibilityFilter reports whether the caller can read a database.

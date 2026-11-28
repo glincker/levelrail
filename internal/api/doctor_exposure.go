@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/exposure"
+	"github.com/glincker/levelrail/internal/exposure"
 )
 
 const (

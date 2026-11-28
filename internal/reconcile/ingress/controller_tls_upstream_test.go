@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/store"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestController_Reconcile_TLSTerminatedUpstreamClearsStaleACMEFailures(t *testing.T) {

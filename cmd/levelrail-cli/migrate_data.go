@@ -12,7 +12,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const envMigrateSourcePassword = "APP_MIGRATE_SOURCE_DB_PASSWORD" //nolint:gosec // env var name, not a credential

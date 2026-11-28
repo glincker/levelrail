@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/authengine"
 )
 
 const (

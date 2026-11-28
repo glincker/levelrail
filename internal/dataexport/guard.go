@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // ErrBlockedDestination wraps a refusal to reach an internal address.

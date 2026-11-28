@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Store is the persistence the runner needs; *store.DB satisfies it.

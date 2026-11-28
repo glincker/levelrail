@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dnsstatus"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnsstatus"
+	"github.com/glincker/levelrail/internal/dnszones"
 )
 
 // Wants turns built records into one status entry per value, with ids stable

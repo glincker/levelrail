@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/secretsource"
 )
 
 // Config holds the non-secret settings; which fields apply depends on the provider.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/spool"
+	"github.com/glincker/levelrail/internal/spool"
 	"io"
 	"log/slog"
 	"mime"
@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type assetResource struct {

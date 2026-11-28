@@ -1,0 +1,22 @@
+services:
+  medusa:
+    image: linuxserver/medusa:1.0.27
+    ports: ["8081"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    volumes:
+      - medusa_config:/config
+      - medusa_downloads:/downloads
+      - medusa_tv:/tv
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8081/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+volumes:
+  medusa_config:
+  medusa_downloads:
+  medusa_tv:

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func hstsCall(t *testing.T, rt *Router, cookie *http.Cookie, method, body string) (int, hstsProbeResult) {

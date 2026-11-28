@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dataexport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dataexport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestMatches(t *testing.T) {

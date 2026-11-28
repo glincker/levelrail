@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // bakedAdmin is the state a real admin login leaves behind: the table rows

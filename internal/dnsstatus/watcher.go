@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 )
 
 // WatchState is where a watched domain is on its way to serving traffic.

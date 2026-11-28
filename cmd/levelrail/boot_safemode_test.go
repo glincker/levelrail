@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/safemode"
+	"github.com/glincker/levelrail/internal/safemode"
 )
 
 func quietBootLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }

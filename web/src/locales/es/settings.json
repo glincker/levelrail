@@ -307,6 +307,10 @@
         "title": "Actualizaciones",
         "description": "Versión actual y versiones disponibles."
       },
+      "announcements": {
+        "title": "Anuncios",
+        "description": "Avisos firmados del proyecto Levelrail y la opción del feed."
+      },
       "beta-features": {
         "title": "Funciones beta",
         "description": "Activa funciones que ya sirven pero aún se están afinando."
@@ -2330,7 +2334,10 @@
       "confirmLabel": "Escribe \"{{phrase}}\" para confirmar",
       "confirmed": "Identidad de la instancia restaurada. Los tokens de la CLI vuelven a funcionar.",
       "fingerprint": "Huella",
-      "id": "Instancia",
+      "backupSetId": "ID del conjunto de copias",
+      "copy": "Copiar",
+      "copied": "ID de instancia copiado",
+      "id": "ID de instancia",
       "movedBody": "Su identidad cambió, así que se rechazan los tokens de la CLI emitidos antes del traslado. Si es la misma instancia (una restauración o migración que hiciste), confírmalo para aceptar de nuevo esos tokens. Si no la trasladaste, déjalo así e inicia sesión de nuevo en la CLI.",
       "movedTitle": "Esta instancia se restauró en un host nuevo",
       "name": "Nombre",

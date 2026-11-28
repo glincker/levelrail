@@ -17,7 +17,7 @@ TAG="levelrail-qa"
 DRY_RUN=0
 CACHE="${QA_CACHE:-$HOME/.cache/levelrail-qa}"
 SSH_KEY="${QA_SSH_KEY:-$HOME/.ssh/id_ed25519}"
-MODULE="github.com/GLINCKER/levelrail"
+MODULE="github.com/glincker/levelrail"
 ARTIFACTS=(levelrail levelrail-cli levelrail-agent)
 SSH_OPTS=()
 

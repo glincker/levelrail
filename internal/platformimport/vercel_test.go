@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakevercel"
+	"github.com/glincker/levelrail/internal/platformimport/fakevercel"
 )
 
 func vercelDiscover(t *testing.T, fake *fakevercel.Server) *Discovery {

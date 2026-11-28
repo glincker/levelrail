@@ -14,10 +14,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agentupdate"
-	"github.com/GLINCKER/levelrail/internal/cliupdate"
-	"github.com/GLINCKER/levelrail/internal/nodeinsight"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/agentupdate"
+	"github.com/glincker/levelrail/internal/cliupdate"
+	"github.com/glincker/levelrail/internal/nodeinsight"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 // release is the same Fetcher the agent uses, pointed at an in-process server,

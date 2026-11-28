@@ -10,9 +10,9 @@ import (
 
 	"github.com/golang/snappy"
 
-	"github.com/GLINCKER/levelrail/internal/prompb"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/prompb"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 func promReadRequest(t *testing.T, cookie *http.Cookie, req prompb.ReadRequest) *http.Request {

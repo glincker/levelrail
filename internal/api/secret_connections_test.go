@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretconn"
-	"github.com/GLINCKER/levelrail/internal/secretprovider"
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/glincker/levelrail/internal/secretconn"
+	"github.com/glincker/levelrail/internal/secretprovider"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/vault"
 )
 
 func newConnRouter(t *testing.T) (*Router, *store.DB) {

@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/stressprofile"
+	"github.com/glincker/levelrail/internal/stressprofile"
 )
 
 type options struct {

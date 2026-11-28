@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/repolayout"
 )
 
 const bodyLimit = 2 << 20

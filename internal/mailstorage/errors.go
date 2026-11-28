@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/objectstore"
 )
 
 // Classified failures the dashboard explains in plain words.

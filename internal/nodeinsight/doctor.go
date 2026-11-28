@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/nodepreflight"
 )
 
 // Extra check IDs the doctor adds to the preflight set.

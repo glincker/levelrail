@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploysafety"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // --max-items/--starting-token use server-side limit/offset so large fleets are not fetched whole.

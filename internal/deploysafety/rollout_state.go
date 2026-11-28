@@ -3,7 +3,7 @@ package deploysafety
 import (
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Traffic positions of a release relative to the health gate.

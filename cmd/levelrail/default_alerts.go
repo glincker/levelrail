@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // seedDefaultAlerts creates the default alert rules once; APP_DEFAULT_ALERTS=off skips it.

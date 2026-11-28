@@ -15,7 +15,7 @@ func TestEnvSetPrintsRebuildHint(t *testing.T) {
 		"GET /api/v1/apps/web/secrets":         []map[string]string{},
 		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
 		"GET /api/v1/apps/web/pending-changes": map[string]any{},
-		"PUT /api/v1/apps/web/env":             map[string]any{"name": "web", "rebuild_required": true, "rebuild_keys": []string{"NEXT_PUBLIC_API"}},
+		"POST /api/v1/apps/web/env/apply":      map[string]any{"app": "web", "changed": true, "env_version": 5, "plan": []map[string]string{{"key": "NEXT_PUBLIC_API", "action": "set"}}},
 	}, map[string][]byte{})
 	out, _ := runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "NEXT_PUBLIC_API=https://a.example"))
 	if !strings.Contains(out, "NEXT_PUBLIC_API is baked in at build time") {
@@ -33,7 +33,7 @@ func TestEnvSetRebuildHintGitApp(t *testing.T) {
 		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
 		"GET /api/v1/apps/web/pending-changes": map[string]any{},
 		"GET /api/v1/apps/web/git-source":      map[string]any{"service_name": "web", "repo_url": "https://x/y.git", "branch": "main"},
-		"PUT /api/v1/apps/web/env":             map[string]any{"name": "web", "rebuild_required": true, "rebuild_keys": []string{"VITE_API"}},
+		"POST /api/v1/apps/web/env/apply":      map[string]any{"app": "web", "changed": true, "env_version": 5, "plan": []map[string]string{{"key": "VITE_API", "action": "set"}}},
 	}, map[string][]byte{})
 	out, _ := runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "VITE_API=https://a.example"))
 	if !strings.Contains(out, "deploy web --latest") {
@@ -47,7 +47,7 @@ func envSetRoutes(extra map[string]any) map[string]any {
 		"GET /api/v1/apps/web/secrets":         []map[string]string{},
 		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
 		"GET /api/v1/apps/web/pending-changes": map[string]any{},
-		"PUT /api/v1/apps/web/env":             map[string]any{"name": "web"},
+		"POST /api/v1/apps/web/env/apply":      map[string]any{"app": "web", "changed": true, "env_version": 5, "plan": []map[string]string{}},
 	}
 	maps.Copy(r, extra)
 	return r
@@ -58,7 +58,7 @@ func sentEnv(t *testing.T, bodies map[string][]byte) map[string]string {
 	var sent struct {
 		Set map[string]string `json:"set"`
 	}
-	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web/env"], &sent); err != nil {
+	if err := json.Unmarshal(bodies["POST /api/v1/apps/web/env/apply"], &sent); err != nil {
 		t.Fatal(err)
 	}
 	return sent.Set
@@ -163,7 +163,7 @@ func TestEnvUnsetMultipleKeys(t *testing.T) {
 		Set   map[string]string `json:"set"`
 		Unset []string          `json:"unset"`
 	}
-	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web/env"], &sent); err != nil {
+	if err := json.Unmarshal(bodies["POST /api/v1/apps/web/env/apply"], &sent); err != nil {
 		t.Fatal(err)
 	}
 	if len(sent.Set) != 0 || strings.Join(sent.Unset, ",") != "A,B" {

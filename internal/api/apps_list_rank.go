@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/search"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/search"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // appRank orders an app list by search rank. It only narrows the DB query:

@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/defparse"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/defparse"
 )
 
 // definitionDockerfile returns the Dockerfile that levelrail-definition.json names

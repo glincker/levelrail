@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/version"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/version"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // Store is the narrow store surface Scheduler needs. *store.DB satisfies
@@ -24,6 +24,12 @@ import (
 // establishes for its own store dependency.
 type Store interface {
 	GetUpdateSettings(ctx context.Context) (store.UpdateSettings, error)
+}
+
+// Announcer is polled by Tick for the signed announcement feed; it decides
+// itself whether a fetch is due and never fetches while its setting is off.
+type Announcer interface {
+	Poll(ctx context.Context) error
 }
 
 // Result is the outcome of the most recently completed check.
@@ -46,6 +52,8 @@ type Scheduler struct {
 	Store    Store
 	Fetchers upgrade.Fetchers
 	Logger   *slog.Logger
+	// Announcements, when set, is polled on every tick regardless of auto_update_enabled.
+	Announcements Announcer
 
 	mu     sync.Mutex
 	result Result
@@ -82,6 +90,12 @@ func (s *Scheduler) Result() Result {
 // operator opts in, the same "absence is a real, valid state" stance
 // this codebase takes elsewhere (e.g. IngressSettings.PrimaryDomain).
 func (s *Scheduler) Tick(ctx context.Context) error {
+	// Before the auto-update gate: security notices must not depend on update checks being on.
+	if s.Announcements != nil {
+		if err := s.Announcements.Poll(ctx); err != nil {
+			s.log().Debug("updatecheck: announcements poll failed", slog.String("error", err.Error()))
+		}
+	}
 	settings, err := s.Store.GetUpdateSettings(ctx)
 	if err != nil {
 		return fmt.Errorf("updatecheck: get update settings: %w", err)

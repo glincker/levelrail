@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/costestimate"
-	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/costestimate"
+	"github.com/glincker/levelrail/internal/resourceadvisor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

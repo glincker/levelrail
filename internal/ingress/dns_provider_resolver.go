@@ -3,7 +3,7 @@ package ingress
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ProviderSource is the store surface the resolver reads; *store.DB implements it.

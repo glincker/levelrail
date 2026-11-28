@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/glincker/levelrail/internal/envrules"
 )
 
 var (
@@ -46,7 +48,17 @@ func newEnvVar(key, value, source string) EnvVar {
 // ParseEnvFile parses KEY=VALUE lines (comments, `export`, quotes handled).
 // Values are treated as data only and are never interpolated.
 func ParseEnvFile(text, source string) []EnvVar {
-	var out []EnvVar
+	vars, _ := ParseEnvFileReport(text, source)
+	return vars
+}
+
+// ParseEnvFileReport is ParseEnvFile plus a per-key report: every refused line
+// is named with its reason instead of being skipped silently. New keys follow
+// the strict env rules, the same ones every writer applies.
+func ParseEnvFileReport(text, source string) ([]EnvVar, envrules.Report) {
+	var vars []EnvVar
+	set := map[string]string{}
+	var bad []envrules.Rejection
 	sc := bufio.NewScanner(strings.NewReader(text))
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
 	for sc.Scan() {
@@ -57,10 +69,39 @@ func ParseEnvFile(text, source string) []EnvVar {
 		line = strings.TrimSpace(strings.TrimPrefix(line, "export "))
 		k, v, ok := strings.Cut(line, "=")
 		k = strings.TrimSpace(k)
-		if !ok || !envKeyRe.MatchString(k) {
+		if !ok {
+			bad = append(bad, envrules.Rejection{Key: k, Code: "not_assignment", Reason: "line is not KEY=VALUE"})
 			continue
 		}
-		out = append(out, newEnvVar(k, unquoteEnv(v), source))
+		val := unquoteEnv(v)
+		set[k] = val
+		vars = append(vars, newEnvVar(k, val, source))
+	}
+	pol := envrules.DefaultPolicy()
+	pol.KeyMode = envrules.KeyModeStrict
+	res := envrules.Validate(set, envrules.Existing{}, pol, envrules.Options{Multiline: true})
+	rep := envrules.BuildReport(set, res)
+	rep.Rejected = append(rep.Rejected, bad...)
+	refused := map[string]bool{}
+	for _, r := range res.Errors {
+		refused[r.Key] = true
+	}
+	out := vars[:0]
+	for _, e := range vars {
+		if !refused[e.Key] {
+			out = append(out, e)
+		}
+	}
+	return out, rep
+}
+
+// MergeReports combines the reports of several env example files.
+func MergeReports(reps ...envrules.Report) envrules.Report {
+	out := envrules.Report{Accepted: []string{}, Rejected: []envrules.Rejection{}, Warnings: []envrules.Issue{}}
+	for _, r := range reps {
+		out.Accepted = append(out.Accepted, r.Accepted...)
+		out.Rejected = append(out.Rejected, r.Rejected...)
+		out.Warnings = append(out.Warnings, r.Warnings...)
 	}
 	return out
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/provision"
 )
 
 func TestVultrProvider_KnownAndSizeRegionGuard(t *testing.T) {

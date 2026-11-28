@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-webauthn/webauthn/protocol"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const passkeyBodyLimit = 1 << 20

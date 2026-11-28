@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/gpu"
 )
 
 // gpuReportInterval is how often an agent re-reports its GPU snapshot so

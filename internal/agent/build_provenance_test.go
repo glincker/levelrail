@@ -3,7 +3,7 @@ package agent
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
 )
 
 func doneFrame(id string) *agentpb.BuildOutput {

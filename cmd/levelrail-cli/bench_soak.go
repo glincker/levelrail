@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/soak"
+	"github.com/glincker/levelrail/internal/soak"
 )
 
 const defaultSoakPaths = "/api/v1/apps,/api/v1/changelog,/api/v1/system/control-plane-health"

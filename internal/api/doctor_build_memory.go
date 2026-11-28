@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // doctorCheckBuildMemory warns, never fails, when the host is under the Next.js build floor.

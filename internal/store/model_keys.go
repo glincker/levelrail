@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/timeutil"
+	"github.com/glincker/levelrail/kit/timeutil"
 )
 
 // ErrModelKeyNotFound is returned when a model has no key with the given id.

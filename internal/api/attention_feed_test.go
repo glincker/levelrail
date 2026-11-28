@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/datamigrate"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/datamigrate"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func fetchFeed(t *testing.T, rt *Router, req *http.Request) []attention.Item {
@@ -100,7 +101,7 @@ func TestAttentionFeed_ItemShape(t *testing.T) {
 	rt, db := newTestRouter(t)
 	admin := loginTestSession(t, rt, db)
 	mintExpiringToken(t, rt, admin, "ci", 2)
-	items := fetchFeed(t, rt, authedRequest(t, admin, http.MethodGet, "/api/v1/attention/feed", ""))
+	items := withoutAnnouncementOptIn(fetchFeed(t, rt, authedRequest(t, admin, http.MethodGet, "/api/v1/attention/feed", "")))
 	if len(items) != 1 {
 		t.Fatalf("items = %+v, want one", items)
 	}
@@ -112,6 +113,48 @@ func TestAttentionFeed_ItemShape(t *testing.T) {
 		if strings.ContainsAny(field, "\u2014\u2013") {
 			t.Errorf("dash in copy %q", field)
 		}
+	}
+}
+
+func withoutAnnouncementOptIn(items []attention.Item) []attention.Item {
+	var out []attention.Item
+	for _, it := range items {
+		if it.Kind != attentionKindAnnouncementOptIn {
+			out = append(out, it)
+		}
+	}
+	return out
+}
+
+func hasAnnouncementOptIn(items []attention.Item) bool {
+	return len(withoutAnnouncementOptIn(items)) != len(items)
+}
+
+// The opt-in prompt is a root-only question about fetching the feed, shown until it is answered.
+func TestAttentionFeed_AnnouncementOptInIsRootOnly(t *testing.T) {
+	rt, db := newTestRouter(t)
+	root := loginTestSession(t, rt, db)
+	admin := sessionCookieForTest(t, rt, storeUserWithAbilitiesForTest(t, db, "admin@example.com", []string{AbilityRead, AbilityWrite, AbilityWriteSensitive, AbilityDeploy}).ID)
+	viewer := sessionCookieForTest(t, rt, storeUserWithAbilitiesForTest(t, db, "viewer@example.com", []string{AbilityRead}).ID)
+	feed := func(c *http.Cookie) []attention.Item {
+		return fetchFeed(t, rt, authedRequest(t, c, http.MethodGet, "/api/v1/attention/feed", ""))
+	}
+
+	if !hasAnnouncementOptIn(feed(root)) {
+		t.Error("root must see the opt-in item while the setting is unanswered")
+	}
+	if hasAnnouncementOptIn(feed(admin)) {
+		t.Error("a non-root admin must not see the opt-in item")
+	}
+	if hasAnnouncementOptIn(feed(viewer)) {
+		t.Error("a viewer must not see the opt-in item")
+	}
+
+	if _, err := rt.runtimeSettings.Set(context.Background(), runtimesettings.KeyAnnouncements, json.RawMessage(`"off"`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	if hasAnnouncementOptIn(feed(root)) {
+		t.Error("root must not see the opt-in item once the setting is answered")
 	}
 }
 

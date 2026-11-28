@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const bundleCompose = "# Exported from Levelrail app \"shop\". Plain Docker Compose, no Levelrail needed.\nname: \"shop\"\nservices:\n  web:\n    image: \"acme/web:1\"\n"

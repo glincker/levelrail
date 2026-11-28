@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/functions"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 type functionCaptureStore interface {

@@ -9,7 +9,7 @@ COPY kit/go.mod ./kit/
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build \
-    -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${VERSION}" \
+    -ldflags "-X github.com/glincker/levelrail/internal/version.Version=${VERSION}" \
     -o /levelrail-agent ./cmd/levelrail-agent
 # Data dir pre-created so a fresh named volume inherits it.
 RUN mkdir -p /data/levelrail-agent

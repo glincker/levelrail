@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/tokenhash"
+	"github.com/glincker/levelrail/internal/tokenhash"
 )
 
 const (

@@ -1,0 +1,15 @@
+id: memgraph
+name: Memgraph
+slogan: An in-memory graph database that speaks Cypher over the Bolt protocol.
+description: Source-available (BSL 1.1 community edition). Bolt on port 7687. No authentication by default, keep the port private or create users with Cypher.
+category: Databases
+documentation_url: https://memgraph.com/docs
+recommended_memory_bytes: 1073741824
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/memgraph/memgraph
+license: BUSL-1.1
+license_class: source-available
+license_url: https://github.com/memgraph/memgraph/blob/master/LICENSE

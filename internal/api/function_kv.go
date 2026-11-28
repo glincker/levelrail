@@ -13,8 +13,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/functions"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const kvPreviewRunes = 120
@@ -246,6 +246,9 @@ func (rt *Router) handleRotateFunctionKVToken(w http.ResponseWriter, r *http.Req
 	kv := rt.functionKV()
 	if kv == nil || rt.secrets == nil {
 		writeError(w, http.StatusNotImplemented, "the key-value store needs the control plane master key")
+		return
+	}
+	if refuseReservedApp(w, svc.Name) {
 		return
 	}
 	token, err := kv.RotateFunctionKVToken(r.Context(), svc.Name, time.Now())

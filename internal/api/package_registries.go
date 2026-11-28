@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/pkgregistry"
-	"github.com/GLINCKER/levelrail/internal/registryvendor"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/pkgregistry"
+	"github.com/glincker/levelrail/internal/registryvendor"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 const packageRegistryTestTimeout = 10 * time.Second

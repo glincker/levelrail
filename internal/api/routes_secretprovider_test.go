@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretprovider"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretprovider"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestSecretProviderResourceNeverSerializesToken(t *testing.T) {

@@ -71,3 +71,4 @@ manifest:
     first_boot_seconds: 0
     console_command: []
     capabilities: []
+    requires_kernel_modules: []

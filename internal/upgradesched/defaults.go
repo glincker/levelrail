@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Defaults is the automatic upgrade policy an install gets until an operator

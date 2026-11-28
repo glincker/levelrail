@@ -17,7 +17,7 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/authengine"
 )
 
 // fakeIdentity is who the fake identity provider authenticates for one code.

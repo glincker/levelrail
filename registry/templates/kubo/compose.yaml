@@ -1,0 +1,16 @@
+services:
+  kubo:
+    image: ipfs/kubo:v0.43.2
+    ports: ["8080", "4001"]
+    environment:
+      IPFS_PROFILE: server
+    volumes:
+      - kubo_data:/data/ipfs
+    healthcheck:
+      test: ["CMD", "ipfs", "--api", "/ip4/127.0.0.1/tcp/5001", "id"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+volumes:
+  kubo_data:

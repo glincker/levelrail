@@ -1,0 +1,15 @@
+id: hammond
+name: Hammond
+slogan: A vehicle expense tracker for fuel, service and other costs with charts.
+description: MIT licensed. Uses SQLite on a volume. Create the first account from the sign-up page.
+category: Finance
+documentation_url: https://github.com/alfhou/hammond
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/alfhou/hammond
+license: MIT
+license_class: permissive
+license_url: https://github.com/alfhou/hammond/blob/master/LICENSE

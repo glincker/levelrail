@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // defaultShellSectionTimeout applies only when no runtime settings service is wired.

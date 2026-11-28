@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // certStorageCertsPrefix is the top-level storage-key prefix every

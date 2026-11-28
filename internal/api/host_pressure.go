@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/hostpressure"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/hostpressure"
+	"github.com/glincker/levelrail/internal/hostswap"
 )
 
 const (
@@ -77,15 +78,20 @@ func (rt *Router) doctorCheckNoSwap(context.Context) doctorCheckResource {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "Host pressure sampling is not running."}
 	}
 	st := rt.hostPressure.Status()
+	host := hostswap.Read("")
+	detail := ""
+	if host.Supported {
+		detail = " (" + host.Summary() + ")"
+	}
 	if st.NoSwap {
 		return doctorCheckResource{
 			Code: code, Name: name, Status: doctorStatusWarn,
-			Message:  fmt.Sprintf("No swap is configured and the host has %s of RAM. A memory spike can make the kernel kill processes, including the control plane.", humanBytes(st.Sample.MemTotal)),
-			Fix:      "Add a 1 to 2 GB swap file (fallocate, mkswap, swapon, then an fstab entry).",
+			Message:  fmt.Sprintf("No swap is configured and the host has %s of RAM. A memory spike can make the kernel kill processes, including the control plane.%s", humanBytes(st.Sample.MemTotal), detail),
+			Fix:      "On the control plane host run the CLI command 'swap' to print the exact commands (dry run), then 'sudo <cli> swap --apply' to create the swapfile. Nothing changes until you apply it.",
 			DocsPath: docsHostPressure,
 		}
 	}
-	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "Swap is configured, or the host has enough RAM to run without it."}
+	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "Swap is configured, or the host has enough RAM to run without it." + detail}
 }
 
 // hostPressureAttentionItems raises one item while the host is warm or critical.

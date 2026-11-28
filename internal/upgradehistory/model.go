@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 // Transition kinds.

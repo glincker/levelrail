@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/repolayout"
 )
 
 type fakeLayoutSource struct {

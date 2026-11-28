@@ -9,7 +9,7 @@ import (
 
 	"github.com/libdns/libdns"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnszones"
 )
 
 // defaultRecordTTLSeconds applies when neither the caller nor an existing set names a TTL.

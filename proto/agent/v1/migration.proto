@@ -7,7 +7,7 @@ syntax = "proto3";
 
 package levelrail.migration.v1;
 
-option go_package = "github.com/GLINCKER/levelrail/internal/agent/migrationpb;migrationpb";
+option go_package = "github.com/glincker/levelrail/internal/agent/migrationpb;migrationpb";
 
 import "google/protobuf/timestamp.proto";
 

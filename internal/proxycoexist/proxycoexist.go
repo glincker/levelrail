@@ -8,7 +8,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/proxyroutes"
 )
 
 // Kind is a reverse proxy family we can generate configuration for.

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/compliance"
+	"github.com/glincker/levelrail/internal/compliance"
 )
 
 func newComplianceRouter(t *testing.T) (*Router, *http.Cookie) {

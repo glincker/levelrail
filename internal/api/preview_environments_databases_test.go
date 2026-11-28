@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakePreviewDBRuntime is a hand-written fake docker.Runtime, the same
@@ -31,8 +31,8 @@ func newFakePreviewDBRuntime() *fakePreviewDBRuntime {
 	return &fakePreviewDBRuntime{containers: map[string]*docker.ContainerState{}}
 }
 
-func (f *fakePreviewDBRuntime) seed(name string, running bool) {
-	f.containers[name] = &docker.ContainerState{ID: "c-" + name, Name: name, Running: running}
+func (f *fakePreviewDBRuntime) seed(name string) {
+	f.containers[name] = &docker.ContainerState{ID: "c-" + name, Name: name, Running: true}
 }
 
 func (f *fakePreviewDBRuntime) InspectByName(_ context.Context, name string) (*docker.ContainerState, error) {
@@ -205,7 +205,7 @@ func TestTeardownPreviewEphemeralDatabase_RemovesContainerAndRows(t *testing.T) 
 	if err != nil {
 		t.Fatalf("GetPreviewEphemeralDatabaseByPreviewAndKey() error = %v", err)
 	}
-	runtime.seed(database.ContainerName(tracked.DatabaseName), true)
+	runtime.seed(database.ContainerName(tracked.DatabaseName))
 
 	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
 	if rec.Code != http.StatusOK {
@@ -244,7 +244,7 @@ func TestTeardownPreviewEphemeralDatabase_HalfSucceeded_ThenRetrySucceeds(t *tes
 	if err != nil {
 		t.Fatalf("GetPreviewEphemeralDatabaseByPreviewAndKey() error = %v", err)
 	}
-	runtime.seed(database.ContainerName(tracked.DatabaseName), true)
+	runtime.seed(database.ContainerName(tracked.DatabaseName))
 	runtime.removeErr = errors.New("engine temporarily unavailable")
 
 	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
@@ -404,7 +404,7 @@ func TestTeardownPreviewEphemeralDatabase_ProtectedBranchKeepsContainer(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	runtime.seed(database.ContainerName(tracked.DatabaseName), true)
+	runtime.seed(database.ContainerName(tracked.DatabaseName))
 	if err := db.CreateDatabaseBranch(ctx, store.DatabaseBranch{ID: "b", DatabaseName: tracked.DatabaseName, ParentName: "x", RootName: "x", Mode: "full", Source: "live", State: "ready", Protected: true, CreatedAt: "t", UpdatedAt: "t"}); err != nil {
 		t.Fatal(err)
 	}

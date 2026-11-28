@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bitbucketapp"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // bitbucketPullRequestBody builds a pullrequest:* event payload

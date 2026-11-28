@@ -4,7 +4,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/diskhistory"
+	"github.com/glincker/levelrail/internal/diskhistory"
 )
 
 // DiskForecast mirrors the forecast block of GET /api/v1/system/disk/history.

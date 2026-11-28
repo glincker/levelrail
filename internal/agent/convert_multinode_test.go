@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 func TestContainerSpecMultiNodeFieldsRoundTrip(t *testing.T) {

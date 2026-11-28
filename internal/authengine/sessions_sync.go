@@ -11,7 +11,7 @@ import (
 	theauth "github.com/glincker/theauth-go/v2"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/identity"
 )
 
 func parseULID(s string) (theauth.ULID, error) {

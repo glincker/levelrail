@@ -11,7 +11,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const mailBackupUsageLines = `  %[1]s mail backup run [--app name] [--wait]   back up, verify and encrypt the mail server now

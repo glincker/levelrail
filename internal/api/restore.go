@@ -10,8 +10,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	backupbusy "github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/store"
+	backupbusy "github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // RestoreHistoryStore is the store surface the restore history handler

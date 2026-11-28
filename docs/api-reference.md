@@ -128,6 +128,7 @@ System endpoints for:
 | GET | /api/v1/system/processes | AbilityRoot | handleGetSystemProcesses |
 | GET | /api/v1/system/slow-statements | AbilityRoot | handleGetSlowStatements |
 | GET | /api/v1/updates/self-upgrade/smoke | AbilityRead | handleSelfUpgradeSmoke |
+| POST | /api/v1/system/disk/gc | AbilityRoot | handleDiskGC |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -816,6 +817,8 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/env/revisions/{rev}/restore | AbilityWrite | handleRestoreEnvRevision |
 | GET | /api/v1/deploys/{id}/why | AbilityRead | handleGetDeployWhy |
 | PUT | /api/v1/apps/{name}/env | AbilityWrite | handlePutAppEnv |
+| POST | /api/v1/apps/{name}/budget/resume | AbilityRoot | handleSpendCapResume |
+| POST | /api/v1/apps/{name}/env/apply | AbilityWrite | handleApplyEnvPlan |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
 
@@ -2659,6 +2662,22 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/node-pools/{name} | AbilityRoot | handleDeleteNodePool |
 | GET | /api/v1/external-databases/providers | AbilityRoot | handleListExternalDatabaseProviders |
 | POST | /api/v1/external-databases/parse | AbilityRoot | handleParseExternalDatabaseURL |
+| GET | /api/v1/templates/compat | AbilityRead | handleListTemplateCompat |
+| GET | /api/v1/templates/sources | AbilityRoot | handleListTemplateSources |
+| POST | /api/v1/templates/sources | AbilityRoot | handleCreateTemplateSource |
+| GET | /api/v1/templates/sources/{name}/templates | AbilityRoot | handleListTemplateSourceEntries |
+| POST | /api/v1/templates/sources/{name}/sync | AbilityRoot | handleSyncTemplateSource |
+| DELETE | /api/v1/templates/sources/{name} | AbilityRoot | handleDeleteTemplateSource |
+| POST | /api/v1/templates/sources/{name}/templates/{id}/approve | AbilityRoot | handleApproveTemplateSourceEntry |
+| GET | /api/v1/templates/sources/{name}/templates/{id} | AbilityRoot | handleGetTemplateSourceEntry |
+| GET | /api/v1/costs/capped-apps | AbilityRead | handleListSpendCapPaused |
+| GET | /api/v1/announcements | AbilityRead | handleListAnnouncements |
+| GET | /api/v1/announcements/banner | AbilityRead | handleAnnouncementBanner |
+| POST | /api/v1/announcements/{id}/read | Session | handleAnnouncementRead |
+| POST | /api/v1/announcements/{id}/dismiss | Session | handleAnnouncementDismiss |
+| POST | /api/v1/announcements/{id}/snooze | Session | handleAnnouncementSnooze |
+| POST | /api/v1/tokens/bulk-revoke | Session | handleBulkRevokeTokens |
+| POST | /api/v1/tokens/prune | AbilityRoot | handlePruneTokens |
 | POST | /mcp | Public |  |
 
 ## See also

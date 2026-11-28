@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/forms"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/forms"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // FormsStore is the persistence surface for form capture; nil on the router means the routes answer 501.

@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 // runOpen implements "open <app>": print the app's public addresses, primary first.

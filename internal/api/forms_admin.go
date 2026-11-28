@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/forms"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/forms"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const maxFormNotifyChannels = 10

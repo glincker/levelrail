@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploy"
 )
 
 func TestRemoveNextImageCacheVolume(t *testing.T) {

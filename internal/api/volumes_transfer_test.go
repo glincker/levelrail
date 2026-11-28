@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // transferRuntime fakes the helper container: Exec lists an empty volume or tars fixed bytes, ExecWithInput records the stream.

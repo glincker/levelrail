@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/canarypolicy"
-	"github.com/GLINCKER/levelrail/internal/rolloutpolicy"
+	"github.com/glincker/levelrail/internal/canarypolicy"
+	"github.com/glincker/levelrail/internal/rolloutpolicy"
 )
 
 // Platform defaults for rolling deploys and staged canaries. An app's own

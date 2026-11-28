@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // dnsQueriesDefaultLimit is the page size when the caller sends no limit.

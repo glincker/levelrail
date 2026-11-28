@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 // One compose file creates one app plus its member services in a single call.

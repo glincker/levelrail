@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Database rule kinds. They target BackupDatabaseName and reuse Threshold (percent) and ForDuration, so they need no schema change.

@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // sessionStream is the narrow surface mux needs from a Session stream, so tests can fake it.

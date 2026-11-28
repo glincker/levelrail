@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 func deployProxy(t *testing.T, req Request) (string, []string, error) {

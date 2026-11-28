@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // bindConfirmFlag registers --confirm plus its --yes/-y aliases, so scripts that pass --yes to "deploy" work on the apps deploy family too.

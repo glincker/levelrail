@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/diagnose"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/repolayout"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/diagnose"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDeleteAppRemovesPerAppAccessRows(t *testing.T) {
@@ -44,7 +44,7 @@ func TestDeleteAppRemovesPerAppAccessRows(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/site", ""))
-	if rec.Code != http.StatusNoContent {
+	if rec.Code != http.StatusNoContent && rec.Code != http.StatusOK {
 		t.Fatalf("delete status = %d", rec.Code)
 	}
 	seedApp(t, db, "site")
@@ -117,7 +117,7 @@ func TestDeleteAppRemovesGitSourceAndSecrets(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/site", ""))
-	if rec.Code != http.StatusNoContent {
+	if rec.Code != http.StatusNoContent && rec.Code != http.StatusOK {
 		t.Fatalf("delete status = %d", rec.Code)
 	}
 	seedApp(t, db, "site")

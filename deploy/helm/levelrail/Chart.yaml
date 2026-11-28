@@ -1,0 +1,28 @@
+apiVersion: v2
+name: levelrail
+description: Levelrail control plane, a self-hosted deployment platform
+type: application
+# The release job overwrites version and appVersion with the release tag.
+version: 0.0.0
+appVersion: "0.0.0"
+home: https://levelrail.com
+sources:
+  - https://github.com/glincker/levelrail
+keywords:
+  - deployment
+  - self-hosted
+  - paas
+maintainers:
+  - name: Levelrail
+    email: support@levelrail.com
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/category: integration-delivery
+  artifacthub.io/images: |
+    - name: levelrail
+      image: ghcr.io/glincker/levelrail:latest
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://levelrail.com/docs
+    - name: Source
+      url: https://github.com/glincker/levelrail

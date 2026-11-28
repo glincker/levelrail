@@ -3,7 +3,7 @@ package spec
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendcap"
 )
 
 func TestBudgetCap(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 // cliProg is the binary name for empty-result hints that have no prog argument.

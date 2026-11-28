@@ -10,9 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/resourceadvisor"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // advisorDockerTimeout bounds the one Docker call so the advisor never
@@ -42,6 +44,9 @@ func (rt *Router) advisorThresholds() resourceadvisor.Thresholds {
 	th, errs := resourceadvisor.ThresholdsFromEnv(os.LookupEnv)
 	for _, err := range errs {
 		rt.logger.Warn("resource advisor: ignoring threshold", slog.String("error", err.Error()))
+	}
+	if rt.runtimeSettings != nil {
+		th.IdleWindow = time.Duration(rt.runtimeSettings.Limit(context.Background(), runtimesettings.KeyAdvisorIdleHours)) * time.Hour
 	}
 	return th
 }
@@ -77,6 +82,9 @@ func (rt *Router) advisorNodeOf(nodeID string) string {
 
 func (rt *Router) advisorInput(ctx context.Context, th resourceadvisor.Thresholds, now time.Time) (resourceadvisor.Input, error) {
 	in := resourceadvisor.Input{Now: now, Thresholds: th}
+	if rt.runtimeSettings != nil {
+		in.NodePrices, _ = runtimesettings.ParseNodePrices(rt.runtimeSettings.String(ctx, runtimesettings.KeyAdvisorNodePrices))
+	}
 	svcs, err := rt.apps.ListDesiredServices(ctx)
 	if err != nil {
 		return in, fmt.Errorf("resource advisor: list apps: %w", err)
@@ -273,4 +281,17 @@ func databaseLinks(svcs []store.DesiredService, dbs []store.DesiredDatabase) map
 		}
 	}
 	return out
+}
+
+// AdvisorDigestTotals returns the finding count and reclaimable MiB for the weekly digest, ok=false while the beta is off.
+func (rt *Router) AdvisorDigestTotals(ctx context.Context) (int, int64, bool) {
+	if !experimental.Enabled(experimental.ResourceAdvisor) {
+		return 0, 0, false
+	}
+	fs, err := rt.advisorFindings(ctx)
+	if err != nil {
+		return 0, 0, false
+	}
+	s := resourceadvisor.Summarize(fs, 0)
+	return s.Actionable, s.ReclaimableMB, s.Actionable > 0
 }

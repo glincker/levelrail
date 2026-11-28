@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakecoolify"
+	"github.com/glincker/levelrail/internal/platformimport/fakecoolify"
 )
 
 // fakeCoolifyServer returns an httptest.Server that answers the three

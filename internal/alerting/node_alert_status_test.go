@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 func healthyNodeAlertSamples(node store.Node, now time.Time) map[string]map[string][]telemetry.Sample {

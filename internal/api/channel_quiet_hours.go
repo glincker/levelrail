@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/alerting"
 )
 
 // ChannelQuietHours is the quiet-hours surface of alerting.DB.

@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const minStaticKeepReleases = 3

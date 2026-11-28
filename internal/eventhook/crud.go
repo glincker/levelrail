@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dataexport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dataexport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // knownEventTypes seeds the UI picker; subscriptions also accept any

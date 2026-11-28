@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // volumeNameRe mirrors internal/spec's own unexported nameLike pattern

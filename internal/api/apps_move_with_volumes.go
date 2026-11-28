@@ -11,9 +11,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AppVolumeMoveStore is the store surface handleMoveAppWithVolumes and its
@@ -221,7 +221,7 @@ func (rt *Router) runAppVolumeMove(ctx context.Context, moveID, serviceName, fro
 		if err := rt.apps.UpdateServiceSuspended(ctx, serviceName, true); err != nil {
 			return err
 		}
-		return application.New(serviceName, rt.apps, srcRuntime).Teardown(ctx)
+		return application.New(serviceName, rt.apps, srcRuntime).Teardown(rt.fenced(ctx, serviceName))
 	}) {
 		return
 	}

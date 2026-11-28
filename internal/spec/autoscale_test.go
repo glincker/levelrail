@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/autoscale"
 )
 
 func TestAutoscalePolicy(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 func TestBuildEscrow_RoundTripMultiRecipient(t *testing.T) {

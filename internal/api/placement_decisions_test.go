@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agent"
 )
 
 const testGiB = uint64(1) << 30

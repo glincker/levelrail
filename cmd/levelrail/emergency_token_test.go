@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func noEnv(string) (string, bool) { return "", false }
@@ -119,4 +119,44 @@ func TestRunEmergencyToken_RefusesWithoutAnAdmin(t *testing.T) {
 		t.Errorf("stdout = %q, must print no token on failure", stdout.String())
 	}
 	_ = os.Remove(dbPath)
+}
+
+func TestRunEmergencyToken_FailsClosedWhenTheAuditWriteFails(t *testing.T) {
+	ctx := context.Background()
+	dbPath := filepath.Join(t.TempDir(), "levelrail.db")
+	logger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
+	open := func(ctx context.Context) (*store.DB, error) { return store.Open(ctx, dbPath) }
+	seed, err := open(ctx)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := recoverAdminUser(ctx, seed, "admin", "correct horse battery staple"); err != nil {
+		t.Fatalf("seed admin: %v", err)
+	}
+	if _, err := seed.ExecContext(ctx, "DROP TABLE audit_log"); err != nil {
+		t.Fatalf("drop audit table: %v", err)
+	}
+	_ = seed.Close()
+
+	var stdout bytes.Buffer
+	if err := runEmergencyToken(ctx, logger, nil, &stdout, open); err == nil {
+		t.Fatal("runEmergencyToken() succeeded without an audit write")
+	}
+	if strings.Contains(stdout.String(), emergencyTokenPrefix+"_") {
+		t.Error("a token was printed although the audit write failed")
+	}
+	db, err := open(ctx)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	tokens, err := db.ListAPITokens(ctx)
+	if err != nil {
+		t.Fatalf("ListAPITokens: %v", err)
+	}
+	for _, tk := range tokens {
+		if tk.Name == emergencyTokenName && tk.RevokedAt == nil {
+			t.Errorf("token %s is still live", tk.ID)
+		}
+	}
 }

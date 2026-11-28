@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // httpSinkTimeout bounds one Send call: a generic collector endpoint an

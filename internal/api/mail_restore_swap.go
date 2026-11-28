@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/mail/mox"
-	"github.com/GLINCKER/levelrail/internal/mailbackup/moxrun"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/mail/mox"
+	"github.com/glincker/levelrail/internal/mailbackup/moxrun"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // mailRestoreHoldPrefix marks a maintenance hold owned by a mail restore.

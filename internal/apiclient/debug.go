@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/envredact"
 )
 
 // debugTarget holds the writer every request traces to, nil (the zero

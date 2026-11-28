@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // GFSStore is the store surface grandfather-father-son pruning needs.

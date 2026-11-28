@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/deploytimeline"
+	"github.com/glincker/levelrail/internal/deploytimeline"
 )
 
 const (

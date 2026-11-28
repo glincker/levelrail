@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/accesspolicy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/accesspolicy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

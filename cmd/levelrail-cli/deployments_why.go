@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // topWhyTemplates bounds the text output; --json carries every cluster.
@@ -35,6 +35,12 @@ func runDeploymentsWhy(prog string, args []string, stdout, stderr io.Writer, loo
 
 func printDeployWhy(out io.Writer, w apiclient.DeployWhy) {
 	_, _ = fmt.Fprintf(out, "deploy %s: %s\n", w.DeployID, w.Verdict)
+	for _, l := range w.Summary {
+		_, _ = fmt.Fprintf(out, "  %s\n", cleanWhyText(l))
+	}
+	if len(w.Summary) > 0 {
+		return
+	}
 	if w.ExitCode != nil {
 		_, _ = fmt.Fprintf(out, "  exit code: %d\n", *w.ExitCode)
 	}

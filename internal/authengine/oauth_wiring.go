@@ -10,7 +10,7 @@ import (
 
 	theauth "github.com/glincker/theauth-go/v2"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

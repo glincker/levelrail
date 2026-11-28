@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
 )
 
 // InventoryDoc is the stored and served form of one discovery.

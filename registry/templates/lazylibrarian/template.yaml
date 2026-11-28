@@ -1,0 +1,15 @@
+id: lazylibrarian
+name: LazyLibrarian
+slogan: A book library manager that finds, downloads and sorts ebooks and audiobooks.
+description: GPL 3.0 licensed. Web UI on port 5299. Connect a download client and a book folder in the settings.
+category: Media
+documentation_url: https://lazylibrarian.gitlab.io
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://gitlab.com/LazyLibrarian/LazyLibrarian
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://gitlab.com/LazyLibrarian/LazyLibrarian/-/blob/master/LICENSE

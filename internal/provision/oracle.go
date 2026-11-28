@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/ocisign"
+	"github.com/glincker/levelrail/internal/ocisign"
 )
 
 // maxOracleMetadataBytes is OCI's cap on the metadata map; checked before launch

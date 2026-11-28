@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (
@@ -65,6 +65,8 @@ func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now ti
 	items = append(items, rt.interruptedDeployAttentionItems(r, abilities)...)
 	items = append(items, rt.buildQueueAttentionItems(r, abilities)...)
 	items = append(items, rt.uncleanRestartAttentionItems(r.Context(), abilities, now)...)
+	items = append(items, rt.restoreNeedsAttentionItems(r, abilities)...)
+	items = append(items, rt.announcementAttentionItems(r, abilities, now)...)
 	return withoutSilenced(items, rt.activeSilences(r.Context(), now), now)
 }
 

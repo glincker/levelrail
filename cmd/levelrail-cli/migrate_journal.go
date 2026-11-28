@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // The journal holds only kinds, names, step states and fingerprints: never values, so a leaked journal leaks no secret.

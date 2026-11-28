@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // applyJournal records one --apply run step by step; a nil *applyJournal records nothing.

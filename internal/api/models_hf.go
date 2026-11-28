@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/models"
 )
 
 // ModelPreflightService is the optional surface behind the Hugging Face

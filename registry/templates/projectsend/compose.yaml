@@ -1,0 +1,39 @@
+services:
+  projectsend:
+    image: linuxserver/projectsend:r2098-ls10
+    ports: ["80"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - projectsend_config:/config
+      - projectsend_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:80/ | grep -qE '^(200|301|302)'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: projectsend
+      MARIADB_USER: projectsend
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+    volumes:
+      - projectsend_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+volumes:
+  projectsend_config:
+  projectsend_data:
+  projectsend_db:

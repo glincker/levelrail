@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/rolloutpolicy"
+	"github.com/glincker/levelrail/internal/rolloutpolicy"
 )
 
 // Rollout is a service's rolling deploy and disruption budget settings.

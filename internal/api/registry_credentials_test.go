@@ -14,7 +14,7 @@ import (
 
 	cerrdefs "github.com/containerd/errdefs"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeRegistryCredentialSecretsSetter is a hand-written fake for

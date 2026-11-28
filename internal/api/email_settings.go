@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EmailSecretsStore is the surface the email settings handlers need from

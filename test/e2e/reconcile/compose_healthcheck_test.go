@@ -20,11 +20,11 @@ import (
 
 	"github.com/docker/docker/api/types/image"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/test/e2e/testenv"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/test/e2e/testenv"
 )
 
 // TestComposeHealthcheck_Live_GatesDeploySuccess builds

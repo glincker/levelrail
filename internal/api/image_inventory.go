@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/imagelife"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/imagelife"
 )
 
 const (

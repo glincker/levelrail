@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDeployDispatcher_Dispatch_WebpushAudienceIsAppAndChannelProject(t *testing.T) {

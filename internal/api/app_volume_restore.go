@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ServiceVolumeRestoreHistoryStore is the store surface the volume
@@ -63,6 +63,9 @@ func (rt *Router) handleTriggerVolumeRestore(w http.ResponseWriter, r *http.Requ
 	}
 	if backup.ServiceName != serviceName || backup.VolumeName != volumeName {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", req.BackupID, serviceName, volumeName))
+		return
+	}
+	if rt.refuseForeignVolumeBackup(w, r, serviceName, backup) {
 		return
 	}
 	if backup.Status != store.BackupStatusSucceeded {

@@ -20,7 +20,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 
-	"github.com/GLINCKER/levelrail/internal/gitsshkey"
+	"github.com/glincker/levelrail/internal/gitsshkey"
 )
 
 const lastUsedFile = ".last_used"

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/timeutil"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/timeutil"
 )
 
 const recordColumns = `attempt_id, app_name, sbom_format, package_count, sbom_bytes, has_provenance, summary, generated_at,

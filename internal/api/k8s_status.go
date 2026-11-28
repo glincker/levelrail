@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type k8sConditionRow struct {

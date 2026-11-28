@@ -37,6 +37,7 @@ export interface AdvisorImpact {
   saving_memory_bytes?: number
   saving_nano_cpus?: number
   saving_disk_bytes?: number
+  monthly_saving?: number
   exhaustion_at?: string
   risk?: string
 }
@@ -58,6 +59,7 @@ export interface AdvisorFinding {
   why: string
   evidence: AdvisorEvidence
   impact: AdvisorImpact
+  reclaimable_mb?: number
   action?: AdvisorAction
   params?: Record<string, string>
   state?: 'dismissed' | 'snoozed'

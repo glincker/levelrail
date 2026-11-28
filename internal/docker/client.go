@@ -440,7 +440,7 @@ func observedPorts(ports []container.Port) []PortBinding {
 
 // Create implements Runtime.
 func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error) {
-	if err := c.ensureImage(ctx, spec.Image, spec.RegistryAuth, spec.ForcePull, spec.OnPull); err != nil {
+	if err := c.ensureImagePlatform(ctx, spec.Image, spec.RegistryAuth, spec.ForcePull, spec.OnPull, spec.Platform); err != nil {
 		return "", err
 	}
 
@@ -479,7 +479,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			StopTimeout:  spec.StopTimeoutSeconds,
 		},
 		hostConfig,
-		toNetworkingConfig(spec.Network), nil,
+		toNetworkingConfig(spec.Network), parsePlatform(spec.Platform),
 		spec.Name,
 	)
 	if err != nil {
@@ -1261,8 +1261,16 @@ func (c *Client) streamExecOutput(ctx context.Context, containerID, execID strin
 // onPull, when set, receives the pull's progress; a local hit reports a single
 // Done event with Status "cached".
 func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth, forcePull bool, onPull func(PullEvent)) error {
+	return c.ensureImagePlatform(ctx, ref, auth, forcePull, onPull, "")
+}
+
+// ensureImagePlatform is ensureImage for an image pinned to platform ("" keeps the node default).
+func (c *Client) ensureImagePlatform(ctx context.Context, ref string, auth *RegistryAuth, forcePull bool, onPull func(PullEvent), platform string) error {
 	if !forcePull {
-		_, err := c.cli.ImageInspect(ctx, ref)
+		inspect, err := c.cli.ImageInspect(ctx, ref)
+		if err == nil && platform != "" && !platformMatches(platform, inspect.Os, inspect.Architecture, inspect.Variant) {
+			err = cerrdefs.ErrNotFound.WithMessage("local image is not " + platform)
+		}
 		if err == nil {
 			if onPull != nil {
 				onPull(PullEvent{Phase: PullPhaseDone, Ref: ref, Status: PullStatusCached, Percent: 100})
@@ -1274,16 +1282,16 @@ func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth
 		}
 	}
 
-	return pulls.do(ctx, pullKey(ref, auth), func() error {
-		return c.pullImage(ctx, ref, auth, onPull)
+	return pulls.do(ctx, pullKey(ref, auth)+"\x00"+platform, func() error {
+		return c.pullImage(ctx, ref, auth, onPull, platform)
 	})
 }
 
 // pulls dedupes and caps image pulls across all deploy pipelines.
 var pulls = newPullGroup()
 
-func (c *Client) pullImage(ctx context.Context, ref string, auth *RegistryAuth, onPull func(PullEvent)) error {
-	var pullOpts image.PullOptions
+func (c *Client) pullImage(ctx context.Context, ref string, auth *RegistryAuth, onPull func(PullEvent), platform string) error {
+	pullOpts := image.PullOptions{Platform: platform}
 	if auth != nil {
 		encoded, err := registry.EncodeAuthConfig(auth.authConfig())
 		if err != nil {

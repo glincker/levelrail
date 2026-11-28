@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/localmode"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/localmode"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // applyLocalMode enforces the loopback-only rules of a local instance and serves its apps over plain HTTP.

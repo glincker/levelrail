@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // handleGetEnvironmentEnv handles GET /api/v1/environments/{id}/env.

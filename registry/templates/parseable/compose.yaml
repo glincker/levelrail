@@ -1,0 +1,23 @@
+services:
+  parseable:
+    image: parseable/parseable:v2.8.0
+    command: ["parseable", "local-store"]
+    ports: ["8000"]
+    environment:
+      P_USERNAME: admin
+      P_PASSWORD: $SERVICE_PASSWORD_24_ADMIN
+      P_ADDR: 0.0.0.0:8000
+      P_FS_DIR: /parseable/data
+      P_STAGING_DIR: /parseable/staging
+    volumes:
+      - parseable_data:/parseable/data
+      - parseable_staging:/parseable/staging
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8000/api/v1/liveness || curl -fsS -o /dev/null http://127.0.0.1:8000/api/v1/liveness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+volumes:
+  parseable_data:
+  parseable_staging:

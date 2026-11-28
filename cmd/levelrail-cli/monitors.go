@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runMonitors dispatches "monitors <verb>": experimental uptime checks, off until the monitors.enabled runtime setting is on.

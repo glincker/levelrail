@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/certflow"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/certflow"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // CertStore is the store surface handleListCertificates and

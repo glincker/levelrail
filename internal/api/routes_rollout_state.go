@@ -6,8 +6,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // rolloutStateResource is GET /api/v1/apps/{name}/rollout/state: the newest

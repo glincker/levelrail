@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/bindmount"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/bindmount"
+	"github.com/glincker/levelrail/internal/spec"
 	"gopkg.in/yaml.v3"
 )
 
@@ -125,6 +125,7 @@ type Service struct {
 	Sysctls         sysctlMap
 	CapDrop         []string
 	PidsLimit       int
+	Platform        string
 	ReadOnly        bool
 	HostAccess      HostAccess
 	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
@@ -137,6 +138,9 @@ type Service struct {
 	// ports: published on their own host port with a private bind, instead
 	// of being dropped. The routed web port is the first tcp port not listed.
 	PublishedTCP []int
+	// Node is x-levelrail-node: where this service should run, as a node name
+	// or a key=value label selector. The API resolves it; empty means no pin.
+	Node string
 	// DependsOnHealthy lists the DependsOn entries declared with
 	// condition: service_healthy, which wait for readiness, not just start.
 	DependsOnHealthy []string
@@ -344,6 +348,9 @@ func validateComposeServices(f *File, allowBuild, allowBindMounts bool) []error 
 					errs = append(errs, fmt.Errorf("service %q: bind-mount volume %q is not supported here, use a named volume instead", name, v.ContainerPath))
 					continue
 				}
+				if socketGrantCovers(f, name, v) {
+					continue
+				}
 				if err := validateBindMountHostPath(v.HostPath); err != nil {
 					errs = append(errs, fmt.Errorf("service %q: %w", name, err))
 				}
@@ -463,6 +470,9 @@ func joinErrors(errs []error) error {
 func validateStrategies(f *File) []error {
 	var errs []error
 	for _, name := range sortedServiceNames(f) {
+		if err := ValidateNodeRef(f.Services[name].Node); err != nil {
+			errs = append(errs, fmt.Errorf("service %q: x-levelrail-node: %w", name, err))
+		}
 		switch f.Services[name].Strategy {
 		case "", spec.StrategyBlueGreen, spec.StrategyRecreate, spec.StrategyRolling:
 		default:

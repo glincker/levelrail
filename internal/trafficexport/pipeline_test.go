@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/testutil"
+	"github.com/glincker/levelrail/internal/testutil"
 	"strings"
 	"sync"
 	"testing"

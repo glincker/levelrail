@@ -4,10 +4,10 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/ingress"
+	ingressreconcile "github.com/glincker/levelrail/internal/reconcile/ingress"
 )
 
 // tunnelSocketDirName sits under the data dir, which is private to the service user.

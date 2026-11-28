@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deployreceipt"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deployreceipt"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type failingApprovals struct{ DeployApprovalStore }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build/cachebudget"
+	"github.com/glincker/levelrail/internal/build/cachebudget"
 )
 
 const (
@@ -13,6 +13,8 @@ const (
 
 	defaultGCSourceKeep  = 48 * time.Hour
 	defaultGCSourceMaxMB = 512
+	// defaultCPUShares is a quarter of the engine weight so builds yield to the control plane.
+	defaultCPUShares = 256
 )
 
 // gcSizing is the resolved byte budget written into the three GC rules.

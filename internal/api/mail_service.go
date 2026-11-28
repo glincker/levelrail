@@ -2,19 +2,19 @@ package api
 
 import (
 	"context"
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 	"log/slog"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnsstatus"
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/mailcast"
-	"github.com/GLINCKER/levelrail/internal/mailgroups"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dnsstatus"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/mailcast"
+	"github.com/glincker/levelrail/internal/mailgroups"
+	"github.com/glincker/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Mail tuning, all overridable from the environment.

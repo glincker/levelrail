@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/reconcile"
 )
 
 // Fake-runtime twin of the live compose healthcheck test: the compose probe, translated for real, gates the deploy.

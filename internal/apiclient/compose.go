@@ -115,6 +115,19 @@ type TemplateInstallRequest struct {
 	Domains map[string]string `json:"domains,omitempty"`
 	// ProjectID groups the installed services under a project.
 	ProjectID string `json:"project_id,omitempty"`
+	// AllowPlatformMismatch installs despite an unverified architecture.
+	AllowPlatformMismatch bool `json:"allow_platform_mismatch,omitempty"`
+	// NodeID pins the install to a node by id or name; NodeSelector takes key=value labels.
+	NodeID       string `json:"node_id,omitempty"`
+	NodeSelector string `json:"node_selector,omitempty"`
+}
+
+// NodeRefFields splits a --node value into the node_id or node_selector request field.
+func NodeRefFields(ref string) (nodeID, selector string) {
+	if strings.Contains(ref, "=") {
+		return "", ref
+	}
+	return ref, ""
 }
 
 func profilesQuery(profiles []string) string {
@@ -122,6 +135,26 @@ func profilesQuery(profiles []string) string {
 		return ""
 	}
 	return "?profiles=" + url.QueryEscape(strings.Join(profiles, ","))
+}
+
+// DeployComposeStackOnNode is DeployComposeStack pinned to a node by name, id or label selector.
+func (c *Client) DeployComposeStackOnNode(ctx context.Context, name string, composeYAML []byte, profiles []string, node string) (ComposeStackDeploy, error) {
+	var out ComposeStackDeploy
+	q := url.Values{}
+	if len(profiles) > 0 {
+		q.Set("profiles", strings.Join(profiles, ","))
+	}
+	if id, sel := NodeRefFields(node); id != "" {
+		q.Set("node_id", id)
+	} else if sel != "" {
+		q.Set("node_selector", sel)
+	}
+	path := "/api/v1/apps/" + PathEscape(name) + "/compose"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	err := c.postYAML(ctx, path, composeYAML, &out)
+	return out, err
 }
 
 // postYAML sends a raw YAML body, which do() (JSON only) cannot.

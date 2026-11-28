@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dbprovision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbprovision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type provisionDBStore struct {

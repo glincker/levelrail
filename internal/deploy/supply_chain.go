@@ -3,7 +3,7 @@ package deploy
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // SupplyChainHook stores a build's SBOM and may veto the release. A non-nil

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/awsxtest"
+	"github.com/glincker/levelrail/internal/awsx/awsxtest"
 )
 
 const iid = "i-0123456789abcdef0"

@@ -1,0 +1,22 @@
+services:
+  lazylibrarian:
+    image: linuxserver/lazylibrarian:c5bec1de-ls409
+    ports: ["5299"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    volumes:
+      - lazylibrarian_config:/config
+      - lazylibrarian_downloads:/downloads
+      - lazylibrarian_books:/books
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5299/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+volumes:
+  lazylibrarian_config:
+  lazylibrarian_downloads:
+  lazylibrarian_books:

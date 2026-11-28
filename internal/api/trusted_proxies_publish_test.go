@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
 )
 
 func TestSetResolvedTrustedProxiesReachesIngressReaders(t *testing.T) {

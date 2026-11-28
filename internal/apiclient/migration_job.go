@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/migrationgate"
+	"github.com/glincker/levelrail/internal/migrationgate"
 )
 
 // MigrationJobItem is one selected resource of a migration job.

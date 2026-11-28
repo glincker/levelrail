@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/agentinit"
+	"github.com/glincker/levelrail/internal/agentinit"
 	"golang.org/x/term"
 )
 

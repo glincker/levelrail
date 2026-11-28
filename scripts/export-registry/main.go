@@ -12,19 +12,58 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/catalog"
+	"gopkg.in/yaml.v3"
 )
 
+// carryHandWritten keeps fields the Go catalog does not hold (licence, source,
+// icon, status, kernel modules, leading attribution comments) from the file on disk.
+func carryHandWritten(meta, old []byte) ([]byte, error) {
+	if len(old) == 0 {
+		return meta, nil
+	}
+	var cur, prev catalog.RegistryMeta
+	if err := yaml.Unmarshal(meta, &cur); err != nil {
+		return nil, err
+	}
+	if err := yaml.Unmarshal(old, &prev); err != nil {
+		return meta, nil //nolint:nilerr // unreadable old file is simply regenerated
+	}
+	cur.SourceRepo, cur.License = prev.SourceRepo, prev.License
+	cur.LicenseClass, cur.LicenseURL = prev.LicenseClass, prev.LicenseURL
+	cur.Icon, cur.Status = prev.Icon, prev.Status
+	if cur.Manifest != nil && prev.Manifest != nil && len(cur.Manifest.RequiresKernelModules) == 0 {
+		cur.Manifest.RequiresKernelModules = prev.Manifest.RequiresKernelModules
+	}
+	out, err := yaml.Marshal(cur)
+	if err != nil {
+		return nil, err
+	}
+	var head strings.Builder
+	for _, line := range strings.SplitAfter(string(old), "\n") {
+		if !strings.HasPrefix(line, "#") {
+			break
+		}
+		head.WriteString(line)
+	}
+	return append([]byte(head.String()), out...), nil
+}
+
 // render maps relative file path to content for the whole registry.
-func render(templates []catalog.Template) (map[string][]byte, error) {
+func render(templates []catalog.Template, have map[string][]byte) (map[string][]byte, error) {
 	files := map[string][]byte{}
 	for _, t := range templates {
 		meta, compose, mc, err := catalog.EncodeRegistryTemplate(t)
 		if err != nil {
 			return nil, err
 		}
-		files[filepath.Join(t.ID, catalog.RegistryMetaFile)] = meta
+		metaPath := filepath.Join(t.ID, catalog.RegistryMetaFile)
+		if meta, err = carryHandWritten(meta, have[metaPath]); err != nil {
+			return nil, err
+		}
+		files[metaPath] = meta
 		files[filepath.Join(t.ID, catalog.RegistryComposeFile)] = compose
 		if mc != nil {
 			files[filepath.Join(t.ID, catalog.RegistryManifestComposeFile)] = mc
@@ -55,12 +94,12 @@ func main() {
 	check := flag.Bool("check", false, "fail instead of writing when the folder is stale")
 	flag.Parse()
 
-	want, err := render(catalog.Templates)
+	have, err := existing(*out)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	have, err := existing(*out)
+	want, err := render(catalog.Templates, have)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

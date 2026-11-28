@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/placement"
 )
 
 // JoinCommands are ready-to-paste commands that enroll a server.

@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/firewall"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/firewall"
 )
 
 // portRestrictLabelPrefix marks firewall rules owned by the "open this

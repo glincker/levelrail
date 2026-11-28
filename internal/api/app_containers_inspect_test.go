@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // inspectingRuntime is a remote node whose agent may or may not answer live inspects.

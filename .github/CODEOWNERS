@@ -7,3 +7,6 @@
 /internal/catalog/tombstones.json @thegdsks
 /internal/catalog/contrib/ @thegdsks
 /.github/workflows/template-pr.yml @thegdsks
+
+# Announcement feed source: items, schema and key roles.
+/feed-src/ @thegdsks

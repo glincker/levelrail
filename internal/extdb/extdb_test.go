@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	appspec "github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/docker"
+	appspec "github.com/glincker/levelrail/internal/spec"
 )
 
 func TestValidate(t *testing.T) {

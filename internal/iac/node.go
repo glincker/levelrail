@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // liveNode is a joined node with the labels and taints a plan compares.

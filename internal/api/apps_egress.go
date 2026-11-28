@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // egressHostRe restricts allow hosts to a hostname or IPv4 literal: the

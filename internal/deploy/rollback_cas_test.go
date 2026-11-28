@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // interleaveStore runs hook once, right before the first desired-state save,

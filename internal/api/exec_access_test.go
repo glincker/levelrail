@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TestHandleExecAccess_GetDefaultOnAndSetToggles checks exec access defaults to on, unlike the other toggles.

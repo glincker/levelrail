@@ -75,6 +75,26 @@ func TestRun_AppsScale_PairsRollBackOnFailure(t *testing.T) {
 	}
 }
 
+func TestParseScaleStep(t *testing.T) {
+	cases := []struct {
+		in          string
+		step, count int
+		wantErr     bool
+	}{
+		{"+1", 1, 0, false},
+		{"-1", -1, 0, false},
+		{"3", 0, 3, false},
+		{"0", 0, 0, true},
+		{"x", 0, 0, true},
+	}
+	for _, c := range cases {
+		step, count, err := parseScaleStep(c.in)
+		if (err != nil) != c.wantErr || step != c.step || count != c.count {
+			t.Errorf("parseScaleStep(%q) = %d, %d, %v", c.in, step, count, err)
+		}
+	}
+}
+
 func TestAppsScale_SwapAndCpuset(t *testing.T) {
 	var put map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

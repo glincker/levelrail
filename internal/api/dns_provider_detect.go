@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/mailrecords"
 )
 
 const envDNSProviderCacheSeconds = "APP_MAIL_DNS_PROVIDER_CACHE_SECONDS"

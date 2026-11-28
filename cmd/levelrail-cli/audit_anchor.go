@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // anchorFetchTimeout bounds reading a remote export; override with APP_AUDIT_ANCHOR_FETCH_TIMEOUT.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/email"
 )
 
 type capSender struct{ plain, rich int }

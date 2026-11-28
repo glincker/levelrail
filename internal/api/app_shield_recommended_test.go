@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 func recommendShield(t *testing.T, rt *Router, cookie *http.Cookie, body string) (int, shieldRecommendedResource) {

@@ -3,7 +3,7 @@
 // Repository text is parsed as data only and env values are never returned.
 package appwizard
 
-import "github.com/GLINCKER/levelrail/internal/repolayout"
+import "github.com/glincker/levelrail/internal/repolayout"
 
 // Env vars bounding one analysis.
 const (

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // recordDomainMoveRun logs an app-to-app move in the default sets so the

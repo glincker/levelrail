@@ -8,7 +8,7 @@ import (
 
 	theauth "github.com/glincker/theauth-go/v2"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DeviceRequest is one device login request in any state. It never carries

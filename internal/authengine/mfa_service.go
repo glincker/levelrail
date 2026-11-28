@@ -18,7 +18,7 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/GLINCKER/levelrail/internal/totp"
+	"github.com/glincker/levelrail/internal/totp"
 )
 
 var (

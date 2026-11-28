@@ -14,14 +14,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/certflow"
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
-	"github.com/GLINCKER/levelrail/internal/fixit"
-	"github.com/GLINCKER/levelrail/internal/golive"
-	"github.com/GLINCKER/levelrail/internal/hostfw"
-	"github.com/GLINCKER/levelrail/internal/hostprovider"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/certflow"
+	"github.com/glincker/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/golive"
+	"github.com/glincker/levelrail/internal/hostfw"
+	"github.com/glincker/levelrail/internal/hostprovider"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Env knobs for the go live checklist.

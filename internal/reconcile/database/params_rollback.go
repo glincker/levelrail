@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbparams"
-	"github.com/GLINCKER/levelrail/internal/dbprovision"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbparams"
+	"github.com/glincker/levelrail/internal/dbprovision"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // paramsRollbacker is what the SQLite store offers for automatic rollback;

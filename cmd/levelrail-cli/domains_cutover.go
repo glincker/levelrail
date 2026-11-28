@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/domaincutover"
+	"github.com/glincker/levelrail/internal/domaincutover"
 )
 
 // runDomainsCutover implements "domains cutover <domain> [--get-certificate]".

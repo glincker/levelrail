@@ -1,0 +1,17 @@
+services:
+  chhoto:
+    image: sintan1729/chhoto-url:7.11.10
+    ports: ["4567"]
+    environment:
+      password: $SERVICE_PASSWORD_ADMIN
+      db_url: /db/urls.sqlite
+    volumes:
+      - chhoto_db:/db
+    healthcheck:
+      test: ["CMD-SHELL", 'wget --no-verbose --tries=1 --spider http://127.0.0.1:4567/api/siteurl || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+volumes:
+  chhoto_db:

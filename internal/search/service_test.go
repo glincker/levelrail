@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/search"
-	"github.com/GLINCKER/levelrail/internal/store/storetest"
+	"github.com/glincker/levelrail/internal/search"
+	"github.com/glincker/levelrail/internal/store/storetest"
 )
 
 type staticProvider struct {

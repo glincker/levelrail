@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func (h *codeHarness) pendingApproval(rec *httptest.ResponseRecorder) (string, *http.Cookie) {

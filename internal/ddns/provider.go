@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/heartbeat"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/heartbeat"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Provider writes the address to one DNS target.

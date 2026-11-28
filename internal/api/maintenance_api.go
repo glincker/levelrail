@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/maintenance"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/maintenance"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ScheduledMaintenanceStore is the store surface for scheduled maintenance

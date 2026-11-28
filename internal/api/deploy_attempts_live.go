@@ -3,7 +3,7 @@ package api
 import (
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // newestSucceededID is the one attempt that is live: attempts are newest

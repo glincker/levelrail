@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/sourceupload"
+	"github.com/glincker/levelrail/internal/sourceupload"
 )
 
 // upSourceKind is where "up" gets the code the server builds.

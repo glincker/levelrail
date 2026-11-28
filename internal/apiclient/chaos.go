@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 // ResilienceReport mirrors GET /api/v1/resilience.

@@ -3,7 +3,7 @@ package templateupgrade
 import (
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 // Volume and port actions.

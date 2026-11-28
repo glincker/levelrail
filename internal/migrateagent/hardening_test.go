@@ -14,9 +14,9 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
 
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
-	"github.com/GLINCKER/levelrail/internal/migrationplan"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/migrationplan"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestParseTokenIsStrict(t *testing.T) {

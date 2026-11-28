@@ -1,0 +1,15 @@
+id: portkey-gateway
+name: Portkey AI Gateway
+slogan: A fast gateway that routes one OpenAI-style API to over 200 model providers with retries and fallbacks.
+description: MIT licensed. Pass provider keys per request with the x-portkey-provider and Authorization headers; nothing is stored.
+category: AI
+documentation_url: https://portkey.ai/docs/product/ai-gateway
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/Portkey-AI/gateway
+license: MIT
+license_class: permissive
+license_url: https://github.com/Portkey-AI/gateway/blob/main/LICENSE

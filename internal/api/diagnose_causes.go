@@ -1,6 +1,6 @@
 package api
 
-import "github.com/GLINCKER/levelrail/internal/diagnose"
+import "github.com/glincker/levelrail/internal/diagnose"
 
 type diagnosisChangeResource struct {
 	Field      string `json:"field"`

@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/plugins/internal/pluginkit"
+	"github.com/glincker/levelrail/plugins/internal/pluginkit"
 )
 
 const (

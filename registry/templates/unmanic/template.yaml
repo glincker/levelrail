@@ -1,0 +1,15 @@
+id: unmanic
+name: Unmanic
+slogan: Automatically optimise and convert your media library with a plugin-driven worker queue.
+description: GPL 3.0 licensed. Mount your media into the container and add the library path in the web UI. CPU transcoding only here.
+category: Media
+documentation_url: https://docs.unmanic.app
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/Unmanic/unmanic
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/Unmanic/unmanic/blob/master/LICENSE

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
 )
 
 // ErrNotDNSProvider is returned when a DNS call names a plugin of another kind.

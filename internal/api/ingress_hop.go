@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingresstrust"
+	"github.com/glincker/levelrail/internal/ingresstrust"
 )
 
 const envInsecureLoginLogInterval = "APP_INSECURE_LOGIN_LOG_INTERVAL" //nolint:gosec // env var name

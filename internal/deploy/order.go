@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ErrSuperseded marks a deploy that was not applied because a newer one
@@ -83,6 +83,15 @@ type PortAdmitter interface {
 	AdmitPublishedPorts(ctx context.Context, desired store.DesiredService) (release func(), err error)
 }
 
+// NameAdmitter refuses a new service name that is reserved or held by another kind,
+// before any secret is stored under it; an existing service passes.
+type NameAdmitter interface {
+	AdmitNewServiceName(ctx context.Context, name string) error
+}
+
+// SetNameAdmitter installs the admitter after construction, like SetPortAdmitter.
+func (p *Pipeline) SetNameAdmitter(a NameAdmitter) { p.names = a }
+
 // SetPortAdmitter installs the admitter after construction, since the API
 // router that implements it is built after the pipeline.
 func (p *Pipeline) SetPortAdmitter(a PortAdmitter) { p.ports = a }
@@ -120,7 +129,8 @@ func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.D
 	if held, err := p.holdForLock(ctx, req, desired); held || err != nil {
 		return held, err
 	}
-	if err := p.persistFileSecrets(ctx, &desired); err != nil {
+	written, err := p.persistFileSecrets(ctx, &desired)
+	if err != nil {
 		return false, err
 	}
 	save := p.store.SaveDesiredService
@@ -129,7 +139,11 @@ func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.D
 			return p.ordered.SaveDesiredServiceOrdered(ctx, svc, *req.Order, CheckOrder)
 		}
 	}
-	return false, p.saveRebasedFromSpec(ctx, req, desired, save)
+	err = p.saveRebasedFromSpec(ctx, req, desired, save)
+	if err != nil {
+		p.dropUnsavedFileSecrets(ctx, desired.Name, written)
+	}
+	return false, err
 }
 
 // saveRebasedFromSpec writes the spec-built service with a revision check so env edited

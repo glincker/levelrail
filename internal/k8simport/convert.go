@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/envredact"
 )
 
 var (

@@ -1,0 +1,50 @@
+# Image of the control plane. An empty tag uses the chart appVersion.
+image:
+  repository: ghcr.io/glincker/levelrail
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# One replica only: the control plane keeps its state in a single SQLite
+# database on the volume below.
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Where the control plane keeps its database and generated files.
+persistence:
+  enabled: true
+  size: 5Gi
+  # Empty uses the cluster default storage class.
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  # Use an existing claim instead of creating one.
+  existingClaim: ""
+
+# Optional ingress for the dashboard and API.
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: levelrail.example.com
+  # Name of a TLS secret. Empty serves plain HTTP from the ingress.
+  tlsSecretName: ""
+
+# Extra APP_* settings, for example APP_PUBLIC_HOST. Values are plain strings.
+env: {}
+
+# Name of an existing Secret whose keys are loaded as environment variables,
+# for example APP_ADMIN_USERNAME and APP_ADMIN_PASSWORD. Empty skips it.
+existingSecret: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+nameOverride: ""
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

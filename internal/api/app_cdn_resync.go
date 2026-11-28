@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/dnsrecords"
 )
 
 // Per-record resync outcomes.
