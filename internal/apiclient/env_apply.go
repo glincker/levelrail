@@ -54,6 +54,19 @@ type EnvVersionConflictError struct {
 
 func (e *EnvVersionConflictError) Error() string { return e.Message }
 
+// SetSecretReplacing is PUT /apps/{name}/secrets/{key} and reports whether the server replaced
+// a plain env copy of the key in the same request. buildTime nil leaves build access unchanged.
+func (c *Client) SetSecretReplacing(ctx context.Context, name, key, value string, overwriteLocked bool, buildTime *bool) (bool, error) {
+	if err := PrecheckEnv(map[string]string{key: value}, true); err != nil {
+		return false, err
+	}
+	var out struct {
+		ReplacedPlainEnv bool `json:"replaced_plain_env"`
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked, BuildTime: buildTime}, &out)
+	return out.ReplacedPlainEnv, err
+}
+
 // ApplyAppEnv calls POST /api/v1/apps/{name}/env/apply: plain, secret and vault changes in one transaction.
 func (c *Client) ApplyAppEnv(ctx context.Context, name string, req EnvApplyRequest) (EnvApplyResult, error) {
 	var out EnvApplyResult

@@ -61,10 +61,13 @@ func runEnvApply(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		req.ExpectedVersion = &expected
 	}
 
+	if err := checkEnvValueSizes(req); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	res, err := client.ApplyAppEnv(context.Background(), name, req)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, wrapEnvConflict(prog, name, fmt.Errorf("apply env for app %q: %w", name, err)))
+		return reportError(stdout, stderr, jsonOut, wrapEnvConflict(prog, name, fmt.Errorf("apply env for app %q: %w", name, readableNetError(err))))
 	}
 	out := envApplyOutput{App: name, DryRun: res.DryRun, Changed: res.Changed, EnvVersion: res.EnvVersion, Plan: res.Plan}
 	if out.Plan == nil {

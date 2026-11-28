@@ -24,15 +24,14 @@ func envMergeFromPlan(plan envImportPlan, keepExisting bool, unset []string) api
 }
 
 // mergeEnv sends one versioned apply and wraps the error with the app name, never a value.
-// version is the env_version read with the app; a concurrent change then fails as a conflict.
-func mergeEnv(ctx context.Context, client *Client, prog, name string, version int, req apiclient.EnvMergeRequest) (apiclient.EnvMergeResult, error) {
+// base is the app as read; a concurrent change to the plan's own keys fails as a conflict, other keys retry.
+func mergeEnv(ctx context.Context, client *Client, prog, name string, base apiclient.AppResource, rt envRetry, req apiclient.EnvMergeRequest) (apiclient.EnvMergeResult, error) {
 	if len(req.Set) == 0 && len(req.Unset) == 0 {
 		return apiclient.EnvMergeResult{App: name}, nil
 	}
-	v := version
-	res, err := client.ApplyAppEnv(ctx, name, apiclient.EnvApplyRequest{ExpectedVersion: &v, Set: req.Set, Unset: req.Unset})
+	res, err := sendEnvPlan(ctx, client, prog, name, base, apiclient.EnvApplyRequest{Set: req.Set, Unset: req.Unset}, rt)
 	if err != nil {
-		return apiclient.EnvMergeResult{}, wrapEnvConflict(prog, name, fmt.Errorf("update env for app %q: %w", name, err))
+		return apiclient.EnvMergeResult{}, fmt.Errorf("update env for app %q: %w", name, readableNetError(err))
 	}
 	out := apiclient.EnvMergeResult{App: name, Changed: res.Changed, EnvDirty: res.Changed}
 	keys := make([]string, 0, len(res.Plan))

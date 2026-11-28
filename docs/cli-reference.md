@@ -160,8 +160,10 @@ levelrail-cli logs <app> [flags]
 Same as `apps logs <app>`. The log archive and search commands keep their names (`logs archive`, `logs search`, `logs dump`).
 
 ```
-levelrail-cli env set <app> KEY=VALUE... [--apply|--no-apply] [--allow-file-values] [flags]
+levelrail-cli env set <app> KEY=VALUE... [--apply|--no-apply] [--allow-file-values] [--retries N] [--no-retry] [flags]
 ```
+`env set`, `env unset`, `apps env import` and `apps secrets set` retry a stale-version conflict automatically when only other keys changed: the CLI re-reads the version, checks that the keys in its own plan are unchanged, and replays the same plan with jittered backoff (`--retries N`, default 5, env `LEVELRAIL_ENV_RETRIES`). `--no-retry` exits 8 at the first conflict. Exit 8 also means a key in the plan itself changed or the retries ran out; the message names the keys.
+
 Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those. `KEY=@-` reads the value from stdin. `KEY=@./path`, `KEY=@/abs/path` and `KEY=@~/path` read a local file only with `--allow-file-values` and are refused otherwise. `KEY=@@text` stores the literal `@text`. All keys go to the server in one column-scoped call, so a concurrent deploy cannot drop them.
 
 ```
@@ -483,7 +485,7 @@ levelrail-cli apps build-cache remove <name>|--global
 ### Environment, secrets and Vault
 
 ```
-levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [--apply|--no-apply] [flags]
+levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [--strict] [--apply|--no-apply] [flags]
 levelrail-cli apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]
 levelrail-cli apps env get <name> <KEY> [--reveal] [flags]
 levelrail-cli apps env diff <app-a> <app-b> [flags]
@@ -508,10 +510,10 @@ levelrail-cli apps contexts list|clear|show <name> [flags]
 levelrail-cli apps contexts set <name> --context CTX [--env K=V]... [--build-command CMD] [--publish DIR] [--build-arg K=V]... [flags]
 ```
 
-- `apps env import` merges a .env file into an app and prints which keys are new, changed, unchanged or sent to secrets, by name only. Keys that look sensitive (`*_KEY`, `*_SECRET`, `*_TOKEN`, `*PASSWORD*`, `DATABASE_URL` and URLs with credentials) go to the secret store and the rest to plain env. `--all-secrets` sends every key to secrets, `--all-plain` keeps every key in plain env, and `--secret-pattern STRIPE_*,*_DSN` adds key globs to the secret side. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`. `--no-apply` keeps the change pending when `apps.env_apply_on_set` is on.
+- `apps env import` merges a .env file into an app and prints which keys are new, changed, unchanged or sent to secrets, by name only. Keys that look sensitive (`*_KEY`, `*_SECRET`, `*_TOKEN`, `*PASSWORD*`, `DATABASE_URL` and URLs with credentials) go to the secret store and the rest to plain env. `--all-secrets` sends every key to secrets, `--all-plain` keeps every key in plain env, and `--secret-pattern STRIPE_*,*_DSN` adds key globs to the secret side. Keys that are already secrets are skipped. Every run, dry run included, prints a report of accepted keys, rejected lines with the reason (line numbers and key names, never values; malformed lines, names the env rules refuse such as `LD_PRELOAD`) and warnings such as duplicate keys; `--json` carries it as `env_report`. Valid keys are still imported, the command exits 2 when nothing valid is left, and `--strict` imports nothing and exits 2 when anything was rejected. It reports how many changes are pending, or restarts the app right away with `--apply`. `--no-apply` keeps the change pending when `apps.env_apply_on_set` is on.
 - `apps env diff` compares two apps' env vars, for example staging against production. Secret values are never read: secrets are compared by key only, and the dashboard has the same comparison on an app's Environment page.
 - `apps env export` writes env vars as .env text; sensitive and secret keys are written empty with a comment unless `--reveal` is given. `apps env get` prints one variable, masked when sensitive. `--reveal` asks for your password (and authenticator code) at the prompt, never from flags or the environment, and needs a token with `read:sensitive` and `secrets:reveal` plus `APP_SECRET_REVEAL_TOKENS=on` on the server. See [Environment variables and secrets](/environment-and-secrets).
-- `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
+- `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. A key that already exists as plain env is replaced atomically in one request (the output says `replaced plain env value`); `--retries` and `--no-retry` as for `env set`. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.
 - `apps preview-env` and `apps branch-env` override an env var for previews only. A branch override applies when the preview's own branch matches PATTERN (an exact name or a glob such as `release/*`); `--secret` stores it envelope encrypted. Neither affects the app's own running deploy.
 - `apps branch-deploys` chooses which branches get a stable per-branch deploy (see [Preview environments](/preview-environments#branch-deploys)), lists the live ones and removes one now.
