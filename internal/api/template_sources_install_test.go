@@ -45,6 +45,9 @@ func TestInstallSourceTemplateUsesBuiltinGuards(t *testing.T) {
 	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			seedSourceEntry(t, db, "captpl", tc.compose, "h")
+			if err := db.ApproveTemplateSourceEntry(context.Background(), "acme", "acme/captpl", "h"); err != nil {
+				t.Fatal(err)
+			}
 			composeDo(t, rt, cookie, http.MethodPost, path, `{"name":"src`+fmt.Sprint(i)+`x","domains":{"web":"cap.example.com"}}`, tc.want)
 		})
 	}
