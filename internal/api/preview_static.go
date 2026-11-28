@@ -94,7 +94,7 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 	// A static build reads build args only, so app env never needs to reach it.
 	svcSpec.Port, svcSpec.Env = 0, nil
 	svcSpec.Domains = domainSlice(wantDomain)
-	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName, Preview: true}
+	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName, Preview: true, PreviewParent: appName}
 
 	if err := rt.inheritSitePassword(ctx, appName, previewName); err != nil {
 		return "", false, err

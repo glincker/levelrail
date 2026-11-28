@@ -46,6 +46,8 @@ type MultiRequest struct {
 	SingleServiceName string
 	// Preview marks a pull request preview build (see Request.Preview).
 	Preview bool
+	// PreviewParent is the production app of a preview (see Request.PreviewParent).
+	PreviewParent string
 }
 
 // ServiceOutcome is one service's own fan-out result: Image is set on
@@ -135,6 +137,8 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 			CommitSHA:   req.CommitSHA,
 			ImageRepo:   req.ImageRepoBase + "-" + key,
 			Preview:     req.Preview,
+
+			PreviewParent: req.PreviewParent,
 		}, svcProgress)
 		if deployErr != nil {
 			outcomes = append(outcomes, ServiceOutcome{ServiceKey: key, ServiceName: svcName, Err: deployErr})

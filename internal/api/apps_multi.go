@@ -121,7 +121,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.SingleServiceName != "" {
-		if err := spec.ValidateServiceName(req.SingleServiceName); err != nil {
+		if err := spec.ValidateNewAppName(req.SingleServiceName); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}

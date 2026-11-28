@@ -9,31 +9,33 @@ import (
 func TestPreviewCacheID(t *testing.T) {
 	long := strings.Repeat("feature-branch-name-", 4)
 	cases := []struct {
-		name, mode, svc, unique, want string
+		name, mode, svc, parent, unique, want string
 	}{
-		{"isolated keeps the pr", PreviewCacheIsolated, "web-pr-12", "", "web-pr-12"},
-		{"shared strips the pr", PreviewCacheSharedWithApp, "web-pr-12", "", "web"},
-		{"shared strips multi service key", PreviewCacheSharedWithApp, "web-pr-12-api", "", "web"},
-		{"special characters", PreviewCacheIsolated, "My_App.v2-pr-3", "", "my-app-v2-pr-3"},
+		{"isolated keeps the pr", PreviewCacheIsolated, "web-pr-12", "web", "", "web-pr-12"},
+		{"shared uses the parent", PreviewCacheSharedWithApp, "web-pr-12", "web", "", "web-key"},
+		{"shared multi service key", PreviewCacheSharedWithApp, "web-pr-12-api", "web", "", "web-key"},
+		{"app named like a preview", PreviewCacheSharedWithApp, "web-pr-1-x-pr-3", "web-pr-1-x", "", "web-pr-1-x-key"},
+		{"no record keeps the preview id", PreviewCacheSharedWithApp, "web-pr-1-x-pr-3", "", "", "web-pr-1-x-pr-3"},
+		{"special characters", PreviewCacheIsolated, "My_App.v2-pr-3", "", "", "my-app-v2-pr-3"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := PreviewCacheID(tc.mode, tc.svc, tc.unique); got != tc.want {
+			if got := PreviewCacheID(tc.mode, tc.svc, tc.parent, tc.parent+"-key", tc.unique); got != tc.want {
 				t.Fatalf("got %q, want %q", got, tc.want)
 			}
 		})
 	}
-	a := PreviewCacheID(PreviewCacheIsolated, long+"-pr-1", "")
-	b := PreviewCacheID(PreviewCacheIsolated, long+"-pr-2", "")
+	a := PreviewCacheID(PreviewCacheIsolated, long+"-pr-1", "", "", "")
+	b := PreviewCacheID(PreviewCacheIsolated, long+"-pr-2", "", "", "")
 	if a == b || len(a) > maxCacheIDLen || len(b) > maxCacheIDLen {
 		t.Fatalf("long names must differ and fit: %q %q", a, b)
 	}
-	o1 := PreviewCacheID(PreviewCacheOff, "web-pr-1", "t1")
-	o2 := PreviewCacheID(PreviewCacheOff, "web-pr-1", "t2")
+	o1 := PreviewCacheID(PreviewCacheOff, "web-pr-1", "", "", "t1")
+	o2 := PreviewCacheID(PreviewCacheOff, "web-pr-1", "", "", "t2")
 	if o1 == o2 || !strings.HasPrefix(o1, "web-pr-1-") {
 		t.Fatalf("off mode must be unique per build: %q %q", o1, o2)
 	}
-	if got := PreviewCacheID(PreviewCacheOff, long+"-pr-1", "t"); len(got) > maxCacheIDLen {
+	if got := PreviewCacheID(PreviewCacheOff, long+"-pr-1", "", "", "t"); len(got) > maxCacheIDLen {
 		t.Fatalf("off id too long: %q", got)
 	}
 }

@@ -41,7 +41,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := spec.ValidateServiceName(req.NewName); err != nil {
+	if err := spec.ValidateNewAppName(req.NewName); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

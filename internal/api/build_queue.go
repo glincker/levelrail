@@ -355,6 +355,31 @@ func sameApp(as []store.DeployAttempt, app string) []store.DeployAttempt {
 	return out
 }
 
+// filterBuildQueue keeps only the apps the caller may see; a nil list means all.
+func filterBuildQueue(res *buildQueueResource, visible []string) {
+	if visible == nil {
+		return
+	}
+	allowed := make(map[string]bool, len(visible))
+	for _, n := range visible {
+		allowed[n] = true
+	}
+	running := res.Running[:0]
+	for _, b := range res.Running {
+		if allowed[b.App] {
+			running = append(running, b)
+		}
+	}
+	res.Running = running
+	queued := res.Queued[:0]
+	for _, q := range res.Queued {
+		if allowed[q.App] {
+			queued = append(queued, q)
+		}
+	}
+	res.Queued = queued
+}
+
 // handleGetBuildQueue handles GET /api/v1/builds/queue.
 func (rt *Router) handleGetBuildQueue(w http.ResponseWriter, r *http.Request) {
 	res, err := rt.buildQueueView(r.Context())
@@ -362,6 +387,12 @@ func (rt *Router) handleGetBuildQueue(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: build queue: read failed", err)
 		return
 	}
+	visible, err := rt.visibleAppNames(r)
+	if err != nil {
+		rt.internalError(w, "api: build queue: resolve visibility failed", err)
+		return
+	}
+	filterBuildQueue(&res, visible)
 	writeJSON(w, http.StatusOK, res)
 }
 

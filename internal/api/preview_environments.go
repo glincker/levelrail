@@ -470,7 +470,7 @@ func (rt *Router) deployPreviewMulti(ctx context.Context, appName, previewName s
 	}
 
 	outcomes, err := rt.builder.DeploySpec(ctx, deploy.MultiRequest{
-		AppName: previewName, Services: services, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepoBase: previewName, Preview: true,
+		AppName: previewName, Services: services, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepoBase: previewName, Preview: true, PreviewParent: appName,
 	}, nil)
 	if err != nil {
 		return "", false, err

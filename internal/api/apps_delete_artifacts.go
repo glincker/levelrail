@@ -32,6 +32,7 @@ func (rt *Router) removeAppArtifactsUnlessReused(ctx context.Context, name, node
 // (Docker refuses to remove an image a container still runs); failures are logged.
 func (rt *Router) removeAppArtifacts(ctx context.Context, name, nodeID string) {
 	rt.clearDeletedAppBuildCache(ctx, name)
+	rt.dropAppCacheEpoch(ctx, name)
 	rt.removeAppPushMirror(name)
 	rt.removeNextImageCacheVolume(ctx, name, nodeID)
 	if st := rt.uploadStore(); st != nil {
@@ -97,13 +98,27 @@ func imageRepoIs(tag, name string) bool {
 	return repo == name
 }
 
+// dropAppCacheEpoch ends the app instance's cache token so a same-name app starts cold.
+// Failure is logged and never blocks the delete.
+func (rt *Router) dropAppCacheEpoch(ctx context.Context, name string) {
+	d, ok := any(rt.apps).(interface {
+		DeleteAppCacheEpoch(ctx context.Context, name string) error
+	})
+	if !ok {
+		return
+	}
+	if err := d.DeleteAppCacheEpoch(ctx, name); err != nil {
+		rt.logger.Warn("api: delete app: end cache instance failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+}
+
 // clearDeletedAppBuildCache drops the app's BuildKit cache mounts, which
 // otherwise outlive it and cannot be cleared by name. Best effort.
 func (rt *Router) clearDeletedAppBuildCache(ctx context.Context, name string) {
 	if rt.appBuildCache == nil {
 		return
 	}
-	id := build.SanitizeCacheID(name, "")
+	id := build.AppCacheKey(ctx, name)
 	if id == "" {
 		return
 	}

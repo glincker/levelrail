@@ -37,6 +37,21 @@ func ValidateServiceName(name string) error {
 	return nil
 }
 
+// previewNameSuffix is the tail the preview system gives its own apps.
+var previewNameSuffix = regexp.MustCompile(`-pr-[0-9]+$`)
+
+// ValidateNewAppName is ValidateServiceName for apps being created: it also refuses the
+// "-pr-<digits>" tail, which only the preview system may mint. Existing apps keep working.
+func ValidateNewAppName(name string) error {
+	if err := ValidateServiceName(name); err != nil {
+		return err
+	}
+	if previewNameSuffix.MatchString(name) {
+		return fmt.Errorf("name %q ends in -pr-<number>, which is reserved for pull request previews", name)
+	}
+	return nil
+}
+
 // Validate checks rules the JSON Schema can't express: values whose
 // validity depends on another field, or on the rest of the document, not
 // just their own shape. Parse always runs this after schema validation

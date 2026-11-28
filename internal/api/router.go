@@ -1235,6 +1235,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	if rt.sourceCache == nil {
 		rt.sourceCache = sourcecache.New(sourcecache.ConfigFromEnv(""), logger)
 	}
+	if e, ok := any(s).(build.AppCacheEpochs); ok {
+		build.SetAppCacheEpochs(e)
+	}
 	rt.attachRuntimeSettings(s)
 	rt.attachLiveLimits()
 	rt.attachRepoCache(s)

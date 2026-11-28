@@ -186,6 +186,8 @@ type Request struct {
 	// Preview marks a pull request preview build, which may not use
 	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
 	Preview bool
+	// PreviewParent is the production app a preview belongs to, from the preview record.
+	PreviewParent string
 	// ProxyAuthorizer vets each app a static site's proxy rules name and
 	// returns its scope. Nil refuses every proxy rule.
 	ProxyAuthorizer ProxyAuthorizer
