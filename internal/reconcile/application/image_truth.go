@@ -110,7 +110,7 @@ func (c *Controller) verifyImage(ctx context.Context, state *docker.ContainerSta
 }
 
 func (c *Controller) recordRollout(ctx context.Context, desired *store.DesiredService, state, runningImageID string) {
-	if c.rollouts == nil {
+	if c.rollouts == nil || !c.replicaIndexes.holdsPrimary() {
 		return
 	}
 	// Best effort: history annotation must never fail a reconcile.
@@ -140,7 +140,7 @@ func (c *Controller) recoverRestart(ctx context.Context, desired *store.DesiredS
 // attempt was recorded succeeded synchronously at trigger time, before
 // this outcome was knowable.
 func (c *Controller) recordRolloutFailure(ctx context.Context, desired *store.DesiredService, cause error) {
-	if c.rollouts == nil {
+	if c.rollouts == nil || !c.replicaIndexes.holdsPrimary() {
 		return
 	}
 	if err := c.rollouts.RecordRolloutFailure(ctx, c.serviceName, desired.Image, cause.Error()); err != nil {

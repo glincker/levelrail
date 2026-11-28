@@ -322,6 +322,7 @@ type Controller struct {
 	dependsOnMu         sync.Mutex
 	dependsOnSince      map[string]dependencyWait // first pass a service waited on a dependency
 	volumeWrites        volumeWriteMemo           // last volume write check per container, see probeVolumeWrites
+	replicaIndexes      replicaIndexFilter        // zero value runs every replica, see WithReplicaIndexes
 }
 
 // Option configures optional Controller behavior.
@@ -692,6 +693,10 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		return unknownResult(ReasonMaintenanceHold), nil
 	}
 
+	if c.replicaIndexes.set && len(c.replicaIndexes.indexes) == 0 {
+		return c.cleanSpreadNode(ctx)
+	}
+
 	desired = c.withPolicyCaps(ctx, c.withIncarnation(ctx, desired))
 
 	// Suspended is an operator-requested stop (DesiredService.Suspended's
@@ -761,10 +766,9 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		strategy = store.DefaultDeployStrategy
 	}
 
-	targets := make([]string, replicas)
-	for i := range targets {
-		targets[i] = replicaContainerName(c.serviceName, NameImage(*desired), desired.RestartNonce, i)
-	}
+	targets := c.replicaIndexes.targets(replicas, func(i int) string {
+		return replicaContainerName(c.serviceName, NameImage(*desired), desired.RestartNonce, i)
+	})
 
 	c.servingImageID = ""
 	// Rolling retires per step and recreate skips converged targets, so both keep the blocking wait.
@@ -1021,6 +1025,7 @@ type replicaOutcome struct {
 // the old container still serving in its place) purely because Docker
 // reports it Running.
 func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, index int, desired *store.DesiredService) (replicaOutcome, error) {
+	index = c.replicaIndexes.original(index)
 	state, err := c.inspectByName(ctx, target)
 	if err != nil {
 		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("inspect %q: %w", target, err)
@@ -2375,7 +2380,7 @@ func (c *Controller) runPreDeployHook(ctx context.Context, containerID string, d
 // hookRuns for GET /api/v1/apps/{name}/hook-runs, it just never undoes a
 // cutover that already succeeded.
 func (c *Controller) runPostDeployHookIfConfigured(ctx context.Context, targets []string, desired *store.DesiredService) error {
-	if desired.Hooks == nil || desired.Hooks.PostDeploy == "" {
+	if desired.Hooks == nil || desired.Hooks.PostDeploy == "" || !c.replicaIndexes.holdsPrimary() {
 		return nil
 	}
 	primary := targets[0]
