@@ -25,6 +25,7 @@ const (
 	errCodeRegistryUnreachable = "registry_unreachable"
 	errCodeInternal            = "internal_error"
 	errCodeEnvKeyInvalid       = "env_key_invalid"
+	errCodeInvalidServiceName  = "invalid_service_name"
 	errCodeEnvDualHome         = "env_dual_home"
 
 	envLeftoverVolumeTimeout = "APP_LEFTOVER_VOLUME_CHECK_TIMEOUT"
@@ -70,6 +71,8 @@ func classifyError(err error) *typedError {
 		return mk(http.StatusServiceUnavailable, errCodeDockerUnavailable, dockerUnavailableMessage, nil)
 	case errors.Is(err, store.ErrEnvKeyInvalid):
 		return mk(http.StatusBadRequest, errCodeEnvKeyInvalid, err.Error(), nil)
+	case errors.Is(err, store.ErrInvalidServiceName):
+		return mk(http.StatusBadRequest, errCodeInvalidServiceName, err.Error(), nil)
 	case errors.Is(err, store.ErrEnvDualHome):
 		return mk(http.StatusConflict, errCodeEnvDualHome, "a key would be both a plain variable and a secret ("+err.Error()+"); keep one", nil)
 	case strings.Contains(text, "database is locked") || strings.Contains(text, "sqlite_busy") || strings.Contains(text, "sqlite_locked"):
