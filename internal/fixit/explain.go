@@ -192,6 +192,8 @@ func buildExplainTable() map[string]Explanation {
 			"Open Settings, then Git connections, and press Reconnect.", "", KindGuided),
 		ex("token_hygiene", "Some API tokens never expire or are unused.", "A leaked token keeps working.",
 			"Open Settings, then Tokens, and revoke or shorten the listed tokens.", "", KindGuided),
+		ex("tokens_hygiene", "There are too many live emergency tokens, expired tokens kept past the retention window, or tokens about to expire.", "A long token list hides the ones that matter, and an expired token that was still in use stops working without warning.",
+			"Use the commands shown in the check: list the tokens, revoke the extra emergency ones, and prune the old expired ones. Each command previews before it changes anything.", "", KindGuided),
 		ex("signature_pin", "Release signatures have not been pinned on this host.", "Upgrades accept releases with a checksum only.",
 			"Open Settings, then Updates, and press Pin release signature.", "", KindGuided),
 		ex("second_admin", "There is only one administrator.", "If that account is lost, nobody can sign in to manage the install.",

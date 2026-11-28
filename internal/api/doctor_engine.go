@@ -133,6 +133,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("git_connections", doctorGroupSecurity, rt.doctorCheckGitConnections),
 		one("git_oauth_refresh", doctorGroupSecurity, rt.doctorCheckGitOAuthRefresh),
 		one("token_hygiene", doctorGroupSecurity, rt.doctorCheckTokenHygiene),
+		one("tokens_hygiene", doctorGroupSecurity, rt.doctorCheckTokensHygiene),
 		one("approval_without_session", doctorGroupSecurity, rt.doctorCheckApprovalWithoutSession),
 		one("signature_pin", doctorGroupSecurity, func(context.Context) doctorCheckResource { return rt.doctorCheckReleaseSignature() }),
 
