@@ -71,6 +71,17 @@ type NodeCleanupResult struct {
 	} `json:"preview"`
 	FreedBytes int64  `json:"freed_bytes"`
 	Error      string `json:"error,omitempty"`
+	// Budget is set on a remote node preview.
+	Budget *NodeBudgetPlan `json:"budget,omitempty"`
+}
+
+// NodeBudgetPlan is a node's unused images against its disk budget, oldest listed first.
+type NodeBudgetPlan struct {
+	BudgetBytes    int64             `json:"budget_bytes"`
+	UnusedBytes    int64             `json:"unused_bytes"`
+	OverBytes      int64             `json:"over_bytes"`
+	Oldest         []NodeCleanupItem `json:"oldest"`
+	WouldFreeBytes int64             `json:"would_free_bytes"`
 }
 
 // NodeCleanupRunResource is one entry of GET /api/v1/nodes/{id}/cleanup-runs.

@@ -47,6 +47,7 @@ type nodeGuardState struct {
 	notify     func(ctx context.Context, text string)
 	mu         sync.Mutex
 	lastLevels map[string]nodecapacity.Level
+	janitor    *nodeJanitorState
 }
 
 // SetNodeGuardrails enables the per-node capacity guardrails. notify may be nil.
@@ -56,6 +57,7 @@ func (rt *Router) SetNodeGuardrails(s NodeGuardrailStore, notify func(ctx contex
 		defaults:   nodecapacity.ThresholdsFromEnv(os.LookupEnv),
 		notify:     notify,
 		lastLevels: map[string]nodecapacity.Level{},
+		janitor:    newNodeJanitorState(),
 	}
 }
 
@@ -327,6 +329,8 @@ type nodeCleanupResponse struct {
 	Preview nodecapacity.Preview `json:"preview"`
 	Freed   int64                `json:"freed_bytes"`
 	Error   string               `json:"error,omitempty"`
+	// Budget is set on a remote preview: unused images against the node's disk budget.
+	Budget *nodecapacity.BudgetPlan `json:"budget,omitempty"`
 }
 
 // handleNodeCleanup handles POST /api/v1/nodes/{id}/cleanup: a dry-run preview, or a confirmed removal of the safe classes.
@@ -351,15 +355,16 @@ func (rt *Router) handleNodeCleanup(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.DryRun && !local {
 		keep, err := rt.keepContainerNames(r.Context())
-		var res nodecapacity.Result
+		var prev nodecapacity.Preview
+		var plan nodecapacity.BudgetPlan
 		if err == nil {
-			res, err = rt.remoteCleaner(id).NodeCleanup(r.Context(), true, keep)
+			prev, plan, err = previewNodeBudget(r.Context(), rt.remoteCleaner(id), keep, rt.nodeBudgetBytes(r.Context(), id))
 		}
 		if err != nil {
 			rt.internalError(w, "api: node cleanup preview failed", err, slog.String("node_id", id))
 			return
 		}
-		writeJSON(w, http.StatusOK, nodeCleanupResponse{DryRun: true, Preview: res.Preview})
+		writeJSON(w, http.StatusOK, nodeCleanupResponse{DryRun: true, Preview: prev, Budget: &plan})
 		return
 	}
 	if req.DryRun {
@@ -536,6 +541,7 @@ func (rt *Router) RunNodeGuardrailWatcher(ctx context.Context) {
 	if rt.nodeGuard == nil {
 		return
 	}
+	go rt.RunRemoteNodeJanitor(ctx)
 	rt.checkNodeGuardrails(ctx)
 	_ = footprint.Every(ctx, "node guardrails", nodeGuardInterval, rt.logger, func(ctx context.Context) error {
 		rt.checkNodeGuardrails(ctx)

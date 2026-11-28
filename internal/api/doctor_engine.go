@@ -88,6 +88,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("build_memory", doctorGroupHost, rt.doctorCheckBuildMemory),
 		one("personal_builder_owner", doctorGroupHost, rt.doctorCheckPersonalBuilders),
 		one("build_queue", doctorGroupHost, rt.doctorCheckBuildQueue),
+		one("node_disk_budget", doctorGroupHost, rt.doctorCheckNodeDiskBudget),
 		one("build_cache_budget", doctorGroupHost, rt.doctorCheckBuildCacheBudget),
 		one("unit_protection", doctorGroupHost, func(ctx context.Context) doctorCheckResource { return rt.doctorCheckUnitProtection(ctx, time.Now()) }),
 		one("cpu", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckCPU() }),

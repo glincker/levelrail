@@ -3,6 +3,7 @@ package nodecapacity
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/glincker/levelrail/internal/docker"
 	"github.com/glincker/levelrail/internal/janitor"
@@ -89,6 +90,9 @@ func Execute(ctx context.Context, run Runner, trigger string) (Result, error) {
 }
 
 func keptImages(recs []docker.ImageRecord) []janitor.Item {
+	// Oldest first: the disk budget plan trims in this order and the agent wire carries no timestamps.
+	recs = append([]docker.ImageRecord(nil), recs...)
+	sort.SliceStable(recs, func(i, j int) bool { return recs[i].CreatedAt.Before(recs[j].CreatedAt) })
 	items := []janitor.Item{}
 	for _, r := range recs {
 		if len(r.Tags) == 0 || r.Containers > 0 {

@@ -530,6 +530,10 @@ ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
 ingress.unmatched_mode
 ingress.unmatched_redirect_url
+janitor.node_images_budget_gb
+janitor.node_images_budget_overrides
+janitor.remote_execute
+janitor.remote_interval_minutes
 k8s.allow_cluster_admin
 k8s.allow_private_api
 k8s.allow_unverified_hosts

@@ -67,3 +67,14 @@ API: `GET` and `PUT /api/v1/apps/{name}/image-retention` (`{"keep": 5}`), and `P
 
 - It cleans the control plane's own node. Other nodes keep using the per-node build center and image tools.
 - Disk free is measured on the control plane data directory.
+
+## Remote nodes
+
+Each remote node gets a scheduled preview (`janitor.remote_interval_minutes`) that compares its unused images with a disk budget (`janitor.node_images_budget_gb`, or the node's own entry in `janitor.node_images_budget_overrides`). Over budget, the pass records the oldest unused images and what it would free in the node's cleanup history, and frees nothing. It removes only when `janitor.remote_execute` is on and the node has auto-clean enabled, using the same safe classes and fence tokens as the manual cleanup. Rollback images are never removed.
+
+```
+levelrail-cli janitor run --node <id>          # preview with the budget plan
+levelrail-cli janitor run --node <id> --yes    # remove the safe classes
+```
+
+The doctor row "Node disk over budget" warns when the last pass found a node over budget.

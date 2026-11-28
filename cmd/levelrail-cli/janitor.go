@@ -15,6 +15,7 @@ func janitorUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s janitor status [flags]                    disk state, policy, last pass and quarantined volumes
   %[1]s janitor run [--dry-run] [--if-needed]     one cleanup pass now (--dry-run previews, --if-needed waits for disk pressure)
+  %[1]s janitor run --node <id> [--yes]           preview a remote node against its disk budget, --yes removes the safe classes
   %[1]s janitor policy [--enabled=BOOL ...]       show the policy, or change the fields you pass
 
 Policy flags: --enabled, --dry-run, --interval-minutes, --disk-free-budget-percent,
@@ -96,12 +97,17 @@ func runJanitorRun(prog string, args []string, stdout, stderr io.Writer, lookupE
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "janitor run", "print the report as JSON to stdout and nothing else", stderr)
 	dry := fs.Bool("dry-run", false, "preview what would be removed without removing anything")
 	ifNeeded := fs.Bool("if-needed", false, "run the size-driven stages only when free space is below the budget")
+	node := fs.String("node", "", "run on a remote node instead: a preview with its disk budget, or a removal with --yes")
+	yes := fs.Bool("yes", false, "with --node: remove the safe classes now instead of previewing")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, janitorUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if *node != "" {
+		return runJanitorNode(client, *node, !*yes, jsonOut, of, stdout, stderr)
+	}
 	rep, err := client.RunJanitor(context.Background(), *dry, !*ifNeeded)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("janitor run: %w", err))
@@ -223,4 +229,29 @@ func printJanitorPolicy(out io.Writer, p apiclient.JanitorPolicy) {
 	_, _ = fmt.Fprintf(out, "enabled: %t\ndry-run: %t\ninterval-minutes: %d\ndisk-free-budget-percent: %.0f\n", p.Enabled, p.DryRun, p.IntervalMinutes, p.DiskFreeBudgetPercent)
 	_, _ = fmt.Fprintf(out, "build-cache-budget-mb: %d\nbuild-cache-max-age-hours: %d\nvolume-quarantine-days: %d\ndelete-orphan-volumes: %t\n", p.BuildCacheBudgetMB, p.BuildCacheMaxAgeHours, p.VolumeQuarantineDays, p.DeleteOrphanVolumes)
 	_, _ = fmt.Fprintf(out, "attempt-retention-days: %d\nattempt-keep-per-app: %d\ndisabled-stages: %s\n", p.AttemptRetentionDays, p.AttemptKeepPerApp, strings.Join(p.DisabledStages, ","))
+}
+
+func runJanitorNode(client *Client, id string, dry, jsonOut bool, of outputFlags, stdout, stderr io.Writer) int {
+	res, err := client.CleanupNode(context.Background(), id, dry)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("janitor run node %q: %w", id, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, res, func() {
+		printNodeCleanup(stdout, res)
+		if b := res.Budget; b != nil && b.BudgetBytes > 0 {
+			_, _ = fmt.Fprintf(stdout, "unused images: %s against a %s budget", humanBytes(b.UnusedBytes), humanBytes(b.BudgetBytes))
+			if b.OverBytes > 0 {
+				_, _ = fmt.Fprintf(stdout, ", %s over. Oldest first:\n", humanBytes(b.OverBytes))
+				for _, it := range b.Oldest {
+					_, _ = fmt.Fprintf(stdout, "  %s  %s\n", humanBytes(it.SizeBytes), it.Name)
+				}
+			} else {
+				_, _ = fmt.Fprintln(stdout, ", within budget")
+			}
+		}
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
 }
