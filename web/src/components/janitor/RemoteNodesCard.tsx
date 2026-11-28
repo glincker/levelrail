@@ -46,7 +46,6 @@ export default function RemoteNodesCard() {
   const nodes = useNodeListOptional()
   const doctor = useQuery({
     ...doctorQueryOptions(),
-    queryKey: ['system', 'doctor', 'janitor-remote'],
     enabled: true,
     retry: false,
   })
