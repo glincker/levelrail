@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
@@ -49,6 +49,10 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 // "no selection"), the same reasoning DrainNodeDialog's own
 // LOCAL_NODE_VALUE sentinel documents.
 const ALL_CLIENT_KINDS = '__all__'
+
+const AgentActivityPanel = lazy(
+  () => import('../../components/audit/AgentActivityPanel'),
+)
 
 // The audit log's shared event family for CLI device logins.
 const DEVICE_LOGIN_ACTION = 'device_login'
@@ -159,6 +163,7 @@ function AuditLogSettingsPage() {
   const [filterLoading, setFilterLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [failedOnly, setFailedOnly] = useState(false)
+  const [agentView, setAgentView] = useState(false)
   const {
     agent: agentFromLink,
     action: actionFromLink,
@@ -408,6 +413,17 @@ function AuditLogSettingsPage() {
         >
           {t('filters.deviceLogin')}
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={agentView ? 'default' : 'outline'}
+          aria-pressed={agentView}
+          onClick={() => {
+            setAgentView((prev) => !prev)
+          }}
+        >
+          {t('agentActivity.toggle')}
+        </Button>
         {pathFilter ? (
           <Button
             type="button"
@@ -427,7 +443,11 @@ function AuditLogSettingsPage() {
         />
       </div>
 
-      {filterLoading ? (
+      {agentView ? (
+        <Suspense fallback={<TableSkeleton columnCount={6} rowCount={6} />}>
+          <AgentActivityPanel />
+        </Suspense>
+      ) : filterLoading ? (
         <TableSkeleton columnCount={8} rowCount={8} />
       ) : entries.length === 0 ? (
         <EmptyState

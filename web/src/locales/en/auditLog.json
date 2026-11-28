@@ -98,5 +98,21 @@
     "rangeEnd": "Range ends at entry {{seq}}",
     "outside_one": "This range is intact, but the whole chain has {{count}} problem outside it. Verify without a range.",
     "outside_other": "This range is intact, but the whole chain has {{count}} problems outside it. Verify without a range."
+  },
+  "agentActivity": {
+    "toggle": "Agent activity",
+    "label": "Actions by agents, tokens and AI",
+    "summary": "{{method}} {{path}}",
+    "noApproval": "No approval needed",
+    "approvedBy": "Approved by {{name}}",
+    "emptyTitle": "No agent activity",
+    "emptyDescription": "Actions by API tokens, MCP clients and AI will show up here.",
+    "status": {
+      "pending": "Waiting for approval",
+      "approving": "Approving",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    }
   }
 }

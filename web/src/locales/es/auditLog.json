@@ -98,5 +98,21 @@
     "rangeEnd": "El rango termina en la entrada {{seq}}",
     "outside_one": "Este rango está íntegro, pero la cadena completa tiene {{count}} problema fuera de él. Verifica sin rango.",
     "outside_other": "Este rango está íntegro, pero la cadena completa tiene {{count}} problemas fuera de él. Verifica sin rango."
+  },
+  "agentActivity": {
+    "toggle": "Actividad de agentes",
+    "label": "Acciones de agentes, tokens e IA",
+    "summary": "{{method}} {{path}}",
+    "noApproval": "Sin aprobación requerida",
+    "approvedBy": "Aprobado por {{name}}",
+    "emptyTitle": "Sin actividad de agentes",
+    "emptyDescription": "Aquí aparecerán las acciones de tokens de API, clientes MCP e IA.",
+    "status": {
+      "pending": "Esperando aprobación",
+      "approving": "Aprobando",
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "expired": "Caducado"
+    }
   }
 }

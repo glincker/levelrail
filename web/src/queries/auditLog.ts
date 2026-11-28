@@ -27,6 +27,8 @@ export interface AuditLogEntry {
   // Set when the request used a token labeled as an AI agent.
   agent_name?: string
   agent_client?: string
+  // Human an AI turn acted for, as user:<id>.
+  on_behalf_of?: string
   // Stable event name such as device_login.expired, set on lifecycle rows.
   action?: string
 }
