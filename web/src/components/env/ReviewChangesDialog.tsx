@@ -23,6 +23,7 @@ export interface ReviewChangesDialogProps {
   scanVars: Record<string, string>
   onStoreAsSecrets: (keys: string[]) => void
   onConfirm: () => void
+  confirmDisabled?: boolean
   onOpenChange: (open: boolean) => void
 }
 
@@ -41,6 +42,7 @@ export function ReviewChangesDialog({
   scanVars,
   onStoreAsSecrets,
   onConfirm,
+  confirmDisabled = false,
   onOpenChange,
 }: ReviewChangesDialogProps) {
   const { t } = useTranslation('envEditor')
@@ -93,6 +95,11 @@ export function ReviewChangesDialog({
             ))}
           </ul>
         )}
+        {changes.length > 0 ? (
+          <p className="text-xs text-muted-foreground">
+            {t('conflict.restartNeeded')}
+          </p>
+        ) : null}
         {findings.length > 0 ? (
           <Alert role="status">
             <AlertTitle>{t('review.scan.title')}</AlertTitle>
@@ -140,7 +147,7 @@ export function ReviewChangesDialog({
           <Button
             type="button"
             writeAction
-            disabled={saving || changes.length === 0}
+            disabled={saving || confirmDisabled || changes.length === 0}
             onClick={onConfirm}
           >
             {saving ? t('review.saving') : t('review.save')}

@@ -173,9 +173,13 @@ function mockServer(overrides: Record<string, (call: Call) => Response> = {}) {
                 })
               : json({ error: 'confirm', code: 'step_up_required' }, 403),
           )
-        case 'PUT /api/v1/apps/demo':
+        case 'POST /api/v1/apps/demo/env/apply':
           return Promise.resolve(
-            json({ ...app, env: { PORT: '4000', API_SECRET: MASKED_VALUE } }),
+            json({
+              changed: true,
+              env_version: 2,
+              plan: [{ key: 'PORT', action: 'set' }],
+            }),
           )
         default:
           if (url.startsWith('/api/v1/audit-log'))
@@ -276,22 +280,30 @@ describe('EnvironmentEditor', () => {
     )
     await waitFor(() => {
       expect(
-        calls.some((c) => c.method === 'PUT' && c.url === '/api/v1/apps/demo'),
+        calls.some(
+          (c) => c.method === 'POST' && c.url === '/api/v1/apps/demo/env/apply',
+        ),
       ).toBe(true)
     })
     const put = calls.find(
-      (c) => c.method === 'PUT' && c.url === '/api/v1/apps/demo',
+      (c) => c.method === 'POST' && c.url === '/api/v1/apps/demo/env/apply',
     )
     const sent = JSON.parse(put?.body ?? '{}') as {
-      env: Record<string, string>
+      set: Record<string, string>
+      expected_version: number
     }
-    expect(sent.env).toEqual({ PORT: '4000', API_SECRET: MASKED_VALUE })
+    expect(sent.set).toEqual({ PORT: '4000' })
+    expect(typeof sent.expected_version).toBe('number')
   })
 
   it('rebuild now runs a source build from the git source, not a redeploy', async () => {
     const calls = mockServer({
-      'PUT /api/v1/apps/demo': () =>
-        json({ ...app, rebuild_keys: ['NEXT_PUBLIC_SITE'] }),
+      'POST /api/v1/apps/demo/env/apply': () =>
+        json({
+          changed: true,
+          env_version: 2,
+          plan: [{ key: 'NEXT_PUBLIC_SITE', action: 'set' }],
+        }),
       'GET /api/v1/apps/demo/git-source': () =>
         json({
           repo_url: 'https://git.example/demo.git',

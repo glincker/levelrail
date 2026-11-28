@@ -247,6 +247,8 @@ export interface AppDetail {
   // recreated, so the change is not live yet. No omitempty on the Go
   // side, same always-present shape as suspended.
   env_dirty: boolean
+  // Response-only: send back as expected_version on env apply.
+  env_version?: number
   // Response-only on PUT: build-time env keys changed, a rebuild applies them.
   rebuild_required?: boolean
   rebuild_keys?: string[]

@@ -213,5 +213,17 @@
     "started": "Refazendo o build de \"{{name}}\" a partir do código-fonte.",
     "view": "Ver build",
     "noGitSource": "Nenhuma origem git está conectada. Execute levelrail-cli deploy na pasta do seu projeto para aplicar esta alteração, ou refaça o build da image onde ela é construída, porque o valor está embutido na image."
+  },
+  "conflict": {
+    "title": "The environment changed while you were editing",
+    "description": "Your draft is kept. Tick the keys where your value should win; the others take the current server value.",
+    "changed": "changed",
+    "secretChanged": "secret changed",
+    "reload": "Reload theirs",
+    "keepMine": "Keep mine",
+    "remote": "Changed by someone else. Your draft is kept.",
+    "lockedReplace": "Replace locked secret {{key}}",
+    "lockedTitle": "Locked secrets need an explicit tick to be replaced or deleted.",
+    "restartNeeded": "Restart needed for the running app to pick this up."
   }
 }

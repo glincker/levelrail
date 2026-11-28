@@ -213,5 +213,17 @@
     "started": "正在从源码重新构建“{{name}}”。",
     "view": "查看构建",
     "noGitSource": "未连接 git 来源。请在项目文件夹中运行 levelrail-cli deploy 来应用此更改，或者在构建镜像的地方重新构建，因为该值已固化在镜像中。"
+  },
+  "conflict": {
+    "title": "The environment changed while you were editing",
+    "description": "Your draft is kept. Tick the keys where your value should win; the others take the current server value.",
+    "changed": "changed",
+    "secretChanged": "secret changed",
+    "reload": "Reload theirs",
+    "keepMine": "Keep mine",
+    "remote": "Changed by someone else. Your draft is kept.",
+    "lockedReplace": "Replace locked secret {{key}}",
+    "lockedTitle": "Locked secrets need an explicit tick to be replaced or deleted.",
+    "restartNeeded": "Restart needed for the running app to pick this up."
   }
 }
