@@ -2,7 +2,10 @@ package deployurls
 
 import (
 	"context"
+	"errors"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type fakeGuardStore struct {
@@ -45,6 +48,49 @@ func TestRetainedParentSecrets(t *testing.T) {
 	}
 	if ok, _ := r.Exists(ctx, "other", "WHOAMI_PORT_NUMBER"); ok {
 		t.Fatal("a service that is not retained must keep its own namespace")
+	}
+}
+
+type dbGuardStore struct {
+	fakeGuardStore
+	dbs map[string]bool
+	err error
+}
+
+func (d *dbGuardStore) DeployURLApp(ctx context.Context, name string) (string, bool, error) {
+	if d.err != nil {
+		return "", false, d.err
+	}
+	return d.fakeGuardStore.DeployURLApp(ctx, name)
+}
+
+func (d *dbGuardStore) GetDesiredDatabase(_ context.Context, name string) (*store.DesiredDatabase, error) {
+	if d.dbs[name] {
+		return &store.DesiredDatabase{Name: name}, nil
+	}
+	return nil, store.ErrDatabaseNotFound
+}
+
+func TestParentSecretsRefusesUnsafeOwner(t *testing.T) {
+	inner := fakeSecrets{"vault/K": "x", "teamdb/K": "x", "web/K": "x"}
+	apps := map[string]string{"c-reserved": "vault", "c-db": "teamdb", "c-ok": "web"}
+	st := &dbGuardStore{fakeGuardStore: fakeGuardStore{apps: apps}, dbs: map[string]bool{"teamdb": true}}
+	r := ParentSecrets{Inner: inner, Apps: st}
+	ctx := context.Background()
+	for _, svc := range []string{"c-reserved", "c-db"} {
+		if _, err := r.Resolve(ctx, svc, "K"); !errors.Is(err, ErrParentSecretOwner) {
+			t.Errorf("%s: err = %v, want ErrParentSecretOwner", svc, err)
+		}
+		if _, err := r.Exists(ctx, svc, "K"); err == nil {
+			t.Errorf("%s: Exists must refuse", svc)
+		}
+	}
+	if v, err := r.Resolve(ctx, "c-ok", "K"); err != nil || v != "x" {
+		t.Errorf("a normal parent must still resolve: %q %v", v, err)
+	}
+	st.err = errors.New("store down")
+	if _, err := r.Resolve(ctx, "c-ok", "K"); err == nil {
+		t.Error("a store error must fail closed")
 	}
 }
 

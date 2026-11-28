@@ -120,6 +120,12 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "single_service_name requires exactly one service")
 		return
 	}
+	if req.SingleServiceName != "" {
+		if err := spec.ValidateServiceName(req.SingleServiceName); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 	if err := validateDeploySpecServiceTypes(req.Services); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -154,6 +160,22 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Stored before DeploySpec runs, since validateEnv checks required secrets up front.
+	// Names are admitted under their locks first, so a refused name never gets a value written.
+	var written []writtenSecret
+	var fresh []string
+	var admitted *admittedNames
+	if len(inlineSecrets) > 0 {
+		var ok bool
+		if admitted, ok = rt.admitServiceNames(w, r, specServiceNames(name, req.SingleServiceName, req.Services)); !ok {
+			return
+		}
+		fresh = admitted.fresh
+		defer func() {
+			if admitted != nil {
+				admitted.release()
+			}
+		}()
+	}
 	for key, values := range inlineSecrets {
 		svcName := name + "-" + key
 		if req.SingleServiceName != "" {
@@ -161,6 +183,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		}
 		for envKey, value := range values {
 			if err := rt.secrets.SetValueGuarded(r.Context(), svcName, envKey, value, false); err != nil {
+				rt.dropUnsavedSecrets(r.Context(), admitted.fresh, written)
 				if errors.Is(err, secrets.ErrSecretLocked) {
 					writeError(w, http.StatusConflict, fmt.Sprintf("service %q secret %q is locked", key, envKey))
 					return
@@ -168,7 +191,15 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 				rt.internalError(w, "api: deploy spec: set secret failed", err, slog.String("name", name), slog.String("service_key", key), slog.String("env_key", envKey))
 				return
 			}
+			written = append(written, writtenSecret{service: svcName, key: envKey})
 		}
+	}
+	// A service that never reached the store must not keep the value written for it.
+	defer func() { rt.dropUnsavedSecrets(r.Context(), fresh, written) }()
+	if admitted != nil {
+		// Locks only need to cover admission and the writes, not the long build.
+		admitted.release()
+		admitted = nil
 	}
 
 	imageRepoBase := req.ImageRepoBase

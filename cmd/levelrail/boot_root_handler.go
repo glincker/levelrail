@@ -448,6 +448,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 	if builder != nil {
 		// Spec file deploys (webhook, git push, builds) admit host ports like POST /apps.
 		builder.SetPortAdmitter(rt)
+		builder.SetNameAdmitter(rt)
 	}
 	wireBindMountSettings(rt)
 	if secretsManager != nil {

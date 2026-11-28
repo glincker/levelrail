@@ -244,6 +244,7 @@ type Pipeline struct {
 	registryAuth RegistryAuthSource    // nil resolves private images without credentials
 	ordered      OrderedStore          // nil disables the stale-deploy guard
 	ports        PortAdmitter          // nil skips host port admission (tests, demo)
+	names        NameAdmitter          // nil skips name admission before file secrets (tests, demo)
 	attempts     AttemptRecorder       // nil skips recording digests on attempts
 
 	buildSecretValues BuildSecretValues // nil: build.secrets is rejected at deploy
