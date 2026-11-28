@@ -132,8 +132,15 @@ func (rt *Router) restoreNeedsAttentionItems(r *http.Request, abilities []string
 	if err != nil {
 		return nil
 	}
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		return nil
+	}
 	var items []attention.Item
 	for _, svc := range apps {
+		if !canSee(svc.Name) {
+			continue
+		}
 		for _, c := range splitUndoLabel(svc.Labels[undoNeedsLabel]) {
 			if !rt.undoCategoryMissing(ctx, svc.Name, c) {
 				continue

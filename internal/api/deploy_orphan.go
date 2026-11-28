@@ -46,8 +46,15 @@ func (rt *Router) interruptedDeployAttentionItems(r *http.Request, abilities []s
 		rt.logger.Warn("api: attention: list failed deploys failed", slog.String("error", err.Error()))
 		return nil
 	}
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		return nil
+	}
 	var out []attention.Item
 	for _, f := range failed {
+		if !canSee(f.Attempt.ServiceName) {
+			continue
+		}
 		if f.Attempt.Status == store.DeployAttemptStatusRefused {
 			it := feedItem(attention.Warning, attention.KindDeployRefused, f.Attempt.ServiceName,
 				"Refused: "+f.Attempt.Error+". Free space on the node or open Nodes, Capacity, then retry",
