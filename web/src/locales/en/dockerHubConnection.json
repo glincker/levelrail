@@ -1,0 +1,65 @@
+{
+  "title": "Docker Hub connection",
+  "description": "Token status, pull limits and private repository access for your Docker Hub credentials.",
+  "status": {
+    "label": "Token status",
+    "checking": "Checking the token...",
+    "valid": "Valid",
+    "invalid": "Rejected",
+    "expired": "Expired",
+    "unknown": "Unknown",
+    "checkedAt": "Checked {{when}}",
+    "scopes": "Scopes: {{scopes}}",
+    "noScopes": "No scopes reported",
+    "kind": "{{kind}} token",
+    "privateRepos": "Private repositories visible",
+    "expiresOn": "Expires {{when}}",
+    "loadFailed": "Could not read the connection status: {{message}}"
+  },
+  "limits": {
+    "label": "Pull limit",
+    "remaining": "{{remaining}} of {{limit}} pulls left",
+    "window": "per {{hours}} h window",
+    "sourceAccount": "Counted by account",
+    "sourceIp": "Counted by IP address",
+    "anonymous": "Anonymous",
+    "authenticated": "Authenticated",
+    "unknown": "Docker Hub did not report a pull limit.",
+    "low": "Low: under {{percent}}% of the limit remains",
+    "meter": "Pulls remaining",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "refreshFailed": "Could not refresh the pull limit: {{message}}",
+    "unavailable": "The pull limit could not be read."
+  },
+  "actions": {
+    "test": "Test connection",
+    "testing": "Testing...",
+    "retest": "Re-test",
+    "replaceToken": "Replace token",
+    "testOk": "{{name}}: Docker Hub accepted the token.",
+    "testRejected": "{{name}}: Docker Hub rejected the token.",
+    "testFailed": "{{name}}: the test failed.",
+    "tokenLabel": "New access token",
+    "tokenHelp": "Create a read-only access token in Docker Hub account settings.",
+    "save": "Save token",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "replaced": "{{name}}: token replaced."
+  },
+  "cli": {
+    "summary": "Fix via CLI",
+    "hint": "Run this command to check the connection from a terminal."
+  },
+  "tags": {
+    "filterLabel": "Filter tags",
+    "filterPlaceholder": "Type to filter",
+    "empty": "No tags match.",
+    "loading": "Loading tags...",
+    "loadFailed": "Could not load tags: {{message}}",
+    "retry": "Retry",
+    "showing": "Showing {{from}} to {{to}} of {{total}}",
+    "listLabel": "Tags of {{repository}}",
+    "pick": "Use tag {{tag}}"
+  }
+}

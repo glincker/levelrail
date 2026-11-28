@@ -23,6 +23,10 @@ const CloudRegistryCards = lazy(
   () => import('../../components/registry/CloudRegistryCards'),
 )
 
+const DockerHubConnectionCard = lazy(
+  () => import('../../components/registry/DockerHubConnectionCard'),
+)
+
 // Account-level, same reasoning settings/backup-targets.tsx's own doc
 // comment gives: a registry credential isn't scoped to one app, it's
 // referenced by name from any app.yaml's build.registryCredential
@@ -97,6 +101,9 @@ function RegistryCredentialsPage() {
         {extras ? <BuiltInRegistryCard /> : null}
         <Suspense fallback={null}>
           <CloudRegistryCards credentials={credentials} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <DockerHubConnectionCard credentials={credentials} />
         </Suspense>
         <RegistryVendorGrid />
         <RegistryCredentialTable

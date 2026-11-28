@@ -15,6 +15,10 @@ import type {
   RegistryPresetRequest,
   RegistryPresetTestResult,
 } from '../types/registryCredential'
+import type {
+  DockerHubLimits,
+  DockerHubStatus,
+} from '../types/dockerHubAccount'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const registryCredentialKeys = {
@@ -24,6 +28,8 @@ export const registryCredentialKeys = {
     [...registryCredentialKeys.all, 'repositories', id] as const,
   tags: (id: string, repository: string) =>
     [...registryCredentialKeys.all, 'tags', id, repository] as const,
+  dockerHub: (id: string) =>
+    [...registryCredentialKeys.all, 'dockerhub', id] as const,
 }
 
 // GET /api/v1/registry-credentials (handleListRegistryCredentials): no
@@ -315,6 +321,130 @@ export function useRefreshRegistryCredential() {
   return useMutation<RegistryCredential, ApiError, string>({
     mutationFn: refreshRegistryCredential,
     onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: registryCredentialKeys.list(),
+      })
+    },
+  })
+}
+
+// GET /api/v1/registry-credentials/{id}/dockerhub: token status plus pull
+// limits; refresh=true bypasses the server-side cache and re-checks Docker Hub.
+export async function fetchDockerHubStatus(
+  id: string,
+  refresh: boolean,
+): Promise<DockerHubStatus> {
+  const suffix = refresh ? '?refresh=true' : ''
+  const res = await fetch(
+    `/api/v1/registry-credentials/${encodeURIComponent(id)}/dockerhub${suffix}`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `docker hub status failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DockerHubStatus
+}
+
+export function dockerHubStatusQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: registryCredentialKeys.dockerHub(id),
+    queryFn: () => fetchDockerHubStatus(id, false),
+    retry: false,
+  })
+}
+
+export function useDockerHubStatus(id: string) {
+  return useQuery(dockerHubStatusQueryOptions(id))
+}
+
+// Re-test: forces a fresh status check and replaces the cached reading.
+export function useRetestDockerHub(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation<DockerHubStatus, ApiError, void>({
+    mutationFn: () => fetchDockerHubStatus(id, true),
+    onSuccess: (data) => {
+      queryClient.setQueryData(registryCredentialKeys.dockerHub(id), data)
+    },
+  })
+}
+
+// GET /api/v1/registry-credentials/{id}/limits?refresh=true: only the pull
+// limit, merged into the cached status so the meter updates in place.
+export async function fetchDockerHubLimits(
+  id: string,
+  refresh: boolean,
+): Promise<DockerHubLimits> {
+  const suffix = refresh ? '?refresh=true' : ''
+  const res = await fetch(
+    `/api/v1/registry-credentials/${encodeURIComponent(id)}/limits${suffix}`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `docker hub limits failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DockerHubLimits
+}
+
+export function useRefreshDockerHubLimits(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation<DockerHubLimits, ApiError, void>({
+    mutationFn: () => fetchDockerHubLimits(id, true),
+    onSuccess: (limits) => {
+      queryClient.setQueryData<DockerHubStatus>(
+        registryCredentialKeys.dockerHub(id),
+        (prev) => (prev ? { ...prev, limits } : prev),
+      )
+    },
+  })
+}
+
+export interface ReplaceDockerHubTokenRequest {
+  id: string
+  name: string
+  registry_host: string
+  username: string
+  password: string
+}
+
+// PUT /api/v1/registry-credentials/{id}: the server verifies a Docker Hub
+// token before storing it and answers 400 when Docker Hub rejects it.
+export async function replaceDockerHubToken(
+  req: ReplaceDockerHubTokenRequest,
+): Promise<RegistryCredential> {
+  const { id, ...body } = req
+  const res = await fetch(
+    `/api/v1/registry-credentials/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `replace token failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as RegistryCredential
+}
+
+export function useReplaceDockerHubToken() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    RegistryCredential,
+    ApiError,
+    ReplaceDockerHubTokenRequest
+  >({
+    mutationFn: replaceDockerHubToken,
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: registryCredentialKeys.dockerHub(vars.id),
+      })
       void queryClient.invalidateQueries({
         queryKey: registryCredentialKeys.list(),
       })

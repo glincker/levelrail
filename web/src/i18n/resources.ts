@@ -17,6 +17,7 @@ import type hotSpots from '../locales/en/hotSpots.json'
 import type buildLogs from '../locales/en/buildLogs.json'
 import type storageParts from '../locales/en/storageParts.json'
 import type installCard from '../locales/en/installCard.json'
+import type dockerHubConnection from '../locales/en/dockerHubConnection.json'
 import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
@@ -410,6 +411,7 @@ declare module 'i18next' {
       buildLogs: typeof buildLogs
       storageParts: typeof storageParts
       installCard: typeof installCard
+      dockerHubConnection: typeof dockerHubConnection
     }
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -28,6 +28,13 @@ import {
   type DockerHubRepository,
 } from '../queries/dockerhub'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { isDockerHubHost } from '../lib/dockerHubHost'
+
+const DockerHubTagBrowser = lazy(() =>
+  import('./registry/DockerHubTagBrowser').then((m) => ({
+    default: m.DockerHubTagBrowser,
+  })),
+)
 
 const BUILTIN_SOURCE_ID = 'builtin'
 const DOCKERHUB_SOURCE_ID = 'dockerhub'
@@ -104,6 +111,10 @@ export function RegistryImagePicker({
       ? null
       : (credentials.find((credential) => credential.id === effectiveSource) ??
         null)
+
+  const hubCredential =
+    selectedCredential !== null &&
+    isDockerHubHost(selectedCredential.registry_host)
 
   const builtinRepos = useRegistryRepositoriesOptional(
     builtinAvailable && isBuiltinSelected,
@@ -233,7 +244,24 @@ export function RegistryImagePicker({
             ) : null}
           </Field>
 
-          {selectedRepo ? (
+          {selectedRepo && selectedCredential && hubCredential ? (
+            <Suspense fallback={null}>
+              <DockerHubTagBrowser
+                credentialId={selectedCredential.id}
+                repository={selectedRepo}
+                disabled={disabled}
+                onPick={(tag) =>
+                  onSelect(
+                    buildImageRef(
+                      selectedCredential.registry_host,
+                      selectedRepo,
+                      tag,
+                    ),
+                  )
+                }
+              />
+            </Suspense>
+          ) : selectedRepo ? (
             <Field>
               <FieldLabel htmlFor="registry-picker-tag">Tag</FieldLabel>
               <Combobox

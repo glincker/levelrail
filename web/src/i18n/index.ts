@@ -213,6 +213,7 @@ export const NAMESPACES = [
   'buildLogs',
   'storageParts',
   'installCard',
+  'dockerHubConnection',
   'restorePreview',
   'dbOverview',
 ] as const
