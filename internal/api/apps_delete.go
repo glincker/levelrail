@@ -190,7 +190,7 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 		}
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
-	rt.removeAppCredentials(ctx, name, integrationNS)
+	credErr := rt.removeAppCredentials(ctx, name, integrationNS)
 	if soft == nil && rt.secrets != nil {
 		if err := rt.secrets.DeleteAll(ctx, store.TraceIngestSecretsKey(name)); err != nil {
 			rt.logger.Warn("api: delete app: remove trace ingest token failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -286,14 +286,18 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 			cancel()
 		}
 	}
+	// A failed secrets erase is reported like a pending teardown; the name is wiped again before reuse.
+	if teardownErr == nil && credErr != nil {
+		teardownErr = fmt.Errorf("erase stored secrets of %q: %w", name, credErr)
+	}
 	return teardownErr, nil
 }
 
 // removeAppCredentials erases the app's stored secrets, git source with its
 // deploy token and webhook secret, and other access grants, so a later app
-// of the same name inherits none of them. Failures are logged only.
+// of the same name inherits none of them. A failed secrets erase is returned.
 // extraNamespaces are secrets namespaces the caller collected earlier.
-func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNamespaces []string) {
+func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNamespaces []string) error {
 	namespaces := append([]string(nil), extraNamespaces...)
 	if g, ok := rt.apps.(interface {
 		DeleteAppAccessGrants(ctx context.Context, name string) ([]string, error)
@@ -310,15 +314,18 @@ func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNa
 		}
 	}
 	if rt.secrets == nil {
-		return
+		return nil
 	}
 	namespaces = append(namespaces, name, store.LogDrainSecretService(name))
+	var failed error
 	for _, ns := range namespaces {
 		if err := rt.secrets.DeleteAll(ctx, ns); err != nil {
 			rt.logger.Warn("api: delete app: remove secrets failed", slog.String("error", err.Error()), slog.String("name", name))
+			failed = errors.Join(failed, err)
 		}
 	}
 	rt.eraseGitSourceSecrets(ctx, name)
+	return failed
 }
 
 // namespaceCopier is the secrets manager's copy between namespaces.

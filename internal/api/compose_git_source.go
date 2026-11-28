@@ -249,7 +249,8 @@ func (rt *Router) appNameFree(ctx context.Context, name string) error {
 	if other {
 		return errAppNameTaken
 	}
-	return nil
+	// The caller holds the name lock, so values a deleted database or app left here are wiped before the new owner reads them.
+	return rt.clearStaleSecretNamespace(ctx, name)
 }
 
 func (rt *Router) loadComposeGitSource(w http.ResponseWriter, r *http.Request, name string) (*store.GitSource, bool) {

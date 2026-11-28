@@ -210,8 +210,11 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		}
 		err = rt.restoreDeletedDatabase(r.Context(), cur)
 		if err == nil {
-			// Only the row restored from is cleared; a newer delete of the same name stays.
-			if derr := rt.clearRestoredDatabaseEntry(r.Context(), st, cur); derr != nil {
+			// The entry stays if the parked copy cannot be erased, so the purge erases it later.
+			if serr := rt.dropParkedDatabaseSecrets(r.Context(), name); serr != nil {
+				rt.logger.Warn("api: erase parked database credentials failed", slog.String("name", name), slog.String("error", serr.Error()))
+			} else if derr := rt.clearRestoredDatabaseEntry(r.Context(), st, cur); derr != nil {
+				// Only the row restored from is cleared; a newer delete of the same name stays.
 				rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
 			}
 		}
@@ -349,15 +352,23 @@ func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDe
 	} else if other {
 		return errRestoreConflict(msgNameUnavailable)
 	}
+	if _, gerr := rt.databases.GetDesiredDatabase(ctx, e.Name); gerr == nil {
+		return errRestoreConflict("a database named " + e.Name + " exists again; rename or delete it first")
+	}
+	if err := rt.restoreParkedDatabaseSecrets(ctx, e.Name); err != nil {
+		return err
+	}
 	if err := rt.insertDesiredDatabase(ctx, d); err != nil {
 		if errors.Is(err, store.ErrDatabaseExists) {
 			return errRestoreConflict("a database named " + e.Name + " exists again; rename or delete it first")
 		}
+		rt.eraseRestoredDatabaseSecrets(ctx, e.Name)
 		return err
 	}
 	// A half-restored row would block the retry with a conflict, so undo the insert on failure.
 	defer func() {
 		if err != nil {
+			rt.eraseRestoredDatabaseSecrets(ctx, e.Name)
 			if derr := rt.databases.DeleteDesiredDatabase(context.WithoutCancel(ctx), e.Name); derr != nil {
 				rt.logger.Warn("api: roll back failed database restore", slog.String("name", e.Name), slog.String("error", derr.Error()))
 			}
@@ -389,12 +400,16 @@ func (rt *Router) SweepRecentlyDeleted(ctx context.Context, now time.Time) (int,
 	cutoff := now.Add(-rt.recentlyDeletedWindow(ctx))
 	// Hold each expiring app's name lock so a restore that already re-read its entry finishes first.
 	if all, err := st.ListRecentlyDeleted(ctx); err == nil {
-		var names []string
+		var names, dbNames []string
 		for _, e := range all {
 			if e.Kind == store.RecentlyDeletedApp && e.DeletedAt.Before(cutoff) {
 				names = append(names, e.Name)
 			}
+			if e.Kind == store.RecentlyDeletedDatabase && e.DeletedAt.Before(cutoff) {
+				dbNames = append(dbNames, "database:"+e.Name)
+			}
 		}
+		names = append(names, dbNames...)
 		sort.Strings(names)
 		for _, n := range names {
 			defer lockAppName(n)()

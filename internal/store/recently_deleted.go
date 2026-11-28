@@ -18,6 +18,10 @@ const (
 // values for the undo window. App names cannot contain a slash, so it never collides.
 func DeletedAppSecretsKey(name string) string { return "deleted-app/" + name }
 
+// DeletedDatabaseSecretsKey is the secrets namespace that holds a soft-deleted database's
+// credentials for the undo window. The slash keeps every name from reaching it.
+func DeletedDatabaseSecretsKey(name string) string { return "deleted-db/" + name }
+
 // ErrRecentlyDeletedNotFound is returned when no undo entry exists for the name.
 var ErrRecentlyDeletedNotFound = errors.New("store: recently deleted entry not found")
 
@@ -115,6 +119,9 @@ func (db *DB) PurgeRecentlyDeleted(ctx context.Context, cutoff time.Time) (int, 
 	if err := rows.Close(); err != nil {
 		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
 	}
+	if err := purgeExpiredDatabaseSecrets(ctx, tx, at); err != nil {
+		return 0, fmt.Errorf("store: purge recently deleted: %w", err)
+	}
 	for _, n := range names {
 		// Restore copies parked values to the live name first, so the parked copy always goes.
 		if err := deleteServiceSecretsTx(ctx, tx, DeletedAppSecretsKey(n)); err != nil {
@@ -148,6 +155,43 @@ func (db *DB) PurgeRecentlyDeleted(ctx context.Context, cutoff time.Time) (int, 
 	}
 	n, _ := res.RowsAffected()
 	return int(n), nil
+}
+
+// purgeExpiredDatabaseSecrets erases the parked credentials of expired database undo rows, and the live
+// namespace too while no database or app holds the name, so a failed erase at delete time cannot outlive the window.
+func purgeExpiredDatabaseSecrets(ctx context.Context, tx *sql.Tx, at string) error {
+	rows, err := tx.QueryContext(ctx, `SELECT name FROM recently_deleted WHERE kind = ? AND deleted_at < ?`, RecentlyDeletedDatabase, at)
+	if err != nil {
+		return err
+	}
+	var names []string
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		names = append(names, n)
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, n := range names {
+		if err := deleteServiceSecretsTx(ctx, tx, DeletedDatabaseSecretsKey(n)); err != nil {
+			return err
+		}
+		var live int
+		if err := tx.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM desired_databases WHERE name = ?) + (SELECT COUNT(*) FROM desired_services WHERE name = ?)`, n, n).Scan(&live); err != nil {
+			return err
+		}
+		if live > 0 {
+			continue
+		}
+		if err := deleteServiceSecretsTx(ctx, tx, n); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // TraceIngestSecretsKey is the secrets namespace of an app's trace ingest token.

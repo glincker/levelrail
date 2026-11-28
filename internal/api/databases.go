@@ -346,6 +346,15 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		return false
 	}
 
+	if err := rt.clearStaleSecretNamespace(r.Context(), req.Name); err != nil {
+		if errors.Is(err, errAppNameTaken) {
+			writeError(w, http.StatusConflict, msgNameUnavailable)
+			return false
+		}
+		rt.internalError(w, "api: create database: clear stale secrets failed", err, slog.String("name", req.Name))
+		return false
+	}
+
 	if rt.refuseIncompatibleLeftover(w, r, req) {
 		return false
 	}
@@ -544,6 +553,22 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// An undo keeps the credentials parked, so a reused name sees nothing; a final delete erases them below.
+	undoKept := !purge && rt.databaseUndoKept(r.Context())
+	parked, rowGone := false, false
+	if undoKept && rt.canParkSecrets() {
+		if err := rt.parkDatabaseSecrets(r.Context(), name); err != nil {
+			rt.internalError(w, "api: delete database: park credentials failed", err, slog.String("name", name))
+			return
+		}
+		parked = true
+		defer func() {
+			if !rowGone {
+				_ = rt.dropParkedDatabaseSecrets(context.WithoutCancel(r.Context()), name)
+			}
+		}()
+	}
+
 	if rt.execRuntime != nil {
 		if err := rt.recordDatabaseTeardown(r.Context(), name, existing.NodeID, purge); err != nil {
 			rt.internalError(w, "api: delete database: record teardown failed", err, slog.String("name", name))
@@ -564,11 +589,28 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rowGone = true
+	// Under the name lock, right after the row went: a same-name create cannot write what this erase removes.
+	var credErr error
+	if !undoKept || parked {
+		credErr = rt.eraseDatabaseCredentials(context.WithoutCancel(r.Context()), name)
+		if credErr != nil {
+			rt.logger.Error("api: delete database: erase credentials failed", slog.String("error", credErr.Error()), slog.String("name", name))
+		}
+	}
 	if !purge {
 		rt.rememberDeleted(context.WithoutCancel(r.Context()), r, store.RecentlyDeletedDatabase, name, existing, rt.lastBackupRef(r.Context(), name))
+		rt.dropOrphanParkedDatabase(context.WithoutCancel(r.Context()), name, parked)
 	}
 	rt.changes.Publish(changeDatabases, name)
 	rt.nudgeReconciler()
+	if credErr != nil {
+		writeJSON(w, http.StatusAccepted, map[string]string{
+			"status":  "credentials_pending",
+			"message": "database removed, but its stored credentials could not be erased yet; they are cleared before the name is reused",
+		})
+		return
+	}
 	if terr := rt.runDatabaseTeardown(r.Context(), name, existing.NodeID, purge); terr != nil {
 		writeJSON(w, http.StatusAccepted, map[string]string{
 			"status":  "teardown_pending",
