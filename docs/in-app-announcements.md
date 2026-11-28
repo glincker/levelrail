@@ -1,7 +1,7 @@
 ---
 title: "In-app announcements"
 description: What the signed announcement feed is, what an instance fetches and reveals, how to turn it off or use your own copy, and how to verify the feed yourself.
-"og:url": "https://docs.levelrail.com/announcements"
+"og:url": "https://docs.levelrail.com/in-app-announcements"
 ---
 
 Levelrail can show short notices inside the dashboard: a security fix is available, a maintenance window, a new feature. The notices come from one public, signed file. This page says exactly what an instance fetches and what that reveals.
