@@ -137,6 +137,7 @@ Four main types, plus two Levelrail-specific categories:
 | [ai-assistant.md](/ai-assistant) | Run `levelrail-mcp` over stdio or the network for an MCP-compatible AI assistant, and scope a token for it |
 | [ai-assistant-chat.md](/ai-assistant-chat) | The in-app dashboard/CLI chat behind the `ai-chat` experimental flag: enabling it, what it can and can't do, and the confirmation gate |
 | [agent-tooling-audit.md](/agent-tooling-audit) | Tool counts and estimated token cost per MCP mode, the heaviest and overlapping tools, and the budget test |
+| [agent-plan-before-apply.md](/agent-plan-before-apply) | Plan before apply for agents: dry run on every apply path, the plan JSON shape and the stable error codes |
 
 #### Maintenance and Documentation
 

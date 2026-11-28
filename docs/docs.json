@@ -530,6 +530,7 @@
               "plugins-first-party",
               "mcp-tool-surface",
               "agent-tooling-audit",
+              "agent-plan-before-apply",
               "kit",
               "terraform-provider"
             ],

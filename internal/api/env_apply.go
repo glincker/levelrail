@@ -32,6 +32,14 @@ type envApplyResource struct {
 	Plan       []store.EnvPlanChange `json:"plan"`
 }
 
+// Stable codes of the env apply endpoint, listed in docs/agent-plan-before-apply.md.
+const (
+	EnvApplyCodeVersionConflict = "env_version_conflict"
+	EnvApplyCodeLockedSecret    = "env_locked_secret" //nolint:gosec // error code, not a credential
+	EnvApplyCodeDualHome        = "env_dual_home"
+	EnvApplyCodeKeyIsSecret     = "env_key_is_secret" //nolint:gosec // error code, not a credential
+)
+
 // envApplyConflictResource is the 409 body for a stale expected_version.
 type envApplyConflictResource struct {
 	Error          string   `json:"error"`
@@ -192,17 +200,17 @@ func (rt *Router) writeEnvApplyError(w http.ResponseWriter, name string, req env
 		return false
 	case errors.As(err, &conflict):
 		writeJSON(w, http.StatusConflict, envApplyConflictResource{
-			Error: "the env changed since expected_version; reload and retry", Code: "env_version_conflict",
+			Error: "the env changed since expected_version; reload and retry", Code: EnvApplyCodeVersionConflict,
 			CurrentVersion: conflict.Current, PlanKeys: planKeyNames(req),
 		})
 	case errors.Is(err, store.ErrServiceNotFound):
 		writeError(w, http.StatusNotFound, "app not found")
 	case errors.Is(err, store.ErrEnvLockedSecret):
-		writeError(w, http.StatusConflict, "a locked secret is in the plan, set overwrite_locked to confirm replacing it")
+		writeCodedError(w, http.StatusConflict, EnvApplyCodeLockedSecret, "a locked secret is in the plan, set overwrite_locked to confirm replacing it")
 	case errors.Is(err, store.ErrEnvDualHome):
-		writeError(w, http.StatusConflict, "a key in the plan would be both a plain and a secret value; remove one copy first")
+		writeCodedError(w, http.StatusConflict, EnvApplyCodeDualHome, "a key in the plan would be both a plain and a secret value; remove one copy first")
 	case errors.Is(err, store.ErrEnvKeyIsSecret):
-		writeError(w, http.StatusConflict, "a plain key in the plan is stored as a secret; remove the secret first")
+		writeCodedError(w, http.StatusConflict, EnvApplyCodeKeyIsSecret, "a plain key in the plan is stored as a secret; remove the secret first")
 	default:
 		rt.internalError(w, "api: env apply failed", err, slog.String("name", name))
 	}

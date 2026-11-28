@@ -78,6 +78,16 @@ func TestEnvApply_ConvertMovesValueAtomically(t *testing.T) {
 	}
 }
 
+func TestEnvApply_StableConflictCodes(t *testing.T) {
+	f := newEnvFixture(t)
+	const path = "/api/v1/apps/web/env/apply"
+	f.do(t, f.cookie, http.MethodPost, path, `{"secret_set":{"SEALED_KEY":"`+storedSecretValue+`"}}`, http.StatusOK)
+	rec := f.do(t, f.cookie, http.MethodPost, path, `{"set":{"SEALED_KEY":"plain"}}`, http.StatusConflict)
+	if !strings.Contains(rec.Body.String(), `"code":"`+EnvApplyCodeKeyIsSecret+`"`) {
+		t.Fatalf("body = %s", rec.Body.String())
+	}
+}
+
 func envApplyInt(n int) string {
 	b, _ := json.Marshal(n)
 	return string(b)
