@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"sort"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/compose"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -28,8 +28,10 @@ type nodeRefError struct {
 func (e *nodeRefError) Error() string { return e.msg }
 
 // resolveNodeRef turns a node name, id or key=value label selector into one
-// schedulable, online node. A selector with several matches takes the least loaded.
-func (rt *Router) resolveNodeRef(ctx context.Context, ref string) (nodeTarget, *nodeRefError) {
+// schedulable, online node the caller may place on. A selector with several
+// matches takes the least loaded allowed one, and errors name only visible nodes.
+func (rt *Router) resolveNodeRef(r *http.Request, ref string) (nodeTarget, *nodeRefError) {
+	ctx := r.Context()
 	sel, err := compose.NodeRefSelector(ref)
 	if err != nil {
 		return nodeTarget{}, &nodeRefError{http.StatusBadRequest, fmt.Sprintf("node selector %q is invalid: %v", ref, err)}
@@ -37,6 +39,10 @@ func (rt *Router) resolveNodeRef(ctx context.Context, ref string) (nodeTarget, *
 	cands, err := rt.placementCandidates(ctx)
 	if err != nil {
 		return nodeTarget{}, &nodeRefError{http.StatusInternalServerError, "could not read the node list: " + err.Error()}
+	}
+	cands, err = rt.allowedPlacementCandidates(r, cands)
+	if err != nil {
+		return nodeTarget{}, &nodeRefError{http.StatusInternalServerError, "could not check node access"}
 	}
 	names := make([]string, 0, len(cands))
 	best := -1
@@ -77,6 +83,29 @@ func (rt *Router) resolveNodeRef(ctx context.Context, ref string) (nodeTarget, *
 	}
 }
 
+// allowedPlacementCandidates drops nodes an IAM Deny hides from the caller. The
+// control plane node is always allowed.
+func (rt *Router) allowedPlacementCandidates(r *http.Request, cands []placement.Candidate) ([]placement.Candidate, error) {
+	allowed, err := rt.authorizeRefPredicate(r, AbilityWrite)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]placement.Candidate, 0, len(cands))
+	for _, c := range cands {
+		if c.ID != rt.localNodeID && c.ID != "" {
+			ok, err := allowed(nodeRef(c.ID))
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				continue
+			}
+		}
+		out = append(out, c)
+	}
+	return out, nil
+}
+
 // resolveRequestNode reads the node_id and node_selector request fields. It
 // returns nil when neither is set, and writes the refusal itself on failure.
 func (rt *Router) resolveRequestNode(w http.ResponseWriter, r *http.Request, nodeID, selector string) (*nodeTarget, bool) {
@@ -91,7 +120,7 @@ func (rt *Router) resolveRequestNode(w http.ResponseWriter, r *http.Request, nod
 	if ref == "" {
 		return nil, true
 	}
-	t, nerr := rt.resolveNodeRef(r.Context(), ref)
+	t, nerr := rt.resolveNodeRef(r, ref)
 	if nerr != nil {
 		writeError(w, nerr.status, nerr.msg)
 		return nil, false
@@ -136,7 +165,7 @@ func (rt *Router) applyComposeNodeTargets(w http.ResponseWriter, r *http.Request
 			t, ok := resolved[ref]
 			if !ok {
 				var nerr *nodeRefError
-				if t, nerr = rt.resolveNodeRef(r.Context(), ref); nerr != nil {
+				if t, nerr = rt.resolveNodeRef(r, ref); nerr != nil {
 					writeError(w, nerr.status, fmt.Sprintf("service %q: x-levelrail-node: %s", key, nerr.msg))
 					return nil, false
 				}
