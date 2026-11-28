@@ -165,6 +165,11 @@ levelrail-cli env set <app> KEY=VALUE... [--apply|--no-apply] [--allow-file-valu
 Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those. `KEY=@-` reads the value from stdin. `KEY=@./path`, `KEY=@/abs/path` and `KEY=@~/path` read a local file only with `--allow-file-values` and are refused otherwise. `KEY=@@text` stores the literal `@text`. All keys go to the server in one column-scoped call, so a concurrent deploy cannot drop them.
 
 ```
+levelrail-cli env apply <app> [-f plan.json] [--set K=V] [--unset K] [--secret-set K=V] [--secret-delete K] [--convert K] [--vault-clear K] [--expected-version N] [--dry-run] [--force-locked] [flags]
+```
+Apply plain, secret and vault changes in one transaction (`apps env apply` is the same command). `-f` takes the API request body (`POST /api/v1/apps/{name}/env/apply`) and the flags add to it. The output lists key names and actions only, never a value. Read the version with `apps get <app> --json` (field `env_version`) and pass it as `--expected-version`: if the env changed since, nothing is applied and the command exits with code 8, so a concurrent writer is a visible conflict, not a silent overwrite. `env set`, `env unset`, `apps env import` and `apps secrets set` use the same endpoint with the version they read. Exit codes: 0 applied or dry run, 1 usage, 2 invalid plan, 3 network, 4 API error, 8 env changed since the expected version.
+
+```
 levelrail-cli open <app> [flags]
 levelrail-cli login [--device] [flags]
 levelrail-cli backup <database> [--target ID] [flags]

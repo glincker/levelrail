@@ -77,7 +77,7 @@ func runEnvUnset(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		result.Removed = append(result.Removed, k)
 	}
 	if len(result.Removed) > 0 {
-		if _, err := mergeEnv(ctx, client, name, apiclient.EnvMergeRequest{Unset: result.Removed}); err != nil {
+		if _, err := mergeEnv(ctx, client, prog, name, app.EnvVersion, apiclient.EnvMergeRequest{Unset: result.Removed}); err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
 		result.Applied = true

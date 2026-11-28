@@ -20,6 +20,8 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsEnvUsage(prog))
 		return exitOK
+	case "apply":
+		return runEnvApply(prog, args[1:], stdout, stderr, lookupEnv)
 	case "import":
 		return runAppsEnvImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
@@ -189,15 +191,16 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 				moved = append(moved, e.Key)
 			}
 		}
-		if _, err := mergeEnv(ctx, client, name, envMergeFromPlan(plan, keepExisting, moved)); err != nil {
+		if _, err := mergeEnv(ctx, client, prog, name, app.EnvVersion, envMergeFromPlan(plan, keepExisting, moved)); err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
 		result.Applied = true
 	}
 	var failed []string
 	if !dryRun {
+		ver := &envVersionTracker{}
 		for _, e := range secretEntries {
-			if err := client.SetSecret(ctx, name, e.Key, e.Value, false); err != nil {
+			if err := setSecretMaybeBuildTime(client, prog, name, e.Key, e.Value, false, false, ver); err != nil {
 				_, _ = fmt.Fprintf(stderr, "secret %q for app %q: %v\n", e.Key, name, err)
 				failed = append(failed, e.Key)
 				continue

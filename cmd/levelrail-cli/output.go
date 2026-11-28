@@ -26,6 +26,7 @@ const (
 	exitDeployFailed  = 5  // "apps wait": every API call succeeded, but the deploy itself converged as a failure
 	exitDeployTimeout = 6  // "apps wait": gave up before the deploy converged either way
 	exitNotLive       = 7  // "go-live --wait": every call worked, but the domain is not live yet
+	exitEnvConflict   = 8  // env apply: the env changed since it was read (HTTP 409 env_version_conflict), reload and retry
 	exitUpdateAvail   = 10 // "update --check --exit-code": the check worked and a newer release exists
 )
 
@@ -34,6 +35,10 @@ func exitCodeForError(err error) int {
 	var dry *apiclient.DryRunError
 	if errors.As(err, &dry) {
 		return exitOK
+	}
+	var envConflict *apiclient.EnvVersionConflictError
+	if errors.As(err, &envConflict) {
+		return exitEnvConflict
 	}
 	var apiErr *apiError
 	if errors.As(err, &apiErr) {

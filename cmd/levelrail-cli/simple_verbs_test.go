@@ -155,13 +155,13 @@ func TestEnvSet(t *testing.T) {
 		"GET /api/v1/apps/web/secrets":         []map[string]string{{"key": "TOKEN"}},
 		"GET /api/v1/apps/web/env/bound":       []map[string]string{},
 		"GET /api/v1/apps/web/pending-changes": map[string]any{},
-		"PUT /api/v1/apps/web/env":             map[string]any{"name": "web"},
+		"POST /api/v1/apps/web/env/apply":      map[string]any{"app": "web", "changed": true, "env_version": 5, "plan": []map[string]string{}},
 	}, bodies)
 	runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "B=2", "A=9"))
 	var sent struct {
 		Set map[string]string `json:"set"`
 	}
-	if err := json.Unmarshal(bodies["PUT /api/v1/apps/web/env"], &sent); err != nil {
+	if err := json.Unmarshal(bodies["POST /api/v1/apps/web/env/apply"], &sent); err != nil {
 		t.Fatal(err)
 	}
 	if len(sent.Set) != 2 || sent.Set["A"] != "9" || sent.Set["B"] != "2" {

@@ -118,7 +118,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 		if !ok {
 			return exitUsage
 		}
-		code := runAppsSecretsSetEnvFile(client, rest[0], envFile, overwriteLocked, buildTime, stdout, stderr)
+		code := runAppsSecretsSetEnvFile(client, prog, rest[0], envFile, overwriteLocked, buildTime, stdout, stderr)
 		if code == exitOK {
 			code = afterConfigWrite(context.Background(), client, prog, rest[0], apply, stdout, stderr)
 		}
@@ -131,7 +131,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 	}
 	name, key, value := rest[0], rest[1], rest[2]
 
-	if err := setSecretMaybeBuildTime(client, name, key, value, overwriteLocked, buildTime); err != nil {
+	if err := setSecretMaybeBuildTime(client, prog, name, key, value, overwriteLocked, buildTime, nil); err != nil {
 		return reportError(stdout, stderr, false, fmt.Errorf("set secret %q for app %q: %w", key, name, err))
 	}
 	_, _ = fmt.Fprintf(stdout, "secret %q set for app %q\n", key, name)
@@ -167,7 +167,7 @@ func runAppsSecretsDelete(prog string, args []string, stdout, stderr io.Writer, 
 }
 
 // Only key names are printed, never values.
-func runAppsSecretsSetEnvFile(client *Client, name, path string, overwriteLocked, buildTime bool, stdout, stderr io.Writer) int {
+func runAppsSecretsSetEnvFile(client *Client, prog, name, path string, overwriteLocked, buildTime bool, stdout, stderr io.Writer) int {
 	data, err := os.ReadFile(path) //nolint:gosec // operator-supplied local path, same trust boundary as every other --file flag in this CLI
 	if err != nil {
 		return reportError(stdout, stderr, false, newValidationError("read env file %q: %v", path, err))
@@ -180,8 +180,9 @@ func runAppsSecretsSetEnvFile(client *Client, name, path string, overwriteLocked
 	}
 
 	var failedKeys []string
+	ver := &envVersionTracker{}
 	for _, entry := range entries {
-		if err := setSecretMaybeBuildTime(client, name, entry.Key, entry.Value, overwriteLocked, buildTime); err != nil {
+		if err := setSecretMaybeBuildTime(client, prog, name, entry.Key, entry.Value, overwriteLocked, buildTime, ver); err != nil {
 			_, _ = fmt.Fprintf(stderr, "secret %q for app %q: %v\n", entry.Key, name, err)
 			failedKeys = append(failedKeys, entry.Key)
 			continue
@@ -195,13 +196,36 @@ func runAppsSecretsSetEnvFile(client *Client, name, path string, overwriteLocked
 	return exitOK
 }
 
+// envVersionTracker carries the env version across a batch so each write expects the previous one.
+type envVersionTracker struct {
+	v     int
+	known bool
+}
+
 // setSecretMaybeBuildTime only sends build_time when --build-time was given,
 // so a plain set never changes an existing secret's build access.
-func setSecretMaybeBuildTime(client *Client, name, key, value string, overwriteLocked, buildTime bool) error {
+func setSecretMaybeBuildTime(client *Client, prog, name, key, value string, overwriteLocked, buildTime bool, ver *envVersionTracker) error {
 	if buildTime {
 		return client.SetSecretWithBuildTime(context.Background(), name, key, value, overwriteLocked, true)
 	}
-	return client.SetSecret(context.Background(), name, key, value, overwriteLocked)
+	ctx := context.Background()
+	if ver == nil {
+		ver = &envVersionTracker{}
+	}
+	if !ver.known {
+		app, err := client.GetApp(ctx, name)
+		if err != nil {
+			return fmt.Errorf("get app %q: %w", name, err)
+		}
+		ver.v, ver.known = app.EnvVersion, true
+	}
+	expected := ver.v
+	res, err := client.ApplyAppEnv(ctx, name, apiclient.EnvApplyRequest{ExpectedVersion: &expected, SecretSet: map[string]string{key: value}, OverwriteLocked: overwriteLocked})
+	if err != nil {
+		return wrapEnvConflict(prog, name, err)
+	}
+	ver.v = res.EnvVersion
+	return nil
 }
 
 func runAppsSecretsBuildTime(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

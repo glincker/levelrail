@@ -23,12 +23,12 @@ func TestEnvTools(t *testing.T) {
 		wantRedeps bool
 		wantErr    string
 	}{
-		{"set plain", "set_app_env", map[string]any{"name": "web", "key": "A", "value": "1"}, []string{"PUT /api/v1/apps/web/env"}, true, ""},
-		{"set secret", "set_app_env", map[string]any{"name": "web", "key": "TOKEN", "value": secretValue, "secret": true}, []string{"PUT /api/v1/apps/web/secrets/TOKEN"}, true, ""},
-		{"unset plain", "unset_app_env", map[string]any{"name": "web", "key": "EXISTING"}, []string{"PUT /api/v1/apps/web/env"}, true, ""},
-		{"unset missing plain", "unset_app_env", map[string]any{"name": "web", "key": "NOPE"}, []string{"PUT /api/v1/apps/web/env"}, false, "no plain env var"},
-		{"unset secret", "unset_app_env", map[string]any{"name": "web", "key": "TOKEN", "secret": true}, []string{"DELETE /api/v1/apps/web/secrets/TOKEN"}, true, ""},
-		{"unset secret force", "unset_app_env", map[string]any{"name": "web", "key": "TOKEN", "secret": true, "force": true}, []string{"DELETE /api/v1/apps/web/secrets/TOKEN"}, true, ""},
+		{"set plain", "set_app_env", map[string]any{"name": "web", "key": "A", "value": "1"}, []string{"POST /api/v1/apps/web/env/apply"}, true, ""},
+		{"set secret", "set_app_env", map[string]any{"name": "web", "key": "TOKEN", "value": secretValue, "secret": true}, []string{"POST /api/v1/apps/web/env/apply"}, true, ""},
+		{"unset plain", "unset_app_env", map[string]any{"name": "web", "key": "EXISTING"}, []string{"POST /api/v1/apps/web/env/apply"}, true, ""},
+		{"unset missing plain", "unset_app_env", map[string]any{"name": "web", "key": "NOPE"}, []string{"POST /api/v1/apps/web/env/apply"}, false, "no plain env var"},
+		{"unset secret", "unset_app_env", map[string]any{"name": "web", "key": "TOKEN", "secret": true}, []string{"POST /api/v1/apps/web/env/apply"}, true, ""},
+		{"unset secret force", "unset_app_env", map[string]any{"name": "web", "key": "TOKEN", "secret": true, "force": true}, []string{"POST /api/v1/apps/web/env/apply"}, true, ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -40,13 +40,13 @@ func TestEnvTools(t *testing.T) {
 				mu.Unlock()
 				w.Header().Set("Content-Type", "application/json")
 				switch {
-				case r.Method == http.MethodPut && strings.HasSuffix(r.URL.Path, "/env"):
-					var req apiclient.EnvMergeRequest
+				case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/env/apply"):
+					var req apiclient.EnvApplyRequest
 					_ = json.NewDecoder(r.Body).Decode(&req)
-					out := apiclient.EnvMergeResult{App: "web", Changed: true, EnvDirty: true, Removed: []string{}}
+					out := apiclient.EnvApplyResult{App: "web", Changed: true, EnvVersion: 2, Plan: []apiclient.EnvPlanChange{}}
 					for _, k := range req.Unset {
-						if k == "EXISTING" {
-							out.Removed = append(out.Removed, k)
+						if k == "NOPE" {
+							out.Changed = false
 						}
 					}
 					_ = json.NewEncoder(w).Encode(out)
@@ -106,5 +106,26 @@ func TestEnvToolsClassified(t *testing.T) {
 		if !ok || m.Class != ClassMutate || !m.Sensitive() {
 			t.Fatalf("%s meta = %+v", n, m)
 		}
+	}
+}
+
+func TestSetAppEnvStaleVersionIsConflict(t *testing.T) {
+	var sent apiclient.EnvApplyRequest
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&sent)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"the env changed since expected_version; reload and retry","code":"env_version_conflict","current_version":5}`))
+	})
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "set_app_env", Arguments: map[string]any{"name": "web", "key": "A", "value": "topsecretvalue", "expected_version": 3}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := toolResultText(result)
+	if !result.IsError || !strings.Contains(text, "get_app_env") || strings.Contains(text, "topsecretvalue") {
+		t.Fatalf("result = %s", text)
+	}
+	if sent.ExpectedVersion == nil || *sent.ExpectedVersion != 3 {
+		t.Fatalf("expected_version not forwarded: %+v", sent.ExpectedVersion)
 	}
 }

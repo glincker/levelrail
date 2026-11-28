@@ -85,7 +85,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		if !quiet {
 			printEnvNameDiff(stderr, plan.New, plan.Changed, nil)
 		}
-		saved, err := mergeEnv(ctx, client, name, envMergeFromPlan(plan, false, nil))
+		saved, err := mergeEnv(ctx, client, prog, name, app.EnvVersion, envMergeFromPlan(plan, false, nil))
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}

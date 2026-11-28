@@ -126,6 +126,8 @@ type AppResource struct {
 	// env vars backed by encrypted secret storage, values held only in
 	// Secrets below or set later via PUT .../secrets/{key}, never here.
 	SecretEnv []string `json:"secret_env,omitempty"`
+	// EnvVersion is read-only: send it back as expected_version when applying env changes.
+	EnvVersion int `json:"env_version,omitempty"`
 	// Secrets mirrors internal/api's appResource.Secrets: plaintext
 	// values to encrypt and store for SecretEnv-named vars at create
 	// time. Write-only, like SetSecretRequest's own Value: never
