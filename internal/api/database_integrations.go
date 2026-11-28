@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/dbintegrations"
+	"github.com/glincker/levelrail/internal/dbintegrations"
 )
 
 type databaseIntegrationsResource struct {

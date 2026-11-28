@@ -17,11 +17,11 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/agent/migrationmode"
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
-	"github.com/GLINCKER/levelrail/internal/agent/pinned"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/migrationmode"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/agent/pinned"
 )
 
 type fakeEngine map[string]string

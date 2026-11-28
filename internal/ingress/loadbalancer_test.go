@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/loadbalancer"
 )
 
 func TestNewLBReverseProxyHandler(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/envrules/contract"
+	"github.com/glincker/levelrail/internal/envrules/contract"
 )
 
 // The dotenv parser must accept and refuse the same keys as every other writer.

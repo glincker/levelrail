@@ -3,8 +3,8 @@ package application
 import (
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // applyRuntimeOptions copies the validated runtime block onto the container

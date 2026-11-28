@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/trafficexport"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/trafficexport"
 )
 
 func trafficExportUsage(prog string) string {

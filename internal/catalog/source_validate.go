@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 var sourcePlatformRe = regexp.MustCompile(`^linux/[a-z0-9]+(/[a-z0-9]+)?$`)

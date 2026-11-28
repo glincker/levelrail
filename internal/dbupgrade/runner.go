@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 // Phases inside a state. Persisted, so a restarted control plane resumes

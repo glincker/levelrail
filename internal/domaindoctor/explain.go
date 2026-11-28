@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnsinspect"
+	"github.com/glincker/levelrail/internal/dnsinspect"
 )
 
 // maxEvidenceLine keeps a pasted CA or resolver error from flooding the list.

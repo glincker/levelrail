@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestChaos_DiskFullDuringBackup_PreflightRefusesBeforeAnyWork(t *testing.T) {

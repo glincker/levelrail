@@ -46,7 +46,7 @@ stop() {
 build_binary() {
 	local ver; ver="${LOCAL_VERSION_BASE:-v0.8.0}-dev.$(git -C "$repo_root" rev-parse --short HEAD)"
 	# -buildvcs=false: a linked worktree of a bare repo fails VCS stamping.
-	(cd "$repo_root" && go build -buildvcs=false -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=$ver" -o "$1" ./cmd/levelrail)
+	(cd "$repo_root" && go build -buildvcs=false -ldflags "-X github.com/glincker/levelrail/internal/version.Version=$ver" -o "$1" ./cmd/levelrail)
 }
 
 # build_next builds to levelrail.next so a failed build leaves the running servers alone.

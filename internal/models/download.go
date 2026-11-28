@@ -19,8 +19,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/diskspace"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Download failure codes, shown in the resource status.

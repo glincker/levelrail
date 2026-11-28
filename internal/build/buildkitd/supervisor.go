@@ -12,9 +12,9 @@ import (
 
 	bkclient "github.com/moby/buildkit/client"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/runtimesettings/registrymirror"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 // Runtime is the slice of docker.Runtime the supervisor needs.

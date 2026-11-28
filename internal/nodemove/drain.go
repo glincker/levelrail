@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 // Resource is one app or database a drain must move off a node.

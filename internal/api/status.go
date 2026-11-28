@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/diskfree"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/diskfree"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // systemStatusResponse is GET /api/v1/system/status's wire shape: a

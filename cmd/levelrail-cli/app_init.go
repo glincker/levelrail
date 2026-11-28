@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 func appsInitUsage(prog string) string {

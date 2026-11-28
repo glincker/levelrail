@@ -1,6 +1,6 @@
 package database
 
-import "github.com/GLINCKER/levelrail/internal/store"
+import "github.com/glincker/levelrail/internal/store"
 
 // PostgresPasswordEnvKey, MySQLPasswordEnvKey, MongoPasswordEnvKey are the
 // internal/secrets envKeys each engine's generated password is stored

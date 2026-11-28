@@ -15,7 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	"golang.org/x/net/proxy"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 var errInflated = errors.New("sources: the repository inflates past the size cap")

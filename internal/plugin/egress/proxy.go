@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Denial reasons passed to the deny callback.

@@ -10,7 +10,7 @@ cd "$root" || exit 2
 
 base_ref="${1:-origin/release/v0.8}"
 jobs="${LEVELRAIL_VERIFY_JOBS:-2}"
-module="github.com/GLINCKER/levelrail"
+module="github.com/glincker/levelrail"
 log_dir="$(git rev-parse --git-dir)/verify"
 rm -rf "$log_dir" && mkdir -p "$log_dir" || exit 2
 results="$log_dir/results.txt"

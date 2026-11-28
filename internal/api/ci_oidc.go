@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ghactions"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/ghactions"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/canarypolicy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/canarypolicy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeCanarySource struct{ releases []store.CanaryRelease }

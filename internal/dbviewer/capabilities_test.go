@@ -3,8 +3,8 @@ package dbviewer_test
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dbviewer"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbviewer"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestCapabilitiesRegistryCoversEveryEngine(t *testing.T) {

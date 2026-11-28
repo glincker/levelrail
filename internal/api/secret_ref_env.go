@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const secretRefNeedsRoot = "a secret reference can only be set by root unless its connection allows your environment and the path through allowed_envs and allowed_prefixes"

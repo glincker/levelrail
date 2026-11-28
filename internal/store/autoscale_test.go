@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/autoscale"
 )
 
 func TestAutoscaleRoundTrip(t *testing.T) {

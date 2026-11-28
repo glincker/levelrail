@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/janitor"
 )
 
 // Cleanup classes.

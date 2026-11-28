@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ErrBackupTooLarge means a volume archive exceeded the configured size budget.

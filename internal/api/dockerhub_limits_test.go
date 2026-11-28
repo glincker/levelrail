@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/dockerhub"
+	"github.com/glincker/levelrail/kit/dockerhub"
 )
 
 // fakeHubAccount satisfies DockerHubClient and DockerHubAccountClient.

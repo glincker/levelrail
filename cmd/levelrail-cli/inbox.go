@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/attention"
 )
 
 // inboxEntry is one row of the unified inbox: an alert, an approval request or a failure.

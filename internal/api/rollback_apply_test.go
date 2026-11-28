@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/rollback"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/rollback"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 func TestRollbackOneClick(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	theauth "github.com/glincker/theauth-go/v2"
 	_ "modernc.org/sqlite"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func linkRuntime(t *testing.T) *oauthRuntime {

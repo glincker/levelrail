@@ -3,7 +3,7 @@ package ingress
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/loadbalancer"
 )
 
 func TestNewLBRoute(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // WakeWindowReader tells whether an app was woken from sleep recently.

@@ -1,6 +1,6 @@
 package api
 
-import "github.com/GLINCKER/levelrail/internal/upgradehistory"
+import "github.com/glincker/levelrail/internal/upgradehistory"
 
 // cleanReleaseNotes strips HTML comments (such as the release-notes markers
 // the release workflow wraps notes in) and surrounding blank space. Markdown

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
 )
 
 func TestGitUseAsSource_GitLabWebhookFailureIsSoft(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // legacySplit is the port split every template got before published tcp

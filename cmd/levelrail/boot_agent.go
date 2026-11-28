@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agent"
 )
 
 // A regenerated CA would invalidate every enrolled agent's certificate.

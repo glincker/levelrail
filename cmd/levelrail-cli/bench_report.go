@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/benchreport"
-	"github.com/GLINCKER/levelrail/internal/chaos"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/benchreport"
+	"github.com/glincker/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 const (

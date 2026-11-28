@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/coolifyexit"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/coolifyexit"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 type coolifyExitFlags struct {

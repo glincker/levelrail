@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dnsstatus"
+	"github.com/glincker/levelrail/internal/dnsstatus"
 )
 
 func TestPlanStatusAndHashExcludeLiveRecords(t *testing.T) {

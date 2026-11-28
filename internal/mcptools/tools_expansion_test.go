@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/kit/untrusted"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/kit/untrusted"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

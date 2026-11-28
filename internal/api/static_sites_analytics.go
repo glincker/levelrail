@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/pages"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // handleStaticSiteAnalytics handles GET /api/v1/static-sites/{name}/analytics.

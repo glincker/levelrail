@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // serviceEnvPatcher is the env-only compare-and-set write behind the domain

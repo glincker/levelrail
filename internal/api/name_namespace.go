@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // msgNameUnavailable never says which kind of resource holds the name, so it is no cross-tenant existence oracle.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // StepStaticPhase is the persisted trace step of a static phase; its key is "static_phase.<phase>".

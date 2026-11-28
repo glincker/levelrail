@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/pages"
-	"github.com/GLINCKER/levelrail/internal/trafficclass"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/trafficclass"
 )
 
 func TestStaticSiteTraffic(t *testing.T) {

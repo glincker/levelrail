@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // Record is what a journal keeps for one imported resource: names, ids and shapes, never a value.

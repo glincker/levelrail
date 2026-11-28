@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/quota"
 )
 
 // GetQuota returns the explicit limits for a scope, or all zero (unlimited)

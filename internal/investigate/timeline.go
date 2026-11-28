@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/changes"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // Kinds added on top of changes.Kind.

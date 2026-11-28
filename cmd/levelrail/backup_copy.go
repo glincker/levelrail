@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // startBackupCopies runs the second-destination copy worker. storage routes local and node

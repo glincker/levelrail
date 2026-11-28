@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 func TestClassifyRoute(t *testing.T) {

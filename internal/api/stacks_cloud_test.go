@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 const cloudStackDocs = "version: 1\nkind: CloudAccount\nmetadata: {name: oci-test}\nspec:\n  provider: oracle\n  region: us-phoenix-1\n  auth: {method: secret_ref, secretRef: oci-key}\n  limits: {monthlyCost: 0, instances: 1}\n" +

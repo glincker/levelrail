@@ -17,7 +17,7 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Continuous replica: an opt-in, off-by-default loop that re-ships an encrypted snapshot of the

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
 )
 
 type fakeEngine map[string]string

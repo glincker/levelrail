@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/announcements"
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/announcements"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // Attention kinds for the announcement feed. They are local to this source

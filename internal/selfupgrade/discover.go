@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/netclient"
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/internal/netclient"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 const (

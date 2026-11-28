@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/api"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/proxyroutes"
 )
 
 // Seconds a running container counts as still starting on the diagnostic page.

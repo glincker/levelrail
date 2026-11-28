@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
 )
 
 const testDigest = "sha256:0000000000000000000000000000000000000000000000000000000000000001"

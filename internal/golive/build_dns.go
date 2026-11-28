@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/domaindoctor"
 )
 
 func noDomainStep(in Input, id, title string) Step {

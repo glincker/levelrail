@@ -1,6 +1,6 @@
 package secrets
 
-import "github.com/GLINCKER/levelrail/internal/spec"
+import "github.com/glincker/levelrail/internal/spec"
 
 // ErrReservedNamespace is returned when app scoped code names a control plane namespace.
 var ErrReservedNamespace = spec.ErrReservedNamespace

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 // ErrUsageBudgetNotFound is returned when a budget id matches no row.

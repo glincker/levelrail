@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/authengine"
 )
 
 type authEngineStatusResponse struct {

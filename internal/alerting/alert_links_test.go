@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/changes"
 )
 
 func TestAlertLinksAndSuffix(t *testing.T) {

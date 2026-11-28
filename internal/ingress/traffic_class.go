@@ -6,7 +6,7 @@ import (
 
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 
-	"github.com/GLINCKER/levelrail/internal/trafficclass"
+	"github.com/glincker/levelrail/internal/trafficclass"
 )
 
 // trafficRules holds per-route-key path rules, copy-on-write like the other

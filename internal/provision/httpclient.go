@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ocisign"
-	"github.com/GLINCKER/levelrail/kit/httpx"
+	"github.com/glincker/levelrail/internal/ocisign"
+	"github.com/glincker/levelrail/kit/httpx"
 )
 
 const (

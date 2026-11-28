@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/ddns"
+	"github.com/glincker/levelrail/internal/ddns"
 )
 
 type ddnsMemSecrets map[string]string

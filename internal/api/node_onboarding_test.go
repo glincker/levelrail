@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/cloudmeta"
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/cloudmeta"
+	"github.com/glincker/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func goodFacts() nodepreflight.Facts {

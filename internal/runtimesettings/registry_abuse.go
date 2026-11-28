@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/abuse"
+	"github.com/glincker/levelrail/internal/abuse"
 )
 
 // Registered keys for the per-app abuse defense limits.

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/certflow"
+	"github.com/glincker/levelrail/internal/certflow"
 )
 
 type certBudgetResource struct {

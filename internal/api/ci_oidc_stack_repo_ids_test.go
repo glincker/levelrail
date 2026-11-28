@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestCIStackTrustMatchesRepositoryIDs(t *testing.T) {

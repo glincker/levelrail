@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/envrules"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // setAppPreviewEnvOverrideRequest is handleSetAppPreviewEnvOverride's

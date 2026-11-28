@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // v2ChangeStore is the change log the v2 view reads; *store.DB satisfies it.

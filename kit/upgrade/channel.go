@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 // Update channels a running build can compare itself against.

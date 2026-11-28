@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/edgefw"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/edgefw"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EdgeFirewallStore is the store surface for the ingress firewall rules and

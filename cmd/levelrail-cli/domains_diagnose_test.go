@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func diagnoseReport(fixed bool) apiclient.DomainDoctorReport {

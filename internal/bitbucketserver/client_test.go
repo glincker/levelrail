@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 func newTestClient(t *testing.T, h http.HandlerFunc) (*Client, string) {

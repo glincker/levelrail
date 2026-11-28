@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/elasticache"
+	"github.com/glincker/levelrail/internal/awsx/elasticache"
 )
 
 type elastiCacheGroupWire struct {

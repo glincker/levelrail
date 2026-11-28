@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runDatabasesDelete implements "databases delete <name>": DELETE

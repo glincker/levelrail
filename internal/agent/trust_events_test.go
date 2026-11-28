@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/testutil"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/testutil"
 )
 
 func listEvents(t *testing.T, db *store.DB, nodeID, outcome string) []store.NodeSecurityEvent {

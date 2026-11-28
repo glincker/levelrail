@@ -12,7 +12,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 const (

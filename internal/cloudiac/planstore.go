@@ -8,7 +8,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ErrPlanNotFound means the stack has no saved plan to apply.

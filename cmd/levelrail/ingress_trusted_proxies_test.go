@@ -8,10 +8,10 @@ import (
 	"net/netip"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeEdgeStore struct{ s store.IngressEdgeSettings }

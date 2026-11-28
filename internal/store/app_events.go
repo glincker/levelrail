@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // App event kinds recorded in app_events. Deploys and rollbacks are not

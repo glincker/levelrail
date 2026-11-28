@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/coolifyexit"
-	"github.com/GLINCKER/levelrail/internal/coolifyexit/exportfixture"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/coolifyexit"
+	"github.com/glincker/levelrail/internal/coolifyexit/exportfixture"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 func discover(t *testing.T) (*exportfixture.Server, *platformimport.Discovery) {

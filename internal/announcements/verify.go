@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/advisoryfeed"
+	"github.com/glincker/levelrail/internal/advisoryfeed"
 )
 
 // Signature is one detached signature entry in the .sig file.

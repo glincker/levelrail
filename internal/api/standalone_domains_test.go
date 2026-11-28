@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/standalone"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/standalone"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type staticResolver map[string][]netip.Addr

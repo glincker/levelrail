@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/proxyroutes"
 )
 
 func TestListenerDownMessage(t *testing.T) {

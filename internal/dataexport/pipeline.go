@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/backoff"
-	"github.com/GLINCKER/levelrail/kit/untrusted"
+	"github.com/glincker/levelrail/kit/backoff"
+	"github.com/glincker/levelrail/kit/untrusted"
 )
 
 // queue is a bounded FIFO that drops its oldest items on overflow, so a slow

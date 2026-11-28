@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // domainsDNSJSONUsage is every domains dns subcommand's --json flag

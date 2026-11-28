@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var publicSurfaces = []string{"/public/status", "/public/status.atom", "/public/status/history", "/public/status/incidents/pubflow1"}

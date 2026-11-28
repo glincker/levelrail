@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/privnet"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/privnet"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func privateNetworkConfig(db *store.DB, rt docker.Runtime, prefix, instanceID string) api.PrivateNetworkConfig {

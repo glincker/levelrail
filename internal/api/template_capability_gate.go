@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // elevatedCapsOf returns the Elevated caps (NET_ADMIN, NET_RAW) among caps.

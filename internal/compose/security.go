@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/dockerguard"
 )
 
 // HostAccess holds the service keys that widen a container's reach into

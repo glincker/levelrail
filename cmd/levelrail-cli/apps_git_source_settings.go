@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // ciGateUnreadableHint explains the 422 the API answers when no CI reader can be built for the app's source.

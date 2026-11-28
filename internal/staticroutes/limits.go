@@ -3,7 +3,7 @@ package staticroutes
 import (
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // Environment variables that tune the caps below. Every one is optional.

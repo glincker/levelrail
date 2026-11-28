@@ -2,7 +2,7 @@ package api
 
 import (
 	"context"
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 	"strings"
 	"testing"
 )

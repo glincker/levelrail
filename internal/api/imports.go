@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/importplan"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/importplan"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // importPlanBodyLimit bounds the pasted input, compose files included.

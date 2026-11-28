@@ -3,7 +3,7 @@ package lognorm
 import (
 	"regexp"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // Placeholders left in a template so equal failures with different values cluster.

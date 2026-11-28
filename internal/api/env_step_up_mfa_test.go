@@ -10,7 +10,7 @@ import (
 
 	"github.com/descope/virtualwebauthn"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func seedRevealApp(t *testing.T, db *store.DB) {

@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
 )
 
 // ErrFileStoreDisabled means the agent has no storage directory configured, so it refuses every file operation.

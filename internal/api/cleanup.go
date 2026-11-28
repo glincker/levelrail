@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/cleanup"
-	"github.com/GLINCKER/levelrail/internal/eventhook"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/cleanup"
+	"github.com/glincker/levelrail/internal/eventhook"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 const (

@@ -3,7 +3,7 @@ package database
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestContainerName(t *testing.T) {

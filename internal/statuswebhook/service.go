@@ -19,10 +19,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/statuspage"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/backoff"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/statuspage"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/backoff"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Event types a subscriber can filter on.

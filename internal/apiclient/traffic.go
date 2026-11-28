@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cutoververify"
-	"github.com/GLINCKER/levelrail/internal/domaincutover"
+	"github.com/glincker/levelrail/internal/cutoververify"
+	"github.com/glincker/levelrail/internal/domaincutover"
 )
 
 // DomainReachability is one entry of AppEnvironmentDomains.Reachability.

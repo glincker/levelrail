@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deployurls"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deployurls"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestRetainedCopyDoesNotReturnAfterDelete(t *testing.T) {

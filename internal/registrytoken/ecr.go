@@ -15,7 +15,7 @@ import (
 
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/provision"
 )
 
 const ecrTarget = "AmazonEC2ContainerRegistry_V20150921.GetAuthorizationToken"

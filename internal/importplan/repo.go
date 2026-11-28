@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/envrules"
 )
 
 var composeFileNames = []string{"docker-compose.yml", "docker-compose.yaml", "compose.yaml", "compose.yml"}

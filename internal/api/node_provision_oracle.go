@@ -7,14 +7,14 @@ import (
 
 	"context"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/cloudconn"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // oracleSettings reads the Oracle tunables live so a change applies to the

@@ -3,7 +3,7 @@ package ingress
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestFallbackDomain_PublicIPv4(t *testing.T) {

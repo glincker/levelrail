@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/cdn"
+	"github.com/glincker/levelrail/internal/cdn"
 )
 
 func TestAppEdge_ReportsProviderZoneAndLastPurge(t *testing.T) {

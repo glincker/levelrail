@@ -15,7 +15,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/GLINCKER/levelrail/internal/sshprovision"
+	"github.com/glincker/levelrail/internal/sshprovision"
 )
 
 // DefaultSocketPath is the Docker socket opened when none is given.

@@ -3,7 +3,7 @@ package templateupgrade
 import (
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 // Env actions. Values are never reported, only names.

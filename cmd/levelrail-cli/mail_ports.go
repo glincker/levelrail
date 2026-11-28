@@ -7,7 +7,7 @@ import (
 	"io"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const mailPortsUsageLines = `  %[1]s mail ports [--app name]                  list the four mail ports, their bind and firewall state

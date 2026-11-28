@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/localmode"
+	"github.com/glincker/levelrail/internal/localmode"
 )
 
 func TestParseDevArgs(t *testing.T) {

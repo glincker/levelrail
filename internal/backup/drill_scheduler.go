@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ticker"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/ticker"
 )
 
 // DefaultDrillInterval is how often each resource is drilled when

@@ -9,8 +9,8 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // StaleAfter is how old a WireGuard handshake may be before the path counts

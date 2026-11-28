@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"regexp"
 
-	"github.com/GLINCKER/levelrail/internal/canary"
-	"github.com/GLINCKER/levelrail/internal/canarypolicy"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/canary"
+	"github.com/glincker/levelrail/internal/canarypolicy"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // CanarySource lists in-flight canaries. nil disables traffic splitting.

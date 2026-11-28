@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/doctor"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/doctor"
 )
 
 // reconcilerLagAlertSource feeds kind=reconciler_lagging rules; warn is read on every tick so the setting applies live.

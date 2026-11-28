@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/loadbalancer"
 )
 
 // LoadBalancerFor returns a service's loadbalancer: block, or nil when the

@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
+	"github.com/glincker/levelrail/internal/gitprovider/reporef"
 )
 
 // normalizePastedRepoURL turns what an operator pastes into a plain https

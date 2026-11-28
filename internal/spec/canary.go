@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/canarypolicy"
+	"github.com/glincker/levelrail/internal/canarypolicy"
 )
 
 // Canary is a service's staged canary policy (internal/canary). Unset fields

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 var updatePolicyGolden = flag.Bool("update-policy-golden", false, "rewrite testdata/policy_*.golden.json")

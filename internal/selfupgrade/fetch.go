@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/netclient"
+	"github.com/glincker/levelrail/internal/netclient"
 	"io"
 	"net/http"
 	"net/url"

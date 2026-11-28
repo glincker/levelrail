@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 type migrateCoolifyFlags struct {

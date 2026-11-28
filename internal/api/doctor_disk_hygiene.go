@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/diskfree"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/diskfree"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 const (

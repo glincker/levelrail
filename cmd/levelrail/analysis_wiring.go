@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/analysis"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/analysis"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // wireAnalysisHook returns the runner (nil when disabled) and attaches report generation to alert firings. With

@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/imagelife"
-	"github.com/GLINCKER/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/imagelife"
+	"github.com/glincker/levelrail/internal/janitor"
 )
 
 // AuditActionDiskGC is written once per applied disk cleanup.

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rehydrate"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/rehydrate"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const rehydrateBackupPageSize = 500

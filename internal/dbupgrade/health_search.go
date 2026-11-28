@@ -1,6 +1,6 @@
 package dbupgrade
 
-import "github.com/GLINCKER/levelrail/internal/store"
+import "github.com/glincker/levelrail/internal/store"
 
 // tcpGet is a bash /dev/tcp HTTP/1.0 GET: the Qdrant and Typesense images
 // ship bash but no HTTP client. The key is expanded by builtins only.

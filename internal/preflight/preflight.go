@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/policy"
 )
 
 // Status is one check's outcome.

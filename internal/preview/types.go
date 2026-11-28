@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // Record statuses.

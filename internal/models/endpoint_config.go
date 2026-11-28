@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Compute kind and engine name of a model served by an external endpoint.

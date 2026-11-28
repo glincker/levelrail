@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/envrules"
 )
 
 // envLineIssue is one refused line or key. Line is 0 when the issue is about a key, not a line.

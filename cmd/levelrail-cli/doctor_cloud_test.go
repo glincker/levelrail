@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/hostprovider"
+	"github.com/glincker/levelrail/internal/hostprovider"
 )
 
 // fakeMetadataDeps routes every metadata GET to a fake server that answers

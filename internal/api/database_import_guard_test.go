@@ -11,8 +11,8 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 func TestDatabaseImport_SealedExportIs400WithoutRestore(t *testing.T) {

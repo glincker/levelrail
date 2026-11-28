@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/reachability"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/reachability"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // reachabilityReport is the body of GET /api/v1/doctor/reachability.

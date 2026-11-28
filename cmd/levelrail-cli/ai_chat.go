@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // Stop on "done" rather than waiting for the server to close the stream right after it.

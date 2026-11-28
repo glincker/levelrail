@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ocisign"
+	"github.com/glincker/levelrail/internal/ocisign"
 )
 
 func fixedCfg() func() Config {

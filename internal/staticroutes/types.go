@@ -3,7 +3,7 @@
 // routes and headers blocks, and the SPA, clean URL and 404 options.
 package staticroutes
 
-import "github.com/GLINCKER/levelrail/internal/spec"
+import "github.com/glincker/levelrail/internal/spec"
 
 // Rule and header sources, shown next to each parsed rule.
 const (

@@ -5,7 +5,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/diagnose"
+	"github.com/glincker/levelrail/internal/diagnose"
 )
 
 // procNetTables are read for the "what is listening" hint; absent off Linux.

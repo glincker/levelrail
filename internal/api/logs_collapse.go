@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // collapsedLog is one run of identical consecutive lines. The stored rows are

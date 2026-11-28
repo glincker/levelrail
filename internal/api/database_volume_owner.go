@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/dbprovision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbprovision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

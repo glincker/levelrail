@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/appwizard"
+	"github.com/glincker/levelrail/internal/appwizard"
 )
 
 // TestAnalyzeImport_WizardFinalRequestsDeployAnalyzedBuild replays the

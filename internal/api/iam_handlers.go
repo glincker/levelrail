@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // errInvalidPolicyRequestBody and errPolicyNotFound are reused across

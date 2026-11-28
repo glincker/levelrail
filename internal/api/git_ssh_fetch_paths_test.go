@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/sourcecache"
 )
 
 // Both one-off remote listings must stop before any transport for an ssh URL

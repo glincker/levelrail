@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/deploy/secretscan"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy/secretscan"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newSecretScanTestRouter(t *testing.T) (*Router, *store.DB, *secretscan.Service) {

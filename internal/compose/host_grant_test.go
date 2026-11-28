@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/dockerguard"
 )
 
 func TestHostAccessRefusedWithoutGrant(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/envrules"
 )
 
 type envFixtureCase struct {

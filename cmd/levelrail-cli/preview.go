@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 // runPreview dispatches "preview <verb>": the CLI counterpart of the

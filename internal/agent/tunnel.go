@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 // CapIngressTunnel means the agent can carry ingress traffic to its own

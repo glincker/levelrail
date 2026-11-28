@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/coder/websocket"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 const (

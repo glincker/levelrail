@@ -14,10 +14,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
-	"github.com/GLINCKER/levelrail/internal/agent/pinned"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/agent/pinned"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type clock struct {

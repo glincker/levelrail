@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // Adopts an existing machine over SSH; poll nodes ssh-provisions show for progress.

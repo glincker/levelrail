@@ -3,7 +3,7 @@ package selfupgrade
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // PlanSourceRunningBinary says the list comes from the migrations embedded in

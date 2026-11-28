@@ -2,7 +2,7 @@
 // rolls back, and runs the level-triggered reconciler that applies it.
 package canary
 
-import "github.com/GLINCKER/levelrail/internal/canarypolicy"
+import "github.com/glincker/levelrail/internal/canarypolicy"
 
 type (
 	// Policy is the stage schedule and thresholds of one canary.

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/repolayout"
-	"github.com/GLINCKER/levelrail/kit/stackdetect"
+	"github.com/glincker/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/kit/stackdetect"
 )
 
 func tree(files map[string]string) Input {

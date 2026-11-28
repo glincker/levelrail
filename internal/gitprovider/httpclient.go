@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // AllowPrivateEnv lets git provider clients reach internal addresses, for

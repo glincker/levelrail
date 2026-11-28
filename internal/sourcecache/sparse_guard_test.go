@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // A fake git on PATH answers the version probe, and records every other run

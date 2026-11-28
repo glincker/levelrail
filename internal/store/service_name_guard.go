@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // ErrInvalidServiceName is returned when a new service name could collide with a secret namespace.

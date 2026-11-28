@@ -11,7 +11,7 @@ import (
 
 	cerrdefs "github.com/containerd/errdefs"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // Test-only retry tuning for registry pulls. Production pulls are not retried here.

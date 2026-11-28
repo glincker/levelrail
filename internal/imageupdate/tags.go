@@ -16,8 +16,8 @@ import (
 
 	"github.com/distribution/reference"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // ErrRegistryRequest is the only failure text callers see, so a registry can

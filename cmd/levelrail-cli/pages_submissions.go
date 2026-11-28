@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const pagesSubmissionsUsage = "Usage:\n  %[1]s pages submissions <site> [--limit N] [flags]\n  %[1]s pages submissions rm <site> <form> <id> [flags]\n"

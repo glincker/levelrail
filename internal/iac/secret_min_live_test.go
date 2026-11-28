@@ -3,7 +3,7 @@ package iac
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestLeakedSecretFollowsLiveMinimum(t *testing.T) {

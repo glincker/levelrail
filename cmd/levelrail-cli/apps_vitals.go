@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 var vitalsCLIMetrics = []string{"LCP", "INP", "CLS", "TTFB", "FCP"}

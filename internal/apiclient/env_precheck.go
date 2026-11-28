@@ -3,7 +3,7 @@ package apiclient
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/envrules"
 )
 
 // PrecheckEnv applies the same key and value rules the API enforces, with the

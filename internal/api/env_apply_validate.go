@@ -3,9 +3,9 @@ package api
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/envrules"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // envApplyRequest is the body of POST /api/v1/apps/{name}/env/apply.

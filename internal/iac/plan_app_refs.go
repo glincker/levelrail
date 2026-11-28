@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/envredact"
 )
 
 // jobOp is one job write an app item performs after the app itself.

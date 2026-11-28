@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/hostfw"
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/hostfw"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // doctorCheckFirewallCtx wraps doctorCheckFirewall with the real

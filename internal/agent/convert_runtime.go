@@ -1,9 +1,9 @@
 package agent
 
 import (
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 func runtimeToPB(s docker.ContainerSpec, pb *agentpb.ContainerSpec) *agentpb.ContainerSpec {

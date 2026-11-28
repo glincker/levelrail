@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // MySQLBinlogPath is where a PITR-enabled MySQL or MariaDB database mounts its

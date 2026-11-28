@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const cdnTestToken = "cf-token-must-not-leak" //nolint:gosec // fake value used to assert it never leaks

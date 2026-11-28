@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/vmruntime/guest"
+	"github.com/glincker/levelrail/internal/vmruntime/guest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/vmruntime"
+	"github.com/glincker/levelrail/internal/vmruntime"
 )
 
 const fakeBoot = "boot-123"

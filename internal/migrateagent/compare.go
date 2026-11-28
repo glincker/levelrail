@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/migrationplan"
-	"github.com/GLINCKER/levelrail/internal/treestat"
+	"github.com/glincker/levelrail/internal/migrationplan"
+	"github.com/glincker/levelrail/internal/treestat"
 )
 
 // Actor is the checklist actor recorded when the agent advances a step.

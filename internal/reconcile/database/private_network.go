@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // defaultBridgeNetwork is Docker's shared network every container without

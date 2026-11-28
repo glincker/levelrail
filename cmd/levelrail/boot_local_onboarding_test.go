@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/nodepreflight"
 )
 
 func TestReportLocalOnboardingFillsStore(t *testing.T) {

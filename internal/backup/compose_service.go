@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ComposeServiceEngine maps a compose service image to a backup engine.

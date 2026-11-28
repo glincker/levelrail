@@ -1,6 +1,6 @@
 package runtimesettings
 
-import "github.com/GLINCKER/levelrail/internal/updatewindow"
+import "github.com/glincker/levelrail/internal/updatewindow"
 
 // Agent offline buffer and self-update health limits.
 const (

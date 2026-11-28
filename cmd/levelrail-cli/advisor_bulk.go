@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/resourceadvisor"
 )
 
 // advisorKinds maps the --kind flag to the finding kind it selects.

@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 func TestClassifyError(t *testing.T) {

@@ -3,9 +3,9 @@ package database
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/meshpath"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/meshpath"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // MeshPortLookup reads a database's allocated mesh port (0 when none).

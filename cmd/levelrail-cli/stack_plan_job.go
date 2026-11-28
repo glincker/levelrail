@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // Poll interval grows from min to max so a long cloud plan is not hammered. Vars so tests can shrink them.

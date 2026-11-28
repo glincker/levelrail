@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/mysqlssl"
+	"github.com/glincker/levelrail/internal/mysqlssl"
 )
 
 func TestParseURL_Providers(t *testing.T) {

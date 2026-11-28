@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const syncHookSHA = "0123456789abcdef0123456789abcdef01234567"

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeCertSource is an in-memory CertSource, the same hand-written-fake

@@ -18,13 +18,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cloudiac"
-	"github.com/GLINCKER/levelrail/internal/eventhook"
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
-	"github.com/GLINCKER/levelrail/internal/stacksync"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cloudiac"
+	"github.com/glincker/levelrail/internal/eventhook"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/stacksync"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const auditStackSyncSettings = "stack.sync_settings"

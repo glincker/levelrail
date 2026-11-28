@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/rightsizing"
 )
 
 // Analyze runs every rule. The same Input always yields the same findings,

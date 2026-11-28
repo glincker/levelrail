@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

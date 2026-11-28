@@ -1259,7 +1259,7 @@ write_brand() {
 		short_name: Levelrail
 		binary_name: levelrail
 		domain: levelrail.com
-		support_url: https://github.com/GLINCKER/levelrail/issues
+		support_url: https://github.com/glincker/levelrail/issues
 		docs_url: https://docs.levelrail.com
 		primary_color: ""
 		logo_svg: ""

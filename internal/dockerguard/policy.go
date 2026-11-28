@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/bindmount"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/bindmount"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // GrantableCaps are capabilities a container may add only when its own

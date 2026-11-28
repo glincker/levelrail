@@ -5,7 +5,7 @@ import (
 
 	dockerclient "github.com/docker/docker/client"
 
-	"github.com/GLINCKER/levelrail/internal/benchreport"
+	"github.com/glincker/levelrail/internal/benchreport"
 )
 
 // DockerInfo asks the local daemon what it is; an unreachable daemon yields the zero value.

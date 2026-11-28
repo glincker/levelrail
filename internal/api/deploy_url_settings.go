@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/deployurls"
+	"github.com/glincker/levelrail/internal/deployurls"
 )
 
 // DeployURLSettingsStore is the store surface for the deploy URL copies mode.

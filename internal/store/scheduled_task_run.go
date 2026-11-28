@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // ErrScheduledTaskRunNotFound is returned by GetScheduledTaskRun when id

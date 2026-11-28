@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const applyResultJSON = `{"repo_url":"https://github.com/acme/mono","branch":"main","dry_run":false,"needs_confirmation":false,"confirm_above":10,

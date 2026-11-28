@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/benchreport"
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/benchreport"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 func TestBenchReportPlanWritesFiles(t *testing.T) {

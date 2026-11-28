@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/profile"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/profile"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // Below these the check only warns. Set under the documented 1 GB, 1 vCPU start because a "1 GB" VM reports under 1 GiB.

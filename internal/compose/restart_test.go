@@ -3,7 +3,7 @@ package compose
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestToDesiredServices_RestartPolicy(t *testing.T) {

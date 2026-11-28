@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store/storetest"
+	"github.com/glincker/levelrail/internal/store/storetest"
 )
 
 func TestManager_Newest(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/k8simport"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/k8simport"
 )
 
 const k8sImportFile = "k8s-import.yaml"

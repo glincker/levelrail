@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TrialKeeper makes a trial deployment permanent. *store.DB satisfies it.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakerender"
+	"github.com/glincker/levelrail/internal/platformimport/fakerender"
 )
 
 func renderDiscover(t *testing.T, fake *fakerender.Server) *Discovery {

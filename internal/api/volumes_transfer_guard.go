@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/backup"
 )
 
 var (

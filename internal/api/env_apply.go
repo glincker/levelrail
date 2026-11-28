@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // envApplyStore is the transactional env writer; *store.DB satisfies it.

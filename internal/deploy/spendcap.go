@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendcap"
 )
 
 // SpendCapStore persists a service's budget: block from app.yaml.

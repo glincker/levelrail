@@ -7,7 +7,7 @@ import (
 	"path"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // Context names. Production is the app's own settings and has no stored row.

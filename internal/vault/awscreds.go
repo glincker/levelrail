@@ -14,7 +14,7 @@ import (
 
 	vaultapi "github.com/hashicorp/vault/api"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // ErrNoAWSCredentials marks a creds read that returned no usable key pair.

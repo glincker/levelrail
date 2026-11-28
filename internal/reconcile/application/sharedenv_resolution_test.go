@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/sharedenv"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/sharedenv"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TestController_ResolveEnv_SharedEnvVars proves that an app deployed

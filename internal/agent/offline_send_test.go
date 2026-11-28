@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/nodeinsight"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/nodeinsight"
 )
 
 func TestBufferedSendKeepsReportsAndReplaysInOrder(t *testing.T) {

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore/objectstoretest"
+	"github.com/glincker/levelrail/internal/objectstore/objectstoretest"
 )
 
 const testSecret = "s3cr3t-value-xyz"

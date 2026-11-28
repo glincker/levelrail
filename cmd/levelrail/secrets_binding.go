@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 // secretsManagerOptions configures slot binding enforcement. Legacy

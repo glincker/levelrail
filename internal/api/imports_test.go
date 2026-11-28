@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/importplan"
+	"github.com/glincker/levelrail/internal/importplan"
 )
 
 type fakeImportFiles map[string]string

@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

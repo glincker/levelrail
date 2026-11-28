@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agentupdate"
-	"github.com/GLINCKER/levelrail/internal/nodeinsight"
+	"github.com/glincker/levelrail/internal/agentupdate"
+	"github.com/glincker/levelrail/internal/nodeinsight"
 )
 
 // healthTracker persists which agent version last ran stably, using session

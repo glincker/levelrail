@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/monitor"
 )
 
 const heartbeatColumns = `SELECT monitor_id, token_hash, armed_at, last_ok_at, last_start_at, last_fail_at FROM monitor_heartbeats`

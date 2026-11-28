@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/setupguide"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/setupguide"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func decodeGuide(t *testing.T, rec *httptest.ResponseRecorder) setupguide.Guide {

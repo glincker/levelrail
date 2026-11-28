@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 // restoreToNodeHistoryScan bounds how many recent attempts are read to find the newest succeeded one.

@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // AllowPrivateEnv additionally lets operators use registries on loopback.

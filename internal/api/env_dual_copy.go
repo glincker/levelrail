@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // envSecretOverlap returns the sorted keys present both as plain env and as a declared secret.

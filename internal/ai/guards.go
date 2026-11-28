@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/untrusted"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/untrusted"
 )
 
 // ModeSource returns the current AI control mode for the acting session.

@@ -22,8 +22,8 @@ import (
 	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 const rollbackWarning = "Rollback restores configuration only. Secret values and database contents are NOT rolled back."

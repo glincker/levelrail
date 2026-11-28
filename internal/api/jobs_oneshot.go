@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/scheduledtask"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/scheduledtask"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // oneShotAttempter is what *scheduledtask.Runner offers a one-shot job: one

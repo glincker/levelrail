@@ -7,8 +7,8 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbcatalogbuild"
-	"github.com/GLINCKER/levelrail/internal/registrycatalog"
+	"github.com/glincker/levelrail/internal/dbcatalogbuild"
+	"github.com/glincker/levelrail/internal/registrycatalog"
 )
 
 func (r *RemoteCatalog) builder() *dbcatalogbuild.Builder {

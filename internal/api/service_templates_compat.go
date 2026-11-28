@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/failure"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/failure"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // compatBodyCap bounds how much of a refusal body is kept for classification.

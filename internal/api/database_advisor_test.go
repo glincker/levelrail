@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dbadvisor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbadvisor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDatabaseAdvisor_RefusesOtherEngines(t *testing.T) {

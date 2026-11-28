@@ -6,7 +6,7 @@ import (
 	"encoding/pem"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/reconcile/database"
 )
 
 func TestTLSMaterialFor_NilSecretsManager_ReturnsNil(t *testing.T) {

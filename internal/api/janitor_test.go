@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/janitor"
 )
 
 type janitorTestDocker struct{ janitor.Docker }

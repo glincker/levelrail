@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/schedulescan"
+	"github.com/glincker/levelrail/internal/schedulescan"
 )
 
 // SetScheduleScan wires the store the schedule never runs check reads.

@@ -1527,7 +1527,7 @@ const file_proto_plugin_v1_plugin_proto_rawDesc = "" +
 	"\vListRecords\x12'.levelrail.plugin.v1.ListRecordsRequest\x1a(.levelrail.plugin.v1.ListRecordsResponse\x12c\n" +
 	"\fUpsertRecord\x12(.levelrail.plugin.v1.UpsertRecordRequest\x1a).levelrail.plugin.v1.UpsertRecordResponse\x12c\n" +
 	"\fDeleteRecord\x12(.levelrail.plugin.v1.DeleteRecordRequest\x1a).levelrail.plugin.v1.DeleteRecordResponse\x12c\n" +
-	"\fVerifyRecord\x12(.levelrail.plugin.v1.VerifyRecordRequest\x1a).levelrail.plugin.v1.VerifyRecordResponseBAZ?github.com/GLINCKER/levelrail/internal/plugin/pluginpb;pluginpbb\x06proto3"
+	"\fVerifyRecord\x12(.levelrail.plugin.v1.VerifyRecordRequest\x1a).levelrail.plugin.v1.VerifyRecordResponseBAZ?github.com/glincker/levelrail/internal/plugin/pluginpb;pluginpbb\x06proto3"
 
 var (
 	file_proto_plugin_v1_plugin_proto_rawDescOnce sync.Once

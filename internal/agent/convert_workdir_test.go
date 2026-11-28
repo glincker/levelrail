@@ -3,7 +3,7 @@ package agent
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 func TestContainerSpecUserWorkingDirRoundTrip(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // ServiceResources caps a service's memory and CPU, in the same units

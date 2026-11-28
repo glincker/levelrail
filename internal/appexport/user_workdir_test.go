@@ -3,7 +3,7 @@ package appexport
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 func TestRenderUserWorkingDirRoundTrip(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestRemoteGrantRefusalNamesServiceAndNode(t *testing.T) {

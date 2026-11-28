@@ -3,11 +3,11 @@ package api
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/bitbucketserver"
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/internal/repolist"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bitbucketserver"
+	"github.com/glincker/levelrail/internal/giteaapp"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/repolist"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const forgejoCallbackPath = "/api/v1/forgejo-app/callback"

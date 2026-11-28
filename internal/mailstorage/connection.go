@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // AllowPrivateEnv opts in to private endpoints such as a self-hosted MinIO.

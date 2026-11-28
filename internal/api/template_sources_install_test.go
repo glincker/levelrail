@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func seedSourceEntry(t *testing.T, db *store.DB, id, compose, hash string) {

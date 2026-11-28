@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/preflight"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/preflight"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestHandlePreflightNew_RequiredEnvAndMounts(t *testing.T) {

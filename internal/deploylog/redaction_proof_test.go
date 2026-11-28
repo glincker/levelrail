@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 const proofCanary = "canary-build-secret-7731" //nolint:gosec // synthetic test value

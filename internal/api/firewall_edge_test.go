@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/edgefw"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/edgefw"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 const fwBase = "/api/v1/firewall/edge"

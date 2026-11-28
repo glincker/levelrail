@@ -6,11 +6,11 @@ description: Standard-library-only Go module with networking, scheduling, parsin
 
 `kit` is a Go module in this repository under `./kit`. It holds the small, self-contained building blocks the control plane and node agent share, packaged so other Go programs can import them too. Every package uses only the Go standard library, so the module has no third-party requirements.
 
-Import a single package rather than the whole module, for example `github.com/GLINCKER/levelrail/kit/cronexpr`. The full package list and install notes are in [kit/README.md](https://github.com/glincker/levelrail/blob/main/kit/README.md); this page explains what each package is for.
+Import a single package rather than the whole module, for example `github.com/glincker/levelrail/kit/cronexpr`. The full package list and install notes are in [kit/README.md](https://github.com/glincker/levelrail/blob/main/kit/README.md); this page explains what each package is for.
 
 ## Install
 
-`go get github.com/GLINCKER/levelrail/kit@latest`
+`go get github.com/glincker/levelrail/kit@latest`
 
 The module requires Go 1.24 or newer.
 

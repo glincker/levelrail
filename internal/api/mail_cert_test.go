@@ -20,10 +20,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/mailcert"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/volumefiles"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/mailcert"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/volumefiles"
 )
 
 // Every PEM private key header shape, so a leak of any key form is caught.

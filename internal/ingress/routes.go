@@ -18,7 +18,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 // FileServerHandler is Caddy's "file_server" handler

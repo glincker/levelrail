@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/egress"
+	"github.com/glincker/levelrail/internal/plugin/egress"
 )
 
 // denialsCache keeps the last good read so list calls do not hit the sidecar each time.

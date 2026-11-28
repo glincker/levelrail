@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func seedPreviewRow(t *testing.T, db *store.DB, id, app string, pr int, status string, updated time.Time) {

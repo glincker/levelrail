@@ -9,8 +9,8 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // Secrets cannot go in the create body (appResource has no field for them), so they are set afterward.

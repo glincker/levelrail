@@ -9,7 +9,7 @@ import (
 	dockerbuildkit "github.com/docker/docker/client/buildkit"
 	bkclient "github.com/moby/buildkit/client"
 
-	"github.com/GLINCKER/levelrail/internal/build/buildkitd"
+	"github.com/glincker/levelrail/internal/build/buildkitd"
 )
 
 // Client drives builds against the BuildKit instance embedded in a local

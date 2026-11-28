@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbaudit"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbaudit"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // newBranchPolicyToken builds a read-only token with db:write on app-db and db:admin on app-db-pr-*.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakeheroku"
+	"github.com/glincker/levelrail/internal/platformimport/fakeheroku"
 )
 
 func TestHerokuDiscover(t *testing.T) {

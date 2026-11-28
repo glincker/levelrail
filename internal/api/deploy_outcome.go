@@ -4,10 +4,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/failure"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/failure"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Deploy outcomes reported by GET /apps/{name}/deploys/{deployId}.

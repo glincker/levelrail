@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func runAppsCanary(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

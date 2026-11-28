@@ -569,7 +569,7 @@ See the [CLI reference](/cli-reference) for every command.
 | Homebrew (macOS and Linux) | `brew install glincker/tap/levelrail-cli` |
 | Scoop and winget (Windows) | See [Install on Windows and Linux](#install-on-windows-and-linux). Use the PowerShell installer above until then. |
 | npm, yarn or pnpm | `npx levelrail-cli <command>` or `npm install --global levelrail-cli` ([details](#use-the-cli-from-npm)) |
-| Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
+| Go | `go install github.com/glincker/levelrail/cmd/levelrail-cli@latest` |
 | Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
 
 Every release asset is listed in `checksums.txt`, which is signed with cosign and has a build provenance attestation. Windows binaries are published from the release after `v0.2.0-beta.15`; before that, run the install script from WSL.

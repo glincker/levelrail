@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 var errMonthsRange = errors.New("months must be 1 to 12")

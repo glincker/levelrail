@@ -14,7 +14,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/pinned"
+	"github.com/glincker/levelrail/internal/agent/pinned"
 )
 
 // CA is the control plane's self-signed root, signing its server cert and every agent's client cert.

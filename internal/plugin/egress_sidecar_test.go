@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/egress"
+	"github.com/glincker/levelrail/internal/plugin/egress"
 )
 
 func proxyHarness(t *testing.T) (*harness, *[]egress.Policy) {

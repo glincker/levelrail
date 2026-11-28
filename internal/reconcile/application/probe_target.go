@@ -8,9 +8,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // WithProbeLimits sets redirect, exec-output and default-timing bounds for

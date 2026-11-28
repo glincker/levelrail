@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/firewall"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/firewall"
 )
 
 // FirewallRuleStore is the store surface the firewall rule handlers

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/vmruntime/lima"
+	"github.com/glincker/levelrail/internal/vmruntime/lima"
 )
 
 // SchemaVersion is bumped when the file layout changes incompatibly.

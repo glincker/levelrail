@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/reconcile/database"
 )
 
 // ErrWritesNotFrozen is returned when a move is attempted before the caller

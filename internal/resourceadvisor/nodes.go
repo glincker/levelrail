@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/rightsizing"
 )
 
 func nodeRef(n Node) Ref { return Ref{Kind: ResourceNode, Name: n.ID} }

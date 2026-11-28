@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/release"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/release"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // deployOlderRelease binds web-staging to a newer release, then deploys the older one by id.

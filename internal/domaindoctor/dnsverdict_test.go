@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnsinspect"
+	"github.com/glincker/levelrail/internal/dnsinspect"
 )
 
 func src(name string, addrs ...string) dnsinspect.Source {

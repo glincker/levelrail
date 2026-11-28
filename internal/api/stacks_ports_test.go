@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/stackdrift"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/stackdrift"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func udpStackDocs(hostPort string) string {

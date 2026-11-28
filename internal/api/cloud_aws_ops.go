@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/cloudwatch"
-	"github.com/GLINCKER/levelrail/internal/awsx/ec2snap"
-	"github.com/GLINCKER/levelrail/internal/awsx/rds"
-	"github.com/GLINCKER/levelrail/internal/cloudguard"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/awsx/cloudwatch"
+	"github.com/glincker/levelrail/internal/awsx/ec2snap"
+	"github.com/glincker/levelrail/internal/awsx/rds"
+	"github.com/glincker/levelrail/internal/cloudguard"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // awsMetricsCache holds metric reads for a few minutes because AWS bills each one.

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webpush"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webpush"
 )
 
 // newTestRouterWithPushVAPIDPublicKey wires a non-empty public key, the

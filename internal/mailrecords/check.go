@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/email"
 )
 
 // Check statuses.

@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/vault"
 )
 
 // doctorCheckVaultLegacyPaths lists apps with an unvetted legacy Vault path outside

@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/totp"
 	"github.com/descope/virtualwebauthn"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/totp"
 )
 
 const mfaTestOrigin = "http://example.com" //nolint:gosec // test-fixture origin, not a credential

@@ -10,8 +10,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/upgradehistory"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/upgradehistory"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 const (

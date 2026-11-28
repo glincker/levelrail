@@ -3,7 +3,7 @@ package application
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestToContainerSpec_UserAndWorkingDir(t *testing.T) {

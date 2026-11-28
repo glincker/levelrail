@@ -14,10 +14,10 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/demo"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/web"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/demo"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/web"
 )
 
 func demoTestLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }

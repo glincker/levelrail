@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 func historyRouter(t *testing.T) (*Router, *http.Cookie, int) {

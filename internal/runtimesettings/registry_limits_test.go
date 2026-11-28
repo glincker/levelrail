@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestLimitClampsEnvSeeds(t *testing.T) {

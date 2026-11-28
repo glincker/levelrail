@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Dumper streams a consistent dump of a live parent and labels its consistency.

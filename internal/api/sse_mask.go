@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // EnvLogMaskIdleFlush is how long a held log tail waits for a following line before it is emitted.

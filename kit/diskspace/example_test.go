@@ -3,7 +3,7 @@ package diskspace_test
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 func ExampleHumanBytes() {

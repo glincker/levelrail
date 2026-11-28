@@ -3,8 +3,8 @@ package agent
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 func cs(name, health string, labels map[string]string) docker.ContainerState {

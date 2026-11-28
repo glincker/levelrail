@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/autoscale"
 )
 
 // AppAutoscale is GET/PUT /api/v1/apps/{name}/autoscale.

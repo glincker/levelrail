@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/takeover"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/takeover"
 )
 
 func seedTakeover(t *testing.T, state string, boots int) *store.DB {

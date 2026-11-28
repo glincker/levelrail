@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAppsDeploys dispatches "apps deploys <verb> [flags]", the same

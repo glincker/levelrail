@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 	"net/http"
 	"net/http/httptest"
 	"strings"

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ssaNull marks a field the applier sent as null: remove it from the object.

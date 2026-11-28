@@ -13,7 +13,7 @@ import (
 	theauth "github.com/glincker/theauth-go/v2"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Reasons a legacy token is not imported. Each is terminal for that token.

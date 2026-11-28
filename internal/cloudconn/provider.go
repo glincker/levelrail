@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/secretsource"
 )
 
 // Providers and auth methods accepted on a connection.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // placementRules are one app's tolerations and affinity as the scheduler reads them.

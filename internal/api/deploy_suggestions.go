@@ -1,6 +1,6 @@
 package api
 
-import "github.com/GLINCKER/levelrail/internal/spec"
+import "github.com/glincker/levelrail/internal/spec"
 
 // Suggestion identifiers are stable: the dashboard keys its i18n copy and
 // per-user dismissal on them.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 // channelSecretSealer is the slice of *alerting.DB the startup seal needs.

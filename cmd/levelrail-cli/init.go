@@ -11,12 +11,12 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GLINCKER/levelrail/internal/agentinit"
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/projecttpl"
-	"github.com/GLINCKER/levelrail/internal/scaffold"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/kit/stackdetect"
+	"github.com/glincker/levelrail/internal/agentinit"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/projecttpl"
+	"github.com/glincker/levelrail/internal/scaffold"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/kit/stackdetect"
 )
 
 // File actions reported by init.

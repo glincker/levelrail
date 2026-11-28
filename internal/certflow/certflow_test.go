@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/domaindoctor"
 )
 
 func TestClassify(t *testing.T) {

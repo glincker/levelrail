@@ -8,7 +8,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // KindSLOBurn fires on error-budget burn rate for a request-based SLO over the

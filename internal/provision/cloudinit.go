@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
+	"github.com/glincker/levelrail/internal/runtimesettings/registrymirror"
 )
 
 // agentImageOwner is the registry namespace the agent image is published under, a concrete upstream location rather than branding.

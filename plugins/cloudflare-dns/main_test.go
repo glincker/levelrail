@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
-	"github.com/GLINCKER/levelrail/plugins/internal/pluginkit"
-	"github.com/GLINCKER/levelrail/plugins/internal/pluginkit/pluginkittest"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/plugins/internal/pluginkit"
+	"github.com/glincker/levelrail/plugins/internal/pluginkit/pluginkittest"
 )
 
 const testToken = "cf-token-SECRET-123" //nolint:gosec // test fixture, not a credential

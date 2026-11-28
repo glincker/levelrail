@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 var emitOpts = platformimport.EmitOptions{Stack: "shop", Project: "shop", Environment: "production", ImageRepo: "registry.example.com/acme"}

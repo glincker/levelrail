@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // topWhyTemplates bounds the text output; --json carries every cluster.

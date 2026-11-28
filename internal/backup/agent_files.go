@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AgentEndpointScheme marks a destination whose bytes live in an enrolled node's confined storage directory instead of an S3 bucket.

@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // admitNewServiceName is the one gate every path runs before it writes a

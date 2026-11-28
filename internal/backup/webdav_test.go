@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 	"io"
 	"net/http"
 	"net/http/httptest"

@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // NotificationDelivery is one recorded send attempt through a NotificationChannel, real or test.

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // The engine resolves only SERVICE_* variables, so any other ${...} left in an

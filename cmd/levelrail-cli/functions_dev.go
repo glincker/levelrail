@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/functions"
 )
 
 const fnDevStopTimeout = 15 * time.Second

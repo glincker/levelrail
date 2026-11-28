@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/email"
 )
 
 // NotifyPluginPrefix starts the channel kind of a notification_channel plugin,

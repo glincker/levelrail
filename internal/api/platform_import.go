@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/platformimport/dokployextras"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport/dokployextras"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const maxPlatformImportBody = 64 << 10

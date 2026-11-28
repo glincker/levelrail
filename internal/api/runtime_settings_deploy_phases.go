@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // KeyDeployPhasesSamples is how many past successful deploys feed the typical-time baseline.

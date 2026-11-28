@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/functions"
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/ingress"
 )
 
 func TestMergeColdRecordsFoldsWakeHookIntoReplayedCall(t *testing.T) {

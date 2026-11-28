@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
-	"github.com/GLINCKER/levelrail/internal/awsx/cloudwatch"
+	"github.com/glincker/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx/cloudwatch"
 )
 
 var elbSvc = awsx.Service{Name: "elasticloadbalancing", Prefix: "elasticloadbalancing", SigningName: "elasticloadbalancing"}

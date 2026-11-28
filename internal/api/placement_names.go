@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // placementResolver turns a stored node_id into the display fields apps and

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbprovision"
+	"github.com/glincker/levelrail/internal/dbprovision"
 )
 
 const envProvisionStreamInterval = "APP_DB_PROVISION_STREAM_INTERVAL"

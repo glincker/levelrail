@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // nodeSelector matches nodes by zone, region and provider; empty fields match all.

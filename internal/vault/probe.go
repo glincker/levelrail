@@ -10,8 +10,8 @@ import (
 
 	vaultapi "github.com/hashicorp/vault/api"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ErrPathDenied marks a path the credential's policy does not allow reading.

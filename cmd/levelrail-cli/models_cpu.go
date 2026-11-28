@@ -7,7 +7,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func gibText(b int64) string { return fmt.Sprintf("%.1f GiB", float64(b)/(1<<30)) }

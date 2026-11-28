@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // configureTelemetryTiers applies the APP_METRICS_* tier and retention

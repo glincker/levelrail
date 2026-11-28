@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/appexport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/appexport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestResourceNotesSetGetSearchCloneExport(t *testing.T) {

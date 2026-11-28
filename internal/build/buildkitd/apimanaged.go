@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
+	"github.com/glincker/levelrail/internal/runtimesettings/registrymirror"
 )
 
 const (

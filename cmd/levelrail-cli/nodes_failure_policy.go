@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runNodesFailurePolicy implements "nodes failure-policy get|set <id>".

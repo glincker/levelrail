@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/awsxtest"
+	"github.com/glincker/levelrail/internal/awsx/awsxtest"
 )
 
 const runOK = `<RunInstancesResponse><instancesSet><item><instanceId>i-0abc</instanceId></item></instancesSet></RunInstancesResponse>`

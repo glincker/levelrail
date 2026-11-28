@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/envrules"
-	"github.com/GLINCKER/levelrail/internal/envrules/contract"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/envrules/contract"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Each writer below must refuse and accept exactly what the shared fixture says.

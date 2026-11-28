@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 var logRuleClock = time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)

@@ -7,9 +7,9 @@ import (
 	"io"
 	"io/fs"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/volumefiles"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/volumefiles"
 )
 
 // ErrVolumeFilesUnsupported means the runtime cannot map a volume to a host directory.

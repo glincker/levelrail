@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/orphans"
 )
 
 func lookupSystemContainer(name string, containers []docker.ContainerState) (docker.ContainerState, bool) {

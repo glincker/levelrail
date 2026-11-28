@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	appspec "github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	appspec "github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // WithElevatedCaps sets where the live "elevated capabilities allowed" setting comes

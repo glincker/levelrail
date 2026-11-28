@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/migrateagent"
-	"github.com/GLINCKER/levelrail/internal/migrationplan"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/migrateagent"
+	"github.com/glincker/levelrail/internal/migrationplan"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeMigrationAgent struct {

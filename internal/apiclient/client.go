@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/httpx"
+	"github.com/glincker/levelrail/kit/httpx"
 )
 
 // Request header names and values shared by every client call.

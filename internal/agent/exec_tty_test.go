@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/testutil"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/testutil"
 )
 
 // fakeTTYSession is a docker.ExecSession the test drives: output comes

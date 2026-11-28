@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestEmailConfigFromSettings_SESSMTPDerivesHostFromRegion(t *testing.T) {

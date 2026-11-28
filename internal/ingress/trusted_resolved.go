@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/GLINCKER/levelrail/internal/abuse"
+	"github.com/glincker/levelrail/internal/abuse"
 )
 
 type resolvedList struct {

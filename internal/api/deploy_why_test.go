@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploywhy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploywhy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDeployWhy_VerdictAndScopedDeny(t *testing.T) {

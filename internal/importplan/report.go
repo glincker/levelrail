@@ -8,8 +8,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/importreport"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/importreport"
 )
 
 var (

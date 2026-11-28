@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // BackupDownloader is the surface the backup download handler needs from

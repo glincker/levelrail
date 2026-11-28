@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build/cachebudget"
+	"github.com/glincker/levelrail/internal/build/cachebudget"
 )
 
 const (

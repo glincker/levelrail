@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/profile"
+	"github.com/glincker/levelrail/internal/profile"
 )
 
 func TestStartWhenWork(t *testing.T) {

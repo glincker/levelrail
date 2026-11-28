@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/migrationplan"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/migrationplan"
 )
 
 const envMigrateSourceToken = "APP_MIGRATE_SOURCE_TOKEN" //nolint:gosec // env var name, not a credential

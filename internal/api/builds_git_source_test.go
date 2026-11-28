@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newBuildGitSourceRouter(t *testing.T) (*Router, *store.DB, *http.Cookie, *fakeGitHubAppClient, *fakeGitSourceSecrets) {

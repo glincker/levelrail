@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TestProjectChannel_CrossTeamDenied: a team B app cannot bind a rule or deploy target to a team A project channel.

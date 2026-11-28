@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // CopyFromContainer implements docker.ArchiveRuntime over the exec frame

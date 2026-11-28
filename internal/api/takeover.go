@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/takeover"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/takeover"
 )
 
 // Env knobs of the same-server port takeover.

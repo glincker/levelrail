@@ -20,10 +20,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/datamigrate"
-	"github.com/GLINCKER/levelrail/internal/migrationgate"
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakecoolify"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/datamigrate"
+	"github.com/glincker/levelrail/internal/migrationgate"
+	"github.com/glincker/levelrail/internal/platformimport/fakecoolify"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func (h *appImportHarness) decode(rec *httptest.ResponseRecorder, into any) {

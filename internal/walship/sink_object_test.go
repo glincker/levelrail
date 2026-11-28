@@ -11,8 +11,8 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore"
-	"github.com/GLINCKER/levelrail/internal/objectstore/objectstoretest"
+	"github.com/glincker/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/objectstore/objectstoretest"
 )
 
 type clientBucket struct{ *objectstore.Client }

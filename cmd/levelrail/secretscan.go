@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/deploy/secretscan"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploy/secretscan"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newSecretScanService(db *store.DB, logger *slog.Logger) *secretscan.Service {

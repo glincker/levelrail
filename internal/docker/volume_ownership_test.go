@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	appspec "github.com/GLINCKER/levelrail/internal/spec"
+	appspec "github.com/glincker/levelrail/internal/spec"
 )
 
 func TestCheckVolumeOwner(t *testing.T) {

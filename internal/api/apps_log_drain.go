@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // logDrainResource is GET/PUT /api/v1/apps/{name}/log-drain's response

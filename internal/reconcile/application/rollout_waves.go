@@ -8,10 +8,10 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/rolloutpolicy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/rolloutpolicy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // RolloutPolicySource reads an app's saved rollout: block. A ServiceStore

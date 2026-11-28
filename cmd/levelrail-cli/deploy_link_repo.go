@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/deploylink"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/deploylink"
 )
 
 // The static badge lives in this repository and is served from its default branch.

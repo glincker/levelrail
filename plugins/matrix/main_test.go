@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/plugins/internal/pluginkit"
-	"github.com/GLINCKER/levelrail/plugins/internal/pluginkit/pluginkittest"
+	"github.com/glincker/levelrail/plugins/internal/pluginkit"
+	"github.com/glincker/levelrail/plugins/internal/pluginkit/pluginkittest"
 )
 
 func setup(t *testing.T) {

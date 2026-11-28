@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/eventhook"
+	"github.com/glincker/levelrail/internal/eventhook"
 )
 
 func TestEventWebhooks_CRUDSecretShownOnce(t *testing.T) {

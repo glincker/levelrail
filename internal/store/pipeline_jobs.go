@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // PipelineJob is one expanded job of a run. NeedsJSON and MatrixJSON are

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/changes"
 )
 
 // alertLinks derives the logs (for the firing window) and nearest deploy links from the app's alerts page link.

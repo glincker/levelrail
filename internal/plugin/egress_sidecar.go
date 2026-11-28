@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/plugin/egress"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/plugin/egress"
 )
 
 // Egress modes. Open keeps the shared bridge; proxy forces every plugin

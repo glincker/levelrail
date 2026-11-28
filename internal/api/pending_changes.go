@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/secrets"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Pending change kinds and apply actions.

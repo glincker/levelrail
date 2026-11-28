@@ -4,8 +4,8 @@
 package importplan
 
 import (
-	"github.com/GLINCKER/levelrail/internal/envrules"
-	"github.com/GLINCKER/levelrail/internal/importreport"
+	"github.com/glincker/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/importreport"
 )
 
 // SourceKind is what Classify decided the input is.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/forecast"
+	"github.com/glincker/levelrail/kit/forecast"
 )
 
 // Database health rule kinds. Each fans out over every managed database and reads its thresholds from live settings.

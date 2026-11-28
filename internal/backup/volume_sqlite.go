@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // SqliteSnapshotter produces a consistent snapshot of a SQLite .db file

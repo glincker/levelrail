@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/preview"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/preview"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func previewGet(t *testing.T, rt *Router, cookie *http.Cookie, target string, hdr map[string]string) *httptest.ResponseRecorder {

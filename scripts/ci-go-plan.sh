@@ -29,7 +29,7 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 small_max="${CI_SMALL_LANE_MAX:-8}"
-api_pkg="github.com/GLINCKER/levelrail/internal/api"
+api_pkg="github.com/glincker/levelrail/internal/api"
 api_shards=4
 flaky_file=.github/flaky-tests.txt
 
@@ -168,8 +168,8 @@ fi
 # test/e2e gets its own lane (and test/e2e/reconcile too when fleet_run)
 # so the heaviest one sets the floor alone. Fleet runs also isolate the template fleet test (about 1,000 s
 # sequentially, bounded-parallel inside the test) from the rest of test/e2e.
-e2e_pkg="github.com/GLINCKER/levelrail/test/e2e"
-reconcile_pkg="github.com/GLINCKER/levelrail/test/e2e/reconcile"
+e2e_pkg="github.com/glincker/levelrail/test/e2e"
+reconcile_pkg="github.com/glincker/levelrail/test/e2e/reconcile"
 fleet_test="TestTemplateFleet_Live_DeploysAndTearsDownCleanly"
 # Three catalog batch tests, about 200 s of the reconcile package's 430 s (CI timings 2026-10-16).
 reconcile_heavy="TestCatalogProductivityBatch_Live_Deploys|TestCatalogAutomationBatch_Live|TestCatalogDevtoolsInfraBatch_Live_Deploys"

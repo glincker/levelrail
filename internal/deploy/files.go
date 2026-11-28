@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // secretValueSetter is what the secrets manager adds beside SecretChecker;

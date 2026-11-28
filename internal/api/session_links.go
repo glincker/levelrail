@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // sessionLinkTokenTTL bounds how long a minted session link can be

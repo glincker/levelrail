@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cloudflareips"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/cloudflareips"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // cloudflarePresetResource is the wire shape of /api/v1/settings/ingress/cloudflare; source is stored, env or default.

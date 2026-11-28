@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // UserAgent is the only identifying header a fetch sends. It carries no

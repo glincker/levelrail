@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/costbudget"
-	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/costbudget"
+	"github.com/glincker/levelrail/internal/spendcap"
 )
 
 func TestCostBudgetRoundTripAndEnforcementMerge(t *testing.T) {

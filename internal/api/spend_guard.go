@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/costbudget"
-	"github.com/GLINCKER/levelrail/internal/spendcap"
-	"github.com/GLINCKER/levelrail/internal/spendguard"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/costbudget"
+	"github.com/glincker/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendguard"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 // spendForecast is the projected month end position of one app cap.

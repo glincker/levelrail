@@ -136,7 +136,7 @@ expect_pkg() { # label want(yes|no) pkg path...
 		[ "$want" = no ] || { echo "FAIL $label: $pkg missing"; fail=1; }
 	fi
 }
-guard=github.com/GLINCKER/levelrail/test/execgate
+guard=github.com/glincker/levelrail/test/execgate
 expect_pkg "go change selects execgate" yes "$guard" internal/spec/discover.go
 expect_pkg "test-only change skips execgate" no "$guard" internal/spec/discover_test.go
 expect_pkg "docs change skips execgate" no "$guard" docs/ci.md

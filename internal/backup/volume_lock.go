@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ErrVolumeBackupBusy is returned when a backup of the same volume is already

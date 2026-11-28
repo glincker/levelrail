@@ -8,8 +8,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // CapHostProbe means the agent runs readiness probes on its own host. A node

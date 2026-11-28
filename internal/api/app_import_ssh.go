@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dockerssh"
-	"github.com/GLINCKER/levelrail/internal/imagemove"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/sshprovision"
+	"github.com/glincker/levelrail/internal/dockerssh"
+	"github.com/glincker/levelrail/internal/imagemove"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/sshprovision"
 )
 
 const (

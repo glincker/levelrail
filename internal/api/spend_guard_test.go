@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendcap"
 )
 
 func TestSpendGuard_ProjectBudgetBlocksThenOverrideAllows(t *testing.T) {

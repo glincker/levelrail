@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/rolloutpolicy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/rolloutpolicy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestRolloutStatusAndDisruptionBudget(t *testing.T) {

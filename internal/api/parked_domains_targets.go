@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // lifecycleSide is one domain set a park, move or attach touches, with its

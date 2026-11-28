@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const announcementsUsage = "Usage:\n  %[1]s announcements ls [--all] [--json]\n  %[1]s announcements read <id>\n  %[1]s announcements dismiss <id>\n  %[1]s announcements snooze <id> --for <duration>\n"

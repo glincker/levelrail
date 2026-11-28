@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // serviceEnvironmentDomainStore is the per-environment domain surface

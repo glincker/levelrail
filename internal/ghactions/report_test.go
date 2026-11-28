@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/githubapp"
 )
 
 type fakeGH struct {

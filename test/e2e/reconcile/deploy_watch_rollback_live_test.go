@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/deploywatch"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/test/e2e/testenv"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploywatch"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/test/e2e/testenv"
 )
 
 // TestDeployWatch_Live_HealthyStaysCrashloopRollsBack proves the post-deploy

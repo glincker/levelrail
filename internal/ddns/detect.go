@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/heartbeat"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/heartbeat"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Detection outcomes the loop reports as warnings, never as writes.

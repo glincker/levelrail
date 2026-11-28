@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // doctorLabel keeps the status column plain text, FAIL is upper case so it stands out without symbols.

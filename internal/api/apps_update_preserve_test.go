@@ -8,8 +8,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func seedFullApp(t *testing.T, db *store.DB) store.DesiredService {

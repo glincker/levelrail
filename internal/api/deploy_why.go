@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploywhy"
-	"github.com/GLINCKER/levelrail/internal/lognorm"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploywhy"
+	"github.com/glincker/levelrail/internal/lognorm"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DeployLogTemplateStore persists mined log clusters per deploy. *store.DB satisfies it.

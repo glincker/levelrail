@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/quota"
-	"github.com/GLINCKER/levelrail/internal/repoplan"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/repoplan"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const applyRepo = "https://github.com/acme/mono"

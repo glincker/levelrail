@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/netclient"
+	"github.com/glincker/levelrail/internal/netclient"
 	"io"
 	"log/slog"
 	"net/http"
@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Benchmark errors, distinguishable by callers to pick an HTTP status.

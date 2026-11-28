@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/bindmount"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/bindmount"
+	"github.com/glincker/levelrail/internal/spec"
 	"gopkg.in/yaml.v3"
 )
 

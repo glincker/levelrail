@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // sftpScanFailed is the single answer to a host key scan that did not produce a key.

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/stacks"
+	"github.com/glincker/levelrail/internal/stacks"
 )
 
 // Template describes one bundle and the defaults of its variables.

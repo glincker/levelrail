@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // placeholderBasicAuthUser is the user a gated domain gets until the operator sets the real credential.

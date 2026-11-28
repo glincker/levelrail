@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	appspec "github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	appspec "github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // errReservedSecretOwner is returned when an app named like a control plane secret namespace asks for secrets.

@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // runAppsValidate implements "apps validate --file": a local parse of app.yaml, falling back to Compose.

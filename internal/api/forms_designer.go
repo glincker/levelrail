@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/forms"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/forms"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type formTestResponse struct {

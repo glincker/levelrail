@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/platformimport/dokployextras"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport/dokployextras"
 )
 
 // Backup import; the planning and create calls live in dokployextras, shared with the dashboard import.

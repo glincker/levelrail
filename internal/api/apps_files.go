@@ -9,8 +9,8 @@ import (
 	"path"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // appFilesUpdater is the one write this feature adds to the app store; kept

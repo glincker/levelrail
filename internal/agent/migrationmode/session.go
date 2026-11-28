@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
 )
 
 // ErrGoAway ends a session the control plane closed on purpose.

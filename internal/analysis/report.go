@@ -5,8 +5,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
-	"github.com/GLINCKER/levelrail/kit/untrusted"
+	"github.com/glincker/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/kit/untrusted"
 )
 
 // Build turns a digest and its trigger into a report. It is pure: same

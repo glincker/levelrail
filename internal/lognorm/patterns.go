@@ -3,7 +3,7 @@ package lognorm
 import (
 	"regexp"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // Registered-value masking misses secrets the platform never saw, so common

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/domaindoctor"
 )
 
 func quietDoctorProbes(ip string) *domaindoctor.Probes {

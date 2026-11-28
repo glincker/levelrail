@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/mailcert"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/volumefiles"
+	"github.com/glincker/levelrail/internal/mailcert"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/volumefiles"
 )
 
 // VolumeFileNode is what a node transport offers for browsing a named volume; the local node and agent transports both satisfy it.

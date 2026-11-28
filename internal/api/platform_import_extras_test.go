@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/platformimport/dokployextras"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport/dokployextras"
 )
 
 var extrasFixtureSecrets = []string{importFixtureValue, "AKIAFIXTUREKEY01", "fixture-secret-aws-value", "FIXTURE-SLACK-TOKEN", "fixture-smtp-password"}

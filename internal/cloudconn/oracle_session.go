@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ocisign"
+	"github.com/glincker/levelrail/internal/ocisign"
 )
 
 // AuthOCISession is the browser login (oci session authenticate) method. It lives here so

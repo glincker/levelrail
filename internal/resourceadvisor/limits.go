@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/rightsizing"
 )
 
 func toRightsizing(samples []Sample) []rightsizing.Sample {

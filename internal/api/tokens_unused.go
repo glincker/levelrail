@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // unusedTokenResource is the list shape for an idle token: metadata only, never the secret.

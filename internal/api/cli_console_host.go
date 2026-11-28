@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cliconsole"
-	"github.com/GLINCKER/levelrail/internal/hostdiag"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/cliconsole"
+	"github.com/glincker/levelrail/internal/hostdiag"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 var errCLIConsoleHostDisabled = errors.New("host diagnostics are turned off on this server (" + hostdiag.EnvSwitch + "=off)")

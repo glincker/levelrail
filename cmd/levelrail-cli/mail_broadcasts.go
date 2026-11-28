@@ -8,7 +8,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const mailBroadcastUsageLines = `  %[1]s mail broadcasts list                       list broadcasts with sent, failed and suppressed counts

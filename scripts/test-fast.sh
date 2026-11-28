@@ -27,7 +27,7 @@ if [ -z "${LEVELRAIL_SLOT_HELD:-}" ]; then
 	exit $?
 fi
 
-api_pkg="github.com/GLINCKER/levelrail/internal/api"
+api_pkg="github.com/glincker/levelrail/internal/api"
 ncpu="$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)"
 shards="${TEST_FAST_SHARDS:-$((ncpu - 2))}"
 [ "$shards" -gt 6 ] && shards=6

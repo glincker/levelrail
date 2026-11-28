@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/tlsowner"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/tlsowner"
 )
 
 // Enforcement modes reported per domain.

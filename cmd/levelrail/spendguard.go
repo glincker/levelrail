@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/spendguard"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/spendguard"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func spendGuardDeployOptions(db *store.DB, logger *slog.Logger) []deploy.Option {

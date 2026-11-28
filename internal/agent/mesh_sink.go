@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // meshTransport is the slice of *GRPCTransport GRPCSink needs, as an interface so tests can fake it.

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dbcatalogbuild"
-	"github.com/GLINCKER/levelrail/internal/dbupgrade"
+	"github.com/glincker/levelrail/internal/dbcatalogbuild"
+	"github.com/glincker/levelrail/internal/dbupgrade"
 )
 
 // DatabaseVersionCatalog is the remote-refreshed version catalog

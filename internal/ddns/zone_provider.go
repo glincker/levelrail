@@ -9,8 +9,8 @@ import (
 
 	"golang.org/x/net/publicsuffix"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // zoneProvider keeps A or AAAA records current through a token DNS provider's record API.

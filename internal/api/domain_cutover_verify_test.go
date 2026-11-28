@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cutoververify"
+	"github.com/glincker/levelrail/internal/cutoververify"
 )
 
 type verifyFakeResolver struct{ hosts map[string][]string }

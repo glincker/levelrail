@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var testNow = time.Date(2026, 11, 27, 12, 0, 0, 0, time.UTC)
@@ -218,7 +218,7 @@ func TestValidateItemRejectsUnsafeContent(t *testing.T) {
 		})
 	}
 	good := item("good", TierInfo)
-	good["body"] = "Read **the notes** at [release](https://github.com/GLINCKER/levelrail/releases/tag/v1.5.14) or `levelrail version`."
+	good["body"] = "Read **the notes** at [release](https://github.com/glincker/levelrail/releases/tag/v1.5.14) or `levelrail version`."
 	raw, _ := json.Marshal(good)
 	var it Item
 	_ = json.Unmarshal(raw, &it)

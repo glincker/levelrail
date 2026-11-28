@@ -3,13 +3,13 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/pkgregistry"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/pkgregistry"
 )
 
 // BuildSecretSource supplies the private package registry config a

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/attention"
 )
 
 // Doctor groups, in display order.

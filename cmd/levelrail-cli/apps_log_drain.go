@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/fielddesc"
 )
 
 // runAppsLogDrain dispatches "apps log-drain <verb> [flags]" to one of

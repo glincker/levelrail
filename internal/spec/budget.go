@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendcap"
 )
 
 // Budget is a service's monthly egress and cost guardrail (internal/spendcap).

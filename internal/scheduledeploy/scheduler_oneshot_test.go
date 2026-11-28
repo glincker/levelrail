@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var oneShotAt = time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)

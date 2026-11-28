@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/standalone"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/standalone"
 )
 
 // standaloneSafety lists this instance's own listeners: a standalone domain

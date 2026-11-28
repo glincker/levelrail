@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/monitor"
 )
 
 // InsertResults stores a batch and folds it into the hourly rollups in one

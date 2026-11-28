@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/functions"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestFunctionWebhookAndDeadLetters(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/hostswap"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/hostswap"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 const (

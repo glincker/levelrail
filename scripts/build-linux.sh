@@ -20,14 +20,14 @@ echo "==> web ($commit)"
 echo "==> go build linux/$arch as $version"
 mkdir -p "$(dirname "$out")"
 GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -buildvcs=false -tags embedweb -trimpath \
-	-ldflags "-s -w -X github.com/GLINCKER/levelrail/internal/version.Version=${version}" \
+	-ldflags "-s -w -X github.com/glincker/levelrail/internal/version.Version=${version}" \
 	-o "$out" ./cmd/levelrail
 
 # The agent carries the same stamp, otherwise nodes list shows dev for a hand-built agent.
 agent_out="$(dirname "$out")/levelrail-agent"
 echo "==> go build agent linux/$arch as $version"
 GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -buildvcs=false -trimpath \
-	-ldflags "-s -w -X github.com/GLINCKER/levelrail/internal/version.Version=${version}" \
+	-ldflags "-s -w -X github.com/glincker/levelrail/internal/version.Version=${version}" \
 	-o "$agent_out" ./cmd/levelrail-agent
 
 echo "==> $out and $agent_out"

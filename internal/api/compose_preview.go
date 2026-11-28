@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/envredact"
 )
 
 // composePreviewMaxBytes bounds a pasted or uploaded compose file.

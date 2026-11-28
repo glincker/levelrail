@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // scopeFlags holds this run's --team and --project, applied by every client.

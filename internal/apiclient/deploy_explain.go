@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/deploytimeline"
+	"github.com/glincker/levelrail/internal/deploytimeline"
 )
 
 // ExplainDeploy returns the rule-based failure explanation for one deploy.

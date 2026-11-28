@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Database counterpart of handleAppResourceRecommendation; only the store lookup and resource ID differ,

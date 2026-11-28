@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/vmruntime/guest"
+	"github.com/glincker/levelrail/internal/vmruntime/guest"
 )
 
 // Defaults block (ADR 070 table). Nothing else in this package holds a limit.

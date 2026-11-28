@@ -11,8 +11,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // errExecCancelled ends the agent's side of an exec the control plane

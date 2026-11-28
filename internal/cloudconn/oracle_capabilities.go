@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ocisign"
+	"github.com/glincker/levelrail/internal/ocisign"
 )
 
 // Oracle capability names, one per read the account needs.

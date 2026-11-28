@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/cutoververify"
+	"github.com/glincker/levelrail/internal/cutoververify"
 )
 
 func TestRun_DomainsCheck(t *testing.T) {

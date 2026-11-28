@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretrotation"
+	"github.com/glincker/levelrail/internal/secretrotation"
 )
 
 const (

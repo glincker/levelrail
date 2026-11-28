@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/gitprovider/reporef"
 )
 
 // envGitSourceHint set to off, false, 0 or no hides the "no git source" line after a deploy.

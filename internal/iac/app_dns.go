@@ -3,8 +3,8 @@ package iac
 import (
 	"errors"
 
-	"github.com/GLINCKER/levelrail/internal/dnsnames"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/dnsnames"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // dnsFields are the extra internal DNS names of an app; nil leaves live names alone.

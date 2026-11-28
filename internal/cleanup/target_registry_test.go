@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/registrycatalog"
+	"github.com/glincker/levelrail/internal/registrycatalog"
 )
 
 type fakeRegistry struct {

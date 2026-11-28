@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 const releaseSignatureDocsPath = "/upgrade-safely#signature-pin"

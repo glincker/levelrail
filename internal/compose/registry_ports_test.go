@@ -4,8 +4,8 @@ import (
 	"io/fs"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/registry"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/registry"
 )
 
 // A udp port without a host port is refused at admission, so no registry

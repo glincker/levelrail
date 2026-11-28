@@ -1,6 +1,6 @@
 package runtimesettings
 
-import "github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
+import "github.com/glincker/levelrail/internal/runtimesettings/registrymirror"
 
 // KeyRegistryMirrorPrefix is the pull-through prefix for the agent and BuildKit images.
 const KeyRegistryMirrorPrefix = "registry.mirror_prefix"

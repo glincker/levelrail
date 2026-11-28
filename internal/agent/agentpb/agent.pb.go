@@ -10255,7 +10255,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\bReenroll\x12#.levelrail.agent.v1.ReenrollRequest\x1a$.levelrail.agent.v1.ReenrollResponse\x12d\n" +
 	"\rCheckIdentity\x12(.levelrail.agent.v1.CheckIdentityRequest\x1a).levelrail.agent.v1.CheckIdentityResponse\x12^\n" +
 	"\vUpdateCheck\x12&.levelrail.agent.v1.UpdateCheckRequest\x1a'.levelrail.agent.v1.UpdateCheckResponse\x12N\n" +
-	"\x06Tunnel\x12\x1f.levelrail.agent.v1.TunnelFrame\x1a\x1f.levelrail.agent.v1.TunnelFrame(\x010\x01B>Z<github.com/GLINCKER/levelrail/internal/agent/agentpb;agentpbb\x06proto3"
+	"\x06Tunnel\x12\x1f.levelrail.agent.v1.TunnelFrame\x1a\x1f.levelrail.agent.v1.TunnelFrame(\x010\x01B>Z<github.com/glincker/levelrail/internal/agent/agentpb;agentpbb\x06proto3"
 
 var (
 	file_proto_agent_v1_agent_proto_rawDescOnce sync.Once

@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apptype"
-	"github.com/GLINCKER/levelrail/internal/policy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/apptype"
+	"github.com/glincker/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // appTypeStore is satisfied by *store.DB.

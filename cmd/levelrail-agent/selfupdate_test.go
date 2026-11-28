@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agentupdate"
+	"github.com/glincker/levelrail/internal/agentupdate"
 )
 
 func noEnv(string) (string, bool) { return "", false }

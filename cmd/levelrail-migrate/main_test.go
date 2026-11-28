@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/GLINCKER/levelrail/internal/agent/migrationmode"
+	"github.com/glincker/levelrail/internal/agent/migrationmode"
 )
 
 func TestRenderUnitCarriesNoSecretAndIsHardened(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/diskguard"
 )
 
 // ControlPlaneBackupManager is the surface the /system/backups routes need.

@@ -10,9 +10,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/compliance"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/compliance"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // SetCompliance enables the access review and evidence pack routes.

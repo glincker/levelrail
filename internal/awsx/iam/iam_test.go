@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/awsxtest"
+	"github.com/glincker/levelrail/internal/awsx/awsxtest"
 )
 
 func TestListAttachedRolePoliciesPages(t *testing.T) {

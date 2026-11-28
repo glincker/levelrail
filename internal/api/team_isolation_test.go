@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func teamDo(t *testing.T, rt *Router, method, path, body string, mutate func(*http.Request)) (int, string) {

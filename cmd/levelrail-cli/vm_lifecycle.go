@@ -17,8 +17,8 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/vmruntime"
-	"github.com/GLINCKER/levelrail/internal/vmruntime/guest"
+	"github.com/glincker/levelrail/internal/vmruntime"
+	"github.com/glincker/levelrail/internal/vmruntime/guest"
 )
 
 const (

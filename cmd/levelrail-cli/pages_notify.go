@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const pagesNotifyUsage = "Usage:\n  %[1]s pages notify show <site> [flags]\n  %[1]s pages notify set <site> [--on success,failure] [--channel ID] [flags]\n  %[1]s pages notify off <site> [flags]\n  %[1]s pages notify reset <site> [flags]\n"

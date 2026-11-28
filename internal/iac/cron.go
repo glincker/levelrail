@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 var cronNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,62}$`)

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/testutil"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/testutil"
 )
 
 const projectDoc = "version: 1\nkind: Project\nmetadata: {name: shop}\nspec:\n  env:\n    REGION: eu\n    FEATURE_SET: declared-value-1\n"

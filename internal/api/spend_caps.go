@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
-	"github.com/GLINCKER/levelrail/internal/spendguard"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendguard"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 const (

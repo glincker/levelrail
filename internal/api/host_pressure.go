@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/hostpressure"
-	"github.com/GLINCKER/levelrail/internal/hostswap"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/hostpressure"
+	"github.com/glincker/levelrail/internal/hostswap"
 )
 
 const (

@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/benchreport"
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/benchreport"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 func benchResultsServer(t *testing.T) (*httptest.Server, func(string) (string, bool)) {

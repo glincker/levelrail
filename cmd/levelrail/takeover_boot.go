@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/takeover"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/takeover"
 )
 
 // applyTakeoverBoot makes a stored same-server takeover win over the

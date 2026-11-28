@@ -1,6 +1,6 @@
 package main
 
-import "github.com/GLINCKER/levelrail/internal/apiclient"
+import "github.com/glincker/levelrail/internal/apiclient"
 
 // Fallback to the CLI's default credentials file. A renamed CLI binary finds nothing here, but the flags and env vars still work.
 const cliProg = "levelrail-cli"

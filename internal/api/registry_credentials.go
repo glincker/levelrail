@@ -16,11 +16,11 @@ import (
 
 	cerrdefs "github.com/containerd/errdefs"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/registrycatalog"
-	"github.com/GLINCKER/levelrail/internal/registrytoken"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/registrycatalog"
+	"github.com/glincker/levelrail/internal/registrytoken"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // registryCredentialTestTimeout bounds the synchronous auth check

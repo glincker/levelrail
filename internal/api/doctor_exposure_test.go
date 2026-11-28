@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/exposure"
+	"github.com/glincker/levelrail/internal/exposure"
 )
 
 func exposureTestFinding(container string, owner exposure.OwnerKind, port int, proto string, sev exposure.Severity) exposureFindingResource {

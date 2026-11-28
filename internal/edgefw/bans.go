@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cloudflareips"
+	"github.com/glincker/levelrail/internal/cloudflareips"
 )
 
 var warnCloudflareOnce sync.Once

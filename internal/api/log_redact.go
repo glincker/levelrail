@@ -1,6 +1,6 @@
 package api
 
-import "github.com/GLINCKER/levelrail/internal/envredact"
+import "github.com/glincker/levelrail/internal/envredact"
 
 // redactURLCredentials strips userinfo from a URL before it is logged:
 // operators paste private repo URLs like https://<token>@host/repo.git,

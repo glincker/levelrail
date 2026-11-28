@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // handleDownloadVolumeBackup is handleDownloadBackup for volumes, sharing its streamer and ability tier.

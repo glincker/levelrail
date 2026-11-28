@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/timeutil"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/timeutil"
 )
 
 const recordColumns = `deployment_id, app_name, path, bytes, width, height, status, reason, detail, http_status, source, meta, captured_at, last_viewed_at`

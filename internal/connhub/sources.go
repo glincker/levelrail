@@ -3,7 +3,7 @@ package connhub
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // NotifyChannel is the slice of a notification channel the hub shows, kept here so this package

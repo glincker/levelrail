@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/sdk/go/levelrail"
+	"github.com/glincker/levelrail/sdk/go/levelrail"
 )
 
 // exampleURL is a placeholder. Point LEVELRAIL_API_URL at a real control plane.

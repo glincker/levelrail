@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EnvDemoMode is the explicit opt-in the demo entrypoint requires.

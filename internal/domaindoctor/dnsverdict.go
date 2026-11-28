@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnsinspect"
+	"github.com/glincker/levelrail/internal/dnsinspect"
 )
 
 // DNS verdicts, computed from authoritative answers first.

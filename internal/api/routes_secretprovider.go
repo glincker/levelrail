@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretprovider"
+	"github.com/glincker/levelrail/internal/secretprovider"
 )
 
 // Same tiers as /api/v1/settings/vault: GET AbilityRead, writes and the live test AbilityRoot.

@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // fakeDistRegistry implements the distribution token challenge: every /v2 call without a

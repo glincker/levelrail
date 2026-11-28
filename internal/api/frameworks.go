@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/frameworks"
+	"github.com/glincker/levelrail/internal/frameworks"
 )
 
 type frameworkListResponse struct {

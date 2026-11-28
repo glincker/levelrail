@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dataexport"
-	"github.com/GLINCKER/levelrail/internal/metrics"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/dataexport"
+	"github.com/glincker/levelrail/internal/metrics"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // handleScrapeMetrics serves the Prometheus text exposition at GET /metrics.

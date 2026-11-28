@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/search"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/search"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func rawSearchBody(t *testing.T, rt *Router, tok, target string) string {

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakecoolify"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/platformimport/fakecoolify"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestAppImportVerifyBuildAndFailure(t *testing.T) {

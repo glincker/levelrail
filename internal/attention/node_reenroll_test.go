@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func reenrollNode(left time.Duration, now time.Time, state string, r *apiclient.NodeCertRenewal) apiclient.NodeResource {

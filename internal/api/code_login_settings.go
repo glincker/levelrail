@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 type codeLoginSettingsResource struct {

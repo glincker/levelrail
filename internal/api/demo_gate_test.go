@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/demo"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/demo"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const demoTestVisitorID = "user_demo_visitor"

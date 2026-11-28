@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/bench"
+	"github.com/glincker/levelrail/internal/bench"
 )
 
 type benchReport struct {

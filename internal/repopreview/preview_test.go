@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/appwizard"
+	"github.com/glincker/levelrail/internal/appwizard"
 )
 
 type fakeClient struct {

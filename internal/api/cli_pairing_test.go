@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newCLIPairing(t *testing.T, rt *Router, cookie *http.Cookie) cliPairingCodeResponse {

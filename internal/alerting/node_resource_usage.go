@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DefaultNodeCPUThresholdPercent is the summed node CPU percent that fires a node_resource_usage rule when unset.

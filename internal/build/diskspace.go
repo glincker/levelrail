@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 // envMinDiskSpaceMB overrides defaultMinDiskSpaceMB, the free-space floor

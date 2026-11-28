@@ -8,10 +8,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/pages"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/store"
 	"golang.org/x/crypto/bcrypt"
 )
 

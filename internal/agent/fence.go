@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
 )
 
 // CapFenceToken means the agent understands fence_token on destructive requests and refuses stale ones.

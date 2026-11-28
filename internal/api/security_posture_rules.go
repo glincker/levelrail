@@ -6,9 +6,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/auditanchor"
-	"github.com/GLINCKER/levelrail/internal/profile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/auditanchor"
+	"github.com/glincker/levelrail/internal/profile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Posture severities, highest first, and what a failing item costs the score.

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx"
 )
 
 // Service is the CloudTrail API (target prefix checked against the botocore model).

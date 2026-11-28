@@ -8,8 +8,8 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/mailbackup"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/mailbackup"
 )
 
 // TestLiveMoxBackupVerifyRestore runs against a real mox container named by

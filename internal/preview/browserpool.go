@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // publicNetwork is the Docker network a browser joins to reach a public URL.

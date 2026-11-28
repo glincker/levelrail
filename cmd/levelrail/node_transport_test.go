@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agent"
 )
 
 // Regression: auto-placed services got the local node's real mesh ID, which resolveNodeTransport does not translate, so they were silently skipped.

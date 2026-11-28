@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 const execDoc = "version: 1\nkind: App\nmetadata: {name: shop}\nspec:\n  compose:\n    path: compose/shop.yaml\n"

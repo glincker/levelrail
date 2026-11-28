@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/backoff"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/backoff"
 )
 
 // One-shot job states.

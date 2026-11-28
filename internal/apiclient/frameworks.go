@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/frameworks"
+	"github.com/glincker/levelrail/internal/frameworks"
 )
 
 type frameworkListResource struct {

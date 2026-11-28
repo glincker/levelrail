@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/fixit"
 )
 
 // handleDoctorExplain handles GET /api/v1/doctor/explain?id=<check-id>. The text is a

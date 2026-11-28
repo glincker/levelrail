@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/migrateverify"
-	"github.com/GLINCKER/levelrail/internal/migrationplan"
+	"github.com/glincker/levelrail/internal/migrateverify"
+	"github.com/glincker/levelrail/internal/migrationplan"
 )
 
 // MigrationVerifyRequest is the source credential plus the probe settings

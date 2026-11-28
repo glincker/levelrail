@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/tokenhash"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/tokenhash"
 )
 
 // Env vars for the built-in auth gate provider.

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/canarypolicy"
-	"github.com/GLINCKER/levelrail/internal/rolloutpolicy"
+	"github.com/glincker/levelrail/internal/canarypolicy"
+	"github.com/glincker/levelrail/internal/rolloutpolicy"
 )
 
 func TestRolloutAndCanaryDefaultsFollowSettings(t *testing.T) {

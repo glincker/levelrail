@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cliupdate"
+	"github.com/glincker/levelrail/internal/cliupdate"
 )
 
 // hintSkipVerbs never carry the hint: they are about versions already, or are scripted by tools.

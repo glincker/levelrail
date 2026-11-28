@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EvaluateScheduledTaskHealth evaluates a KindScheduledTaskMissed or

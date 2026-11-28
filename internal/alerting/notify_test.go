@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // TestMain shortens retry backoff and allows loopback receivers so the package's tests stay fast.

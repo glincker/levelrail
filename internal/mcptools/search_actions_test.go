@@ -3,7 +3,7 @@ package mcptools
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/search"
+	"github.com/glincker/levelrail/internal/search"
 )
 
 func TestSearchActionsNameRealTools(t *testing.T) {

@@ -14,8 +14,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // Import outcomes. No type here has a credential field: keys and notify URLs go from the

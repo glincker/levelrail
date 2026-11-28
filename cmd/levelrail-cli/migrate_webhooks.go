@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/platformimport/dokployextras"
+	"github.com/glincker/levelrail/internal/platformimport/dokployextras"
 	"io"
 	"net"
 	"net/url"
@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 // webhookOutcome is what --create-webhooks did, or would do, for one git-sourced app.

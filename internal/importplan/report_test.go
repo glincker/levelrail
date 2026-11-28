@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/importreport"
+	"github.com/glincker/levelrail/internal/importreport"
 )
 
 var updateReport = flag.Bool("update-report", false, "rewrite report golden files")

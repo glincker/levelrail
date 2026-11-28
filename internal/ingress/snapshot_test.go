@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingresstrust"
+	"github.com/glincker/levelrail/internal/ingresstrust"
 )
 
 func testKey(b byte) []byte { return bytes.Repeat([]byte{b}, 32) }

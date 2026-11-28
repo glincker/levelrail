@@ -3,7 +3,7 @@ package runtimesettings
 import (
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 )
 
 // Keys for the live Go runtime footprint knobs.

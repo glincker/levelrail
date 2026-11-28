@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func gateServer(t *testing.T, pages []apiclient.DeployGateResource, paths *[]string) *httptest.Server {

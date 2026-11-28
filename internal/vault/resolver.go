@@ -20,8 +20,8 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ErrSecretMissing marks a secret, field or version that does not exist, so callers can tell it from an outage.

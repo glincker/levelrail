@@ -22,7 +22,7 @@ syntax = "proto3";
 
 package levelrail.agent.v1;
 
-option go_package = "github.com/GLINCKER/levelrail/internal/agent/agentpb;agentpb";
+option go_package = "github.com/glincker/levelrail/internal/agent/agentpb;agentpb";
 
 import "google/protobuf/timestamp.proto";
 

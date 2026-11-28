@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/identity"
 )
 
 // User is a real, individually-identified account

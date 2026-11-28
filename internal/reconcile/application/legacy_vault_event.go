@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // recordLegacyVaultRefusal stores one security event per app per hour, so a retry loop cannot flood the timeline.

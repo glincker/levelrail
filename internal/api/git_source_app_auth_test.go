@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/githubapp"
 )
 
 const appAuthRepoURL = "https://github.com/acme/widgets.git"

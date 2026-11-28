@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const mailCertUsageLines = `  %[1]s mail cert status [--app name]            show the served certificate: subject, issuer, expiry, days left, self-signed or not

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func seedDatabaseBackupForRestoreTest(t *testing.T, db *store.DB, id, status string) {

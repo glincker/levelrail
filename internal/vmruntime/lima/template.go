@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/vmruntime/guest"
+	"github.com/glincker/levelrail/internal/vmruntime/guest"
 )
 
 // Pinned Ubuntu 26.04 LTS cloud images. Digests are the publisher's SHA-256;

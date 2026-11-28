@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func orgPNG(t *testing.T, w, h int) []byte {

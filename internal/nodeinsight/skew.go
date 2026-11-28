@@ -3,7 +3,7 @@ package nodeinsight
 import (
 	"sort"
 
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 // Skew classes, stable so the dashboard can translate them.

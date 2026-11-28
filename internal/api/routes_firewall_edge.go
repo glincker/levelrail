@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/edgefw"
+	"github.com/glincker/levelrail/internal/edgefw"
 )
 
 // registerFirewallEdgeRoutes wires the ingress firewall. Reads that expose

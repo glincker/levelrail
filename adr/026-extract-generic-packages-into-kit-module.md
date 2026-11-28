@@ -11,7 +11,7 @@ Date: 2026-10-05
 
 ## Decision
 
-- Move them into a nested Go module at `kit/` (`github.com/GLINCKER/levelrail/kit`) that depends on the standard library only.
+- Move them into a nested Go module at `kit/` (`github.com/glincker/levelrail/kit`) that depends on the standard library only.
 - The main module consumes it through a `replace` directive, so local builds always use the working tree.
 - Tag the kit independently as `kit/vX.Y.Z`. It stays at v0.x: the API may change between minor versions.
 - Keep it in this repository. Splitting out would add cross-repo PRs and releases for every change that touches both sides.

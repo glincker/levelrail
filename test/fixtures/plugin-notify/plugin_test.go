@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/GLINCKER/levelrail/internal/plugin"
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/internal/plugin"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
 )
 
 func TestFixtureManifestIsValid(t *testing.T) {

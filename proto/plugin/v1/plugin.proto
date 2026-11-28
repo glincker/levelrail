@@ -5,7 +5,7 @@ syntax = "proto3";
 
 package levelrail.plugin.v1;
 
-option go_package = "github.com/GLINCKER/levelrail/internal/plugin/pluginpb;pluginpb";
+option go_package = "github.com/glincker/levelrail/internal/plugin/pluginpb;pluginpb";
 
 import "google/protobuf/timestamp.proto";
 

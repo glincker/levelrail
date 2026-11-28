@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestSQLStoreRoundTrip(t *testing.T) {

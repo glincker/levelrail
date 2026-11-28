@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/appwizard"
+	"github.com/glincker/levelrail/internal/appwizard"
 )
 
 func TestRepoPlan_ReturnsPlanAndCreatesNothing(t *testing.T) {

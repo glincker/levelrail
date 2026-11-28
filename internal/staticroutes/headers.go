@@ -1,7 +1,7 @@
 package staticroutes
 
 import (
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // ParseHeaders parses Netlify _headers syntax; bad lines are reported, never applied.

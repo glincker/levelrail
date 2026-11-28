@@ -16,8 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/footprint"
 )
 
 // Controller manages one resource's convergence from desired to observed

@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // DefaultNodeDiskSpaceThresholdPercent is the percent-used level a node_disk_space rule fires at when none is configured.

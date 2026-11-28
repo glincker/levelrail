@@ -3,7 +3,7 @@ package catalog
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 func TestTemplates_ComposeParsesAndValidates(t *testing.T) {

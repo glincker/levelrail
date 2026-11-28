@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/search"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/search"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const searchDeploymentWindow = 300

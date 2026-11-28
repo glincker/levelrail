@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // CertSuppressor returns, for one evaluation, whether a stored certificate's

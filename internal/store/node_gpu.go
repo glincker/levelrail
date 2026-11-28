@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/gpu"
 )
 
 // LocalNodeGPUKey is the node_gpus key of the control plane's own host.

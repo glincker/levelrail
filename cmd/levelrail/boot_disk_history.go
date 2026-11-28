@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/diskhistory"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/diskhistory"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // startDiskHistory samples disk usage on the runtime-set interval and serves the history API.

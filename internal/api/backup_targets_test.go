@@ -12,7 +12,7 @@ import (
 
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeBackupSecretsSetter is a hand-written fake for BackupSecretsSetter,

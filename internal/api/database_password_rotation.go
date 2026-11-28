@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbrotate"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbrotate"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // WithDatabasePasswordRotation enables database owner password rotation and

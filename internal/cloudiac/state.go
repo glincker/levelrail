@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // StatePurpose names the master derived key that wraps every per record state key.

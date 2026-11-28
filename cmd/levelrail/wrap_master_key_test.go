@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 func TestRunWrapMasterKeyRoundTrip(t *testing.T) {

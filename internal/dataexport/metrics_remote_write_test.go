@@ -14,8 +14,8 @@ import (
 	"github.com/golang/snappy"
 	"google.golang.org/protobuf/encoding/protowire"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/store/storetest"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store/storetest"
 )
 
 type rwSeries struct {

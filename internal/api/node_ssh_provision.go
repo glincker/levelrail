@@ -10,11 +10,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
-	"github.com/GLINCKER/levelrail/internal/sshprovision"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings/registrymirror"
+	"github.com/glincker/levelrail/internal/sshprovision"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 // sshNodeProvisionJoinTokenTTL mirrors nodeProvisionJoinTokenTTL's own

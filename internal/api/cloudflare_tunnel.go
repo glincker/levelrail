@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile/cloudflaretunnel"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // CloudflareTunnelSecrets is the surface the Cloudflare Tunnel settings

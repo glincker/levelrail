@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/scripts/smokerecord"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/scripts/smokerecord"
 )
 
 // recordPasses writes each passing template into the committed catalog data.

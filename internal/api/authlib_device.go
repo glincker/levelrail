@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DeviceTokenTTL is the lifetime of a device-login token (APP_DEVICE_TOKEN_TTL_DAYS).

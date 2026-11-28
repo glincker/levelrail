@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/frameworks"
+	"github.com/glincker/levelrail/internal/frameworks"
 )
 
 // maxContentReads bounds how many file bodies one detection fetches.

@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cliupdate"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/cliupdate"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 const (

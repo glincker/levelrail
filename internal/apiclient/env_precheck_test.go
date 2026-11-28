@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/envrules"
 )
 
 // The CLI pre-check must refuse every case the shared fixture marks as an

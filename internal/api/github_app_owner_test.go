@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/githubapp"
 )
 
 func TestNormalizeGitHubAppOwner(t *testing.T) {
