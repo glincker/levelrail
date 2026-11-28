@@ -14,7 +14,7 @@ import (
 
 var namespaceNameRe = regexp.MustCompile(`(?i)(SecretsKey|SecretsNS|SecretsService|SecretService|SecretsOwner|SecretNS|KeyService|SecretPrefix|SecretsNamespace|SaltService)`)
 
-// managerCalls are the secret Manager methods whose second argument is the namespace.
+// managerCalls are the secret Manager methods whose second argument is the namespace; classifyManagerCalls covers every other method.
 var managerCalls = map[string]bool{"SetValue": true, "SetValueGuarded": true, "Resolve": true, "Exists": true, "DeleteValue": true, "SetLocked": true}
 
 func stringLit(e ast.Expr) (string, bool) {
@@ -112,6 +112,7 @@ func TestReservedNamesCoverSecretNamespaces(t *testing.T) {
 	if checked < 10 {
 		t.Fatalf("only %d namespace literals found, the scan is broken", checked)
 	}
+	classifyManagerCalls(t)
 }
 
 func TestIsReservedName(t *testing.T) {
