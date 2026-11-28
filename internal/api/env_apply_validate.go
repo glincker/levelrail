@@ -1,9 +1,11 @@
 package api
 
 import (
-	"strings"
+	"context"
 
 	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/GLINCKER/levelrail/internal/envrules"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // envApplyRequest is the body of POST /api/v1/apps/{name}/env/apply.
@@ -29,10 +31,6 @@ func (p envApplyRequest) empty() bool {
 	return len(p.Set) == 0 && len(p.Unset) == 0 && !p.touchesSensitive()
 }
 
-func validEnvKey(k string) bool {
-	return k != "" && !strings.ContainsAny(k, "=\x00")
-}
-
 // validateEnvPlan applies the same key and value rules as the single-key
 // endpoints and refuses a plan that gives one key two homes. It returns an
 // empty string when the plan is acceptable, else the reason.
@@ -42,8 +40,8 @@ func validateEnvPlan(p envApplyRequest) string {
 	}
 	home := map[string]string{}
 	claim := func(k, kind string) string {
-		if !validEnvKey(k) {
-			return "env keys must be non-empty and contain no = or NUL"
+		if msg := envrules.ValidateKeys([]string{k}).Err(); msg != "" {
+			return msg
 		}
 		if prev, dup := home[k]; dup {
 			return "key " + k + " appears twice in the plan (" + prev + " and " + kind + ")"
@@ -86,4 +84,15 @@ func validateEnvPlan(p envApplyRequest) string {
 		return "convert needs expected_version so the plain value read matches what is stored"
 	}
 	return ""
+}
+
+// validateEnvPlanRules runs the shared key and value rules on the keys the plan
+// writes, against what the app holds, so old legacy keys never block a save.
+func (rt *Router) validateEnvPlanRules(ctx context.Context, svc *store.DesiredService, p envApplyRequest) string {
+	pol := rt.envPolicy(ctx)
+	ex := existingEnv(svc)
+	if msg := envrules.Validate(p.Set, ex, pol, envrules.Options{Multiline: true}).Err(); msg != "" {
+		return msg
+	}
+	return envrules.Validate(p.SecretSet, ex, pol, envrules.Options{Secret: true, Multiline: true}).Err()
 }

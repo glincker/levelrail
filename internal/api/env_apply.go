@@ -68,6 +68,10 @@ func (rt *Router) handleApplyEnvPlan(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if msg := rt.validateEnvPlanRules(r.Context(), svc, req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	plan, ok := rt.buildEnvPlan(w, r, name, svc, req)
 	if !ok {
 		return

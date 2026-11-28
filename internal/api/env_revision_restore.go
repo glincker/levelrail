@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/GLINCKER/levelrail/internal/envrules"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -105,6 +106,11 @@ func (rt *Router) handleRestoreEnvRevision(w http.ResponseWriter, r *http.Reques
 	}
 	if !rt.restoreMaySetSensitive(r, svc.Env, updated.Env) {
 		writeError(w, http.StatusForbidden, "restoring this revision changes sensitive variables; it needs the write:sensitive ability")
+		return
+	}
+	// Only keys the restore adds or changes are checked, so a legacy key already stored never blocks it.
+	if msg := envrules.Validate(updated.Env, existingEnv(svc), rt.envPolicy(r.Context()), envrules.Options{Multiline: true, ExistingUnknown: true}).Err(); msg != "" {
+		writeError(w, http.StatusConflict, "this revision cannot be restored as is: "+msg)
 		return
 	}
 	replacer, ok := rt.apps.(envReplaceStore)
