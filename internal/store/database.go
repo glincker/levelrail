@@ -207,6 +207,9 @@ func (db *DB) SetDatabasePooler(ctx context.Context, name string, enabled bool) 
 // SaveDesiredService, including the identical NodeID exception
 // SaveDesiredService's own doc comment explains.
 func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error {
+	if err := db.checkNewDatabaseName(ctx, d.Name); err != nil {
+		return err
+	}
 	resourcesJSON, err := json.Marshal(d.Resources)
 	if err != nil {
 		return fmt.Errorf("store: marshal resources for database %q: %w", d.Name, err)

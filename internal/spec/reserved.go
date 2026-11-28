@@ -10,13 +10,13 @@ var reservedNames = map[string]bool{
 	"heartbeat-jobs": true, "token-lifecycle": true, "secretconnections": true, "secretproviders": true, "ddns": true,
 	"vault": true, "email-settings": true, "mail-system-email": true, "ai-assistant": true,
 	"cloudflare-tunnel": true, "cloudflare-dns": true, "google-cloud-dns": true, "route53-dns": true,
-	"builtin-registry": true,
+	"builtin-registry": true, "traffic-export": true,
 	"dns-digitalocean": true, "dns-hetzner": true, "dns-azure": true, "dns-porkbun": true, "dns-desec": true,
 	"dns-godaddy": true, "dns-namecheap": true, "dns-cloudflare": true, "dns-route53": true, "dns-googleclouddns": true,
 }
 
 // reservedPrefixes are namespace families keyed by an id appended to the prefix.
-var reservedPrefixes = []string{"ai-assistant-provider-"}
+var reservedPrefixes = []string{"ai-assistant-provider-", "dns-", "monitor-"}
 
 // IsReservedName reports whether name is, or could alias, a control plane secrets namespace.
 func IsReservedName(name string) bool {
@@ -31,20 +31,7 @@ func IsReservedName(name string) bool {
 	return false
 }
 
-// ReservedNameCovers reports whether a namespace literal, or the literal head of a family, is covered by the reserved list.
+// ReservedNameCovers reports whether a namespace literal is reserved exactly or falls under a reserved prefix.
 func ReservedNameCovers(lit string) bool {
-	if IsReservedName(lit) {
-		return true
-	}
-	for n := range reservedNames {
-		if strings.HasPrefix(n, lit) {
-			return true
-		}
-	}
-	for _, p := range reservedPrefixes {
-		if strings.HasPrefix(p, lit) {
-			return true
-		}
-	}
-	return false
+	return IsReservedName(lit)
 }

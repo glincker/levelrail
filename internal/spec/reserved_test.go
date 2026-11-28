@@ -12,7 +12,10 @@ import (
 	"testing"
 )
 
-var namespaceNameRe = regexp.MustCompile(`(?i)(SecretsKey|SecretsNS|SecretsService|SecretService|SecretsOwner|SecretNS|KeyService|SecretPrefix|SecretsNamespace)`)
+var namespaceNameRe = regexp.MustCompile(`(?i)(SecretsKey|SecretsNS|SecretsService|SecretService|SecretsOwner|SecretNS|KeyService|SecretPrefix|SecretsNamespace|SaltService)`)
+
+// managerCalls are the secret Manager methods whose second argument is the namespace.
+var managerCalls = map[string]bool{"SetValue": true, "SetValueGuarded": true, "Resolve": true, "Exists": true, "DeleteValue": true, "SetLocked": true}
 
 func stringLit(e ast.Expr) (string, bool) {
 	if b, ok := e.(*ast.BinaryExpr); ok && b.Op == token.ADD {
@@ -30,6 +33,7 @@ func stringLit(e ast.Expr) (string, bool) {
 func TestReservedNamesCoverSecretNamespaces(t *testing.T) {
 	fset := token.NewFileSet()
 	checked := 0
+	literalCalls := 0
 	check := func(pos token.Pos, lit string) {
 		if len(lit) < 2 || !nameLike.MatchString(lit) {
 			return
@@ -53,6 +57,23 @@ func TestReservedNamesCoverSecretNamespaces(t *testing.T) {
 		if perr != nil {
 			return nil
 		}
+		ast.Inspect(f, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok || len(call.Args) < 3 {
+				return true
+			}
+			sel, ok := call.Fun.(*ast.SelectorExpr)
+			if !ok || !managerCalls[sel.Sel.Name] {
+				return true
+			}
+			if s, ok := stringLit(call.Args[1]); ok {
+				literalCalls++
+				if !ReservedNameCovers(s) {
+					t.Errorf("%s: %s uses namespace literal %q that is not reserved", fset.Position(call.Pos()), sel.Sel.Name, s)
+				}
+			}
+			return true
+		})
 		for _, decl := range f.Decls {
 			switch dd := decl.(type) {
 			case *ast.FuncDecl:
@@ -94,7 +115,7 @@ func TestReservedNamesCoverSecretNamespaces(t *testing.T) {
 }
 
 func TestIsReservedName(t *testing.T) {
-	for _, n := range []string{"vault", "email-settings", "mail-system-email", "ai-assistant", "cloudflare-dns", "dns-hetzner", "builtin-registry", "route53-dns", "ai-assistant-provider-x", "heartbeat"} {
+	for _, n := range []string{"vault", "email-settings", "mail-system-email", "ai-assistant", "cloudflare-dns", "dns-hetzner", "builtin-registry", "route53-dns", "ai-assistant-provider-x", "heartbeat", "traffic-export", "dns-server", "monitor-web"} {
 		if !IsReservedName(n) {
 			t.Errorf("%q should be reserved", n)
 		}
@@ -102,7 +123,7 @@ func TestIsReservedName(t *testing.T) {
 			t.Errorf("ValidateServiceName(%q) should refuse", n)
 		}
 	}
-	for _, n := range []string{"web", "email", "dns-server", "vault-ui"} {
+	for _, n := range []string{"web", "email", "dnsmasq", "vault-ui", "monitor"} {
 		if IsReservedName(n) {
 			t.Errorf("%q should be free", n)
 		}

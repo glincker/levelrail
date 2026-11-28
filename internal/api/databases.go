@@ -163,7 +163,7 @@ type databaseListResource struct {
 // Engines are checked against the embedded registry, so adding an engine needs no change here.
 // validDatabaseName keeps a database name safe to embed in container names, DNS labels and engine tooling.
 func validDatabaseName(name string) bool {
-	return len(name) <= 63 && gitSourceDatabaseNamePattern.MatchString(name)
+	return len(name) <= 63 && gitSourceDatabaseNamePattern.MatchString(name) && store.ServiceNameNamespaceProblem(name) == ""
 }
 
 func validateDatabaseResource(d databaseResource) error {

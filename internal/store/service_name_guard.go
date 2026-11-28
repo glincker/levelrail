@@ -69,5 +69,33 @@ func (db *DB) ServiceNamesBreakingNamespaceRule(ctx context.Context) ([]string, 
 			bad = append(bad, n)
 		}
 	}
-	return bad, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	dbs, err := db.ListDesiredDatabases(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range dbs {
+		if ServiceNameNamespaceProblem(d.Name) != "" {
+			bad = append(bad, d.Name+" (database)")
+		}
+	}
+	return bad, nil
+}
+
+// checkNewDatabaseName applies the service name rule to a new database, since its secrets live under its name.
+func (db *DB) checkNewDatabaseName(ctx context.Context, name string) error {
+	problem := ServiceNameNamespaceProblem(name)
+	if problem == "" {
+		return nil
+	}
+	var n int
+	if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM desired_databases WHERE name = ?`, name).Scan(&n); err != nil {
+		return fmt.Errorf("store: check database name %q: %w", name, err)
+	}
+	if n > 0 {
+		return nil
+	}
+	return fmt.Errorf("%w: %q %s", ErrInvalidServiceName, name, problem)
 }
