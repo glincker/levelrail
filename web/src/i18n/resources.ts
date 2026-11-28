@@ -68,6 +68,7 @@ import type migration from '../locales/en/migration.json'
 import type migrate from '../locales/en/migrate.json'
 import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
+import type announcements from '../locales/en/announcements.json'
 import type updates from '../locales/en/updates.json'
 import type upgradeSafety from '../locales/en/upgradeSafety.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
@@ -256,6 +257,7 @@ declare module 'i18next' {
       domains: typeof domains
       attention: typeof attention
       updates: typeof updates
+      announcements: typeof announcements
       upgradeSafety: typeof upgradeSafety
       infraCanvas: typeof infraCanvas
       canvas: typeof canvas

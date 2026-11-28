@@ -690,6 +690,10 @@
         "title": "更新",
         "description": "当前版本和可用版本。"
       },
+      "announcements": {
+        "title": "公告",
+        "description": "Levelrail 项目的签名通知以及订阅源设置。"
+      },
       "beta-features": {
         "title": "Beta 功能",
         "description": "开启可以使用但仍在调优的功能。"

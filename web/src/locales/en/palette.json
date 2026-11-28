@@ -180,6 +180,7 @@
       "settings-users": "People who can sign in and their roles.",
       "settings-audit-log": "Who changed what, and when.",
       "settings-updates": "Check for and apply platform updates.",
+      "settings-announcements": "Security notices, features and the newsletter.",
       "settings-dr-report": "What can be restored today and how recent it is.",
       "settings-heartbeat": "Ping a monitor on a schedule so silence raises an alarm.",
       "settings-deploy-policies": "Require CI checks and approvals before a deploy.",

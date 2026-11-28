@@ -279,6 +279,10 @@
         "title": "Mises à jour",
         "description": "Version actuelle et versions disponibles."
       },
+      "announcements": {
+        "title": "Annonces",
+        "description": "Avis signés du projet Levelrail et l'activation du flux."
+      },
       "beta-features": {
         "title": "Fonctions bêta",
         "description": "Activez des fonctions qui marchent mais sont encore en cours de réglage."

@@ -180,6 +180,7 @@
       "settings-users": "可以登录的人员及其角色。",
       "settings-audit-log": "谁在何时更改了什么。",
       "settings-updates": "检查并应用平台更新。",
+      "settings-announcements": "安全通知、新功能和新闻简报。",
       "settings-dr-report": "目前可以恢复什么，以及它有多新。",
       "settings-heartbeat": "按计划 ping 某个监控，使沉默触发告警。",
       "settings-deploy-policies": "部署之前要求通过 CI 检查和审批。",

@@ -180,6 +180,7 @@
       "settings-users": "Les personnes qui peuvent se connecter et leurs rôles.",
       "settings-audit-log": "Qui a modifié quoi, et quand.",
       "settings-updates": "Recherchez et appliquez les mises à jour de la plateforme.",
+      "settings-announcements": "Avis de sécurité, nouveautés et la lettre d'information.",
       "settings-dr-report": "Ce qui peut être restauré aujourd'hui et à quel point c'est récent.",
       "settings-heartbeat": "Pingez un moniteur selon un calendrier pour que le silence déclenche une alarme.",
       "settings-deploy-policies": "Exigez des vérifications CI et des approbations avant un déploiement.",

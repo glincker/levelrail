@@ -698,6 +698,10 @@
         "title": "Updates",
         "description": "Current version and available releases."
       },
+      "announcements": {
+        "title": "Announcements",
+        "description": "Signed notices from the Levelrail project and the feed opt-in."
+      },
       "beta-features": {
         "title": "Beta features",
         "description": "Switch on features that work but are still being tuned."

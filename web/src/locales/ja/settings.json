@@ -279,6 +279,10 @@
         "title": "アップデート",
         "description": "現在のバージョンと利用可能なリリース。"
       },
+      "announcements": {
+        "title": "お知らせ",
+        "description": "Levelrail プロジェクトの署名付きお知らせと、フィードの設定。"
+      },
       "beta-features": {
         "title": "ベータ機能",
         "description": "動作はするが、まだ調整中の機能を有効にします。"

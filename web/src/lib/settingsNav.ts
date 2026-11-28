@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import {
   ActivityGlassIcon,
   ArrowUpGlassIcon,
+  BellGlassIcon,
   BotGlassIcon,
   BroomGlassIcon,
   ChartColumnGlassIcon,
@@ -461,6 +462,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'updates',
         to: '/settings/updates',
         icon: ArrowUpGlassIcon,
+      },
+      {
+        id: 'announcements',
+        to: '/settings/announcements',
+        icon: BellGlassIcon,
       },
     ],
   },

@@ -41,6 +41,7 @@ export const NAMESPACES = [
   'domains',
   'attention',
   'updates',
+  'announcements',
   'upgradeSafety',
   'infraCanvas',
   'canvas',

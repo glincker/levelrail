@@ -307,6 +307,10 @@
         "title": "Actualizaciones",
         "description": "Versión actual y versiones disponibles."
       },
+      "announcements": {
+        "title": "Anuncios",
+        "description": "Avisos firmados del proyecto Levelrail y la opción del feed."
+      },
       "beta-features": {
         "title": "Funciones beta",
         "description": "Activa funciones que ya sirven pero aún se están afinando."
