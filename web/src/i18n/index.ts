@@ -198,6 +198,7 @@ export const NAMESPACES = [
   'certBudget',
   'appRows',
   'tokensNotices',
+  'tokenList',
   'firstRun',
   'newAppNoGit',
   'appOverview',

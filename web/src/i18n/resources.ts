@@ -56,6 +56,7 @@ import type gitConnect from '../locales/en/gitConnect.json'
 import type certBudget from '../locales/en/certBudget.json'
 import type appRows from '../locales/en/appRows.json'
 import type tokensNotices from '../locales/en/tokensNotices.json'
+import type tokenList from '../locales/en/tokenList.json'
 import type firstRun from '../locales/en/firstRun.json'
 import type newAppNoGit from '../locales/en/newAppNoGit.json'
 import type appOverview from '../locales/en/appOverview.json'
@@ -244,6 +245,7 @@ declare module 'i18next' {
       certBudget: typeof certBudget
       appRows: typeof appRows
       tokensNotices: typeof tokensNotices
+      tokenList: typeof tokenList
       firstRun: typeof firstRun
       newAppNoGit: typeof newAppNoGit
       appOverview: typeof appOverview

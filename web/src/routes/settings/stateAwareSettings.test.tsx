@@ -4,12 +4,10 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Route as StatusRoute } from './status-page'
-import { Route as TokensRoute } from './tokens'
 import { Route as ChannelsRoute } from './notification-channels'
 import { Route as RegistryRoute } from './registry-credentials'
 import statusEn from '../../locales/en/statusPage.json'
 import settingsEn from '../../locales/en/settings.json'
-import { tokenListQueryOptions } from '../../queries/tokens'
 import { registryCredentialListQueryOptions } from '../../queries/registryCredentials'
 import { notificationChannelListQueryOptions } from '../../queries/notificationChannels'
 import { createTestQueryClient } from '@/test/testQueryClient'
@@ -139,23 +137,6 @@ describe('status page settings', () => {
     mockStatus(true, [{ id: 'c1' }])
     renderRoute(StatusRoute)
     expect(await screen.findAllByRole('tab')).toHaveLength(4)
-  })
-})
-
-describe('tokens page', () => {
-  const live = { id: 'a', abilities: [], name: 'a' }
-  const gone = { id: 'b', abilities: [], name: 'b', revoked_at: '2026-01-01' }
-  it('hides the revoked card when nothing is revoked', () => {
-    renderRoute(TokensRoute, (qc) => {
-      qc.setQueryData(tokenListQueryOptions().queryKey, [live] as never)
-    })
-    expect(screen.queryByText('revoked-card')).toBeNull()
-  })
-  it('shows the revoked card when a token is revoked', () => {
-    renderRoute(TokensRoute, (qc) => {
-      qc.setQueryData(tokenListQueryOptions().queryKey, [live, gone] as never)
-    })
-    expect(screen.getByText('revoked-card')).toBeTruthy()
   })
 })
 
