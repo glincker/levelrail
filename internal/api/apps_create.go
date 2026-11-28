@@ -62,6 +62,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if dup := envSecretOverlap(req.Env, unionSecretEnvNames(req.SecretEnv, req.Secrets)); len(dup) > 0 {
+		writeError(w, http.StatusBadRequest, dualCopyMessage(dup))
+		return
+	}
 	if !rt.vetSecretRefs(w, r, req.Name, req.EnvironmentID, nil, &req) {
 		return
 	}

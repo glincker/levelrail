@@ -54,6 +54,8 @@ func buildExplainTable() map[string]Explanation {
 			"Set \"live-restore\": true in /etc/docker/daemon.json, then run systemctl reload docker. Levelrail never edits that file for you.", "", KindManual),
 		ex("install_state", "This install is not in a normal released state.", "An unusual build or half finished upgrade can behave differently from what the docs describe.",
 			"Open Settings, then Updates, and move to the latest release. From a terminal, levelrail-cli update does the same.", "", KindGuided),
+		ex("env_dual_copy", "An app has the same key as a plain variable and as a secret.", "The two values can drift apart, and an edit to one is silently ignored.",
+			"Run levelrail-cli apps env unset <app> <KEY> for each listed key. Only the plain copy is removed, the secret stays.", "", KindManual),
 		ex("container_runtime", "The container runtime is running with reduced support on this host.", "Some isolation or networking features may be missing.",
 			"Open the check details to see what is missing, then follow the guided step. Nothing needs fixing if you accept the limits.", "", KindGuided),
 		ex("docker_guard", "The engine socket guard is not enforcing yet.", "Without it a compromised container could talk to the engine directly.",

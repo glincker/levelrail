@@ -47,8 +47,16 @@ func runEnvUnset(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", name, err))
 	}
-	if secret := slices.DeleteFunc(slices.Clone(keys), func(k string) bool { return !slices.Contains(app.SecretEnv, k) }); len(secret) > 0 {
-		return reportError(stdout, stderr, jsonOut, newValidationError("%s is stored as a secret; remove it with \"%s apps secrets delete %s KEY\"", strings.Join(secret, ", "), prog, name))
+	if secret := slices.DeleteFunc(slices.Clone(keys), func(k string) bool {
+		_, plain := app.Env[k]
+		return !slices.Contains(app.SecretEnv, k) || plain
+	}); len(secret) > 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%s is a secret with no plain copy; to remove the secret use \"%s apps secrets delete %s KEY\"", strings.Join(secret, ", "), prog, name))
+	}
+	for _, k := range keys {
+		if _, plain := app.Env[k]; plain && slices.Contains(app.SecretEnv, k) {
+			_, _ = fmt.Fprintf(stderr, "%s is also a secret: only the duplicate plain copy is removed, the secret stays\n", k)
+		}
 	}
 	if bound, berr := client.ListBoundEnv(ctx, name); berr == nil {
 		for _, b := range bound {
@@ -106,8 +114,8 @@ func envUnsetUsage(prog string) string {
   %[1]s env unset <app> KEY [KEY...] [flags]
 
 Removes plain environment variables from an app. Keys that are not set are
-reported and skipped. Secrets are refused, use "%[1]s apps secrets delete"
-for those; keys injected by a linked database or bucket go away when you
+reported and skipped. A secret-only key is refused, use "%[1]s apps secrets delete"
+for it; when a key is both plain and a secret, only the plain copy goes; keys injected by a linked database or bucket go away when you
 unlink it. The running container keeps the old values until the next
 restart, or now with --apply.
 

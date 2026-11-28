@@ -96,9 +96,36 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "the secret value was saved but declaring the key failed, retry the request")
 		return
 	}
-	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: "Secret set: " + key})
+	_, hadPlain := app.Env[key]
+	if hadPlain {
+		// Store and declare come first so a failure here never loses the old plain value.
+		remover, ok := rt.apps.(plainEnvKeyRemover)
+		if !ok {
+			writeError(w, http.StatusNotImplemented, "this key exists as a plain variable and this control plane cannot convert it; run apps env unset first")
+			return
+		}
+		if _, err := remover.RemoveServicePlainEnvKey(r.Context(), name, key); err != nil {
+			rt.logger.Error("api: set secret: remove plain copy failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
+			writeError(w, http.StatusInternalServerError, "the secret was saved but the plain copy was not removed, retry the request")
+			return
+		}
+	}
+	title := "Secret set: " + key
+	if hadPlain {
+		title = "Plain variable replaced by secret: " + key
+	}
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: title})
 	rt.nudgeReconciler()
+	if hadPlain {
+		writeJSON(w, http.StatusOK, setSecretResponse{ReplacedPlainEnv: true})
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// setSecretResponse is sent only when the key also existed as a plain variable.
+type setSecretResponse struct {
+	ReplacedPlainEnv bool `json:"replaced_plain_env"`
 }
 
 // secretEnvDeclarer and secretValueDeleter are the narrow store writes behind

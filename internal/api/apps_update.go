@@ -48,6 +48,10 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	mergeOmittedAppFields(&req, *existing, sent)
 
+	if dup := newEnvSecretOverlap(req.Env, req.SecretEnv, existing.Env, store.SecretEnvNames(existing.SecretEnv)); len(dup) > 0 {
+		writeError(w, http.StatusConflict, dualCopyMessage(dup))
+		return
+	}
 	if !rt.vetSecretRefs(w, r, name, existing.EnvironmentID, existing.VaultEnv, &req) {
 		return
 	}

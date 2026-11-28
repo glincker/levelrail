@@ -93,7 +93,7 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, store.ErrEnvKeyIsSecret) {
-		writeError(w, http.StatusConflict, "a key is stored as a secret; change it with the secrets endpoint")
+		writeError(w, http.StatusConflict, "a key is stored as a secret; change it with PUT /api/v1/apps/{name}/secrets/{key} (CLI: apps secrets set), or drop the secret first with apps secrets delete")
 		return
 	}
 	if err != nil {
