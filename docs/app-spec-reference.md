@@ -10,7 +10,7 @@ description: Complete reference for app.yaml - the declarative app spec for Leve
 
 Levelrail looks for the file under these names, in this order: `app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`, then the product's own name with a `.yaml` or `.yml` extension. The generic names come first so a repo that already committed `app.yaml` keeps working.
 
-To start a new file, run `levelrail-cli apps init`. It writes a valid `app.yaml` with the optional fields listed as comments, taken from the same schema.
+To start a new file, run `levelrail-cli apps init`. It writes a valid `app.yaml` with the optional fields listed as comments, taken from the same schema, each with its type and default. Pass `--type web|worker|static` to pick a starter kind (a worker has no public domain, a static site has no port). Stack starters are copied from templates with `levelrail-cli stack init`.
 
 ## Minimal example
 

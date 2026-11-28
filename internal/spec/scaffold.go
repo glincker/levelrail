@@ -11,6 +11,7 @@ import (
 // ScaffoldOptions picks the values a starter app.yaml is filled with.
 type ScaffoldOptions struct {
 	Name   string // service name
+	Type   string // starter kind: web (default), worker or static
 	Image  string // prebuilt image; empty means build from a Dockerfile
 	Build  string // build type when Image is empty: dockerfile, railpack or static
 	Port   int
@@ -28,6 +29,9 @@ type scaffoldSchema struct {
 		Properties map[string]struct {
 			Description string `json:"description"`
 			Enum        []any  `json:"enum"`
+			Type        any    `json:"type"`
+			Default     any    `json:"default"`
+			Ref         string `json:"$ref"`
 		} `json:"properties"`
 	} `json:"$defs"`
 }
@@ -43,6 +47,20 @@ func Scaffold(o ScaffoldOptions) ([]byte, error) {
 	}
 	if o.Port < 0 || o.Port > 65535 {
 		return nil, fmt.Errorf("port %d is out of range", o.Port)
+	}
+	switch o.Type {
+	case "", "web":
+	case "worker":
+		if o.Domain != "" {
+			return nil, fmt.Errorf("type worker serves no public domain, drop --domain or use type web")
+		}
+	case "static":
+		if o.Image != "" || (o.Build != "" && o.Build != "static") {
+			return nil, fmt.Errorf("type static builds a site, it cannot take an image or another build type")
+		}
+		o.Build = "static"
+	default:
+		return nil, fmt.Errorf("type %q must be web, worker or static", o.Type)
 	}
 	raw, err := SchemaJSON()
 	if err != nil {
@@ -83,6 +101,9 @@ func Scaffold(o ScaffoldOptions) ([]byte, error) {
 	if o.Domain != "" {
 		fmt.Fprintf(&b, "    domains:\n      - %s\n", yamlScalar(o.Domain))
 	}
+	if o.Type == "worker" {
+		b.WriteString("    # Background worker: no domain. Set command below to override the image entrypoint.\n")
+	}
 	b.WriteString(commentedFields(sc, "service", "    ", "Optional service fields (uncomment and edit):",
 		"build", "image", "port", "domains"))
 	if o.DB != "" {
@@ -105,6 +126,32 @@ func schemaHasEnum(sc scaffoldSchema, def, prop, val string) bool {
 	return false
 }
 
+// fieldHint renders "(type, default X)" from schema facts only.
+func fieldHint(typ any, ref string, def any) string {
+	var parts []string
+	if t, ok := typ.(string); ok {
+		parts = append(parts, t)
+	} else if ref != "" {
+		parts = append(parts, "object")
+	}
+	if def != nil {
+		parts = append(parts, fmt.Sprintf("default %v", def))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return "(" + strings.Join(parts, ", ") + ")"
+}
+
+// optionalFieldComments renders the commented field list for one schema definition.
+func optionalFieldComments(raw []byte, def, indent, heading string, skip ...string) (string, error) {
+	var sc scaffoldSchema
+	if err := json.Unmarshal(raw, &sc); err != nil {
+		return "", fmt.Errorf("spec: read schema: %w", err)
+	}
+	return commentedFields(sc, def, indent, heading, skip...), nil
+}
+
 func commentedFields(sc scaffoldSchema, def, indent, heading string, skip ...string) string {
 	skipped := map[string]bool{}
 	for _, s := range skip {
@@ -120,7 +167,11 @@ func commentedFields(sc scaffoldSchema, def, indent, heading string, skip ...str
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s# %s\n", indent, heading)
 	for _, n := range names {
-		desc := strings.TrimSpace(sc.Defs[def].Properties[n].Description)
+		p := sc.Defs[def].Properties[n]
+		desc := strings.TrimSpace(p.Description)
+		if hint := fieldHint(p.Type, p.Ref, p.Default); hint != "" {
+			desc = strings.TrimSpace(desc + " " + hint)
+		}
 		if desc == "" {
 			fmt.Fprintf(&b, "%s# %s:\n", indent, n)
 			continue

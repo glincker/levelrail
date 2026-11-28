@@ -12,7 +12,7 @@ import (
 
 func appsInitUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps init [--file app.yaml] [--name NAME] [--image IMAGE | --build TYPE] [--port N] [--domain HOST] [--database ENGINE] [--force] [--json]
+  %[1]s apps init [--file app.yaml] [--type web|worker|static] [--name NAME] [--image IMAGE | --build TYPE] [--port N] [--domain HOST] [--database ENGINE] [--force] [--json]
 
 Writes a starter app.yaml. Optional field names and hints come from the
 embedded schema, so the file matches what the control plane accepts.
@@ -20,6 +20,7 @@ Runs offline and refuses to overwrite a file unless --force is set.
 
 Flags:
   --file string       output path (default app.yaml)
+  --type string       starter kind: web, worker or static (default web)
   --name string       service name (default web)
   --image string      prebuilt image (omit to build from source)
   --build string      build type without an image: dockerfile, railpack or static (default dockerfile)
@@ -42,6 +43,7 @@ func runAppsInit(prog string, args []string, stdout, stderr io.Writer, _ func(st
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsInitUsage(prog)) }
 	var o spec.ScaffoldOptions
 	file := fs.String("file", "app.yaml", "output path")
+	fs.StringVar(&o.Type, "type", "", "starter kind: web, worker or static")
 	fs.StringVar(&o.Name, "name", "", "service name")
 	fs.StringVar(&o.Image, "image", "", "prebuilt image")
 	fs.StringVar(&o.Build, "build", "", "build type without an image")
