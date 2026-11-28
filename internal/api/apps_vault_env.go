@@ -6,8 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secretsource"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/vault"
 )
 
 // setAppVaultEnvRequest is handleSetAppVaultEnv's request body.
@@ -75,6 +77,9 @@ func (rt *Router) handleSetAppVaultEnv(w http.ResponseWriter, r *http.Request) {
 	if req.Conn != "" && !rt.allowSecretRefs(w, r, existing.EnvironmentID, connRef) {
 		return
 	}
+	if req.Conn == "" && !rt.allowLegacyVaultPath(w, r, existing.VaultEnv[key], req.Path) {
+		return
+	}
 	for _, ref := range existing.SecretEnv {
 		if ref.Name == key {
 			writeError(w, http.StatusBadRequest, "env var \""+key+"\" is already secret-backed, remove it from secret_env first")
@@ -114,3 +119,31 @@ func (rt *Router) handleClearAppVaultEnv(w http.ResponseWriter, r *http.Request)
 	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// legacyVaultPathOK reports whether the caller may point an env var at a legacy Vault path: root,
+// a path inside the allowed prefixes, or the unchanged path an app already stored and vetted.
+func (rt *Router) legacyVaultPathOK(r *http.Request, prev store.VaultEnvRef, path string) bool {
+	if rt.callerHasAbility(r, AbilityRoot) {
+		return true
+	}
+	if prev.Conn == "" && prev.Path == path && !prev.Unvetted {
+		return true
+	}
+	var prefixes []string
+	if rt.runtimeSettings != nil {
+		prefixes = rt.runtimeSettings.List(r.Context(), runtimesettings.KeyVaultLegacyAllowedPrefixes)
+	}
+	return vault.LegacyPathAllowed(path, prefixes)
+}
+
+// allowLegacyVaultPath writes 403 and returns false when legacyVaultPathOK refuses.
+func (rt *Router) allowLegacyVaultPath(w http.ResponseWriter, r *http.Request, prev store.VaultEnvRef, path string) bool {
+	if rt.legacyVaultPathOK(r, prev, path) {
+		return true
+	}
+	rt.auditSecretRefDenied(r, secretsource.Ref{Path: path})
+	writeError(w, http.StatusForbidden, legacyVaultNeedsRoot)
+	return false
+}
+
+const legacyVaultNeedsRoot = "a Vault path outside the allowed prefixes can only be set by root, see the vault.legacy_allowed_prefixes setting"

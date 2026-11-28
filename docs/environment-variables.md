@@ -163,6 +163,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_PAGES_TOKEN_MAX_DAYS` | [`tokens.site_deploy_max_days`](/runtime-settings#security) | `365` |
 | `APP_VAULT_ALLOW_PRIVATE_ADDRESS` | [`vault.allow_private_address`](/runtime-settings#security) | `true` |
+| `APP_VAULT_LEGACY_ALLOWED_PREFIXES` | [`vault.legacy_allowed_prefixes`](/runtime-settings#security) | empty |
 | `APP_API_CONDITIONAL_GET` | [`api.conditional_get`](/runtime-settings#networking) | `true` |
 | `APP_API_CONDITIONAL_GET_MAX_BYTES` | [`api.conditional_get_max_bytes`](/runtime-settings#networking) | `4194304` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |

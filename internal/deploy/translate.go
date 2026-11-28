@@ -192,7 +192,7 @@ func vaultEnvRefs(env map[string]spec.EnvVar) (map[string]store.VaultEnvRef, err
 			out[k] = store.VaultEnvRef{Conn: conn, Path: path, Key: key, Version: ver, Unvetted: true}
 			continue
 		}
-		out[k] = store.VaultEnvRef{Path: v.Vault.Path, Key: v.Vault.Key}
+		out[k] = store.VaultEnvRef{Path: v.Vault.Path, Key: v.Vault.Key, Unvetted: true}
 	}
 	return out, nil
 }

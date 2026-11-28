@@ -310,6 +310,12 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithDatabaseScope(deps.db),
 		application.WithVaultSettings(deps.db),
 		application.WithSecretSources(currentSecretSources),
+		application.WithLegacyVaultPrefixes(func(ctx context.Context) []string {
+			if s := deps.settingsService(); s != nil {
+				return s.List(ctx, runtimesettings.KeyVaultLegacyAllowedPrefixes)
+			}
+			return nil
+		}),
 		application.WithVaultResolver(vault.NewResolverWith(vault.TunablesFrom(deps.settingsService()))),
 		application.WithRegistryCredentials(deps.db),
 		application.WithRegistryPullTokens(func(image string) (string, bool, error) {

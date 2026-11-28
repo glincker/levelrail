@@ -254,13 +254,14 @@ type Controller struct {
 	databaseScope          DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
 	databases              DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
 	vaultSettings          VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
-	secretSources          func() SecretSources    // late bound: the connection service is built after the controllers' options
-	vaultResolver          VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
-	hookRuns               HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
-	traceStore             TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
-	probeAttempts          ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
-	hookTimeout            time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
-	wakeWindow             WakeWindowReader        // nil is valid: no short probe interval after a wake, see WithWakeProbe
+	legacyVaultPrefixes    func(context.Context) []string
+	secretSources          func() SecretSources // late bound: the connection service is built after the controllers' options
+	vaultResolver          VaultResolver        // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
+	hookRuns               HookRunRecorder      // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	traceStore             TraceStore           // nil is valid: no deploy trace is written, see WithTraceStore
+	probeAttempts          ProbeAttemptRecorder // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
+	hookTimeout            time.Duration        // defaults to defaultHookTimeout, see WithHookTimeout
+	wakeWindow             WakeWindowReader     // nil is valid: no short probe interval after a wake, see WithWakeProbe
 	wakeProbeInterval      time.Duration
 	liveness               *LivenessTracker                                          // per-container liveness failure counts, in memory only, see LivenessTracker
 	fenceCtx               func(ctx context.Context, service string) context.Context // nil means unfenced
@@ -441,6 +442,11 @@ func WithVaultSettings(s VaultSettingsStore) Option {
 // establishes.
 func WithVaultResolver(r VaultResolver) Option {
 	return func(ctrl *Controller) { ctrl.vaultResolver = r }
+}
+
+// WithLegacyVaultPrefixes supplies the live allowed path prefixes for unvetted legacy Vault refs.
+func WithLegacyVaultPrefixes(f func(context.Context) []string) Option {
+	return func(ctrl *Controller) { ctrl.legacyVaultPrefixes = f }
 }
 
 // WithSecretSources enables resolving secret:// env references. The func is
@@ -1859,6 +1865,9 @@ func (c *Controller) resolveVaultEnv(ctx context.Context, envID string, all map[
 	if len(vaultEnv) == 0 {
 		return out, nil
 	}
+	if err := c.checkLegacyVaultPaths(ctx, vaultEnv); err != nil {
+		return nil, err
+	}
 	legacy, err := c.resolveLegacyVaultEnv(ctx, vaultEnv)
 	if err != nil {
 		return nil, err
@@ -1913,6 +1922,22 @@ func (c *Controller) resolveSecretRefEnv(ctx context.Context, envID string, refs
 		out[envVar] = val
 	}
 	return out, nil
+}
+
+// checkLegacyVaultPaths refuses an unvetted legacy path (written by a deploy) outside the allowed
+// prefixes before the platform credential reads it. Paths stored through a gated write stay working.
+func (c *Controller) checkLegacyVaultPaths(ctx context.Context, vaultEnv map[string]store.VaultEnvRef) error {
+	var prefixes []string
+	if c.legacyVaultPrefixes != nil {
+		prefixes = c.legacyVaultPrefixes(ctx)
+	}
+	for envVar, ref := range vaultEnv {
+		if !ref.Unvetted || vault.LegacyPathAllowed(ref.Path, prefixes) {
+			continue
+		}
+		return fmt.Errorf("env var %q (vault path %q): outside vault.legacy_allowed_prefixes, ask root to approve the prefix", envVar, ref.Path)
+	}
+	return nil
 }
 
 // resolveLegacyVaultEnv is the original single-Vault path for { vault: ... }.

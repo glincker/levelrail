@@ -145,7 +145,7 @@ func (rt *Router) buildEnvPlan(w http.ResponseWriter, r *http.Request, name stri
 	if len(req.VaultSet) > 0 {
 		plan.VaultSet = map[string]store.VaultEnvRef{}
 		for k, v := range req.VaultSet {
-			ref, ok := rt.vaultRefForPlan(w, r, svc, v)
+			ref, ok := rt.vaultRefForPlan(w, r, svc, k, v)
 			if !ok {
 				return plan, false
 			}
@@ -155,7 +155,7 @@ func (rt *Router) buildEnvPlan(w http.ResponseWriter, r *http.Request, name stri
 	return plan, true
 }
 
-func (rt *Router) vaultRefForPlan(w http.ResponseWriter, r *http.Request, svc *store.DesiredService, v setAppVaultEnvRequest) (store.VaultEnvRef, bool) {
+func (rt *Router) vaultRefForPlan(w http.ResponseWriter, r *http.Request, svc *store.DesiredService, envVar string, v setAppVaultEnvRequest) (store.VaultEnvRef, bool) {
 	if v.Ref != "" {
 		parsed, err := secretsource.ParseRef(v.Ref)
 		if err != nil {
@@ -177,6 +177,9 @@ func (rt *Router) vaultRefForPlan(w http.ResponseWriter, r *http.Request, svc *s
 		if !rt.allowSecretRefs(w, r, svc.EnvironmentID, parsed) {
 			return store.VaultEnvRef{}, false
 		}
+	}
+	if v.Conn == "" && !rt.allowLegacyVaultPath(w, r, svc.VaultEnv[envVar], v.Path) {
+		return store.VaultEnvRef{}, false
 	}
 	return store.VaultEnvRef{Path: v.Path, Key: v.Key, Conn: v.Conn, Version: v.Version}, true
 }
