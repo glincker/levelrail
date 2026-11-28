@@ -36,6 +36,8 @@ type tokenResource struct {
 	Agent *agentIdentity `json:"agent,omitempty"`
 	// Scope is set when the token is limited to one team.
 	Scope *tokenScopeResource `json:"scope,omitempty"`
+	// Status is active, expired or revoked, computed on the server from revoked_at and expires_at.
+	Status string `json:"status"`
 	// Access is read_only when no ability or attached policy can change anything, else can_change.
 	Access string `json:"access"`
 	// InstanceID is the server the token is bound to; LastIP is where it was last seen.
@@ -59,6 +61,7 @@ func toTokenResource(t store.APIToken) tokenResource {
 		Name:        t.Name,
 		Abilities:   t.Abilities,
 		Access:      tokenAccess(t.Abilities),
+		Status:      tokenStatus(t, time.Now()),
 		CreatedAt:   t.CreatedAt,
 		LastUsedAt:  t.LastUsedAt,
 		ExpiresAt:   t.ExpiresAt,

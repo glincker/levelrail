@@ -37,6 +37,7 @@ APP_API_URL=http://<server>:8080 APP_API_TOKEN=<token> levelrail-cli settings in
 What keeps it safe:
 
 - Host access only: it opens the data directory directly, so it cannot be called over HTTP.
+- Capped: at most `tokens.emergency_max_live` (default 3, seeded by `APP_TOKENS_EMERGENCY_MAX_LIVE`, 0 means no limit) emergency tokens are valid at once. Minting another revokes the oldest ones beyond the cap, prints how many, and records the count in the audit entry. Revoked and expired tokens are removed later by the token retention settings, or sooner with `levelrail-cli tokens prune`.
 - Short lived: the default is one hour. `--ttl` accepts 1 minute up to 24 hours, and `APP_EMERGENCY_TOKEN_MAX_TTL` raises or lowers that cap on the control plane.
 - Visible and revocable: it appears as `emergency (host)` under **Settings, CLI Access** with its expiry, and you can revoke it there before it runs out.
 - Audited: every mint is written to the audit log and the control plane log.

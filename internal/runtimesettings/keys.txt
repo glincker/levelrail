@@ -839,7 +839,9 @@ templates.sources_max_files
 templates.sources_max_mb
 templates.sources_max_wire_mb
 templates.sources_timeout_seconds
+tokens.bulk_max
 tokens.default_ttl_days
+tokens.emergency_max_live
 tokens.expiry_warning_days
 tokens.site_deploy_max_days
 tokens.system_rotation_lead_minutes

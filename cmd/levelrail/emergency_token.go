@@ -126,7 +126,12 @@ func runEmergencyToken(ctx context.Context, logger *slog.Logger, args []string, 
 		return fmt.Errorf("start auth engine: %w", err)
 	}
 
-	expires := time.Now().UTC().Add(ttl)
+	now := time.Now().UTC()
+	revoked, err := revokeOldestEmergencyTokens(ctx, db, eng, emergencyMaxLive(ctx, db), now)
+	if err != nil {
+		return err
+	}
+	expires := now.Add(ttl)
 	abilities := []string{api.AbilityRoot}
 	raw, rec, err := eng.MintToken(ctx, authengine.MintInput{
 		OwnerLegacyID: owner.ID, Name: emergencyTokenName, Abilities: abilities, ExpiresAt: &expires,
@@ -156,7 +161,7 @@ func runEmergencyToken(ctx context.Context, logger *slog.Logger, args []string, 
 	if err := db.SaveAuditEntry(ctx, store.AuditEntry{
 		ID: auditID, ActorType: "system", ActorID: "host", ActorName: "emergency-token",
 		Ability: api.AbilityRoot, Method: "CLI", Path: "emergency-token " + owner.Email,
-		StatusCode: 200, RemoteAddr: "host", CreatedAt: time.Now().UTC().Format(time.RFC3339), ClientKind: "system",
+		StatusCode: 200, RemoteAddr: "host", Detail: fmt.Sprintf(`{"revoked_oldest":%d}`, revoked), CreatedAt: time.Now().UTC().Format(time.RFC3339), ClientKind: "system",
 	}); err != nil {
 		logger.Error("emergency token audit entry failed", slog.String("error", err.Error()))
 	}
@@ -165,5 +170,8 @@ func runEmergencyToken(ctx context.Context, logger *slog.Logger, args []string, 
 	_, _ = fmt.Fprintf(stdout, "emergency token for %q (root), valid until %s:\n\n  %s\n\n", owner.Email, expires.Format(time.RFC3339), raw)
 	_, _ = fmt.Fprintf(stdout, "shown once. Use it with the CLI:\n  APP_API_URL=%s APP_API_TOKEN=<token> levelrail-cli <command>\n", emergencyAPIURL(os.Getenv))
 	_, _ = fmt.Fprintln(stdout, "It expires on its own; revoke it earlier under Settings, CLI Access.")
+	if revoked > 0 {
+		_, _ = fmt.Fprintf(stdout, "revoked %d older emergency tokens to stay within tokens.emergency_max_live\n", revoked)
+	}
 	return nil
 }
