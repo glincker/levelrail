@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "error_code": "",
+  "accepted": [],
+  "dropped": [
+    {
+      "id": "advisory-one",
+      "code": "tier_not_signed"
+    }
+  ]
+}

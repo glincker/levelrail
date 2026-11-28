@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "sequence": 5,
+  "generated_at": "2026-11-25T00:00:00Z",
+  "expires_at": "2026-12-25T00:00:00Z",
+  "items": [
+    {
+      "id": "info-one",
+      "tier": "info",
+      "kind": "announcement",
+      "title": "Title info-one",
+      "body": "Hello from the feed.",
+      "applies_to": "<1.5.14",
+      "issued_at": "2026-11-20T00:00:00Z",
+      "expires_at": "2027-02-20T00:00:00Z"
+    },
+    {
+      "id": "html-one",
+      "tier": "info",
+      "kind": "announcement",
+      "title": "Title html-one",
+      "body": "Click <script>alert(1)</script> now.",
+      "applies_to": "<1.5.14",
+      "issued_at": "2026-11-20T00:00:00Z",
+      "expires_at": "2027-02-20T00:00:00Z"
+    }
+  ]
+}
