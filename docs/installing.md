@@ -319,8 +319,8 @@ A 1 GB or 2 GB VPS installs and runs, but a build can be killed when memory runs
 Add swap. On a host under 2 GB with no swap, the installer asks once whether to create a swap file after the install. It asks only on an interactive terminal. In a piped or scripted install it never asks and creates nothing unless you pass `--swap`. It never touches an existing swap device, swap file or `/etc/fstab` swap line.
 
 ```bash
-curl -fsSL https://levelrail.dev/install.sh | sudo sh -s -- --swap
-curl -fsSL https://levelrail.dev/install.sh | sudo sh -s -- --no-swap
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --swap
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --no-swap
 ```
 
 On an existing install, preview the commands first, then apply them as root:
