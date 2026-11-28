@@ -22,7 +22,7 @@ An agent should never apply blind. Every apply path in Levelrail has a read only
 | App env (plain, secret, vault) | dry run | `POST /api/v1/apps/{name}/env/apply` with `"dry_run": true` | `levelrail-cli env apply APP --dry-run -o json` | `plan_change` with `set_app_env` |
 | One mutating tool call | preview | none | none | `plan_change` |
 
-`--dry-run` with `--exit-code` exits 2 when changes are pending, so a script can gate on it. The dashboard shows the same plan as a preview before the apply button on the stack and resource pages.
+`--dry-run` with `--exit-code` exits 2 when changes are pending, so a script can gate on it. The dashboard shows the same plans in the resource import preview and in the stack sync revision view.
 
 ## Plan shape
 
