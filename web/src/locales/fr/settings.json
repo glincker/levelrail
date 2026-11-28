@@ -911,5 +911,22 @@
       "off": "Désactivés",
       "offHint": "Souris et Tab uniquement"
     }
+  },
+  "cliAccessPage": {
+    "server": {
+      "title": "Ce serveur",
+      "body": "La CLI épingle cette identité à la connexion et refuse d'envoyer un token à tout autre serveur. Comparez l'empreinte avec celle qu'affiche la CLI.",
+      "name": "Nom",
+      "id": "ID de l'instance",
+      "fingerprint": "Empreinte",
+      "backupSetId": "ID du jeu de sauvegardes",
+      "copy": "Copier",
+      "copied": "ID de l'instance copié",
+      "movedTitle": "Cette instance a été restaurée sur un nouvel hôte",
+      "movedBody": "Son identité a changé, donc les tokens de la CLI émis avant le déplacement sont refusés. S'il s'agit de la même instance (une restauration ou une migration que vous avez faite), confirmez-le pour accepter de nouveau ces tokens. Si vous ne l'avez pas déplacée, ne faites rien et reconnectez-vous à la CLI.",
+      "confirmLabel": "Saisissez \"{{phrase}}\" pour confirmer",
+      "confirmAction": "Confirmer la même instance",
+      "confirmed": "Identité de l'instance rétablie. Les tokens de la CLI fonctionnent de nouveau."
+    }
   }
 }

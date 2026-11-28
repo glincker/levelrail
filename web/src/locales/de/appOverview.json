@@ -172,5 +172,45 @@
   "trafficUnavailable": "Live-Traffic-Zahlen sind derzeit nicht verfügbar.",
   "trafficRetry": "Erneut versuchen",
   "noTrafficTitle": "Noch kein Traffic",
-  "noTrafficHint": "Sende eine Anfrage, um Live-Zahlen zu sehen."
+  "noTrafficHint": "Sende eine Anfrage, um Live-Zahlen zu sehen.",
+  "status": {
+    "chips": "Status",
+    "openAnyway": "Trotzdem öffnen",
+    "reason": {
+      "down": "Die App ist gestoppt oder nicht bereit, deshalb antwortet diese Adresse noch nicht.",
+      "waiting_dns": "Warten auf DNS: Die Domain zeigt noch nicht hierher.",
+      "local_only": "Diese Adresse funktioniert nur auf diesem Computer.",
+      "unknown": "Die App-Adresse konnte noch nicht geprüft werden."
+    },
+    "chip": {
+      "down": "Nicht bereit",
+      "waiting_dns": "Wartet auf DNS",
+      "local_only": "Nur dieser Computer",
+      "unknown": "Ungeprüft"
+    },
+    "qr": {
+      "open": "QR-Code anzeigen",
+      "title": "QR-Code für diese App",
+      "fallback": "Diese App ist lokal. Scannen Sie stattdessen diese öffentliche Adresse."
+    },
+    "deploy": {
+      "title": "Letztes Deployment"
+    },
+    "health": {
+      "title": "Health-Checks",
+      "on": "Health-Check aktiv",
+      "none": "Kein Health-Check",
+      "add": "Health-Check hinzufügen",
+      "dismiss": "Vorschlag für einen Health-Check ausblenden"
+    },
+    "warnings": {
+      "label_one": "{{count}} Warnung",
+      "label_other": "{{count}} Warnungen",
+      "title_one": "{{count}} Warnung, Health öffnen",
+      "title_other": "{{count}} Warnungen, Health öffnen"
+    },
+    "resources": "Ressourcen",
+    "domains": "Domains",
+    "addDomain": "Domain hinzufügen"
+  }
 }
