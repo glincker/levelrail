@@ -39,6 +39,8 @@ const (
 	AppEventReservedSecretOwner = "reserved_secret_owner"
 	// AppEventDatabaseRefRefused marks the reconciler refusing a database reference bound to another database instance or team.
 	AppEventDatabaseRefRefused = "database_ref_refused"
+	// AppEventLegacyVaultPathRefused marks the reconciler refusing an unvetted legacy Vault path outside the allowed prefixes.
+	AppEventLegacyVaultPathRefused = "legacy_vault_path_refused"
 )
 
 const (

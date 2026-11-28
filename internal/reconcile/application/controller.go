@@ -225,6 +225,8 @@ type Controller struct {
 	reservedOwnerEventAt atomic.Int64
 	// databaseRefEventAt coalesces the stored database reference refusal event.
 	databaseRefEventAt atomic.Int64
+	// legacyVaultEventAt coalesces the stored legacy vault path refusal event.
+	legacyVaultEventAt atomic.Int64
 	runtime            docker.Runtime
 	snap               *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
 	snapNode           string
@@ -1937,6 +1939,7 @@ func (c *Controller) checkLegacyVaultPaths(ctx context.Context, vaultEnv map[str
 		if !ref.Unvetted || vault.LegacyPathAllowed(ref.Path, prefixes) {
 			continue
 		}
+		c.recordLegacyVaultRefusal(envVar)
 		return fmt.Errorf("env var %q (vault path %q): outside vault.legacy_allowed_prefixes, ask root to approve the prefix", envVar, ref.Path)
 	}
 	return nil
