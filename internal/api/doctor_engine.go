@@ -75,6 +75,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("network_pool", doctorGroupRuntime, rt.doctorCheckNetworkPool),
 		one("docker_orphans", doctorGroupRuntime, rt.doctorCheckOrphans),
 		one("database_crash_loop", doctorGroupRuntime, rt.doctorCheckDatabaseCrashLoop),
+		one("app_volume_owners", doctorGroupRuntime, rt.doctorCheckAppVolumeOwners),
 		one("container_log_rotation", doctorGroupRuntime, rt.doctorCheckLogRotation),
 
 		one("disk_space", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskSpace() }),

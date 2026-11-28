@@ -193,6 +193,9 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app: recheck name failed", ferr, slog.String("name", req.Name))
 		return
 	}
+	if rt.refuseForeignAppVolumes(w, r, req.Name, req.NodeID, desired.Volumes, false) {
+		return
+	}
 	if v := rt.existingVolume(r.Context(), desired); v != "" {
 		writeError(w, http.StatusConflict, fmt.Sprintf("volume %q already exists on the node, likely left by an earlier app of this name; remove it or choose another name", v))
 		return

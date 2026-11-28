@@ -68,6 +68,10 @@ func (rt *Router) handleSetAppVolumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rt.refuseForeignAppVolumes(w, r, name, svc.NodeID, volumes, true) {
+		return
+	}
+
 	if err := rt.apps.UpdateServiceVolumes(r.Context(), name, volumes); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return

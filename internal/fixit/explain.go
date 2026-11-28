@@ -70,6 +70,8 @@ func buildExplainTable() map[string]Explanation {
 			nextFixButton+"It removes only networks no container uses. "+nextCLIFix, "docker.network_pool.prune", KindAuto),
 		ex("docker_orphans", "There are containers, images or volumes no app owns.", "They use disk and can hold old data.",
 			nextFixButton+"It shows what would go before anything is removed. "+nextCLIFix, "docker.orphans.prune", KindAuto),
+		ex("app_volume_owners", "An app volume holds data of an earlier app that had the same name, or belongs to another app instance.", "A new app of that name must not read the old data.",
+			"Check the data on the volume. Nothing is deleted for you: remove it from Storage when it is not needed, or pick another app name.", "", KindManual),
 		ex("database_crash_loop", "A database container keeps exiting right after it starts.", "Apps that use it cannot connect, and it was never really running.",
 			"Open the database logs. If the data directory was written by another major version, change the version in Settings to match the data, then press Re-check.", "", KindManual),
 

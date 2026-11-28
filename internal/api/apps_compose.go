@@ -229,6 +229,16 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		return composeDeployResponse{}, false
 	}
 
+	for _, svc := range services {
+		nodeID := svc.NodeID
+		if pin, pinned := nodePins[svc.Name]; pinned {
+			nodeID = pin
+		}
+		if rt.refuseForeignAppVolumes(w, r, svc.Name, nodeID, svc.Volumes, composeHadService(previousServices, svc.Name)) {
+			return composeDeployResponse{}, false
+		}
+	}
+
 	portsRelease, portsOK := rt.admitPublishedPorts(w, r, name, previousServices, services)
 	if !portsOK {
 		return composeDeployResponse{}, false
