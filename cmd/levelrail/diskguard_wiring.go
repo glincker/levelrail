@@ -38,6 +38,7 @@ func startDiskGuard(ctx context.Context, logger *slog.Logger, dataDir string, ch
 	router.SetDiskGuard(g)
 	router.SetNodeGuardrails(db, g.Notify)
 	go router.RunNodeGuardrailWatcher(ctx)
+	go router.RunNodeScaleIn(ctx)
 	go func() {
 		if err := g.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("disk guard stopped", slog.String("error", err.Error()))

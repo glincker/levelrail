@@ -69,6 +69,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesResourceUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "capacity-forecast":
 		return runNodesCapacityForecast(prog, rest, stdout, stderr, lookupEnv)
+	case "scale-in":
+		return runNodesScaleIn(prog, rest, stdout, stderr, lookupEnv)
 	case "capacity":
 		return runNodesCapacity(prog, rest, stdout, stderr, lookupEnv)
 	case "cleanup":
@@ -207,6 +209,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes cert renew <id> [flags]                                ask a connected node to renew its agent certificate now
   %[1]s nodes cert drill <id> [flags]                                rotate its certificate end to end and report each step
   %[1]s nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean, vultr)
+  %[1]s nodes scale-in --dry-run [flags]                              list idle cloud nodes a scale-in would remove and the monthly saving
   %[1]s nodes provision --provider --region --size --name [flags]    create a server at a cloud provider and enroll it as a node
   %[1]s nodes provisions list|show <id> [flags]                      track a cloud node provision through to enrollment
   %[1]s nodes ssh-provision --host --user (--key-file|--password) --name [flags]   adopt a machine you already have over SSH and enroll it as a node

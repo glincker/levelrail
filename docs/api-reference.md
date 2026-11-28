@@ -1216,6 +1216,7 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/agent-update/hold | AbilityRoot | handleNodeAgentUpdateControl |
 | DELETE | /api/v1/nodes/{id}/agent-update/hold | AbilityRoot | handleNodeAgentUpdateControl |
 | POST | /api/v1/nodes/{id}/agent-update/override | AbilityRoot | handleNodeAgentUpdateControl |
+| GET | /api/v1/nodes/scale-in/preview | AbilityRoot | handleNodeScaleInPreview |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

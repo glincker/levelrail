@@ -134217,6 +134217,74 @@
         "x-required-ability": "root"
       }
     },
+    "/api/v1/nodes/scale-in/preview": {
+      "get": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleNodeScaleInPreview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Node Scale In Preview",
+        "tags": [
+          "Nodes"
+        ],
+        "x-required-ability": "root"
+      }
+    },
     "/api/v1/nodes/ssh-provision": {
       "post": {
         "description": "SSH node provisioning: AbilityRoot like every node route (an SSH credential is as sensitive as a join token). The show route stays a top-level sibling: nesting {id} under /nodes/ would conflict with /nodes/{id}/health.\n\nRequires the `root` ability.",

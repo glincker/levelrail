@@ -12,6 +12,7 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// AbilityWriteSensitive already applies one level down at the
 	// per-app layer.
 	mux.HandleFunc("GET /api/v1/nodes", rt.requireAbility(AbilityRoot, rt.handleListNodes))
+	mux.HandleFunc("GET /api/v1/nodes/scale-in/preview", rt.requireAbility(AbilityRoot, rt.handleNodeScaleInPreview))
 	mux.HandleFunc("GET /api/v1/deploy-targets", rt.requireAbility(AbilityRoot, rt.handleListDeployTargets))
 	mux.HandleFunc("GET /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNode))
 	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))

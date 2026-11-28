@@ -616,6 +616,8 @@ nodes.patch_poll_interval
 nodes.patch_preview_ttl
 nodes.patch_run_history
 nodes.protected_taint_keys
+nodes.scale_in
+nodes.scale_in_idle_minutes
 observability.metrics_scrape_enabled
 onboarding.enabled
 onboarding.restore_reminder_days

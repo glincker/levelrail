@@ -356,3 +356,13 @@ levelrail-cli nodes import --provider aws --instance-id i-0abc1234def567890 --na
 ```
 
 `servers` lists running and stopped instances. On AWS, `--region` queries that region directly (checked against the account's regions); without it the region the provider was connected with is listed. Other providers list their whole account and `--region` filters it. `import` prints a single-use join token and the agent install command. Run the command on the instance (over your own SSH session) and the node appears once its agent sends a heartbeat.
+
+## Scale in idle nodes (dry run)
+
+Scale-in is dry run only in this release: it reports idle nodes and never destroys one. Turn on `nodes.scale_in` (off by default) and set `nodes.scale_in_idle_minutes` (default 60) in runtime settings. A node is reported with a `would_destroy` audit event when Levelrail created it, it carries the label `autoscale=on`, it has run no apps or databases for the idle time, it is not the last node in its pool, it is not the control plane, and no volume move involves it. The event includes the node's monthly price when one is set.
+
+```bash
+levelrail-cli nodes scale-in --dry-run
+```
+
+The command prints the candidates and the monthly saving. It also works with `nodes.scale_in` off, so you can look before you enable the events.

@@ -86,6 +86,7 @@ import (
 	"github.com/glincker/levelrail/internal/imageupdate"
 	"github.com/glincker/levelrail/internal/nodefailure"
 	"github.com/glincker/levelrail/internal/nodeinsight"
+	"github.com/glincker/levelrail/internal/nodescale"
 	"github.com/glincker/levelrail/internal/repolayout"
 	"github.com/glincker/levelrail/internal/repolist"
 	"github.com/glincker/levelrail/internal/runtimesettings"
@@ -263,6 +264,8 @@ type Router struct {
 	dataDir                 string // "" means "don't report disk usage", set via WithDataDir
 	diskGuard               *diskguard.Guard
 	hostPressure            *hostpressure.Guard
+	scaleIn                 *nodescale.Worker // idle node scale-in, dry run only
+	scaleInOnce             sync.Once
 	localNodeID             string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone                string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness               ReadinessProbes
