@@ -2449,6 +2449,19 @@ levelrail-cli analysis show <id> [--json]
 
 Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`. Right-sizing thresholds: `APP_ANALYSIS_HEADROOM_MEMORY` and `APP_ANALYSIS_HEADROOM_CPU` (multiplier over p95, above 1), `APP_ANALYSIS_SIZING_RAISE_AT` and `APP_ANALYSIS_SIZING_LOWER_AT` (p95 as a fraction of the limit), and `APP_ANALYSIS_SIZING_MIN_COVERAGE` (history needed before a suggestion). Unset values keep the engine defaults.
 
+## Announcements
+
+Signed notices from the Levelrail project (security alerts, release news) that your instance has verified. They appear only when `updates.announcements` is on.
+
+```
+levelrail-cli announcements ls [--all] [--json]
+levelrail-cli announcements read <id>
+levelrail-cli announcements dismiss <id>
+levelrail-cli announcements snooze <id> --for <duration>
+```
+
+`ls` shows tier, date, title, expiry, id and your read state; dismissed and snoozed notices are hidden unless you pass `--all`. A critical notice cannot be dismissed until you upgrade, so `dismiss` answers with that message; `snooze` hides it for the given time, capped by the runtime setting `updates.announcements_snooze_max`. `read`, `dismiss` and `snooze` mark your own account, so they need a signed-in session user.
+
 ## Certificates
 
 ```

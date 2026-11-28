@@ -131,6 +131,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runIncidents(prog, args[1:], stdout, stderr, lookupEnv)
 	case "analysis":
 		return runAnalysis(prog, args[1:], stdout, stderr, lookupEnv)
+	case "announcements":
+		return runAnnouncements(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "projects":

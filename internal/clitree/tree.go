@@ -38,6 +38,7 @@ var Tree = map[string]*Node{
 	"alias":          {Subs: map[string]*Node{"set": nil, "list": nil, "delete": nil}},
 	"incidents":      {Subs: map[string]*Node{"list": nil, "show": nil, "ack": nil, "resolve": nil, "note": nil, "promote": nil, "draft": nil, "publish": nil, "postmortem": {Subs: map[string]*Node{"show": nil, "draft": nil, "edit": nil, "publish": nil}}}},
 	"analysis":       {Subs: map[string]*Node{"list": nil, "run": nil, "show": nil}},
+	"announcements":  {Subs: map[string]*Node{"ls": nil, "read": nil, "dismiss": nil, "snooze": nil}},
 	"previews": {Subs: map[string]*Node{
 		"list": nil, "delete": nil, "teardown": nil, "extend": nil, "settings": nil, "enable": nil, "disable": nil, "sweep": nil, "limits": nil, "approve": nil,
 		"pr-status": {Subs: map[string]*Node{"enable": nil, "disable": nil}},
