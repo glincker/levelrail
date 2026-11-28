@@ -1667,6 +1667,7 @@ OPERATIONS: Dict[str, Operation] = {
     "handleNodeDomains": Operation("GET", "/api/v1/nodes/domains", False, False),
     "handleNodePatchApply": Operation("POST", "/api/v1/nodes/{id}/patch/apply", True, False),
     "handleNodePatchPreview": Operation("POST", "/api/v1/nodes/{id}/patch/preview", True, False),
+    "handleNodeScaleInPreview": Operation("GET", "/api/v1/nodes/scale-in/preview", False, False),
     "handleNodeTimeline": Operation("GET", "/api/v1/nodes/{id}/timeline", False, False),
     "handleNodeVersionSkew": Operation("GET", "/api/v1/nodes/version-skew", False, False),
     "handleOAuthCallback": Operation("GET", "/api/v1/auth/oauth/{provider}/callback", False, False),

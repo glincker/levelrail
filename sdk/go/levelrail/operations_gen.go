@@ -1659,6 +1659,7 @@ var Operations = map[string]Operation{
 	"handleNodeDomains":                        {Method: "GET", Path: "/api/v1/nodes/domains", HasBody: false, Stream: false},
 	"handleNodePatchApply":                     {Method: "POST", Path: "/api/v1/nodes/{id}/patch/apply", HasBody: true, Stream: false},
 	"handleNodePatchPreview":                   {Method: "POST", Path: "/api/v1/nodes/{id}/patch/preview", HasBody: true, Stream: false},
+	"handleNodeScaleInPreview":                 {Method: "GET", Path: "/api/v1/nodes/scale-in/preview", HasBody: false, Stream: false},
 	"handleNodeTimeline":                       {Method: "GET", Path: "/api/v1/nodes/{id}/timeline", HasBody: false, Stream: false},
 	"handleNodeVersionSkew":                    {Method: "GET", Path: "/api/v1/nodes/version-skew", HasBody: false, Stream: false},
 	"handleOAuthCallback":                      {Method: "GET", Path: "/api/v1/auth/oauth/{provider}/callback", HasBody: false, Stream: false},

@@ -218,6 +218,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_CA_RETRY_BACKOFF_MAX` | [`ingress.ca_switch_retry_max`](/runtime-settings#networking) | `1h` |
 | `APP_INGRESS_CERT_FALLBACK_RETRY_INTERVAL` | [`ingress.cert_fallback_retry_interval`](/runtime-settings#networking) | `10m` |
 | `APP_INGRESS_CERT_FALLBACK_RETRY_MAX` | [`ingress.cert_fallback_retry_max`](/runtime-settings#networking) | `12` |
+| `APP_INGRESS_CERT_RESET_MIN_INTERVAL_SECONDS` | [`ingress.cert_reset_min_interval_seconds`](/runtime-settings#networking) | `30` |
 | `APP_CLOUDFLARE_IPS_MAX_BYTES` | [`ingress.cloudflare_ips_max_bytes`](/runtime-settings#networking) | `1048576` |
 | `APP_CLOUDFLARE_IPS_MIN_RANGES` | [`ingress.cloudflare_ips_min_ranges`](/runtime-settings#networking) | `10` |
 | `APP_CLOUDFLARE_IPS_REFRESH` | [`ingress.cloudflare_ips_refresh`](/runtime-settings#networking) | `24h` |
