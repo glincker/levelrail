@@ -1,6 +1,7 @@
 package hostswap
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -26,6 +27,26 @@ func fakeProc(t *testing.T, swapKB int, swaps string) string {
 	return root
 }
 
+func TestValidatePathAndSize(t *testing.T) {
+	for _, ok := range []string{"/swapfile-levelrail", "/swapfile", "/var/lib/swap1"} {
+		if err := ValidatePath(ok); err != nil {
+			t.Errorf("ValidatePath(%q) = %v", ok, err)
+		}
+	}
+	for _, bad := range []string{"", "swapfile", "/etc/passwd", "/var/../etc/x", "/var/a b", "/var/a\nb", "/var/a;b", "/var//x", "/swapfile'x", "/var/x#y"} {
+		if err := ValidatePath(bad); err == nil {
+			t.Errorf("ValidatePath(%q) accepted", bad)
+		}
+	}
+	st := State{Supported: true}
+	if _, err := BuildPlan(st, "/swapfile-levelrail", MaxSizeMB+1, 1<<50, "/nonexistent-fstab"); err == nil {
+		t.Error("oversized swapfile accepted")
+	}
+	if err := Apply(context.Background(), Plan{Path: "/etc/passwd", SizeMB: 10}, "/nonexistent-fstab"); err == nil {
+		t.Error("Apply accepted a path outside the allowed directories")
+	}
+}
+
 func TestHostSwapPlan(t *testing.T) {
 	st := Read(fakeProc(t, 0, "Filename Type Size Used Priority\n"))
 	if !st.Supported || st.RAMBytes != 1<<30 || st.SwapBytes != 0 || st.Swappiness != 60 {
@@ -33,6 +54,8 @@ func TestHostSwapPlan(t *testing.T) {
 	}
 	dir := t.TempDir()
 	path := filepath.Join(dir, "sw")
+	allowedPrefixes = append(allowedPrefixes, dir+"/")
+	t.Cleanup(func() { allowedPrefixes = allowedPrefixes[:2] })
 	fstab := filepath.Join(dir, "fstab")
 	size := SizeMB(0, st.RAMBytes)
 	if size != 1024 {

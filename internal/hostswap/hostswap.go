@@ -21,7 +21,38 @@ const (
 	// FstabPath is the file the persistent entry is appended to.
 	FstabPath = "/etc/fstab"
 	mib       = int64(1) << 20
+	// MaxSizeMB bounds a swapfile so a typo cannot fill the disk.
+	MaxSizeMB = 262144
 )
+
+// allowedPrefixes are the only places a swapfile may live; tests extend it.
+var allowedPrefixes = []string{"/var/", "/swapfile"}
+
+// ValidatePath accepts only a clean absolute path under an allowed prefix with
+// no character that could break an fstab line or an argv value.
+func ValidatePath(path string) error {
+	if !filepath.IsAbs(path) || filepath.Clean(path) != path {
+		return errors.New("swapfile path must be a clean absolute path")
+	}
+	for _, r := range path {
+		if r <= ' ' || r == 0x7f || r == '\\' || r == '\'' || r == '"' || r == '#' || r == ';' {
+			return errors.New("swapfile path contains a forbidden character")
+		}
+	}
+	for _, p := range allowedPrefixes {
+		if strings.HasPrefix(path, p) {
+			return nil
+		}
+	}
+	return errors.New("swapfile path must be under /var or start with /swapfile")
+}
+
+func validateSize(sizeMB int) error {
+	if sizeMB <= 0 || sizeMB > MaxSizeMB {
+		return fmt.Errorf("swapfile size must be between 1 and %d MiB", MaxSizeMB)
+	}
+	return nil
+}
 
 // State is what the host reports about memory and swap.
 type State struct {
@@ -130,6 +161,9 @@ func BuildPlan(st State, path string, sizeMB int, freeBytes int64, fstab string)
 	if path == "" {
 		path = DefaultPath
 	}
+	if err := ValidatePath(path); err != nil {
+		return Plan{}, err
+	}
 	switch {
 	case !st.Supported:
 		return Plan{}, errors.New("this host does not expose Linux memory data, so no swapfile plan can be made")
@@ -137,6 +171,9 @@ func BuildPlan(st State, path string, sizeMB int, freeBytes int64, fstab string)
 		return Plan{}, errors.New("swap is already configured; leaving the existing setup alone")
 	case sizeMB <= 0:
 		return Plan{}, errors.New("swapfile size resolved to zero; set host.swap_size_mb or pass --size-mb")
+	}
+	if err := validateSize(sizeMB); err != nil {
+		return Plan{}, err
 	}
 	if _, err := os.Lstat(path); err == nil {
 		return Plan{}, fmt.Errorf("%s already exists; refusing to overwrite it", path)
@@ -184,6 +221,12 @@ func Apply(ctx context.Context, p Plan, fstab string) error {
 	}
 	if os.Geteuid() != 0 {
 		return errors.New("applying a swapfile needs root; rerun with sudo")
+	}
+	if err := ValidatePath(p.Path); err != nil {
+		return err
+	}
+	if err := validateSize(p.SizeMB); err != nil {
+		return err
 	}
 	steps := [][]string{
 		{"fallocate", "-l", strconv.Itoa(p.SizeMB) + "M", p.Path},
