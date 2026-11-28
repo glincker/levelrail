@@ -174,6 +174,11 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
 	rt.removeAppCredentials(ctx, name, integrationNS)
+	if soft == nil && rt.secrets != nil {
+		if err := rt.secrets.DeleteAll(ctx, store.TraceIngestSecretsKey(name)); err != nil {
+			rt.logger.Warn("api: delete app: remove trace ingest token failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	if vdb, ok := rt.vitalsDB(); ok {
 		if err := rt.vitalsRuntime().dropApp(ctx, vdb, name); err != nil {
 			rt.logger.Warn("api: delete app: drop buffered vitals failed", slog.String("error", err.Error()), slog.String("name", name))

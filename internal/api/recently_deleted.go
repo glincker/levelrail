@@ -143,7 +143,7 @@ func (rt *Router) handleListRecentlyDeleted(w http.ResponseWriter, r *http.Reque
 }
 
 // handleRestoreRecentlyDeleted handles POST /api/v1/recently-deleted/{kind}/{name}/restore.
-// It recreates the config; secrets and the function KV token were erased with the original and must be set again (mint a new KV token; its data is kept).
+// It recreates the config and the app's secret values; the function KV token is not restored (mint a new one; its data is kept).
 func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Request) {
 	kind, name := r.PathValue("kind"), r.PathValue("name")
 	st := rt.recentlyDeleted()
@@ -165,7 +165,19 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 			return
 		}
 		unlock := lockAppName(name)
-		err = rt.restoreDeletedApp(r.Context(), e)
+		// Re-read under the lock so a restore never applies an older snapshot beside newer parked secrets.
+		cur, lerr := rt.liveDeleted(r.Context(), kind, name)
+		switch {
+		case errors.Is(lerr, store.ErrRecentlyDeletedNotFound):
+			unlock()
+			writeError(w, http.StatusNotFound, "nothing to restore: the undo window has passed or it was never deleted")
+			return
+		case lerr != nil:
+			unlock()
+			rt.internalError(w, "api: restore recently deleted", lerr, slog.String("name", name))
+			return
+		}
+		err = rt.restoreDeletedApp(r.Context(), cur)
 		if err == nil {
 			// The entry stays if the parked copy cannot be erased, so the purge still removes it.
 			if serr := rt.dropParkedSecrets(r.Context(), name); serr != nil {
@@ -247,7 +259,9 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 		bg := context.WithoutCancel(ctx)
 		if saved {
 			if derr := rt.apps.DeleteDesiredService(store.WithKeptRevisions(bg), e.Name); derr != nil {
+				// The app stays live, so its secrets must stay too.
 				rt.logger.Warn("api: roll back failed app restore", slog.String("name", e.Name), slog.String("error", derr.Error()))
+				return
 			}
 		}
 		if rt.secrets != nil {

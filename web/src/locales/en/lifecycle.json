@@ -1,7 +1,7 @@
 {
   "recentlyDeleted": {
     "title": "Recently deleted",
-    "description": "Deleted apps and databases can be brought back until the undo window ends. Secrets are not kept, set them again after a restore.",
+    "description": "Deleted apps and databases can be brought back until the undo window ends. Secret values come back with a restore; the deploy source, deploy token, log drain and integrations do not.",
     "kind": {
       "app": "App",
       "database": "Database"
