@@ -2178,12 +2178,18 @@ func (c *Client) MintSessionLink(ctx context.Context) (SessionLinkResource, erro
 // the server's 409-if-locked guard, the same escape hatch the dashboard's
 // SecretsEditor exposes.
 func (c *Client) SetSecret(ctx context.Context, name, key, value string, overwriteLocked bool) error {
+	if err := PrecheckEnv(map[string]string{key: value}, true); err != nil {
+		return err
+	}
 	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked}, nil)
 }
 
 // SetSecretWithBuildTime is SetSecret plus an explicit build_time flag
 // (whether build.secrets may mount the secret).
 func (c *Client) SetSecretWithBuildTime(ctx context.Context, name, key, value string, overwriteLocked, buildTime bool) error {
+	if err := PrecheckEnv(map[string]string{key: value}, true); err != nil {
+		return err
+	}
 	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked, BuildTime: &buildTime}, nil)
 }
 

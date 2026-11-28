@@ -87,6 +87,9 @@ func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "value is required for a secret override")
 		return
 	}
+	if !rt.checkOverrideEnv(r.Context(), w, req.Key, req.Value, req.Secret) {
+		return
+	}
 	if _, err := branchMatchesPattern("x", req.BranchPattern); err != nil {
 		writeError(w, http.StatusBadRequest, "branch_pattern is not a valid pattern: "+err.Error())
 		return

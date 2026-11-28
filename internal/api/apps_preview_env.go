@@ -40,6 +40,10 @@ func (rt *Router) handleSetAppPreviewEnvOverride(w http.ResponseWriter, r *http.
 		return
 	}
 
+	if !rt.checkOverrideEnv(r.Context(), w, key, req.Value, false) {
+		return
+	}
+
 	if err := rt.apps.SetServicePreviewEnvOverride(r.Context(), name, key, &req.Value); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return

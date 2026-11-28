@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/envrules"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -34,6 +35,8 @@ type envMergeResource struct {
 	Keys        []string `json:"keys"`
 	RebuildKeys []string `json:"rebuild_keys,omitempty"`
 	EnvVersion  int      `json:"env_version,omitempty"`
+	// Warnings are findings on the written keys that did not block the write; no values.
+	Warnings []envrules.Issue `json:"warnings,omitempty"`
 }
 
 // handlePutAppEnv handles PUT /api/v1/apps/{name}/env: a batch of set and unset
@@ -85,6 +88,10 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: env merge: read app failed", err, slog.String("name", name))
 		return
 	}
+	warnings, ok := rt.checkEnvWrite(r.Context(), w, req.Set, existingEnv(existing), envrules.Options{Multiline: true})
+	if !ok {
+		return
+	}
 	if !rt.enforceSecretPolicy(r.Context(), w, existing.EnvironmentID, literalSecretKeys(req.Set, existing.Env, rt.envOverrides(r.Context(), name))) {
 		return
 	}
@@ -101,7 +108,7 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: env merge failed", err, slog.String("name", name))
 		return
 	}
-	out := envMergeResource{App: name, Changed: res.Changed, EnvDirty: res.EnvDirty, Set: []string{}, Removed: []string{}, Missing: []string{}, Keys: []string{}}
+	out := envMergeResource{Warnings: warnings, App: name, Changed: res.Changed, EnvDirty: res.EnvDirty, Set: []string{}, Removed: []string{}, Missing: []string{}, Keys: []string{}}
 	for k, v := range req.Set {
 		if old, had := res.Before[k]; !had || old != v {
 			out.Set = append(out.Set, k)

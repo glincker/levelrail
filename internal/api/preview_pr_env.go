@@ -84,6 +84,9 @@ func (rt *Router) handleSetPRPreviewEnv(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "value is required for a secret override")
 		return
 	}
+	if !rt.checkOverrideEnv(r.Context(), w, req.Key, req.Value, req.Secret) {
+		return
+	}
 	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return

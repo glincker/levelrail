@@ -427,7 +427,13 @@ domains.tuning_min_timeout_seconds
 domains.wait_poll
 domains.wait_timeout
 domains.www_mode
+env.dangerous_keys_mode
+env.key_max_length
+env.key_policy
+env.path_override_mode
+env.reserved_prefixes
 env.revisions_keep
+env.value_max_bytes
 errors.dedup_hours
 errors.dedup_max
 events.changes_buffer

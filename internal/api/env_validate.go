@@ -1,0 +1,58 @@
+package api
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/envrules"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// envPolicy reads the live env validation settings; without a settings service the defaults apply.
+func (rt *Router) envPolicy(ctx context.Context) envrules.Policy {
+	p := envrules.DefaultPolicy()
+	if rt.runtimeSettings == nil {
+		return p
+	}
+	rs := rt.runtimeSettings
+	p.KeyMode = rs.String(ctx, runtimesettings.KeyEnvKeyPolicy)
+	p.KeyMaxLen = rs.Int(ctx, runtimesettings.KeyEnvKeyMaxLength)
+	p.ValueMaxBytes = rs.Int(ctx, runtimesettings.KeyEnvValueMaxBytes)
+	p.ReservedPrefixes = rs.List(ctx, runtimesettings.KeyEnvReservedPrefixes)
+	p.LoaderMode = rs.String(ctx, runtimesettings.KeyEnvDangerousKeysMode)
+	p.PathMode = rs.String(ctx, runtimesettings.KeyEnvPathOverrideMode)
+	return p
+}
+
+// existingEnv describes what an app already holds, for the validator.
+func existingEnv(s *store.DesiredService) envrules.Existing {
+	return envrules.Existing{Plain: s.Env, Names: store.SecretEnvNames(s.SecretEnv)}
+}
+
+// checkEnvWrite validates the keys being written and answers 400 on a refusal.
+// It returns the warnings to pass on, and false when the write was refused.
+func (rt *Router) checkEnvWrite(ctx context.Context, w http.ResponseWriter, set map[string]string, ex envrules.Existing, o envrules.Options) ([]envrules.Issue, bool) {
+	res := envrules.Validate(set, ex, rt.envPolicy(ctx), o)
+	if msg := res.Err(); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return nil, false
+	}
+	return res.Warnings, true
+}
+
+// checkEnvKeys validates keys that only name an entry (unset, delete), refusing unusable names.
+func checkEnvKeys(w http.ResponseWriter, keys []string) bool {
+	if msg := envrules.ValidateKeys(keys).Err(); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return false
+	}
+	return true
+}
+
+// checkOverrideEnv validates one key and value on writers that do not load the
+// app's stored keys (preview, branch and PR overrides), so legacy names pass.
+func (rt *Router) checkOverrideEnv(ctx context.Context, w http.ResponseWriter, key, value string, secret bool) bool {
+	_, ok := rt.checkEnvWrite(ctx, w, map[string]string{key: value}, envrules.Existing{}, envrules.Options{Secret: secret, Multiline: true, ExistingUnknown: true})
+	return ok
+}

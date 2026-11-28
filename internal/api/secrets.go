@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/envrules"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -67,6 +68,9 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Value == "" {
 		writeError(w, http.StatusBadRequest, "value is required")
+		return
+	}
+	if _, ok := rt.checkEnvWrite(r.Context(), w, map[string]string{key: req.Value}, existingEnv(app), envrules.Options{Secret: true, Multiline: true}); !ok {
 		return
 	}
 	if !rt.enforceSecretPolicy(r.Context(), w, app.EnvironmentID, []string{key}) {
