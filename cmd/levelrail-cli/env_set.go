@@ -119,6 +119,14 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			gitApp = gerr == nil
 		}
 		printRebuildHint(hintOut, prog, name, rebuildKeys, gitApp)
+		if result.Pending {
+			// Stderr like the other hints; counts names only, never values.
+			pendingOut := io.Writer(stderr)
+			if hintOut == io.Discard {
+				pendingOut = io.Discard
+			}
+			_, _ = fmt.Fprintf(pendingOut, "%d variables pending, run %s apps apply %s\n", len(plan.New)+len(plan.Changed)+len(refs), prog, name)
+		}
 		if len(plan.New) > 0 || len(plan.Changed) > 0 {
 			// Hints go to stderr so stdout stays the result only.
 			undoOut := io.Writer(stderr)

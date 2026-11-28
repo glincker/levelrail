@@ -199,3 +199,11 @@ func TestEnvRestoreNeedsConfirmAndPrintsNamesOnly(t *testing.T) {
 		t.Errorf("confirm not sent: %s", bodies["POST /api/v1/apps/web/env/revisions/2/restore"])
 	}
 }
+
+func TestEnvSetPrintsPendingVariableCount(t *testing.T) {
+	srv := routeServer(t, envSetRoutes(nil), map[string][]byte{})
+	_, errOut := runCLIExpectOK(t, cliArgs(srv, "env", "set", "web", "A=1", "B=2"))
+	if !strings.Contains(errOut, "2 variables pending, run ") || !strings.Contains(errOut, "apps apply web") {
+		t.Errorf("missing pending count hint in %q", errOut)
+	}
+}
