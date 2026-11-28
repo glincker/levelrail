@@ -57,9 +57,9 @@ replayed. See [Functions](/functions).
 
 ## Multi-service apps (stacks)
 
-Off by default. Set `APP_SLEEP_STACK=true` and the services of one
+Off by default. Turn on the runtime setting `sleep.stack` (Settings, Security and runtime, Deploys card, or `levelrail-cli settings runtime set sleep.stack true`) and the services of one
 multi-service app (a compose app or `app.yaml` with several services) sleep and
-wake as one unit instead of one by one. Only apps that already have sleep
+wake as one unit instead of one by one. It applies live, with no restart. Only apps that already have sleep
 enabled are affected.
 
 - One idle clock: a request, network traffic, an open connection or a running

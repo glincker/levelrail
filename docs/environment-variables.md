@@ -522,6 +522,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RUNTIME_TMPFS_MAX_BYTES` | [`runtime.tmpfs_max_bytes`](/runtime-settings#deploys) | `1073741824` |
 | `APP_RUNTIME_ULIMIT_BYTES_MAX` | [`runtime.ulimit_bytes_max`](/runtime-settings#deploys) | `1073741824` |
 | `APP_RUNTIME_ULIMIT_COUNT_MAX` | [`runtime.ulimit_count_max`](/runtime-settings#deploys) | `4194304` |
+| `APP_SLEEP_STACK` | [`sleep.stack`](/runtime-settings#deploys) | `false` |
 | `APP_SPEND_PAUSE_STOPS_APPS` | [`spend.pause_stops_apps`](/runtime-settings#deploys) | `false` |
 | `APP_STACK_APPROVAL_TTL` | [`stacks.approval_ttl`](/runtime-settings#deploys) | `24h` |
 | `APP_STACK_DRIFT_INTERVAL` | [`stacks.drift_interval_seconds`](/runtime-settings#deploys) | `900` |

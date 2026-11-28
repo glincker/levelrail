@@ -4,6 +4,7 @@ package runtimesettings
 const (
 	KeyAppSleepMaxWaiters      = "appsleep.max_waiters"
 	KeyAppSleepWakeWaitSeconds = "appsleep.wake_wait_seconds" //nolint:gosec // setting key, not a credential
+	KeySleepStack              = "sleep.stack"
 )
 
 func init() {
@@ -18,5 +19,11 @@ func init() {
 		Env: "APP_SLEEP_WAKE_WAIT_SECONDS", Apply: ApplyLive, CheckValue: intRangeCheck(0, 3600),
 		Title:       "Longest hold while an app wakes",
 		Description: "Seconds a held request waits for the app before it gets 503 with Retry-After. 0 uses the window learned from the app's own wake history.",
+	})
+	Register(Definition{
+		Key: KeySleepStack, Category: CategoryDeploys, Kind: KindBool, Default: "false",
+		Env: "APP_SLEEP_STACK", Apply: ApplyLive,
+		Title:       "Sleep multi-service apps as one stack",
+		Description: "Off by default. On, the services of one multi-service app sleep and wake as a unit, with one idle clock. Only apps with sleep enabled are affected. Applies on the next sleep check.",
 	})
 }

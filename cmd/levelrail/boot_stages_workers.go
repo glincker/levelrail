@@ -446,6 +446,9 @@ func (s *bootState) startSchedulers() {
 		Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Events: db, Logger: logger, Cfg: sleepCfg,
 		Metrics: telemetryDB, Breakdowns: telemetryDB, Conns: portWake, Ops: db, Fleet: db, PortWake: portWake, PortSync: portWake,
 	}
+	appsleep.SetStackSource(func(c context.Context) bool {
+		return apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeySleepStack)
+	})
 	apiRouter.SetSleepRuntime(portWake, appSleepScheduler)
 	go func() {
 		if err := portWake.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {

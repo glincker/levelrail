@@ -778,6 +778,7 @@ sizing.memory_margin_pct
 sizing.min_coverage
 sizing.min_samples
 sizing.raise_at_pct
+sleep.stack
 spend.pause_stops_apps
 spool.max_age_seconds
 spool.quota_bytes

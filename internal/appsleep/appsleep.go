@@ -189,7 +189,7 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		}
 	}
 	cfg := s.cfg()
-	stacks, all := s.stackPlan(ctx, settings, cfg)
+	stacks, all := s.stackPlan(ctx, settings)
 	net := s.networkActivity(ctx, all, now)
 	rows := make(map[string]store.AppSleep, len(settings))
 	for _, a := range settings {
@@ -425,7 +425,7 @@ func Sleep(ctx context.Context, sleep interface {
 		return err
 	}
 	stop := func() error { return apps.UpdateServiceSuspended(ctx, name, true) }
-	if ConfigFromEnv(nil).StackSleep {
+	if StackEnabled(ctx) {
 		stop = func() error { return stackStop(ctx, sleep, apps, name, now) }
 	}
 	if err := stop(); err != nil {
@@ -490,7 +490,7 @@ func Wake(ctx context.Context, sleep interface {
 		return false, err
 	}
 	start := func() error { return apps.UpdateServiceSuspended(ctx, name, false) }
-	if ConfigFromEnv(nil).StackSleep {
+	if StackEnabled(ctx) {
 		start = func() error { return stackStart(ctx, sleep, apps, name, now) }
 	}
 	if err := start(); err != nil {

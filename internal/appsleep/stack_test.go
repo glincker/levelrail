@@ -65,7 +65,7 @@ func stackSleepRows(since time.Time, sleeping bool) *fakeSleep {
 }
 
 func TestStackSleepsAndWakesInOrder(t *testing.T) {
-	t.Setenv(EnvStackSleep, "true")
+	stackOn(t)
 	now := time.Date(2026, 11, 28, 12, 0, 0, 0, time.UTC)
 	old := now.Add(-2 * time.Hour)
 	apps, sleep := newStackApps(), stackSleepRows(old, false)
@@ -95,7 +95,7 @@ func TestStackSleepsAndWakesInOrder(t *testing.T) {
 }
 
 func TestStackTrafficOnOneServiceKeepsAllAwake(t *testing.T) {
-	t.Setenv(EnvStackSleep, "true")
+	stackOn(t)
 	now := time.Date(2026, 11, 28, 12, 0, 0, 0, time.UTC)
 	old := now.Add(-2 * time.Hour)
 	apps, sleep := newStackApps(), stackSleepRows(old, false)
@@ -121,4 +121,10 @@ func TestStackOffKeepsPerServiceSleep(t *testing.T) {
 	if !apps.suspended["shop-web"] || apps.suspended["shop-api"] {
 		t.Fatalf("with stack sleep off each service sleeps alone: %v", apps.suspended)
 	}
+}
+
+func stackOn(t *testing.T) {
+	t.Helper()
+	SetStackSource(func(context.Context) bool { return true })
+	t.Cleanup(func() { SetStackSource(nil) })
 }

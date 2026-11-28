@@ -123,9 +123,9 @@ func stackStart(ctx context.Context, sleep interface {
 // stackPlan maps each opted-in app to its stack members (only multi-service
 // stacks, when stack sleep is on) and extends settings with stand-in rows for
 // members that have no sleep setting, so their network use is read too.
-func (s *Scheduler) stackPlan(ctx context.Context, settings []store.AppSleep, cfg Config) (map[string][]string, []store.AppSleep) {
+func (s *Scheduler) stackPlan(ctx context.Context, settings []store.AppSleep) (map[string][]string, []store.AppSleep) {
 	stacks := map[string][]string{}
-	if !cfg.StackSleep {
+	if !StackEnabled(ctx) {
 		return stacks, settings
 	}
 	all := append([]store.AppSleep{}, settings...)
