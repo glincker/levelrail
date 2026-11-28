@@ -26,8 +26,8 @@ import (
 	slackprov "github.com/glincker/theauth-go/v2/provider/slack"
 	twitchprov "github.com/glincker/theauth-go/v2/provider/twitch"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // defaultOIDCClient refuses internal destinations (discovery and token calls go to operator-supplied issuers).

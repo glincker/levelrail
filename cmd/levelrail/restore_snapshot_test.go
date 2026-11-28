@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func seedSnapshot(t *testing.T, dataDir string) (string, cpbackup.Info) {

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/cdn"
+	"github.com/glincker/levelrail/internal/cdn"
 )
 
 type cdnSetupRequest struct {

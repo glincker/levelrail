@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/cliupdate"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/cliupdate"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 // selfUpdatePlatforms are the agent platforms self-update asks assets for.

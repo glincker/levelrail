@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // containerLogReader is the optional runtime capability containerLogTail reads through.

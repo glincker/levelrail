@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // MaxFreezeDuration bounds one freeze window so a typo cannot freeze an

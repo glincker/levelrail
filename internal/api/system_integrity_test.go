@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/integrity"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/integrity"
+	"github.com/glincker/levelrail/internal/reconcile"
 )
 
 type fakeIntegrity struct {

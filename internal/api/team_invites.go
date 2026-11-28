@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // teamInviteTTLEnv overrides how long a team invite link stays valid.

@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/cliupdate"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/cliupdate"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // Step codes in a Plan. The dashboard and CLI translate them.

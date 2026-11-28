@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ErrNodeDestination is returned when an S3 client is requested for a node directory destination.

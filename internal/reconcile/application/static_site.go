@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ReasonStaticSitePublished is the Ready reason of an app whose content is

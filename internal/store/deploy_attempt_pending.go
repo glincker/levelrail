@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // ResolvePendingDeployAttempts settles the attempts queued for an offline node

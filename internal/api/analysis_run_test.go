@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/analysis"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/analysis"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeAnalysisRunner struct {

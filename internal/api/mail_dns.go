@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dnsstatus"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/dnsstatus"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/mailrecords"
 )
 
 const auditMailDNSApply = "mail_dns.apply"

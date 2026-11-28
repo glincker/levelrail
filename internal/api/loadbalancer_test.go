@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeLBStats map[string]loadbalancer.Stats

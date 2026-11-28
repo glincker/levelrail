@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 func TestParseLine(t *testing.T) {

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dashboards"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dashboards"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const maxDashboardBodyBytes = 256 << 10

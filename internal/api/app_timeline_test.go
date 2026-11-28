@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newTimelineRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {

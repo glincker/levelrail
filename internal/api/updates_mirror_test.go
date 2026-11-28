@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 func TestChannelReleaseMirrorFallback(t *testing.T) {

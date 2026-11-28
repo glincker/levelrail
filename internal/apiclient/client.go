@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/httpx"
+	"github.com/glincker/levelrail/kit/httpx"
 )
 
 // Request header names and values shared by every client call.
@@ -951,6 +951,8 @@ type DeleteAppResult struct {
 	Pending bool   `json:"pending"`
 	Message string `json:"message,omitempty"`
 	Error   string `json:"error,omitempty"`
+	// WillNotRestore names credential categories an undo cannot bring back.
+	WillNotRestore []string `json:"will_not_restore,omitempty"`
 }
 
 // DeleteAppResult calls DELETE /api/v1/apps/{name} and reports whether
@@ -960,11 +962,13 @@ func (c *Client) DeleteAppResult(ctx context.Context, name string) (DeleteAppRes
 		Status  string `json:"status"`
 		Message string `json:"message"`
 		Error   string `json:"error"`
+
+		WillNotRestore []string `json:"will_not_restore"`
 	}
 	if err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name), nil, &body); err != nil {
 		return DeleteAppResult{}, err
 	}
-	return DeleteAppResult{Pending: body.Status == "teardown_pending", Message: body.Message, Error: body.Error}, nil
+	return DeleteAppResult{Pending: body.Status == "teardown_pending", Message: body.Message, Error: body.Error, WillNotRestore: body.WillNotRestore}, nil
 }
 
 // GetDeployStatus calls GET /api/v1/apps/{name}/deploys: the application
@@ -2178,12 +2182,18 @@ func (c *Client) MintSessionLink(ctx context.Context) (SessionLinkResource, erro
 // the server's 409-if-locked guard, the same escape hatch the dashboard's
 // SecretsEditor exposes.
 func (c *Client) SetSecret(ctx context.Context, name, key, value string, overwriteLocked bool) error {
+	if err := PrecheckEnv(map[string]string{key: value}, true); err != nil {
+		return err
+	}
 	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked}, nil)
 }
 
 // SetSecretWithBuildTime is SetSecret plus an explicit build_time flag
 // (whether build.secrets may mount the secret).
 func (c *Client) SetSecretWithBuildTime(ctx context.Context, name, key, value string, overwriteLocked, buildTime bool) error {
+	if err := PrecheckEnv(map[string]string{key: value}, true); err != nil {
+		return err
+	}
 	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked, BuildTime: &buildTime}, nil)
 }
 
@@ -5187,5 +5197,13 @@ func (c *Client) ListCleanupRuns(ctx context.Context, q CleanupRunsQuery) (Clean
 	}
 	var out CleanupRunsPage
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// ListTemplateCompat calls GET /api/v1/templates/compat: the templates that
+// could not install on this host and what unlocks each.
+func (c *Client) ListTemplateCompat(ctx context.Context) ([]TemplateCompatItem, error) {
+	var out []TemplateCompatItem
+	err := c.do(ctx, http.MethodGet, "/api/v1/templates/compat", nil, &out)
 	return out, err
 }

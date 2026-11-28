@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/deploylink"
+	"github.com/glincker/levelrail/internal/deploylink"
 )
 
 const envBrandDocsURL = "APP_BRAND_DOCS_URL"

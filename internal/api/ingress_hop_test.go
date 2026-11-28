@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingresstrust"
+	"github.com/glincker/levelrail/internal/ingresstrust"
 )
 
 // serveThroughHop runs r through the hop middleware and returns what the inner handler saw.

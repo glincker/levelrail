@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // UpdateServiceRuntimeIf swaps only the runtime_options column when it still holds

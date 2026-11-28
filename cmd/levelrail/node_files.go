@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/backup"
 )
 
 type backupNodeFiles struct{ files *agent.NodeFiles }

@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/registrycatalog"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/registrycatalog"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // Built-in registry target ids.

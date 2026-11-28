@@ -163,5 +163,15 @@
     "override": "Déroger",
     "edit": "Ouvrir l'app",
     "forecast": "Dépassement prévu"
+  },
+  "servers": {
+    "title": "Servers",
+    "description": "Each server's monthly price shared out by what its apps use. Servers without a price are left out.",
+    "caption": "Apps on {{name}} and their share of its bill",
+    "app": "App",
+    "share": "Share",
+    "saving": "Monthly saving",
+    "savingValue": "Save {{amount}} a month",
+    "idle": "Idle"
   }
 }

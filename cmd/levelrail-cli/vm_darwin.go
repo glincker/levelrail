@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/localmode"
-	"github.com/GLINCKER/levelrail/internal/vmruntime"
+	"github.com/glincker/levelrail/internal/localmode"
+	"github.com/glincker/levelrail/internal/vmruntime"
 )
 
 const bytesPerMiB = 1 << 20

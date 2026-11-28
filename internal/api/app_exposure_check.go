@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Failure codes of a reachability probe; the UI maps each to plain copy and

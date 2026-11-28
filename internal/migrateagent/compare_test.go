@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/migrationplan"
+	"github.com/glincker/levelrail/internal/migrationplan"
 )
 
 func TestSourceTarget(t *testing.T) {

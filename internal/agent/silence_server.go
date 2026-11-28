@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
 )
 
 // EnvSilencePushEvery is how often a session re-checks the silence URL, so a dashboard edit reaches live agents.

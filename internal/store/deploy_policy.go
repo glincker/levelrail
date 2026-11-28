@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/policy"
 )
 
 // DeployPolicy is one scope's stored rule set.

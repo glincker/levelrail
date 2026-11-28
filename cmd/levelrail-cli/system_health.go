@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/footprint"
 )
 
 func runSystemHealth(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

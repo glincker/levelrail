@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/giteaapp"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // giteaPullRequestBody builds a pull_request event payload carrying

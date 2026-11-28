@@ -160,9 +160,16 @@ levelrail-cli logs <app> [flags]
 Same as `apps logs <app>`. The log archive and search commands keep their names (`logs archive`, `logs search`, `logs dump`).
 
 ```
-levelrail-cli env set <app> KEY=VALUE... [--apply|--no-apply] [--allow-file-values] [flags]
+levelrail-cli env set <app> KEY=VALUE... [--apply|--no-apply] [--allow-file-values] [--retries N] [--no-retry] [flags]
 ```
+`env set`, `env unset`, `apps env import` and `apps secrets set` retry a stale-version conflict automatically when only other keys changed: the CLI re-reads the version, checks that the keys in its own plan are unchanged, and replays the same plan with jittered backoff (`--retries N`, default 5, env `LEVELRAIL_ENV_RETRIES`). `--no-retry` exits 8 at the first conflict. Exit 8 also means a key in the plan itself changed or the retries ran out; the message names the keys.
+
 Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those. `KEY=@-` reads the value from stdin. `KEY=@./path`, `KEY=@/abs/path` and `KEY=@~/path` read a local file only with `--allow-file-values` and are refused otherwise. `KEY=@@text` stores the literal `@text`. All keys go to the server in one column-scoped call, so a concurrent deploy cannot drop them.
+
+```
+levelrail-cli env apply <app> [-f plan.json] [--set K=V] [--unset K] [--secret-set K=V] [--secret-delete K] [--convert K] [--vault-clear K] [--expected-version N] [--dry-run] [--force-locked] [flags]
+```
+Apply plain, secret and vault changes in one transaction (`apps env apply` is the same command). `-f` takes the API request body (`POST /api/v1/apps/{name}/env/apply`) and the flags add to it. The output lists key names and actions only, never a value. Read the version with `apps get <app> --json` (field `env_version`) and pass it as `--expected-version`: if the env changed since, nothing is applied and the command exits with code 8, so a concurrent writer is a visible conflict, not a silent overwrite. `env set`, `env unset`, `apps env import` and `apps secrets set` use the same endpoint with the version they read. Exit codes: 0 applied or dry run, 1 usage, 2 invalid plan, 3 network, 4 API error, 8 env changed since the expected version.
 
 ```
 levelrail-cli open <app> [flags]
@@ -223,7 +230,7 @@ levelrail-cli apps delete <name> [flags]
 - `apps listening-ports <app>` shows whether the running container listens on the configured port. It reads the container socket table, so it needs exec enabled for the app; otherwise the note column says why and the verdict is `unknown`.
 - `apps next-advisor <app>` checks the saved config of a Next.js app (shared cache, skew protection, build memory, web vitals) and prints one row per finding with its fix. It needs no build; for other apps it says Next.js was not detected. `--json` prints the raw response.
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
-- `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried. It then prints the undo command, `apps restore <name>`, and the restore deadline when the server lists one. `apps restore <name>` brings a deleted app back, stopped, within the undo window (`retention.recently_deleted_days`); secrets are not kept, set them again afterwards. `env restore <app> <revision> --confirm <app>` restores an earlier env revision as a new revision, so history is kept.
+- `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried. It then prints the undo command, `apps restore <name>`, and the restore deadline when the server lists one. `apps restore <name>` brings a deleted app back, stopped, within the undo window (`retention.recently_deleted_days`); secret values come back, but the deploy source, deploy token, log drain, integrations and build hooks do not: `apps delete` lists them before you rely on the undo and `apps restore` prints the command to recreate each. `env restore <app> <revision> --confirm <app>` restores an earlier env revision as a new revision, so history is kept.
 - `apps expiry <app>` shows an app's expiry. `--at TIME` (RFC 3339) or `--in 72h` sets it, within the max horizon setting. A notice is written to the audit log first, the app is stopped at the expiry, and deleted only after the grace period (`deploy.app_expiry_grace_hours`, default 7 days) and only when an operator has turned on `deploy.app_expiry_delete_enabled` (off by default; until then expired apps are only stopped). Starting the app again after its expiry stop keeps it for good. With `--delete-data`, the person or token that set it must still hold write:sensitive at delete time, or the app is kept. A control plane restore marks already stopped expiries kept. Apps with volumes, bind mounts, linked databases or dependent apps are only stopped and kept unless `--delete-data --confirm <app>` is set. A protected app, an app in a protected environment (setting an expiry there is refused), or one started again after its expiry is never deleted. An expiry belongs to one life of the app name, so a recreated app never inherits it. Setting needs write ability on the app, `--delete-data` also needs write:sensitive and an app on the control plane's own node. `--clear` needs deploy ability and always cancels a pending delete; a stopped app stays stopped until `apps start`.
 - `apps restart-schedule <app>` shows an app's scheduled restart. `--schedule EXPR` sets it: a 5 field cron (`0 3 * * *`, with `--timezone`, default UTC) or `@every 24h`. Restarts must be at least `deploy.restart_schedule_min_interval` apart (default 1h, never under 5m), and one sweep restarts at most `deploy.restart_schedule_max_per_sweep` apps per control plane. Each run uses the same restart path as `apps restart`, so the rollout strategy, health gating and disruption budget apply, and multi replica apps roll. A stopped app, an app in a protected environment, during a deploy freeze, with a running deploy, on an offline node or over its disruption budget is skipped (recorded with the reason, the next regular run is kept) and never forced or started. A failed restart is retried after `deploy.restart_schedule_failure_backoff` (default 15m, doubled per failure up to 24h, never later than the next regular run). Set, clear and each run, skip or failure are written to the audit log. The schedule belongs to one life of the app name, so a recreated app never inherits it. Setting and `--clear` need deploy ability on the app, like `apps restart`, because a restart also applies staged environment edits. Saving the schedule again never moves the next run closer than the minimum interval after the last run.
 
@@ -478,7 +485,7 @@ levelrail-cli apps build-cache remove <name>|--global
 ### Environment, secrets and Vault
 
 ```
-levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [--apply|--no-apply] [flags]
+levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [--strict] [--apply|--no-apply] [flags]
 levelrail-cli apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]
 levelrail-cli apps env get <name> <KEY> [--reveal] [flags]
 levelrail-cli apps env diff <app-a> <app-b> [flags]
@@ -503,10 +510,10 @@ levelrail-cli apps contexts list|clear|show <name> [flags]
 levelrail-cli apps contexts set <name> --context CTX [--env K=V]... [--build-command CMD] [--publish DIR] [--build-arg K=V]... [flags]
 ```
 
-- `apps env import` merges a .env file into an app and prints which keys are new, changed, unchanged or sent to secrets, by name only. Keys that look sensitive (`*_KEY`, `*_SECRET`, `*_TOKEN`, `*PASSWORD*`, `DATABASE_URL` and URLs with credentials) go to the secret store and the rest to plain env. `--all-secrets` sends every key to secrets, `--all-plain` keeps every key in plain env, and `--secret-pattern STRIPE_*,*_DSN` adds key globs to the secret side. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`. `--no-apply` keeps the change pending when `apps.env_apply_on_set` is on.
+- `apps env import` merges a .env file into an app and prints which keys are new, changed, unchanged or sent to secrets, by name only. Keys that look sensitive (`*_KEY`, `*_SECRET`, `*_TOKEN`, `*PASSWORD*`, `DATABASE_URL` and URLs with credentials) go to the secret store and the rest to plain env. `--all-secrets` sends every key to secrets, `--all-plain` keeps every key in plain env, and `--secret-pattern STRIPE_*,*_DSN` adds key globs to the secret side. Keys that are already secrets are skipped. Every run, dry run included, prints a report of accepted keys, rejected lines with the reason (line numbers and key names, never values; malformed lines, names the env rules refuse such as `LD_PRELOAD`) and warnings such as duplicate keys; `--json` carries it as `env_report`. Valid keys are still imported, the command exits 2 when nothing valid is left, and `--strict` imports nothing and exits 2 when anything was rejected. It reports how many changes are pending, or restarts the app right away with `--apply`. `--no-apply` keeps the change pending when `apps.env_apply_on_set` is on.
 - `apps env diff` compares two apps' env vars, for example staging against production. Secret values are never read: secrets are compared by key only, and the dashboard has the same comparison on an app's Environment page.
 - `apps env export` writes env vars as .env text; sensitive and secret keys are written empty with a comment unless `--reveal` is given. `apps env get` prints one variable, masked when sensitive. `--reveal` asks for your password (and authenticator code) at the prompt, never from flags or the environment, and needs a token with `read:sensitive` and `secrets:reveal` plus `APP_SECRET_REVEAL_TOKENS=on` on the server. See [Environment variables and secrets](/environment-and-secrets).
-- `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
+- `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. A key that already exists as plain env is replaced atomically in one request (the output says `replaced plain env value`); `--retries` and `--no-retry` as for `env set`. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.
 - `apps preview-env` and `apps branch-env` override an env var for previews only. A branch override applies when the preview's own branch matches PATTERN (an exact name or a glob such as `release/*`); `--secret` stores it envelope encrypted. Neither affects the app's own running deploy.
 - `apps branch-deploys` chooses which branches get a stable per-branch deploy (see [Preview environments](/preview-environments#branch-deploys)), lists the live ones and removes one now.
@@ -890,8 +897,13 @@ List configured credentials profiles with API URL, whether each holds a token, i
 ```
 levelrail-cli tokens create --name NAME (--abilities LIST | --preset observer|deployer|operator) [--agent NAME] [--agent-description TEXT] [flags]
 levelrail-cli tokens list [flags]
-levelrail-cli tokens revoke <id> [flags]
+levelrail-cli tokens ls [--status S] [--name N] [--q Q] [--ability A] [--kind K] [--sort S] [--order O] [--limit N] [--groups] [--json]
+levelrail-cli tokens revoke <id>... [flags]
+levelrail-cli tokens revoke --expired | --name N | --kind K | --filter 'k=v,...' [--dry-run] [--yes]
+levelrail-cli tokens prune [--older-than 30d] [--dry-run] [--yes]
 levelrail-cli tokens cleanup [--older-than-days N] [--yes] [flags]
+
+`ls` is `list` with filters: `--status` takes active, expiring, expired or revoked, `--kind` takes emergency, agent, system or user, and `--sort` takes name, created, last_used or expires. It prints status, name, abilities, created, last used and expires, plus counts by status. `--groups` prints one row per name with counts. Revoking several ids, or by `--expired`, `--name`, `--kind` or `--filter` (keys q, status, ability, name, kind, expires_before), always previews first, prints the count and up to 10 names, and asks to confirm unless `--yes` is given. `--dry-run` stops after the preview. A bulk revoke skips revoked tokens and the token making the call, is refused above the `tokens.bulk_max` setting, and needs a signed-in session: pass `--username` and `--password`, because an API token (including a saved one) is refused with a message saying so. `prune` previews and then deletes revoked and expired tokens older than the window (default 90d), and needs a root API token.
 ```
 `tokens create` requires a username and password (prompted if omitted, never prompted in CI mode), because that route is session only server side. `revoke` first tries the API token from `--token`, `LEVELRAIL_TOKEN`, `APP_API_TOKEN` or the saved profile, and asks for `--username` and `--password` only when the server refuses a token. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret. `cleanup` permanently removes revoked tokens that were revoked more than `--older-than-days` days ago (default 90 when the flag is omitted; `0` removes every revoked token and needs `--yes`) and prints how many it removed; unlike the other subcommands it takes a root API token (`--token` or the stored one) instead of a password, and it never touches an active token. The dashboard setting **Delete revoked API tokens after** (Settings, API tokens) does the same on a schedule.
 
@@ -1384,6 +1396,13 @@ levelrail-cli event-webhooks rotate-secret <id>
 levelrail-cli event-webhooks delete <id>
 ```
 Signed outbound event webhooks with a delivery log. `create` and `rotate-secret` print the signing secret once. See [Event webhooks](/event-webhooks).
+
+## Instance ID
+
+```
+levelrail-cli instance show [--json]
+```
+Prints the server's Instance ID, its fingerprint, the Backup set ID (the name of the backup storage path), the server version and whether this profile is pinned to the server. The Instance ID identifies the server to your own tools, labels its Docker resources and binds CLI tokens to it. It is an identifier, not a secret, and Levelrail never sends it in the update check or the announcement fetch. A support bundle (`doctor --bundle`) carries the Instance ID and fingerprint, never a key.
 
 ## Scheduled maintenance
 
@@ -2434,6 +2453,19 @@ levelrail-cli analysis show <id> [--json]
 ```
 
 Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`. Right-sizing thresholds: `APP_ANALYSIS_HEADROOM_MEMORY` and `APP_ANALYSIS_HEADROOM_CPU` (multiplier over p95, above 1), `APP_ANALYSIS_SIZING_RAISE_AT` and `APP_ANALYSIS_SIZING_LOWER_AT` (p95 as a fraction of the limit), and `APP_ANALYSIS_SIZING_MIN_COVERAGE` (history needed before a suggestion). Unset values keep the engine defaults.
+
+## Announcements
+
+Signed notices from the Levelrail project (security alerts, release news) that your instance has verified. They appear only when `updates.announcements` is on.
+
+```
+levelrail-cli announcements ls [--all] [--json]
+levelrail-cli announcements read <id>
+levelrail-cli announcements dismiss <id>
+levelrail-cli announcements snooze <id> --for <duration>
+```
+
+`ls` shows tier, date, title, expiry, id and your read state; dismissed and snoozed notices are hidden unless you pass `--all`. A critical notice cannot be dismissed until you upgrade, so `dismiss` answers with that message; `snooze` hides it for the given time, capped by the runtime setting `updates.announcements_snooze_max`. `read`, `dismiss` and `snooze` mark your own account, so they need a signed-in session user.
 
 ## Certificates
 

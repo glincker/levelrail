@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // PITRHistoryStore is the store surface PITRRunner needs. See ADR 016

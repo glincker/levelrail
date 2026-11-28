@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/statuspage"
+	"github.com/glincker/levelrail/internal/statuspage"
 )
 
 const (

@@ -1,0 +1,17 @@
+services:
+  quickwit:
+    image: quickwit/quickwit:0.8.2
+    command: ["run"]
+    ports: ["7280"]
+    environment:
+      QW_ENABLE_OPENTELEMETRY_OTLP_EXPORTER: "false"
+    volumes:
+      - quickwit_data:/quickwit/qwdata
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:7280/health/livez"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+volumes:
+  quickwit_data:

@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"net"
 
-	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/meshpath"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bindaddr"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/meshpath"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // WithMeshPaths lets a service placed on a remote node publish its main

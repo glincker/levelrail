@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const googleCloudDNSNoMasterKey = "google cloud dns is not configured on this control plane (no master key set)"

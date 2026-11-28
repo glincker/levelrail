@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/secrets"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/vault"
 )
 
 // OwnerKey is the internal/secrets namespace that holds every provider config and token.

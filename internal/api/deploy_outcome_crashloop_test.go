@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func crashLoopCond(restarts int, at time.Time) reconcile.Condition {

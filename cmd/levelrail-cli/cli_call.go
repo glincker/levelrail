@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // cliCall is the parsed common state of one API-backed subcommand.

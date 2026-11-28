@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ErrMaxSteps means a turn used its whole tool step budget without a final answer.

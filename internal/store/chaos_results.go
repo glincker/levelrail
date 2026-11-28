@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 const chaosResultColumns = `id, scenario, status, summary, recovery_ms, error_window_ms, requests, request_errors, assertions, hardware, duration_ms, ran_at`

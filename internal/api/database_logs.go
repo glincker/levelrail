@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // resourceIDForDatabase is telemetry's stable identifier for one managed

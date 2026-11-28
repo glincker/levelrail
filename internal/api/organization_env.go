@@ -3,11 +3,12 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/glincker/levelrail/internal/envrules"
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // sharedEnvScope parameterizes handleGetSharedEnv/handleSetSharedEnv
@@ -61,6 +62,9 @@ func (rt *Router) handleSetSharedEnv(w http.ResponseWriter, r *http.Request, sco
 	current, err := scope.list(r.Context(), id)
 	if err != nil {
 		rt.internalError(w, "api: set "+scope.label+" env: load current failed", err, slog.String("id", id))
+		return
+	}
+	if _, ok := rt.checkEnvWrite(r.Context(), w, vars, envrules.Existing{Plain: current}, envrules.Options{Multiline: true}); !ok {
 		return
 	}
 	if vars, err = envredact.Merge(vars, current); err != nil {

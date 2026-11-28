@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	appspec "github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	appspec "github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // JobSpec is a one-off container spec derived from a service, plus the
@@ -58,7 +58,7 @@ func (c *Controller) BuildJobSpec(ctx context.Context, desired *store.DesiredSer
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
-	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
+	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, appLabelValue(desired))
 	if desired.Incarnation != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.IncarnationLabelKey, desired.Incarnation)
 	}

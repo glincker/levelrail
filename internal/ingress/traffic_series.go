@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/trafficclass"
+	"github.com/glincker/levelrail/internal/trafficclass"
 )
 
 // TrafficPoint is one bucket of the request series.

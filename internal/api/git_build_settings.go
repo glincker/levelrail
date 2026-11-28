@@ -11,11 +11,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/defparse"
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/internal/repolayout"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/defparse"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // repoLayoutSourceFunc opens a file-tree source for build detection. A seam

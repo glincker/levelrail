@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 func getRepoList(t *testing.T, rt *Router, cookie *http.Cookie, query string) (int, http.Header, gitRepoListResource, gitRepoRateLimitedError) {

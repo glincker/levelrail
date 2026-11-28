@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func appBody(f appFields) map[string]any {

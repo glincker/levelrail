@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Environment variables that tune usage metering.

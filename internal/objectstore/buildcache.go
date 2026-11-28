@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Env names for the build cache bounds.

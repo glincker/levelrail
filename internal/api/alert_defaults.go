@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/alerting"
 )
 
 // AlertDefaults is the surface the seeded default alert routes need from internal/alerting.DB.

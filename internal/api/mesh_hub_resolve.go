@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	meshnet "github.com/GLINCKER/levelrail/internal/network"
+	meshnet "github.com/glincker/levelrail/internal/network"
 )
 
 // SetMeshHubResolver lets a hostname advertise host become the mesh endpoint IP.

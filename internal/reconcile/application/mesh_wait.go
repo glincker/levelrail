@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ReasonWaitingForMesh is the Ready condition reason of a service parked

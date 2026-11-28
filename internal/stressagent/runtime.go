@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 var errUnsupported = errors.New("stressagent: not supported by the fake runtime")

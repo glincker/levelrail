@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // Pure, no I/O. CapRover exposes no repo or branch, so RepoURL and Ref stay empty.

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newBuildCacheEnv(t *testing.T) (*storageEnv, storageDestinationResource) {

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2428 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2447 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -157,6 +157,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/budget/dry-run", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppSpendDryRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/budget/override", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendOverride", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/budget/resume", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapResume", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-cache", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppBuildCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-cache", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildCache", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/build-cache/reclaim", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleReclaimAppBuildCache", Description: ""},
@@ -275,6 +276,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-report", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppEgressReport", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/env", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppEnv", Description: "Batch set and unset merged in one transaction; the CLI uses this instead of a full-spec PUT."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env-diff", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleEnvDiff", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/env/apply", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyEnvPlan", Description: "Plain edits need write; secret, convert and vault parts additionally check write:sensitive in the handler."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/bound", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBoundEnv", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/check", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckEnv", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/check/fix", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleFixEnv", Description: ""},
@@ -1209,6 +1211,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/alert-silences/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleExpireAlertSilence", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertTemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/analysis/reports/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetAnalysisReport", Description: ""},
+	{Method: "GET", Path: "/api/v1/announcements", Ability: "AbilityRead", Group: "Other", Handler: "handleListAnnouncements", Description: ""},
+	{Method: "GET", Path: "/api/v1/announcements/banner", Ability: "AbilityRead", Group: "Other", Handler: "handleAnnouncementBanner", Description: ""},
+	{Method: "POST", Path: "/api/v1/announcements/{id}/dismiss", Ability: "Session", Group: "Other", Handler: "handleAnnouncementDismiss", Description: ""},
+	{Method: "POST", Path: "/api/v1/announcements/{id}/read", Ability: "Session", Group: "Other", Handler: "handleAnnouncementRead", Description: ""},
+	{Method: "POST", Path: "/api/v1/announcements/{id}/snooze", Ability: "Session", Group: "Other", Handler: "handleAnnouncementSnooze", Description: ""},
 	{Method: "GET", Path: "/api/v1/app-types", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppTypes", Description: ""},
 	{Method: "POST", Path: "/api/v1/app-types", Ability: "AbilityRoot", Group: "Other", Handler: "handleSaveAppType", Description: ""},
 	{Method: "POST", Path: "/api/v1/app-types/{name}/check", Ability: "AbilityRead", Group: "Other", Handler: "handleCheckAppType", Description: ""},
@@ -1419,6 +1426,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/costs/budgets/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCostBudget", Description: ""},
 	{Method: "PUT", Path: "/api/v1/costs/budgets/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateCostBudget", Description: ""},
 	{Method: "POST", Path: "/api/v1/costs/budgets/{id}/dry-run", Ability: "AbilityRead", Group: "Other", Handler: "handleCostBudgetDryRun", Description: ""},
+	{Method: "GET", Path: "/api/v1/costs/capped-apps", Ability: "AbilityRead", Group: "Other", Handler: "handleListSpendCapPaused", Description: ""},
 	{Method: "GET", Path: "/api/v1/costs/explore", Ability: "AbilityRead", Group: "Other", Handler: "handleCostExplore", Description: ""},
 	{Method: "GET", Path: "/api/v1/dashboards", Ability: "AbilityRead", Group: "Other", Handler: "handleListDashboards", Description: ""},
 	{Method: "POST", Path: "/api/v1/dashboards", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateDashboard", Description: ""},
@@ -2091,9 +2099,19 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityRead", Group: "Other", Handler: "handleGetQuota", Description: ""},
 	{Method: "PUT", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetQuota", Description: ""},
 	{Method: "POST", Path: "/api/v1/teams/{id}/transfer", Ability: "AbilityWrite", Group: "Other", Handler: "handleTransferTeam", Description: ""},
-	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
+	{Method: "GET", Path: "/api/v1/templates/compat", Ability: "AbilityRead", Group: "Other", Handler: "handleListTemplateCompat", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
+	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: ""},
 	{Method: "POST", Path: "/api/v1/templates/custom", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleImportCustomTemplate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
+	{Method: "GET", Path: "/api/v1/templates/sources", Ability: "AbilityRoot", Group: "Other", Handler: "handleListTemplateSources", Description: ""},
+	{Method: "POST", Path: "/api/v1/templates/sources", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateTemplateSource", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/templates/sources/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteTemplateSource", Description: ""},
+	{Method: "POST", Path: "/api/v1/templates/sources/{name}/sync", Ability: "AbilityRoot", Group: "Other", Handler: "handleSyncTemplateSource", Description: ""},
+	{Method: "GET", Path: "/api/v1/templates/sources/{name}/templates", Ability: "AbilityRoot", Group: "Other", Handler: "handleListTemplateSourceEntries", Description: ""},
+	{Method: "GET", Path: "/api/v1/templates/sources/{name}/templates/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetTemplateSourceEntry", Description: ""},
+	{Method: "POST", Path: "/api/v1/templates/sources/{name}/templates/{id}/approve", Ability: "AbilityRoot", Group: "Other", Handler: "handleApproveTemplateSourceEntry", Description: ""},
+	{Method: "POST", Path: "/api/v1/tokens/bulk-revoke", Ability: "Session", Group: "Other", Handler: "handleBulkRevokeTokens", Description: "Bulk revoke is session only like the single revoke; prune deletes rows so it is AbilityRoot."},
+	{Method: "POST", Path: "/api/v1/tokens/prune", Ability: "AbilityRoot", Group: "Other", Handler: "handlePruneTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/tokens/unused", Ability: "Session", Group: "Other", Handler: "handleUnusedTokens", Description: "Read-only list of idle tokens, same audience as the token list."},
 	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},
 	{Method: "GET", Path: "/api/v1/usage/budgets", Ability: "AbilityRead", Group: "Other", Handler: "handleListUsageBudgets", Description: ""},
@@ -2361,6 +2379,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/control-plane-health/fix", Ability: "AbilityRoot", Group: "System", Handler: "handleCPHealthFix", Description: "Checkpointing and ANALYZE briefly hold the single database connection, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/db-space", Ability: "AbilityRead", Group: "System", Handler: "handleGetDBSpace", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/db-space/compact", Ability: "AbilityRoot", Group: "System", Handler: "handleCompactDB", Description: "VACUUM holds the single writer connection, so AbilityRoot, and it only runs on request."},
+	{Method: "POST", Path: "/api/v1/system/disk/gc", Ability: "AbilityRoot", Group: "System", Handler: "handleDiskGC", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/disk/history", Ability: "AbilityRead", Group: "System", Handler: "handleDiskHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/docker-guard", Ability: "AbilityRead", Group: "System", Handler: "handleGetDockerGuard", Description: "Docker API guard status (Security settings page): AbilityRead like system/doctor."},
 	{Method: "PUT", Path: "/api/v1/system/docker-guard", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateDockerGuard", Description: "Switching modes changes the host-protection boundary, so AbilityRoot."},

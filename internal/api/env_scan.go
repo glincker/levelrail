@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/deploy/secretscan"
+	"github.com/glincker/levelrail/internal/deploy/secretscan"
 )
 
 const envScanBodyLimit = 1 << 20

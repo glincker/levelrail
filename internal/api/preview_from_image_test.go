@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func postImagePreview(t *testing.T, rt *Router, cookie *http.Cookie, pr string) *httptest.ResponseRecorder {

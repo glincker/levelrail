@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
 )
 
 const (

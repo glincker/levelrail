@@ -3,7 +3,7 @@ package deploysafety
 import (
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Watch states a release's post-deploy watch can be in.

@@ -85,10 +85,15 @@ func (db *DB) StartBackupHistory(ctx context.Context, h BackupHistory) error {
 	if kind == "" {
 		kind = BackupResourceKindDatabase
 	}
+	if kind == BackupResourceKindVolume && h.ServiceName != "" {
+		if _, err := db.ServiceInstanceID(ctx, h.ServiceName); err != nil {
+			return err
+		}
+	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO backup_history (id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, instance_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, '', ?, '', COALESCE((SELECT instance_id FROM desired_databases WHERE name = ?), ''))
-	`, h.ID, h.DatabaseName, kind, h.ServiceName, h.VolumeName, h.TargetID, h.ObjectKey, BackupStatusRunning, h.StartedAt, h.DatabaseName)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, '', ?, '', COALESCE((SELECT instance_id FROM desired_databases WHERE name = ?), (SELECT instance_id FROM service_instances WHERE name = ? AND ? = 'volume'), ''))
+	`, h.ID, h.DatabaseName, kind, h.ServiceName, h.VolumeName, h.TargetID, h.ObjectKey, BackupStatusRunning, h.StartedAt, h.DatabaseName, h.ServiceName, kind)
 	if err != nil {
 		return fmt.Errorf("store: start backup history %q: %w", h.ID, err)
 	}
@@ -297,7 +302,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 	)
 	if before != nil {
 		rows, err = db.reader().QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes, instance_id
 			FROM backup_history
 			WHERE database_name = ? AND started_at < ?
 			ORDER BY started_at DESC
@@ -305,7 +310,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 		`, databaseName, before.UTC().Format(time.RFC3339), limit)
 	} else {
 		rows, err = db.reader().QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes, instance_id
 			FROM backup_history
 			WHERE database_name = ?
 			ORDER BY started_at DESC
@@ -339,7 +344,7 @@ func (db *DB) ListAllBackupHistory(ctx context.Context, limit int, before *time.
 	)
 	if before != nil {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes, instance_id
 			FROM backup_history
 			WHERE started_at < ?
 			ORDER BY started_at DESC
@@ -347,7 +352,7 @@ func (db *DB) ListAllBackupHistory(ctx context.Context, limit int, before *time.
 		`, before.UTC().Format(time.RFC3339), limit)
 	} else {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes, instance_id
 			FROM backup_history
 			ORDER BY started_at DESC
 			LIMIT ?
@@ -375,7 +380,7 @@ func scanBackupHistoryRows(rows *sql.Rows) ([]BackupHistory, error) {
 	var out []BackupHistory
 	for rows.Next() {
 		var h BackupHistory
-		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256, &h.Codec, &h.ManifestDigest, &h.ManifestFiles, &h.ManifestBytes); err != nil {
+		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256, &h.Codec, &h.ManifestDigest, &h.ManifestFiles, &h.ManifestBytes, &h.InstanceID); err != nil {
 			return nil, fmt.Errorf("scan backup history row: %w", err)
 		}
 		out = append(out, h)
@@ -392,26 +397,29 @@ func scanBackupHistoryRows(rows *sql.Rows) ([]BackupHistory, error) {
 // implied by service_name/volume_name being non-empty) so this can never
 // accidentally match a database row, however this schema evolves later.
 func (db *DB) ListServiceVolumeBackupHistory(ctx context.Context, serviceName, volumeName string, limit int, before *time.Time) ([]BackupHistory, error) {
+	legacy := legacyBackupsAllowed(ctx)
 	var (
 		rows *sql.Rows
 		err  error
 	)
 	if before != nil {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes, instance_id
 			FROM backup_history
 			WHERE resource_kind = ? AND service_name = ? AND volume_name = ? AND started_at < ?
+			AND (instance_id = COALESCE((SELECT instance_id FROM service_instances WHERE name = ?), '-') OR (? AND instance_id = ''))
 			ORDER BY started_at DESC
 			LIMIT ?
-		`, BackupResourceKindVolume, serviceName, volumeName, before.UTC().Format(time.RFC3339), limit)
+		`, BackupResourceKindVolume, serviceName, volumeName, before.UTC().Format(time.RFC3339), serviceName, legacy, limit)
 	} else {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes, instance_id
 			FROM backup_history
 			WHERE resource_kind = ? AND service_name = ? AND volume_name = ?
+			AND (instance_id = COALESCE((SELECT instance_id FROM service_instances WHERE name = ?), '-') OR (? AND instance_id = ''))
 			ORDER BY started_at DESC
 			LIMIT ?
-		`, BackupResourceKindVolume, serviceName, volumeName, limit)
+		`, BackupResourceKindVolume, serviceName, volumeName, serviceName, legacy, limit)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: list backup history for service %q volume %q: %w", serviceName, volumeName, err)

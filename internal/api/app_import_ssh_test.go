@@ -14,10 +14,10 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockerssh"
-	"github.com/GLINCKER/levelrail/internal/imagemove"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockerssh"
+	"github.com/glincker/levelrail/internal/imagemove"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 const sshTestKey = "-----BEGIN OPENSSH PRIVATE KEY-----\nsecret-key-material\n-----END OPENSSH PRIVATE KEY-----"

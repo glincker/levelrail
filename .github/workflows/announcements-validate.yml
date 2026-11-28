@@ -1,0 +1,48 @@
+name: announcements-validate
+
+# Checks announcement items on every PR that touches the feed source.
+# pull_request (never pull_request_target) and read-only: no secrets used.
+on:
+  pull_request:
+    paths:
+      - "feed-src/**"
+      - "tools/announce/**"
+      - ".github/workflows/announcements-validate.yml"
+
+concurrency:
+  group: announcements-validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: tools/go.mod
+          cache: false
+
+      - name: Validate items
+        working-directory: tools
+        run: go run ./announce validate ../feed-src
+
+      - name: Build is deterministic
+        working-directory: tools
+        run: |
+          now=2030-01-01T00:00:00Z
+          go run ./announce build -dir ../feed-src/announcements -now "$now" -out "$RUNNER_TEMP/a.json"
+          go run ./announce build -dir ../feed-src/announcements -now "$now" -out "$RUNNER_TEMP/b.json"
+          cmp "$RUNNER_TEMP/a.json" "$RUNNER_TEMP/b.json"
+
+      - name: Tool tests and vectors
+        if: ${{ hashFiles('tools/announce/**') != '' }}
+        working-directory: tools
+        run: go test ./announce/...

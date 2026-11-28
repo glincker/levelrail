@@ -17,7 +17,24 @@ const (
 	EventConfigured = "configured"
 	EventCleared    = "cleared"
 	EventOverride   = "override"
+	EventCapPaused  = "cap_paused"
+	EventCapResumed = "cap_resumed"
 )
+
+// StopState values: whether the cap stopped the app's containers.
+const (
+	StopPaused  = "paused"
+	StopResumed = "resumed"
+)
+
+// ErrNotPaused means the app is not held stopped by its spend cap.
+var ErrNotPaused = errors.New("app is not paused by a spend cap")
+
+// Sleeper stops and starts an app through the sleep service.
+type Sleeper interface {
+	Pause(ctx context.Context, app string) error
+	Resume(ctx context.Context, app string) error
+}
 
 // State is what the controller last decided for an app in a period.
 type State struct {
@@ -25,8 +42,11 @@ type State struct {
 	Period string
 	// Enforced is "" or the action ingress must apply; Nudged is the value
 	// ingress was last told about.
-	Enforced    string
-	Nudged      string
+	Enforced string
+	Nudged   string
+	// StopState is "", StopPaused (containers stopped by the cap) or StopResumed
+	// (started by hand, not stopped again until the cap lifts or the period ends).
+	StopState   string
 	Highest     int
 	Pct         float64
 	EgressBytes int64
@@ -77,6 +97,12 @@ type Controller struct {
 	Nudge  func(ctx context.Context) error
 	Logger *slog.Logger
 	Now    func() time.Time
+	// Sleeper and StopApps make a pause really stop containers; with either
+	// unset or StopApps false the pause stays a maintenance response.
+	Sleeper  Sleeper
+	StopApps func(ctx context.Context) bool
+	// Notify tells the owner a cap stopped or restarted an app.
+	Notify func(ctx context.Context, app, text string)
 }
 
 func (c *Controller) now() time.Time {
@@ -133,9 +159,13 @@ func (c *Controller) reconcile(ctx context.Context, cp Cap, u Usage, now time.Ti
 		}
 		// Ingress may still hold last month's action: keep what it was told
 		// so the change to "" gets nudged.
-		st = State{App: cp.App, Period: period, Nudged: st.Enforced}
+		st = State{App: cp.App, Period: period, Nudged: st.Enforced, StopState: st.StopState}
 		if !ok {
 			st.Nudged = ""
+		}
+		// A new month ends a manual resume; a held stop is released below.
+		if st.StopState == StopResumed {
+			st.StopState = ""
 		}
 	}
 	ev := Evaluate(cp, u)
@@ -151,9 +181,14 @@ func (c *Controller) reconcile(ctx context.Context, cp Cap, u Usage, now time.Ti
 		add(EventReleased, fmt.Sprintf("%s lifted at %.0f%%", st.Enforced, ev.Pct), ev.Pct)
 	}
 	st.Enforced = desired
+	st.Pct = ev.Pct
+	stopErr := c.syncStop(ctx, &st, desired, add)
 	st.Pct, st.EgressBytes, st.Cost, st.UpdatedAt = ev.Pct, u.EgressBytes, u.Cost, now
 	if err := c.Store.SaveSpendCapState(ctx, st, events); err != nil {
 		return fmt.Errorf("save state: %w", err)
+	}
+	if stopErr != nil {
+		return stopErr
 	}
 	if st.Enforced == st.Nudged {
 		return nil
@@ -253,6 +288,63 @@ func (c *Controller) Breaches(ctx context.Context) ([]Breach, error) {
 			text += "; the action is alert only, so it keeps serving"
 		}
 		out = append(out, Breach{Key: fmt.Sprintf("spendcap:%s:%s:%d", cp.App, period, st.Highest), Text: text})
+		if st.StopState == StopPaused {
+			out = append(out, Breach{Key: fmt.Sprintf("spendcap:%s:%s:stopped", cp.App, period), Text: fmt.Sprintf("app %q was stopped by its spend cap and stays down until the limit resets or is raised", cp.App)})
+		}
 	}
 	return out, nil
+}
+
+// syncStop stops the app when the cap pauses it and starts it when the cap
+// lifts. A failed stop or start leaves the state unchanged so the next tick retries.
+func (c *Controller) syncStop(ctx context.Context, st *State, desired string, add func(kind, detail string, pct float64)) error {
+	if c.Sleeper == nil {
+		return nil
+	}
+	switch {
+	case desired == ActionPause && st.StopState == "" && c.StopApps != nil && c.StopApps(ctx):
+		if err := c.Sleeper.Pause(ctx, st.App); err != nil {
+			return fmt.Errorf("stop capped app: %w", err)
+		}
+		st.StopState = StopPaused
+		add(EventCapPaused, "containers stopped by the spend cap; they stay down until the limit resets or is raised", st.Pct)
+		c.notify(ctx, st.App, "stopped by its spend cap")
+	case desired != ActionPause && st.StopState != "":
+		if st.StopState == StopPaused {
+			if err := c.Sleeper.Resume(ctx, st.App); err != nil {
+				return fmt.Errorf("start capped app: %w", err)
+			}
+			add(EventCapResumed, "spend cap lifted; the app was started again", st.Pct)
+			c.notify(ctx, st.App, "started again, its spend cap was lifted")
+		}
+		st.StopState = ""
+	}
+	return nil
+}
+
+func (c *Controller) notify(ctx context.Context, app, text string) {
+	if c.Notify != nil {
+		c.Notify(ctx, app, text)
+	}
+}
+
+// ResumeNow starts a cap-stopped app by hand. The cap keeps its action, but
+// the app is not stopped again until the limit lifts or the month rolls over.
+func (c *Controller) ResumeNow(ctx context.Context, app, actor, reason string) error {
+	st, ok, err := c.Store.GetSpendCapState(ctx, app)
+	if err != nil {
+		return fmt.Errorf("spendcap: load state: %w", err)
+	}
+	if !ok || st.StopState != StopPaused || c.Sleeper == nil {
+		return ErrNotPaused
+	}
+	if err := c.Sleeper.Resume(ctx, app); err != nil {
+		return fmt.Errorf("spendcap: start app: %w", err)
+	}
+	st.StopState = StopResumed
+	ev := Event{App: app, Period: st.Period, Kind: EventCapResumed, Detail: fmt.Sprintf("%s started the app by hand: %s", actor, reason), Pct: st.Pct, At: c.now()}
+	if err := c.Store.SaveSpendCapState(ctx, st, []Event{ev}); err != nil {
+		return fmt.Errorf("spendcap: save state: %w", err)
+	}
+	return nil
 }

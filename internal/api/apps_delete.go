@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/glincker/levelrail/internal/secrets"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // handleDeleteApp handles DELETE /api/v1/apps/{name}. 204 means containers are
@@ -35,7 +37,17 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		undo, _ = rt.apps.GetDesiredService(r.Context(), name)
 	}
 	delCtx := r.Context()
+	var willNotRestore []string
 	if st := rt.recentlyDeleted(); undo != nil && st != nil && rt.recentlyDeletedWindow(delCtx) > 0 {
+		willNotRestore = rt.undoLostCategories(delCtx, *undo)
+		if len(willNotRestore) > 0 {
+			labels := make(map[string]string, len(undo.Labels)+1)
+			for k, v := range undo.Labels {
+				labels[k] = v
+			}
+			labels[undoNeedsLabel] = strings.Join(willNotRestore, ".")
+			undo.Labels = labels
+		}
 		if entry, ok := rt.deletedEntry(r, store.RecentlyDeletedApp, name, undo, ""); ok {
 			// The reservation is written under the name lock, in deleteAppGuarded, before history is relied on.
 			delCtx = withSoftDelete(store.WithKeptRevisions(delCtx), func(c context.Context) error { return st.AddRecentlyDeleted(c, entry) })
@@ -57,11 +69,16 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	rt.purgeAppAccess(name)
 	rt.nudgeReconciler()
 	if teardownErr != nil {
-		writeJSON(w, http.StatusAccepted, map[string]string{
-			"status":  "teardown_pending",
-			"message": "app deleted, but its containers are not removed yet; teardown retries automatically",
-			"error":   teardownErr.Error(),
+		writeJSON(w, http.StatusAccepted, map[string]any{
+			"status":           "teardown_pending",
+			"message":          "app deleted, but its containers are not removed yet; teardown retries automatically",
+			"error":            teardownErr.Error(),
+			"will_not_restore": nonNilStrings(willNotRestore),
 		})
+		return
+	}
+	if len(willNotRestore) > 0 {
+		writeJSON(w, http.StatusOK, map[string]any{"status": "deleted", "will_not_restore": willNotRestore})
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -152,6 +169,12 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 			return nil, err
 		}
 	}
+	// Copy the secret values aside for undo while the app is still whole, so a failure here changes nothing.
+	if soft != nil {
+		if err := rt.parkAppSecrets(ctx, name); err != nil {
+			return nil, fmt.Errorf("keep secrets of %q for undo: %w", name, err)
+		}
+	}
 	// Read before the row delete: it also drops the app's deploy attempts, and their deploy-url rows with them.
 	copies := rt.retainedSiblingRows(ctx, name)
 	// Integration rows cascade with the service, so list them first.
@@ -159,12 +182,20 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 	// Erase right after the row is gone, under the name lock (held since the
 	// load): a same-name create cannot write secrets this cleanup then removes.
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
+		if soft != nil {
+			_ = rt.dropParkedSecrets(context.WithoutCancel(ctx), name)
+		}
 		if soft == nil {
 			return nil, fmt.Errorf("delete app %q: function data was already removed, repeat the delete to finish: %w", name, err)
 		}
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
-	rt.removeAppCredentials(ctx, name, integrationNS)
+	credErr := rt.removeAppCredentials(ctx, name, integrationNS)
+	if soft == nil && rt.secrets != nil {
+		if err := rt.secrets.DeleteAll(ctx, store.TraceIngestSecretsKey(name)); err != nil {
+			rt.logger.Warn("api: delete app: remove trace ingest token failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	if vdb, ok := rt.vitalsDB(); ok {
 		if err := rt.vitalsRuntime().dropApp(ctx, vdb, name); err != nil {
 			rt.logger.Warn("api: delete app: drop buffered vitals failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -255,14 +286,18 @@ func (rt *Router) deleteAppGuarded(ctx context.Context, name string, guard func(
 			cancel()
 		}
 	}
+	// A failed secrets erase is reported like a pending teardown; the name is wiped again before reuse.
+	if teardownErr == nil && credErr != nil {
+		teardownErr = fmt.Errorf("erase stored secrets of %q: %w", name, credErr)
+	}
 	return teardownErr, nil
 }
 
 // removeAppCredentials erases the app's stored secrets, git source with its
 // deploy token and webhook secret, and other access grants, so a later app
-// of the same name inherits none of them. Failures are logged only.
+// of the same name inherits none of them. A failed secrets erase is returned.
 // extraNamespaces are secrets namespaces the caller collected earlier.
-func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNamespaces []string) {
+func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNamespaces []string) error {
 	namespaces := append([]string(nil), extraNamespaces...)
 	if g, ok := rt.apps.(interface {
 		DeleteAppAccessGrants(ctx context.Context, name string) ([]string, error)
@@ -279,15 +314,60 @@ func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNa
 		}
 	}
 	if rt.secrets == nil {
-		return
+		return nil
 	}
 	namespaces = append(namespaces, name, store.LogDrainSecretService(name))
+	var failed error
 	for _, ns := range namespaces {
 		if err := rt.secrets.DeleteAll(ctx, ns); err != nil {
 			rt.logger.Warn("api: delete app: remove secrets failed", slog.String("error", err.Error()), slog.String("name", name))
+			failed = errors.Join(failed, err)
 		}
 	}
 	rt.eraseGitSourceSecrets(ctx, name)
+	return failed
+}
+
+// namespaceCopier is the secrets manager's copy between namespaces.
+type namespaceCopier interface {
+	CopyNamespace(ctx context.Context, from, to string) error
+}
+
+// parkAppSecrets keeps a re-encrypted copy of the app's secret values under its
+// deletion namespace. Nothing reads that namespace but the restore and the purge.
+func (rt *Router) parkAppSecrets(ctx context.Context, name string) error {
+	c, ok := rt.secrets.(namespaceCopier)
+	if !ok {
+		return nil
+	}
+	ns := store.DeletedAppSecretsKey(name)
+	if err := rt.secrets.DeleteAll(ctx, ns); err != nil {
+		return err
+	}
+	return c.CopyNamespace(ctx, name, ns)
+}
+
+// dropParkedSecrets erases the values parked for an undo.
+func (rt *Router) dropParkedSecrets(ctx context.Context, name string) error {
+	if rt.secrets == nil {
+		return nil
+	}
+	return rt.secrets.DeleteAll(ctx, store.DeletedAppSecretsKey(name))
+}
+
+// restoreParkedSecrets puts the parked values back under the app's own namespace; the parked copy stays until the restore completes.
+func (rt *Router) restoreParkedSecrets(ctx context.Context, name string) error {
+	c, ok := rt.secrets.(namespaceCopier)
+	if !ok {
+		return nil
+	}
+	if err := secrets.AppNamespace(name); err != nil {
+		return err
+	}
+	if err := rt.secrets.DeleteAll(ctx, name); err != nil {
+		return err
+	}
+	return c.CopyNamespace(ctx, store.DeletedAppSecretsKey(name), name)
 }
 
 // eraseGitSourceSecrets drops a git source's deploy token and webhook
@@ -395,11 +475,5 @@ func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
 // reservedSecretNamespace reports names the control plane seals its own settings under; an app with
 // one would share that secret namespace.
 func reservedSecretNamespace(name string) bool {
-	switch name {
-	case store.EmailSettingsSecretsKey(), sysEmailSecretsNS, store.VaultSecretsKey(), store.AIAssistantSecretsKey(),
-		store.CloudflareTunnelSecretsKey(), store.CloudflareDNSSecretsKey(), store.GoogleCloudDNSSecretsKey(), store.DNSTokenSecretsKey(dnszones.ProviderDigitalOcean), store.DNSTokenSecretsKey(dnszones.ProviderHetzner), store.DNSTokenSecretsKey(dnszones.ProviderAzure), store.DNSTokenSecretsKey(dnszones.ProviderPorkbun), store.DNSTokenSecretsKey(dnszones.ProviderDeSEC), store.DNSTokenSecretsKey(dnszones.ProviderGoDaddy), store.DNSTokenSecretsKey(dnszones.ProviderNamecheap),
-		store.RegistrySettingsSecretsKey(), store.Route53DNSSecretsKey():
-		return true
-	}
-	return false
+	return spec.IsReservedName(name)
 }

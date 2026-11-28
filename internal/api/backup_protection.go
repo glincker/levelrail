@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // BackupProtection is the surface the backup health, drill and restore-to
@@ -294,6 +294,16 @@ func (rt *Router) handleStartBackupDrill(w http.ResponseWriter, r *http.Request)
 	if !rt.authorizeDrillBackup(w, r, h) {
 		return
 	}
+	if h.ResourceKind == store.BackupResourceKindVolume {
+		if rt.refuseForeignVolumeBackup(w, r, h.ServiceName, h) {
+			return
+		}
+	} else {
+		if db, derr := rt.databases.GetDesiredDatabase(r.Context(), h.DatabaseName); derr == nil && !db.OwnsBackup(h.InstanceID, h.StartedAt) {
+			writeError(w, http.StatusNotFound, "backup not found")
+			return
+		}
+	}
 	if h.Status != store.BackupStatusSucceeded {
 		writeError(w, http.StatusConflict, fmt.Sprintf("backup %q has status %q, only a succeeded backup can be drilled", req.BackupID, h.Status))
 		return
@@ -485,6 +495,9 @@ func (rt *Router) handleVolumeRestoreTo(w http.ResponseWriter, r *http.Request) 
 	}
 	if bh.ServiceName != svcName || bh.VolumeName != volName {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", req.BackupID, svcName, volName))
+		return
+	}
+	if rt.refuseForeignVolumeBackup(w, r, svcName, bh) {
 		return
 	}
 	if bh.Status != store.BackupStatusSucceeded {

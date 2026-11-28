@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestComputeReachability(t *testing.T) {

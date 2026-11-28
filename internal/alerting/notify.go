@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/changes"
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // HTTP header names and values shared by the outbound notification senders.

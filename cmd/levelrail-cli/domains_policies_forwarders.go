@@ -6,8 +6,8 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 func runDomainsForwarders(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

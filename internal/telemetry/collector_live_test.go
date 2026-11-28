@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockertest"
 )
 
 // TestCollector_Live_RealContainerToRealStore proves the whole pipeline

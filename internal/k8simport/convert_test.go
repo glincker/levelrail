@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 var update = flag.Bool("update", false, "rewrite golden files")

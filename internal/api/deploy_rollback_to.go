@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/rollbackref"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/rollbackref"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // rollbackPin returns target's rollback pin, or nil when none is recorded.

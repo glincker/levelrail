@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbviewer"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbviewer"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // dynamoViewerTarget resolves a managed DynamoDB local container to exec curl in.

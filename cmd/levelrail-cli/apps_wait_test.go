@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 	"net/http"
 	"net/http/httptest"
 	"strings"

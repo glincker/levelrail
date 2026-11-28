@@ -7,8 +7,8 @@ import (
 
 	"github.com/libdns/libdns"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/dnszones/gcdtest"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnszones/gcdtest"
 )
 
 func TestZoneManagerDNS01Flow(t *testing.T) {

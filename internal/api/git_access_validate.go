@@ -10,9 +10,9 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/fixit"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

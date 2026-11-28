@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // SetDNS01ProviderCheck lets the dns01 setting refuse enabling while no DNS provider is connected.

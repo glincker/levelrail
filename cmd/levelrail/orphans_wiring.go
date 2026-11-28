@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/orphans"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/orphans"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // newOrphanReaper builds the reaper shared by the reconcile loop and the API.

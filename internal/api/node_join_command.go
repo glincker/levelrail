@@ -2,10 +2,10 @@ package api
 
 import (
 	"context"
-	"github.com/GLINCKER/levelrail/internal/cloudmeta"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
+	"github.com/glincker/levelrail/internal/cloudmeta"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/runtimesettings/registrymirror"
 	"net"
 	"strconv"
 	"strings"

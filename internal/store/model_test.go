@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/gpu"
 )
 
 func testModel(name, domain string) Model {

@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/quota"
 )
 
 // registerTeamRoutes wires teams, members and invites. Every /teams/{id}

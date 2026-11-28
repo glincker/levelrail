@@ -7,10 +7,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ephemeralDatabaseName derives the desired_databases.name a preview's

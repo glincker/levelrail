@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/fixit"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // nextjsFixes registers the Next.js doctor fixes for apps whose last deploy

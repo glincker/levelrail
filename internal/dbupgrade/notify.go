@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/alerting"
 )
 
 // ChannelStore loads alerting notification channels.

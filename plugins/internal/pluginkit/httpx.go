@@ -13,7 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
 )
 
 const (

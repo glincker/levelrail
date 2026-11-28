@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/timeutil"
+	"github.com/glincker/levelrail/kit/timeutil"
 )
 
 // Commit is one entry of a branch's history, reduced to what a deploy

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dbauthz"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbauthz"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Effect is a statement's outcome when it matches: Allow or Deny,

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agent"
 )
 
 // A severed agent drops out of the registry, so its services are skipped (not

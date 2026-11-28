@@ -1,6 +1,6 @@
 package database
 
-import "github.com/GLINCKER/levelrail/internal/store"
+import "github.com/glincker/levelrail/internal/store"
 
 // conventionalEnvPrefix is the variable prefix client libraries of these
 // engines read by convention; other engines keep DATABASE_URL naming.

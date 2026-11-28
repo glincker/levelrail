@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/certflow"
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/certflow"
+	"github.com/glincker/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const certFlowServerIP = "203.0.113.7"

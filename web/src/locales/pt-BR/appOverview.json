@@ -172,5 +172,45 @@
   "trafficUnavailable": "Os números de tráfego ao vivo não estão disponíveis agora.",
   "trafficRetry": "Tentar novamente",
   "noTrafficTitle": "Ainda sem tráfego",
-  "noTrafficHint": "Envie uma requisição para ver os números ao vivo."
+  "noTrafficHint": "Envie uma requisição para ver os números ao vivo.",
+  "status": {
+    "chips": "Status",
+    "openAnyway": "Abrir mesmo assim",
+    "reason": {
+      "down": "O app está parado ou não está pronto, então este endereço ainda não vai responder.",
+      "waiting_dns": "Aguardando o DNS: o domínio ainda não aponta para cá.",
+      "local_only": "Este endereço só funciona neste computador.",
+      "unknown": "O endereço do app ainda não pôde ser verificado."
+    },
+    "chip": {
+      "down": "Não está pronto",
+      "waiting_dns": "Aguardando DNS",
+      "local_only": "Só este computador",
+      "unknown": "Não verificado"
+    },
+    "qr": {
+      "open": "Mostrar QR code",
+      "title": "QR code deste app",
+      "fallback": "Este app é local. Escaneie este endereço público no lugar."
+    },
+    "deploy": {
+      "title": "Último deploy"
+    },
+    "health": {
+      "title": "Verificações de saúde",
+      "on": "Verificação de saúde ativa",
+      "none": "Sem verificação de saúde",
+      "add": "Adicionar uma verificação de saúde",
+      "dismiss": "Dispensar a sugestão de verificação de saúde"
+    },
+    "warnings": {
+      "label_one": "{{count}} aviso",
+      "label_other": "{{count}} avisos",
+      "title_one": "{{count}} aviso, abrir saúde",
+      "title_other": "{{count}} avisos, abrir saúde"
+    },
+    "resources": "Recursos",
+    "domains": "Domínios",
+    "addDomain": "Adicionar um domínio"
+  }
 }

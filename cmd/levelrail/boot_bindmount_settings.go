@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/bindmount"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/bindmount"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // wireBindMountSettings feeds the runtime settings into internal/bindmount, which cannot import the store.

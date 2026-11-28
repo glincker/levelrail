@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 // runMigrate dispatches "migrate <source> [flags]".

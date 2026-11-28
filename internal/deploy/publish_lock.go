@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // PublishLocks is the store surface the pipeline needs to hold a build back

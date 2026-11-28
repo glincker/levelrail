@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gpu"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Errors returned by Service, distinguishable by callers to pick an

@@ -1,0 +1,22 @@
+services:
+  sickgear:
+    image: linuxserver/sickgear:3.37.1
+    ports: ["8081"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    volumes:
+      - sickgear_config:/config
+      - sickgear_tv:/tv
+      - sickgear_downloads:/downloads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8081/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+volumes:
+  sickgear_config:
+  sickgear_tv:
+  sickgear_downloads:

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newCoverageRouter(t *testing.T, p *fakeBackupProtection, vols *fakeOrphanedVolumeManager) (*Router, *store.DB, *http.Cookie) {

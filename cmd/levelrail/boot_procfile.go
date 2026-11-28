@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // wireProcfilePort lets the deploy pipeline read the Procfile web port live, since the router that owns the settings is built after the pipeline.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/policy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // agentPostureInput is what the agent and deploy-safety checks read: counts,

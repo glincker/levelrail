@@ -14,8 +14,8 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/GLINCKER/levelrail/internal/cliconsole"
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/cliconsole"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 // Builds only the CLI package so the gates past the binary check run for real:
@@ -25,7 +25,7 @@ func TestCLIConsole_GateOrderWithBuiltCLI(t *testing.T) {
 		t.Skip("credential drop needs a real unprivileged user")
 	}
 	bin := filepath.Join(t.TempDir(), "levelrail-cli")
-	build := exec.CommandContext(t.Context(), "go", "build", "-buildvcs=false", "-o", bin, "github.com/GLINCKER/levelrail/cmd/levelrail-cli") //nolint:gosec // fixed argv, test builds one package
+	build := exec.CommandContext(t.Context(), "go", "build", "-buildvcs=false", "-o", bin, "github.com/glincker/levelrail/cmd/levelrail-cli") //nolint:gosec // fixed argv, test builds one package
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build cli: %v\n%s", err, out)
 	}

@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/orphans"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/orphans"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 func TestSplitHostMemory(t *testing.T) {

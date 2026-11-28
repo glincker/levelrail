@@ -1,0 +1,628 @@
+{
+ "cases": [
+  {
+   "name": "plain upper key",
+   "set": {
+    "DATABASE_URL": "x"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "lower key",
+   "set": {
+    "api_key": "x"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "leading underscore",
+   "set": {
+    "_X": "1"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "digits inside",
+   "set": {
+    "A1B2": "1"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "leading digit",
+   "set": {
+    "1A": "x"
+   },
+   "want_errors": [
+    "charset"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "space in key",
+   "set": {
+    "A B": "x"
+   },
+   "want_errors": [
+    "charset"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "empty key",
+   "set": {
+    "": "x"
+   },
+   "want_errors": [
+    "empty_key"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "equals in key",
+   "set": {
+    "A=B": "x"
+   },
+   "want_errors": [
+    "equals"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "NUL in key",
+   "set": {
+    "A\u0000B": "x"
+   },
+   "want_errors": [
+    "equals"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "unicode key",
+   "set": {
+    "CAFÉ": "x"
+   },
+   "want_errors": [
+    "charset"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "dot key new",
+   "set": {
+    "a.b": "x"
+   },
+   "want_errors": [
+    "charset"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "dash key new",
+   "set": {
+    "a-b": "x"
+   },
+   "want_errors": [
+    "charset"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "dot key existing legacy",
+   "set": {
+    "a.b": "y"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "legacy_key"
+   ],
+   "existing": {
+    "plain": {
+     "a.b": "x"
+    }
+   }
+  },
+  {
+   "name": "dash key existing strict",
+   "set": {
+    "a-b": "y"
+   },
+   "want_errors": [
+    "charset"
+   ],
+   "want_warnings": [],
+   "existing": {
+    "plain": {
+     "a-b": "x"
+    }
+   },
+   "policy": {
+    "key_mode": "strict"
+   }
+  },
+  {
+   "name": "dot key unchanged value skipped",
+   "set": {
+    "a.b": "x"
+   },
+   "want_errors": [],
+   "want_warnings": [],
+   "existing": {
+    "plain": {
+     "a.b": "x"
+    }
+   },
+   "policy": {
+    "key_mode": "strict"
+   }
+  },
+  {
+   "name": "client cannot see stored keys",
+   "set": {
+    "a.b": "x"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "legacy_key"
+   ],
+   "options": {
+    "existing_unknown": true
+   }
+  },
+  {
+   "name": "key at max length",
+   "set": {
+    "KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK": "x"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "key over max length",
+   "set": {
+    "KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK": "x"
+   },
+   "want_errors": [
+    "length"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "custom max length",
+   "set": {
+    "KKKKKKKKKKKKKKKKKKKK": "x"
+   },
+   "want_errors": [
+    "length"
+   ],
+   "want_warnings": [],
+   "policy": {
+    "key_max_len": 16
+   }
+  },
+  {
+   "name": "reserved prefix",
+   "set": {
+    "LEVELRAIL_TOKEN": "x"
+   },
+   "want_errors": [
+    "reserved"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "reserved prefix lower",
+   "set": {
+    "levelrail_token": "x"
+   },
+   "want_errors": [
+    "reserved"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "reserved prefix existing key exempt",
+   "set": {
+    "LEVELRAIL_TOKEN": "y"
+   },
+   "want_errors": [],
+   "want_warnings": [],
+   "existing": {
+    "plain": {
+     "LEVELRAIL_TOKEN": "x"
+    }
+   }
+  },
+  {
+   "name": "custom reserved prefix",
+   "set": {
+    "PLATFORM_X": "1"
+   },
+   "want_errors": [
+    "reserved"
+   ],
+   "want_warnings": [],
+   "policy": {
+    "reserved_prefixes": [
+     "PLATFORM_"
+    ]
+   }
+  },
+  {
+   "name": "no reserved prefixes configured",
+   "set": {
+    "LEVELRAIL_X": "1"
+   },
+   "want_errors": [],
+   "want_warnings": [],
+   "policy": {
+    "reserved_prefixes": []
+   }
+  },
+  {
+   "name": "secret previous suffix",
+   "set": {
+    "DB_PASSWORD_PREVIOUS": "x"
+   },
+   "want_errors": [
+    "previous_suffix"
+   ],
+   "want_warnings": [],
+   "options": {
+    "secret": true
+   }
+  },
+  {
+   "name": "plain previous suffix allowed",
+   "set": {
+    "DB_PASSWORD_PREVIOUS": "x"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "LD_PRELOAD refused",
+   "set": {
+    "LD_PRELOAD": "/x.so"
+   },
+   "want_errors": [
+    "dangerous"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "LD_LIBRARY_PATH refused",
+   "set": {
+    "LD_LIBRARY_PATH": "/x"
+   },
+   "want_errors": [
+    "dangerous"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "DYLD prefix refused",
+   "set": {
+    "DYLD_INSERT_LIBRARIES": "/x"
+   },
+   "want_errors": [
+    "dangerous"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "BASH_ENV refused",
+   "set": {
+    "BASH_ENV": "/x"
+   },
+   "want_errors": [
+    "dangerous"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "LD_PRELOAD warn mode",
+   "set": {
+    "LD_PRELOAD": "/x.so"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "dangerous"
+   ],
+   "policy": {
+    "loader_mode": "warn"
+   }
+  },
+  {
+   "name": "LD like app key allowed",
+   "set": {
+    "LD_API_KEY": "x"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "PATH warns by default",
+   "set": {
+    "PATH": "/bin"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "dangerous"
+   ]
+  },
+  {
+   "name": "PATH off",
+   "set": {
+    "PATH": "/bin"
+   },
+   "want_errors": [],
+   "want_warnings": [],
+   "policy": {
+    "path_mode": "off"
+   }
+  },
+  {
+   "name": "PATH refuse",
+   "set": {
+    "PATH": "/bin"
+   },
+   "want_errors": [
+    "dangerous"
+   ],
+   "want_warnings": [],
+   "policy": {
+    "path_mode": "refuse"
+   }
+  },
+  {
+   "name": "case duplicate in one set",
+   "set": {
+    "Foo": "1",
+    "FOO": "2"
+   },
+   "want_errors": [
+    "duplicate"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "case duplicate against existing",
+   "set": {
+    "FOO": "1"
+   },
+   "want_errors": [
+    "duplicate"
+   ],
+   "want_warnings": [],
+   "existing": {
+    "plain": {
+     "Foo": "x"
+    }
+   }
+  },
+  {
+   "name": "case duplicate against secret name",
+   "set": {
+    "FOO": "1"
+   },
+   "want_errors": [
+    "duplicate"
+   ],
+   "want_warnings": [],
+   "existing": {
+    "names": [
+     "Foo"
+    ]
+   }
+  },
+  {
+   "name": "same key as existing secret allowed",
+   "set": {
+    "FOO": "1"
+   },
+   "want_errors": [],
+   "want_warnings": [],
+   "existing": {
+    "names": [
+     "FOO"
+    ]
+   }
+  },
+  {
+   "name": "NUL in value",
+   "set": {
+    "A": "x\u0000y"
+   },
+   "want_errors": [
+    "nul"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "value at max bytes",
+   "set": {
+    "A": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "want_errors": [],
+   "want_warnings": [],
+   "policy": {
+    "value_max_bytes": 1024
+   }
+  },
+  {
+   "name": "value over max bytes",
+   "set": {
+    "A": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "want_errors": [
+    "value_size"
+   ],
+   "want_warnings": [],
+   "policy": {
+    "value_max_bytes": 1024
+   }
+  },
+  {
+   "name": "unchanged oversized value skipped",
+   "set": {
+    "A": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "want_errors": [],
+   "want_warnings": [],
+   "existing": {
+    "plain": {
+     "A": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "policy": {
+    "value_max_bytes": 1024
+   }
+  },
+  {
+   "name": "trailing CR refused without multiline",
+   "set": {
+    "A": "x\r"
+   },
+   "want_errors": [
+    "crlf"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "trailing CR allowed on byte exact path",
+   "set": {
+    "A": "x\r"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "multiline",
+    "whitespace"
+   ],
+   "options": {
+    "multiline": true
+   }
+  },
+  {
+   "name": "multiline value warns",
+   "set": {
+    "A": "l1\nl2"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "multiline"
+   ]
+  },
+  {
+   "name": "leading space flagged",
+   "set": {
+    "A": " x"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "whitespace"
+   ]
+  },
+  {
+   "name": "trailing space flagged",
+   "set": {
+    "A": "x "
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "whitespace"
+   ]
+  },
+  {
+   "name": "empty value flagged",
+   "set": {
+    "A": ""
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "empty_value"
+   ]
+  },
+  {
+   "name": "dollar brace",
+   "set": {
+    "A": "p${HOME}"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "interpolation"
+   ]
+  },
+  {
+   "name": "dollar name",
+   "set": {
+    "A": "pa$ss"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "interpolation"
+   ]
+  },
+  {
+   "name": "double dollar",
+   "set": {
+    "A": "a$$b"
+   },
+   "want_errors": [],
+   "want_warnings": [
+    "interpolation"
+   ]
+  },
+  {
+   "name": "lone trailing dollar literal",
+   "set": {
+    "A": "cost$"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "dollar digit literal",
+   "set": {
+    "A": "a$1"
+   },
+   "want_errors": [],
+   "want_warnings": []
+  },
+  {
+   "name": "two errors reported",
+   "set": {
+    "1A": "x",
+    "B C": "y"
+   },
+   "want_errors": [
+    "charset",
+    "charset"
+   ],
+   "want_warnings": []
+  },
+  {
+   "name": "secret same value still checked",
+   "set": {
+    "A_PREVIOUS": "x"
+   },
+   "want_errors": [
+    "previous_suffix"
+   ],
+   "want_warnings": [],
+   "existing": {
+    "plain": {
+     "A_PREVIOUS": "x"
+    }
+   },
+   "options": {
+    "secret": true
+   }
+  }
+ ]
+}

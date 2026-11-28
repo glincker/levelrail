@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // cliExecer runs commands through `docker exec -i`, mirroring what the

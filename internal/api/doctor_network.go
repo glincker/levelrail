@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
-	meshnet "github.com/GLINCKER/levelrail/internal/network"
+	meshnet "github.com/glincker/levelrail/internal/network"
 	"io"
 	"net"
 	"net/http"

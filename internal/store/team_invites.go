@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // ErrTeamInviteInvalid covers an unknown, expired, revoked or already used

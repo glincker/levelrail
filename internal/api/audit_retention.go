@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cleanup"
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/cleanup"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // defaultAuditLogRetention mirrors the registered default of retention.audit_log_days

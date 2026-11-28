@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/plugin"
+	"github.com/glincker/levelrail/internal/plugin"
 )
 
 const pluginTestDigest2 = "sha256:0000000000000000000000000000000000000000000000000000000000000002"

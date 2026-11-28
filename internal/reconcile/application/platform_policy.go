@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // EnvPlatformMismatch picks what happens when an image has no manifest for the

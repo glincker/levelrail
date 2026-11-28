@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/alerting"
 )
 
 func TestNodeCertThresholds(t *testing.T) {

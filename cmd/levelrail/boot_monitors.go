@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/incident"
-	"github.com/GLINCKER/levelrail/internal/monitor"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/incident"
+	"github.com/glincker/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // startMonitors watches the monitors.enabled runtime setting (seeded by APP_MONITORS_ENABLED) and

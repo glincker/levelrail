@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/exposure"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/exposure"
 )
 
 // Driven by a shell script against throwaway containers on a real Linux

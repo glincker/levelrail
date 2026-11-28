@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type mailBroadcastTestRequest struct {

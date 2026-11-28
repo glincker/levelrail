@@ -1,0 +1,16 @@
+services:
+  dragonfly:
+    image: ghcr.io/dragonflydb/dragonfly:v1.27.1
+    ports: ["6379"]
+    environment:
+      DFLY_requirepass: $SERVICE_PASSWORD_DRAGONFLY
+    volumes:
+      - dragonfly_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/local/bin/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+volumes:
+  dragonfly_data:

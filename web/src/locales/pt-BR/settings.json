@@ -706,6 +706,10 @@
         "title": "Atualizações",
         "description": "Versão atual e releases disponíveis."
       },
+      "announcements": {
+        "title": "Anúncios",
+        "description": "Avisos assinados do projeto Levelrail e a opção do feed."
+      },
       "beta-features": {
         "title": "Recursos beta",
         "description": "Ative recursos que funcionam, mas ainda estão sendo ajustados."
@@ -1864,8 +1868,11 @@
       "title": "Este servidor",
       "body": "A CLI fixa esta identidade no login e se recusa a enviar um token a qualquer outro servidor. Compare a impressão digital com o que a CLI mostra.",
       "name": "Nome",
-      "id": "Instância",
+      "id": "ID da instância",
       "fingerprint": "Impressão digital",
+      "backupSetId": "ID do conjunto de backup",
+      "copy": "Copiar",
+      "copied": "ID da instância copiado",
       "movedTitle": "Esta instância foi restaurada em um novo host",
       "movedBody": "A identidade dela mudou, então tokens de CLI emitidos antes da mudança são recusados. Se esta é a mesma instância (uma restauração ou migração feita por você), confirme para aceitar esses tokens novamente. Se você não a moveu, deixe como está e faça login na CLI de novo.",
       "confirmLabel": "Digite \"{{phrase}}\" para confirmar",

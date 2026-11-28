@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // MaxWebhookDeliveryPayloadBytes bounds how much of a webhook delivery's

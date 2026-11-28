@@ -10,7 +10,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // TestCloneAndCheckout_Live exercises the real go-git clone-and-checkout

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // inheritValue clears one override so the setting follows the platform default.

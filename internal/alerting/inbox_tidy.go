@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 )
 
 // Env vars for the inbox sweep. A zero duration disables that step; an invalid one falls back to the default.

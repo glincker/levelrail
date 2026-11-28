@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx"
 )
 
 // Service is the Systems Manager API.

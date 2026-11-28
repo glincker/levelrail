@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/deploytrace"
-	"github.com/GLINCKER/levelrail/internal/quota"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploytrace"
+	"github.com/glincker/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // composeDeployResponse is POST /api/v1/apps/{name}/compose's response
@@ -89,6 +89,11 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 			opts.source, opts.templateID = store.ComposeRevisionSourceTemplate, id
 		}
 	}
+	node, ok := rt.resolveRequestNode(w, r, r.URL.Query().Get("node_id"), r.URL.Query().Get("node_selector"))
+	if !ok {
+		return
+	}
+	opts.node = node
 	resp, ok := rt.lockedComposeDeploy(w, r, name, body, opts)
 	if !ok {
 		return
@@ -133,6 +138,15 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
 	}
+	// Every derived name is held from validation to the flush, so another team cannot take one in between.
+	derived := make([]string, 0, len(file.Services))
+	for key := range file.Services {
+		derived = append(derived, name+"-"+key)
+	}
+	slices.Sort(derived)
+	for _, n := range derived {
+		defer lockAppName(n)()
+	}
 
 	// Loaded before this deploy writes anything: staleComposeServices
 	// below needs the previous member list to diff against, and name is
@@ -160,7 +174,12 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		})
 		return composeDeployResponse{}, false
 	}
-	secretEnv, unresolved, err := compose.ResolveMagicVars(file, rt.generateComposeSecret(r.Context(), name), rt.persistComposeSecret(r.Context(), name))
+	// Every namespace a magic var can write is checked before anything is generated.
+	if !rt.admitComposeNamespaces(w, r, name, previousServices, file, opts.noCaller) {
+		return composeDeployResponse{}, false
+	}
+	pending := &pendingComposeSecrets{rt: rt}
+	secretEnv, unresolved, err := compose.ResolveMagicVars(file, rt.generateComposeSecret(r.Context(), name, pending), rt.persistComposeSecret(r.Context(), name, pending))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
@@ -197,6 +216,14 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		services[i].IsTrial = isTrial
 		services[i].TemplateID = opts.templateID
 	}
+	if msg := rt.composeEnvRefusal(r.Context(), services); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return composeDeployResponse{}, false
+	}
+	nodePins, ok := rt.applyComposeNodeTargets(w, r, name, file, services, opts.node)
+	if !ok {
+		return composeDeployResponse{}, false
+	}
 	rt.applyFirstBootTimeout(r.Context(), opts.templateID, services)
 	if !rt.reviewCapabilityChange(w, name, previousServices, services, opts) {
 		return composeDeployResponse{}, false
@@ -207,15 +234,8 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		return composeDeployResponse{}, false
 	}
 	defer portsRelease()
-	serviceNames := make([]string, 0, len(services))
-	for _, svc := range services {
-		serviceNames = append(serviceNames, svc.Name)
-	}
-	if opts.noCaller {
-		if !rt.refuseForeignServiceNames(r.Context(), w, name, previousServices, serviceNames) {
-			return composeDeployResponse{}, false
-		}
-	} else if !rt.authorizeServiceNames(w, r, name, serviceNames) {
+	if err := pending.flush(r.Context()); err != nil {
+		rt.internalError(w, "api: deploy compose: save generated secrets failed", err, slog.String("name", name))
 		return composeDeployResponse{}, false
 	}
 
@@ -257,6 +277,12 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return composeDeployResponse{}, false
 		}
+		if nodeID, pinned := nodePins[svc.Name]; pinned {
+			if err := rt.apps.UpdateServiceNode(r.Context(), svc.Name, nodeID); err != nil {
+				rt.internalError(w, "api: deploy compose: assign node failed", err, slog.String("service", svc.Name), slog.String("node_id", nodeID))
+				return composeDeployResponse{}, false
+			}
+		}
 		svcTrace := trace.Clone()
 		svcTrace.Note(r.Context(), deploytrace.StepComposeService, store.TraceStatusDone, "", composeServiceLine(svc))
 		rt.recordResolvedDeployAttempt(r.Context(), svc, svc.Image, store.DeployAttemptSourceCompose, deploy.ImageResolution{}, svcTrace)
@@ -271,6 +297,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	notices := make([]composeNoticeResult, 0, len(fileNotices))
 	for _, n := range fileNotices {
 		notices = append(notices, composeNoticeResult{Level: string(n.Level), Message: n.Message})
+	}
+
+	if n := firewallNotice(services); n != nil {
+		notices = append(notices, *n)
 	}
 
 	revision := 0
@@ -372,7 +402,7 @@ func (rt *Router) pruneStaleComposeServices(ctx context.Context, appName string,
 		}
 		rt.teardownServiceContainers(svc.Name, svc.NodeID)
 		// A removed service must not leave encrypted values or its key behind.
-		if rt.secrets != nil {
+		if rt.secrets != nil && secrets.AppNamespace(svc.Name) == nil {
 			if err := rt.secrets.DeleteAll(ctx, svc.Name); err != nil {
 				rt.logger.Warn("api: deploy compose: remove pruned service secrets failed", slog.String("error", err.Error()), slog.String("service", svc.Name))
 			}
@@ -388,12 +418,15 @@ func (rt *Router) pruneStaleComposeServices(ctx context.Context, appName string,
 // first use. Without rt.composeSecrets configured, any compose file
 // needing a generated value fails loudly rather than deploying with a
 // broken literal token.
-func (rt *Router) generateComposeSecret(ctx context.Context, appName string) func(kind, key string, length int) (string, error) {
+func (rt *Router) generateComposeSecret(ctx context.Context, appName string, pending *pendingComposeSecrets) func(kind, key string, length int) (string, error) {
 	return func(kind, key string, length int) (string, error) {
 		if rt.composeSecrets == nil {
 			return "", fmt.Errorf("this compose file needs a generated secret (SERVICE_%s_%s) but no secrets master key is configured", kind, key)
 		}
 		storageKey := composeSecretStorageKey(kind, key)
+		if v, ok := pending.get(appName, storageKey); ok {
+			return v, nil
+		}
 		val, err := rt.composeSecrets.Resolve(ctx, appName, storageKey)
 		if err == nil {
 			return val, nil
@@ -405,9 +438,7 @@ func (rt *Router) generateComposeSecret(ctx context.Context, appName string) fun
 		if err != nil {
 			return "", err
 		}
-		if err := rt.composeSecrets.SetValue(ctx, appName, storageKey, val); err != nil {
-			return "", fmt.Errorf("save generated value for SERVICE_%s_%s: %w", kind, key, err)
-		}
+		pending.add(appName, storageKey, val)
 		return val, nil
 	}
 }
@@ -417,13 +448,124 @@ func (rt *Router) generateComposeSecret(ctx context.Context, appName string) fun
 // secret resolver reads from at container-create time
 // (internal/reconcile/application's WithSecretResolver, keyed by the
 // real service name, not by an app-wide magic-var key).
-func (rt *Router) persistComposeSecret(ctx context.Context, appName string) func(serviceKey, envKey, value string) error {
+func (rt *Router) persistComposeSecret(_ context.Context, appName string, pending *pendingComposeSecrets) func(serviceKey, envKey, value string) error {
 	return func(serviceKey, envKey, value string) error {
 		if rt.composeSecrets == nil {
 			return fmt.Errorf("no secrets master key configured")
 		}
-		return rt.composeSecrets.SetValue(ctx, appName+"-"+serviceKey, envKey, value)
+		ns := appName + "-" + serviceKey
+		if spec.IsReservedName(ns) {
+			return fmt.Errorf("namespace %q is reserved", ns)
+		}
+		pending.add(ns, envKey, value)
+		return nil
 	}
+}
+
+type pendingComposeSecret struct{ namespace, key, value string }
+
+// pendingComposeSecrets holds generated values until the deploy has passed
+// every name check, so a refused deploy leaves no secret row behind.
+type pendingComposeSecrets struct {
+	rt    *Router
+	items []pendingComposeSecret
+}
+
+func (p *pendingComposeSecrets) add(ns, key, value string) {
+	p.items = append(p.items, pendingComposeSecret{ns, key, value})
+}
+
+func (p *pendingComposeSecrets) get(ns, key string) (string, bool) {
+	for _, it := range p.items {
+		if it.namespace == ns && it.key == key {
+			return it.value, true
+		}
+	}
+	return "", false
+}
+
+type writtenComposeSecret struct {
+	item    pendingComposeSecret
+	prior   string
+	existed bool
+}
+
+// rollback undoes written values in reverse order, best effort per row.
+func (p *pendingComposeSecrets) rollback(ctx context.Context, done []writtenComposeSecret) {
+	for i := len(done) - 1; i >= 0; i-- {
+		w := done[i]
+		var err error
+		switch {
+		case w.existed:
+			err = p.rt.composeSecrets.SetValue(ctx, w.item.namespace, w.item.key, w.prior)
+		default:
+			if d, ok := p.rt.composeSecrets.(composeSecretDeleter); ok {
+				err = d.DeleteValue(ctx, w.item.namespace, w.item.key)
+			}
+		}
+		if err != nil {
+			p.rt.logger.Warn("api: deploy compose: roll back generated secret failed", slog.String("namespace", w.item.namespace), slog.String("error", err.Error()))
+		}
+	}
+}
+
+// flush is all or nothing: a failed write restores or removes every value this deploy already wrote.
+func (p *pendingComposeSecrets) flush(ctx context.Context) error {
+	if len(p.items) > 0 && p.rt.composeSecrets == nil {
+		return fmt.Errorf("no secrets master key configured")
+	}
+	var done []writtenComposeSecret
+	for _, it := range p.items {
+		prior, perr := p.rt.composeSecrets.Resolve(ctx, it.namespace, it.key)
+		if err := p.rt.composeSecrets.SetValue(ctx, it.namespace, it.key, it.value); err != nil {
+			p.rollback(context.WithoutCancel(ctx), done)
+			return err
+		}
+		done = append(done, writtenComposeSecret{item: it, prior: prior, existed: perr == nil && prior != ""})
+	}
+	return nil
+}
+
+// admitComposeNamespaces refuses an app name or derived service name that is reserved,
+// invalid or owned by another app, before any magic var can write a secret under it.
+func (rt *Router) admitComposeNamespaces(w http.ResponseWriter, r *http.Request, name string, previous []store.DesiredService, file *compose.File, noCaller bool) bool {
+	names := make([]string, 0, len(file.Services))
+	for key := range file.Services {
+		names = append(names, name+"-"+key)
+	}
+	for _, n := range append([]string{name}, names...) {
+		if err := spec.ValidateServiceName(n); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return false
+		}
+	}
+	member := map[string]bool{name: true}
+	for _, p := range previous {
+		member[p.Name] = true
+	}
+	// Magic vars write under each derived name, which a database credential may already hold.
+	if len(previous) == 0 {
+		// A new stack name has no member row yet, so only this check keeps it off a database name.
+		delete(member, name)
+	}
+	for _, n := range append([]string{name}, names...) {
+		if member[n] {
+			continue
+		}
+		other, err := rt.nameTakenByOtherKind(r.Context(), n, store.NameKindApp, true)
+		if err != nil {
+			rt.internalError(w, "api: deploy compose: check name", err, slog.String("name", n))
+			return false
+		}
+		if other {
+			writeError(w, http.StatusConflict, msgNameUnavailable)
+			return false
+		}
+	}
+	if noCaller {
+		return rt.refuseForeignServiceNames(r.Context(), w, name, previous, names)
+	}
+	return rt.authorizeServiceNames(w, r, name, names)
 }
 
 func composeSecretStorageKey(kind, key string) string {

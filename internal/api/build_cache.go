@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/objectstore"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const buildCacheOpTimeout = 2 * time.Minute

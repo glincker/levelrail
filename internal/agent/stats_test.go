@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // statsRuntime is transport_test.go's minimal fakeRuntime plus the

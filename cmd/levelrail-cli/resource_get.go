@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func getUsage(prog string) string {

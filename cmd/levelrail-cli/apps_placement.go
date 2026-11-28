@@ -7,8 +7,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/placement"
 )
 
 func dimText(d apiclient.PlacementDimension, v int64) string {

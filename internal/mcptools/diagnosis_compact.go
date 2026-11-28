@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/kit/untrusted"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/kit/untrusted"
 )
 
 // compactDiagnosis is the short why-it-failed answer attached to a failed

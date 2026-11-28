@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // discoverMirror is swapped in tests; production reads the mirror's latest.json.

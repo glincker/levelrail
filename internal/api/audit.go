@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // statusRecorder wraps http.ResponseWriter to capture the status code a

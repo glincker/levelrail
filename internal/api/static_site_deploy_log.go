@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploylog"
-	"github.com/GLINCKER/levelrail/internal/pages"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/deploylog"
+	"github.com/glincker/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // staticLogLine is one build log line tagged with the Pages phase it ran in.

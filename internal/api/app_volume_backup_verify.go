@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // handleVerifyVolumeBackup is the volume counterpart of handleVerifyBackup. Engine is empty since a volume has no database engine.

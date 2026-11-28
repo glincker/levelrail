@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // defaultStaticBuildEnvPrefixes are the conventions frameworks use for values

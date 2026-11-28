@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploysafety"
 )
 
 func TestStatusReasonsListsEveryCatalogEntry(t *testing.T) {

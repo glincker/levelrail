@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/coolifyexit"
+	"github.com/glincker/levelrail/internal/coolifyexit"
 )
 
 // CoolifyExitReport calls POST /api/v1/migration/coolify/exit-report. The source token goes in the body only.

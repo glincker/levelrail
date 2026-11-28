@@ -13,8 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/datamigrate"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/datamigrate"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Hub steps, in order. Connect is the form before a session exists.
@@ -207,6 +208,9 @@ func (rt *Router) handleCreateHubSession(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	rt.hubState.setPassword(id, req.Password)
+	if pt, pid, _, perr := rt.callerPrincipal(r); perr == nil {
+		rt.hubState.setOwner(id, pt+":"+pid)
+	}
 	rt.logger.Info("api: migration hub session created", slog.String("session_id", id), slog.String("engine", req.Engine), slog.Int("databases", len(items)))
 	rt.writeHubSession(w, r, http.StatusCreated, id)
 }
@@ -399,6 +403,9 @@ func (rt *Router) handleListHubSessions(w http.ResponseWriter, r *http.Request) 
 // databases already created are left alone.
 func (rt *Router) handleDeleteHubSession(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if !rt.hubCallerOwns(w, r, id) {
+		return
+	}
 	if rt.hubState.isRunning(id) {
 		writeError(w, http.StatusConflict, "a copy is running for this session, wait for it to finish")
 		return
@@ -409,6 +416,58 @@ func (rt *Router) handleDeleteHubSession(w http.ResponseWriter, r *http.Request)
 	}
 	rt.hubState.forget(id)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// hubCallerOwns lets only the session's creator or root change it or reveal its
+// secrets, and answers 404 otherwise so session ids stay unguessable.
+func (rt *Router) hubCallerOwns(w http.ResponseWriter, r *http.Request, id string) bool {
+	if rt.callerIsRoot(r) {
+		return true
+	}
+	if pt, pid, _, err := rt.callerPrincipal(r); err == nil {
+		if owner := rt.hubState.owner(id); owner != "" && owner == pt+":"+pid {
+			return true
+		}
+	}
+	writeError(w, http.StatusNotFound, "migration session not found")
+	return false
+}
+
+// hubTargetLocked reports whether an item's target is already bound to a
+// resource this migration created or copied into.
+func hubTargetLocked(it store.MigrationItem) bool {
+	switch it.Status {
+	case store.HubItemVerified, store.HubItemCopying, store.HubItemFailed:
+		return true
+	}
+	return it.CreatedTarget || !it.StartedAt.IsZero()
+}
+
+// hubCheckNewTarget admits a new database name for a hub item the way a
+// normal database create does, so a rename can never reach another resource.
+func (rt *Router) hubCheckNewTarget(ctx context.Context, name string, others []store.MigrationItem, source string) (int, string) {
+	if err := spec.ValidateServiceName(name); err != nil {
+		return http.StatusBadRequest, err.Error()
+	}
+	if spec.IsReservedName(name) || rt.deletedNameReserved(ctx, name) {
+		return http.StatusConflict, msgNameUnavailable
+	}
+	for _, o := range others {
+		if o.SourceDB != source && o.TargetName == name {
+			return http.StatusConflict, msgNameUnavailable
+		}
+	}
+	if _, err := rt.databases.GetDesiredDatabase(ctx, name); err == nil {
+		return http.StatusConflict, msgNameUnavailable
+	} else if !errors.Is(err, store.ErrDatabaseNotFound) {
+		return http.StatusInternalServerError, "internal error"
+	}
+	if other, err := rt.nameTakenByOtherKind(ctx, name, store.NameKindDatabase, true); err != nil {
+		return http.StatusInternalServerError, "internal error"
+	} else if other {
+		return http.StatusConflict, msgNameUnavailable
+	}
+	return 0, ""
 }
 
 type hubSelectionItem struct {
@@ -425,6 +484,9 @@ type hubSelectionRequest struct {
 // handlePutHubSelection handles PUT /api/v1/migration/hub/sessions/{id}/selection.
 func (rt *Router) handlePutHubSelection(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if !rt.hubCallerOwns(w, r, id) {
+		return
+	}
 	var req hubSelectionRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -453,7 +515,18 @@ func (rt *Router) handlePutHubSelection(w http.ResponseWriter, r *http.Request) 
 			it.Selected = *in.Selected
 		}
 		if in.TargetName != nil {
-			it.TargetName = strings.TrimSpace(*in.TargetName)
+			name := strings.TrimSpace(*in.TargetName)
+			if name != it.TargetName {
+				if hubTargetLocked(it) {
+					writeError(w, http.StatusConflict, "the target name cannot change once the copy has started")
+					return
+				}
+				if code, msg := rt.hubCheckNewTarget(r.Context(), name, items, it.SourceDB); code != 0 {
+					writeError(w, code, msg)
+					return
+				}
+			}
+			it.TargetName = name
 		}
 		if in.TargetVersion != nil {
 			it.TargetVersion = strings.TrimSpace(*in.TargetVersion)
@@ -474,6 +547,9 @@ type hubStepRequest struct {
 // It only moves forward through steps whose prerequisites hold.
 func (rt *Router) handlePutHubStep(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if !rt.hubCallerOwns(w, r, id) {
+		return
+	}
 	var req hubStepRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxHubBody)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")

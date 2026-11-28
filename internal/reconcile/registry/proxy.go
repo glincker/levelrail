@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // proxyLabel records the applied pull-through config so a change replaces the container;

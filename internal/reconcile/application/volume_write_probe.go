@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/deploytrace"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploytrace"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EnvVolumeWriteProbe set to 0, false or off turns the post-start volume write check off.

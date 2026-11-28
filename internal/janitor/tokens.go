@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TokenPurger deletes inactive API tokens. *store.DB satisfies it.

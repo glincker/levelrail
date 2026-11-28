@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 func (rt *Router) tokenSettingInt(ctx context.Context, key string) int {

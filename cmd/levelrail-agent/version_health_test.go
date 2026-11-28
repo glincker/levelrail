@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agentupdate"
-	"github.com/GLINCKER/levelrail/internal/nodeinsight"
+	"github.com/glincker/levelrail/internal/agentupdate"
+	"github.com/glincker/levelrail/internal/nodeinsight"
 )
 
 func TestHealthTrackerRollsBackAfterShortSessions(t *testing.T) {

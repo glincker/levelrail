@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // saveComposeService writes one compose member from the file, but with a revision check against

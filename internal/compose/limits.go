@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // deployLimits is deploy.resources.limits, the Compose spelling of a hard cap.

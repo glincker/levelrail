@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // ssoSleep is swapped in tests so the poll loop does not wait.

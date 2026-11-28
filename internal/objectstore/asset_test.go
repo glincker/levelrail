@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore/objectstoretest"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/objectstore/objectstoretest"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 func TestPresignUploadSignsTypeAndLength(t *testing.T) {

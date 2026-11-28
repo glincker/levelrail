@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type memComposeSecrets map[string]string

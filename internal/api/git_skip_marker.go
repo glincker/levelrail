@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/ghactions"
+	"github.com/glincker/levelrail/internal/ghactions"
 )
 
 // skipMarkerIn returns the deploy-skip marker found in a commit message, matched case-insensitively.

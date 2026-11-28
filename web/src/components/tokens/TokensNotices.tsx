@@ -1,26 +1,28 @@
 import { useTranslation } from 'react-i18next'
 import { Banner } from '@/components/ui/banner'
+import { Button } from '@/components/ui/button'
 import { RelativeTime } from '../kit/RelativeTime'
 import { RevokeTokenDialog } from '../RevokeTokenDialog'
 import { useUnusedTokens } from '../../queries/tokensUnused'
-import type { TokenResource } from '../../types/token'
+import type { TokenAbility } from '../../types/token'
 
 // One compact notice for every token warning, so the page never stacks banners.
+// expiringSoon is the server count of live tokens inside the warning window.
 export function TokensNotices({
   expiringSoon,
+  soonDays,
   longLivedRoot,
-  active,
+  onReviewExpiring,
 }: {
   expiringSoon: number
+  soonDays: number
   longLivedRoot: number
-  active: TokenResource[]
+  onReviewExpiring: () => void
 }) {
   const { t } = useTranslation('tokensNotices')
+  const { t: tl } = useTranslation('tokenList')
   const unused = useUnusedTokens().data
-  const rows = (unused?.items ?? []).flatMap((item) => {
-    const token = active.find((tok) => tok.id === item.id)
-    return token ? [{ item, token }] : []
-  })
+  const rows = unused?.items ?? []
   const count =
     (expiringSoon > 0 ? 1 : 0) +
     (longLivedRoot > 0 ? 1 : 0) +
@@ -31,7 +33,12 @@ export function TokensNotices({
     <Banner variant="warning" title={t('title', { count })}>
       <ul className="list-disc space-y-1 pl-4 break-words">
         {expiringSoon > 0 ? (
-          <li>{t('expiring', { count: expiringSoon })}</li>
+          <li>
+            {tl('expiringBanner', { count: expiringSoon, days: soonDays })}{' '}
+            <Button variant="link" size="sm" onClick={onReviewExpiring}>
+              {tl('reviewExpiring')}
+            </Button>
+          </li>
         ) : null}
         {longLivedRoot > 0 ? (
           <li>{t('longLivedRoot', { count: longLivedRoot })}</li>
@@ -40,7 +47,7 @@ export function TokensNotices({
           <li>
             {t('unusedIntro', { days: unused?.alert_days ?? 0 })}
             <ul className="mt-1 space-y-1">
-              {rows.map(({ item, token }) => (
+              {rows.map((item) => (
                 <li
                   key={item.id}
                   className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"
@@ -57,7 +64,12 @@ export function TokensNotices({
                       t('neverUsed')
                     )}
                   </span>
-                  <RevokeTokenDialog token={token} />
+                  <RevokeTokenDialog
+                    token={{
+                      ...item,
+                      abilities: item.abilities as TokenAbility[],
+                    }}
+                  />
                 </li>
               ))}
             </ul>

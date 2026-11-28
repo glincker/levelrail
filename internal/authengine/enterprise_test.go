@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 func TestInstanceOrganizationIsCreatedOnce(t *testing.T) {

@@ -145,6 +145,11 @@
       "replicas": "Atenda mais tráfego: aumente o número de réplicas nas configurações de deploy. Cada réplica é uma cópia do app que divide a carga.",
       "autoscale": "Deixe o app acompanhar a carga: ative o autoscale abaixo e escolha um mínimo e um máximo. Ele fica desativado até você configurá-lo.",
       "biggerHost": "Mude para um host maior quando o próprio servidor ficar curto: a CPU ou a memória continua alta no host após o redimensionamento, ou adicionar réplicas não reduz mais a carga. Réplicas em um servidor compartilham esse servidor."
+    },
+    "stepper": {
+      "less": "Menos replicas",
+      "more": "Mais replicas",
+      "autoscaleOwns": "O autoescalonamento define a contagem. Mude o intervalo ou desative para ajustar manualmente."
     }
   },
   "replicaTable": {

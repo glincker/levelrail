@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func testHostKeyLine(t *testing.T) string {

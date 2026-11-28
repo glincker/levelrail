@@ -5,7 +5,7 @@ import (
 	"html"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/mailgroups"
+	"github.com/glincker/levelrail/internal/mailgroups"
 )
 
 const unsubscribePath = "/mail/unsubscribe"

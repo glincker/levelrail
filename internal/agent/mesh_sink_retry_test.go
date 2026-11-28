@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // scriptedMeshTransport returns errs in order, then succeeds; a nil entry blocks until the attempt's context ends.

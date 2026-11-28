@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TestFromDesiredServices_NeverCapturesSecretValues is the load-bearing

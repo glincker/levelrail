@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/configtranslate"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/configtranslate"
 )
 
 // cronSecretEnv is the env var Vercel sends as the cron bearer token.

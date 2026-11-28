@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/glincker/levelrail/internal/secrets"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/canary"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/canary"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (
@@ -402,7 +403,7 @@ func (rt *Router) removeCanary(ctx context.Context, name string) error {
 func (rt *Router) deleteCanaryClone(ctx context.Context, cloneName string) error {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cloneRollbackTimeout)
 	defer cancel()
-	if rt.secrets != nil {
+	if rt.secrets != nil && secrets.AppNamespace(cloneName) == nil {
 		if err := rt.secrets.DeleteAll(ctx, cloneName); err != nil {
 			return fmt.Errorf("delete canary secrets: %w", err)
 		}

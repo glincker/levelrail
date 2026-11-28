@@ -11,7 +11,7 @@ import (
 
 	"github.com/golang/snappy"
 
-	"github.com/GLINCKER/levelrail/internal/prompb"
+	"github.com/glincker/levelrail/internal/prompb"
 )
 
 // levelrailMetricPrefix namespaces every metric this control plane

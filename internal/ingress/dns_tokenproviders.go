@@ -7,8 +7,8 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	"github.com/libdns/libdns"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/dnszones"
 )
 
 // TokenDNSProvider is the wire shape for the in-repo Caddy modules

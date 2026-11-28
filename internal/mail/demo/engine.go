@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/mail"
+	"github.com/glincker/levelrail/internal/mail"
 )
 
 type account struct {

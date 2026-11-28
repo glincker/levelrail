@@ -14,8 +14,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/volumefiles"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/volumefiles"
 )
 
 // dirVolumeNode backs a node's volume with a temp directory through the real confined store.

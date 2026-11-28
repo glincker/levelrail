@@ -1,4 +1,4 @@
-module github.com/GLINCKER/levelrail/tools
+module github.com/glincker/levelrail/tools
 
 go 1.26.3
 

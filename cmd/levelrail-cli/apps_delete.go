@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAppsDelete implements "apps delete <name>": DELETE
@@ -51,6 +51,9 @@ func runAppsDelete(prog string, args []string, stdout, stderr io.Writer, lookupE
 	}
 
 	payload := map[string]any{"deleted": true}
+	if len(res.WillNotRestore) > 0 {
+		payload["will_not_restore"] = res.WillNotRestore
+	}
 	if res.Pending {
 		payload["teardown_pending"] = true
 		payload["error"] = res.Error
@@ -61,6 +64,9 @@ func runAppsDelete(prog string, args []string, stdout, stderr io.Writer, lookupE
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "app %q deleted, containers removed\n", name)
+		if len(res.WillNotRestore) > 0 {
+			_, _ = fmt.Fprintf(stdout, "an undo will not bring back: %s\n", strings.ReplaceAll(strings.Join(res.WillNotRestore, ", "), "_", " "))
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

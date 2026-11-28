@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/edgefw"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/edgefw"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 const edgeFirewallKeyPurpose = "edge-firewall-challenge"

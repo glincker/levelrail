@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GLINCKER/levelrail/internal/heartbeat"
+	"github.com/glincker/levelrail/internal/heartbeat"
 )
 
 // SetJobPings enables per-job heartbeat URLs; without it they are rejected.

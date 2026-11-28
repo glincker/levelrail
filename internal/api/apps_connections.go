@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Sets and lists the DatabaseEnv connections an app uses, separate from the single-slot database attachment.

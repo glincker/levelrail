@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func startEnrollTestServer(t *testing.T) (addr, token string, ca *CA) {

@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // lastServingImage returns the image of the newest confirmed-serving attempt, for when the newest attempt is not serving yet.

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // probeAttemptResource is the per-attempt JSON shape GET

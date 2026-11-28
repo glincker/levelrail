@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 const passwordMaxBytes = 72

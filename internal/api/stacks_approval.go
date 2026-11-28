@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Approval design: a stack with require_approval stores the validated, planned

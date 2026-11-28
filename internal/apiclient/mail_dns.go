@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/mailrecords"
 )
 
 // MailDNSRequest is the body of the mail DNS plan and apply calls. Confirm and PlanHash are used by apply only.

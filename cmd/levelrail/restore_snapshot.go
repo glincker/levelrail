@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const restoreSnapshotUsage = `usage: levelrail restore-snapshot [--list] [--dry-run] [--yes] [name | latest]

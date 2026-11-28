@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/giteaapp"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // previewGiteaTarget resolves an access token and gs's own owner/repo.

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/standalone"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/standalone"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DomainBasicAuthStore is the store surface GET/PUT/DELETE

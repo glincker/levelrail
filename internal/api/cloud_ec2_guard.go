@@ -5,10 +5,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/cloudguard"
-	"github.com/GLINCKER/levelrail/internal/cloudspend"
-	"github.com/GLINCKER/levelrail/internal/provision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cloudguard"
+	"github.com/glincker/levelrail/internal/cloudspend"
+	"github.com/glincker/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // armEC2CreateGuard gives an AWS provisioner the shared create guard. Every entry that

@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 // MetaMarker opens the machine-readable upgrade metadata comment a release

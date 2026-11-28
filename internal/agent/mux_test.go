@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
 )
 
 // fakeSessionStream is a hand-written fake for sessionStream, the same

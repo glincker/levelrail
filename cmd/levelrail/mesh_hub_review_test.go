@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 type recordingRec struct{ got map[string]string }

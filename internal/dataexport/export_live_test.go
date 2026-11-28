@@ -21,10 +21,10 @@ import (
 	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockertest"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 const lokiImage = "grafana/loki:3.3.2"

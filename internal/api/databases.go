@@ -9,12 +9,12 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
-	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/quota"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // databaseControllerName duplicates the controller's name format, so the two must stay in sync.
@@ -55,6 +55,9 @@ type databaseResource struct {
 	// database of the same name left behind (see database_leftover_volume.go).
 	// It is stored with the record and applied by the reconciler.
 	ExistingVolume string `json:"existing_volume,omitempty"`
+	// ConfirmVolume is request-only: the database name, required for a root caller
+	// to reuse a kept volume whose owner was never recorded.
+	ConfirmVolume string `json:"confirm_volume,omitempty"`
 	// ProvisionState is response-only: "pending" or "failed" while the
 	// database has no running container yet, empty once it is created.
 	ProvisionState  string `json:"provision_state,omitempty"`
@@ -163,7 +166,7 @@ type databaseListResource struct {
 // Engines are checked against the embedded registry, so adding an engine needs no change here.
 // validDatabaseName keeps a database name safe to embed in container names, DNS labels and engine tooling.
 func validDatabaseName(name string) bool {
-	return len(name) <= 63 && gitSourceDatabaseNamePattern.MatchString(name)
+	return len(name) <= 63 && gitSourceDatabaseNamePattern.MatchString(name) && store.ServiceNameNamespaceProblem(name) == ""
 }
 
 func validateDatabaseResource(d databaseResource) error {
@@ -337,6 +340,26 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		return false
 	}
 
+	if other, err := rt.nameTakenByOtherKind(r.Context(), req.Name, store.NameKindDatabase, true); err != nil {
+		rt.internalError(w, "api: create database: check name failed", err, slog.String("name", req.Name))
+		return false
+	} else if other || spec.IsReservedName(req.Name) {
+		writeError(w, http.StatusConflict, msgNameUnavailable)
+		return false
+	}
+
+	if err := rt.clearStaleSecretNamespace(r.Context(), req.Name); err != nil {
+		if errors.Is(err, errAppNameTaken) {
+			writeError(w, http.StatusConflict, msgNameUnavailable)
+			return false
+		}
+		rt.internalError(w, "api: create database: clear stale secrets failed", err, slog.String("name", req.Name))
+		return false
+	}
+
+	if !rt.leftoverChoiceAllowed(w, r, req.Name, req.NodeID, rt.teamOfProjectID(r.Context(), req.ProjectID), req.ExistingVolume, req.ConfirmVolume) {
+		return false
+	}
 	if rt.refuseIncompatibleLeftover(w, r, req) {
 		return false
 	}
@@ -372,6 +395,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return false
 	}
+	rt.recordDatabaseVolumeOwner(r, req.Name, req.NodeID, req.ProjectID, req.ExistingVolume)
 	req.ExistingVolume = ""
 	req.ProvisionState = provisionStatePending
 	rt.enableTLSAtCreate(r.Context(), req.Name, req.Engine)
@@ -450,7 +474,15 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	defer lockAppName("database:" + req.Name)()
+	defer lockAppName(req.Name)()
+	// The earlier check ran unlocked; an app create may have taken the name since.
+	if other, err := rt.nameTakenByOtherKind(r.Context(), req.Name, store.NameKindDatabase, true); err != nil {
+		rt.internalError(w, "api: create database: recheck name failed", err, slog.String("name", req.Name))
+		return
+	} else if other {
+		writeError(w, http.StatusConflict, msgNameUnavailable)
+		return
+	}
 	if base, reserved := rt.reservedBranchName(r.Context(), req.Name); reserved {
 		writeError(w, http.StatusConflict, "name is reserved for pull request branches of database "+base+", choose another name")
 		return
@@ -501,7 +533,7 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 // The data volume is kept on delete, so a mistaken delete never destroys data.
 func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	defer lockAppName("database:" + name)()
+	defer lockAppName(name)()
 
 	existing, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
@@ -522,7 +554,11 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if len(users) > 0 {
-			writeError(w, http.StatusConflict, "database is used by apps ("+strings.Join(users, ", ")+"); detach them or retry with force=true")
+			msg, ok := rt.databaseInUseMessage(w, r, users)
+			if !ok {
+				return
+			}
+			writeError(w, http.StatusConflict, msg)
 			return
 		}
 	}
@@ -533,6 +569,22 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID, true)
 	if !ok {
 		return
+	}
+
+	// An undo keeps the credentials parked, so a reused name sees nothing; a final delete erases them below.
+	undoKept := !purge && rt.databaseUndoKept(r.Context())
+	parked, rowGone := false, false
+	if undoKept && rt.canParkSecrets() {
+		if err := rt.parkDatabaseSecrets(r.Context(), name); err != nil {
+			rt.internalError(w, "api: delete database: park credentials failed", err, slog.String("name", name))
+			return
+		}
+		parked = true
+		defer func() {
+			if !rowGone {
+				_ = rt.dropParkedDatabaseSecrets(context.WithoutCancel(r.Context()), name)
+			}
+		}()
 	}
 
 	if rt.execRuntime != nil {
@@ -555,11 +607,29 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rowGone = true
+	rt.invalidateDatabaseRefs(r.Context(), w, r, name)
+	// Under the name lock, right after the row went: a same-name create cannot write what this erase removes.
+	var credErr error
+	if !undoKept || parked {
+		credErr = rt.eraseDatabaseCredentials(context.WithoutCancel(r.Context()), name)
+		if credErr != nil {
+			rt.logger.Error("api: delete database: erase credentials failed", slog.String("error", credErr.Error()), slog.String("name", name))
+		}
+	}
 	if !purge {
 		rt.rememberDeleted(context.WithoutCancel(r.Context()), r, store.RecentlyDeletedDatabase, name, existing, rt.lastBackupRef(r.Context(), name))
+		rt.dropOrphanParkedDatabase(context.WithoutCancel(r.Context()), name, parked)
 	}
 	rt.changes.Publish(changeDatabases, name)
 	rt.nudgeReconciler()
+	if credErr != nil {
+		writeJSON(w, http.StatusAccepted, map[string]string{
+			"status":  "credentials_pending",
+			"message": "database removed, but its stored credentials could not be erased yet; they are cleared before the name is reused",
+		})
+		return
+	}
 	if terr := rt.runDatabaseTeardown(r.Context(), name, existing.NodeID, purge); terr != nil {
 		writeJSON(w, http.StatusAccepted, map[string]string{
 			"status":  "teardown_pending",

@@ -3,7 +3,7 @@ package alerting
 import (
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // MetricClass says whether a threshold metric is a request-path signal or a real resource or runtime one.

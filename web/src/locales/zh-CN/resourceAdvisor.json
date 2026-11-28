@@ -27,7 +27,9 @@
     "warnings_other": "{{count}} 个警告",
     "actionable_other": "{{count}} 个可直接在此处采纳",
     "saving": "约可回收 {{amount}} 内存",
-    "pending_other": "仍在为 {{count}} 个资源收集数据"
+    "pending_other": "仍在为 {{count}} 个资源收集数据",
+    "reclaimable": "{{amount}} reclaimable",
+    "monthly": "About {{amount}} a month"
   },
   "empty": {
     "title": "目前没有需要调优的内容",
@@ -62,7 +64,9 @@
     "chartLabel": "{{window}}内的用量与限制对比",
     "usage": "用量",
     "suggested": "建议值",
-    "notAllowed": "你可以查看此建议,但无法更改 {{name}}。"
+    "notAllowed": "你可以查看此建议,但无法更改 {{name}}。",
+    "reclaimable": "Reclaims {{mb}} MB",
+    "monthly": "Saves about {{amount}} a month"
   },
   "kinds": {
     "memory_limit_missing": "为 {{name}} 设置内存限制",
@@ -186,5 +190,28 @@
     "samlScimToggleLabel": "开启 SAML 登录和 SCIM",
     "samlScimTurnedOn": "SAML 登录和 SCIM 已开启",
     "samlScimTurnedOff": "SAML 登录和 SCIM 已关闭"
+  },
+  "sleepAll": {
+    "button": "Sleep {{count}} idle apps",
+    "title": "Sleep idle apps",
+    "description_one": "Enable sleep when idle for {{count}} app. It wakes on the next request.",
+    "description_other": "Enable sleep when idle for {{count}} apps. They wake on the next request.",
+    "confirm": "Sleep these apps",
+    "done_one": "Sleep enabled for {{count}} app",
+    "done_other": "Sleep enabled for {{count}} apps",
+    "failed": "Could not update: {{names}}"
+  },
+  "nodePrices": {
+    "title": "Node prices",
+    "hint": "Monthly cost per node. Without a price the advisor shows memory only, never a money figure.",
+    "node": "Node",
+    "nodePlaceholder": "Node name",
+    "price": "Monthly price",
+    "pricePlaceholder": "12.50",
+    "add": "Add node",
+    "remove": "Remove",
+    "save": "Save prices",
+    "saved": "Node prices saved",
+    "invalid": "Each row needs a node name and a positive price."
   }
 }

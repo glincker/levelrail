@@ -144,6 +144,11 @@
       "replicas": "Handle more traffic: raise the replica count in Deploy settings. Each replica is a copy of the app that shares the load.",
       "autoscale": "Let the app follow load: turn on autoscaling below and choose a minimum and a maximum. It is off until you set it up.",
       "biggerHost": "Move to a bigger host when the server itself runs short: CPU or memory stays high on the host after you resize, or adding replicas no longer lowers the load. Replicas on one server share that server."
+    },
+    "stepper": {
+      "less": "Fewer replicas",
+      "more": "More replicas",
+      "autoscaleOwns": "Autoscale sets the count. Change its range or turn it off to step by hand."
     }
   },
   "replicaTable": {

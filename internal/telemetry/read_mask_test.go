@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // The secret is registered after the rows were written, as happens when a

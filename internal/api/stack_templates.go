@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/stacktemplates"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/stacktemplates"
 )
 
 // secretNameRe reads the names-only bullets of a bundle's SECRETS.md.

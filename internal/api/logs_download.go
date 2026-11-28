@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // logDownloadMaxLines caps a single download to this many of the most

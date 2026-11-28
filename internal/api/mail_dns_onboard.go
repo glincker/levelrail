@@ -7,10 +7,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/mail/demo"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/mail/demo"
+	"github.com/glincker/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Candidate sources, in the order the panel prefers them.

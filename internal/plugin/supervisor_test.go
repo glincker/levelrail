@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 func mustPub(t *testing.T) ed25519.PublicKey {

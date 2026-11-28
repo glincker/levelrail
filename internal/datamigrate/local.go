@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // Docker's built-in network names, none of which has embedded DNS or can be

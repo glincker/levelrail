@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // envAssetsDirectMaxBytes is the size above which upload skips the control plane and PUTs to the provider.

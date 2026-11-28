@@ -1,10 +1,10 @@
-module github.com/GLINCKER/levelrail
+module github.com/glincker/levelrail
 
 go 1.27.4
 
 require (
 	filippo.io/age v1.3.2
-	github.com/GLINCKER/levelrail/kit v0.0.0
+	github.com/glincker/levelrail/kit v0.0.0
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.19
@@ -402,4 +402,4 @@ require (
 	rsc.io/binaryregexp v0.2.0 // indirect
 )
 
-replace github.com/GLINCKER/levelrail/kit => ./kit
+replace github.com/glincker/levelrail/kit => ./kit

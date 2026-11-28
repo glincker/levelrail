@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TriggerScheduledDeploy deploys serviceName's git source at the latest commit on branch, which may differ from gs.Branch.

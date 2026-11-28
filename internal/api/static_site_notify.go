@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/pages"
 )
 
 // pagesNotifyChannel is an attached channel; the destination URL and secret are never returned.

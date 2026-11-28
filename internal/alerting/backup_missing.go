@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // DefaultBackupMissingGracePeriod is the slack past a backup's expected interval before it counts as overdue.

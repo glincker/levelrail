@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/loadbalancer"
 )
 
 type stubLBStats struct {

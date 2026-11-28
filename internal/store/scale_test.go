@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile"
 )
 
 const (

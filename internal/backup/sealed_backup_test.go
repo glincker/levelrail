@@ -12,7 +12,7 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newTestSealer(t *testing.T) *Sealer {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // cliCtx carries what every "sso" leaf command needs.

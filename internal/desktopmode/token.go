@@ -14,7 +14,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/tokenhash"
+	"github.com/glincker/levelrail/internal/tokenhash"
 )
 
 const (

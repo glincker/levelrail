@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/dockerguard"
 )
 
 func TestUpdateDockerGuardInvalidConfigIs409WithARestartHint(t *testing.T) {

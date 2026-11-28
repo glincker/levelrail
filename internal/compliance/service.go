@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Audit action names written by this package.

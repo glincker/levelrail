@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/slowquery"
+	"github.com/glincker/levelrail/kit/slowquery"
 )
 
 func ExampleParsePostgres() {

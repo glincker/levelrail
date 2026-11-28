@@ -1,6 +1,6 @@
 package ingress
 
-import "github.com/GLINCKER/levelrail/internal/ingress"
+import "github.com/glincker/levelrail/internal/ingress"
 
 // publishRequestHostOwners tells the request stats aggregator which app owns
 // each routed host, leaving out the platform's own dashboard, registry and

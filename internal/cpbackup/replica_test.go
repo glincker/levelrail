@@ -9,7 +9,7 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newReplica(t *testing.T, e *drEnv) *Replicator {

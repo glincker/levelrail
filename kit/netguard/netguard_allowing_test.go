@@ -35,3 +35,10 @@ func TestControlAllowing(t *testing.T) {
 		})
 	}
 }
+
+func TestControlAllowingNoEnvNames(t *testing.T) {
+	err := controlAllowing()("10.0.0.5:80")
+	if !errors.Is(err, ErrBlockedAddress) {
+		t.Fatalf("err = %v, want ErrBlockedAddress", err)
+	}
+}

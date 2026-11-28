@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // advertiseHostFromStore prefers the address saved by the fix-it engine over APP_AGENT_ADVERTISE_HOST.

@@ -16,7 +16,7 @@ else
 fi
 [ "${#files[@]}" -gt 0 ] || exit 0
 
-hits="$(grep -nIiE 'levelrail|glinr' "${files[@]}" 2>/dev/null | grep -vF -e 'github.com/GLINCKER/levelrail/kit' -e 'github.com/GLINCKER/levelrail/terraform-provider' || true)"
+hits="$(grep -nIiE 'levelrail|glinr' "${files[@]}" 2>/dev/null | grep -vF -e 'github.com/glincker/levelrail/kit' -e 'github.com/glincker/levelrail/terraform-provider' || true)"
 if [ -n "$hits" ]; then
 	echo "product name found in kit/ or integrations/terraform-provider/ source (use no brand strings in code):" >&2
 	echo "$hits" >&2

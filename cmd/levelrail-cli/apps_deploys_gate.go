@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAppsDeploysGate implements "apps deploys gate <name> [deploy-id]" and

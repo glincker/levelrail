@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // redisTLS mirrors internal/backup's probe: use the TLS port when certs are mounted.

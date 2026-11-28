@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Shared pass/warn/fail values, so the CLI and category code never retype them.
@@ -61,6 +61,9 @@ func (rt *Router) handleGetAppHealthScore(w http.ResponseWriter, r *http.Request
 	name := r.PathValue("name")
 	ctx := r.Context()
 
+	if refuseReservedApp(w, name) {
+		return
+	}
 	svc, err := rt.apps.GetDesiredService(ctx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

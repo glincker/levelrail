@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // durationAlertSource feeds kind=deploy_duration_regression rules from build runs and deploy attempts.

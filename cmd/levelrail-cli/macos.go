@@ -12,10 +12,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/localmode"
-	"github.com/GLINCKER/levelrail/internal/macosrt"
-	"github.com/GLINCKER/levelrail/internal/vmruntime"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/localmode"
+	"github.com/glincker/levelrail/internal/macosrt"
+	"github.com/glincker/levelrail/internal/vmruntime"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 // Tunables seed from env; defaults are the documented values.

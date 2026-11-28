@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/internal/pipeline"
+	"github.com/glincker/levelrail/internal/bitbucketapp"
+	"github.com/glincker/levelrail/internal/giteaapp"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/pipeline"
 )
 
 // EnvGitStatusEnabled is the server kill switch for posting commit statuses

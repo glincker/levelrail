@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakeheroku"
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakerender"
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakevercel"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/platformimport/fakeheroku"
+	"github.com/glincker/levelrail/internal/platformimport/fakerender"
+	"github.com/glincker/levelrail/internal/platformimport/fakevercel"
 )
 
 var updateEmit = os.Getenv("PLATFORMIMPORT_UPDATE") != ""

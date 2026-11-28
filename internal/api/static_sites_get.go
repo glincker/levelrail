@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // staticSiteDeploy is the newest deploy attempt of a Pages site.

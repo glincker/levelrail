@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/mail"
-	"github.com/GLINCKER/levelrail/internal/mail/mox"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/mail"
+	"github.com/glincker/levelrail/internal/mail/mox"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // mailAdminSecretKey is the per-service secret the mail-mox template stores

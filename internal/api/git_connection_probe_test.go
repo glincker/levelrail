@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/bitbucketserver"
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/bitbucketserver"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 func TestConnProbe_TypedFailures(t *testing.T) {

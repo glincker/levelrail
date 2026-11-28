@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/dbupgrade"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/dbupgrade"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DatabaseUpgrader is the upgrade advisor, policy store and runner

@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gpu"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // LocalNodeName labels the control plane's own host in GPU listings.

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/mail"
+	"github.com/glincker/levelrail/internal/mail"
 )
 
 // ParseRecords turns zone-file lines into records, skipping blanks and

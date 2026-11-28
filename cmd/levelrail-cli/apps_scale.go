@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAppsScale implements "apps scale <name> --replicas N [--strategy S]":
@@ -43,6 +43,14 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitUsage
 	}
 	name := rest[0]
+	var step int
+	if len(rest) == 2 && !strings.Contains(rest[1], "=") {
+		var err error
+		if step, replicas, err = parseScaleStep(rest[1]); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		rest = rest[:1]
+	}
 	if len(rest) > 1 {
 		if replicas != 0 || strategy != "" || memory != "" || cpu != 0 || swap != "" || cpuset != "" || size != "" || tp.any() {
 			return reportError(stdout, stderr, jsonOut, newValidationError("service=count pairs cannot be combined with --replicas, --strategy, --memory, --cpu, --swap-memory or --cpuset-cpus"))
@@ -74,6 +82,12 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", name, err))
 	}
 	prevReplicas, prevStrategy := app.Replicas, app.Strategy
+	if step != 0 {
+		if app.Replicas+step < 1 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("app %q has %d replica(s); %+d would go below 1 (use \"apps stop\" to run none)", name, app.Replicas, step))
+		}
+		replicas = app.Replicas + step
+	}
 	if replicas > 0 {
 		app.Replicas = replicas
 	}
@@ -142,6 +156,21 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// parseScaleStep reads "+1", "-1" (relative step) or "N" (absolute count); the server enforces the upper bound.
+func parseScaleStep(s string) (step, replicas int, err error) {
+	n, convErr := strconv.Atoi(s)
+	if convErr != nil || n == 0 {
+		return 0, 0, newValidationError("%q is not +N, -N or a replica count of at least 1", s)
+	}
+	if s[0] == '+' || s[0] == '-' {
+		return n, 0, nil
+	}
+	if n < 1 {
+		return 0, 0, newValidationError("%q: the count must be at least 1 (use \"apps stop\" to run none)", s)
+	}
+	return 0, n, nil
 }
 
 // scaleUndoArgs lists the flags that restore replicas and strategy; empty when neither moved.
@@ -266,6 +295,7 @@ func parseOptionalMemory(s string) (int64, error) {
 func appsScaleUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [--swap-memory 1Gi] [--cpuset-cpus 0-1] [--size small] [flags]
+  %[1]s apps scale <name> +1|-1|N [flags]
   %[1]s apps scale <name> web=2 worker=1 [flags]
 
 Sets an app's replica count, deploy strategy and/or resource limits. Works

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/configtranslate"
+	"github.com/glincker/levelrail/internal/configtranslate"
 )
 
 // appCreatableFragment drops what apps create cannot apply (databases: and

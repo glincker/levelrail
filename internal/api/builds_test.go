@@ -18,14 +18,14 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/deploylog"
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploylog"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeBuilder is a hand-written fake for Builder. calls/lastReq stay

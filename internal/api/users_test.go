@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestHandleListUsers_RequiresAuth(t *testing.T) {

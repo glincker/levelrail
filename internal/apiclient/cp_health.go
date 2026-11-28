@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 )
 
 // CPHealthFinding is one saturated measurement on the control plane.

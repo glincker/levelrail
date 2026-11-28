@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
-	"github.com/GLINCKER/levelrail/internal/cloudguard"
+	"github.com/glincker/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/cloudguard"
 )
 
 func TestDoctorIdentityStepWarnsOnRoot(t *testing.T) {

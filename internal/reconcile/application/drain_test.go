@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 func TestEffectiveHold(t *testing.T) {

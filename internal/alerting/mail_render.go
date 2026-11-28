@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/email"
 )
 
 // MailRenderFunc renders one mailtemplates event for a recipient; ok is false when no template applies.

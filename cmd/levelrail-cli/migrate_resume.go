@@ -9,8 +9,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/migrationgate"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/migrationgate"
 )
 
 const resumeFollowEvery = 2 * time.Second

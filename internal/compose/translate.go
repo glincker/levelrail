@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ToDesiredServices translates f into one store.DesiredService per
@@ -70,7 +72,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		}
 		d.Runtime = rt
 		// Validate already limited cap_add to the approved grants; the filter only matters when ungranted caps are dropped.
-		d.GrantedCaps = grantedCaps(svc.HostAccess.CapAdd, f.CapGrants[key])
+		d.GrantedCaps = append(grantedCaps(svc.HostAccess.CapAdd, f.CapGrants[key]), hostGrantTokens(svc, f.CapGrants[key])...)
 		gpu, err := gpuFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
@@ -105,6 +107,13 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			d.Files = append(d.Files, store.ServiceFile{Path: cf.Path, Mode: cf.Mode, Secret: cf.Secret, NoExpand: cf.NoExpand, Content: cf.Content, Hash: store.FileContentHash(d.Name, cf.Path, cf.Content)})
 		}
 		for _, v := range svc.Volumes {
+			if v.HostPath != "" && socketGrantCovers(f, key, v) {
+				// The real socket is never stored; the reconciler mounts the grant's own.
+				if p, ok := dockerguard.ProfileFromCaps(f.CapGrants[key]); ok {
+					d.GrantedCaps = append(d.GrantedCaps, dockerguard.GrantCap(p))
+				}
+				continue
+			}
 			if v.HostPath != "" {
 				d.BindMounts = append(d.BindMounts, store.ServiceBindMount{
 					HostPath:      v.HostPath,
@@ -195,6 +204,21 @@ func volumeName(appName, serviceKey, logicalName string) string {
 }
 
 // grantedCaps normalizes the validated cap_add of one service into the stored record.
+// hostGrantTokens keeps the host network and device tokens the service actually uses and holds a grant for.
+func hostGrantTokens(svc Service, granted []string) []string {
+	var out []string
+	if strings.EqualFold(strings.TrimSpace(svc.HostAccess.NetworkMode), "host") && dockerguard.HasHostNetworkGrant(granted) {
+		out = append(out, dockerguard.HostNetworkGrantCap)
+	}
+	held := dockerguard.DevicesFromCaps(granted)
+	for _, p := range DevicePaths(svc.HostAccess.Devices) {
+		if slices.Contains(held, p) {
+			out = append(out, dockerguard.DeviceGrantCap(p))
+		}
+	}
+	return out
+}
+
 func grantedCaps(capAdd, granted []string) []string {
 	if len(capAdd) == 0 {
 		return nil

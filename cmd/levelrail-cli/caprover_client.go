@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/httpx"
+	"github.com/glincker/levelrail/kit/httpx"
 )
 
 // CapRover returns real env values to any caller that can list apps, with no redaction gate.

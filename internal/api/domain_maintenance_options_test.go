@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func maintenanceCall(t *testing.T, rt *Router, cookie *http.Cookie, method, body string) (int, domainMaintenanceResource) {

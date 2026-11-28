@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/mail/demo"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/mail/demo"
+	"github.com/glincker/levelrail/internal/mailrecords"
 )
 
 // mailDemoProvider is the fake detection demo mode serves: a Cloudflare host connected to the demo zone.

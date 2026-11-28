@@ -10,7 +10,7 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/identity"
 )
 
 // ErrOwnerNotFound means the legacy user does not exist in the users table.

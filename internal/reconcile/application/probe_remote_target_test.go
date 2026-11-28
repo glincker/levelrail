@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/meshpath"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/meshpath"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestProbeTarget_RemoteNodeDialsMeshAddress(t *testing.T) {

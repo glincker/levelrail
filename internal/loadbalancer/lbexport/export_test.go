@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/loadbalancer"
 )
 
 var update = flag.Bool("update", false, "rewrite golden files")

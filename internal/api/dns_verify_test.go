@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 const verifyTestToken = "cf-token-must-never-leak-0123456789" //nolint:gosec // fake token to prove it never leaks

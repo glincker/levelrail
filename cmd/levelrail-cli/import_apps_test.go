@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func appImportAPI(t *testing.T) (*httptest.Server, *[]string, *apiclient.AppImportRequest) {

@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GLINCKER/levelrail/internal/configtranslate"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/configtranslate"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // maxProcfileBytes bounds a Procfile or app.json read from an untrusted checkout.

@@ -5,19 +5,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 	"log/slog"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/janitor"
-	"github.com/GLINCKER/levelrail/internal/nodecapacity"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/nodecapacity"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 const (
@@ -386,6 +387,21 @@ func (rt *Router) handleNodeCleanup(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, nodeCleanupResponse{Preview: res.Preview, Freed: res.FreedBytes, Error: res.Error})
 }
 
+// nodeCleanupFence stamps ctx with the next cleanup token of nodeID; without a counter the call goes unfenced.
+func (rt *Router) nodeCleanupFence(ctx context.Context, nodeID string) context.Context {
+	src, ok := rt.nodeGuard.store.(interface {
+		NextNodeFenceToken(ctx context.Context, nodeID string) (uint64, error)
+	})
+	if !ok {
+		return ctx
+	}
+	tok, err := src.NextNodeFenceToken(ctx, nodeID)
+	if err != nil || tok == 0 {
+		return ctx
+	}
+	return agent.WithFence(ctx, "node:"+nodeID, tok)
+}
+
 // runNodeCleanup removes the safe classes and records the outcome in the node's history.
 func (rt *Router) runNodeCleanup(ctx context.Context, nodeID, trigger, actor string) (nodecapacity.Result, error) {
 	started := time.Now()
@@ -396,7 +412,8 @@ func (rt *Router) runNodeCleanup(ctx context.Context, nodeID, trigger, actor str
 	} else if c := rt.remoteCleaner(nodeID); c != nil {
 		var keep []string
 		if keep, err = rt.keepContainerNames(ctx); err == nil {
-			res, err = c.NodeCleanup(ctx, false, keep)
+			// Node scope: a persisted per-node counter, so an older cleanup with a staler keep list is refused.
+			res, err = c.NodeCleanup(rt.nodeCleanupFence(ctx, nodeID), false, keep)
 		}
 	} else {
 		err = errors.New("cleanup is not available on this node")

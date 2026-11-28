@@ -27,7 +27,9 @@
     "warnings_other": "警告 {{count}} 件",
     "actionable_other": "{{count}} 件はここで適用できます",
     "saving": "約 {{amount}} のメモリを回収できます",
-    "pending_other": "{{count}} 件のリソースのデータを収集中です"
+    "pending_other": "{{count}} 件のリソースのデータを収集中です",
+    "reclaimable": "{{amount}} reclaimable",
+    "monthly": "About {{amount}} a month"
   },
   "empty": {
     "title": "現在チューニングするものはありません",
@@ -62,7 +64,9 @@
     "chartLabel": "{{window}} の使用量と上限の比較",
     "usage": "使用量",
     "suggested": "推奨",
-    "notAllowed": "この提案は表示できますが、{{name}} を変更することはできません。"
+    "notAllowed": "この提案は表示できますが、{{name}} を変更することはできません。",
+    "reclaimable": "Reclaims {{mb}} MB",
+    "monthly": "Saves about {{amount}} a month"
   },
   "kinds": {
     "memory_limit_missing": "{{name}} にメモリ上限を設定してください",
@@ -186,5 +190,28 @@
     "samlScimToggleLabel": "SAMLサインインとSCIMをオンにする",
     "samlScimTurnedOn": "SAMLサインインとSCIMをオンにしました",
     "samlScimTurnedOff": "SAMLサインインとSCIMをオフにしました"
+  },
+  "sleepAll": {
+    "button": "Sleep {{count}} idle apps",
+    "title": "Sleep idle apps",
+    "description_one": "Enable sleep when idle for {{count}} app. It wakes on the next request.",
+    "description_other": "Enable sleep when idle for {{count}} apps. They wake on the next request.",
+    "confirm": "Sleep these apps",
+    "done_one": "Sleep enabled for {{count}} app",
+    "done_other": "Sleep enabled for {{count}} apps",
+    "failed": "Could not update: {{names}}"
+  },
+  "nodePrices": {
+    "title": "Node prices",
+    "hint": "Monthly cost per node. Without a price the advisor shows memory only, never a money figure.",
+    "node": "Node",
+    "nodePlaceholder": "Node name",
+    "price": "Monthly price",
+    "pricePlaceholder": "12.50",
+    "add": "Add node",
+    "remove": "Remove",
+    "save": "Save prices",
+    "saved": "Node prices saved",
+    "invalid": "Each row needs a node name and a positive price."
   }
 }

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Resource is one app or database placed on a node.

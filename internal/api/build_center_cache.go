@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (
@@ -312,7 +312,7 @@ func (rt *Router) appBuildActive(ctx context.Context, name string) (bool, error)
 func (rt *Router) reclaimAppCache(ctx context.Context, app, trigger string) (cacheReclaimEntry, error) {
 	entry := cacheReclaimEntry{App: app, Trigger: trigger, At: time.Now().UTC(), QuotaBytes: rt.appCacheQuotaBytes(ctx)}
 	q, ok := rt.cacheQuotaReclaimer()
-	id := build.SanitizeCacheID(app, "")
+	id := build.AppCacheKey(ctx, app)
 	if !ok || entry.QuotaBytes <= 0 || id == "" {
 		return entry, nil
 	}

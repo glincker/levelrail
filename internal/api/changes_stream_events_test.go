@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func nextChangeData(t *testing.T, sc *bufio.Scanner) string {

@@ -6,16 +6,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/deploywatch"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploywatch"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // deployGate is the shared state behind the readiness gate, drain and

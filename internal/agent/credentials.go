@@ -12,7 +12,7 @@ import (
 
 	"google.golang.org/grpc/credentials"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // NewServerCredentials returns mTLS credentials that verify a client certificate when presented but do not require one.

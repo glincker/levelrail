@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AppStreamStore is the store surface the app stream handlers need.

@@ -32,6 +32,7 @@ import { EnvPolicyNotice } from './EnvPolicyNotice'
 import { EnvRowList } from './EnvRowList'
 import { ENV_ROW_GRID, EnvVarRow } from './EnvVarRow'
 import { ReviewChangesDialog } from './ReviewChangesDialog'
+import { EnvConflictDialog } from './EnvConflictDialog'
 import { StepUpDialog } from './StepUpDialog'
 import {
   Alert,
@@ -446,8 +447,60 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
         <BoundEnvSection app={app.name} />
       </CardContent>
 
+      {state.remoteChanged ? (
+        <p role="status" className="px-6 text-sm text-warning">
+          {t('conflict.remote')}
+        </p>
+      ) : null}
+      {state.lockedPending.length > 0 ? (
+        <fieldset className="px-6 text-sm">
+          <legend className="text-muted-foreground">
+            {t('conflict.lockedTitle')}
+          </legend>
+          {state.lockedPending.map((key) => (
+            <label key={key} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={state.replaceLocked.has(key)}
+                onChange={(e) => {
+                  state.toggleReplaceLocked(key, e.target.checked)
+                }}
+              />
+              {t('conflict.lockedReplace', { key })}
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
+      {state.conflict ? (
+        <EnvConflictDialog
+          open
+          keys={state.conflict.keys}
+          secretKeys={state.rows
+            .filter((r) => r.type === 'secret')
+            .map((r) => r.key)}
+          saving={saving}
+          onKeepMine={(keep) => {
+            setSaving(true)
+            void state
+              .resolveConflict(keep)
+              .then((keys) => {
+                setRebuildKeys(keys)
+                setReviewOpen(false)
+              })
+              .catch((e: unknown) => {
+                setSaveError(e instanceof Error ? e.message : String(e))
+              })
+              .finally(() => {
+                setSaving(false)
+              })
+          }}
+          onReloadTheirs={state.discard}
+          onClose={state.dismissConflict}
+        />
+      ) : null}
       <ReviewChangesDialog
         open={reviewOpen}
+        confirmDisabled={state.lockedBlocked}
         changes={state.changes}
         saving={saving}
         error={saveError}

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Step names. One constant per concept, shared by emitters and the viewer.

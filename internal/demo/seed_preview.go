@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/preview"
+	"github.com/glincker/levelrail/internal/preview"
 )
 
 const (

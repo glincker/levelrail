@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/stacksync"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/stacksync"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const syncCanary = "CANARY-sync-plaintext-91c2"

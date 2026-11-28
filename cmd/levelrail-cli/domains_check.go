@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // Top-level verb rather than get/set/clear: a single read-only DNS check, nothing to configure.

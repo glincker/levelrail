@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 func ExampleConfig_Validate() {

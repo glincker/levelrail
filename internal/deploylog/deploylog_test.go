@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // fakeStore is a hand-written fake for LogStore, matching this

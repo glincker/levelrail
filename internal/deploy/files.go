@@ -2,11 +2,12 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // secretValueSetter is what the secrets manager adds beside SecretChecker;
@@ -71,23 +72,53 @@ func (p *Pipeline) dropStaleFileSecrets(ctx context.Context, desired *store.Desi
 }
 
 // persistFileSecrets stores each secret file's content encrypted and blanks
-// it in desired state, so the database row holds only the hash.
-func (p *Pipeline) persistFileSecrets(ctx context.Context, desired *store.DesiredService) error {
+// it in desired state, so the database row holds only the hash. It returns the
+// slots it wrote, and admits the name first so a refused name leaves nothing.
+func (p *Pipeline) persistFileSecrets(ctx context.Context, desired *store.DesiredService) ([]string, error) {
 	if err := p.dropStaleFileSecrets(ctx, desired); err != nil {
-		return err
+		return nil, err
 	}
+	var written []string
+	admitted := false
 	for i, f := range desired.Files {
 		if !f.Secret || f.Content == "" {
 			continue
 		}
 		setter, ok := p.secrets.(secretValueSetter)
 		if !ok {
-			return fmt.Errorf("file %q is secret but no secrets manager is configured", f.Path)
+			return written, fmt.Errorf("file %q is secret but no secrets manager is configured", f.Path)
 		}
-		if err := setter.SetValue(ctx, desired.Name, store.FileSecretKey(f.Path), f.Content); err != nil {
-			return fmt.Errorf("store secret file %q: %w", f.Path, err)
+		if !admitted && p.names != nil {
+			if err := p.names.AdmitNewServiceName(ctx, desired.Name); err != nil {
+				return written, fmt.Errorf("service name %q: %w", desired.Name, err)
+			}
+			admitted = true
 		}
+		key := store.FileSecretKey(f.Path)
+		if err := setter.SetValue(ctx, desired.Name, key, f.Content); err != nil {
+			p.dropUnsavedFileSecrets(ctx, desired.Name, written)
+			return nil, fmt.Errorf("store secret file %q: %w", f.Path, err)
+		}
+		written = append(written, key)
 		desired.Files[i].Content = ""
 	}
-	return nil
+	return written, nil
+}
+
+// dropUnsavedFileSecrets removes slots a failed save left behind, but only for a service
+// with no saved record, so a redeploy's earlier values are never lost.
+func (p *Pipeline) dropUnsavedFileSecrets(ctx context.Context, name string, keys []string) {
+	deleter, dok := p.secrets.(secretValueDeleter)
+	loader, lok := p.store.(desiredLoader)
+	if len(keys) == 0 || !dok || !lok {
+		return
+	}
+	if _, err := loader.GetDesiredService(ctx, name); !errors.Is(err, store.ErrServiceNotFound) {
+		return
+	}
+	for _, k := range keys {
+		if err := deleter.DeleteValue(context.WithoutCancel(ctx), name, k); err != nil {
+			p.logger.Warn("deploy: drop unsaved file secret failed", "name", name, "error", err.Error())
+		}
+	}
 }

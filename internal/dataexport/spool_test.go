@@ -10,9 +10,9 @@ import (
 
 	"net/http/httptest"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/store/storetest"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store/storetest"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 func rec(msg string) LogRecord {

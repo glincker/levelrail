@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/functions"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // FunctionTriggerStore persists webhook triggers and the async invocation queue.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/release"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/release"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Binding change reasons written to binding history.

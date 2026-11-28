@@ -5,7 +5,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnszones"
 	"github.com/miekg/dns"
 )
 

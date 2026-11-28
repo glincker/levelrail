@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Suffixes that mark a Postgres version running an extension image, for

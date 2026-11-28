@@ -12,9 +12,9 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore"
-	"github.com/GLINCKER/levelrail/internal/objectstore/objectstoretest"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/objectstore/objectstoretest"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeDest struct {

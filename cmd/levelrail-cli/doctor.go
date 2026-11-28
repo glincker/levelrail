@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/hostprovider"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/hostprovider"
 )
 
 // doctorOutput is the --fix result: the report after fixing plus what was applied or left alone.

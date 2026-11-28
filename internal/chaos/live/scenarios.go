@@ -14,12 +14,12 @@ import (
 	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/bench"
-	"github.com/GLINCKER/levelrail/internal/chaos"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/bench"
+	"github.com/glincker/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 const (

@@ -4,18 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/netclient"
+	"github.com/glincker/levelrail/internal/netclient"
 	"log/slog"
 	"net/http"
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/abuse"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/abuse"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

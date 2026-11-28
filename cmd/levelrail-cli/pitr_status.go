@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // Reports whether PITR is enabled and the restore window it currently allows.

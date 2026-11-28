@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider/reporef"
+	"github.com/glincker/levelrail/internal/gitprovider/reporef"
 )
 
 var secretKeyRe = regexp.MustCompile(`(?i)(^|_)(secret|password|passwd|pwd|token|api_?key|private_?key|credential|auth|dsn)($|_)|_key$|^database_url$|^redis_url$|^mongo(db)?_url$|^db_url$|pass|secret|token|api_?key|credential|dsn`)

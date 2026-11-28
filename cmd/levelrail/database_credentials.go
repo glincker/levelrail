@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 // Generated once and persisted, so a reconcile pass never rotates a running database's password.

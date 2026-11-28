@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type watchStatusResource struct {

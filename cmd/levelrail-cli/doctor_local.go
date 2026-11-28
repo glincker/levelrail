@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cliupdate"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/cliupdate"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 const (
@@ -33,6 +33,7 @@ func localDoctorReport(ctx context.Context, lookupEnv func(string) (string, bool
 	checks := []doctorCheckResource{
 		localDockerCheck(ctx, lookupEnv),
 		localDiskCheck(lookupEnv),
+		localSwapCheck(lookupEnv),
 		localPortCheck(ctx, 80),
 		localPortCheck(ctx, 443),
 	}

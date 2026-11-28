@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // UpdateSettingsStore is the store surface the update settings handlers

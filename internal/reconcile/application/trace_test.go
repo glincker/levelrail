@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploytrace"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploytrace"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const traceAttempt = "dep_trace"

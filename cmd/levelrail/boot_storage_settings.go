@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/diskguard"
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/diskguard"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 const mibBytes = int64(1) << 20

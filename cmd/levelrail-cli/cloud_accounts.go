@@ -12,7 +12,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const cloudCredentialEnv = "LEVELRAIL_CLOUD_CREDENTIAL" //nolint:gosec // env var name, not a credential

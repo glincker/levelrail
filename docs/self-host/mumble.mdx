@@ -1,0 +1,67 @@
+---
+title: "Self-host Mumble Server with Docker"
+sidebarTitle: "Mumble Server"
+description: "Low latency, high quality voice chat server for gaming and teams."
+"og:url": "https://docs.levelrail.com/self-host/mumble"
+---
+
+Low latency, high quality voice chat server for gaming and teams.
+
+This page describes the Levelrail template for Mumble Server (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.mumble.info/documentation/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `mumble` | `mumblevoip/mumble-server:v1.6.1001` | 64738 | `mumble_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `mumble` | `MUMBLE_SUPERUSER_PASSWORD` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`mumble`): MUMBLE_SUPERUSER_PASSWORD.
+- Stores data in named volumes (`mumble`): mumble_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Mumble Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Mumble Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy mumble --name my-mumble
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Communication templates
+
+- [Apache Answer](/self-host/answer)
+- [Apprise API](/self-host/apprise-api)
+- [Campfire](/self-host/campfire)
+- [Chatwoot](/self-host/chatwoot)
+- [Cinny](/self-host/cinny)
+
+All templates are listed in the [self-host gallery](/self-host).

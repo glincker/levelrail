@@ -6,8 +6,8 @@ import (
 	"maps"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // appUpdateResponse adds the build-time env hint to the saved app; the
@@ -48,6 +48,14 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	mergeOmittedAppFields(&req, *existing, sent)
 
+	if dup := newEnvSecretOverlap(req.Env, req.SecretEnv, existing.Env, store.SecretEnvNames(existing.SecretEnv)); len(dup) > 0 {
+		writeError(w, http.StatusConflict, dualCopyMessage(dup))
+		return
+	}
+	if msg := rt.updateEnvRefusal(r.Context(), req.Env, req.SecretEnv, existing); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	if !rt.vetSecretRefs(w, r, name, existing.EnvironmentID, existing.VaultEnv, &req) {
 		return
 	}

@@ -1,0 +1,14 @@
+services:
+  rqlite:
+    image: rqlite/rqlite:10.8.0
+    ports: ["4001"]
+    volumes:
+      - rqlite_data:/rqlite/file
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:4001/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+volumes:
+  rqlite_data:

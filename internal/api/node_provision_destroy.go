@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AuditActionNodeProvisionDestroy is the audit action for a user-requested server destroy.

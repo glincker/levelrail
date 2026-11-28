@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/exposure"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/exposure"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestSecurityReachabilityReportsExposedPort(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/placement"
 )
 
 // createPlacement carries one create request's placement through

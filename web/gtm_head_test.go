@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/brand"
 )
 
 func gtmHandler(id string) http.Handler {

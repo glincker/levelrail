@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 // waitFake serves the apply endpoints plus a scripted app list: each poll

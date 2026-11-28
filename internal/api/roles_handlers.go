@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // handleListRoles handles GET /api/v1/roles: every stored role with its user count, AbilityRead-gated and never behind the feature flag.

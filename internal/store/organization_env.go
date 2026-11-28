@@ -12,6 +12,9 @@ import (
 // the same "replace, don't diff" semantics SetProjectEnvVars already
 // establishes one tier down.
 func (db *DB) SetOrganizationEnvVars(ctx context.Context, orgID string, vars map[string]string) error {
+	if err := checkEnvKeys(mapKeys(vars)...); err != nil {
+		return err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: set organization env vars for %q: begin transaction: %w", orgID, err)
@@ -117,6 +120,9 @@ func OrganizationEnvSecretsKey(orgID string) string {
 // SetOrganizationSecretEnvVar marks key as a secret-backed shared env
 // var for orgID, mirroring SetProjectSecretEnvVar one tier up.
 func (db *DB) SetOrganizationSecretEnvVar(ctx context.Context, orgID, key string) error {
+	if err := checkEnvKeys(key); err != nil {
+		return err
+	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO organization_env_vars (org_id, key, value, is_secret, updated_at)
 		VALUES (?, ?, '', 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))

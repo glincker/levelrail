@@ -13,9 +13,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/plugin"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/plugin"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const testCFToken = "cf-token-SECRET-xyz" //nolint:gosec // test fixture, not a credential

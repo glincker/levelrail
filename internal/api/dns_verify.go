@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // dnsVerifyTimeout bounds the provider calls made when a credential is saved.

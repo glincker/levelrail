@@ -12,6 +12,11 @@ import (
 // secret-backed env names without touching any other column, and reports
 // whether the set changed. An existing entry keeps its Required flag.
 func (db *DB) SetServiceSecretEnvDeclared(ctx context.Context, name, key string, declared bool) (bool, error) {
+	if declared {
+		if err := checkEnvKeys(key); err != nil {
+			return false, err
+		}
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return false, fmt.Errorf("store: declare secret env for %q: begin: %w", name, err)
@@ -51,7 +56,7 @@ func (db *DB) SetServiceSecretEnvDeclared(ctx context.Context, name, key string,
 	if err != nil {
 		return false, fmt.Errorf("store: declare secret env for %q: marshal: %w", name, err)
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE desired_services SET secret_env = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, string(out), name); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE desired_services SET secret_env = ?, env_version = env_version + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, string(out), name); err != nil {
 		return false, fmt.Errorf("store: declare secret env for %q: update: %w", name, err)
 	}
 	if err := tx.Commit(); err != nil {

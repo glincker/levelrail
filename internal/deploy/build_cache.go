@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // BuildCacheProvider resolves an app's BuildKit remote cache and records how

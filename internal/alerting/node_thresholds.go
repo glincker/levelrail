@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // NodeThresholdPolicy is the live platform default for node pressure rules, read from runtime settings each tick.

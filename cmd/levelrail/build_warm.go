@@ -9,10 +9,10 @@ import (
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // warmFallbackInterval guards the loop from a zero wait if the setting is unreadable.

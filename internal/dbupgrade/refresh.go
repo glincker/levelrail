@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/reconcile/database"
 )
 
 // EnvRefreshInterval sets how often registry tags are refreshed; "0" disables it.

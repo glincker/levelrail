@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/bindmount"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/bindmount"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // GrantableCaps are capabilities a container may add only when its own
@@ -38,6 +38,9 @@ type Policy struct {
 	// ResolveSymlinks checks a bind's resolved host path too. Off when this
 	// process cannot see the host filesystem (the agent in a container).
 	ResolveSymlinks bool
+	// GrantSocketDir holds the per-grant Docker API sockets; a bind from
+	// inside it is the only bind allowed under a protected data dir.
+	GrantSocketDir string
 }
 
 // PolicyFromHardening builds the default policy from the hardening profile
@@ -107,6 +110,9 @@ func normalizeCap(c string) string {
 // or contains a protected path (also compared in resolved form, since /etc
 // may itself be a symlink).
 func (p Policy) sensitiveHostPath(hostPath string) bool {
+	if d := p.GrantSocketDir; d != "" && strings.HasPrefix(filepath.Clean(hostPath), filepath.Clean(d)+"/") {
+		return false
+	}
 	candidates := []string{filepath.Clean(hostPath)}
 	protected := append(append([]string(nil), bindmount.ForbiddenPaths...), p.SensitivePaths...)
 	if p.ResolveSymlinks {

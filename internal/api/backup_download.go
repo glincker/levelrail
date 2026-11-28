@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // BackupDownloader is the surface the backup download handler needs from
@@ -60,7 +60,8 @@ func (rt *Router) handleDownloadBackup(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	historyID := r.PathValue("historyId")
 
-	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
@@ -79,6 +80,10 @@ func (rt *Router) handleDownloadBackup(w http.ResponseWriter, r *http.Request) {
 	}
 	if h.DatabaseName != name {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was taken from database %q, not %q", historyID, h.DatabaseName, name))
+		return
+	}
+	if !db.OwnsBackup(h.InstanceID, h.StartedAt) {
+		writeError(w, http.StatusNotFound, "backup not found")
 		return
 	}
 	if h.Status != store.BackupStatusSucceeded {

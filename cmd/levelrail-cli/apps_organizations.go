@@ -7,7 +7,7 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // An organization groups projects and has no direct app or database membership.

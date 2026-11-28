@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/dbupgrade"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgradesched"
-	"github.com/GLINCKER/levelrail/internal/version"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/dbupgrade"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/upgradesched"
+	"github.com/glincker/levelrail/internal/version"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // UpgradeScheduleStore is the persistence behind scheduled and automatic

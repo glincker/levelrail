@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func certNode(name string, left time.Duration, now time.Time) store.Node {

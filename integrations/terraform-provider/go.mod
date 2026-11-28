@@ -1,4 +1,4 @@
-module github.com/GLINCKER/levelrail/terraform-provider
+module github.com/glincker/levelrail/terraform-provider
 
 go 1.25.8
 

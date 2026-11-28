@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/pkgregistry"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/pkgregistry"
 )
 
 type fakeBuildSecretSource struct{ out pkgregistry.Output }

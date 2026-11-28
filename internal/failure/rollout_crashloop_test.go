@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploysafety"
 )
 
 func TestIsRolloutCrashLoop(t *testing.T) {

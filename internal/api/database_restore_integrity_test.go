@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/quota"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestBranchAndRestoreAsNew_RefuseBackupOfDeletedSameNameDatabase(t *testing.T) {

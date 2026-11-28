@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Diagnosis codes a probe can return; the dashboard maps each to a typed fix.

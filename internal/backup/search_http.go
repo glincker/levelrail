@@ -12,10 +12,10 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/httpx"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/httpx"
 )
 
 // maxSearchAPIResponse caps one API response read back through exec; every

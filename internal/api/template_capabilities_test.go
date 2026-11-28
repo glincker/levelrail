@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -11,9 +12,9 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const capTplManifest = `id: captpl
@@ -34,9 +35,14 @@ capabilities:
 
 func addCapTemplate(t *testing.T, capLine, capAdd string) {
 	t.Helper()
+	addCapTemplateWith(t, capLine, capAdd, "")
+}
+
+func addCapTemplateWith(t *testing.T, capLine, capAdd, extra string) {
+	t.Helper()
 	fsys := fstest.MapFS{
 		"m/captpl/template.yaml": {Data: []byte(capTplManifest + capLine)},
-		"m/captpl/compose.yaml":  {Data: []byte("services:\n  web:\n    image: nginx:1.27.0\n    ports: [\"80\"]\n    cap_add: [" + capAdd + "]\n")},
+		"m/captpl/compose.yaml":  {Data: []byte("services:\n  web:\n    image: nginx:1.27.0\n    ports: [\"80\"]\n    cap_add: [" + capAdd + "]\n" + extra)},
 	}
 	m, err := catalog.LoadManifest(fsys, "m/captpl")
 	if err != nil {
@@ -359,4 +365,53 @@ func TestEgressPolicy_RefusedOnElevatedService(t *testing.T) {
 	cookie := loginTestSession(t, rt, db)
 	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/service-templates/captpl/install", `{"name":"egr","domains":{"web":"e.example.com"}}`, http.StatusOK)
 	composeDo(t, rt, cookie, http.MethodPut, "/api/v1/apps/egr-web/egress-policy", `{"mode":"allowlist","allow":[{"host":"example.com","port":443}]}`, http.StatusConflict)
+}
+
+func logsGrantFixture(t *testing.T, teams int) (*Router, *store.DB, *http.Cookie) {
+	t.Helper()
+	addCapTemplateWith(t, "  - {class: docker_api, service: web, reason: log viewer, caps: [LOGS]}\n", "", "    volumes: [\"/var/run/docker.sock:/var/run/docker.sock\"]\n")
+	rt, db := newTestRouterWithComposeSecrets(t)
+	rt.runtimeSettings = runtimesettings.New(db, func(string) (string, bool) { return "", false })
+	ctx := context.Background()
+	if _, err := rt.runtimeSettings.Set(ctx, runtimesettings.KeyTemplatesCapDockerAPI, json.RawMessage(`true`), "test"); err != nil {
+		t.Fatalf("enable docker api: %v", err)
+	}
+	orgs, err := db.ListOrganizations(ctx)
+	if err != nil {
+		t.Fatalf("ListOrganizations: %v", err)
+	}
+	for i := len(orgs); i < teams; i++ {
+		id := fmt.Sprintf("extra-team-%d", i)
+		if err := db.SaveOrganization(ctx, store.Organization{ID: id, Name: id, CreatedAt: "2026-10-01T00:00:00Z"}); err != nil {
+			t.Fatalf("SaveOrganization: %v", err)
+		}
+	}
+	return rt, db, loginTestSession(t, rt, db)
+}
+
+func TestLogsGrant_RefusedWithTwoTeams(t *testing.T) {
+	rt, db, cookie := logsGrantFixture(t, 2)
+	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/service-templates/captpl/install", `{"name":"viewer","domains":{"web":"v.example.com"}}`, http.StatusForbidden)
+	if _, err := db.GetDesiredService(context.Background(), "viewer-web"); err == nil {
+		t.Fatal("a refused install must not create the service")
+	}
+}
+
+func TestLogsGrant_AllowedWithSettingAndWarns(t *testing.T) {
+	rt, db, cookie := logsGrantFixture(t, 2)
+	if _, err := rt.runtimeSettings.Set(context.Background(), runtimesettings.KeyTemplatesLogsGrantMultiTeam, json.RawMessage(`true`), "test"); err != nil {
+		t.Fatalf("enable setting: %v", err)
+	}
+	body := composeDo(t, rt, cookie, http.MethodPost, "/api/v1/service-templates/captpl/install", `{"name":"viewer","domains":{"web":"v.example.com"}}`, http.StatusOK)
+	if !strings.Contains(string(body), "every team") {
+		t.Fatalf("response lacks the exposure notice: %s", string(body))
+	}
+	if _, err := db.GetDesiredService(context.Background(), "viewer-web"); err != nil {
+		t.Fatalf("service missing: %v", err)
+	}
+}
+
+func TestLogsGrant_AllowedWithOneTeam(t *testing.T) {
+	rt, _, cookie := logsGrantFixture(t, 1)
+	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/service-templates/captpl/install", `{"name":"viewer","domains":{"web":"v.example.com"}}`, http.StatusOK)
 }

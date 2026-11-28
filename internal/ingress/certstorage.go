@@ -13,7 +13,7 @@ import (
 
 	"github.com/caddyserver/certmagic"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // CertStore is the narrow surface SQLiteStorage needs from

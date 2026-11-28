@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/certfallback"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/tlsowner"
+	"github.com/glincker/levelrail/internal/certfallback"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/tlsowner"
 )
 
 // annotateDomainFallback flags ACME-owned domains whose stored certificate is

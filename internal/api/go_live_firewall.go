@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/fixit"
-	"github.com/GLINCKER/levelrail/internal/hostfw"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/hostfw"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const auditActionWebPortsOpened = "host_firewall.web_ports_opened"

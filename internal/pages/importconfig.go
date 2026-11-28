@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // maxImportFile bounds how much of any candidate file is read.

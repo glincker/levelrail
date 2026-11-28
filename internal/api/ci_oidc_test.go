@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeCIVerifier struct {

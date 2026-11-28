@@ -1,0 +1,16 @@
+services:
+  yopass:
+    image: jhaals/yopass:16.3.0
+    ports: ["1337"]
+    command: ["--memcached=memcached:11211"]
+    depends_on:
+      memcached:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", 'wget --no-verbose --tries=1 --spider http://127.0.0.1:1337/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+  memcached:
+    image: memcached:1.6-alpine

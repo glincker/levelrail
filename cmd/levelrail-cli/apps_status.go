@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/deploysafety"
 )
 
 // failureCodeContainerCrashed is the deploy failure code for a container that exited.

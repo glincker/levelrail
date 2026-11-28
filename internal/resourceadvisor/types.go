@@ -147,25 +147,29 @@ const (
 
 // Impact is the estimated saving or risk.
 type Impact struct {
-	SavingMemoryBytes int64      `json:"saving_memory_bytes,omitempty"`
-	SavingNanoCPUs    int64      `json:"saving_nano_cpus,omitempty"`
-	SavingDiskBytes   int64      `json:"saving_disk_bytes,omitempty"`
-	ExhaustionAt      *time.Time `json:"exhaustion_at,omitempty"`
-	Risk              string     `json:"risk,omitempty"`
+	SavingMemoryBytes int64 `json:"saving_memory_bytes,omitempty"`
+	SavingNanoCPUs    int64 `json:"saving_nano_cpus,omitempty"`
+	SavingDiskBytes   int64 `json:"saving_disk_bytes,omitempty"`
+	// MonthlySaving is set only when the node has a known price and memory size.
+	MonthlySaving *float64   `json:"monthly_saving,omitempty"`
+	ExhaustionAt  *time.Time `json:"exhaustion_at,omitempty"`
+	Risk          string     `json:"risk,omitempty"`
 }
 
 // Finding is one piece of advice.
 type Finding struct {
-	ID       string            `json:"id"`
-	Kind     Kind              `json:"kind"`
-	Severity Severity          `json:"severity"`
-	Resource Ref               `json:"resource"`
-	Title    string            `json:"title"`
-	Why      string            `json:"why"`
-	Evidence Evidence          `json:"evidence"`
-	Impact   Impact            `json:"impact"`
-	Action   *Action           `json:"action,omitempty"`
-	Params   map[string]string `json:"params,omitempty"`
+	ID       string   `json:"id"`
+	Kind     Kind     `json:"kind"`
+	Severity Severity `json:"severity"`
+	Resource Ref      `json:"resource"`
+	Title    string   `json:"title"`
+	Why      string   `json:"why"`
+	Evidence Evidence `json:"evidence"`
+	Impact   Impact   `json:"impact"`
+	// ReclaimableMB is the memory freed by applying the finding, whole MiB.
+	ReclaimableMB int64             `json:"reclaimable_mb"`
+	Action        *Action           `json:"action,omitempty"`
+	Params        map[string]string `json:"params,omitempty"`
 }
 
 func newFinding(kind Kind, sev Severity, ref Ref) Finding {
@@ -235,4 +239,6 @@ type Input struct {
 	Resources  []Resource
 	Nodes      []Node
 	Thresholds Thresholds
+	// NodePrices maps node id to a monthly cost; a missing node means unknown, never zero.
+	NodePrices map[string]float64
 }

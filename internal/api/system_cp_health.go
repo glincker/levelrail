@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"github.com/GLINCKER/levelrail/internal/spool"
+	"github.com/glincker/levelrail/internal/spool"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,12 +13,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cphealth"
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/integrity"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cphealth"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/integrity"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

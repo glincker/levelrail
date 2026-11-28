@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/catalog"
 )
 
 func TestHandleDeployServiceTemplateNow_RequiresAuth(t *testing.T) {

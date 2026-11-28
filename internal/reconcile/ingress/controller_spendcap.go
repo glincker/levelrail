@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/spendcap"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

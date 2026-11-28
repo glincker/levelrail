@@ -13,9 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Clone environment (this file): given a source environment (a
@@ -293,6 +294,10 @@ func (rt *Router) handleEnvironmentClone(w http.ResponseWriter, r *http.Request)
 	}
 
 	newNames, conflicts, err := rt.resolveClonedAppNames(r.Context(), source, req.NewEnvironmentName, overrides)
+	if errors.Is(err, errInvalidClonedName) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if err != nil {
 		rt.internalError(w, "api: clone environment: resolve app names failed", err, slog.String("id", id))
 		return
@@ -379,6 +384,9 @@ func (rt *Router) appsInEnvironment(ctx context.Context, env store.Environment) 
 	return out, nil
 }
 
+// errInvalidClonedName marks a new app name that breaks the service name rules.
+var errInvalidClonedName = errors.New("invalid cloned app name")
+
 // resolveClonedAppNames computes every source app's new name up front,
 // so every collision is reported together in one 409 rather than the
 // caller discovering them one failed app at a time: the same
@@ -393,6 +401,9 @@ func (rt *Router) resolveClonedAppNames(ctx context.Context, source []store.Desi
 		newName := suggestClonedAppName(svc.Name, newEnvironmentName)
 		if o, ok := overrides[svc.Name]; ok && o.NewName != "" {
 			newName = o.NewName
+		}
+		if verr := spec.ValidateServiceName(newName); verr != nil {
+			return nil, nil, fmt.Errorf("%w: app %q: %s", errInvalidClonedName, svc.Name, verr.Error())
 		}
 
 		if owner, dup := seen[newName]; dup {
@@ -529,6 +540,9 @@ func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, 
 	}
 
 	if copySecretValues && rt.secrets != nil {
+		if err := errors.Join(secrets.AppNamespace(source.Name), secrets.AppNamespace(newName)); err != nil {
+			return store.DesiredService{}, err
+		}
 		for _, ref := range source.SecretEnv {
 			value, err := rt.secrets.Resolve(ctx, source.Name, ref.Name)
 			if errors.Is(err, secrets.ErrValueNotFound) {
@@ -723,7 +737,7 @@ func suggestClonedAppName(sourceApp, newEnvironmentName string) string {
 func reviewCapsOnly(caps []string) []string {
 	var out []string
 	for _, c := range caps {
-		if !slices.Contains(dockerguard.GrantableCaps, c) {
+		if !slices.Contains(dockerguard.GrantableCaps, c) && !dockerguard.IsAnyGrantCap(c) {
 			out = append(out, c)
 		}
 	}

@@ -28,6 +28,15 @@ func (db *DB) SaveSuspendedDesiredService(ctx context.Context, svc DesiredServic
 // saveDesiredService is SaveDesiredService with an optional hook run inside
 // the same transaction before the write; a hook error aborts the save.
 func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx func(*sql.Tx) error, suspended bool) error {
+	if err := db.checkNewServiceName(ctx, svc.Name); err != nil {
+		return err
+	}
+	if err := db.checkNewNameKind(ctx, svc.Name, NameKindApp); err != nil {
+		return err
+	}
+	if err := db.checkStackNameNotDatabase(ctx, svc); err != nil {
+		return err
+	}
 	if err := db.checkDesiredImage(ctx, svc); err != nil {
 		return err
 	}
@@ -59,7 +68,7 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	if err != nil {
 		return fmt.Errorf("store: marshal secret_env for service %q: %w", svc.Name, err)
 	}
-	databaseEnv := svc.DatabaseEnv
+	databaseEnv := db.stampDatabaseRefs(ctx, svc.Name, svc.DatabaseEnv)
 	if databaseEnv == nil {
 		databaseEnv = map[string]DatabaseEnvRef{}
 	}
@@ -178,6 +187,9 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 		if err := inTx(tx); err != nil {
 			return err
 		}
+	}
+	if err := checkServiceEnvSave(ctx, tx, svc); err != nil {
+		return err
 	}
 
 	res, err := tx.ExecContext(ctx, `

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // hookRunResource is one hook's most recent outcome, GET

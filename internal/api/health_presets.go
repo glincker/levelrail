@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/healthpreset"
+	"github.com/glincker/levelrail/internal/healthpreset"
 )
 
 // handleGetHealthPresets handles GET /api/v1/health-presets: the shortcut paths and timing the

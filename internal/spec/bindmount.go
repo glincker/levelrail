@@ -1,6 +1,6 @@
 package spec
 
-import "github.com/GLINCKER/levelrail/internal/bindmount"
+import "github.com/glincker/levelrail/internal/bindmount"
 
 // validateBindMountHostPath delegates to internal/bindmount, the copy
 // shared with internal/compose (see that package's own doc comment for

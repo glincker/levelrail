@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/brand"
 )
 
 // envDoctorStrings points at an optional JSON file of key overrides, so

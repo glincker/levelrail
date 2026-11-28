@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runModelsEndpoint dispatches "models endpoint <verb>" for model servers

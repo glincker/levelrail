@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // DokployRedirect is one redirect rule of a Dokploy application.

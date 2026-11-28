@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/mail"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/mail"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var _ MailboxStore = (*store.DB)(nil)

@@ -3,7 +3,7 @@ package authengine
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/identity"
 )
 
 // EmailVerified reports whether the library user with this email has a verified address.

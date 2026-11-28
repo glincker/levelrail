@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/deploytrace"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploytrace"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // binfmtFixture points the detector at a temp dir; handlers lists registered

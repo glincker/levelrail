@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // UptimeReportRow is one app's availability for a calendar month. It is for

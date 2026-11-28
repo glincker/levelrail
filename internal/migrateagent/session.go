@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func marshalJSON(v any) (string, error) {

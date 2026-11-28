@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 func inspectServer(t *testing.T, body string, gotPath, gotQuery *string) *httptest.Server {

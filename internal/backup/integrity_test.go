@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func buildTar(t *testing.T, entries []tar.Header, bodies map[string]string) []byte {

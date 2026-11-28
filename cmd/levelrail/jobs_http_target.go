@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/appsleep"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/scheduledtask"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/appsleep"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/scheduledtask"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // jobHTTPPoll is how often a waking app is probed for its published port.

@@ -3,7 +3,7 @@ package pathfilter_test
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/kit/pathfilter"
+	"github.com/glincker/levelrail/kit/pathfilter"
 )
 
 func ExampleFilter_Apply() {

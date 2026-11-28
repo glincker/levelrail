@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // maxBundleReadBytes bounds the local read; the server applies its own live cap.

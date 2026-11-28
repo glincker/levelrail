@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/diskguard"
-	"github.com/GLINCKER/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/janitor"
 )
 
 const errCodeLowDisk = "low_disk"

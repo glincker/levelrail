@@ -7,9 +7,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/eventhook"
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/eventhook"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // captureEvents records emitted events; the other service methods are unused.

@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/failure"
-	"github.com/GLINCKER/levelrail/internal/registryvendor"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/dockerhub"
+	"github.com/glincker/levelrail/internal/failure"
+	"github.com/glincker/levelrail/internal/registryvendor"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/dockerhub"
 )
 
 // Fallbacks for a Router built without runtime settings (unit tests only);

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 // defaultBaseURL is api.github.com's REST API root. Overridable

@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
-	"github.com/GLINCKER/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/secretsource"
 )
 
 func cloudConnectUsage(prog string) string {

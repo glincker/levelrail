@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
+	"github.com/glincker/levelrail/internal/plugin/pluginpb"
 )
 
 // Panel call failures. Callers match with errors.Is.

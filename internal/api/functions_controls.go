@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/functions"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type functionSettingsStore interface {

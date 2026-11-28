@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/meshpath"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/meshpath"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Per-direction and per-pair link states for GET /api/v1/mesh/connectivity.

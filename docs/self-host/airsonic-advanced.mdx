@@ -1,0 +1,67 @@
+---
+title: "Self-host Airsonic Advanced with Docker"
+sidebarTitle: "Airsonic Advanced"
+description: "A web based music streamer for your own library with Subsonic API clients."
+"og:url": "https://docs.levelrail.com/self-host/airsonic-advanced"
+---
+
+A web based music streamer for your own library with Subsonic API clients.
+
+This page describes the Levelrail template for Airsonic Advanced (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://airsonic-advanced.github.io/airsonic-advanced.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `airsonic-advanced` | `linuxserver/airsonic-advanced:11.1.4` | 4040 | `airsonic_advanced_config -&#62; /config`<br />`airsonic_advanced_music -&#62; /music`<br />`airsonic_advanced_playlists -&#62; /playlists`<br />`airsonic_advanced_podcasts -&#62; /podcasts` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `airsonic-advanced` | `PGID` | Preset in the template |
+| `airsonic-advanced` | `PUID` | Preset in the template |
+| `airsonic-advanced` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`airsonic-advanced`): airsonic_advanced_config, airsonic_advanced_music, airsonic_advanced_playlists, airsonic_advanced_podcasts.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Airsonic Advanced with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Airsonic Advanced. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy airsonic-advanced --name my-airsonic-advanced
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Ampache](/self-host/ampache)
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+- [Calibre-Web](/self-host/calibre-web)
+
+All templates are listed in the [self-host gallery](/self-host).

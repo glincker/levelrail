@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/heartbeat"
+	"github.com/glincker/levelrail/internal/heartbeat"
 	"time"
 )
 

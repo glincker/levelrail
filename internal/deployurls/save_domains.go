@@ -3,7 +3,7 @@ package deployurls
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // saveDomains writes the copy's domains with a revision check when the store can re-read,

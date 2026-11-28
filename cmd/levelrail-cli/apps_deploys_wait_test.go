@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func waitServer(t *testing.T, outcomes []string, paths *[]string) *httptest.Server {

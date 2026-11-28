@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // DefaultPolicy is the scan policy apps inherit when they have none of their own.

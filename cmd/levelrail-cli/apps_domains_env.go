@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // matchEnvironmentSet finds want (id, name or kind, case-insensitive) among

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GLINCKER/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/pages"
 )
 
 // runPagesImport converts existing hosting config files in a folder to

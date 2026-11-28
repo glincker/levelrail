@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // ErrNotDockerRun is returned when the text is not a `docker run` command.

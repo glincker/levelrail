@@ -1,0 +1,17 @@
+services:
+  wg-easy:
+    image: ghcr.io/wg-easy/wg-easy:15.5.0
+    ports: ["51821", "51820:51820/udp"]
+    volumes:
+      - etc_wireguard:/etc/wireguard
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:51821/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+volumes:
+  etc_wireguard:

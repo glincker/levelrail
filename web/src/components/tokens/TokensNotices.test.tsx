@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import tokenListEn from '../../locales/en/tokenList.json'
 import tokensNoticesEn from '../../locales/en/tokensNotices.json'
 import commonEn from '../../locales/en/common.json'
 import { createTestQueryClient } from '@/test/testQueryClient'
@@ -18,19 +19,16 @@ vi.mock('../RevokeTokenDialog', () => ({
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
   lng: 'en',
-  ns: ['tokensNotices', 'common'],
+  ns: ['tokensNotices', 'tokenList', 'common'],
   defaultNS: 'common',
-  resources: { en: { tokensNotices: tokensNoticesEn, common: commonEn } },
-})
-
-const active = [
-  {
-    id: 't1',
-    name: 'ci-deploy',
-    abilities: ['read'],
-    created_at: '2026-01-01T00:00:00Z',
+  resources: {
+    en: {
+      tokensNotices: tokensNoticesEn,
+      tokenList: tokenListEn,
+      common: commonEn,
+    },
   },
-] as TokenResource[]
+})
 
 function renderNotices(items: unknown[]) {
   vi.stubGlobal(
@@ -47,7 +45,12 @@ function renderNotices(items: unknown[]) {
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={createTestQueryClient()}>
-        <TokensNotices expiringSoon={0} longLivedRoot={0} active={active} />
+        <TokensNotices
+          expiringSoon={0}
+          soonDays={14}
+          longLivedRoot={0}
+          onReviewExpiring={() => undefined}
+        />
       </QueryClientProvider>
     </I18nextProvider>,
   )

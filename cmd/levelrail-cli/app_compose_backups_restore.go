@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // composeRestoreIsTTY decides whether a prompt can be answered.

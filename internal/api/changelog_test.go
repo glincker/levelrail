@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/changelog"
+	"github.com/glincker/levelrail/internal/changelog"
 )
 
 func getChangelog(t *testing.T, rt *Router, cookie *http.Cookie, target string) (int, changelogResource) {

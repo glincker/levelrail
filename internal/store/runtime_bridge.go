@@ -1,6 +1,6 @@
 package store
 
-import "github.com/GLINCKER/levelrail/internal/spec"
+import "github.com/glincker/levelrail/internal/spec"
 
 // ApplyRuntimeOptions stores the runtime block and routes shm_size and
 // read_only through the resource fields that already carry drift handling.

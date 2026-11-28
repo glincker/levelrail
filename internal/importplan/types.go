@@ -3,6 +3,11 @@
 // side-effect free deployment plan preview from it.
 package importplan
 
+import (
+	"github.com/glincker/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/importreport"
+)
+
 // SourceKind is what Classify decided the input is.
 type SourceKind string
 
@@ -111,6 +116,8 @@ type DeploymentPlan struct {
 	// DomainSuggestion is a hint only; nothing is configured from it.
 	DomainSuggestion string    `json:"domain_suggestion,omitempty"`
 	Warnings         []Warning `json:"warnings"`
+	// EnvReport names every env key the example files accepted or refused, with the reason.
+	EnvReport *envrules.Report `json:"env_report,omitempty"`
 	// MissingRequiredEnv lists required variables with no value; deploy is blocked until each has one.
 	MissingRequiredEnv []string `json:"missing_required_env"`
 	// Resources, SecretRefs, Unsupported and Conflicts are filled for compose
@@ -119,6 +126,8 @@ type DeploymentPlan struct {
 	SecretRefs  []string          `json:"secret_refs,omitempty"`
 	Unsupported []Unsupported     `json:"unsupported,omitempty"`
 	Conflicts   []Conflict        `json:"conflicts,omitempty"`
+	// Report lists every dropped or changed field with a plain reason, for compose and docker run.
+	Report []importreport.Finding `json:"report,omitempty"`
 }
 
 // Input is the raw request to Classify and Plan.

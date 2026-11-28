@@ -14,8 +14,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/scripts/smokerecord"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/scripts/smokerecord"
 )
 
 func main() {

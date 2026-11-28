@@ -1,3 +1,4 @@
+import { AnnouncementBanner } from '../announcements/AnnouncementBanner'
 import { DeviceLoginBanner } from '../attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../attention/SignInRequestsBanner'
 import { InstallCard } from '../InstallCard'
@@ -15,6 +16,7 @@ export default function ShellBanners() {
       <VacationBanner />
       <RestartBanner />
       <LocalModeBanner />
+      <AnnouncementBanner />
       <UpgradeGlobalBar />
       <UpgradeOutcomeToast />
       <MaintenanceBanner />

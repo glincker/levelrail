@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // newFake serves canned JSON by path and returns a client pinned to it.

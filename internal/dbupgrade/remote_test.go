@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbcatalogbuild"
+	"github.com/glincker/levelrail/internal/dbcatalogbuild"
 )
 
 var fixedNow = time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC)

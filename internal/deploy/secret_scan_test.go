@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 type fakeSecretScan struct {

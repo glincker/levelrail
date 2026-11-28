@@ -3,7 +3,7 @@ package ingress
 import (
 	"context"
 	"fmt"
-	"github.com/GLINCKER/levelrail/internal/testutil"
+	"github.com/glincker/levelrail/internal/testutil"
 	"io"
 	"net"
 	"net/http"

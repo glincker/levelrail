@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 func formsServer(t *testing.T, seen *[]string) *httptest.Server {

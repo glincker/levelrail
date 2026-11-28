@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/auditanchor"
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/exposure"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/auditanchor"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/exposure"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 const (

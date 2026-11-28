@@ -1,0 +1,16 @@
+id: piwigo
+name: Piwigo
+slogan: A mature photo gallery with albums, tags, plugins and themes.
+description: GPL 2.0 licensed. Open the page to run the installer. Use database host db, database piwigo, user piwigo and the generated database password from the deployment variables.
+category: Media
+documentation_url: https://piwigo.org/doc
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: piwigo
+source_repo: https://github.com/Piwigo/Piwigo
+license: GPL-2.0-only
+license_class: copyleft
+license_url: https://github.com/Piwigo/Piwigo/blob/master/LICENSE

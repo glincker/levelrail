@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/net/publicsuffix"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Domain lifecycle rule kinds. Both are explicit opt-in: nothing creates them automatically.

@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/abuse"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/abuse"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func abuseRouter(t *testing.T) (*Router, *store.DB, *http.Cookie, *ingress.AccessLog) {

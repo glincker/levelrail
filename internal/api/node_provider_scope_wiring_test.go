@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // scopeFake fails the catalog reads with a provider error and otherwise

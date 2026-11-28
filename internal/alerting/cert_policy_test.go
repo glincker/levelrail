@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/mailtemplates"
 )
 
 const oneDay = 24 * time.Hour

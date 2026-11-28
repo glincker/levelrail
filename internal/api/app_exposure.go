@@ -13,12 +13,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/diagnose"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/firewall"
+	"github.com/glincker/levelrail/internal/bindaddr"
+	"github.com/glincker/levelrail/internal/diagnose"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/firewall"
 )
 
 // Exposure modes: proxied keeps the app behind the ingress (its domain, or
@@ -424,12 +424,18 @@ func (rt *Router) handleSetAppExposure(w http.ResponseWriter, r *http.Request) {
 	next.Port = plan.ContainerPort
 	next.BindAddress = plan.BindAddress
 	next.HostPort = nil
+	shadowed := false
 	if plan.HostPort > 0 {
+		shadowed = len(withoutShadowedPublishedPorts(next.PublishedPorts, plan.HostPort)) != len(next.PublishedPorts)
 		hp := plan.HostPort
 		next.HostPort = &hp
+		next.PublishedPorts = withoutShadowedPublishedPorts(next.PublishedPorts, plan.HostPort)
 	}
 	rebase := func(fresh store.DesiredService) store.DesiredService {
 		fresh.Port, fresh.BindAddress, fresh.HostPort = next.Port, next.BindAddress, next.HostPort
+		if plan.HostPort > 0 {
+			fresh.PublishedPorts = withoutShadowedPublishedPorts(fresh.PublishedPorts, plan.HostPort)
+		}
 		return fresh
 	}
 	if _, err := rt.saveOwned(r.Context(), next, rebase); err != nil {
@@ -439,7 +445,7 @@ func (rt *Router) handleSetAppExposure(w http.ResponseWriter, r *http.Request) {
 	if !rt.syncExposureRule(w, r, svc.Name, plan) {
 		return
 	}
-	rt.recordAppEvent(r, store.AppEvent{AppName: svc.Name, Kind: store.AppEventConfigChange, Title: "Exposure changed", Detail: exposureDetail(plan)})
+	rt.recordAppEvent(r, store.AppEvent{AppName: svc.Name, Kind: store.AppEventConfigChange, Title: "Exposure changed", Detail: exposureDetail(plan, shadowed)})
 	rt.nudgeReconciler()
 	fresh, err := rt.apps.GetDesiredService(r.Context(), svc.Name)
 	if err != nil {
@@ -453,8 +459,11 @@ func (rt *Router) handleSetAppExposure(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
-func exposureDetail(p exposurePlan) string {
+func exposureDetail(p exposurePlan, shadowed bool) string {
 	out := "mode " + p.Mode
+	if shadowed {
+		out += "; the template's own tcp publish of this port was replaced and is not restored on switching back"
+	}
 	for _, c := range p.Changes {
 		out += "; " + c.Kind + " " + c.From + " -> " + c.To
 	}

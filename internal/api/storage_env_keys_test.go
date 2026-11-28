@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/reconcile/application"
 )
 
 func TestHandleListStorageEnvKeys(t *testing.T) {

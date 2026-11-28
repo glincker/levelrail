@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"strings"
 
-	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
-	"github.com/GLINCKER/levelrail/internal/registrycatalog"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	registryreconcile "github.com/glincker/levelrail/internal/reconcile/registry"
+	"github.com/glincker/levelrail/internal/registrycatalog"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // RegistryCatalogClient is the surface GET /api/v1/registry/repositories,

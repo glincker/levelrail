@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/integrity"
-	"github.com/GLINCKER/levelrail/internal/safemode"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/integrity"
+	"github.com/glincker/levelrail/internal/safemode"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 // safeModeError carries a boot failure that should end in the recovery page, not a restart.

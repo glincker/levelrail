@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DownloadHistoryStore is the store.DB surface DownloadRunner needs:

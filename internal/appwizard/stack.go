@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/importplan"
+	"github.com/glincker/levelrail/internal/importplan"
 )
 
 // Runtime identifiers, also the suffix of the memory override env var.

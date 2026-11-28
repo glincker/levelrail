@@ -4,13 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/glincker/levelrail/internal/secrets"
 	"log/slog"
 	"net/http"
+	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const recentlyDeletedSweepEvery = time.Hour
@@ -143,9 +145,10 @@ func (rt *Router) handleListRecentlyDeleted(w http.ResponseWriter, r *http.Reque
 }
 
 // handleRestoreRecentlyDeleted handles POST /api/v1/recently-deleted/{kind}/{name}/restore.
-// It recreates the config; secrets and the function KV token were erased with the original and must be set again (mint a new KV token; its data is kept).
+// It recreates the config and the app's secret values; the function KV token is not restored (mint a new one; its data is kept).
 func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Request) {
 	kind, name := r.PathValue("kind"), r.PathValue("name")
+	var restoredNeeds []string
 	st := rt.recentlyDeleted()
 	if st == nil || (kind != store.RecentlyDeletedApp && kind != store.RecentlyDeletedDatabase) {
 		writeError(w, http.StatusNotFound, "nothing to restore")
@@ -165,10 +168,25 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 			return
 		}
 		unlock := lockAppName(name)
-		err = rt.restoreDeletedApp(r.Context(), e)
+		// Re-read under the lock so a restore never applies an older snapshot beside newer parked secrets.
+		cur, lerr := rt.liveDeleted(r.Context(), kind, name)
+		switch {
+		case errors.Is(lerr, store.ErrRecentlyDeletedNotFound):
+			unlock()
+			writeError(w, http.StatusNotFound, "nothing to restore: the undo window has passed or it was never deleted")
+			return
+		case lerr != nil:
+			unlock()
+			rt.internalError(w, "api: restore recently deleted", lerr, slog.String("name", name))
+			return
+		}
+		err = rt.restoreDeletedApp(r.Context(), cur)
 		if err == nil {
-			// A failed clear leaves a row the purge skips while the app is live, and the name is taken anyway.
-			if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
+			restoredNeeds = undoCategoriesFromSnapshot(cur.Snapshot)
+			// The entry stays if the parked copy cannot be erased, so the purge erases it later.
+			if serr := rt.dropParkedSecrets(r.Context(), name); serr != nil {
+				rt.logger.Warn("api: erase parked secrets failed", slog.String("name", name), slog.String("error", serr.Error()))
+			} else if derr := st.DeleteRecentlyDeleted(r.Context(), kind, name); derr != nil {
 				rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
 			}
 		}
@@ -177,7 +195,7 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		if !rt.authorizeDatabaseRestore(w, r, e.Name) {
 			return
 		}
-		unlock := lockAppName("database:" + name)
+		unlock := lockAppName(name)
 		// Re-read under the lock so a concurrent restore or purge cannot be restored twice.
 		cur, lerr := rt.liveDeleted(r.Context(), kind, name)
 		switch {
@@ -192,8 +210,11 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		}
 		err = rt.restoreDeletedDatabase(r.Context(), cur)
 		if err == nil {
-			// Only the row restored from is cleared; a newer delete of the same name stays.
-			if derr := rt.clearRestoredDatabaseEntry(r.Context(), st, cur); derr != nil {
+			// The entry stays if the parked copy cannot be erased, so the purge erases it later.
+			if serr := rt.dropParkedDatabaseSecrets(r.Context(), name); serr != nil {
+				rt.logger.Warn("api: erase parked database credentials failed", slog.String("name", name), slog.String("error", serr.Error()))
+			} else if derr := rt.clearRestoredDatabaseEntry(r.Context(), st, cur); derr != nil {
+				// Only the row restored from is cleared; a newer delete of the same name stays.
 				rt.logger.Warn("api: clear restored undo entry failed", slog.String("name", name), slog.String("error", derr.Error()))
 			}
 		}
@@ -214,6 +235,10 @@ func (rt *Router) handleRestoreRecentlyDeleted(w http.ResponseWriter, r *http.Re
 		rt.changes.Publish(changeApps, name)
 	}
 	rt.nudgeReconciler()
+	if kind == store.RecentlyDeletedApp {
+		writeJSON(w, http.StatusOK, map[string]any{"status": "restored", "kind": kind, "name": name, "needs_attention": rt.restoreAttentionItems(name, restoredNeeds)})
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "restored", "kind": kind, "name": name})
 }
 
@@ -221,11 +246,16 @@ type errRestoreConflict string
 
 func (e errRestoreConflict) Error() string { return string(e) }
 
-func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted) error {
+func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted) (err error) {
 	if _, err := rt.apps.GetDesiredService(ctx, e.Name); err == nil {
 		return errRestoreConflict("an app named " + e.Name + " exists again; rename or delete it first")
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
 		return err
+	}
+	if other, err := rt.nameTakenByOtherKind(ctx, e.Name, store.NameKindApp, false); err != nil {
+		return err
+	} else if other {
+		return errRestoreConflict(msgNameUnavailable)
 	}
 	var svc store.DesiredService
 	if err := json.Unmarshal([]byte(e.Snapshot), &svc); err != nil {
@@ -233,6 +263,27 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 	}
 	node, project := svc.NodeID, svc.ProjectID
 	svc.AppID = ""
+	if err := rt.restoreParkedSecrets(ctx, e.Name); err != nil {
+		return err
+	}
+	saved := false
+	// A half-restored app would block the retry, so a failure puts it back to deleted; the parked secrets stay.
+	defer func() {
+		if err == nil {
+			return
+		}
+		bg := context.WithoutCancel(ctx)
+		if saved {
+			if derr := rt.apps.DeleteDesiredService(store.WithKeptRevisions(bg), e.Name); derr != nil {
+				// The app stays live, so its secrets must stay too.
+				rt.logger.Warn("api: roll back failed app restore", slog.String("name", e.Name), slog.String("error", derr.Error()))
+				return
+			}
+		}
+		if rt.secrets != nil && secrets.AppNamespace(e.Name) == nil {
+			_ = rt.secrets.DeleteAll(bg, e.Name)
+		}
+	}()
 	if err := rt.apps.SaveDesiredService(ctx, svc); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
@@ -240,6 +291,7 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 		}
 		return err
 	}
+	saved = true
 	if project != "" {
 		if err := rt.apps.UpdateServiceProject(ctx, e.Name, project); err != nil {
 			return err
@@ -287,20 +339,36 @@ func (rt *Router) clearRestoredDatabaseEntry(ctx context.Context, st recentlyDel
 }
 
 func (rt *Router) restoreDeletedDatabase(ctx context.Context, e store.RecentlyDeleted) (err error) {
+	if secrets.AppNamespace(e.Name) != nil {
+		return errRestoreConflict(reservedAppNameMessage)
+	}
 	var d store.DesiredDatabase
 	if err := json.Unmarshal([]byte(e.Snapshot), &d); err != nil {
 		return err
 	}
 	d.ExistingVolume = "reuse"
+	if other, err := rt.nameTakenByOtherKind(ctx, e.Name, store.NameKindDatabase, false); err != nil {
+		return err
+	} else if other {
+		return errRestoreConflict(msgNameUnavailable)
+	}
+	if _, gerr := rt.databases.GetDesiredDatabase(ctx, e.Name); gerr == nil {
+		return errRestoreConflict("a database named " + e.Name + " exists again; rename or delete it first")
+	}
+	if err := rt.restoreParkedDatabaseSecrets(ctx, e.Name); err != nil {
+		return err
+	}
 	if err := rt.insertDesiredDatabase(ctx, d); err != nil {
 		if errors.Is(err, store.ErrDatabaseExists) {
 			return errRestoreConflict("a database named " + e.Name + " exists again; rename or delete it first")
 		}
+		rt.eraseRestoredDatabaseSecrets(ctx, e.Name)
 		return err
 	}
 	// A half-restored row would block the retry with a conflict, so undo the insert on failure.
 	defer func() {
 		if err != nil {
+			rt.eraseRestoredDatabaseSecrets(ctx, e.Name)
 			if derr := rt.databases.DeleteDesiredDatabase(context.WithoutCancel(ctx), e.Name); derr != nil {
 				rt.logger.Warn("api: roll back failed database restore", slog.String("name", e.Name), slog.String("error", derr.Error()))
 			}
@@ -329,7 +397,25 @@ func (rt *Router) SweepRecentlyDeleted(ctx context.Context, now time.Time) (int,
 	if st == nil {
 		return 0, nil
 	}
-	return st.PurgeRecentlyDeleted(ctx, now.Add(-rt.recentlyDeletedWindow(ctx)))
+	cutoff := now.Add(-rt.recentlyDeletedWindow(ctx))
+	// Hold each expiring app's name lock so a restore that already re-read its entry finishes first.
+	if all, err := st.ListRecentlyDeleted(ctx); err == nil {
+		var names, dbNames []string
+		for _, e := range all {
+			if e.Kind == store.RecentlyDeletedApp && e.DeletedAt.Before(cutoff) {
+				names = append(names, e.Name)
+			}
+			if e.Kind == store.RecentlyDeletedDatabase && e.DeletedAt.Before(cutoff) {
+				dbNames = append(dbNames, "database:"+e.Name)
+			}
+		}
+		names = append(names, dbNames...)
+		sort.Strings(names)
+		for _, n := range names {
+			defer lockAppName(n)()
+		}
+	}
+	return st.PurgeRecentlyDeleted(ctx, cutoff)
 }
 
 // RunRecentlyDeletedSweeper runs SweepRecentlyDeleted hourly until ctx ends.

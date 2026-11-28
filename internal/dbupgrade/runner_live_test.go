@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockertest"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // liveBackups records succeeded backup and verification rows without S3:

@@ -12,7 +12,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	dockernetwork "github.com/docker/docker/api/types/network"
 
-	"github.com/GLINCKER/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/dockertest"
 )
 
 // liveClient returns a Client connected to a real daemon, or skips the

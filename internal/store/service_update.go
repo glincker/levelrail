@@ -16,9 +16,7 @@ import (
 // explains why it's deliberately excluded from that method's
 // full-record-replace semantics.
 func (db *DB) UpdateServiceNode(ctx context.Context, name, nodeID string) error {
-	if err := db.updateServiceRow(ctx, "update node", name, `
-		UPDATE desired_services SET node_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
-	`, nodeID, name); err != nil {
+	if _, err := db.withServiceFenceBump(ctx, name, true, nodeID); err != nil {
 		return err
 	}
 	return db.noteAppChange(ctx, name)
@@ -115,21 +113,27 @@ func (db *DB) updateServiceRow(ctx context.Context, what, name, query string, ar
 // UpdateServiceStorageTarget already establishes for StorageTargetID.
 // att nil clears the attachment (all three columns back to ”).
 func (db *DB) UpdateServiceDatabaseAttachment(ctx context.Context, name string, att *DatabaseAttachment) error {
-	var dbName, envVar, field string
+	var dbName, envVar, field, instance string
 	if att != nil {
-		dbName, envVar, field = att.DatabaseName, att.EnvVar, att.Field
+		dbName, envVar, field, instance = att.DatabaseName, att.EnvVar, att.Field, att.InstanceID
+		if instance == "" {
+			instance = databaseInstanceOf(ctx, db, dbName)
+		}
 	}
 	return db.updateServiceRow(ctx, "update database attachment", name, `
 		UPDATE desired_services
-		SET database_attachment_name = ?, database_attachment_env_var = ?, database_attachment_field = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		SET database_attachment_name = ?, database_attachment_env_var = ?, database_attachment_field = ?, database_attachment_instance = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 		WHERE name = ?
-	`, dbName, envVar, field, name)
+	`, dbName, envVar, field, instance, name)
 }
 
 // SetServiceVaultEnvVar adds, replaces (ref non-nil) or removes (ref nil) one
 // VaultEnv entry. The read-modify-write runs in one transaction so concurrent
 // writers of other keys cannot lose each other's update.
 func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, ref *VaultEnvRef) error {
+	if err := checkEnvKeys(envVar); err != nil {
+		return err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: set vault env var for service %q: begin transaction: %w", name, err)
@@ -165,7 +169,7 @@ func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, re
 	}
 
 	if _, err := tx.ExecContext(ctx, `
-		UPDATE desired_services SET vault_env = ?, env_dirty = 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+		UPDATE desired_services SET vault_env = ?, env_dirty = 1, env_version = env_version + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
 	`, string(updated), name); err != nil {
 		return fmt.Errorf("store: set vault env var for service %q: %w", name, err)
 	}
@@ -180,6 +184,9 @@ func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, re
 // one DatabaseEnv entry, in one transaction like SetServiceVaultEnvVar.
 // DatabaseAttachment keeps its own setter.
 func (db *DB) SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string, ref *DatabaseEnvRef) error {
+	if err := checkEnvKeys(envVar); err != nil {
+		return err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: set database env var for service %q: begin transaction: %w", name, err)
@@ -206,7 +213,11 @@ func (db *DB) SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string,
 	if ref == nil {
 		delete(databaseEnv, envVar)
 	} else {
-		databaseEnv[envVar] = *ref
+		stamped := *ref
+		if stamped.Instance == "" {
+			stamped.Instance = databaseInstanceOf(ctx, tx, stamped.Database)
+		}
+		databaseEnv[envVar] = stamped
 	}
 
 	updated, err := json.Marshal(databaseEnv)
@@ -236,6 +247,21 @@ func (db *DB) UpdateServiceApp(ctx context.Context, name, appID string) error {
 	return db.updateServiceRow(ctx, "update app", name, `
 		UPDATE desired_services SET app_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
 	`, appID, name)
+}
+
+// UpdateServiceReplicaNodes records the node of each replica index, or clears
+// the spread when nodes is empty. It leaves the fence token alone.
+func (db *DB) UpdateServiceReplicaNodes(ctx context.Context, name string, nodes []string) error {
+	if nodes == nil {
+		nodes = []string{}
+	}
+	encoded, err := json.Marshal(nodes)
+	if err != nil {
+		return fmt.Errorf("store: marshal replica_nodes for service %q: %w", name, err)
+	}
+	return db.updateServiceRow(ctx, "update replica nodes", name, `
+		UPDATE desired_services SET replica_nodes = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, string(encoded), name)
 }
 
 // UpdateServiceMaintenanceHold sets or clears (hold == "") the service's maintenance hold.

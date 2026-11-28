@@ -5,10 +5,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // appResource is the wire shape for an app: store.DesiredService plus its
@@ -208,6 +208,8 @@ type appResource struct {
 	// container yet. No omitempty: like Suspended, always a definite
 	// state.
 	EnvDirty bool `json:"env_dirty"`
+	// EnvVersion is response-only: send it back as expected_version on env apply.
+	EnvVersion int `json:"env_version,omitempty"`
 	// Volumes are this app's named Docker volumes (store.DesiredService.
 	// Volumes), response-only like NodeID/ProjectID above: declared
 	// through app.yaml's volumes: field, not settable through this

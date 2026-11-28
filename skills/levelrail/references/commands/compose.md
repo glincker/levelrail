@@ -8,7 +8,7 @@ Subcommands: deploy, down, logs, preview, redeploy, revisions, rollback, schedul
 
 ```
 Usage:
-  levelrail-cli compose deploy <app> -f compose.yaml [--profile-name P]   deploy or update a stack
+  levelrail-cli compose deploy <app> -f compose.yaml [--profile-name P] [--node N]   deploy or update a stack (alias: up)
   levelrail-cli compose preview -f compose.yaml                            validate and show what would deploy
   levelrail-cli compose status <app>                                       per-service status and the stack phase
   levelrail-cli compose revisions <app>                                    deploy history, newest first

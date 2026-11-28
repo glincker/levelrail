@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/awsxtest"
-	"github.com/GLINCKER/levelrail/internal/cloudguard"
+	"github.com/glincker/levelrail/internal/awsx/awsxtest"
+	"github.com/glincker/levelrail/internal/cloudguard"
 )
 
 var testNow = time.Date(2026, 11, 21, 12, 0, 0, 0, time.UTC)

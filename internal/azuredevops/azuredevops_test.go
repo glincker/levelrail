@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 const pushBody = `{"eventType":"git.push","resource":{

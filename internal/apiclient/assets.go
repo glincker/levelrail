@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/httpx"
+	"github.com/glincker/levelrail/kit/httpx"
 )
 
 // AssetBucket is an asset bucket as the API returns it; credentials never appear.

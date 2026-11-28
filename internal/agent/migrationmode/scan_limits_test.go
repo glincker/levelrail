@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
 )
 
 func bindInventory(sources ...string) *migrationpb.Inventory {

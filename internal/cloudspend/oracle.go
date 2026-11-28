@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ocisign"
+	"github.com/glincker/levelrail/internal/ocisign"
 )
 
 // Oracle credential keys: tenancy_ocid, user_ocid, fingerprint,

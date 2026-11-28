@@ -1,0 +1,10 @@
+blocker | compose | services.app.build | service "app": build: is not supported, declare a pre-built image: instead | remove or change the field; the file cannot deploy as written
+blocker | compose | services.app.devices | service "app": devices: /dev/ttyUSB0 is not allowed without a devices grant; GPUs go through deploy.resources.reservations.devices [devices_not_granted] | remove or change the field; the file cannot deploy as written
+blocker | compose | services.app.privileged | service "app": privileged: true is not allowed [privileged] | remove or change the field; the file cannot deploy as written
+changes-behavior | compose | services.app.env_file | env files on disk are not read from a pasted file | read only for git deploys (build.type: compose), from files inside the repository; for a pasted file move the values into environment: or the app's env vars
+changes-behavior | compose | services.app.stop_signal | the image's default stop signal is used | the image's default stop signal is used; remove it
+ignored-safe | compose | services.app.expose | internal ports need no declaration here | internal-only ports need no declaration; add ports: for the one ingress should route to
+ignored-safe | compose | services.app.links | legacy links are not created; service names already resolve | services reach each other by service name; remove it
+ignored-safe | compose | services.app.mem_reservation | soft memory reservations are not applied | remove it; only a hard memory limit is applied
+ignored-safe | compose | services.cache.image | the image uses the latest tag, which can change between deploys | pin a version or digest
+ignored-safe | compose | services.cache.ports.6380 | no host port is set, so the port is reachable through ingress and the app network only | add HOST:CONTAINER if it must be published on the node

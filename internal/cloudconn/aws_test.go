@@ -16,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/secretsource"
 )
 
 const testExternalID = "ext-123456"

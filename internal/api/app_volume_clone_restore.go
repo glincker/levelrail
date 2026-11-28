@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 // VolumeCloneRestoreHistoryStore is the store surface the volume
@@ -95,6 +95,9 @@ func (rt *Router) handleVolumeCloneRestore(w http.ResponseWriter, r *http.Reques
 	}
 	if backup.ServiceName != serviceName || backup.VolumeName != volumeName {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", req.BackupID, serviceName, volumeName))
+		return
+	}
+	if rt.refuseForeignVolumeBackup(w, r, serviceName, backup) {
 		return
 	}
 	if backup.Status != store.BackupStatusSucceeded {

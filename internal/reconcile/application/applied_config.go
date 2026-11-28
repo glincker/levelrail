@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AppliedConfigRecorder persists what a container was created with and when
@@ -31,7 +31,7 @@ func (c *Controller) appliedSnapshot(ctx context.Context, containerName string, 
 	literal := desired.Env
 	secretValues := map[string]string{}
 	var secretKeys []string
-	if c.secretResolver != nil {
+	if c.secretResolver != nil && c.refuseReservedSecretOwner() == nil {
 		for _, ref := range desired.SecretEnv {
 			exists, err := c.secretResolver.Exists(ctx, c.serviceName, ref.Name)
 			if err != nil || !exists {

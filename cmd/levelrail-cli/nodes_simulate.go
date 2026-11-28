@@ -6,7 +6,7 @@ import (
 	"io"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func simulatedRows(stdout io.Writer, rows []apiclient.SimulatedPlacement) {

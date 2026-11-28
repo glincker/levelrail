@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // appGauge scrapes the app's own metrics path for the policy gauge. Any failure is an unknown reading, never zero.

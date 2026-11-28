@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AppGroupLister is the store surface for GET /api/v1/apps/{name}/group and the app-linking
@@ -37,6 +37,13 @@ type CustomTemplateStore interface {
 	GetCustomTemplate(ctx context.Context, id string) (store.CustomTemplate, error)
 	ListCustomTemplates(ctx context.Context) ([]store.CustomTemplate, error)
 	DeleteCustomTemplate(ctx context.Context, id string) error
+}
+
+// TemplateCompatStore keeps the local record of template install gaps.
+type TemplateCompatStore interface {
+	UpsertTemplateCompat(ctx context.Context, templateID, nodeArch, class, detail string) error
+	ClearTemplateCompat(ctx context.Context, templateID, nodeArch string) error
+	ListTemplateCompat(ctx context.Context) ([]store.TemplateCompat, error)
 }
 
 // ComposeSecretStore is the surface POST /api/v1/apps/{name}/compose

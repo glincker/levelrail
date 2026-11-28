@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newGateRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {

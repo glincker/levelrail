@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/benchreport"
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/benchreport"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 type chaosRunFunc func(ctx context.Context, scenario, hardwareNote string) chaos.Result

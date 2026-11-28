@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/projectarchive"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/projectarchive"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func seedTwoAppProject(t *testing.T, db *store.DB) {

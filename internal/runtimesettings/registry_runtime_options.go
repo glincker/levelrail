@@ -4,7 +4,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // Keys for the bounds a service's runtime options are validated against.

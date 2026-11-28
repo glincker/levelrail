@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 // The migration runs once per deploy and teable waits for it to exit 0.

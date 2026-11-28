@@ -15,7 +15,7 @@ The SDKs are not published yet. Install them from this repository.
 Go (the package lives in the root module):
 
 ```sh
-go get github.com/GLINCKER/levelrail/sdk/go/levelrail
+go get github.com/glincker/levelrail/sdk/go/levelrail
 ```
 
 Python, from a checkout:

@@ -9,7 +9,7 @@ import (
 
 	"github.com/libdns/libdns"
 
-	"github.com/GLINCKER/levelrail/internal/domaincutover"
+	"github.com/glincker/levelrail/internal/domaincutover"
 )
 
 func cutoverRouter(t *testing.T, trusted bool, calls *atomic.Int32) (*Router, *http.Cookie) {

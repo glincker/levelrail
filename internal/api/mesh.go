@@ -47,8 +47,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // MeshStatusProvider is the narrow surface this package needs from this

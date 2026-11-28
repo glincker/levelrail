@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // ServiceResources caps a service's memory and CPU, in the same units
@@ -161,7 +161,13 @@ type ServiceEgressPolicy struct {
 type DatabaseEnvRef struct {
 	Database string `json:"database"`
 	Field    string `json:"field"`
+	// Instance is the database instance id when the ref was written. Empty is a legacy ref;
+	// DanglingDatabaseInstance marks a ref whose database was force deleted.
+	Instance string `json:"instance,omitempty"`
 }
+
+// DanglingDatabaseInstance never equals a real instance id, so a ref carrying it is refused.
+const DanglingDatabaseInstance = "dangling"
 
 // VaultEnvRef is one env var's parsed { vault: { path, key } } reference
 // (internal/spec.EnvVar.Vault), stored on DesiredService.VaultEnv. Path
@@ -222,6 +228,8 @@ type DatabaseAttachment struct {
 	DatabaseName string
 	EnvVar       string
 	Field        string
+	// InstanceID: see DatabaseEnvRef.Instance.
+	InstanceID string
 }
 
 // ServiceVolume is one named Docker volume an application service's

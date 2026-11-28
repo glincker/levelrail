@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/profile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/profile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const profileDiskBytes = int64(100) << 30

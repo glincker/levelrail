@@ -13,7 +13,7 @@ import (
 	"github.com/opencontainers/go-digest"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // Result is what a successful build produced.

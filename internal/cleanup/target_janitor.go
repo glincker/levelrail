@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/janitor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

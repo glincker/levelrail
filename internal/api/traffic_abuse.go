@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // trafficAbuse is the per-app ingress abuse defense tally over a traffic

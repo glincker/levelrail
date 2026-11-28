@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EnvironmentDomainSource lists per-environment domain sets (migration 0385).

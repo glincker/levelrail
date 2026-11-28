@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type probeFields struct {

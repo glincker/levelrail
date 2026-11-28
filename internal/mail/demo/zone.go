@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnszones"
 )
 
 var errNoRecord = errors.New("demo zone: no such record")

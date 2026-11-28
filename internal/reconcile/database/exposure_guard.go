@@ -3,8 +3,8 @@ package database
 import (
 	"net"
 
-	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bindaddr"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Unauthenticated reports whether a database of engine accepts clients without a password.

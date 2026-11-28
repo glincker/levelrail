@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/GLINCKER/levelrail/internal/store" // registers the sqlite driver
+	_ "github.com/glincker/levelrail/internal/store" // registers the sqlite driver
 )
 
 func TestSwapInBackup_KeepsStoppedAppExpiries(t *testing.T) {

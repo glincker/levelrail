@@ -1,6 +1,6 @@
 package main
 
-import "github.com/GLINCKER/levelrail/internal/apiclient"
+import "github.com/glincker/levelrail/internal/apiclient"
 
 type lbFlagValues struct {
 	algorithm, cookie                         string

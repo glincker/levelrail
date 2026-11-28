@@ -12,7 +12,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 var appsInspectViews = []string{"effective-config", "pending-changes", "failure-context", "rollback-targets", "image-status"}

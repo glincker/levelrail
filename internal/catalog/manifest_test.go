@@ -5,7 +5,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 const testManifest = `id: demo

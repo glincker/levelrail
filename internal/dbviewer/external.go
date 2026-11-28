@@ -3,7 +3,7 @@ package dbviewer
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/mysqlssl"
+	"github.com/glincker/levelrail/internal/mysqlssl"
 )
 
 // External targets run the engine's client in a helper container that carries

@@ -17,10 +17,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/sourceupload"
-	"github.com/GLINCKER/levelrail/internal/spool"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/sourceupload"
+	"github.com/glincker/levelrail/internal/spool"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Env names for the Pages "deploy from a URL" download.

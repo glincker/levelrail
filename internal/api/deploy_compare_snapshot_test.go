@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Covers env, ports, domains, and resource limits across changed and unchanged cases.

@@ -4,8 +4,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/changes"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // withLogSignatures lets the change aggregator report new error types after

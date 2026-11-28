@@ -13,9 +13,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Setting for how many superseded releases stay held per service. Each held
@@ -462,9 +462,17 @@ func applyNextCachePrefix(desired *store.DesiredService, req Request) {
 // id the preview cache mode asks for.
 func railpackCacheID(ctx context.Context, req Request, tag string) string {
 	if !req.Preview {
-		return build.SanitizeCacheID(req.ServiceName, tag)
+		// An unnamed build still derives its id from the image repo in the tag.
+		if strings.TrimSpace(req.ServiceName) == "" {
+			return build.SanitizeCacheID("", tag)
+		}
+		return build.EnsureAppCacheKey(ctx, req.ServiceName)
 	}
-	return build.PreviewCacheID(build.PreviewCacheMode(ctx), req.ServiceName, tag)
+	parentID := ""
+	if req.PreviewParent != "" {
+		parentID = build.AppCacheKey(ctx, req.PreviewParent)
+	}
+	return build.PreviewCacheID(build.PreviewCacheMode(ctx), req.ServiceName, req.PreviewParent, parentID, tag)
 }
 
 // addNextDockerfileArgs injects NEXT_DEPLOYMENT_ID and NEXT_BUILD_ID into a Dockerfile

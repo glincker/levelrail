@@ -12,14 +12,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/fixit"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/serverready"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/serverready"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // settingAgentAdvertiseHost overrides APP_AGENT_ADVERTISE_HOST without a restart.

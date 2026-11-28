@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // defaultDiskUsageCacheTTL bounds how stale docker_disk_usage on

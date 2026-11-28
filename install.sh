@@ -7,7 +7,7 @@
 # Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall|protect] [--force] [--purge] [--dry-run]
 #                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
 #                   [--https-port N] [--domain HOST] [--profile minimal|standard|suite]
-#                   [--template ID]
+#                   [--template ID] [--swap|--no-swap]
 #   install    (default) preflight checks, then install or repair. Safe to re-run.
 #   check      (also --check) read-only server readiness report: who holds ports
 #              80/443, Docker version and isolation, exposed Docker API, disk,
@@ -33,14 +33,21 @@
 #   --template ID  only changes the final message: it prints the dashboard link
 #              that opens the new-app form on this catalog template (same as
 #              LEVELRAIL_TEMPLATE). Lowercase letters, digits and hyphens.
+#   --swap     on a host with under 2 GB RAM and no swap, create a swap file
+#              after the install without asking (same as LEVELRAIL_SWAP=1). It
+#              runs "levelrail-cli swap --apply", so that command's refusals
+#              apply: an existing swap or fstab swap line is never touched.
+#   --no-swap  never offer swap (same as LEVELRAIL_SWAP=0). Without either flag
+#              the installer asks once, only on an interactive terminal.
 #   --force    continue even if a preflight check fails.
 #   --coexist  run behind a proxy that already holds ports 80/443: ingress on
 #              8088/8443, dashboard on loopback only. Chosen automatically
 #              when 80/443 are taken by something else.
 #   --no-coexist  do not switch automatically: a taken 80/443 fails preflight
 #              (same as LEVELRAIL_COEXIST=0).
-#   --yes, -y  accepted for scripts. The installer no longer prompts: it
-#              switches to coexist mode by itself when 80/443 are taken.
+#   --yes, -y  accepted for scripts. The only prompt is the swap offer on a low
+#              memory host, and --yes does not answer it. Coexist mode is
+#              switched on by itself when 80/443 are taken.
 #   --no-cosign  do not install cosign (same as LEVELRAIL_NO_COSIGN=1). Releases
 #              are then verified by SHA-256 checksum only.
 #   --http-port / --https-port  ingress ports (override the LEVELRAIL_* env).
@@ -181,6 +188,9 @@ REGISTRY_MIRROR_PINNED=0
 [ -z "$REGISTRY_MIRROR" ] || REGISTRY_MIRROR_PINNED=1
 DOCKER_MIRROR="${LEVELRAIL_DOCKER_MIRROR:-}"
 LOW_RAM_MB="${LEVELRAIL_LOW_RAM_MB:-2048}"
+SWAP_CHOICE="${LEVELRAIL_SWAP:-ask}"
+SWAP_SIZE_MB="${LEVELRAIL_SWAP_MB:-}"
+SWAP_APPROVED=0
 RUNTIME_CHOICE="${LEVELRAIL_RUNTIME:-auto}"
 RUNTIME_PINNED=0
 [ "$RUNTIME_CHOICE" = "auto" ] || RUNTIME_PINNED=1
@@ -223,7 +233,7 @@ Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall|protect
                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
                   [--https-port N] [--domain HOST] [--email ADDRESS]
                   [--profile minimal|standard|suite] [--runtime auto|docker|podman|existing]
-                  [--template ID]
+                  [--template ID] [--swap|--no-swap]
   install    (default) preflight checks, then install or repair
   check      (also --check) read-only readiness report and recommended mode
   protect    write the out-of-memory protection drop-in on an existing install
@@ -241,7 +251,10 @@ Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall|protect
              whose ports 80/443 an existing proxy already holds (chosen
              automatically when they are taken)
   --no-coexist  fail preflight instead of switching to coexist mode
-  --yes      accepted for scripts, the installer never prompts
+  --swap     create a swap file after install on a host under 2 GB RAM with no
+             swap, without asking (also LEVELRAIL_SWAP=1; size LEVELRAIL_SWAP_MB)
+  --no-swap  never offer swap (also LEVELRAIL_SWAP=0)
+  --yes      accepted for scripts. The only prompt is the swap offer, and --yes does not answer it
   --no-cosign  do not install cosign (checksum-only verification)
   --email    with --domain: enable HTTPS (staging first) once healthy, DNS and
              ports 80/443 pass; otherwise print what failed and the next command
@@ -280,6 +293,8 @@ while [ "$#" -gt 0 ]; do
 	--check) MODE="check" ;;
 	--no-coexist) NO_COEXIST=1 ;;
 	--no-cosign) NO_COSIGN=1 ;;
+	--swap) SWAP_CHOICE=1 ;;
+	--no-swap) SWAP_CHOICE=0 ;;
 	--force) FORCE=1 ;;
 	--purge) PURGE=1 ;;
 	--coexist)
@@ -317,6 +332,13 @@ done
 case "$RUNTIME_CHOICE" in
 auto | docker | podman | existing) ;;
 *) fatal "--runtime must be auto, docker, podman or existing, got: $RUNTIME_CHOICE" ;;
+esac
+case "$SWAP_CHOICE" in
+ask | 0 | 1) ;;
+*) fatal "LEVELRAIL_SWAP must be 0 or 1, got: $SWAP_CHOICE" ;;
+esac
+case "$SWAP_SIZE_MB" in
+*[!0-9]*) fatal "LEVELRAIL_SWAP_MB must be a number of MiB, got: $SWAP_SIZE_MB" ;;
 esac
 case "$VERIFY_MODE" in
 auto | require | off) ;;
@@ -1237,7 +1259,7 @@ write_brand() {
 		short_name: Levelrail
 		binary_name: levelrail
 		domain: levelrail.com
-		support_url: https://github.com/GLINCKER/levelrail/issues
+		support_url: https://github.com/glincker/levelrail/issues
 		docs_url: https://docs.levelrail.com
 		primary_color: ""
 		logo_svg: ""
@@ -2080,12 +2102,62 @@ seed_docker_guard() {
 	chmod 600 "${DATA_DIR}/docker-guard.json"
 }
 
+# swap_needed is true on a Linux host under LOW_RAM_MB with no active swap and
+# no swap line in fstab. levelrail-cli swap re-checks and has the last word.
+swap_needed() {
+	[ "$(uname -s)" = "Linux" ] || return 1
+	mem_kb="$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo 2>/dev/null || echo 0)"
+	swap_kb="$(awk '/^SwapTotal:/ { print $2 }' /proc/meminfo 2>/dev/null || echo 0)"
+	SWAP_RAM_MB=$((${mem_kb:-0} / 1024))
+	[ "$SWAP_RAM_MB" -gt 0 ] && [ "$SWAP_RAM_MB" -lt "$LOW_RAM_MB" ] || return 1
+	[ "${swap_kb:-0}" -eq 0 ] || return 1
+	! awk '$1 !~ /^#/ && $3 == "swap" { found = 1 } END { exit !found }' /etc/fstab 2>/dev/null
+}
+
+# offer_swap asks once, on a real terminal only. A piped install without
+# --swap never prompts and never creates swap.
+offer_swap() {
+	[ "$SWAP_CHOICE" != "0" ] || return 0
+	swap_needed || return 0
+	[ -n "$SWAP_SIZE_MB" ] || SWAP_SIZE_MB="$SWAP_RAM_MB"
+	if [ "$SWAP_CHOICE" = "1" ]; then
+		SWAP_APPROVED=1
+		return 0
+	fi
+	if ! { [ -t 1 ] && [ -r /dev/tty ] && [ -w /dev/tty ] && (: </dev/tty) 2>/dev/null; }; then
+		log "Low memory host (${SWAP_RAM_MB} MB, no swap). Re-run with --swap to add a swap file, or see docs/installing.md (small servers)."
+		return 0
+	fi
+	printf 'This host has %s MB of RAM and no swap. Create a %s MB swap file after install? [y/N] ' "$SWAP_RAM_MB" "$SWAP_SIZE_MB" >/dev/tty
+	swap_answer=""
+	read -r swap_answer </dev/tty || swap_answer=""
+	case "$swap_answer" in
+	y | Y | yes | YES | Yes) SWAP_APPROVED=1 ;;
+	*) log "Skipping swap. Later: sudo levelrail-cli swap --apply" ;;
+	esac
+}
+
+# apply_swap hands an approved swap to levelrail-cli, which refuses when any
+# swap, fstab swap line or swap file path already exists.
+apply_swap() {
+	[ "$SWAP_APPROVED" -eq 1 ] || return 0
+	if ! command -v levelrail-cli >/dev/null 2>&1; then
+		warn "levelrail-cli is not installed, so swap was not created. Run: sudo levelrail-cli swap --apply"
+		return 0
+	fi
+	if levelrail-cli swap --apply --size-mb "$SWAP_SIZE_MB"; then
+		return 0
+	fi
+	warn "swap was not created. Run 'levelrail-cli swap' to see why."
+}
+
 do_install() {
 	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
 	load_settings
 	FRESH_INSTALL=0
 	if is_fresh_install; then FRESH_INSTALL=1; fi
 	preflight
+	offer_swap
 	ensure_runtime
 	install_binary
 	write_brand
@@ -2107,6 +2179,7 @@ do_install() {
 	discover_public_ip
 	reachability_test
 	install_cli
+	apply_swap
 	print_cloud_rules
 	enable_https_after_healthy
 	print_summary

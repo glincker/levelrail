@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/buildernode"
-	"github.com/GLINCKER/levelrail/internal/vmruntime"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/buildernode"
+	"github.com/glincker/levelrail/internal/vmruntime"
 )
 
 const builderUsage = `Usage:

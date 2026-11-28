@@ -2,7 +2,7 @@ package certflow
 
 import (
 	"context"
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 	"log/slog"
 	"os"
 	"sync"

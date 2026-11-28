@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // VolumeArchiver produces a tar archive of a named Docker volume's

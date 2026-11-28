@@ -3,8 +3,8 @@ package api
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/costestimate"
-	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
+	"github.com/glincker/levelrail/internal/costestimate"
+	"github.com/glincker/levelrail/internal/resourceadvisor"
 )
 
 func TestIdleAppSaving(t *testing.T) {

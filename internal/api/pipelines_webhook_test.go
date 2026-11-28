@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/pipeline"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/pipeline"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const webhookPipelineYAML = "version: 1\nname: ci\non: { webhook: {} }\nparameters: [{ name: env, type: choice, choices: [staging, prod], default: staging }]\njobs:\n  t:\n    image: alpine\n    steps:\n      - run: echo hi\n"

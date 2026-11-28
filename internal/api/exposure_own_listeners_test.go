@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/exposure"
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/exposure"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 func TestOwnListenersReadMeshConfig(t *testing.T) {

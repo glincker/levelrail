@@ -9,7 +9,7 @@ import (
 
 	"github.com/oschwald/maxminddb-golang/v2"
 
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // Geo source environment variables.

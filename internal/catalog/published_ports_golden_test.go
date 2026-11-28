@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // legacySplit is the port split every template got before published tcp
@@ -32,6 +32,7 @@ func TestTemplatesWithoutPublishedTCPResolveAsBefore(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", tpl.ID, err)
 		}
+		f.CapGrants = testCapGrants(tpl)
 		svcs, _, err := compose.ToDesiredServices("g", f)
 		if err != nil {
 			continue

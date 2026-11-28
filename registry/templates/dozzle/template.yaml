@@ -1,0 +1,59 @@
+id: dozzle
+name: Dozzle
+slogan: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.
+description: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.
+category: Monitoring
+documentation_url: https://dozzle.dev/guide/getting-started
+recommended_memory_bytes: 67108864
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: dozzle
+source_repo: https://github.com/amir20/dozzle
+license: MIT
+license_class: permissive
+license_url: https://github.com/amir20/dozzle/blob/master/LICENSE
+manifest:
+    id: dozzle
+    name: Dozzle
+    description: A small web viewer for live container logs on this host. It reads containers and logs through a filtered Docker API proxy, never the raw socket, and has no login, so it ships private with no public domain. Reach it over the private network or an authenticated tunnel and add a domain only behind your own login.
+    icon: dozzle
+    category: Monitoring
+    documentation_url: https://dozzle.dev/guide/getting-started
+    source_repo: https://github.com/amir20/dozzle
+    license: MIT
+    license_class: permissive
+    license_url: https://github.com/amir20/dozzle/blob/master/LICENSE
+    hosted_use: unknown
+    listing:
+        by: community
+        vendor_org: ""
+        proof: ""
+    status: active
+    status_reason: ""
+    replaced_by: ""
+    aliases: []
+    first_run:
+        - Open the page and pick a container to watch its logs live.
+        - Dozzle has no login, so no public domain is set and it shows the logs of every app on this host. Keep it private, and add a domain only behind your own authentication.
+    compose_file: compose.yaml
+    recommended_memory_bytes: 67108864
+    env: []
+    domains: []
+    healthcheck:
+        service: dozzle
+        port: 8080
+        path: /healthcheck
+        expect: 200
+        kind: ""
+        reason: ""
+    first_boot_seconds: 0
+    console_command: []
+    capabilities:
+        - class: docker_api
+          service: dozzle
+          reason: Reads the containers and log text of every app on this host through a filtered socket proxy (no environment, host paths or secret labels, nothing that writes). Logs can contain secrets, so grant this only if everyone who can open Dozzle may read all app logs.
+          caps:
+            - logs
+    requires_kernel_modules: []

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/upgradesched"
+	"github.com/glincker/levelrail/internal/upgradesched"
 )
 
 func TestWindowPreview(t *testing.T) {

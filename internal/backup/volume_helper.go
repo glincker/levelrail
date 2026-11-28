@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // volumeHelperImage is the image used to back up or restore a named

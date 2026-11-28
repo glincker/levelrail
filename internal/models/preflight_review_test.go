@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/gpu"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestUsableVRAM(t *testing.T) {

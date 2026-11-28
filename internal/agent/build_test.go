@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // Runs a real mux and serveSession over loopback with only the build runner faked, since the halves cannot be tested apart.

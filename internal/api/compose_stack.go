@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ComposeRevisionStore is the store surface compose stacks need for history and rollback.
@@ -57,6 +57,8 @@ type composeDeployOpts struct {
 	capGate func(added []string) bool
 	// addedCaps, when set, receives the newly added caps once the gate has passed.
 	addedCaps *[]string
+	// node is the request-level node every service lacking x-levelrail-node is pinned to.
+	node *nodeTarget
 }
 
 type composeServiceStatus struct {

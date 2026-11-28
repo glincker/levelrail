@@ -50,6 +50,9 @@ func (d dockerEngine) CreateContainer(ctx context.Context, s CreateSpec) (string
 	if s.PidsLimit > 0 {
 		hc.PidsLimit = &s.PidsLimit
 	}
+	if s.CPUShares > 0 {
+		hc.CPUShares = s.CPUShares
+	}
 	r, err := d.cli.ContainerCreate(ctx, cfg, hc, nil, nil, s.Name)
 	if cerrdefs.IsConflict(err) {
 		return "", ErrConflict

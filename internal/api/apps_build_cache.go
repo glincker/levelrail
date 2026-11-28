@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AuditActionAppBuildCacheClear is the audit event for clearing one app's build cache.
@@ -96,7 +96,7 @@ func (rt *Router) appCacheScope(w http.ResponseWriter, r *http.Request, allowDel
 		rt.internalError(w, "api: app build cache: load app", err, slog.String("name", name))
 		return "", nil, false
 	}
-	id := build.SanitizeCacheID(name, "")
+	id := build.AppCacheKey(r.Context(), name)
 	if id == "" {
 		writeError(w, http.StatusConflict, "this app has no usable cache id")
 		return "", nil, false
@@ -109,7 +109,7 @@ func (rt *Router) siblingCacheIDs(ctx context.Context, id string) []string {
 	var siblings []string
 	if all, err := rt.apps.ListDesiredServices(ctx); err == nil {
 		for _, s := range all {
-			if sid := build.SanitizeCacheID(s.Name, ""); sid != "" && sid != id {
+			if sid := build.AppCacheKey(ctx, s.Name); sid != "" && sid != id {
 				siblings = append(siblings, sid)
 			}
 		}

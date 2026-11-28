@@ -1,3 +1,3 @@
-module github.com/GLINCKER/levelrail/kit
+module github.com/glincker/levelrail/kit
 
 go 1.24

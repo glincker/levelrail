@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Env names for the loop. APP_STACK_DRIFT_INTERVAL=0 turns it off.

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // TestContainerDNSAddr_EarlyReturns checks every branch that returns "" without touching the Docker client.

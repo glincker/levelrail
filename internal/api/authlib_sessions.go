@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const libMailTimeout = 30 * time.Second

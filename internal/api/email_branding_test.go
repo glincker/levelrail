@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/internal/mailtemplates"
 )
 
 const validBrandingBody = `{"logo_url":"https://cdn.example.com/logo.png","brand_color":"#112233","footer_text":"(c) {{year}} {{brand_name}}","footer_address":"1 Main St","footer_links":[{"label":"Privacy","url":"https://example.com/privacy"}],"show_powered_by":true}`

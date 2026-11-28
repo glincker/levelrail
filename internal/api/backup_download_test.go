@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeBackupDownloader is a hand-written fake for BackupDownloader, the

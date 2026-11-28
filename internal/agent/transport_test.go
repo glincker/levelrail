@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // fakeRuntime is a hand-written docker.Runtime fake; only InspectByName matters, since this package only delegates.

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/catalog"
 )
 
 // runTemplatesImport implements "templates import <file>": POST /api/v1/templates/custom.

@@ -8,8 +8,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // runAccessPolicyReset is the host-side lockout recovery: it removes every

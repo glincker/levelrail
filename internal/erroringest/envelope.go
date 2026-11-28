@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // MaxEventsPerEnvelope bounds the events taken from one request.

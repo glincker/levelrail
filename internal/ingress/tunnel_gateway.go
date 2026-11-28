@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 // Gateway limits are fixed protocol-level safety bounds; the dialer enforces

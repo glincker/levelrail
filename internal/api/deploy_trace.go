@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/deploytrace"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploytrace"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // traceInstantDeploy writes the pre-reconcile steps of an attempt that has

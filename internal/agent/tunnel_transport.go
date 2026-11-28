@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 // TunnelOpener is what the ingress gateway needs: open a tunnel to a node's own service port.

@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // Runtime settings for scheduled restarts; all apply on the next sweep or request.

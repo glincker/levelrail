@@ -122,7 +122,7 @@ func (r *cronJobResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						Description: "Request headers. Set a literal value or a secret_ref naming an app env var, never secret text.",
 						NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
 							"name":       schema.StringAttribute{Required: true},
-							"value":      schema.StringAttribute{Optional: true, Description: "Literal header value."},
+							"value":      schema.StringAttribute{Optional: true, Sensitive: true, Description: "Literal header value."},
 							"secret_ref": schema.StringAttribute{Optional: true, Description: "Name of the app env var that holds the value."},
 							"prefix":     schema.StringAttribute{Optional: true, Description: "Text before the secret, such as Bearer. Only with secret_ref."},
 						}},

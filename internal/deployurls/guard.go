@@ -2,12 +2,14 @@ package deployurls
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EnvMaxUnready is how many readiness failures in a row a retained deploy
@@ -106,19 +108,50 @@ type ParentSecrets struct {
 	}
 }
 
-func (p ParentSecrets) owner(ctx context.Context, service string) string {
-	if app, ok, err := p.Apps.DeployURLApp(ctx, service); err == nil && ok {
-		return app
+// ErrParentSecretOwner marks a deploy URL parent whose name is a control plane
+// namespace or a database, whose secrets a clone must never read.
+var ErrParentSecretOwner = errors.New("deployurls: parent app name is not a valid secret owner")
+
+type databaseLookup interface {
+	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
+}
+
+// owner fails closed: a store error or a parent that is reserved or named like a database yields an error.
+func (p ParentSecrets) owner(ctx context.Context, service string) (string, error) {
+	app, ok, err := p.Apps.DeployURLApp(ctx, service)
+	if err != nil {
+		return "", fmt.Errorf("resolve deploy url parent: %w", err)
 	}
-	return service
+	if !ok {
+		return service, nil
+	}
+	if spec.IsReservedName(app) {
+		return "", ErrParentSecretOwner
+	}
+	if dbs, ok := p.Apps.(databaseLookup); ok {
+		if _, err := dbs.GetDesiredDatabase(ctx, app); err == nil {
+			return "", ErrParentSecretOwner
+		} else if !errors.Is(err, store.ErrDatabaseNotFound) {
+			return "", fmt.Errorf("check parent database %q: %w", app, err)
+		}
+	}
+	return app, nil
 }
 
 // Exists implements SecretReader.
 func (p ParentSecrets) Exists(ctx context.Context, service, key string) (bool, error) {
-	return p.Inner.Exists(ctx, p.owner(ctx, service), key)
+	owner, err := p.owner(ctx, service)
+	if err != nil {
+		return false, err
+	}
+	return p.Inner.Exists(ctx, owner, key)
 }
 
 // Resolve implements SecretReader.
 func (p ParentSecrets) Resolve(ctx context.Context, service, key string) (string, error) {
-	return p.Inner.Resolve(ctx, p.owner(ctx, service), key)
+	owner, err := p.owner(ctx, service)
+	if err != nil {
+		return "", err
+	}
+	return p.Inner.Resolve(ctx, owner, key)
 }

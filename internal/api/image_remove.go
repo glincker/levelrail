@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/imagelife"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/imagelife"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 const defaultImageRemoveMax = 200

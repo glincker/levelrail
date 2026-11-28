@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // stackFileDocs parses the request files; parse problems surface later from build.

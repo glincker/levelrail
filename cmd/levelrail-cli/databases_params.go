@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runDatabasesParams dispatches "databases params show|set|unset|discard|apply|rollback <database>".

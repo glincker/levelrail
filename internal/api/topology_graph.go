@@ -3,7 +3,7 @@ package api
 import (
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Topology node/edge kinds: the vocabulary GET /api/v1/projects/{id}/topology

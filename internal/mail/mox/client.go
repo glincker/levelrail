@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/mail"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/mail"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Env knobs for the admin API client.

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 func TestLogPipelineRoutes(t *testing.T) {

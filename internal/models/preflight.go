@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/glincker/levelrail/internal/gpu"
 )
 
 const mib = 1 << 20

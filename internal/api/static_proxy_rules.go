@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 // Proxy rule target states shown next to a rule.

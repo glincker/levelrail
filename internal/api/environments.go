@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // environmentResource is the wire shape for an environment.

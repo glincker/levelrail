@@ -16,8 +16,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
-	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/placement"
 )
 
 // Spec is a fully parsed, schema-valid app.yaml.

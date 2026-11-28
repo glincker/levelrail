@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // The store implements these; fakes that do not are simply never blocked.

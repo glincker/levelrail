@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func pathsYAML(on string) string {

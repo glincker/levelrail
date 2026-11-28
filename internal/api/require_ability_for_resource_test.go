@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // attachTestPolicy creates a single-statement policy and attaches it to

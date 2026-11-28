@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/changes"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 var t0 = time.Date(2026, 10, 3, 3, 0, 0, 0, time.UTC)

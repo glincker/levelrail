@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 func rec(id string, size int64, age time.Duration, now time.Time, tags ...string) docker.ImageRecord {

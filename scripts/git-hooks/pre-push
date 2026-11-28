@@ -135,7 +135,7 @@ fi
 
 # internal/api shard count for the fast and affected lanes: min(4, cores) unless
 # LEVELRAIL_PREPUSH_API_SHARDS says otherwise. 1 keeps a single process.
-api_pkg="github.com/GLINCKER/levelrail/internal/api"
+api_pkg="github.com/glincker/levelrail/internal/api"
 api_shards="${LEVELRAIL_PREPUSH_API_SHARDS:-}"
 if ! [ "$api_shards" -ge 1 ] 2>/dev/null; then
 	ncpu="$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)"
@@ -180,14 +180,14 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	# tests that actually reach it, instead of skipping internal/api here
 	# entirely and leaving it to CI.
 	if [ -z "$api_tests" ] && ! printf '%s\n' "$changed_files" | grep -q '^internal/api/' \
-		&& printf '%s\n' "$scope" | grep -qxF github.com/GLINCKER/levelrail/internal/api; then
+		&& printf '%s\n' "$scope" | grep -qxF github.com/glincker/levelrail/internal/api; then
 		seed_dirs="$(printf '%s\n' "$changed_files" | scripts/affected-go-packages.sh --stdin --seeds 2>/dev/null || true)"
 		if [ -n "$seed_dirs" ]; then
 			# Plain read loops: this hook runs under macOS's bash 3.2, which has no mapfile.
 			seed_dirs_arr=()
 			while IFS= read -r line; do [ -n "$line" ] && seed_dirs_arr+=("$line"); done <<<"$seed_dirs"
 			seed_pkgs=()
-			while IFS= read -r line; do [ -n "$line" ] && seed_pkgs+=("$line"); done < <(go list -e -f '{{.ImportPath}}' "${seed_dirs_arr[@]}" 2>/dev/null | grep -vxF "github.com/GLINCKER/levelrail/internal/api" || true)
+			while IFS= read -r line; do [ -n "$line" ] && seed_pkgs+=("$line"); done < <(go list -e -f '{{.ImportPath}}' "${seed_dirs_arr[@]}" 2>/dev/null | grep -vxF "github.com/glincker/levelrail/internal/api" || true)
 			if [ "${#seed_pkgs[@]}" -gt 0 ]; then
 				narrowed="$(scripts/affected-api-tests.sh "${seed_pkgs[@]}" 2>/dev/null || echo ALL)"
 				[ "$narrowed" != ALL ] && api_tests="$narrowed"

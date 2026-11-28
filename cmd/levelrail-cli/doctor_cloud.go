@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/hostprovider"
+	"github.com/glincker/levelrail/internal/hostprovider"
 )
 
 type cloudRule struct {

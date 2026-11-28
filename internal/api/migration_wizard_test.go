@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/migrationplan"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/migrationplan"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 func TestMigrationWizardPlanImportAndChecklist(t *testing.T) {

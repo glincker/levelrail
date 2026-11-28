@@ -1,0 +1,67 @@
+---
+title: "Self-host Screego with Docker"
+sidebarTitle: "Screego"
+description: "Screen sharing for developers, with low latency and no account."
+"og:url": "https://docs.levelrail.com/self-host/screego"
+---
+
+Screen sharing for developers, with low latency and no account.
+
+This page describes the Levelrail template for Screego (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://screego.net/#/install.
+
+Recommended memory: about 64 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `screego` | `screego/server:1.12.6` | 5050 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `screego` | `SCREEGO_EXTERNAL_IP` | Preset in the template |
+| `screego` | `SCREEGO_SECRET` | Generated at deploy |
+| `screego` | `SCREEGO_SERVER_ADDRESS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`screego`): SCREEGO_SECRET.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Screego with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Screego. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy screego --name my-screego
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Communication templates
+
+- [Apache Answer](/self-host/answer)
+- [Apprise API](/self-host/apprise-api)
+- [Campfire](/self-host/campfire)
+- [Chatwoot](/self-host/chatwoot)
+- [Cinny](/self-host/cinny)
+
+All templates are listed in the [self-host gallery](/self-host).

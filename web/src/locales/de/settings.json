@@ -279,6 +279,10 @@
         "title": "Updates",
         "description": "Aktuelle Version und verfügbare Releases."
       },
+      "announcements": {
+        "title": "Ankündigungen",
+        "description": "Signierte Hinweise des Levelrail-Projekts und die Feed-Einstellung."
+      },
       "beta-features": {
         "title": "Beta-Funktionen",
         "description": "Funktionen aktivieren, die laufen, aber noch feinjustiert werden."
@@ -895,6 +899,23 @@
       "onHint": "j, k, x, Enter, /, ?",
       "off": "Deaktiviert",
       "offHint": "Nur Maus und Tab"
+    }
+  },
+  "cliAccessPage": {
+    "server": {
+      "title": "Dieser Server",
+      "body": "Die CLI merkt sich diese Identität beim Login und verweigert das Senden eines Tokens an jeden anderen Server. Vergleichen Sie den Fingerabdruck mit der Ausgabe der CLI.",
+      "name": "Name",
+      "id": "Instanz-ID",
+      "fingerprint": "Fingerabdruck",
+      "backupSetId": "Backup-Set-ID",
+      "copy": "Kopieren",
+      "copied": "Instanz-ID kopiert",
+      "movedTitle": "Diese Instanz wurde auf einem neuen Host wiederhergestellt",
+      "movedBody": "Ihre Identität hat sich geändert, deshalb werden vor dem Umzug ausgestellte CLI-Tokens abgelehnt. Wenn es dieselbe Instanz ist (eine Wiederherstellung oder Migration von Ihnen), bestätigen Sie das, damit diese Tokens wieder gelten. Wenn Sie sie nicht verschoben haben, lassen Sie es und melden Sie sich erneut in der CLI an.",
+      "confirmLabel": "Geben Sie \"{{phrase}}\" zur Bestätigung ein",
+      "confirmAction": "Gleiche Instanz bestätigen",
+      "confirmed": "Instanz-Identität wiederhergestellt. CLI-Tokens funktionieren wieder."
     }
   }
 }

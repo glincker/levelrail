@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // templateGates maps a catalog template ID to the experimental flag it needs.

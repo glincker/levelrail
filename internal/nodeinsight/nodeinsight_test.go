@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/nodepreflight"
 )
 
 func TestBuildTimeline(t *testing.T) {

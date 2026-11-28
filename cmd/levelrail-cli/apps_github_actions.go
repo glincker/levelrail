@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/ghactions"
-	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/ghactions"
+	"github.com/glincker/levelrail/internal/githubapp"
 )
 
 const (

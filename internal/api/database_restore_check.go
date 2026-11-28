@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // restoreTestScanLimit bounds how far back the newest succeeded backup is searched for.
@@ -35,7 +35,8 @@ func (rt *Router) handleStartDatabaseRestoreTest(w http.ResponseWriter, r *http.
 		return
 	}
 	name := r.PathValue("name")
-	if _, ok := rt.loadDatabaseForRunner(w, r, name, "api: restore test: load database failed"); !ok {
+	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: restore test: load database failed")
+	if !ok {
 		return
 	}
 	rows, err := rt.backupHistory.ListBackupHistory(r.Context(), name, restoreTestScanLimit, nil)
@@ -45,7 +46,7 @@ func (rt *Router) handleStartDatabaseRestoreTest(w http.ResponseWriter, r *http.
 	}
 	var latest *store.BackupHistory
 	for i := range rows {
-		if rows[i].Status == store.BackupStatusSucceeded {
+		if rows[i].Status == store.BackupStatusSucceeded && db.OwnsBackup(rows[i].InstanceID, rows[i].StartedAt) {
 			latest = &rows[i]
 			break
 		}
@@ -115,7 +116,8 @@ type restorePreviewResource struct {
 // size, age, target and overwrite scope of a restore, with the fallback backup named.
 func (rt *Router) handleDatabaseRestorePreview(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	if _, ok := rt.loadDatabaseForRunner(w, r, name, "api: restore preview: load database failed"); !ok {
+	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: restore preview: load database failed")
+	if !ok {
 		return
 	}
 	backupID := r.URL.Query().Get("backup_id")
@@ -124,7 +126,7 @@ func (rt *Router) handleDatabaseRestorePreview(w http.ResponseWriter, r *http.Re
 		return
 	}
 	bh, err := rt.backupHistory.GetBackupHistory(r.Context(), backupID)
-	if errors.Is(err, store.ErrBackupHistoryNotFound) || (err == nil && bh.DatabaseName != name) {
+	if errors.Is(err, store.ErrBackupHistoryNotFound) || (err == nil && (bh.DatabaseName != name || !db.OwnsBackup(bh.InstanceID, bh.StartedAt))) {
 		writeError(w, http.StatusNotFound, "backup not found")
 		return
 	}
@@ -136,7 +138,6 @@ func (rt *Router) handleDatabaseRestorePreview(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusConflict, "only a succeeded backup can be restored from")
 		return
 	}
-	db, _ := rt.databases.GetDesiredDatabase(r.Context(), name)
 	out := restorePreviewResource{
 		Database:   name,
 		BackupID:   bh.ID,
@@ -156,7 +157,7 @@ func (rt *Router) handleDatabaseRestorePreview(w http.ResponseWriter, r *http.Re
 	}
 	if rows, lerr := rt.backupHistory.ListBackupHistory(r.Context(), name, restoreTestScanLimit, nil); lerr == nil {
 		for i := range rows {
-			if rows[i].Status == store.BackupStatusSucceeded && rows[i].ID != bh.ID {
+			if rows[i].Status == store.BackupStatusSucceeded && rows[i].ID != bh.ID && db.OwnsBackup(rows[i].InstanceID, rows[i].StartedAt) {
 				out.SafetyBackupID, out.SafetyTakenAt = rows[i].ID, rows[i].StartedAt
 				break
 			}

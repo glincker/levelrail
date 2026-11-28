@@ -17,6 +17,7 @@ import {
 } from '../queries/imports'
 import { appKeys } from '../queries/apps'
 import { ImportEnvTable } from './ImportEnvTable'
+import { ImportFindingsReport } from './ImportFindingsReport'
 
 const APP_NAME_PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
 
@@ -197,6 +198,8 @@ export function ImportPlanPreview({
           </AlertDescription>
         </Alert>
       ) : null}
+
+      <ImportFindingsReport findings={plan.report ?? []} />
 
       {(plan.conflicts ?? []).length > 0 ? (
         <Alert variant="destructive" data-testid="import-conflicts">

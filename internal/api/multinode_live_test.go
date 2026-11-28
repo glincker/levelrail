@@ -13,16 +13,16 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/cloudmeta"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/meshpath"
-	"github.com/GLINCKER/levelrail/internal/nodemove"
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/cloudmeta"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/meshpath"
+	"github.com/glincker/levelrail/internal/nodemove"
+	"github.com/glincker/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // dindEndpoints plays the WireGuard mesh: each node's mesh address is its

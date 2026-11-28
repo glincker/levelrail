@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
 )
 
 func TestComposeMux_HealthzReachesAPIHandlerNotSPAFallback(t *testing.T) {

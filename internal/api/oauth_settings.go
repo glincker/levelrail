@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // oauthProviderSettingsResource is the wire shape for GET and PUT

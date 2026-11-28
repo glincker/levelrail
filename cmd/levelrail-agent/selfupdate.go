@@ -18,13 +18,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/agentupdate"
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/cliupdate"
-	"github.com/GLINCKER/levelrail/internal/nodeinsight"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agentupdate"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/cliupdate"
+	"github.com/glincker/levelrail/internal/nodeinsight"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 const (

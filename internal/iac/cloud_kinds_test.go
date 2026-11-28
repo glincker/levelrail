@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 func buildCloudDocs(t *testing.T, doc string) ([]*Resource, []Issue) {

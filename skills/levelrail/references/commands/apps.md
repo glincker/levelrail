@@ -1446,7 +1446,7 @@ Usage:
   levelrail-cli apps recently-deleted restore <app|database> <name>     bring one back from its saved config
 
 The undo window is the runtime setting retention.recently_deleted_days.
-Secrets are not kept: set them again after a restore.
+Secret values come back. The deploy source, deploy token, log drain, integrations and build hooks do not; restore prints the command to recreate each.
 ```
 
 ## levelrail-cli apps runtime
@@ -1531,7 +1531,9 @@ Usage:
   levelrail-cli apps secrets rotation <list|due|set|remove|rotate> ...      scheduled rotation policies
 
 A secret you set is injected into the app's container from the next restart
-on. Pass --apply to set to restart right away.
+on. Pass --apply to set to restart right away. If the key already exists as a
+plain variable, set replaces that plain copy in the same call, so the app never
+holds two copies.
 
 Values are never returned: list shows key names and locked state only,
 matching internal/api/secrets.go's own "never echo a value back" rule.

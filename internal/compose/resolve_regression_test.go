@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 // genericForm matches a non-SERVICE ${VAR<op>...} form or a "$$" escape, the only

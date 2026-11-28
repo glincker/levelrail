@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/proxyguard"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/proxyguard"
+	"github.com/glincker/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // proxyAppExists is the shared existence check, so a missing target and a

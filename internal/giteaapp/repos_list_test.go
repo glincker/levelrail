@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 func TestListRepos_PastOldCapAndTruncation(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // Refusals that change nothing on the host.

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbaccess"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbaccess"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDatabaseTemplates_ScopeToOneDatabase(t *testing.T) {

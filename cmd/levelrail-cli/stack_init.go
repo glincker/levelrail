@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/stacktemplates"
+	"github.com/glincker/levelrail/internal/stacktemplates"
 )
 
 func stackTemplatesUsage(prog string) string {

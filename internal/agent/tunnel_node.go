@@ -18,10 +18,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // Agent-side tunnel limits. The node enforces them on its own so a control

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbcatalogbuild"
+	"github.com/glincker/levelrail/internal/dbcatalogbuild"
 )
 
 // Settings of the remote catalog.

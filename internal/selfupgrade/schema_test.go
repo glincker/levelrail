@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 type schemaRelease struct {

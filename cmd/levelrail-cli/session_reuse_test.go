@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // reuseServer models a control plane that issues a device cookie on login and accepts one live token.

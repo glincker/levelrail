@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/branchdeploy"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/branchdeploy"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 func TestStackDeployHandlers_MemberDenyIsUnknownName(t *testing.T) {
@@ -109,7 +109,11 @@ func TestAppNameFree_UnderLock(t *testing.T) {
 func seedServiceTookStackName(t *testing.T, db *store.DB) {
 	t.Helper()
 	seedStackAttempt(t, db, "shop")
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "shop", AppID: "shop", Image: "nginx:1", Port: 80}); err != nil {
+	// The store now refuses the shared name, so rename a saved row to model legacy data.
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "shoplegacy", AppID: "shop", Image: "nginx:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(context.Background(), `UPDATE desired_services SET name = 'shop' WHERE name = 'shoplegacy'`); err != nil {
 		t.Fatal(err)
 	}
 }

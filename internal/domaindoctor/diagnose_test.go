@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/fixit"
 )
 
 func TestPlanRecords(t *testing.T) {

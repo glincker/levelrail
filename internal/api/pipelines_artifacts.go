@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/pipeline"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/pipeline"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // PipelineExtraStore is the store surface for artifacts and inbound webhook

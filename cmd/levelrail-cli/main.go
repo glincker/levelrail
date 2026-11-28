@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func main() {
@@ -131,6 +131,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runIncidents(prog, args[1:], stdout, stderr, lookupEnv)
 	case "analysis":
 		return runAnalysis(prog, args[1:], stdout, stderr, lookupEnv)
+	case "announcements":
+		return runAnnouncements(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "projects":
@@ -287,6 +289,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runEventWebhooks(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cdn":
 		return runCDN(prog, args[1:], stdout, stderr, lookupEnv)
+	case "instance":
+		return runInstance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "maintenance":
 		return runMaintenance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "policy":
@@ -341,6 +345,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runGoLiveChecklist(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "swap":
+		return runSwap(prog, args[1:], stdout, stderr, lookupEnv)
 	case "setup":
 		return runSetup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "me":
@@ -391,6 +397,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runViews(prog, args[1:], stdout, stderr, lookupEnv)
 	case "janitor":
 		return runJanitor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "disk":
+		return runDisk(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "system":
@@ -575,7 +583,8 @@ Usage:
   %[1]s event-webhooks list|create|test|deliveries|replay|enable|disable|rotate-secret|delete   signed outbound event webhooks with a delivery log
   %[1]s policy list|set|check [flags]                           deploy guardrails: registries, probes, limits, mounts, labels, replicas
   %[1]s app-types list|apply|check [flags]                      admin-defined app types and spec conformance checks
-  %[1]s maintenance list|create|delete [flags]               scheduled maintenance windows with banner, status page and optional deploy freeze
+  %[1]s instance show [flags]                                  Instance ID, fingerprint, Backup set ID and pin status of the server
+  %[1]s maintenance list|create|delete [flags]              scheduled maintenance windows with banner, status page and optional deploy freeze
   %[1]s cdn overview [--window 1h]                          fleet traffic, edge cache hit rate and per-node request share
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
@@ -618,6 +627,7 @@ Usage:
   %[1]s bench chaos <list|run|report|disk|free-space> [flags]              failure scenarios measured on local containers, recorded for the resilience report
   %[1]s resilience check [--simulate] [--fix] [flags]         will apps keep serving if the control plane is down (dry run)
   %[1]s doctor [flags]                                        health checks (same as the dashboard Doctor page), --fix applies safe fixes
+  %[1]s swap [--apply] [--size-mb N] [flags]                    low memory hosts: print the swapfile commands (dry run), --apply as root creates it
   %[1]s go-live <app> [domain] [--wait] [--timeout 5m] [flags]  the guided checklist from deploy to https, exits non-zero until live with --wait
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s me appearance [get|set <file|->|reset] [flags]       your dashboard look, synced to your account (reset needs --yes)
@@ -646,7 +656,8 @@ Usage:
   %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
   %[1]s views list|save|delete|apply [--list L] [flags]       saved list filters for apps, databases, domains, builds and deployments, private or shared with your team
   %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts
-  %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
+  %[1]s disk gc [--apply] [--if-needed] [flags]               preview or remove unused images and idle build cache, reclaimable bytes by category
+  %[1]s system-prune [flags]                               remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
   %[1]s volumes export|import <app> <volume> [flags]          move a volume out of or into Levelrail as a tar.gz
   %[1]s volumes-orphaned [flags]                              list this instance's named volumes no app or database references any more
   %[1]s volumes-orphaned-cleanup --names name1,name2 [flags]   remove exactly the named orphaned volumes, after re-confirming each is still orphaned

@@ -1,0 +1,66 @@
+---
+title: "Self-host Plik with Docker"
+sidebarTitle: "Plik"
+description: "A temporary file upload system with expiring, shareable links."
+"og:url": "https://docs.levelrail.com/self-host/plik"
+---
+
+A temporary file upload system with expiring, shareable links.
+
+This page describes the Levelrail template for Plik (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/root-gg/plik#readme.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `plik` | `rootgg/plik:1.4.3` | 8080 | `plik_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `plik` | `PLIKD_DATA_BACKEND_CONFIG` | Preset in the template |
+| `plik` | `PLIKD_METADATA_BACKEND_CONFIG` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`plik`): plik_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Plik with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Plik. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy plik --name my-plik
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [Baikal](/self-host/baikal)
+
+All templates are listed in the [self-host gallery](/self-host).

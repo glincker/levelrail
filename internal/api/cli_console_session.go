@@ -12,7 +12,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/GLINCKER/levelrail/internal/cliconsole"
+	"github.com/glincker/levelrail/internal/cliconsole"
 )
 
 // Frozen CLI console protocol message types.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 // Access is what a token can really do, read from the server's own

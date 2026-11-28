@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingresstrust"
+	"github.com/glincker/levelrail/internal/ingresstrust"
 )
 
 // SnapshotStatus is what the driver knows about its route snapshot.

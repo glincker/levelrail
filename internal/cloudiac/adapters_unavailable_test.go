@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 type connGetter map[string]cloudconn.Connection

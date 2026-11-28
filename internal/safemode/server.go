@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/integrity"
+	"github.com/glincker/levelrail/internal/integrity"
 )
 
 // TokenFilename holds the one-time code that unlocks recovery. Reading it needs host access.

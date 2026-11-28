@@ -7,7 +7,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx"
 )
 
 // SSM and Secrets Manager services (target prefixes checked against the botocore models).

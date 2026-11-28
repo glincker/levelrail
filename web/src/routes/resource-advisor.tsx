@@ -17,6 +17,11 @@ import {
 } from '../queries/resourceAdvisor'
 import { splitPending } from '../lib/resourceAdvisor'
 import { formatBytes } from '../lib/format'
+import { totalMonthlySaving, totalReclaimableMb } from '../lib/advisorSavings'
+import { formatMonthlySaving } from '../components/resourceAdvisor/recommendationFormat'
+import { NodePriceEditor } from '../components/resourceAdvisor/NodePriceEditor'
+import { SleepIdleButton } from '../components/resourceAdvisor/SleepIdleButton'
+import type { AdvisorFinding } from '../types/resourceAdvisor'
 import {
   FindingList,
   type FindingGrouping,
@@ -42,10 +47,12 @@ function ResourceAdvisorSkeleton() {
   )
 }
 
-function SummaryStrip() {
+function SummaryStrip({ findings }: { findings: AdvisorFinding[] }) {
   const { t } = useTranslation('resourceAdvisor')
   const { data } = useAdvisorSummary()
   if (!data) return null
+  const reclaimMb = totalReclaimableMb(findings)
+  const monthly = formatMonthlySaving(totalMonthlySaving(findings) ?? undefined)
   return (
     <div className="flex flex-wrap gap-2 text-sm" data-testid="advisor-summary">
       <Badge variant="outline">
@@ -66,6 +73,18 @@ function SummaryStrip() {
           {t('summary.saving', {
             amount: formatBytes(data.saving_memory_bytes),
           })}
+        </Badge>
+      ) : null}
+      {reclaimMb > 0 ? (
+        <Badge variant="success">
+          {t('summary.reclaimable', {
+            amount: formatBytes(reclaimMb * 1048576),
+          })}
+        </Badge>
+      ) : null}
+      {monthly ? (
+        <Badge variant="success">
+          {t('summary.monthly', { amount: monthly })}
         </Badge>
       ) : null}
       {data.pending_data > 0 ? (
@@ -100,24 +119,28 @@ function ResourceAdvisorPage() {
         helpPath="/resource-advisor"
         helpLabel={t('title')}
       />
-      <SummaryStrip />
+      <SummaryStrip findings={advice} />
+      <NodePriceEditor />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div
-          className="flex gap-1"
-          role="group"
-          aria-label={t('groupBy.label')}
-        >
-          {(['resource', 'savings'] as const).map((g) => (
-            <Button
-              key={g}
-              size="sm"
-              variant={grouping === g ? 'secondary' : 'ghost'}
-              aria-pressed={grouping === g}
-              onClick={() => setGrouping(g)}
-            >
-              {t(`groupBy.${g}`)}
-            </Button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            className="flex gap-1"
+            role="group"
+            aria-label={t('groupBy.label')}
+          >
+            {(['resource', 'savings'] as const).map((g) => (
+              <Button
+                key={g}
+                size="sm"
+                variant={grouping === g ? 'secondary' : 'ghost'}
+                aria-pressed={grouping === g}
+                onClick={() => setGrouping(g)}
+              >
+                {t(`groupBy.${g}`)}
+              </Button>
+            ))}
+          </div>
+          <SleepIdleButton findings={advice} />
         </div>
         <div className="flex items-center gap-2">
           <Switch

@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
 )
 
 func TestRenewer_ScheduleSurvivesRestartAndStaysInWindow(t *testing.T) {

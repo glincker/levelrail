@@ -20,20 +20,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/deploytrace"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/integrations"
-	"github.com/GLINCKER/levelrail/internal/meshpath"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/secretrotation"
-	appspec "github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/vault"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/bindaddr"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploytrace"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/integrations"
+	"github.com/glincker/levelrail/internal/meshpath"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretrotation"
+	appspec "github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/vault"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // ServiceStore is the narrow surface this controller needs from
@@ -221,12 +221,18 @@ type Controller struct {
 	serviceName string
 	conditions  ConditionReader
 	store       ServiceStore
-	runtime     docker.Runtime
-	snap        *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
-	snapNode    string
-	imageIDs    *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
-	imageNode   string
-	httpClient  *http.Client
+	// reservedOwnerEventAt coalesces the stored reserved-name refusal event.
+	reservedOwnerEventAt atomic.Int64
+	// databaseRefEventAt coalesces the stored database reference refusal event.
+	databaseRefEventAt atomic.Int64
+	// legacyVaultEventAt coalesces the stored legacy vault path refusal event.
+	legacyVaultEventAt atomic.Int64
+	runtime            docker.Runtime
+	snap               *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
+	snapNode           string
+	imageIDs           *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
+	imageNode          string
+	httpClient         *http.Client
 	// probeUnreachableLogged keeps an unreachable-node warning to one per outage.
 	probeUnreachableLogged atomic.Bool
 	probeLimits            probe.Limits
@@ -252,16 +258,18 @@ type Controller struct {
 	databaseScope          DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
 	databases              DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
 	vaultSettings          VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
-	secretSources          func() SecretSources    // late bound: the connection service is built after the controllers' options
-	vaultResolver          VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
-	hookRuns               HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
-	traceStore             TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
-	probeAttempts          ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
-	hookTimeout            time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
-	wakeWindow             WakeWindowReader        // nil is valid: no short probe interval after a wake, see WithWakeProbe
+	legacyVaultPrefixes    func(context.Context) []string
+	secretSources          func() SecretSources // late bound: the connection service is built after the controllers' options
+	vaultResolver          VaultResolver        // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
+	hookRuns               HookRunRecorder      // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	traceStore             TraceStore           // nil is valid: no deploy trace is written, see WithTraceStore
+	probeAttempts          ProbeAttemptRecorder // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
+	hookTimeout            time.Duration        // defaults to defaultHookTimeout, see WithHookTimeout
+	wakeWindow             WakeWindowReader     // nil is valid: no short probe interval after a wake, see WithWakeProbe
 	wakeProbeInterval      time.Duration
-	liveness               *LivenessTracker // per-container liveness failure counts, in memory only, see LivenessTracker
-	instanceID             string           // empty means no instance-ownership check, see WithInstanceID
+	liveness               *LivenessTracker                                          // per-container liveness failure counts, in memory only, see LivenessTracker
+	fenceCtx               func(ctx context.Context, service string) context.Context // nil means unfenced
+	instanceID             string                                                    // empty means no instance-ownership check, see WithInstanceID
 	// egressReadyBudget/egressReadyPollInterval override
 	// defaultEgressReadyBudget/defaultEgressReadyPollInterval (egress.go);
 	// zero means "use the default", see effectiveEgressReadyBudget and
@@ -279,6 +287,9 @@ type Controller struct {
 	deployWindows       func(context.Context) deploysafety.Windows    // live override of the timings, see WithDeployWindows
 	restartPolicy       func(context.Context) string                  // stored runtime setting, read per container create
 	elevatedCaps        func(context.Context) bool                    // nil fails closed: no elevated capability is applied, see WithElevatedCaps
+	hostNetworkGrant    func(context.Context) bool                    // nil fails closed, see WithHostGrants
+	devicesGrant        func(context.Context) bool                    // nil fails closed, see WithHostGrants
+	dockerAPI           DockerAPISockets                              // nil fails closed: no docker_api grant is applied, see WithDockerAPI
 	policySwept         sync.Map                                      // container IDs already brought to the desired restart policy
 	applied             AppliedConfigRecorder                         // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
@@ -437,6 +448,11 @@ func WithVaultResolver(r VaultResolver) Option {
 	return func(ctrl *Controller) { ctrl.vaultResolver = r }
 }
 
+// WithLegacyVaultPrefixes supplies the live allowed path prefixes for unvetted legacy Vault refs.
+func WithLegacyVaultPrefixes(f func(context.Context) []string) Option {
+	return func(ctrl *Controller) { ctrl.legacyVaultPrefixes = f }
+}
+
 // WithSecretSources enables resolving secret:// env references. The func is
 // read at resolve time so boot order does not matter; nil or a nil result
 // means not configured and a declared reference then fails closed.
@@ -509,6 +525,12 @@ func WithNetworkPrefix(prefix string) Option {
 // hasn't been updated for cross-instance safety yet still gets.
 func WithInstanceID(id string) Option {
 	return func(ctrl *Controller) { ctrl.instanceID = id }
+}
+
+// WithFence stamps each pass and teardown with the service's current placement token, so a destructive call
+// that outlives a move is refused by the agent or the control plane.
+func WithFence(f func(ctx context.Context, service string) context.Context) Option {
+	return func(ctrl *Controller) { ctrl.fenceCtx = f }
 }
 
 // WithHookRunRecorder enables persisting every pre/post-deploy hook run's
@@ -618,11 +640,19 @@ func IsServiceControllerName(name string) bool {
 	return ok && svc != "" && svc != "delete-finalizer" && svc != "network-cleanup" && !strings.Contains(svc, "/")
 }
 
+func (c *Controller) fenced(ctx context.Context) context.Context {
+	if c.fenceCtx == nil {
+		return ctx
+	}
+	return c.fenceCtx(ctx, c.serviceName)
+}
+
 // ReasonMaintenanceHold is the result reason while DesiredService.MaintenanceHold is set.
 const ReasonMaintenanceHold = "MaintenanceHold"
 
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+	ctx = c.fenced(ctx)
 	started, err := c.store.GetDesiredService(ctx, c.serviceName)
 	result, rerr := c.reconcileDesired(ctx, started, err)
 	if err != nil || started == nil {
@@ -787,6 +817,10 @@ func isReady(r reconcile.Result) bool {
 // Reconcile treats ErrServiceNotFound as "not deployed yet," not "stop
 // everything," so a deleted service is never reconciled again otherwise.
 func (c *Controller) Teardown(ctx context.Context) error {
+	ctx = c.fenced(ctx)
+	if c.dockerAPI != nil {
+		c.dockerAPI.Revoke(c.serviceName)
+	}
 	if err := c.removeStale(ctx, nil); err != nil {
 		return err
 	}
@@ -1439,6 +1473,12 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	spec.RestartPolicy = c.restartPolicyFor(ctx, desired)
 	c.applyMeshBind(ctx, desired, &spec)
+	if err := c.applyDockerAPI(desired, &spec); err != nil {
+		return err
+	}
+	if err := c.applyHostGrants(ctx, desired, &spec); err != nil {
+		return err
+	}
 	streamPorts, err := c.streamPortBindings(ctx, desired.Name)
 	if err != nil {
 		return fmt.Errorf("app streams: %w", err)
@@ -1451,7 +1491,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
-	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
+	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, appLabelValue(desired))
 	if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
 		spec.Labels = mergeLabel(spec.Labels, appspec.DeployURLLabelKey, "1")
 	}
@@ -1493,7 +1533,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		func() error { return c.ensureAppNetwork(ctx, desired) }, "EnsureNetworkFailed", networkTraceLabel(c.networkPrefix, desired)); err != nil {
 		return err
 	}
-	if desired.AppID != "" {
+	if desired.AppID != "" && spec.NetworkMode != "host" {
 		spec.Network = &docker.NetworkAttachment{Name: NetworkName(c.networkPrefix, desired.AppID), Alias: serviceAlias(desired)}
 		if err := c.connectReferencedDatabases(ctx, desired, NetworkName(c.networkPrefix, desired.AppID)); err != nil {
 			return err
@@ -1673,6 +1713,12 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 	}
 
 	if len(desired.SecretEnv) > 0 {
+		if err := c.refuseReservedSecretOwner(); err != nil {
+			return nil, err
+		}
+		if err := c.refuseDatabaseSecretOwner(ctx); err != nil {
+			return nil, err
+		}
 		if c.secretResolver == nil {
 			return nil, fmt.Errorf("service declares %d secret-backed env var(s) but no secret resolver is configured", len(desired.SecretEnv))
 		}
@@ -1823,6 +1869,9 @@ func (c *Controller) resolveVaultEnv(ctx context.Context, envID string, all map[
 	if len(vaultEnv) == 0 {
 		return out, nil
 	}
+	if err := c.checkLegacyVaultPaths(ctx, vaultEnv); err != nil {
+		return nil, err
+	}
 	legacy, err := c.resolveLegacyVaultEnv(ctx, vaultEnv)
 	if err != nil {
 		return nil, err
@@ -1879,6 +1928,23 @@ func (c *Controller) resolveSecretRefEnv(ctx context.Context, envID string, refs
 	return out, nil
 }
 
+// checkLegacyVaultPaths refuses an unvetted legacy path (written by a deploy) outside the allowed
+// prefixes before the platform credential reads it. Paths stored through a gated write stay working.
+func (c *Controller) checkLegacyVaultPaths(ctx context.Context, vaultEnv map[string]store.VaultEnvRef) error {
+	var prefixes []string
+	if c.legacyVaultPrefixes != nil {
+		prefixes = c.legacyVaultPrefixes(ctx)
+	}
+	for envVar, ref := range vaultEnv {
+		if !ref.Unvetted || vault.LegacyPathAllowed(ref.Path, prefixes) {
+			continue
+		}
+		c.recordLegacyVaultRefusal(envVar)
+		return fmt.Errorf("env var %q (vault path %q): outside vault.legacy_allowed_prefixes, ask root to approve the prefix", envVar, ref.Path)
+	}
+	return nil
+}
+
 // resolveLegacyVaultEnv is the original single-Vault path for { vault: ... }.
 func (c *Controller) resolveLegacyVaultEnv(ctx context.Context, vaultEnv map[string]store.VaultEnvRef) (map[string]string, error) {
 	if c.vaultSettings == nil || c.vaultResolver == nil || c.secretResolver == nil {
@@ -1931,7 +1997,7 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 
 	env := make(map[string]string, len(desired.DatabaseEnv)+1)
 	for envVar, ref := range desired.DatabaseEnv {
-		value, err := c.resolveDatabaseField(ctx, desired.NodeID, ref.Database, ref.Field)
+		value, err := c.resolveDatabaseField(ctx, desired.NodeID, ref.Database, ref.Field, ref.Instance)
 		if err != nil {
 			return nil, fmt.Errorf("env var %q: %w", envVar, err)
 		}
@@ -1939,7 +2005,7 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 	}
 
 	if att := desired.DatabaseAttachment; att != nil {
-		value, err := c.resolveDatabaseField(ctx, desired.NodeID, att.DatabaseName, att.Field)
+		value, err := c.resolveDatabaseField(ctx, desired.NodeID, att.DatabaseName, att.Field, att.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("database attachment (env var %q): %w", att.EnvVar, err)
 		}
@@ -1979,7 +2045,7 @@ func DatabaseHost(dbName, zone string) string {
 // postgresCredentialsFor and its siblings); password comes from the same
 // internal/secrets storage those generators already write to
 // (database.PasswordSecretKey).
-func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName, field string) (string, error) {
+func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName, field, instance string) (string, error) {
 	ext, err := c.lookupExternal(ctx, dbName)
 	if err != nil {
 		return "", err
@@ -1993,6 +2059,9 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	}
 	if err != nil {
 		return "", fmt.Errorf("get database %q: %w", dbName, err)
+	}
+	if err := c.checkDatabaseRefBinding(ctx, dbName, instance, desiredDB); err != nil {
+		return "", err
 	}
 	if !database.SupportsField(desiredDB.Engine, field) {
 		return "", fmt.Errorf("field %q is not supported for %s databases", field, desiredDB.Engine)
@@ -2956,7 +3025,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 	}
 	applyRuntimeOptions(&spec, desired.Runtime)
 	// The hardening profile drops ALL and adds this record back, so only approved grants reach the container.
-	spec.CapAdd = append([]string(nil), desired.GrantedCaps...)
+	spec.CapAdd = plainCaps(desired.GrantedCaps)
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every

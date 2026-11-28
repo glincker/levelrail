@@ -11,8 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	vaultapi "github.com/hashicorp/vault/api"
 
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/vault"
 )
 
 var (

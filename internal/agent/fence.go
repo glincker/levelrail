@@ -1,0 +1,244 @@
+package agent
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+)
+
+// CapFenceToken means the agent understands fence_token on destructive requests and refuses stale ones.
+const CapFenceToken = "fence_token"
+
+// staleFencePrefix starts the error string an agent returns for a refused stale request.
+const staleFencePrefix = "stale_fence:"
+
+var (
+	// ErrStaleFence is returned when the agent refused a request whose token is below the highest it has seen.
+	ErrStaleFence = errors.New("agent: stale fence token refused")
+	// ErrFenceUnsupported is returned when agent.fence_required is on and the node's agent cannot enforce tokens.
+	ErrFenceUnsupported = errors.New("agent: this node's agent does not support fence tokens and agent.fence_required is on; update the agent or turn the setting off")
+)
+
+// FenceRecoveryHint tells an operator how to clear an agent's remembered tokens; no protocol message does it.
+const FenceRecoveryHint = "To recover, stop the agent on that node, delete fence-tokens.json in its data directory and start it again, or turn agent.fence_required off"
+
+type fenceCtxKey struct{}
+
+type fenceInfo struct {
+	target string
+	token  uint64
+}
+
+// WithFence marks destructive calls made with the returned context as acting for target at token.
+func WithFence(ctx context.Context, target string, token uint64) context.Context {
+	return context.WithValue(ctx, fenceCtxKey{}, fenceInfo{target: target, token: token})
+}
+
+// FenceCtx stamps ctx with the token read for target now. Call it after any placement change
+// so a stale in-flight action keeps the older token. A read failure or a zero token leaves ctx unfenced.
+func FenceCtx(ctx context.Context, read func(context.Context, string) (uint64, error), target string) context.Context {
+	if read == nil || target == "" {
+		return ctx
+	}
+	tok, err := read(ctx, target)
+	if err != nil || tok == 0 {
+		return ctx
+	}
+	return WithFence(ctx, target, tok)
+}
+
+func fenceFrom(ctx context.Context) (fenceInfo, bool) {
+	fi, ok := ctx.Value(fenceCtxKey{}).(fenceInfo)
+	return fi, ok && fi.target != "" && fi.token > 0
+}
+
+// FenceHooks connect the transport to the control plane's records. Nil fields mean no enforcement.
+type FenceHooks struct {
+	// Required reports the live agent.fence_required setting.
+	Required func(ctx context.Context) bool
+	// Current returns the recorded token of target.
+	Current func(ctx context.Context, target string) (uint64, error)
+	// Refused records an agent-side stale_fence refusal; detail carries the operator recovery text.
+	Refused func(ctx context.Context, nodeID, target string, sent uint64, op, detail string)
+	// Rejected records a stale_action_rejected event.
+	Rejected func(ctx context.Context, nodeID, target string, sent, current uint64, op string)
+}
+
+// WithFenceHooks installs the hooks used by every node transport of the server.
+func WithFenceHooks(h FenceHooks) Option {
+	return func(s *Server) { s.fence = h }
+}
+
+// fenceStamp picks the token and target to put on a destructive request, or refuses it for an old agent.
+func (t *GRPCTransport) fenceStamp(ctx context.Context) (uint64, string, error) {
+	if !t.caps.has(CapFenceToken) {
+		if t.fence.Required != nil && t.fence.Required(ctx) {
+			return 0, "", ErrFenceUnsupported
+		}
+		return 0, "", nil
+	}
+	fi, ok := fenceFrom(ctx)
+	// With the setting off no token is sent, so an out-of-date agent memory can never block a deploy.
+	if !ok || t.fence.Required == nil || !t.fence.Required(ctx) {
+		return 0, "", nil
+	}
+	return fi.token, fi.target, nil
+}
+
+// destructive sends a request built with the current token and records a result that finished after a newer token.
+func (t *GRPCTransport) destructive(ctx context.Context, op string, build func(token uint64, target string) *agentpb.AgentRequest) (*agentpb.AgentResponse, error) {
+	token, target, err := t.fenceStamp(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := t.mux.Call(ctx, build(token, target))
+	if err != nil {
+		if strings.Contains(err.Error(), staleFencePrefix) {
+			if t.fence.Refused != nil {
+				t.fence.Refused(ctx, t.nodeID, target, token, op, err.Error()+". "+FenceRecoveryHint)
+			}
+			return nil, fmt.Errorf("%w: %s", ErrStaleFence, err.Error())
+		}
+		return nil, err
+	}
+	if token == 0 || t.fence.Current == nil {
+		return resp, nil
+	}
+	cur, cerr := t.fence.Current(ctx, target)
+	if cerr == nil && cur > token {
+		// The action already ran: report it as superseded, never as a failure that would be retried.
+		if t.fence.Rejected != nil {
+			t.fence.Rejected(ctx, t.nodeID, target, token, cur, op)
+		}
+	}
+	return resp, nil
+}
+
+// FenceBook is the agent's memory of the highest token seen per target.
+type FenceBook struct {
+	mu   sync.Mutex
+	seen map[string]uint64
+	path string
+}
+
+// NewFenceBook returns an in-memory book. Without SetPath a restarted agent forgets its tokens.
+func NewFenceBook() *FenceBook { return &FenceBook{seen: map[string]uint64{}} }
+
+// SetPath loads and keeps the book in a file so a restart does not reopen the window for stale requests.
+func (b *FenceBook) SetPath(path string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.path = path
+	raw, err := os.ReadFile(path) //nolint:gosec // path comes from the agent data dir
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			slog.Warn("fence book unreadable, starting empty", slog.String("path", path), slog.String("error", err.Error()))
+		}
+		return
+	}
+	var m map[string]uint64
+	if jerr := json.Unmarshal(raw, &m); jerr != nil {
+		// Keep the bad file for the operator; the next save would overwrite it.
+		_ = os.Rename(path, path+".corrupt")
+		slog.Error("fence book corrupt, moved aside and starting empty", slog.String("path", path), slog.String("error", jerr.Error()))
+		return
+	}
+	for k, v := range m {
+		if v > b.seen[k] {
+			b.seen[k] = v
+		}
+	}
+}
+
+// Admit accepts a token equal to or above the highest seen for target and refuses a lower one. Token 0 is unfenced.
+func (b *FenceBook) Admit(target string, token uint64) error {
+	if token == 0 || target == "" {
+		return nil
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	hi := b.seen[target]
+	if token < hi {
+		return fmt.Errorf("%s token %d for %s is below %d", staleFencePrefix, token, target, hi)
+	}
+	if token > hi {
+		b.seen[target] = token
+		if err := b.saveLocked(); err != nil {
+			slog.Warn("fence book not saved, a restart forgets this token", slog.String("error", err.Error()))
+		}
+	}
+	return nil
+}
+
+func (b *FenceBook) saveLocked() error {
+	if b.path == "" {
+		return nil
+	}
+	raw, err := json.Marshal(b.seen)
+	if err != nil {
+		return fmt.Errorf("encode: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(b.path), 0o700); err != nil {
+		return fmt.Errorf("create dir: %w", err)
+	}
+	tmp := b.path + ".tmp"
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) //nolint:gosec // path comes from the agent data dir
+	if err != nil {
+		return fmt.Errorf("open: %w", err)
+	}
+	_, werr := f.Write(raw)
+	if serr := f.Sync(); werr == nil {
+		werr = serr
+	}
+	if cerr := f.Close(); werr == nil {
+		werr = cerr
+	}
+	if werr != nil {
+		return fmt.Errorf("write: %w", werr)
+	}
+	if err := os.Rename(tmp, b.path); err != nil {
+		return fmt.Errorf("rename: %w", err)
+	}
+	return nil
+}
+
+// CheckRequest applies Admit to the fence fields of a destructive request; other requests pass.
+func (b *FenceBook) CheckRequest(req *agentpb.AgentRequest) error {
+	var token uint64
+	var target string
+	switch op := req.GetOp().(type) {
+	case *agentpb.AgentRequest_Start:
+		token, target = op.Start.GetFenceToken(), op.Start.GetFenceTarget()
+	case *agentpb.AgentRequest_Stop:
+		token, target = op.Stop.GetFenceToken(), op.Stop.GetFenceTarget()
+	case *agentpb.AgentRequest_Remove:
+		token, target = op.Remove.GetFenceToken(), op.Remove.GetFenceTarget()
+	case *agentpb.AgentRequest_RemoveNetwork:
+		token, target = op.RemoveNetwork.GetFenceToken(), op.RemoveNetwork.GetFenceTarget()
+	case *agentpb.AgentRequest_NetworkDisconnect:
+		token, target = op.NetworkDisconnect.GetFenceToken(), op.NetworkDisconnect.GetFenceTarget()
+	case *agentpb.AgentRequest_RemoveVolume:
+		token, target = op.RemoveVolume.GetFenceToken(), op.RemoveVolume.GetFenceTarget()
+	case *agentpb.AgentRequest_Cleanup:
+		token, target = op.Cleanup.GetFenceToken(), op.Cleanup.GetFenceTarget()
+	default:
+		return nil
+	}
+	return b.Admit(target, token)
+}
+
+// processFence outlives reconnects so a stale request cannot slip in right after a session restarts.
+var processFence = NewFenceBook()
+
+// WithFenceState keeps the agent's highest seen tokens in path.
+func WithFenceState(path string) SessionOption {
+	return func(*sessionConfig) { processFence.SetPath(path) }
+}

@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 type shieldLimitsResource struct {

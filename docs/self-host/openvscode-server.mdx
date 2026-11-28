@@ -1,0 +1,70 @@
+---
+title: "Self-host OpenVSCode Server with Docker"
+sidebarTitle: "OpenVSCode Server"
+description: "Visual Studio Code in the browser, served from your own host."
+"og:url": "https://docs.levelrail.com/self-host/openvscode-server"
+---
+
+Visual Studio Code in the browser, served from your own host.
+
+This page describes the Levelrail template for OpenVSCode Server (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/gitpod-io/openvscode-server.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `openvscode-server` | `linuxserver/openvscode-server:1.109.5` | 3000 | `openvscode_server_config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `openvscode-server` | `CONNECTION_TOKEN` | Generated at deploy |
+| `openvscode-server` | `PGID` | Preset in the template |
+| `openvscode-server` | `PUID` | Preset in the template |
+| `openvscode-server` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`openvscode-server`): CONNECTION_TOKEN.
+- Stores data in named volumes (`openvscode-server`): openvscode_server_config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy OpenVSCode Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select OpenVSCode Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy openvscode-server --name my-openvscode-server
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

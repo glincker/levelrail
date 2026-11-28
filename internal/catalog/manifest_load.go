@@ -8,7 +8,7 @@ import (
 	"path"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 	"gopkg.in/yaml.v3"
 )
 

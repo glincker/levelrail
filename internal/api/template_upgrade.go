@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/templateupgrade"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/templateupgrade"
 )
 
 // templateBaselineScan bounds how far back we look for the first template revision.

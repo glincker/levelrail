@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dataexport"
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/untrusted"
+	"github.com/glincker/levelrail/internal/dataexport"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/untrusted"
 )
 
 const auditPageSize = 1000

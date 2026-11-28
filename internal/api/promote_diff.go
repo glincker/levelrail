@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // promoteImageRef is the seam that picks what a promotion deploys. Today it is

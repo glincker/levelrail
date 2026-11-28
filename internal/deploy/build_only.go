@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 // BuildOnlyRequest builds one image without touching desired state.

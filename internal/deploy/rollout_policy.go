@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // RolloutPolicyStore persists a service's rollout: block. *store.DB satisfies it.

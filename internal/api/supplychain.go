@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/supplychain"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/supplychain"
 )
 
 const supplyChainBodyLimit = 4 << 10

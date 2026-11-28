@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/bench"
-	"github.com/GLINCKER/levelrail/internal/chaos"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/bench"
+	"github.com/glincker/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

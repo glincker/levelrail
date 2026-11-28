@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 const manifestMaxBytes = 64 << 10

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeVolumeBackupRunner is a hand-written fake for ServiceVolumeBackupRunner,

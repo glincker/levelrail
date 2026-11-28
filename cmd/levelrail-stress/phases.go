@@ -23,10 +23,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/stressagent"
-	"github.com/GLINCKER/levelrail/internal/stressprofile"
-	"github.com/GLINCKER/levelrail/internal/stressseed"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/stressagent"
+	"github.com/glincker/levelrail/internal/stressprofile"
+	"github.com/glincker/levelrail/internal/stressseed"
 )
 
 const (

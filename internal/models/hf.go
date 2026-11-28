@@ -17,7 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Hub statuses reported by Preflight.

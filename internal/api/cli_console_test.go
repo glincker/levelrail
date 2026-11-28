@@ -7,8 +7,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/cliconsole"
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/cliconsole"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 const cliConsoleSessionPath = "/api/v1/system/cli-console/session"

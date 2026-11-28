@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dockerssh"
-	"github.com/GLINCKER/levelrail/internal/imagemove"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dockerssh"
+	"github.com/glincker/levelrail/internal/imagemove"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const imageMoveInspectTimeout = 5 * time.Second

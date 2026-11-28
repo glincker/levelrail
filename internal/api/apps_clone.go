@@ -7,7 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // cloneAppRequest is POST /api/v1/apps/{name}/clone's body.
@@ -40,6 +41,10 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := spec.ValidateNewAppName(req.NewName); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if req.CopySecrets && !rt.callerHasAbility(r, AbilityReadSensitive) {
 		writeError(w, http.StatusForbidden, "copying secret values requires read:sensitive")
 		return
@@ -68,7 +73,14 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 	unlockName := lockAppName(req.NewName)
 	defer unlockName()
 
-	// Same existence check as handleCreateApp; it also rejects a self-clone as a conflict instead of overwriting the source.
+	// Covers the undo-window name reservation too; it also rejects a self-clone as a conflict instead of overwriting the source.
+	if ferr := rt.appNameFree(r.Context(), req.NewName); errors.Is(ferr, errAppNameTaken) {
+		writeError(w, http.StatusConflict, "an app with this name already exists")
+		return
+	} else if ferr != nil {
+		rt.internalError(w, "api: clone app: check new name failed", ferr, slog.String("new_name", req.NewName))
+		return
+	}
 	_, err = rt.apps.GetDesiredService(r.Context(), req.NewName)
 	if err == nil {
 		writeError(w, http.StatusConflict, "an app with this name already exists")

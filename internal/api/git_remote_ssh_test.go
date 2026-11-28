@@ -13,8 +13,8 @@ import (
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/GLINCKER/levelrail/internal/gitsshkey"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/gitsshkey"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type mapGitSecrets map[string]string

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/sourcecache"
 )
 
 // Ref listings of an ssh repo with no deploy key must fail before go-git can

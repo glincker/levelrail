@@ -11,9 +11,9 @@ import (
 
 	"github.com/libdns/libdns"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestPreviewMemoryBytes(t *testing.T) {

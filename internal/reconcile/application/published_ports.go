@@ -3,7 +3,7 @@ package application
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ReasonPublishedPortsRemoteNode marks a service whose direct host ports were

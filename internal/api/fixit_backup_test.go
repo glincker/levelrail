@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/fixit"
 )
 
 type staleBackups struct {

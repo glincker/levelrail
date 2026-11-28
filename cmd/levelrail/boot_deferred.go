@@ -3,7 +3,7 @@ package main
 import (
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 )
 
 // pendingStages tracks deferred boot stages so /readyz can say what is still starting.

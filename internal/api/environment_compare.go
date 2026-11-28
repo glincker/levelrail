@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Cross-environment env var diff (this file): merges the organization,

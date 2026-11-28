@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // cloudAWSValueEnv carries a secret value so it never lands in shell history or the process list.

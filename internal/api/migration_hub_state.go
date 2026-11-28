@@ -50,10 +50,12 @@ type hubState struct {
 	mu        sync.Mutex
 	passwords map[string]hubSecret
 	running   map[string]bool
+	owners    map[string]string
+	targets   map[string]string
 }
 
 func newHubState() *hubState {
-	return &hubState{passwords: map[string]hubSecret{}, running: map[string]bool{}}
+	return &hubState{passwords: map[string]hubSecret{}, running: map[string]bool{}, owners: map[string]string{}, targets: map[string]string{}}
 }
 
 func (h *hubState) setPassword(id, password string) {
@@ -100,4 +102,34 @@ func (h *hubState) isRunning(id string) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.running[id]
+}
+
+// setOwner records who created a session. It is memory only, like the source
+// password, so after a restart only root can act on an old session.
+func (h *hubState) setOwner(id, owner string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.owners[id] = owner
+}
+
+func (h *hubState) owner(id string) string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.owners[id]
+}
+
+// setTarget remembers the instance id of the database an item created, so a
+// later database that reuses the name is never treated as this migration's.
+func (h *hubState) setTarget(id, source, instance string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.targets[id+"\x00"+source] = instance
+}
+
+// targetMatches is true when no identity was recorded (older session) or it equals instance.
+func (h *hubState) targetMatches(id, source, instance string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	rec, ok := h.targets[id+"\x00"+source]
+	return !ok || rec == instance
 }

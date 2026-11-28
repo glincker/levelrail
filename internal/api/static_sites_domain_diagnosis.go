@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/domaindoctor"
 )
 
 // Longest hint the checklist shows, so a long doctor detail stays one line.

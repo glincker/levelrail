@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/autoscale"
 )
 
 const (

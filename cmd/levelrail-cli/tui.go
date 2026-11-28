@@ -14,7 +14,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GLINCKER/levelrail/internal/tui"
+	"github.com/glincker/levelrail/internal/tui"
 )
 
 const (

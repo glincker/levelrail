@@ -6,7 +6,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runNodesThresholds implements "nodes thresholds get|set <id>".

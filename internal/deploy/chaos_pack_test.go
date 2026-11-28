@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/failure"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/failure"
 )
 
 // Disk full during a build: the failure is typed as disk_full, the stored

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDeveloperMemberIDsSkipsViewers(t *testing.T) {

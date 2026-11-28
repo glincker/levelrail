@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // proxySetupPlan is everything setup would change, computed without writing.

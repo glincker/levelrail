@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 const rollbackWarning = "secret values and database contents are not rolled back; only the declared configuration is re-applied"

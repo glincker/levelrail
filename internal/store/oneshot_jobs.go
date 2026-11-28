@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // ErrOneShotJobNotFound is returned when no job has the requested id.

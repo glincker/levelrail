@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/monitor"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 func TestMonitors_OffReturns404(t *testing.T) {

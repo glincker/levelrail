@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestAppCDN_OverrideRoundTrip(t *testing.T) {

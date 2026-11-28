@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // cascadeScope is everything a delete of an environment, project or

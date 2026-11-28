@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/migrateverify"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/migrateverify"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 func verifyBody(url, extra string) string {

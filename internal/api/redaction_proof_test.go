@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 const apiCanary = "canary-api-secret-4420" //nolint:gosec // synthetic test value

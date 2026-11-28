@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/cloudmeta"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/nodepreflight"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/cloudmeta"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/nodepreflight"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // EnvOnboardingInterval is how often the agent re-sends its onboarding

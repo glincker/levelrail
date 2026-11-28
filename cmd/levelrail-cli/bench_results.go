@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/benchreport"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/benchreport"
 )
 
 func uploadBenchReport(ctx context.Context, client *Client, rep benchreport.Report, stderr io.Writer) error {

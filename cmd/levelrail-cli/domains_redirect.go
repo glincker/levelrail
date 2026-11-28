@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // domainsRedirectJSONUsage is every domains redirect subcommand's --json

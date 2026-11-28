@@ -3,7 +3,7 @@ package stacksync
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Trigger outcomes: queued started a run, coalesced folded into the pending one.

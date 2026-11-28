@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runSettingsHeartbeat dispatches "settings heartbeat show|set|clear" over GET/PUT /api/v1/settings/heartbeat.

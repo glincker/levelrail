@@ -13,7 +13,7 @@ import (
 	"github.com/libdns/libdns"
 	"github.com/libdns/route53"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnszones"
 )
 
 // Manager is the subset of libdns's interfaces a DNS records view needs:

@@ -1,14 +1,20 @@
 package docker
 
+import "strings"
+
 // CreateDeclaration is what Create says a container needs beyond the
 // hardened default, so a Docker API guard can tell a declared bind mount
 // or GPU request from an injected one.
 type CreateDeclaration struct {
 	Name        string
 	HostNetwork bool
-	GPU         bool
-	BindPaths   []string
-	CapAdd      []string
+	// HostNetworkGranted marks host networking a template grant approved.
+	HostNetworkGranted bool
+	// Devices are the host device paths a template grant approved.
+	Devices   []string
+	GPU       bool
+	BindPaths []string
+	CapAdd    []string
 }
 
 // CreateDeclarer receives a declaration before each container create; the
@@ -33,10 +39,15 @@ func (c *Client) declare(spec ContainerSpec) func() {
 		return func() {}
 	}
 	d := CreateDeclaration{
-		Name:        spec.Name,
-		HostNetwork: spec.NetworkMode == "host",
-		GPU:         spec.GPU != nil,
-		CapAdd:      append([]string(nil), spec.CapAdd...),
+		Name:               spec.Name,
+		HostNetwork:        spec.NetworkMode == "host",
+		HostNetworkGranted: spec.HostNetworkGranted,
+		GPU:                spec.GPU != nil,
+		CapAdd:             append([]string(nil), spec.CapAdd...),
+	}
+	for _, dev := range spec.GrantedDevices {
+		host, _, _ := strings.Cut(dev, ":")
+		d.Devices = append(d.Devices, host)
 	}
 	for _, m := range spec.BindMounts {
 		d.BindPaths = append(d.BindPaths, m.HostPath)

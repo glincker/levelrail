@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/advisoryfeed"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/advisoryfeed"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // envAdvisoryRefresh is the server switch for the refresh action. It stays off

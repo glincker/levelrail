@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/sshprovision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/sshprovision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestHandleCreateSSHNodeProvisionHostKeyPolicy(t *testing.T) {

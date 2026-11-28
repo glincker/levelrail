@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // liveUpgradeEnv is a throwaway "host": an installed binary, a data
@@ -60,7 +60,7 @@ func buildGo(t *testing.T, pkg, out string, ldflags string) {
 	}
 }
 
-const versionPkg = "github.com/GLINCKER/levelrail/internal/version.Version"
+const versionPkg = "github.com/glincker/levelrail/internal/version.Version"
 
 const installedVersion = "v0.4.0"
 

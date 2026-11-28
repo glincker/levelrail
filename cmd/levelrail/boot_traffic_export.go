@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/trafficexport"
+	"github.com/glincker/levelrail/internal/brand"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/trafficexport"
 )
 
 // trafficExportSource loads the stored sinks and resolves their secrets for the export service.

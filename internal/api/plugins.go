@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/plugin"
-	"github.com/GLINCKER/levelrail/internal/plugin/egress"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/plugin"
+	"github.com/glincker/levelrail/internal/plugin/egress"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const pluginBodyLimit = 128 << 10

@@ -16,7 +16,7 @@ set -o pipefail
 
 root="$(git rev-parse --show-toplevel)" || exit 2
 cd "$root" || exit 2
-module="github.com/GLINCKER/levelrail"
+module="github.com/glincker/levelrail"
 api_pkg="$module/internal/api"
 max_pkgs="${QUICK_MAX_PKGS:-12}"
 jobs="${QUICK_JOBS:-3}"

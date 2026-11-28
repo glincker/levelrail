@@ -18,8 +18,8 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeTTYSession is a docker.ExecSession the test drives directly.

@@ -14,12 +14,12 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/k8sconn"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	secretsvc "github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/k8sconn"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/secretmask"
+	secretsvc "github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // Audit actions for cluster changes. Rows carry names and hosts, never credentials.

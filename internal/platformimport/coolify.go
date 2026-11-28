@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // CoolifySource reads a Coolify instance through its bearer-token API v1.

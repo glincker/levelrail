@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/cloudconn"
 )
 
 type ssoFakeSTS struct{}

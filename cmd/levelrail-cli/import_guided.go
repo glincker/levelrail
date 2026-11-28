@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/configtranslate"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/configtranslate"
 )
 
 // secretPathHints mark file names that usually hold credentials rather than app config.

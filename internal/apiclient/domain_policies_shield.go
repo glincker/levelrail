@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // ShieldLimits are the instance caps and under-attack defaults for the abuse shield.

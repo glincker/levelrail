@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Warning codes returned by the asset probe. They never block anything: ADR 044 open question 3 resolved to warn only.

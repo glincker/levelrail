@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/fixit"
-	"github.com/GLINCKER/levelrail/internal/golive"
-	"github.com/GLINCKER/levelrail/internal/hostprovider"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/golive"
+	"github.com/glincker/levelrail/internal/hostprovider"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const goLiveUFWBlocked = "Status: active\nDefault: deny (incoming), allow (outgoing)\n\nTo  Action  From\n--  ------  ----\n22/tcp                     ALLOW IN    Anywhere\n"

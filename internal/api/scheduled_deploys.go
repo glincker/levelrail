@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/policy"
-	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/scheduledeploy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

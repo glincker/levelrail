@@ -1,0 +1,65 @@
+---
+title: "Self-host Perplexica with Docker"
+sidebarTitle: "Perplexica"
+description: "An AI answer engine that searches the web and cites sources, with its own SearXNG bundled."
+"og:url": "https://docs.levelrail.com/self-host/perplexica"
+---
+
+An AI answer engine that searches the web and cites sources, with its own SearXNG bundled.
+
+This page describes the Levelrail template for Perplexica (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/ItzCrazyKns/Perplexica.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `perplexica` | `itzcrazykns1337/perplexica:v1.12.0` | 3000 | `perplexica_data -&#62; /home/perplexica/data`<br />`perplexica_uploads -&#62; /home/perplexica/uploads` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `perplexica` | `HOSTNAME` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`perplexica`): perplexica_data, perplexica_uploads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Perplexica with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Perplexica. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy perplexica --name my-perplexica
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [Agentgateway](/self-host/agentgateway)
+- [AnythingLLM](/self-host/anythingllm)
+- [Argilla](/self-host/argilla)
+- [Bifrost](/self-host/bifrost)
+- [Big-AGI](/self-host/big-agi)
+
+All templates are listed in the [self-host gallery](/self-host).

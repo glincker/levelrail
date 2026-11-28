@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // poolStore is the optional pool and warm-list surface of the placement store.

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/cloudconn"
 )
 
 // oracleSealedNamespace cannot collide with an app's secrets: app names never start with an underscore.

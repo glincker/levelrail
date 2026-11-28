@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 // useGitHubRepoAsSourceResponse is gitSourceResource extended with

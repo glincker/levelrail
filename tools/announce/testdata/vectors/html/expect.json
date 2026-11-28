@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "error_code": "",
+  "accepted": [
+    "info-one"
+  ],
+  "dropped": [
+    {
+      "id": "html-one",
+      "code": "content"
+    }
+  ]
+}

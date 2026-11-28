@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
-	"github.com/GLINCKER/levelrail/internal/hostdiag"
+	"github.com/glincker/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/hostdiag"
 )
 
 // deniedFlags read or write local paths, stdin or local env, launch local

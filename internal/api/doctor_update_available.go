@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/nodeinsight"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/version"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/nodeinsight"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/version"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // doctorCheckUpdateAvailable reads only the release the updates page already

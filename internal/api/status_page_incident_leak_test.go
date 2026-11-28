@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/statuspage"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/statuspage"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // An unpublished internal incident and its internal updates must never reach a public surface.

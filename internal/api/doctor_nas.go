@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os/exec"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // doctorNASDocsPath is the one guide a missing NFS/CIFS mount helper's

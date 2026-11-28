@@ -10,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // KindJobFailing sends one notice per failing job that opted into failure

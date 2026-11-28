@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func isOracleAccount(a store.CloudAccount) bool { return a.Provider == cloudconn.ProviderOracle }

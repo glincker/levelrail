@@ -14,10 +14,10 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/GLINCKER/levelrail/internal/cliconsole"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/hostdiag"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cliconsole"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/hostdiag"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type hostRouteCase struct {

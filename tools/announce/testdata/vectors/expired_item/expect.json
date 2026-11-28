@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "error_code": "",
+  "accepted": [
+    "advisory-one"
+  ],
+  "dropped": [
+    {
+      "id": "info-one",
+      "code": "expired"
+    }
+  ]
+}

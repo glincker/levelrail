@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
 )
 
 // resolvedTrusted is the list the edge applies (env, dashboard value, preset),

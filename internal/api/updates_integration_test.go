@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 func useEdgeChannel(t *testing.T, rt *Router) {

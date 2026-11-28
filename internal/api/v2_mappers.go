@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Kind names of the v2 uniform resource view, keyed by their route segment.

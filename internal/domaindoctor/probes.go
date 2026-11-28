@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnsinspect"
+	"github.com/glincker/levelrail/internal/dnsinspect"
 	"github.com/miekg/dns"
 )
 

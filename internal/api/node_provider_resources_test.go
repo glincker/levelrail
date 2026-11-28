@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type fakeDiscoveryProvisioner struct {

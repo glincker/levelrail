@@ -107,6 +107,7 @@
     "linesLabel": "失败容器的最后几行日志",
     "noLines": "没有为此次失败捕获到日志行。",
     "openFullLogs": "打开完整日志",
-    "crashSummary": "最近 {{minutes}} 分钟内重启 {{count}} 次。"
+    "crashSummary": "最近 {{minutes}} 分钟内重启 {{count}} 次。",
+    "sectionWarnings": "警告（{{count}}）"
   }
 }

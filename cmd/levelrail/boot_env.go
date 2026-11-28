@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/exposure"
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/exposure"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	ingressreconcile "github.com/glincker/levelrail/internal/reconcile/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // Shared with cmd/levelrail-agent through the same env var, so one setting governs both cadences by default.

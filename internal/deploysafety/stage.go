@@ -1,6 +1,6 @@
 package deploysafety
 
-import "github.com/GLINCKER/levelrail/internal/store"
+import "github.com/glincker/levelrail/internal/store"
 
 // Stages a release moves through, derived from its gate timeline.
 const (

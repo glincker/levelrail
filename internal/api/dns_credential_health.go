@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/dnszones"
 )
 
 // dnsCredentialCache keeps the last scheduled access check so alert ticks

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestRunEnableHTTPS(t *testing.T) {

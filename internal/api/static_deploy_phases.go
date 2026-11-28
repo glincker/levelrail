@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/deploylog"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploylog"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // staticPhase is one named step of a static build with its state:

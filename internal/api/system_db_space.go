@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/cleanup"
-	"github.com/GLINCKER/levelrail/internal/cphealth"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/cleanup"
+	"github.com/glincker/levelrail/internal/cphealth"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DBSpaceStore is the database surface the space report and compaction use.

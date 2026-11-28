@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // newSetupTestRouter builds a Router with a data dir holding a fresh setup token.

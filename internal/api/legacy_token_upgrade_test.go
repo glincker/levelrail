@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // lastSchemaBeforeAuthLibrary is the newest migration v0.2.0-beta.18 shipped.

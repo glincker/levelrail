@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/forecast"
+	"github.com/glincker/levelrail/kit/forecast"
 )
 
 func ExampleProject() {

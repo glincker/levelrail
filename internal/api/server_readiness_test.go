@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/serverready"
+	"github.com/glincker/levelrail/internal/serverready"
 )
 
 func TestServerReadiness(t *testing.T) {

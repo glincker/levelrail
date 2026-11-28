@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAppsDeploysCancel implements "apps deploys cancel <name> <deploy-id>".

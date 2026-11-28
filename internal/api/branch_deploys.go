@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/branchdeploy"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/branchdeploy"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 const (

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 // emptyDoer answers every read with an empty body: a control plane with nothing in it.

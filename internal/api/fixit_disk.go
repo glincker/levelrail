@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/diskfree"
+	"github.com/glincker/levelrail/internal/diskfree"
 )
 
 func statfsBytes(dir string) (free, total int64, err error) {

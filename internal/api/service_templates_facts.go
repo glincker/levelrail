@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/catalog"
 )
 
 // templateListing says who stands behind a catalog entry.

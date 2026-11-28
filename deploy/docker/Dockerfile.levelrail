@@ -28,7 +28,7 @@ RUN go mod download
 COPY . .
 COPY --from=web /src/web/dist ./web/dist
 RUN CGO_ENABLED=0 go build -tags embedweb \
-    -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${VERSION}" \
+    -ldflags "-X github.com/glincker/levelrail/internal/version.Version=${VERSION}" \
     -o /levelrail ./cmd/levelrail
 # A fresh named volume mounted here would otherwise be root-owned (no
 # VOLUME/directory exists in this image for Docker to copy ownership

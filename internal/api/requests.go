@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // defaultRequestSummaryWindow is the lookback of the request summary shown on

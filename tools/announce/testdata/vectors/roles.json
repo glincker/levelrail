@@ -1,0 +1,30 @@
+{
+  "keys": [
+    {
+      "key_id": "N",
+      "public_key": "six20OJX9ZAMI//u6k+lrGM5pp98Zy2sNg5ZrbF7wlA=",
+      "tiers": [
+        "info",
+        "feature",
+        "maintenance",
+        "newsletter"
+      ]
+    },
+    {
+      "key_id": "S1",
+      "public_key": "/KIZT/xmqMo7grt0/GQP6tsAVdV7IhC6m+T2dHcxYX4=",
+      "tiers": [
+        "advisory",
+        "critical"
+      ]
+    },
+    {
+      "key_id": "S2",
+      "public_key": "EguVKqOOvDg2WwBlDDDTjTKRXNXEry7z5DNOma6aABA=",
+      "tiers": [
+        "advisory",
+        "critical"
+      ]
+    }
+  ]
+}

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 func deployRouted(t *testing.T, p *Pipeline, svc spec.Service, files map[string]string, sha string) (string, []string, error) {

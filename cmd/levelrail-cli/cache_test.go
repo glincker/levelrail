@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 func cacheServer(t *testing.T, seen *[]string) *httptest.Server {

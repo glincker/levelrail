@@ -4,11 +4,11 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/extdb"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/extdb"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // startExternalDatabaseMonitor probes every external database on an

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 func TestJoinTokenTTLFollowsRuntimeSetting(t *testing.T) {

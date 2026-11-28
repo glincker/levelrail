@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const cascadeFlagUsage = "also delete every app and database inside (default: they keep running, detached)"

@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/maintenance"
-	"github.com/GLINCKER/levelrail/internal/standalone"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/maintenance"
+	"github.com/glincker/levelrail/internal/standalone"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type appMaintenanceDomain struct {

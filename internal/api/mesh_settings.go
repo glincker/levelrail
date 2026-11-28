@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/profile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/profile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // MeshSettingsStore persists the operator's mesh on/off choice; *store.DB satisfies it.

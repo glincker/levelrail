@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func TestMatchEnvironmentSet(t *testing.T) {

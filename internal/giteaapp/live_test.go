@@ -21,8 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dockertest"
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 // Live tests drive the real clients against throwaway Gitea and Forgejo

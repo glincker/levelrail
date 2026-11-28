@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // DefaultDomainHealthCheckInterval is how often a domain_health rule runs a real DNS check by default.

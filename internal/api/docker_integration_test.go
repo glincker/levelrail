@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockerlint"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockerlint"
 )
 
 func TestDockerLintEndpoint(t *testing.T) {

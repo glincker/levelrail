@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestJobFailureNotice_NameAndExitCodeOnly(t *testing.T) {

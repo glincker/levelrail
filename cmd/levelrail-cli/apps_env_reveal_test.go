@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const cliSecretValue = "real-secret-value-0123456789abcd"

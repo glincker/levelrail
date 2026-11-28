@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // jobNameLike mirrors the job-name rule the HTTP API applies.

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // stackTokenFixture seeds stack shop-prod (project p-shop) and blog-prod

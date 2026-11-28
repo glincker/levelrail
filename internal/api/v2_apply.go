@@ -15,8 +15,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // v2FieldStore holds server-side apply ownership; *store.DB satisfies it.

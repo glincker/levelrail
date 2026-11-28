@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/edgefw"
+	"github.com/glincker/levelrail/internal/edgefw"
 )
 
 const firewallEdgeBase = "/api/v1/firewall/edge"

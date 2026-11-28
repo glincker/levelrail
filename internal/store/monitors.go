@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/monitor"
 )
 
 const monitorColumns = `SELECT id, name, kind, interval_s, timeout_ms, enabled, spec, created_at FROM monitors`

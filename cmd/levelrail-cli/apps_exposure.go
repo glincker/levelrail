@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAppsExposure implements "apps exposure|ports <name> [show|check]" and

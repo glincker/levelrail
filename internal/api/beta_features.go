@@ -9,8 +9,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/profile"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/profile"
 )
 
 // Where a feature's on state comes from.

@@ -14,8 +14,8 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/GLINCKER/levelrail/internal/diskguard"
-	"github.com/GLINCKER/levelrail/internal/failure"
+	"github.com/glincker/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/failure"
 )
 
 // Every injected failure must classify into a named condition that carries a cause and a suggested fix.

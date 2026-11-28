@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // Node security event kinds.
@@ -21,6 +21,7 @@ const (
 	SecurityKindRenewFailed  = "renew_failed"
 	SecurityKindRevoke       = "revoke"
 	SecurityKindRenewRequest = "renew_requested"
+	SecurityKindStaleAction  = "stale_action_rejected"
 )
 
 // Node security event outcomes.

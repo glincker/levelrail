@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // TokenSource returns a fresh join token for the named node.

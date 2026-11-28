@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/brand"
 )
 
 var accentRe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)

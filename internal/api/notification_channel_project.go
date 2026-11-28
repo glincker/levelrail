@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // validateChannelProject checks a channel's project through the same team helper every project filing uses.

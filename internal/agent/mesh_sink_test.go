@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // The embedded Transport is nil, so only ApplyMesh and RotateMeshKey may be called on it.

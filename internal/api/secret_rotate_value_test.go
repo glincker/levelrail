@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretrotation"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretrotation"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func auditActions(t *testing.T, db *store.DB) []string {

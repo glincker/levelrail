@@ -1,0 +1,15 @@
+id: manticore
+name: Manticore Search
+slogan: A fast full-text and vector search database with a SQL and HTTP interface.
+description: GPL 3.0 licensed. HTTP API on port 9308 and MySQL protocol on port 9306. No authentication by default, keep the ports private.
+category: Database Tools
+documentation_url: https://manual.manticoresearch.com
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/manticoresoftware/manticoresearch
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/manticoresoftware/manticoresearch/blob/master/LICENSE

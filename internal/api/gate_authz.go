@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Reasons recorded with gate decisions.

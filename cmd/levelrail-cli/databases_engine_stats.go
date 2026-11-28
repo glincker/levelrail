@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // safeTerminalText replaces control and format characters (escape sequences,

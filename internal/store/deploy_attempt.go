@@ -11,7 +11,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // DeployAttempt is one row-per-attempt entry in the deploy_attempts

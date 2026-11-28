@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // unappliedSections lists the app.yaml parts apps create cannot apply, so a

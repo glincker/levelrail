@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 // Rotation has no MCP tool on purpose: key material stays out of agent processes.

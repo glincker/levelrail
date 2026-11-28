@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestPersonalBuilderEnrolsBuildOnlyAndStaysOffProduction(t *testing.T) {

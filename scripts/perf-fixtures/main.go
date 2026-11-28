@@ -12,8 +12,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/stressseed"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/stressseed"
 )
 
 func main() {

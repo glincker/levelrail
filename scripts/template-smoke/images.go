@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/catalog"
 )
 
 const bytesPerGB = 1 << 30

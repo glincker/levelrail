@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/build"
 )
 
 func TestResolveBuildRoot(t *testing.T) {

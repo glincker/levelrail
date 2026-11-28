@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "levelrail.fullname" . }}
+  labels:
+    {{- include "levelrail.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  # Recreate because two pods must never open the same SQLite file.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "levelrail.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "levelrail.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: levelrail
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: APP_HTTP_ADDR
+              value: ":8080"
+            - name: APP_DATA_DIR
+              value: /var/lib/levelrail-data
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- if .Values.existingSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+          {{- end }}
+          readinessProbe:
+            exec:
+              command: ["/app/levelrail", "healthcheck", "--ready"]
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/app/levelrail", "healthcheck", "--ready"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/levelrail-data
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "levelrail.claimName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

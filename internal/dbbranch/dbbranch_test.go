@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/diskguard"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestTransitions(t *testing.T) {

@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/upgradehistory"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/upgradehistory"
 )
 
 // gracefulStopper is the subset of *grpc.Server stopAgentGRPCServer

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runUpdatesAuto implements "updates status|enable|disable|channel|check|history|dismiss-notice".

@@ -3,7 +3,7 @@ package ingress
 import (
 	"sync/atomic"
 
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 var httpRedirectActive atomic.Bool

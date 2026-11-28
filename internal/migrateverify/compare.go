@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 // Job is a scheduled command, identified by name and cron expression only.

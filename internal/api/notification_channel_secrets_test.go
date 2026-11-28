@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 func TestNotificationChannels_SealedSecretsNeverLeaveTheServer(t *testing.T) {

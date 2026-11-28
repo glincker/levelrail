@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx"
 )
 
 var (

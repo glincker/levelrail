@@ -1,0 +1,15 @@
+id: tududi
+name: Tududi
+slogan: A self-hosted task and project manager with areas, notes and recurring tasks.
+description: MIT licensed. Uses a bundled PostgreSQL database. Sign in as admin@example.com with the generated admin password from the deployment variables.
+category: Productivity
+documentation_url: https://github.com/chrisvel/tududi
+recommended_memory_bytes: 268435456
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/chrisvel/tududi
+license: MIT
+license_class: permissive
+license_url: https://github.com/chrisvel/tududi/blob/main/LICENSE

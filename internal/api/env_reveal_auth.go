@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AbilitySecretsReveal lets an API token reveal secret values, and only

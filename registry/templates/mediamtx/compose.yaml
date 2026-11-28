@@ -1,0 +1,13 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1.21.4
+    ports: ["9997", "8554", "8888", "8889"]
+    environment:
+      MTX_API: "yes"
+      MTX_API_ADDRESS: ":9997"
+    healthcheck:
+      test: ["CMD", "/mediamtx", "--version"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

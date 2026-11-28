@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/store/storetest"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store/storetest"
 )
 
 const splunkToken = "11111111-2222-3333-4444-555555555555"

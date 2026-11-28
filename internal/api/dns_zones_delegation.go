@@ -11,9 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // registrarLookup is the RDAP registrar hint source; tests and demo mode swap it.

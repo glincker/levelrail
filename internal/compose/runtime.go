@@ -3,12 +3,14 @@ package compose
 import (
 	"fmt"
 	"math"
+	"runtime"
 	"sort"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // stringList accepts a single string or a list, as tmpfs: and dns: do.
@@ -94,6 +96,7 @@ func runtimeFromService(svc Service) (*spec.RuntimeOptions, []string, error) {
 	r := &spec.RuntimeOptions{
 		Ulimits: svc.Ulimits, Init: svc.Init, ExtraHosts: svc.ExtraHosts,
 		DNS: svc.DNS, Sysctls: svc.Sysctls, PidsLimit: svc.PidsLimit,
+		Platform: strings.ToLower(strings.TrimSpace(svc.Platform)),
 	}
 	for _, t := range svc.Tmpfs {
 		r.Tmpfs = append(r.Tmpfs, spec.NormalizeTmpfs(t))
@@ -119,6 +122,19 @@ func runtimeFromService(svc Service) (*spec.RuntimeOptions, []string, error) {
 			r.StopTimeout = &secs
 		}
 	}
+	if w := emulationWarning(r.Platform); w != "" {
+		warns = append(warns, w)
+	}
 	out, more, err := r.Sanitize()
 	return out, append(warns, more...), err
+}
+
+// emulationWarning flags a platform that differs from this host, which runs only with
+// qemu binfmt support and is slower. Nodes of another architecture may still run it natively.
+func emulationWarning(platform string) string {
+	arch, _, _ := strings.Cut(strings.TrimPrefix(platform, "linux/"), "/")
+	if platform == "" || arch == runtime.GOARCH {
+		return ""
+	}
+	return fmt.Sprintf("platform: %s differs from this host (%s); it runs under emulation (qemu binfmt) on a node of another architecture, which is slower", platform, runtime.GOARCH)
 }

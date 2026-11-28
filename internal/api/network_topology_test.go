@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestHandleGetNetworkTopology_Empty(t *testing.T) {

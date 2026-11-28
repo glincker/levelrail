@@ -9,10 +9,10 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/advisoryfeed"
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/advisoryfeed"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnszones"
 )
 
 // Every token DNS provider the code offers must have a seed row after migrations, so a provider added

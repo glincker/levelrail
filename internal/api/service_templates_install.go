@@ -2,13 +2,18 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/hostswap"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // installAppName bounds an installed stack's name: it prefixes every
@@ -21,6 +26,11 @@ type templateInstallRequest struct {
 	Domains map[string]string `json:"domains,omitempty"`
 	// ProjectID groups the installed services under a project; empty uses the switcher's project.
 	ProjectID string `json:"project_id,omitempty"`
+	// AllowPlatformMismatch installs despite an architecture the template did not verify.
+	AllowPlatformMismatch bool `json:"allow_platform_mismatch,omitempty"`
+	// NodeID pins the install to one node (id or name); NodeSelector takes the least loaded node matching key=value labels.
+	NodeID       string `json:"node_id,omitempty"`
+	NodeSelector string `json:"node_selector,omitempty"`
 }
 
 func manifestIcon(m *catalog.Manifest) string {
@@ -35,12 +45,29 @@ func manifestIcon(m *catalog.Manifest) string {
 // domains, then deploys it as a compose app through deployComposeBody.
 // Unlike .../deploy it is not a trial and it accepts configuration.
 func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Request) {
+	rec := &compatRecorder{ResponseWriter: w}
+	rt.installServiceTemplate(rec, r)
+	rt.recordTemplateCompat(r, r.PathValue("id"), rec)
+}
+
+func (rt *Router) installServiceTemplate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if strings.Contains(id, "/") {
+		rt.installSourceTemplate(w, r, id)
+		return
+	}
 	tpl, ok := catalog.TemplateByID(id)
 	if !ok || !templateAvailable(id) {
 		writeError(w, http.StatusNotFound, "service template not found")
 		return
 	}
+	rt.installTemplate(w, r, tpl)
+}
+
+// installTemplate is the one install path for built-in and source templates, so
+// the compose guard, platform preflight and capability grants cannot differ.
+func (rt *Router) installTemplate(w http.ResponseWriter, r *http.Request, tpl catalog.Template) {
+	id := tpl.ID
 	if tpl.Manifest == nil {
 		writeError(w, http.StatusConflict, "this template has no install manifest, so it cannot be configured at install time; use 'templates deploy "+id+"' (POST /api/v1/service-templates/"+id+"/deploy) instead")
 		return
@@ -50,9 +77,12 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
+	if rec, ok := w.(*compatRecorder); ok {
+		rec.callerName = req.Name
+	}
 	name := req.Name
 	if name == "" {
-		generated, err := rt.generateOneClickAppName(r.Context(), tpl.ID)
+		generated, err := rt.generateOneClickAppName(r.Context(), strings.ReplaceAll(tpl.ID, "/", "-"))
 		if err != nil {
 			rt.internalError(w, "api: install template: generate app name failed", err, slog.String("template", tpl.ID))
 			return
@@ -61,6 +91,17 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 	}
 	if !installAppName.MatchString(name) {
 		writeError(w, http.StatusBadRequest, "name must start with a letter and use only lowercase letters, digits and dashes (40 characters at most)")
+		return
+	}
+	target, ok := rt.resolveRequestNode(w, r, req.NodeID, req.NodeSelector)
+	if !ok {
+		return
+	}
+	if reason, overridable := rt.platformPreflightOn(r.Context(), tpl, target); reason != "" && (!overridable || !req.AllowPlatformMismatch) {
+		writeError(w, http.StatusUnprocessableEntity, reason)
+		return
+	}
+	if rt.refuseIfTeardownPending(w, r, name) {
 		return
 	}
 	req.ProjectID = defaultProjectFor(r, req.ProjectID)
@@ -79,6 +120,10 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 		rt.internalError(w, "api: install template: check name failed", err, slog.String("name", name))
 		return
 	}
+	if msg := rt.templateEnvRefusal(r.Context(), req.Env); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	if err := tpl.Manifest.CheckFileInputs(req.Env, rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyTemplatesFileInputMaxBytes)); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -92,9 +137,12 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
-	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: interpEnvWithoutFiles(tpl.Manifest, req.Env), capGrants: catalog.CapGrantMap(grants)})
+	resp, ok := rt.lockedComposeDeploy(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: interpEnvWithoutFiles(tpl.Manifest, req.Env), capGrants: catalog.CapGrantMap(grants), node: target})
 	if !ok {
 		return
+	}
+	if n, ok := rt.lowMemoryNotice(tpl.RecommendedMemoryBytes); ok {
+		resp.Notices = append(resp.Notices, n)
 	}
 	if req.ProjectID != "" {
 		for _, svc := range resp.Services {
@@ -106,6 +154,12 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 	}
 	if !rt.auditCapabilityGrants(r, name, tpl.Manifest, grants) {
 		w.Header().Set("X-Audit-Incomplete", "true")
+	}
+	for _, g := range grants {
+		if isLogsGrant(g) && rt.multiTeam(r.Context()) {
+			resp.Notices = append(resp.Notices, composeNoticeResult{Level: string(compose.NoticeLevelWarning), Message: logsGrantExposureNotice})
+			break
+		}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -121,4 +175,25 @@ func interpEnvWithoutFiles(m *catalog.Manifest, env map[string]string) map[strin
 		delete(out, k)
 	}
 	return out
+}
+
+// lowMemoryNotice is a plain warning, never a block, when a template wants more
+// RAM than the host has free.
+func (rt *Router) lowMemoryNotice(recommended int64) (composeNoticeResult, bool) {
+	if recommended <= 0 {
+		return composeNoticeResult{}, false
+	}
+	read := rt.doctorHostMemory
+	if read == nil {
+		read = func() (int64, int64, error) { return telemetry.HostMemoryBytes() }
+	}
+	_, avail, err := read()
+	if err != nil || avail <= 0 || avail >= recommended {
+		return composeNoticeResult{}, false
+	}
+	msg := fmt.Sprintf("This template recommends %s of memory and this host has %s free.", humanBytes(recommended), humanBytes(avail))
+	if hostswap.Read("").SwapBytes == 0 {
+		msg += " No swap is configured: run the CLI command 'swap' on the control plane host to see how to add a swapfile (nothing changes until you apply it)."
+	}
+	return composeNoticeResult{Level: string(compose.NoticeLevelWarning), Message: msg}, true
 }

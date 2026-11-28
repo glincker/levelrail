@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/chaos"
-	"github.com/GLINCKER/levelrail/internal/chaos/live"
-	"github.com/GLINCKER/levelrail/test/e2e/testenv"
+	"github.com/glincker/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/chaos/live"
+	"github.com/glincker/levelrail/test/e2e/testenv"
 )
 
 // TestChaos_Live runs each scenario against real local containers and

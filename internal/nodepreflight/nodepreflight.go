@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/hostprovider"
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/hostprovider"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // Environment variables that tune the judgement. They are read on the

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,16 +18,17 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/GLINCKER/levelrail/internal/canary"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
-	"github.com/GLINCKER/levelrail/internal/meshpath"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/canary"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/meshpath"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	"github.com/glincker/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ServiceStore is the narrow surface this controller needs from
@@ -211,6 +213,7 @@ const (
 // container. Desired state is read fresh from ServiceStore on every
 // Reconcile, never cached.
 type Controller struct {
+	hostNetworkGrant func(ctx context.Context) bool
 	// domainLimitCeilings reads the current domain limit ceilings each pass; nil leaves stored values as saved.
 	domainLimitCeilings func(ctx context.Context) (bodyBytes int64, timeoutSeconds int)
 	// domainTuningBounds reads the current tuning bounds each pass; nil leaves stored values as saved.
@@ -378,6 +381,15 @@ func (c *Controller) isLocalNode(nodeID string) bool {
 
 // Option configures optional Controller behavior.
 type Option func(*Controller)
+
+// WithHostNetworkGrant wires the live templates.cap_host_network setting; unset fails closed.
+func WithHostNetworkGrant(on func(context.Context) bool) Option {
+	return func(ctrl *Controller) { ctrl.hostNetworkGrant = on }
+}
+
+func (c *Controller) hostNetworkOn(ctx context.Context) bool {
+	return c.hostNetworkGrant != nil && c.hostNetworkGrant(ctx)
+}
 
 // WithFirewall puts the instance firewall in front of every route.
 func WithFirewall() Option {
@@ -1483,6 +1495,9 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 	} else if dial, ok := dialAddr(state, svc.Port); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
+	} else if dial, ok := hostNetworkDial(svc, state, c.hostNetworkOn(ctx)); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
+		c.lastDial.Store(svc.Name, dial)
+		return dial, true
 	}
 
 	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, svc.Port, target, warmingImageID(svc, state)); ok {
@@ -1610,6 +1625,19 @@ func dialAddr(state *docker.ContainerState, port int) (string, bool) {
 		return "", false
 	}
 	return "127.0.0.1:" + strconv.Itoa(p.HostPort), true
+}
+
+// hostNetworkDial is the backend of a host-network container: it publishes nothing,
+// so the app is reached on the loopback at its own port. The setting must be on now and
+// the container really on the host network, else a stored grant alone never opens loopback.
+func hostNetworkDial(svc store.DesiredService, state *docker.ContainerState, settingOn bool) (string, bool) {
+	if state == nil || !state.Running || svc.Port == 0 || !settingOn || !dockerguard.HasHostNetworkGrant(svc.GrantedCaps) {
+		return "", false
+	}
+	if !slices.ContainsFunc(state.Networks, func(n docker.ContainerNetwork) bool { return n.Name == "host" }) {
+		return "", false
+	}
+	return "127.0.0.1:" + strconv.Itoa(svc.Port), true
 }
 
 // dialPreviousRelease finds another running, ported container for

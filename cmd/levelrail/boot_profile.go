@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/diskfree"
-	"github.com/GLINCKER/levelrail/internal/profile"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/diskfree"
+	"github.com/glincker/levelrail/internal/profile"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const loopbackAgentAddr = "127.0.0.1:9443"

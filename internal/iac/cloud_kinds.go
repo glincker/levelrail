@@ -3,7 +3,7 @@ package iac
 import (
 	"net/netip"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 const cloudValidateOnlyWarning = "cloud kinds are validated only: this build has no cloud planner installed, so they are not planned or applied"

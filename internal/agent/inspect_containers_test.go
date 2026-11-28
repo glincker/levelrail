@@ -9,9 +9,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // inspectFakeRuntime ignores the query's label filter on purpose, so the

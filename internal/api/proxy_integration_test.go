@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type proxyTestEnv struct {

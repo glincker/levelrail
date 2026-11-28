@@ -13,7 +13,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 // ComposeBody is sent as the raw compose file instead of JSON. Env feeds

@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/migrateverify"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/migrateverify"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

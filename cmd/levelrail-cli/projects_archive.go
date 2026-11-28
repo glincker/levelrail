@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/projectarchive"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/projectarchive"
 )
 
 const envArchivePassphrase = "LEVELRAIL_ARCHIVE_PASSPHRASE" //nolint:gosec // an env var name, not a credential

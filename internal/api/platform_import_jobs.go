@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // createImportedJobs turns source cron entries into scheduled jobs. Staged apps are suspended,

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/diskguard"
-	"github.com/GLINCKER/levelrail/internal/diskhistory"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/diskhistory"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // DiskHistoryReader is the store surface GET /api/v1/system/disk/history needs.

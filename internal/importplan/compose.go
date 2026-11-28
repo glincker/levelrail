@@ -7,7 +7,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/compose"
 )
 
 // serviceSelectionRule returns the index of the service that should be routed

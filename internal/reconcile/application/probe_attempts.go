@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/GLINCKER/levelrail/internal/deploytrace"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/deploytrace"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // ProbeAttemptRecorder persists individual readiness-probe attempts made

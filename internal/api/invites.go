@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/mailtemplates"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/mailtemplates"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // defaultInviteTTL is the fallback when the control plane isn't given an

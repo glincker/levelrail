@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func expireDeviceRowForTest(t *testing.T, db *store.DB, userCode string, expiresAt time.Time) {

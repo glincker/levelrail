@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/analysis"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/analysis"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AnalysisReportStore is the read surface the report routes need; *store.DB satisfies it.

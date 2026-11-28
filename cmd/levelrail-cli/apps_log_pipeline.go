@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func appsLogPipelineUsage(prog string) string {

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/policy"
 )
 
 // Violation codes. They share the policy.Violation shape so every surface

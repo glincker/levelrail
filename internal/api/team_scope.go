@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // teamStore is the store surface team scoping needs; *store.DB satisfies it.

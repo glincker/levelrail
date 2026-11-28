@@ -6,8 +6,8 @@ import (
 	"net/netip"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 var builtinNetworks = map[string]bool{"bridge": true, "host": true, "none": true}

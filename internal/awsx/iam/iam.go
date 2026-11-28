@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/awsx"
 )
 
 // Service is the IAM Query API; IAM is global and signs in us-east-1.

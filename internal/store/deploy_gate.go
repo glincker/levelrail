@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // DeploySafetySettings is one app's readiness gate and post-deploy watch

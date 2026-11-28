@@ -14,8 +14,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // importPromptFn asks the operator for one missing env value. It is nil
@@ -244,7 +244,8 @@ func printImportPlan(out io.Writer, p apiclient.ImportPlan) {
 		}
 	}
 	printImportStack(out, p)
-	if len(p.Warnings) > 0 {
+	printImportReport(out, p.Report)
+	if len(p.Warnings) > 0 && len(p.Report) == 0 {
 		_, _ = fmt.Fprintln(out, "\nwarnings:")
 		for _, w := range p.Warnings {
 			_, _ = fmt.Fprintf(out, "  - %s\n", w.Message)

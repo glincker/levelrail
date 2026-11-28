@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dbupgrade"
-	"github.com/GLINCKER/levelrail/internal/imageupdate"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbupgrade"
+	"github.com/glincker/levelrail/internal/imageupdate"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

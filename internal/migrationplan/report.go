@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 // Verdict says what an import of one item will do.

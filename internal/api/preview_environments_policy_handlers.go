@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 const maxPreviewTTLHours = 24 * 365

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // errReplacedByNewRun is the context.Cause a run's context carries once

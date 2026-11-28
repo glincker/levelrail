@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 func writeTree(t *testing.T, files map[string]string) string {

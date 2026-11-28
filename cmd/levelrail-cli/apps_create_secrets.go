@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // checkRequiredSecrets fails when a { secret: true, required: true } var has

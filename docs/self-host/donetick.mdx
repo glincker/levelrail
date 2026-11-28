@@ -1,0 +1,69 @@
+---
+title: "Self-host Donetick with Docker"
+sidebarTitle: "Donetick"
+description: "A shared chore and task tracker for households and teams with recurring schedules."
+"og:url": "https://docs.levelrail.com/self-host/donetick"
+---
+
+A shared chore and task tracker for households and teams with recurring schedules.
+
+This page describes the Levelrail template for Donetick (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.donetick.com.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `donetick` | `donetick/donetick:v0.1.60` | 2021 | `donetick_config -&#62; /usr/src/app/config`<br />`donetick_data -&#62; /donetick-data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `donetick` | `DT_ENV` | Preset in the template |
+| `donetick` | `DT_JWT_SECRET` | Generated at deploy |
+| `donetick` | `DT_SQLITE_PATH` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`donetick`): DT_JWT_SECRET.
+- Stores data in named volumes (`donetick`): donetick_config, donetick_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Donetick with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Donetick. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy donetick --name my-donetick
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [Baikal](/self-host/baikal)
+
+All templates are listed in the [self-host gallery](/self-host).

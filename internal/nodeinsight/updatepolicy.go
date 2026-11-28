@@ -1,7 +1,7 @@
 package nodeinsight
 
 import (
-	"github.com/GLINCKER/levelrail/internal/updatewindow"
+	"github.com/glincker/levelrail/internal/updatewindow"
 	"strconv"
 	"strings"
 	"time"

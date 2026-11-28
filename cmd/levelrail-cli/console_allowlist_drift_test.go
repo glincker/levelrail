@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/cliconsole"
+	"github.com/glincker/levelrail/internal/cliconsole"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile"
 )
 
 func TestUpsertAndGetConditions(t *testing.T) {

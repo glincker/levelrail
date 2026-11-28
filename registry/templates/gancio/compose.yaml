@@ -1,0 +1,18 @@
+services:
+  gancio:
+    image: cisti/gancio:2.0.0-beta.12
+    ports: ["13120"]
+    environment:
+      GANCIO_DB_DIALECT: sqlite
+      GANCIO_DB_STORAGE: /home/node/data/gancio.sqlite
+      GANCIO_DATA: /home/node/data
+    volumes:
+      - gancio_data:/home/node/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:13120/ || curl -fsS -o /dev/null http://127.0.0.1:13120/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+volumes:
+  gancio_data:

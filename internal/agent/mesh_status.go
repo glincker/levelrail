@@ -6,8 +6,8 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/network"
 )
 
 // MeshStatusReader is the optional half of a MeshApplier that can report

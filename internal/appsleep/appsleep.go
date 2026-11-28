@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // DefaultInterval is how often idle apps are looked for.
@@ -438,6 +438,17 @@ func Wake(ctx context.Context, sleep interface {
 	mu := wakeLock(name)
 	mu.Lock()
 	defer mu.Unlock()
+	if c, ok := sleep.(interface {
+		SpendCapped(ctx context.Context, name string) (bool, error)
+	}); ok {
+		capped, err := c.SpendCapped(ctx, name)
+		if err != nil {
+			return false, err
+		}
+		if capped {
+			return false, ErrCapped
+		}
+	}
 	a, err := sleep.GetAppSleep(ctx, name)
 	if err != nil {
 		return false, err
@@ -463,5 +474,8 @@ func Wake(ctx context.Context, sleep interface {
 	}
 	return true, nil
 }
+
+// ErrCapped means a spend cap holds the app stopped, so nothing may wake it.
+var ErrCapped = errors.New("app is stopped by its spend cap")
 
 func resourceID(app string) string { return "service:" + app }

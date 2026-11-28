@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 const sampleGoBench = `goos: darwin

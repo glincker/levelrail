@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // ErrSavedQueryNotFound is returned when a saved query does not exist for the caller.

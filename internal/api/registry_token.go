@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // registryTokenLimiters keeps one limiter per router, apart from the sign-in buckets.

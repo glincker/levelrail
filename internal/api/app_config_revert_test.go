@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func saveEnv(t *testing.T, f *teamFixture, app string, mutate func(*store.DesiredService)) {

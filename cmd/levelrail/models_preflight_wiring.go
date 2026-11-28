@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"runtime"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/models"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/models"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 // wireModelPreflight enables Hugging Face preflight and the model cache

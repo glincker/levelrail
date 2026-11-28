@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/clitree"
 )
 
 const ciExamplesDir = "../../docs/ci-examples"

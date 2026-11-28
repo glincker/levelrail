@@ -6,8 +6,8 @@ import (
 	"io"
 	"runtime/debug"
 
-	"github.com/GLINCKER/levelrail/internal/cliupdate"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/cliupdate"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 const (

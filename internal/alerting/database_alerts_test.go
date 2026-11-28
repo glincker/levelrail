@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/forecast"
+	"github.com/glincker/levelrail/kit/forecast"
 )
 
 type fakeDBAlertSource struct{ in []DatabaseAlertInput }

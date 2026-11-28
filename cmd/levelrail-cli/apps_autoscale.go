@@ -12,8 +12,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/autoscale"
 )
 
 const noAutoscaleMessage = "no autoscale policy is set for this app"

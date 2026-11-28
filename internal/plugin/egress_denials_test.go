@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/plugin/egress"
+	"github.com/glincker/levelrail/internal/plugin/egress"
 )
 
 // fakeSidecar serves a denial tally on a short unix socket and counts reads.

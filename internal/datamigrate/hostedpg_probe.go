@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/reconcile/database"
 )
 
 // HostedProbe is what read-only queries found on a hosted database.

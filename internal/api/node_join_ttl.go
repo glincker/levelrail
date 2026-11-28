@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // Join token lifetime settings, in minutes. The constants are only the seed defaults.

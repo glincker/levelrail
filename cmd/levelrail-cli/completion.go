@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/clitree"
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/clitree"
+	"github.com/glincker/levelrail/internal/experimental"
 )
 
 // cmdNode is one node of the CLI's command tree: the verbs a command

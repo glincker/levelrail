@@ -778,7 +778,16 @@
     "unsupported": "引き継がれない項目",
     "instead": "代替案: {{alternative}}",
     "conflicts": "すでに使われている名前",
-    "deploy": "デプロイ"
+    "deploy": "デプロイ",
+    "report": {
+      "title": "Import report",
+      "fix": "Fix: {{fix}}",
+      "severity": {
+        "blocker": "Blockers",
+        "changes-behavior": "Changes behavior",
+        "ignored-safe": "Ignored, safe"
+      }
+    }
   },
   "takeover": {
     "title": "このサーバーのポートを引き継ぐ",

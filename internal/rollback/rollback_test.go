@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 func TestBuildPlanVerdicts(t *testing.T) {

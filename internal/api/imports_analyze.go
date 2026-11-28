@@ -8,10 +8,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/appwizard"
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/internal/repolayout"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/appwizard"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const analyzeBodyLimit = 16 << 10

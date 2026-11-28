@@ -104,6 +104,8 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'settings-agents': 'agent node worker connect',
   'settings-status-page': 'status uptime public page incident',
   'settings-updates': 'update upgrade version release',
+  'settings-announcements':
+    'announcement notice news security advisory newsletter feed banner',
   'settings-audit-log': 'audit log history events who did compliance',
   'settings-general': 'general instance name url preferences',
   'settings-appearance':

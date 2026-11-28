@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/mcptools"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/mcptools"
 )
 
 // configOut is where --print-config writes; a variable so tests can capture it.

@@ -7,9 +7,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/diagnose"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/diagnose"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

@@ -11,13 +11,13 @@ import (
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 
-	"github.com/GLINCKER/levelrail/internal/awsx"
-	"github.com/GLINCKER/levelrail/internal/cloudconn"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/secretconn"
-	"github.com/GLINCKER/levelrail/internal/secretsource"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/glincker/levelrail/internal/awsx"
+	"github.com/glincker/levelrail/internal/cloudconn"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/secretconn"
+	"github.com/glincker/levelrail/internal/secretsource"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/vault"
 )
 
 // vaultAccountToken resolves the Vault token for a vault_aws account: its own secret reference, else a

@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // This file is global, connect-once notification channels (Settings ->
@@ -282,6 +282,9 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 	if req.InteractiveApprovals && !rt.requireRootForChatApprovals(w, r) {
 		return
 	}
+	if (req.NotifyDeviceLogin || req.NotifyDeviceLoginExpired) && !rt.requireRootForSecurityNotices(w, r) {
+		return
+	}
 	channel, err := req.toChannel(id, "")
 	if err == nil && channel.InteractiveApprovals {
 		err = validateInteractiveShape(channel.Kind, channel.NotifyURL, channel.InteractiveSecret)
@@ -344,6 +347,9 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 	}
 	setupChanged := chatApprovalSetupChanged(*existing, req)
 	if setupChanged && !rt.requireRootForChatApprovals(w, r) {
+		return
+	}
+	if securityNoticeFlagTurnedOn(*existing, req) && !rt.requireRootForSecurityNotices(w, r) {
 		return
 	}
 	channel, err := req.toChannel(id, existing.InteractiveSecret)
@@ -631,6 +637,29 @@ func (rt *Router) requireRootForChatApprovals(w http.ResponseWriter, r *http.Req
 	}
 	if !hasAbility(abilities, AbilityRoot) {
 		writeError(w, http.StatusForbidden, chatApprovalsRootMsg)
+		return false
+	}
+	return true
+}
+
+const securityNoticesRootMsg = "subscribing a channel to sign-in notices needs the root ability: they carry other users' emails, browsers and IP addresses"
+
+// securityNoticeFlagTurnedOn is true when an update newly enables a flag that
+// feeds instance security notices; turning one off or leaving it stays open.
+func securityNoticeFlagTurnedOn(existing alerting.NotificationChannel, req createNotificationChannelRequest) bool {
+	return (req.NotifyDeviceLogin && !existing.NotifyDeviceLogin) ||
+		(req.NotifyDeviceLoginExpired && !existing.NotifyDeviceLoginExpired)
+}
+
+// requireRootForSecurityNotices writes a 403 unless the caller holds root.
+func (rt *Router) requireRootForSecurityNotices(w http.ResponseWriter, r *http.Request) bool {
+	abilities, err := rt.callerAbilities(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, msgAuthRequired)
+		return false
+	}
+	if !hasAbility(abilities, AbilityRoot) {
+		writeError(w, http.StatusForbidden, securityNoticesRootMsg)
 		return false
 	}
 	return true

@@ -15,9 +15,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // protectedEnvironmentOf returns the protected environment a service lives in.

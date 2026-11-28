@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/ddns"
+	"github.com/glincker/levelrail/internal/ddns"
 )
 
 // SetDDNS enables /api/v1/settings/ddns; without it the routes answer 501.

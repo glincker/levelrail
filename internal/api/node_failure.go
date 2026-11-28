@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/nodefailure"
-	"github.com/GLINCKER/levelrail/internal/nodemove"
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/nodefailure"
+	"github.com/glincker/levelrail/internal/nodemove"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // WithNodeFailure enables the node failure policy controller and its routes.

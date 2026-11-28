@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/stackdetect"
+	"github.com/glincker/levelrail/kit/stackdetect"
 )
 
 // appTune holds the values init lets a person adjust before app.yaml is written.

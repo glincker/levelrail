@@ -13,8 +13,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/sourcecache"
 )
 
 // listBranchesFunc lists every branch name a git remote advertises, with

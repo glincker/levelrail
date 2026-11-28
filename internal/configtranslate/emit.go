@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 // EmitOptions narrow what a translation result becomes as stack documents.

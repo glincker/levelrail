@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    expose:
+      - "3000"
+    mem_reservation: 256m
+    stop_signal: SIGINT
+    links:
+      - cache
+    privileged: true
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+  cache:
+    image: redis:latest
+    command: redis-server --save ""
+    ports:
+      - "6379:6379"
+      - "6380/udp"

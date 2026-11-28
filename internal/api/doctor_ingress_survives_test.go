@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
 )
 
 func TestDoctorIngressSurvives(t *testing.T) {

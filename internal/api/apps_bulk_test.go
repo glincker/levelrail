@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/quota"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func bulkCall(t *testing.T, rt *Router, cookie *http.Cookie, body string) (int, bulkAppsResponse) {

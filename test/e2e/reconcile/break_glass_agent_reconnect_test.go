@@ -21,9 +21,9 @@ import (
 
 	"github.com/docker/docker/api/types/image"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/test/e2e/testenv"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/test/e2e/testenv"
 )
 
 func waitNodeStatus(t *testing.T, client *apiclient.Client, nodeID, want string, timeout time.Duration) {

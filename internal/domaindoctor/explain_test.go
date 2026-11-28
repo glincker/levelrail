@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnsinspect"
-	"github.com/GLINCKER/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/dnsinspect"
+	"github.com/glincker/levelrail/internal/fixit"
 )
 
 // Built from code points so this file itself passes the dash sweep.

@@ -13,14 +13,14 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/azuredevops"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/azuredevops"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 // Fetches repoURL at an exact commit sha into a directory, authenticated with token when set.

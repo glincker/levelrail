@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 func TestWriterMasksSecretSplitAcrossWrites(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/prcommand"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/prcommand"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 // refusalAuditWindow admits one refusal audit row per key per window and

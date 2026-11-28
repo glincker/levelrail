@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/proxycoexist"
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/proxycoexist"
+	"github.com/glincker/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // proxyContainerInspector is the Docker surface detection needs beyond

@@ -7,6 +7,8 @@ const (
 	KeySecretRefMaxPath     = "secrets.ref_max_path_bytes" //nolint:gosec // setting key, not a credential
 	KeySecretRefMaxSegments = "secrets.ref_max_path_depth" //nolint:gosec // setting key, not a credential
 	KeySecretRefMaxKey      = "secrets.ref_max_key_bytes"  //nolint:gosec // setting key, not a credential
+
+	KeyVaultLegacyAllowedPrefixes = "vault.legacy_allowed_prefixes"
 )
 
 func init() {
@@ -39,5 +41,11 @@ func init() {
 		Env: "APP_SECRETREF_MAX_KEY", Apply: ApplyLive, CheckValue: intRangeCheck(8, 512),
 		Title:       "Secret references: key length",
 		Description: "Longest key name inside a secret reference, in bytes, from 8 to 512.",
+	})
+	Register(Definition{
+		Key: KeyVaultLegacyAllowedPrefixes, Category: CategorySecurity, Kind: KindStringList, Default: "",
+		Env: "APP_VAULT_LEGACY_ALLOWED_PREFIXES", Apply: ApplyLive, Risk: RiskWeakensSecurity,
+		Title:       "Legacy Vault path prefixes",
+		Description: "Vault path prefixes an app env var may read with the platform credential through the legacy vault path and key form. Empty means only root may add one; paths an app already stored keep working. A prefix an owner adds lets writers use paths under it.",
 	})
 }

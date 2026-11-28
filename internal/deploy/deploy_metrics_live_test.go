@@ -9,10 +9,10 @@ import (
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
 
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/dockertest"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/build"
+	"github.com/glincker/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // TestPipeline_Deploy_Live_RecordsBuildDuration is the remaining-gap

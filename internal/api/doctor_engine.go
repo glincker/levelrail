@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/attention"
 )
 
 // Doctor groups, in display order.
@@ -66,6 +66,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("docker_version", doctorGroupRuntime, rt.doctorCheckDockerVersion),
 		one("docker_live_restore", doctorGroupRuntime, rt.doctorCheckLiveRestore),
 		one("install_state", doctorGroupRuntime, rt.doctorCheckInstallState),
+		one("env_dual_copy", doctorGroupRuntime, rt.doctorCheckEnvDualCopy),
 		many("update_available", doctorGroupRuntime, rt.doctorCheckUpdateAvailable),
 		one("container_runtime", doctorGroupRuntime, rt.doctorCheckContainerRuntime),
 		one("docker_guard", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerGuard)),
@@ -118,18 +119,23 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		many("cloud", doctorGroupNetwork, rt.doctorCheckCloud),
 		one("certificates", doctorGroupNetwork, rt.doctorCheckCertExpiry),
 		one("certificate_budget", doctorGroupNetwork, rt.doctorCheckCertBudget),
+		one("service_name_namespace", doctorGroupSecurity, rt.doctorCheckServiceNameNamespace),
+		one("name_namespace_collision", doctorGroupSecurity, rt.doctorCheckNameNamespaceCollision),
 		one("reachability", doctorGroupNetwork, rt.doctorCheckReachability),
 
 		one("master_key_rotation", doctorGroupSecurity, rt.doctorCheckMasterKeyRotation),
 		one("secret_binding", doctorGroupSecurity, rt.doctorCheckSecretBinding),
 		one("stale_secrets", doctorGroupSecurity, rt.doctorCheckStaleSecrets),
 		one("notification_channel_secrets", doctorGroupSecurity, rt.doctorCheckNotificationChannelSecrets),
+		one("notification_channel_security_flags", doctorGroupSecurity, rt.doctorCheckNotificationChannelSecurityFlags),
 		one("notify_reachable", doctorGroupSecurity, rt.doctorCheckNotifyReachable),
 		one("secret_reveal_policy", doctorGroupSecurity, func(context.Context) doctorCheckResource { return doctorCheckSecretReveal() }),
+		one("vault_legacy_paths", doctorGroupSecurity, rt.doctorCheckVaultLegacyPaths),
 		one("legacy_tokens", doctorGroupSecurity, rt.doctorCheckLegacyTokens),
 		one("git_connections", doctorGroupSecurity, rt.doctorCheckGitConnections),
 		one("git_oauth_refresh", doctorGroupSecurity, rt.doctorCheckGitOAuthRefresh),
 		one("token_hygiene", doctorGroupSecurity, rt.doctorCheckTokenHygiene),
+		one("tokens_hygiene", doctorGroupSecurity, rt.doctorCheckTokensHygiene),
 		one("approval_without_session", doctorGroupSecurity, rt.doctorCheckApprovalWithoutSession),
 		one("signature_pin", doctorGroupSecurity, func(context.Context) doctorCheckResource { return rt.doctorCheckReleaseSignature() }),
 
@@ -146,6 +152,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		many("gpus", doctorGroupHardware, rt.doctorCheckGPUs),
 		many("gpu_placement", doctorGroupHardware, rt.doctorCheckGPUPlacement),
 		many("nas_client_tools", doctorGroupHardware, rt.doctorCheckNASClientTools),
+		many("kernel_modules", doctorGroupHardware, rt.doctorCheckKernelModules),
 	}
 }
 

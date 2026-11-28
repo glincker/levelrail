@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/gitprovider"
 )
 
 // Repo is one repository, reduced to what the picker and source setup need.

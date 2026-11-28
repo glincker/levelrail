@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 const emitKindStack = "stack"

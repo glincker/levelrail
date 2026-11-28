@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 // sanitizeRepoForReport cleans a repo URL for report output and records a

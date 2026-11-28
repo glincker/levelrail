@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/internal/reconcile"
 )
 
 // UpsertConditions persists every condition from a controller's most

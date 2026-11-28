@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/proxyroutes"
 )
 
 func fallbackProbe(_ context.Context, _ proxyroutes.ProbeTarget) proxyroutes.ProbeResult {

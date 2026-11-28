@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
+	"github.com/glincker/levelrail/internal/runtimesettings/registrymirror"
 )
 
 const (
@@ -61,6 +61,7 @@ type CreateSpec struct {
 	Labels      map[string]string
 	SecurityOpt []string
 	PidsLimit   int64
+	CPUShares   int64
 	Volume      string
 	DataPath    string
 }
@@ -178,6 +179,7 @@ func (m *APIManager) create(ctx context.Context, ref string) (*Observed, error) 
 		SecurityOpt: append([]string(nil), secOpt...),
 		Cmd:         []string{"--oci-worker-no-process-sandbox", "--config", configDir + "/buildkitd.toml"},
 		Volume:      VolumeName, DataPath: m.dataPath(ref),
+		CPUShares: m.cfg.CPUShares,
 	}
 	if m.cfg.PidsLimit != nil {
 		spec.PidsLimit = int64(max(m.cfg.PidsLimit(ctx), 0))

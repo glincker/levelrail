@@ -1,0 +1,15 @@
+services:
+  web:
+    image: ghcr.io/example/web:1.4.2
+    ports:
+      - "8080:8080"
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    cpuset: "0-1"
+    pid: host
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendcap"
 )
 
 // Scope kinds a budget can cover.

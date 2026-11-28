@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/resourceadvisor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // scopedAdvisorRefs reports whether an advisor finding's resource sits in the

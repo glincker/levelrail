@@ -1,0 +1,20 @@
+services:
+  microbin:
+    image: danielszabo99/microbin:2.1.4
+    ports: ["8080"]
+    environment:
+      MICROBIN_ADMIN_USERNAME: admin
+      MICROBIN_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      MICROBIN_UPLOADER_PASSWORD: $SERVICE_PASSWORD_UPLOADER
+      MICROBIN_PUBLIC_PATH: ${SERVICE_URL_MICROBIN:-http://localhost:8080}
+      MICROBIN_DATA_DIR: /app/microbin_data
+    volumes:
+      - microbin_data:/app/microbin_data
+    healthcheck:
+      test: ["CMD-SHELL", 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+volumes:
+  microbin_data:

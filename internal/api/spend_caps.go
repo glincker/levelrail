@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/spendcap"
-	"github.com/GLINCKER/levelrail/internal/spendguard"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/spendguard"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 const (
@@ -54,7 +54,9 @@ func (rt *Router) spendCaps() *spendcap.Controller {
 	}
 	return &spendcap.Controller{
 		Store: st, Usage: rt, Logger: rt.logger,
-		Nudge: func(context.Context) error { rt.nudgeReconciler(); return nil },
+		Nudge:    func(context.Context) error { rt.nudgeReconciler(); return nil },
+		Sleeper:  capSleeper{rt: rt},
+		StopApps: rt.spendPauseStops,
 	}
 }
 

@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/gitprovider"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // gitConnectionStore persists provider connection health; *store.DB satisfies it.

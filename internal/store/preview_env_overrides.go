@@ -16,6 +16,9 @@ import (
 // SetServiceVaultEnvVar already establishes for vault_env. value nil
 // clears the override.
 func (db *DB) SetServicePreviewEnvOverride(ctx context.Context, name, envVar string, value *string) error {
+	if err := checkEnvKeys(envVar); err != nil {
+		return err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: set preview env override for service %q: begin transaction: %w", name, err)

@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "error_code": "",
+  "accepted": [
+    "info-one",
+    "advisory-one",
+    "critical-one"
+  ],
+  "dropped": []
+}

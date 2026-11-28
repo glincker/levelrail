@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 // DefaultHealthTimeout bounds how long a new release may take to become

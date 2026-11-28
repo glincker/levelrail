@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const mailMailboxUsageLines = `  %[1]s mail domains list                          list the mail domains your teams own

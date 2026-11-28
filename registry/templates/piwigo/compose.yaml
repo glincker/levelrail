@@ -1,0 +1,39 @@
+services:
+  piwigo:
+    image: linuxserver/piwigo:16.5.0
+    ports: ["80"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - piwigo_config:/config
+      - piwigo_gallery:/gallery
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: piwigo
+      MARIADB_USER: piwigo
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
+    volumes:
+      - piwigo_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+volumes:
+  piwigo_config:
+  piwigo_gallery:
+  piwigo_db:

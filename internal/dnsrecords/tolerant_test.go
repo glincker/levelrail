@@ -9,7 +9,7 @@ import (
 
 	"github.com/libdns/libdns"
 
-	"github.com/GLINCKER/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/dnszones"
 )
 
 // setsProvider serves fixed record sets and records upserts and deletes.

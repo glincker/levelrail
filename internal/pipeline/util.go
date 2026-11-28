@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 func randomID() string {

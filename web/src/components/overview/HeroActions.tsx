@@ -28,6 +28,7 @@ import { useIsStaticSite } from '../../queries/staticSites'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployTab } from './DeploySheet'
 import { useOverviewActions } from './useOverviewActions'
+import { useUrlReachability } from './useUrlReachability'
 import type { HeroPrimary } from './heroPrimary'
 
 export function HeroActions({
@@ -55,6 +56,8 @@ export function HeroActions({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [tagOpen, setTagOpen] = useState(false)
   const { t } = useTranslation('common')
+  const { t: tOverview } = useTranslation('appOverview')
+  const { reach } = useUrlReachability(app, url)
 
   return (
     <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2">
@@ -68,18 +71,40 @@ export function HeroActions({
           {t('overview.connectGitSource')}
         </Link>
       ) : null}
-      {url ? (
+      {url && reach.state === 'down' ? (
+        <span title={tOverview(`status.reason.${reach.state}`)}>
+          <Button
+            variant="outline"
+            size="lg"
+            className="gap-2"
+            disabled
+            aria-description={tOverview(`status.reason.${reach.state}`)}
+          >
+            <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
+            <span className="max-sm:sr-only">{t('overviewHero.openApp')}</span>
+          </Button>
+        </span>
+      ) : url ? (
         <a
           href={url}
           target="_blank"
           rel="noreferrer"
+          title={
+            reach.state === 'waiting_dns' || reach.state === 'unknown'
+              ? tOverview(`status.reason.${reach.state}`)
+              : undefined
+          }
           className={cn(
             buttonVariants({ variant: 'outline', size: 'lg' }),
             'gap-2',
           )}
         >
           <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
-          <span className="max-sm:sr-only">{t('overviewHero.openApp')}</span>
+          <span className="max-sm:sr-only">
+            {reach.state === 'waiting_dns'
+              ? tOverview('status.openAnyway')
+              : t('overviewHero.openApp')}
+          </span>
           {isStatic ? null : (
             <span className="max-lg:hidden">
               <Kbd keys={['O']} />

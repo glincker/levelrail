@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/dockerguard"
 	"gopkg.in/yaml.v3"
 )
 

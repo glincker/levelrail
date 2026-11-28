@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/diagnose"
-	"github.com/GLINCKER/levelrail/internal/pipeline"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/kit/untrusted"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/diagnose"
+	"github.com/glincker/levelrail/internal/pipeline"
+	"github.com/glincker/levelrail/internal/reconcile"
+	"github.com/glincker/levelrail/kit/untrusted"
 )
 
 // Env vars that bound the log excerpt.

@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbaccess"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/nodemove"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbaccess"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/nodemove"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // scriptedRuntime answers each exec with the next canned stdout and records

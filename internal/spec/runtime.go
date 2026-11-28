@@ -83,6 +83,8 @@ type RuntimeOptions struct {
 	Sysctls     map[string]string `yaml:"sysctls,omitempty" json:"sysctls,omitempty"`
 	CapDrop     []string          `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
 	PidsLimit   int               `yaml:"pids_limit,omitempty" json:"pids_limit,omitempty"`
+	// Platform pins the image architecture, "linux/amd64" style.
+	Platform string `yaml:"platform,omitempty" json:"platform,omitempty"`
 }
 
 // Ulimit is a soft and hard resource limit. In YAML a bare integer sets both.
@@ -213,7 +215,7 @@ func (r *RuntimeOptions) Validate() error {
 			return fmt.Errorf("runtime.shm_size: %w", err)
 		}
 	}
-	for _, check := range []func() error{r.validateTmpfs, r.validateUlimits, r.validateHosts, r.validateSysctls, r.validateCaps, r.validateNumbers} {
+	for _, check := range []func() error{r.validateTmpfs, r.validateUlimits, r.validateHosts, r.validateSysctls, r.validateCaps, r.validateNumbers, r.validatePlatform} {
 		if err := check(); err != nil {
 			return err
 		}
@@ -419,6 +421,9 @@ func (r *RuntimeOptions) ComposeKeys() map[string]any {
 	if r.PidsLimit > 0 {
 		out["pids_limit"] = r.PidsLimit
 	}
+	if r.Platform != "" {
+		out["platform"] = r.Platform
+	}
 	return out
 }
 
@@ -474,6 +479,7 @@ func (r *RuntimeOptions) Sanitize() (*RuntimeOptions, []string, error) {
 		{"sysctls", false, func(d, s *RuntimeOptions) { d.Sysctls = s.Sysctls }},
 		{"cap_drop", true, func(d, s *RuntimeOptions) { d.CapDrop = s.CapDrop }},
 		{"pids_limit", false, func(d, s *RuntimeOptions) { d.PidsLimit = s.PidsLimit }},
+		{"platform", false, func(d, s *RuntimeOptions) { d.Platform = s.Platform }},
 	}
 	out := &RuntimeOptions{}
 	var warns []string
@@ -513,10 +519,21 @@ func (r *RuntimeOptions) IdentityKey() string {
 		DNS         []string          `json:"dns,omitempty"`
 		Sysctls     map[string]string `json:"sysctls,omitempty"`
 		PidsLimit   int               `json:"pids_limit,omitempty"`
-	}{r.Tmpfs, r.Ulimits, r.Init, r.StopTimeout, r.ExtraHosts, r.DNS, r.Sysctls, r.PidsLimit}
+		Platform    string            `json:"platform,omitempty"`
+	}{r.Tmpfs, r.Ulimits, r.Init, r.StopTimeout, r.ExtraHosts, r.DNS, r.Sysctls, r.PidsLimit, r.Platform}
 	raw, err := json.Marshal(v)
 	if err != nil || string(raw) == "{}" {
 		return ""
 	}
 	return string(raw)
+}
+
+// platformPattern is linux/<arch>[/<variant>]; other operating systems cannot run in this engine.
+var platformPattern = regexp.MustCompile(`^linux/[a-z0-9]+(/v?[a-z0-9]+)?$`)
+
+func (r *RuntimeOptions) validatePlatform() error {
+	if r.Platform != "" && !platformPattern.MatchString(r.Platform) {
+		return fmt.Errorf("runtime.platform: expected linux/<arch>[/<variant>] such as linux/amd64")
+	}
+	return nil
 }

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // Log levels in ascending severity, used by the min_level filter.

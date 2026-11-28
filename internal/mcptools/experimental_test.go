@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/experimental"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

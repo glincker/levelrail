@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/mail/demo"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/mail/demo"
+	"github.com/glincker/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type nopAudit struct{ AuditStore }

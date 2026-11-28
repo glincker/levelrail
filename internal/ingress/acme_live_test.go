@@ -21,7 +21,7 @@ import (
 
 	smallstepacme "github.com/smallstep/certificates/acme"
 
-	"github.com/GLINCKER/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/dockertest"
 )
 
 // acmeServerHandler is the minimal JSON shape for Caddy's own embedded

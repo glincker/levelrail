@@ -13,6 +13,7 @@ import { deployHasBuild } from '../../lib/deployHasBuild'
 import { failureLinesToText } from '../../lib/observabilityFormat'
 import { useFailureContext } from '../../queries/investigate'
 import { useStuck, type StuckAction } from '../../queries/stuck'
+import { useAppHealthScore } from '../../queries/healthScore'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import { ActionButton, CauseCard } from '../StuckPanel'
 import { ContainerExitBanner } from '../ContainerExitBanner'
@@ -56,6 +57,9 @@ export function DiagnosisCard({
   const stuckQuery = useStuck('app', appName)
   const stuck = stuckQuery.data
   const failure = useFailureContext(appName).data
+  const warnings = (useAppHealthScore(appName).data?.categories ?? []).filter(
+    (c) => c.status !== 'pass',
+  )
   const [copied, setCopied] = useState(false)
 
   const failing = failure !== undefined && failure.state !== 'healthy'
@@ -284,6 +288,20 @@ export function DiagnosisCard({
               >
                 {new Date(c.since).toLocaleString()} {c.type}={c.status} (
                 {c.reason})
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+      {warnings.length > 0 ? (
+        <Section
+          title={t('diagnosis.sectionWarnings', { count: warnings.length })}
+        >
+          <ul className="mt-1 space-y-1" data-testid="diagnosis-warnings">
+            {warnings.map((w) => (
+              <li key={w.key} className="text-xs">
+                <span className="font-medium">{w.label}</span>
+                <span className="text-muted-foreground"> {w.reason}</span>
               </li>
             ))}
           </ul>

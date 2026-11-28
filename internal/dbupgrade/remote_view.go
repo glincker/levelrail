@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbcatalogbuild"
+	"github.com/glincker/levelrail/internal/dbcatalogbuild"
 )
 
 type remoteEngine struct {

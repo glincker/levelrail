@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 const (

@@ -1,0 +1,71 @@
+---
+title: "Self-host Parseable with Docker"
+sidebarTitle: "Parseable"
+description: "A lightweight log analytics and observability platform in one binary."
+"og:url": "https://docs.levelrail.com/self-host/parseable"
+---
+
+A lightweight log analytics and observability platform in one binary.
+
+This page describes the Levelrail template for Parseable (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.parseable.com/docs.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `parseable` | `parseable/parseable:v2.8.0` | 8000 | `parseable_data -&#62; /parseable/data`<br />`parseable_staging -&#62; /parseable/staging` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `parseable` | `P_ADDR` | Preset in the template |
+| `parseable` | `P_FS_DIR` | Preset in the template |
+| `parseable` | `P_PASSWORD` | Generated at deploy |
+| `parseable` | `P_STAGING_DIR` | Preset in the template |
+| `parseable` | `P_USERNAME` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`parseable`): P_PASSWORD.
+- Stores data in named volumes (`parseable`): parseable_data, parseable_staging.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Parseable with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Parseable. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy parseable --name my-parseable
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Blackbox Exporter](/self-host/blackbox-exporter)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -12,27 +12,27 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/deploylog"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockerguard"
-	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/integrity"
-	"github.com/GLINCKER/levelrail/internal/migrateagent"
-	"github.com/GLINCKER/levelrail/internal/pages"
-	"github.com/GLINCKER/levelrail/internal/release"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/upgradehistory"
-	"github.com/GLINCKER/levelrail/internal/webpush"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/migrationpb"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/deploylog"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockerguard"
+	"github.com/glincker/levelrail/internal/email"
+	"github.com/glincker/levelrail/internal/integrity"
+	"github.com/glincker/levelrail/internal/migrateagent"
+	"github.com/glincker/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/release"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/upgradehistory"
+	"github.com/glincker/levelrail/internal/webpush"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // openStore opens the SQLite store and records upgrade history.
@@ -227,7 +227,7 @@ func (s *bootState) startAgentServer() error {
 	meshEndpoints := newMeshEndpointBook(logger)
 	hostReports := agent.NewHostReportStore()
 	onboardingReports := agent.NewOnboardingStore()
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithOnboardingSink(onboardingReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithOnboardingSink(onboardingReports), agent.WithSessionObserver(meshEndpoints.Observe), agentFenceOption(db, logger))...)
 	agentServerRef.Store(agentServer)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	migrationAgent := migrateagent.NewService(db, agentCA, migrateagent.ConfigFromEnv(), logger, nil)

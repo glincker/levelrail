@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/spool"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/spool"
 )
 
 // spoolSweepEvery is the sweep cadence in the loop registry; the age and quota stay runtime settings.

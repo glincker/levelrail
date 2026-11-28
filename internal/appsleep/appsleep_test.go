@@ -3,14 +3,14 @@ package appsleep
 import (
 	"context"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/backup"
 	"io"
 	"log/slog"
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 type fakeSleep struct{ rows map[string]*store.AppSleep }

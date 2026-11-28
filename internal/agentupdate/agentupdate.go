@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/nodeinsight"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/internal/nodeinsight"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 // Outcomes reported in Result.Action.

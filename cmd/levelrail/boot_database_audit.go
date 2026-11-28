@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/dbaudit"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/dbaudit"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

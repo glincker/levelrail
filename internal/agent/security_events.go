@@ -8,7 +8,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // SecurityStore is the persistence the security event log needs.

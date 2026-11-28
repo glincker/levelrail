@@ -9,8 +9,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 func TestContainerSpecSecurityFieldsRoundTrip(t *testing.T) {
@@ -60,7 +60,7 @@ func TestCreateRefusedForAgentWithoutCapability(t *testing.T) {
 
 func TestLocalAgentInfoAdvertisesSecurityCapability(t *testing.T) {
 	caps := LocalAgentInfo().GetCapabilities()
-	want := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush, CapRegistryBearer, CapHostProbe, CapNodeCleanup, CapImagePull}
+	want := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir, CapContainerInspect, CapContainerSpecRuntime, CapBuildPush, CapRegistryBearer, CapHostProbe, CapNodeCleanup, CapImagePull, CapFenceToken}
 	if !slices.Equal(caps, want) {
 		t.Fatalf("caps %v, want exactly %v", caps, want)
 	}

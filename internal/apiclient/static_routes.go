@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/glincker/levelrail/internal/staticroutes"
 )
 
 // StaticRoutesResource is a static site's effective routing rules.

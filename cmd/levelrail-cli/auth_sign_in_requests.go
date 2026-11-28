@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runAuthSignInRequests implements "auth sign-in-requests list|reveal".

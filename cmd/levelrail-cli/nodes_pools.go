@@ -6,7 +6,7 @@ import (
 	"io"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/placement"
 )
 
 // runNodesPools implements "nodes pools [set <name> key=value ... | delete <name>]".

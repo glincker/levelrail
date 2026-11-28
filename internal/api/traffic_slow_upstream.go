@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // KeyTrafficSlowUpstreamMs is the p95 latency above which the domain page flags the app's upstream as slow.

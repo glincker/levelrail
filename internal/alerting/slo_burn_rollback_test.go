@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeSLOAutoRollbackStore extends fakeAutoRollbackStore (crashloop_test.go)

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // streamRecheckInterval is how often a long-lived stream re-evaluates its

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Regenerates internal/agent/agentpb from proto/agent/v1/agent.proto.
-# Needs protoc, protoc-gen-go and protoc-gen-go-grpc on PATH (or in $(go env GOPATH)/bin).
+# Needs protoc on PATH; plugins come from .tools/bin (scripts/proto-tools.sh), then GOPATH/bin.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 out="${1:-$root}"
-PATH="$(go env GOPATH)/bin:$PATH"
+PATH="$root/.tools/bin:$(go env GOPATH)/bin:$PATH"
 module="$(cd "$root" && go list -m)"
 cd "$root"
 protoc -I . \

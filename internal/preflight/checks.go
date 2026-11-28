@@ -7,8 +7,8 @@ import (
 	"net/netip"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/bindmount"
-	"github.com/GLINCKER/levelrail/kit/diskspace"
+	"github.com/glincker/levelrail/internal/bindmount"
+	"github.com/glincker/levelrail/kit/diskspace"
 )
 
 func pass(id, name, reason string) Check {

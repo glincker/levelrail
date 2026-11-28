@@ -161,6 +161,7 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/auth/tokens",
 		"DELETE /api/v1/auth/tokens/{id}",
 		"POST /api/v1/auth/tokens/{id}/rotate",
+		"POST /api/v1/tokens/bulk-revoke",
 		"POST /api/v1/hooks/deploy/{id}/{token}",
 		// Audited inside the handler (static_site.hook_triggered), secret redacted from the path.
 		"POST /api/v1/hooks/pages/{site}/{secret}",
@@ -258,6 +259,9 @@ var restExemptions = restExemptionSet(map[string][]string{
 	},
 	"per-user UI state or notification preference, no shared platform state": {
 		"POST /api/v1/attention/dismiss",
+		"POST /api/v1/announcements/{id}/read",
+		"POST /api/v1/announcements/{id}/dismiss",
+		"POST /api/v1/announcements/{id}/snooze",
 		"POST /api/v1/settings/push-subscriptions",
 		"DELETE /api/v1/settings/push-subscriptions/{id}",
 		"POST /api/v1/auth/logout",

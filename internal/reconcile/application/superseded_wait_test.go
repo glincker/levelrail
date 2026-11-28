@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deployurls"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deployurls"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // A rollback that lands while the newer release is in its readiness wait ends

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/eventhook"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/eventhook"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EventWebhookService is the surface the event webhook routes need from

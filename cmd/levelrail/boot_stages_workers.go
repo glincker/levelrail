@@ -4,39 +4,39 @@ import (
 	"context"
 
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploysafety"
 	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/appsleep"
-	"github.com/GLINCKER/levelrail/internal/auditanchor"
-	"github.com/GLINCKER/levelrail/internal/autoscale"
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/canary"
-	"github.com/GLINCKER/levelrail/internal/changes"
-	"github.com/GLINCKER/levelrail/internal/cpbackup"
-	"github.com/GLINCKER/levelrail/internal/dbaccess"
-	"github.com/GLINCKER/levelrail/internal/deployurls"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/imageupdate"
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/objectstore"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
-	"github.com/GLINCKER/levelrail/internal/scheduledtask"
-	"github.com/GLINCKER/levelrail/internal/schedulescan"
-	"github.com/GLINCKER/levelrail/internal/selfheartbeat"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/tlsowner"
-	"github.com/GLINCKER/levelrail/internal/updatecheck"
-	"github.com/GLINCKER/levelrail/kit/netguard"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/appsleep"
+	"github.com/glincker/levelrail/internal/auditanchor"
+	"github.com/glincker/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/canary"
+	"github.com/glincker/levelrail/internal/changes"
+	"github.com/glincker/levelrail/internal/cpbackup"
+	"github.com/glincker/levelrail/internal/dbaccess"
+	"github.com/glincker/levelrail/internal/deployurls"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/imageupdate"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/scheduledeploy"
+	"github.com/glincker/levelrail/internal/scheduledtask"
+	"github.com/glincker/levelrail/internal/schedulescan"
+	"github.com/glincker/levelrail/internal/selfheartbeat"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/tlsowner"
+	"github.com/glincker/levelrail/internal/updatecheck"
+	"github.com/glincker/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // startTelemetry starts the metric and log collectors.
@@ -512,6 +512,9 @@ func (s *bootState) startSchedulers() {
 	// Only checks when an operator has opted into auto_update_enabled.
 	startUpgradeScheduler(ctx, logger, apiRouter)
 	updateCheckScheduler := updatecheck.NewScheduler(db, logger, b.RepoSlug())
+	if m := apiRouter.Announcements(); m != nil {
+		updateCheckScheduler.Announcements = m
+	}
 	go func() {
 		if err := updateCheckScheduler.Run(ctx, updateCheckInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("update check scheduler stopped", slog.String("error", err.Error()))

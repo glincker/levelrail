@@ -87,10 +87,12 @@ function stripFrontmatter(text: string): string {
 // a safe constant bump: even 1800 pushed virtual:docs-manifest's chunk
 // from 581KB to 709KB, over check-bundle-size.js's 600KB budget. Needs a
 // separate search-only chunk, not a bigger cap here.
-const BODY_EXCERPT_MAX_CHARS = 1200
+const BODY_EXCERPT_MAX_CHARS = 1180
 
 function cleanMarkdownLine(line: string): string {
   return line
+    .replace(/<\/?[A-Za-z][^>]*>/g, '')
+    .replace(/https?:\/\/\S+/g, '')
     .replace(/`([^`]*)`/g, '$1')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
@@ -99,6 +101,7 @@ function cleanMarkdownLine(line: string): string {
     .replace(/^\s*\d+\.\s+/, '')
     .replace(/^>\s?/, '')
     .replace(/\|/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
 }
 
@@ -114,6 +117,7 @@ function extractBody(lines: string[]): string {
     if (inFence) continue
     if (/^#{1,6}\s+/.test(line)) continue
     if (/^:::/.test(line.trim())) continue
+    if (/^(import|export) /.test(line)) continue
     const cleaned = cleanMarkdownLine(line)
     if (!cleaned) continue
     parts.push(cleaned)

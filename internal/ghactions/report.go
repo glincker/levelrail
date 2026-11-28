@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/githubapp"
 )
 
 // Deploy outcomes the CLI hands to Finish.

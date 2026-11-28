@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/costestimate"
-	"github.com/GLINCKER/levelrail/internal/diagnose"
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/costestimate"
+	"github.com/glincker/levelrail/internal/diagnose"
+	"github.com/glincker/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // defaultResourceRecommendationLookback is how far back

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // runRolloutState handles "rollout state <app>": the gate, traffic flip and

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
+	"github.com/glincker/levelrail/internal/trafficpolicy"
 )
 
 // rewriteHandler is Caddy's rewrite handler (http.handlers.rewrite).

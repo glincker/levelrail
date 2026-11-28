@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 type envUnsetResult struct {
@@ -23,6 +23,7 @@ func runEnvUnset(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "env unset", "print the result as JSON to stdout and nothing else", stderr)
 	var apply bool
 	fs.BoolVar(&apply, "apply", false, "restart the app now so the running container loses the removed keys")
+	retry := bindEnvRetryFlags(fs, lookupEnv)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, envUnsetUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonOutP, outputP, queryP}, prog, stderr)
 	if !ok {
@@ -47,8 +48,16 @@ func runEnvUnset(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", name, err))
 	}
-	if secret := slices.DeleteFunc(slices.Clone(keys), func(k string) bool { return !slices.Contains(app.SecretEnv, k) }); len(secret) > 0 {
-		return reportError(stdout, stderr, jsonOut, newValidationError("%s is stored as a secret; remove it with \"%s apps secrets delete %s KEY\"", strings.Join(secret, ", "), prog, name))
+	if secret := slices.DeleteFunc(slices.Clone(keys), func(k string) bool {
+		_, plain := app.Env[k]
+		return !slices.Contains(app.SecretEnv, k) || plain
+	}); len(secret) > 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%s is a secret with no plain copy; to remove the secret use \"%s apps secrets delete %s KEY\"", strings.Join(secret, ", "), prog, name))
+	}
+	for _, k := range keys {
+		if _, plain := app.Env[k]; plain && slices.Contains(app.SecretEnv, k) {
+			_, _ = fmt.Fprintf(stderr, "%s is also a secret: only the duplicate plain copy is removed, the secret stays\n", k)
+		}
 	}
 	if bound, berr := client.ListBoundEnv(ctx, name); berr == nil {
 		for _, b := range bound {
@@ -69,7 +78,7 @@ func runEnvUnset(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		result.Removed = append(result.Removed, k)
 	}
 	if len(result.Removed) > 0 {
-		if _, err := mergeEnv(ctx, client, name, apiclient.EnvMergeRequest{Unset: result.Removed}); err != nil {
+		if _, err := mergeEnv(ctx, client, prog, name, app, *retry, apiclient.EnvMergeRequest{Unset: result.Removed}); err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
 		result.Applied = true
@@ -106,13 +115,15 @@ func envUnsetUsage(prog string) string {
   %[1]s env unset <app> KEY [KEY...] [flags]
 
 Removes plain environment variables from an app. Keys that are not set are
-reported and skipped. Secrets are refused, use "%[1]s apps secrets delete"
-for those; keys injected by a linked database or bucket go away when you
+reported and skipped. A secret-only key is refused, use "%[1]s apps secrets delete"
+for it; when a key is both plain and a secret, only the plain copy goes; keys injected by a linked database or bucket go away when you
 unlink it. The running container keeps the old values until the next
 restart, or now with --apply.
 
 Flags:
   --apply             restart the app now so the running container loses the removed keys
+  --retries int       retries when only other keys changed (default 5, env LEVELRAIL_ENV_RETRIES)
+  --no-retry          exit 8 at the first stale-version conflict instead of retrying
   --token string      API token (default: %[2]s env var, then the credentials file)
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")

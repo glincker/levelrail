@@ -13,9 +13,9 @@ import (
 	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockertest"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TestController_Reconcile_Redis_Live is the real end-to-end proof for

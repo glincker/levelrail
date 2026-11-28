@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -162,28 +161,43 @@ func TestRun_AppsSecretsDelete(t *testing.T) {
 	}
 }
 
+// serveAppEnvVersion answers the GET app read a secret set makes for env_version, reporting whether it handled the request.
+func serveAppEnvVersion(w http.ResponseWriter, r *http.Request) bool {
+	if r.Method != http.MethodGet || r.URL.Path != "/api/v1/apps/web" {
+		return false
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write([]byte(`{"name":"web","image":"x:1","port":80,"env_version":4}`))
+	return true
+}
+
 func TestRun_AppsSecretsSet(t *testing.T) {
 	var gotPath, gotMethod string
 	var gotBody map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if servePendingChanges(w, r, false) {
+		if servePendingChanges(w, r, false) || serveAppEnvVersion(w, r) {
 			return
 		}
 		gotPath, gotMethod = r.URL.Path, r.Method
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.WriteHeader(http.StatusNoContent)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"app":"web","changed":true,"env_version":5,"plan":[{"key":"API_KEY","action":"secret_set"}]}`))
 	}))
 	defer srv.Close()
 
 	stdout, _ := runCLIExpectOK(t, []string{"apps", "secrets", "set", "web", "API_KEY", "s3cr3t", "--api-url", srv.URL})
-	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/secrets/API_KEY" {
-		t.Errorf("request = %s %s, want PUT /api/v1/apps/web/secrets/API_KEY", gotMethod, gotPath)
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/apps/web/env/apply" {
+		t.Errorf("request = %s %s, want POST /api/v1/apps/web/env/apply", gotMethod, gotPath)
 	}
-	if gotBody["value"] != "s3cr3t" {
-		t.Errorf("body value = %v, want s3cr3t", gotBody["value"])
+	secretSet, _ := gotBody["secret_set"].(map[string]any)
+	if secretSet["API_KEY"] != "s3cr3t" || len(secretSet) != 1 {
+		t.Errorf("secret_set = %v, want only API_KEY=s3cr3t", gotBody["secret_set"])
 	}
-	if gotBody["overwrite_locked"] != false {
-		t.Errorf("body overwrite_locked = %v, want false by default", gotBody["overwrite_locked"])
+	if gotBody["expected_version"] != float64(4) {
+		t.Errorf("expected_version = %v, want 4 from the app read", gotBody["expected_version"])
+	}
+	if v, present := gotBody["overwrite_locked"]; present && v != false {
+		t.Errorf("body overwrite_locked = %v, want false or absent by default", v)
 	}
 	if !strings.Contains(stdout, `secret "API_KEY" set for app "web"`) {
 		t.Errorf("stdout = %q, want a set confirmation", stdout)
@@ -193,8 +207,12 @@ func TestRun_AppsSecretsSet(t *testing.T) {
 func TestRun_AppsSecretsSet_Force(t *testing.T) {
 	var gotBody map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if serveAppEnvVersion(w, r) {
+			return
+		}
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.WriteHeader(http.StatusNoContent)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"app":"web","changed":true,"env_version":5,"plan":[]}`))
 	}))
 	defer srv.Close()
 
@@ -271,35 +289,36 @@ func TestRun_AppsSecretsSet_EnvFile(t *testing.T) {
 		t.Fatalf("write env file: %v", err)
 	}
 
-	type setCall struct {
-		path  string
-		value string
-	}
-	var calls []setCall
+	got := map[string]string{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if servePendingChanges(w, r, false) {
+		if servePendingChanges(w, r, false) || serveAppEnvVersion(w, r) {
 			return
 		}
-		var body map[string]any
+		var body struct {
+			SecretSet map[string]string `json:"secret_set"`
+		}
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		calls = append(calls, setCall{path: r.URL.Path, value: fmt.Sprint(body["value"])})
-		w.WriteHeader(http.StatusNoContent)
+		for k, v := range body.SecretSet {
+			got[k] = v
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"app":"web","changed":true,"env_version":5,"plan":[]}`))
 	}))
 	defer srv.Close()
 
 	stdout, _ := runCLIExpectOK(t, []string{"apps", "secrets", "set", "web", "--env-file", envPath, "--api-url", srv.URL})
 
 	want := map[string]string{
-		"/api/v1/apps/web/secrets/API_KEY":     "s3cr3t",
-		"/api/v1/apps/web/secrets/DB_PASSWORD": "p@ss",
-		"/api/v1/apps/web/secrets/QUOTED":      "has spaces",
+		"API_KEY":     "s3cr3t",
+		"DB_PASSWORD": "p@ss",
+		"QUOTED":      "has spaces",
 	}
-	if len(calls) != len(want) {
-		t.Fatalf("got %d PUT calls, want %d: %+v", len(calls), len(want), calls)
+	if len(got) != len(want) {
+		t.Fatalf("got secret_set %v, want %v", got, want)
 	}
-	for _, c := range calls {
-		if want[c.path] != c.value {
-			t.Errorf("call %s value = %q, want %q", c.path, c.value, want[c.path])
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("secret %s value = %q, want %q", k, got[k], v)
 		}
 	}
 	if !strings.Contains(stdout, `secret "API_KEY" set for app "web"`) {
@@ -320,11 +339,18 @@ func TestRun_AppsSecretsSet_EnvFile_MalformedLines(t *testing.T) {
 
 	var gotKeys []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if servePendingChanges(w, r, false) {
+		if servePendingChanges(w, r, false) || serveAppEnvVersion(w, r) {
 			return
 		}
-		gotKeys = append(gotKeys, strings.TrimPrefix(r.URL.Path, "/api/v1/apps/web/secrets/"))
-		w.WriteHeader(http.StatusNoContent)
+		var body struct {
+			SecretSet map[string]string `json:"secret_set"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		for k := range body.SecretSet {
+			gotKeys = append(gotKeys, k)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"app":"web","changed":true,"env_version":5,"plan":[]}`))
 	}))
 	defer srv.Close()
 

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/sourceupload"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/sourceupload"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 const staticSitePort = 80

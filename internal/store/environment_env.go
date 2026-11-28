@@ -10,6 +10,9 @@ import (
 // with vars, the same "replace, don't diff" semantics
 // SetOrganizationEnvVars/SetProjectEnvVars already establish.
 func (db *DB) SetEnvironmentEnvVars(ctx context.Context, environmentID string, vars map[string]string) error {
+	if err := checkEnvKeys(mapKeys(vars)...); err != nil {
+		return err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: set environment env vars for %q: begin transaction: %w", environmentID, err)
@@ -81,6 +84,9 @@ func EnvironmentEnvSecretsKey(environmentID string) string {
 // SetEnvironmentSecretEnvVar marks key as a secret-backed shared env
 // var for environmentID, mirroring SetProjectSecretEnvVar.
 func (db *DB) SetEnvironmentSecretEnvVar(ctx context.Context, environmentID, key string) error {
+	if err := checkEnvKeys(key); err != nil {
+		return err
+	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO environment_env_vars (environment_id, key, value, is_secret, updated_at)
 		VALUES (?, ?, '', 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))

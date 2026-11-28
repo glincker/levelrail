@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/domaindoctor"
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/domaindoctor"
+	"github.com/glincker/levelrail/internal/ingress"
 )
 
 // IsRateLimitError reports whether a CA error text is a rate limit answer.

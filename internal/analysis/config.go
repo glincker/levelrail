@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/rightsizing"
 )
 
 // Config holds every threshold, read from APP_ANALYSIS_* so operators tune them.

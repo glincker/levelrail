@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/mail"
+	"github.com/glincker/levelrail/internal/mail"
 )
 
 func TestMailboxOps(t *testing.T) {

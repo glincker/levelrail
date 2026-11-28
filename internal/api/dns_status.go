@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dnsrecords"
-	"github.com/GLINCKER/levelrail/internal/dnsstatus"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/dnsrecords"
+	"github.com/glincker/levelrail/internal/dnsstatus"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // dnsStatusResponse is the body of GET /api/v1/domains/dns-status and /api/v1/mail/dns/status.

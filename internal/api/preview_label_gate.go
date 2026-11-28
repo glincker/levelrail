@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 const maxPreviewLabelLen = 100

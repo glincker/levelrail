@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dnsstatus"
-	"github.com/GLINCKER/levelrail/internal/dnszones"
-	"github.com/GLINCKER/levelrail/internal/mail/demo"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dnsstatus"
+	"github.com/glincker/levelrail/internal/dnszones"
+	"github.com/glincker/levelrail/internal/mail/demo"
+	"github.com/glincker/levelrail/internal/mailrecords"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type emptyStatusResolver struct{}

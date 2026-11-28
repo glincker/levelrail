@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // HostFactsFunc reports a node's CPUs and memory. ok is false when the

@@ -101,9 +101,9 @@ func fakeEnvServer(t *testing.T, gotPut *map[string]any) *httptest.Server {
 			_, _ = io.WriteString(w, `{"name":"web","image":"nginx","port":80,"bind_address":"private","env":{"KEEP":"1","CHG":"old"},"secret_env":["DECLARED"]}`)
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/web/secrets":
 			_, _ = io.WriteString(w, `[{"key":"API_KEY"}]`)
-		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web/env":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/apps/web/env/apply":
 			_ = json.NewDecoder(r.Body).Decode(gotPut)
-			_, _ = io.WriteString(w, `{"name":"web","image":"nginx","port":80,"bind_address":"private"}`)
+			_, _ = io.WriteString(w, `{"app":"web","changed":true,"env_version":5,"plan":[]}`)
 		default:
 			http.NotFound(w, r)
 		}

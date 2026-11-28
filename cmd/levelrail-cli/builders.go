@@ -8,7 +8,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const buildersWhatNext = "Next: run the command above on the machine that will build, then `%[1]s builder doctor` and `%[1]s builders test <name>` here."

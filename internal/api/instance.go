@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 const (
@@ -20,6 +21,8 @@ const (
 	defaultInstanceInfoRate   = 60
 	instanceCacheTTL          = 5 * time.Second
 	confirmSameInstancePhrase = "same instance"
+	// AuditActionInstanceConfirmedSame is the audit action for restoring the previous Instance ID.
+	AuditActionInstanceConfirmedSame = "instance.confirmed_same"
 )
 
 // InstanceStore is the identity and token-binding surface of the store.
@@ -133,6 +136,7 @@ func (rt *Router) handleConfirmSameInstance(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, `type "`+confirmSameInstancePhrase+`" to confirm this is the same instance`)
 		return
 	}
+	before, _ := rt.instanceInfo(r.Context())
 	err := rt.instance.ConfirmSameInstance(r.Context())
 	if errors.Is(err, store.ErrNoPreviousInstance) {
 		writeError(w, http.StatusConflict, "this instance has not moved, nothing to confirm")
@@ -144,7 +148,31 @@ func (rt *Router) handleConfirmSameInstance(w http.ResponseWriter, r *http.Reque
 	}
 	rt.invalidateInstanceInfo()
 	rt.logger.Warn("api: instance identity restored by operator confirmation")
+	rt.auditInstanceConfirmedSame(r, before)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (rt *Router) auditInstanceConfirmedSame(r *http.Request, before store.InstanceInfo) {
+	if rt.auditLog == nil {
+		return
+	}
+	a := rt.accessActor(r)
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: instance audit id failed", slog.String("error", err.Error()))
+		return
+	}
+	entry := store.AuditEntry{
+		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
+		Ability: AbilityRoot, Method: http.MethodPost, Path: r.URL.Path, StatusCode: http.StatusNoContent,
+		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+		Action:     AuditActionInstanceConfirmedSame,
+		Detail:     fmt.Sprintf(`{"from_instance_id":%q,"to_instance_id":%q}`, before.InstanceID, before.PreviousInstanceID),
+	}
+	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
+		rt.logger.Warn("api: instance audit save failed", slog.String("error", err.Error()))
+	}
 }
 
 // tokenBindingRejects binds an unbound token to this instance on first use and refuses

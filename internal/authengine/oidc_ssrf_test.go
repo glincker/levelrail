@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 func TestDefaultOIDCClient_RefusesInternalAddresses(t *testing.T) {

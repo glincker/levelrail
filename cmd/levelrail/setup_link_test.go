@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/certflow"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/certflow"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestChooseSetupLink(t *testing.T) {

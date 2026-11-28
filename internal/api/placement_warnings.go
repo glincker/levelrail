@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/placement"
 )
 
 // selectorViolationWarnings flags a workload whose running node no longer

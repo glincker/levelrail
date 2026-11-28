@@ -13,7 +13,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	dockerclient "github.com/docker/docker/client"
 
-	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/api"
 )
 
 // discardTestWriter throws away a router's own request logging, the

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/hostfw"
+	"github.com/glincker/levelrail/internal/hostfw"
 )
 
 func TestHostFirewallStatus_OpenCommandsPerBackend(t *testing.T) {

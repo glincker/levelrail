@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/repolayout"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func recordPlanTokens(rt *Router) *[]string {

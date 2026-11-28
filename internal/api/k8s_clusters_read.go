@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/k8sconn"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/k8sconn"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type k8sNodeRow struct {

@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/secretmask"
 )
 
 // App event kinds recorded in app_events. Deploys and rollbacks are not
@@ -35,6 +35,12 @@ const (
 	AppEventPublishHeld   = "publish_held"
 	// AppEventScanGateOverride marks an operator letting a scan-blocked release through.
 	AppEventScanGateOverride = "scan_gate_override"
+	// AppEventReservedSecretOwner marks the reconciler refusing secrets to an app named like a control plane namespace.
+	AppEventReservedSecretOwner = "reserved_secret_owner"
+	// AppEventDatabaseRefRefused marks the reconciler refusing a database reference bound to another database instance or team.
+	AppEventDatabaseRefRefused = "database_ref_refused"
+	// AppEventLegacyVaultPathRefused marks the reconciler refusing an unvetted legacy Vault path outside the allowed prefixes.
+	AppEventLegacyVaultPathRefused = "legacy_vault_path_refused"
 )
 
 const (

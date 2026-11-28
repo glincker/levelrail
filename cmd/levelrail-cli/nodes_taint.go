@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // formatTaint renders a taint as key=value:Effect, dropping an empty value.

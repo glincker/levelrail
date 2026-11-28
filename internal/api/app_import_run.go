@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

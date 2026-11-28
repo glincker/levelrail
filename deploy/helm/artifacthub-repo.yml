@@ -1,0 +1,5 @@
+# Pushed by the release workflow as the artifacthub.io tag of the chart repository.
+repositoryID: ${ARTIFACTHUB_REPOSITORY_ID}
+owners:
+  - name: Levelrail
+    email: support@levelrail.com

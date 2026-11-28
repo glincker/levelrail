@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 // ServiceResources mirrors internal/api's appResource.Resources field
@@ -126,6 +126,8 @@ type AppResource struct {
 	// env vars backed by encrypted secret storage, values held only in
 	// Secrets below or set later via PUT .../secrets/{key}, never here.
 	SecretEnv []string `json:"secret_env,omitempty"`
+	// EnvVersion is read-only: send it back as expected_version when applying env changes.
+	EnvVersion int `json:"env_version,omitempty"`
 	// Secrets mirrors internal/api's appResource.Secrets: plaintext
 	// values to encrypt and store for SecretEnv-named vars at create
 	// time. Write-only, like SetSecretRequest's own Value: never
@@ -1941,6 +1943,16 @@ type ServiceTemplateDetail struct {
 // TemplateManifest carries only the manifest fields the CLI acts on.
 type TemplateManifest struct {
 	ConsoleCommand []string `json:"console_command,omitempty"`
+	// Capabilities lists the elevated access the template declares, one entry per class and service.
+	Capabilities []TemplateCapability `json:"capabilities,omitempty"`
+}
+
+// TemplateCapability mirrors one declared capability of a template manifest.
+type TemplateCapability struct {
+	Class   string   `json:"class"`
+	Service string   `json:"service"`
+	Reason  string   `json:"reason"`
+	Caps    []string `json:"caps,omitempty"`
 }
 
 // TemplateRequirements mirrors internal/catalog's Requirements.
@@ -5068,4 +5080,18 @@ type AppPreviewCard struct {
 	ImageURL string `json:"image_url,omitempty"`
 	State    string `json:"state,omitempty"`
 	Reason   string `json:"reason,omitempty"`
+}
+
+// TemplateCompatItem mirrors internal/api's templateCompatItem: one recorded
+// install gap from GET /api/v1/templates/compat.
+type TemplateCompatItem struct {
+	TemplateID string `json:"template_id"`
+	NodeArch   string `json:"node_arch"`
+	Class      string `json:"class"`
+	Detail     string `json:"detail,omitempty"`
+	Failures   int    `json:"failures"`
+	FirstSeen  string `json:"first_seen"`
+	LastSeen   string `json:"last_seen"`
+	Cause      string `json:"cause"`
+	Fix        string `json:"fix"`
 }

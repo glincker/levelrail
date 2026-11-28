@@ -3,8 +3,8 @@ package api
 import (
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/placement"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/placement"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // Registered here so internal/placement does not depend on the settings package.

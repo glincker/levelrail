@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dockerssh"
-	"github.com/GLINCKER/levelrail/internal/imagemove"
+	"github.com/glincker/levelrail/internal/dockerssh"
+	"github.com/glincker/levelrail/internal/imagemove"
 )
 
 // Image move states.

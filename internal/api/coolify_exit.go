@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/coolifyexit"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/coolifyexit"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 func exitReportPlatform(p platformimport.Platform) bool {

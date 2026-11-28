@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/plugin"
+	"github.com/glincker/levelrail/internal/plugin"
 )
 
 // SetPluginMarketplace enables the plugin marketplace routes.

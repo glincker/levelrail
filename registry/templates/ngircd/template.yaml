@@ -1,0 +1,15 @@
+id: ngircd
+name: ngIRCd
+slogan: A lightweight IRC server for private chat networks.
+description: GPL 2.0 licensed. Plain IRC on port 6667. Edit the config volume to set the server name, operators and passwords.
+category: Communication
+documentation_url: https://ngircd.barton.de/documentation.php
+recommended_memory_bytes: 67108864
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/ngircd/ngircd
+license: GPL-2.0-or-later
+license_class: copyleft
+license_url: https://github.com/ngircd/ngircd/blob/master/COPYING

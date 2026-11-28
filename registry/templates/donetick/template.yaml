@@ -1,0 +1,15 @@
+id: donetick
+name: Donetick
+slogan: A shared chore and task tracker for households and teams with recurring schedules.
+description: AGPL 3.0 licensed. Uses SQLite on a volume. Create the first account from the sign-up page.
+category: Productivity
+documentation_url: https://docs.donetick.com
+recommended_memory_bytes: 134217728
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/donetick/donetick
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/donetick/donetick/blob/main/LICENSE

@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/costbudget"
-	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/glincker/levelrail/internal/costbudget"
+	"github.com/glincker/levelrail/internal/spendcap"
 )
 
 // ErrCostBudgetNameTaken is returned when another budget already uses a name.

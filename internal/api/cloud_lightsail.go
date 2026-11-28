@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/lightsail"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/awsx/lightsail"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 type lightsailInstanceWire struct {

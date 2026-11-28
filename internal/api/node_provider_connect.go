@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/provision"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/provision"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // nodeProviderCustom is the provider id for bare metal, on-prem or any VM

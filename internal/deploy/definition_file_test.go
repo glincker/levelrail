@@ -3,7 +3,7 @@ package deploy
 import (
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/defparse"
+	"github.com/glincker/levelrail/internal/defparse"
 	"os"
 	"path/filepath"
 	"testing"

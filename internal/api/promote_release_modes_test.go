@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/release"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/release"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // seedShadowRelease records web-staging's release with the shadow writer, so

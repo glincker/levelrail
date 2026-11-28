@@ -5,7 +5,7 @@ package reconcile
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/test/e2e/testenv"
+	"github.com/glincker/levelrail/test/e2e/testenv"
 )
 
 func TestCatalogDevtoolsInfraBatch_Live_Deploys(t *testing.T) {

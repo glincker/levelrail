@@ -22,6 +22,7 @@ import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
 import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
 import { PostUpgradeVerify } from '../../components/settings/PostUpgradeVerify'
 import { UpdateStatusHeader } from '../../components/settings/updates/UpdateStatusHeader'
+import { AnnouncementsCard } from '../../components/announcements/AnnouncementsCard'
 import { AutoUpdatesCard } from '../../components/settings/updates/AutoUpdatesCard'
 import { SkippedNotes } from '../../components/settings/updates/SkippedNotes'
 import { LazySection } from '../../components/settings/updates/LazySection'
@@ -102,6 +103,7 @@ function UpdatesSettingsPage() {
       description={t('page.description')}
     >
       <AutoUpdatesCard />
+      <AnnouncementsCard />
       <div id={UPDATE_STATUS_ID}>
         <UpdateStatusHeader initial={status} />
       </div>

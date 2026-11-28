@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/advisoryfeed"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/advisoryfeed"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const refreshTestFeed = `{"version":1,"entries":[{"id":"T-1","severity":"critical","summary":"s","fixed_in":"2","affected":[{"repository":"nginx","tags":["1"]}]}]}`

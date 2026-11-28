@@ -6,7 +6,7 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 cd "$root"
 
-pkg=github.com/GLINCKER/levelrail/internal/version.Version
+pkg=github.com/glincker/levelrail/internal/version.Version
 CGO_ENABLED=0 go build -ldflags "-X $pkg=v9.9.8" -o "$tmp/prev" ./cmd/levelrail
 CGO_ENABLED=0 go build -ldflags "-X $pkg=v9.9.9" -o "$tmp/cand" ./cmd/levelrail
 mkdir "$tmp/no-fixtures"

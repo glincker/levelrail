@@ -10,9 +10,9 @@ import (
 
 	webpushgo "github.com/SherClockHolmes/webpush-go"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webpush"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webpush"
 )
 
 func TestPushRecipients_AllowPush(t *testing.T) {

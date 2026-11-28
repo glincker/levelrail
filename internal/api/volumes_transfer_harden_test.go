@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func saveVolumeApp(t *testing.T, db *store.DB, name, logical string) {

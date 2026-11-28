@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport"
-	"github.com/GLINCKER/levelrail/internal/platformimport/dokployextras"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/platformimport/dokployextras"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const maxPlatformImportBody = 64 << 10
@@ -438,15 +438,10 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 	// Held from the existence check to the row save so a same-name delete cannot wipe these secrets in between.
 	unlockName := lockAppName(p.Name)
 	defer unlockName()
-	if _, err := rt.apps.GetDesiredService(ctx, p.Name); err == nil {
+	if err := rt.appNameFree(ctx, p.Name); errors.Is(err, errAppNameTaken) {
 		return nil, errors.New("an app with this name already exists")
-	} else if !errors.Is(err, store.ErrServiceNotFound) {
-		return nil, fmt.Errorf("check existing app: %w", err)
-	}
-	if taken, err := rt.stackNameTaken(ctx, p.Name); err != nil {
-		return nil, fmt.Errorf("check stack name: %w", err)
-	} else if taken {
-		return nil, errors.New("an app with this name already exists")
+	} else if err != nil {
+		return nil, fmt.Errorf("check app name: %w", err)
 	}
 	for k, v := range p.Secrets {
 		if !a.providerRefs && rt.resolvesThroughProvider(ctx, v) {
@@ -454,10 +449,19 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 		}
 	}
 	secretKeys := make([]string, 0, len(p.Secrets))
+	var written []writtenSecret
+	// The name was admitted above, so a failure from here on must not leave the values behind.
+	saved := false
+	defer func() {
+		if !saved {
+			rt.dropUnsavedSecrets(ctx, []string{p.Name}, written)
+		}
+	}()
 	for k, v := range p.Secrets {
 		if err := rt.secrets.SetValueGuarded(ctx, p.Name, k, v, false); err != nil {
 			return nil, fmt.Errorf("store secret %q: %w", k, err)
 		}
+		written = append(written, writtenSecret{service: p.Name, key: k})
 		secretKeys = append(secretKeys, k)
 	}
 	sort.Strings(secretKeys)
@@ -486,6 +490,7 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 		rt.releaseImageRepoClaim(ctx, p.Name)
 		return warnings, fmt.Errorf("save app: %w", err)
 	}
+	saved = true
 	if projectID != "" {
 		if err := rt.apps.UpdateServiceProject(ctx, p.Name, projectID); err != nil {
 			return warnings, fmt.Errorf("assign project: %w", err)

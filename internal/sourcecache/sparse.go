@@ -19,7 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // ErrSparseUnavailable tells the caller to use the full mirror path instead.

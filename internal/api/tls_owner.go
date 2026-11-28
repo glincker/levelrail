@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/tlsowner"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/tlsowner"
 )
 
 // certSourceProxy marks a certificate row that is the one a fronting proxy

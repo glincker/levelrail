@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // teardownPullRequestPreview deletes a closed pull request's preview

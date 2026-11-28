@@ -8,9 +8,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/probe"
 )
 
 // WithProbeLimits sets redirect, exec-output and default-timing bounds for
@@ -67,7 +67,13 @@ func runnableProbe(p *store.ServiceProbe, port int) *store.ServiceProbe {
 // dials its mesh address: the control plane's loopback is the wrong host.
 func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerState, p store.ServiceProbe, port int, nodeID string) (probe.Target, error) {
 	if !p.NeedsPort() {
-		return probe.Target{ContainerID: state.ID}, nil
+		t := probe.Target{ContainerID: state.ID}
+		// TCP fallback for shell-less images where exec cannot run. Port 0
+		// (compose import) uses the first published tcp port.
+		if addr, err := PrimaryAddr(state, port); nodeID == "" && err == nil {
+			t.FallbackAddr = addr
+		}
+		return t, nil
 	}
 	addr, err := PrimaryAddr(state, port)
 	if err != nil {

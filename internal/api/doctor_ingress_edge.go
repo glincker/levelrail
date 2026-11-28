@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // DoctorIngressEdge is the ingress edge policy GET /api/v1/system/doctor reports.

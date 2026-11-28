@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ai"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/ai"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // fakeAIEngine is a scripted AIEngine, so handler tests can control the

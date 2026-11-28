@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type teamScopeKey struct{}
@@ -170,6 +170,10 @@ func (rt *Router) teamRouteDecision(r *http.Request, scope *teamScope, required 
 		}
 		role := scope.roleFor(&owner)
 		if p.kind == "team" {
+			// A project scoped token must not reach org wide env or settings that flow into every project.
+			if scope.projectID != "" && (r.Method != http.MethodGet || path != p.prefix) {
+				return http.StatusNotFound, p.kind + " not found", nil
+			}
 			role = scope.roleOfTeam(owner.TeamID)
 		}
 		if role == "" {

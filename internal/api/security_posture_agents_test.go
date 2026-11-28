@@ -3,8 +3,8 @@ package api
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/policy"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/policy"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func healthyAgentPosture() agentPostureInput {

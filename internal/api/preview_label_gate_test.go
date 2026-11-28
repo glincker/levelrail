@@ -3,8 +3,8 @@ package api
 import (
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/webhook"
 )
 
 func TestPreviewLabelGateMessage(t *testing.T) {

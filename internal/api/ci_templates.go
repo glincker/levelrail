@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/docs/ci-examples"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/docs/ci-examples"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // ciDeployerAbilities is the least privilege a stored CI token needs: read the app and deploy it.

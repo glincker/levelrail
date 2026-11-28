@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // Derived request metrics a KindThreshold rule can watch. They are computed

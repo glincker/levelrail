@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Where the official nginx image reads configuration, and where certbot

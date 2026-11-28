@@ -1337,5 +1337,18 @@
     "pickerPlaceholder": "No pool",
     "none": "No pool",
     "pickerHint": "The pool's labels are added to this app's own placement selector."
+  },
+  "nodePicker": {
+    "label": "Server",
+    "auto": "Auto (best fit)",
+    "hint": "Auto picks a server that fits. Choose one to pin it there.",
+    "gpu_one": "{{count}} GPU",
+    "gpu_other": "{{count}} GPUs",
+    "status": {
+      "pending": "pending",
+      "online": "online",
+      "offline": "offline",
+      "cordoned": "cordoned"
+    }
   }
 }

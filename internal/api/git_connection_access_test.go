@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/giteaapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
 )
 
 // accessFakeGitLab adds the token and group calls the access view probes for.

@@ -1,0 +1,15 @@
+id: microbin
+name: MicroBin
+slogan: A tiny self-hosted pastebin and file sharing server with expiring links.
+description: BSD 3 Clause licensed. Admin and uploader passwords are generated; read them from the deployment variables.
+category: Productivity
+documentation_url: https://microbin.eu
+recommended_memory_bytes: 67108864
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+source_repo: https://github.com/szabodanika/microbin
+license: BSD-3-Clause
+license_class: permissive
+license_url: https://github.com/szabodanika/microbin/blob/master/LICENSE

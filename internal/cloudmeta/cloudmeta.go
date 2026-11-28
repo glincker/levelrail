@@ -8,7 +8,7 @@ package cloudmeta
 import (
 	"context"
 	"encoding/json"
-	"github.com/GLINCKER/levelrail/internal/netclient"
+	"github.com/glincker/levelrail/internal/netclient"
 	"io"
 	"net/http"
 	"os"
@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/hostprovider"
+	"github.com/glincker/levelrail/internal/hostprovider"
 )
 
 // Environment variables read by FromEnv.

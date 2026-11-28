@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploy"
 )
 
 func TestScheduledMaintenanceLifecycle(t *testing.T) {

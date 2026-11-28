@@ -6,7 +6,7 @@ import (
 	"net/netip"
 	"net/url"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // AdminReachable reports whether the admin listener at base answers HTTP.

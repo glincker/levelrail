@@ -21,8 +21,8 @@ import (
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // SFTPEndpointScheme prefixes the stored endpoint of an SFTP target; the rest is host:port.

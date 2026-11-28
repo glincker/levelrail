@@ -1,0 +1,18 @@
+services:
+  znc:
+    image: linuxserver/znc:1.10.3
+    ports: ["6501"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    volumes:
+      - znc_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 6501"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+volumes:
+  znc_config:

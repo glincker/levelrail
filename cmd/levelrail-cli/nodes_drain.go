@@ -7,8 +7,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/nodemove"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/nodemove"
 )
 
 // runNodesDrain implements "nodes drain <id> [--target ID] [--wait]": the

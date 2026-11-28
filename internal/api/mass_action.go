@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // bulkNeedsCountConfirm reports whether a disruptive bulk action over n apps must carry confirm_count.

@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Default ports NetworkShareDriverOpts' two protocols listen on, used

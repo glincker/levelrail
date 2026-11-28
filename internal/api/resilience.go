@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/resilience"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/resilience"
 )
 
 // IngressResilience is the persisted ingress state the resilience check reads.

@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/fielddesc"
 )
 
 // runRegistryCredentialsCreate implements "registry-credentials create":

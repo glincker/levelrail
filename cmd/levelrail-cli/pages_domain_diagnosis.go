@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // printPagesDiagnosis prints the domain checklist, one "ok" or "fail" row per check.

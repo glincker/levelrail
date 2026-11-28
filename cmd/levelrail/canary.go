@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/canary"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/canary"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // startCanaryReconciler runs the staged-canary loop and gives the API its live

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func exposureDo(t *testing.T, rt *Router, cookie *http.Cookie, method, path, body string) (*httptest.ResponseRecorder, exposureResource) {

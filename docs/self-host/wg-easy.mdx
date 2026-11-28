@@ -1,0 +1,65 @@
+---
+title: "Self-host WireGuard Easy with Docker"
+sidebarTitle: "WireGuard Easy"
+description: "A WireGuard VPN server with a web UI for managing clients."
+"og:url": "https://docs.levelrail.com/self-host/wg-easy"
+---
+
+A WireGuard VPN server with a web UI for managing clients.
+
+This page describes the Levelrail template for WireGuard Easy (Networking). It deploys the services below as one Docker Compose app on your own server. Project site: https://wg-easy.github.io/wg-easy/latest/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `wg-easy` | `ghcr.io/wg-easy/wg-easy:15.5.0` | 51821, 51820 | `etc_wireguard -&#62; /etc/wireguard` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Elevated access**.
+
+What this template needs:
+
+- Adds extra Linux capabilities (`wg-easy`): NET_ADMIN, NET_RAW.
+- Publishes ports directly on the host (`wg-easy`): 51820:51820.
+- Stores data in named volumes (`wg-easy`): etc_wireguard.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy WireGuard Easy with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select WireGuard Easy. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy wg-easy --name my-wg-easy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Networking templates
+
+- [Blocky](/self-host/blocky)
+- [CoreDNS](/self-host/coredns)
+- [DDNS Updater](/self-host/ddns-updater)
+- [Syncthing Discovery Server](/self-host/syncthing-discovery)
+- [Syncthing Relay Server](/self-host/syncthing-relay)
+
+All templates are listed in the [self-host gallery](/self-host).

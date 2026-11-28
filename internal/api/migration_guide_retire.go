@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/datamigrate"
-	"github.com/GLINCKER/levelrail/internal/migrationgate"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/datamigrate"
+	"github.com/glincker/levelrail/internal/migrationgate"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const envMigrateProbeTimeout = "APP_MIGRATE_PROBE_TIMEOUT"

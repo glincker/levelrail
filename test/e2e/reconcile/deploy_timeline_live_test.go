@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/deploysafety"
-	"github.com/GLINCKER/levelrail/internal/deploytimeline"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/test/e2e/testenv"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/deploysafety"
+	"github.com/glincker/levelrail/internal/deploytimeline"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/test/e2e/testenv"
 )
 
 const (

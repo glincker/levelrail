@@ -1,6 +1,6 @@
 package application
 
-import "github.com/GLINCKER/levelrail/internal/store"
+import "github.com/glincker/levelrail/internal/store"
 
 // ServiceAlias is the name sibling containers on desired's per-app network
 // reach it by.

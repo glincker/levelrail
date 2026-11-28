@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbparams"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbparams"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Audit actions for the engine parameters editor. Values are logged with

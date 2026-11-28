@@ -19,7 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
-	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/glincker/levelrail/internal/vault"
 )
 
 var (

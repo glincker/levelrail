@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"encoding/pem"
-	"github.com/GLINCKER/levelrail/internal/k8sconn"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/k8sconn"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 func TestK8sListNodesAndNamespaces(t *testing.T) {

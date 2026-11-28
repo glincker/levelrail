@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func createdPolicy(t *testing.T, desired *store.DesiredService, get func(context.Context) string) string {

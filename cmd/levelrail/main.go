@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 const (

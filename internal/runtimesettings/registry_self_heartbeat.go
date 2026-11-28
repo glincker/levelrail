@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/glincker/levelrail/kit/netguard"
 )
 
 // Bounds of the dead man's switch interval, in seconds.

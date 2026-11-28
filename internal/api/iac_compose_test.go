@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 func TestStrictIaCComposeServerSide(t *testing.T) {

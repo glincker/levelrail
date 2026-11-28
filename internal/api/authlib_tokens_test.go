@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/glincker/levelrail/internal/authengine"
 )
 
 func decodeStatus(t *testing.T, rt *Router, cookie *http.Cookie) authEngineStatusResponse {

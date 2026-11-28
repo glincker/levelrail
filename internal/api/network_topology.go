@@ -18,9 +18,9 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/GLINCKER/levelrail/internal/loadbalancer"
-	"github.com/GLINCKER/levelrail/internal/network"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/loadbalancer"
+	"github.com/glincker/levelrail/internal/network"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // networkTopologyNodeResource is one fleet member.

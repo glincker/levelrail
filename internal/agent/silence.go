@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/heartbeat"
+	"github.com/glincker/levelrail/internal/heartbeat"
 )
 
 // Env knobs for the control plane silence watcher, all durations except the jitter percent.

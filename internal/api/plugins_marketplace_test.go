@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/plugin"
+	"github.com/glincker/levelrail/internal/plugin"
 )
 
 func TestPluginMarketplaceRoutesInstallInOneConfirmedStep(t *testing.T) {

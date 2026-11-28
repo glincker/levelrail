@@ -3,7 +3,7 @@ package dbaudit
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // ServiceSettings adapts the live settings service.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // SecretScanHook scans a deploy's build context and plain env values before

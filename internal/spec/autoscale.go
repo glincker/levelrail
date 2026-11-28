@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/autoscale"
+	"github.com/glincker/levelrail/internal/autoscale"
 )
 
 // Autoscale is a service's replica autoscaling policy (internal/autoscale).

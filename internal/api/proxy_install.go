@@ -7,11 +7,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/fixit"
-	"github.com/GLINCKER/levelrail/internal/proxyinstall"
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
-	"github.com/GLINCKER/levelrail/internal/serverready"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/fixit"
+	"github.com/glincker/levelrail/internal/proxyinstall"
+	"github.com/glincker/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/serverready"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // SubjectProxy groups the fixes that start or repair the managed proxy.

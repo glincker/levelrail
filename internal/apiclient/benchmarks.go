@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/benchreport"
+	"github.com/glincker/levelrail/internal/benchreport"
 )
 
 // BenchmarkRunSummary mirrors one row of GET /api/v1/benchmarks.

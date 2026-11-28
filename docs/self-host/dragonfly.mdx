@@ -1,0 +1,67 @@
+---
+title: "Self-host DragonflyDB with Docker"
+sidebarTitle: "DragonflyDB"
+description: "A multi-threaded, Redis and Memcached compatible in-memory data store."
+"og:url": "https://docs.levelrail.com/self-host/dragonfly"
+---
+
+A multi-threaded, Redis and Memcached compatible in-memory data store.
+
+This page describes the Levelrail template for DragonflyDB (Databases). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.dragonflydb.io/docs.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `dragonfly` | `ghcr.io/dragonflydb/dragonfly:v1.27.1` | 6379 | `dragonfly_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `dragonfly` | `DFLY_requirepass` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`dragonfly`): DFLY_requirepass.
+- Stores data in named volumes (`dragonfly`): dragonfly_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy DragonflyDB with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select DragonflyDB. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy dragonfly --name my-dragonfly
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Databases templates
+
+- [Dgraph](/self-host/dgraph)
+- [GreptimeDB](/self-host/greptimedb)
+- [LibreDB Studio](/self-host/libredb-studio)
+- [Memgraph](/self-host/memgraph)
+- [Redis Stack Server](/self-host/redis-stack)
+
+All templates are listed in the [self-host gallery](/self-host).

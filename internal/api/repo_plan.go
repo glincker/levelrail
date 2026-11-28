@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/appwizard"
-	"github.com/GLINCKER/levelrail/internal/repolayout"
+	"github.com/glincker/levelrail/internal/appwizard"
+	"github.com/glincker/levelrail/internal/repolayout"
 )
 
 // repoPlanRequest is POST /api/v1/apps/repo-plan's body. Token is a one-shot

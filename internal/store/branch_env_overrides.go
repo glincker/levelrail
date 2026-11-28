@@ -65,6 +65,9 @@ func BranchEnvOverrideSecretsKey(serviceName, branchPattern string) string {
 // "store ciphertext." Returns the row's id, minting a new one only on
 // first insert; an existing row keeps its own id across updates.
 func (db *DB) SetServiceBranchEnvOverride(ctx context.Context, serviceName, branchPattern, key, value string, secret bool) (string, error) {
+	if err := checkEnvKeys(key); err != nil {
+		return "", err
+	}
 	if secret {
 		value = ""
 	}

@@ -141,6 +141,16 @@ When required variables have no value and no terminal is attached, `--deploy` fa
 </Tab>
 </Tabs>
 
+## What does the import report show? {#import-report}
+
+A compose or docker run import returns a report before anything is deployed. Each row names the field (`kind`, `path`), a plain `reason`, a `severity` and a `fix` hint. `levelrail-cli import` prints it, and `--json` includes it as `report`.
+
+- `blocker`: the plan cannot deploy as written, for example `privileged`, `pid: host`, `network_mode: host` or a protected host bind mount without a grant.
+- `changes-behavior`: the field is dropped or changed and the service may run differently, for example `cap_add`, `cpuset`, a `CMD-SHELL` healthcheck in an image without a shell, or a host bind mount.
+- `ignored-safe`: informational, for example `container_name`, `tty`, a pinned `platform`, an `x-levelrail-node` pin or a port without a host port.
+
+The report only describes the plan. It never changes what gets deployed.
+
 ## What if the plan looks wrong? {#troubleshooting}
 
 ### Plan shows the wrong build method or is missing settings

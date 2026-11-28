@@ -3,9 +3,9 @@ package main
 import (
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/backup"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/backup"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 // mailBackupOption reuses the instance backup encryption key, so mail

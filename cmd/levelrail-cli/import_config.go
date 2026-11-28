@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/configtranslate"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/configtranslate"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 const (

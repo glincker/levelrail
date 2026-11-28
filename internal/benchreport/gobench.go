@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 // Metric names a Go benchmark result is stored under in chaos.Result.Metrics.

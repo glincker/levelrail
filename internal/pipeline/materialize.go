@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Implicit step kinds. Setup prepares the workspace and container, restore

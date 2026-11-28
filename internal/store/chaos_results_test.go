@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/chaos"
+	"github.com/glincker/levelrail/internal/chaos"
 )
 
 func TestChaosResultsRoundTrip(t *testing.T) {

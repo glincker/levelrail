@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/compose"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/compose"
+	"github.com/glincker/levelrail/internal/spec"
 	"gopkg.in/yaml.v3"
 )
 

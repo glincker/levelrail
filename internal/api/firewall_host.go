@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/hostfw"
+	"github.com/glincker/levelrail/internal/bindaddr"
+	"github.com/glincker/levelrail/internal/hostfw"
 )
 
 const (

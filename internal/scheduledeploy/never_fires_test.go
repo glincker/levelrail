@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestScheduler_Tick_ImpossibleDateNeverArmsOrFires(t *testing.T) {

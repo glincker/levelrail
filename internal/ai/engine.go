@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/untrusted"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/untrusted"
 )
 
 // SecretsAPIKeyEnvKey is the internal/secrets envKey every provider's API

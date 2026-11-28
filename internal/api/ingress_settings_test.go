@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // TestValidateIngressSettingsRequest covers the one real business rule

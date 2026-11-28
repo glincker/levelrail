@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // VaultSecrets is the surface the Vault settings handlers need from

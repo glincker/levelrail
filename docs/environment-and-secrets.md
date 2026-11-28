@@ -165,6 +165,12 @@ levelrail-cli apps secrets delete my-app OLD_TOKEN --force
 
 A value typed on the command line can end up in shell history, so prefer `--env-file` for real credentials. `build-time` is off by default, and an enabled secret can be read by anyone who can change the Dockerfile.
 
+### One key, one place
+
+A key lives either as a plain variable or as a secret, never both. If you run `apps secrets set` for a key that already exists as a plain variable, the plain copy is removed in the same call and the API answers `replaced_plain_env: true`. The secret is saved first, so a failure never loses the old value; retry the request. Creating or updating an app with a key in both `env` and `secret_env` is refused with a message naming the key.
+
+`apps env set` refuses a key that is already a secret and points at `apps secrets set`. `apps env unset` refuses a secret-only key and points at `apps secrets delete`. If a key is both (data from before this rule), `apps env unset my-app KEY` removes only the plain copy and keeps the secret. `levelrail-cli doctor` lists every such key under "Plain and secret variables", with the exact command.
+
 Rotation has its own commands. Both need `--yes`:
 
 ```bash

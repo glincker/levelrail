@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 // DefaultPatchStatusThreshold is the pending security patch count that fires a patch_status rule; 1 means any pending patch.

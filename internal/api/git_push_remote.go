@@ -16,8 +16,8 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/tokenhash"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/tokenhash"
 )
 
 const (

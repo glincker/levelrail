@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/quota"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/attention"
+	"github.com/glincker/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // quotaAttentionItems raises one item per team or project dimension at or

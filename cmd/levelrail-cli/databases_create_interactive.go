@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/spec"
 )
 
 // Plain data, so the conversion to API requests is table-testable without stdin.

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/identity"
+	"github.com/glincker/levelrail/internal/identity"
 )
 
 // UserPreferences are one user's own display settings; empty strings mean "use the default".

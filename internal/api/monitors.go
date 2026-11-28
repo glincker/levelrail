@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/monitor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // MonitorService is the engine the monitor routes drive. A nil service means the feature is off.

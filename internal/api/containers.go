@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/orphans"
 )
 
 // containerPortResource mirrors docker.PortBinding exactly, no invented

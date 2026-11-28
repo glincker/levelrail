@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
 )
 
 // fakeGitLab answers statuses under prefix; the body is the only source of truth.

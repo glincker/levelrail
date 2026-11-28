@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 func newStorageCLIServer(t *testing.T, probe apiclient.StorageProbeResult) (*httptest.Server, *[]string) {

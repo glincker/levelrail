@@ -9,7 +9,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Builds a Router with lookupHost and publicHost overridden, so no DNS I/O happens and no public Option is needed.

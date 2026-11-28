@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 func TestReferencePageIsCurrent(t *testing.T) {

@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
-	"github.com/GLINCKER/levelrail/internal/secretrotation"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/secretrotation"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Typed failures the API maps to status codes.

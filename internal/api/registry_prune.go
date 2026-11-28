@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/internal/cleanup"
-	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
-	"github.com/GLINCKER/levelrail/internal/registrycatalog"
-	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/cleanup"
+	registryreconcile "github.com/glincker/levelrail/internal/reconcile/registry"
+	"github.com/glincker/levelrail/internal/registrycatalog"
+	"github.com/glincker/levelrail/internal/secrets"
 )
 
 // registryPruneClient is the part of *registrycatalog.Client the tag prune needs beyond browsing.

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // pinnedVersionPatterns are the tag shapes these images publish. A pinned

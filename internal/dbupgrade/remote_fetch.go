@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbcatalogbuild"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/glincker/levelrail/internal/dbcatalogbuild"
+	"github.com/glincker/levelrail/internal/reconcile/database"
 )
 
 // RemoteConfig wires a RemoteCatalog. Zero values pick production defaults.

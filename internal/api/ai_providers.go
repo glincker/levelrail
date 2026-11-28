@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ai"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/ai"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AIVault is the internal/ai.Vault surface the provider and settings routes need.

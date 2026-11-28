@@ -1,6 +1,6 @@
 package store
 
-import "github.com/GLINCKER/levelrail/internal/spec"
+import "github.com/glincker/levelrail/internal/spec"
 
 // Compose restart: values; spec owns the parser since store imports spec.
 const (

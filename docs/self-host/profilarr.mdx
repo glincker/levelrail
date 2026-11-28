@@ -1,0 +1,63 @@
+---
+title: "Self-host Profilarr with Docker"
+sidebarTitle: "Profilarr"
+description: "Manage and sync quality profiles and custom formats across Sonarr and Radarr."
+"og:url": "https://docs.levelrail.com/self-host/profilarr"
+---
+
+Manage and sync quality profiles and custom formats across Sonarr and Radarr.
+
+This page describes the Levelrail template for Profilarr (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/Dictionarry-Hub/profilarr.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `profilarr` | `santiagosayshey/profilarr:v1.1.5` | 6868 | `profilarr_config -&#62; /config` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`profilarr`): profilarr_config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Profilarr with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Profilarr. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy profilarr --name my-profilarr
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Airsonic Advanced](/self-host/airsonic-advanced)
+- [Ampache](/self-host/ampache)
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre](/self-host/calibre)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 const keyLossNote = "Losing the backup encryption key means encrypted backups cannot be restored. Keep a copy of backup-encryption.key off this machine."

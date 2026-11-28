@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dbparams"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbparams"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AuditActionDatabaseParamsDropIncompatible records parameters removed on an

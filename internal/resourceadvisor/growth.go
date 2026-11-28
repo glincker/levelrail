@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/rightsizing"
 )
 
 // growthFinding is rule d: steady memory growth fitted over hourly means,

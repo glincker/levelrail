@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/glincker/levelrail/internal/spec"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // HTTPTarget wakes an app if it sleeps, waits until it can answer, and
@@ -208,6 +209,9 @@ func (r *Runner) resolveHeaderSecret(ctx context.Context, svc *store.DesiredServ
 		}
 		if r.Secrets == nil {
 			return "", fmt.Errorf("secret %s cannot be read: no secret resolver is configured", name)
+		}
+		if err := spec.AppNamespace(svc.Name); err != nil {
+			return "", fmt.Errorf("secret %s cannot be read: %w", name, err)
 		}
 		ok, err := r.Secrets.Exists(ctx, svc.Name, name)
 		if err != nil || !ok {

@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/pages"
+	"github.com/glincker/levelrail/internal/pages"
 )
 
 // pagesPresetBody is the PUT body: an empty preset clears the choice.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // liveRestorer is implemented by the Docker client behind DockerPinger.

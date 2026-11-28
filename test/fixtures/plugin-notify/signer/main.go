@@ -15,7 +15,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/plugin"
+	"github.com/glincker/levelrail/internal/plugin"
 )
 
 func main() {

@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/secrets"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secrets"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestPruneStaleComposeServicesClearsSecrets(t *testing.T) {

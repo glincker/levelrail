@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/objectstore"
+	"github.com/glincker/levelrail/internal/objectstore"
 )
 
 // TimeoutEnv bounds each storage operation, in seconds.

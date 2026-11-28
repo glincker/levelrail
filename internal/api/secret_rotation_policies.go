@@ -3,13 +3,14 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/glincker/levelrail/internal/secrets"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretrotation"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretrotation"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (
@@ -62,10 +63,16 @@ func (b rotationBackend) AppState(ctx context.Context, app string) (bool, bool, 
 }
 
 func (b rotationBackend) Value(ctx context.Context, app, key string) (string, error) {
+	if err := secrets.AppNamespace(app); err != nil {
+		return "", err
+	}
 	return b.rt.secrets.Resolve(ctx, app, key)
 }
 
 func (b rotationBackend) SetValue(ctx context.Context, app, key, value string) error {
+	if err := secrets.AppNamespace(app); err != nil {
+		return err
+	}
 	if err := b.rt.secrets.SetValueGuarded(ctx, app, key, value, false); err != nil {
 		return err
 	}
@@ -86,6 +93,9 @@ func (b rotationBackend) DeleteValue(ctx context.Context, app, key string) error
 }
 
 func (b rotationBackend) KeyState(ctx context.Context, app, key string) (bool, bool, time.Time, error) {
+	if err := secrets.AppNamespace(app); err != nil {
+		return false, false, time.Time{}, err
+	}
 	keys, err := b.rt.secrets.ListKeys(ctx, app)
 	if err != nil {
 		return false, false, time.Time{}, err
@@ -176,7 +186,7 @@ func (rt *Router) rotationResources(ctx context.Context, policies []store.Secret
 		times, ok := updated[p.ServiceName]
 		if !ok {
 			times = map[string]time.Time{}
-			if keys, err := rt.secrets.ListKeys(ctx, p.ServiceName); err == nil {
+			if keys, err := rt.secrets.ListKeys(ctx, p.ServiceName); err == nil && secrets.AppNamespace(p.ServiceName) == nil {
 				for _, k := range keys {
 					times[k.Key] = k.UpdatedAt
 				}
@@ -277,6 +287,10 @@ func (rt *Router) handleSetSecretRotation(w http.ResponseWriter, r *http.Request
 	}
 	if msg := validateRotationRequest(&req); msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	if err := secrets.AppNamespace(name); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	exists, err := rt.secrets.Exists(r.Context(), name, key)

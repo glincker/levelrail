@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // PushAudience says which users may receive a browser push. The zero value

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/migrateverify"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/migrateverify"
 )
 
 func verifyServer(t *testing.T, rep apiclient.MigrationVerifyReport, got *map[string]any, path *string) *httptest.Server {

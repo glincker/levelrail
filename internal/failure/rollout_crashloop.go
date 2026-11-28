@@ -1,6 +1,6 @@
 package failure
 
-import "github.com/GLINCKER/levelrail/internal/deploysafety"
+import "github.com/glincker/levelrail/internal/deploysafety"
 
 // EnvRolloutCrashLoopRestarts is how many restarts a rollout that never
 // served may take before its CrashLoopBackOff counts as a failed deploy.

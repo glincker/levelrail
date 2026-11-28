@@ -7,11 +7,11 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/cleanup"
-	"github.com/GLINCKER/levelrail/internal/keyreminder"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/alerting"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/cleanup"
+	"github.com/glincker/levelrail/internal/keyreminder"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // setupCleanup registers the cleanup targets, enables the /api/v1/cleanup routes and starts the scheduler.
@@ -43,7 +43,7 @@ func channelNotice(channels keyreminder.Channels, notifier keyreminder.Notifier)
 		sent := 0
 		var lastErr error
 		for _, c := range list {
-			if !c.Enabled {
+			if !c.Enabled || c.ProjectID != "" {
 				continue
 			}
 			if err := notifier.SendNotice(ctx, c, text); err != nil {

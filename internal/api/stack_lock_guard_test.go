@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // stackLockFixture applies an app "web" under stack shop-prod with the given

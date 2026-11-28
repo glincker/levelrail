@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func newBranchRouter(t *testing.T, mysql MySQLPITRRestoreRunner) (*Router, *store.DB, *fakeCloneRestoreRunner) {

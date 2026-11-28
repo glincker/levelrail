@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cdn"
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/kit/upgrade"
+	"github.com/glincker/levelrail/internal/cdn"
+	"github.com/glincker/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/kit/upgrade"
 )
 
 // tunableInt reads a runtime setting; a router without settings keeps the old env-then-default path.

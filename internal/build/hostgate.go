@@ -57,6 +57,18 @@ func DerivedMaxConcurrent(cpus, memMB int) int {
 	return max(n, 1)
 }
 
+// ResolveMaxParallel is the build slot count: a positive build.max_parallel setting wins,
+// otherwise it is derived from the CPU count (and RAM when known), so a 1 to 2 vCPU host runs one build.
+func ResolveMaxParallel(setting, cpus, memMB int) int {
+	if setting > 0 {
+		return setting
+	}
+	if memMB <= 0 {
+		return max(cpus/2, 1)
+	}
+	return DerivedMaxConcurrent(cpus, memMB)
+}
+
 var localPressure atomic.Pointer[func() string]
 
 // SetLocalPressure wires the reader behind the control plane's own pressure level; nil removes it.

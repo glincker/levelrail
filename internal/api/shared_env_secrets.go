@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // sharedEnvVarResource is the wire shape for one shared env var in the
@@ -151,6 +151,9 @@ func (rt *Router) handleSetSharedEnvSecret(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "value is required")
 		return
 	}
+	if !rt.checkSharedSecretEnv(r.Context(), w, scope, id, key, req.Value) {
+		return
+	}
 	if !rt.allowProviderRefs(w, r, req.Value) {
 		return
 	}
@@ -180,6 +183,9 @@ func (rt *Router) handleSetSharedEnvSecret(w http.ResponseWriter, r *http.Reques
 func (rt *Router) handleDeleteSharedEnvSecret(w http.ResponseWriter, r *http.Request, scope sharedEnvSecretScope) {
 	id := r.PathValue("id")
 	key := r.PathValue("key")
+	if !checkEnvKeys(w, []string{key}) {
+		return
+	}
 	if !rt.loadSharedEnvScope(w, r, scope, id, "delete") {
 		return
 	}

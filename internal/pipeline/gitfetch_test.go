@@ -14,7 +14,7 @@ import (
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	"github.com/GLINCKER/levelrail/internal/sourcecache"
+	"github.com/glincker/levelrail/internal/sourcecache"
 )
 
 type testRepo struct {

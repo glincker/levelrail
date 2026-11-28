@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/GLINCKER/levelrail/internal/janitor"
-	"github.com/GLINCKER/levelrail/internal/storageinv"
+	"github.com/glincker/levelrail/internal/janitor"
+	"github.com/glincker/levelrail/internal/storageinv"
 )
 
 // volumeLock is the database volume lock every non-database delete path asks

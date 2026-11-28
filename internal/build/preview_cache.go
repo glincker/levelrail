@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
-	"regexp"
 	"strings"
 	"sync/atomic"
 )
@@ -47,8 +46,6 @@ func PreviewCacheMode(ctx context.Context) string {
 	return PreviewCacheIsolated
 }
 
-var previewSuffix = regexp.MustCompile(`-pr-[0-9]+(-.*)?$`)
-
 // FitCacheID sanitizes id without losing its tail: past the max length it keeps
 // a head and a hash of the whole id, so two long names never collide.
 func FitCacheID(id string) string {
@@ -70,13 +67,28 @@ func FitCacheID(id string) string {
 	return head + "-" + hex.EncodeToString(sum[:4])
 }
 
-// PreviewCacheID derives the cache id of a preview build. unique only matters
-// for mode off, where every build gets a fresh id so nothing is reused.
-func PreviewCacheID(mode, serviceName, unique string) string {
+// isPreviewOf reports whether name is "<parent>-pr-<digits>" or one of its service keys.
+func isPreviewOf(name, parent string) bool {
+	rest, ok := strings.CutPrefix(name, parent+"-pr-")
+	if !ok {
+		return false
+	}
+	digits := 0
+	for digits < len(rest) && rest[digits] >= '0' && rest[digits] <= '9' {
+		digits++
+	}
+	return digits > 0 && (digits == len(rest) || rest[digits] == '-')
+}
+
+// PreviewCacheID derives the cache id of a preview build. parent and parentID
+// come from the preview record: shared mode reuses parentID only when the
+// preview is named after that parent, never by cutting the name. unique only
+// matters for mode off, where every build gets a fresh id.
+func PreviewCacheID(mode, serviceName, parent, parentID, unique string) string {
 	switch mode {
 	case PreviewCacheSharedWithApp:
-		if app := previewSuffix.ReplaceAllString(serviceName, ""); app != "" {
-			return FitCacheID(app)
+		if parent != "" && parentID != "" && isPreviewOf(serviceName, parent) {
+			return parentID
 		}
 	case PreviewCacheOff:
 		base := FitCacheID(serviceName)

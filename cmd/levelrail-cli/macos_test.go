@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/macosrt"
+	"github.com/glincker/levelrail/internal/macosrt"
 )
 
 func TestLaunchdPrintAgent(t *testing.T) {

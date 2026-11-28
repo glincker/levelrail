@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/platformimport"
 )
 
 const envImportSourceToken = "APP_IMPORT_SOURCE_TOKEN" //nolint:gosec // env var name, not a credential

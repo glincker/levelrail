@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 func TestDatabaseParams_StagedNotApplied(t *testing.T) {

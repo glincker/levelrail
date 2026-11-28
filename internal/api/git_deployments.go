@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
-	"github.com/GLINCKER/levelrail/internal/pipeline"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/gitlabapp"
+	"github.com/glincker/levelrail/internal/pipeline"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Environments a deployment is reported under.

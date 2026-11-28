@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/gamestatus"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/gamestatus"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // How a game port is reachable, as reported in gameStatusResource.Exposure.

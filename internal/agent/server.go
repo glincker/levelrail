@@ -23,8 +23,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EnrollStore is the store surface Server needs. *store.DB satisfies it.
@@ -75,6 +75,7 @@ type Server struct {
 	secStore SecurityStore
 	secCfg   SecurityConfig
 	sec      *securityRecorder
+	fence    FenceHooks
 }
 
 type liveSession struct {
@@ -321,6 +322,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	live := s.trackSession(nodeID, m)
 	tp := newGRPCTransportWithCaps(m, caps)
 	tp.attachTunnels(s.tunnels, nodeID)
+	tp.fence = s.fence
 	s.registry.Register(nodeID, tp)
 	s.observeSession(ctx, nodeID)
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))

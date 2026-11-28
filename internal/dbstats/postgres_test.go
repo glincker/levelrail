@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 const scalarFixture = "conn_active=2\nconn_idle=5\nconn_total=7\nconn_max=100\nlocks_waiting=1\nfuture=9\n" +

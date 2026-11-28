@@ -15,7 +15,7 @@ gh label create "$label" --color d93f0b --description "Test that failed and pass
 
 cat "$@" 2>/dev/null | sort -u | while read -r pkg test attempts; do
 	[ -n "$test" ] || continue
-	short="${pkg#github.com/GLINCKER/levelrail/}"
+	short="${pkg#github.com/glincker/levelrail/}"
 	title="Flaky test: $short $test"
 	body="\`$test\` in \`$short\` failed $attempts attempts and passed otherwise in $run_url (workflow: ${GITHUB_WORKFLOW:-unknown}, ref: ${GITHUB_REF_NAME:-unknown}, sha: ${GITHUB_SHA:-unknown})."
 	existing="$(gh issue list --label "$label" --state open --search "\"$title\" in:title" --json number,title \

@@ -1,8 +1,8 @@
 package deploy
 
 import (
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // snapshotRecorded reports whether snap holds a real config capture; very

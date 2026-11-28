@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/kit/ids"
+	"github.com/glincker/levelrail/kit/ids"
 )
 
 // generationKinds are the SERVICE_<KIND>_... prefixes a real template

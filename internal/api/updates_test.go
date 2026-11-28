@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 // newTestRouterWithFetchLatestRelease builds a Router with

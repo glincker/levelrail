@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/ingress"
 )
 
 type fakeAccess struct{ got ingress.AccessFilter }

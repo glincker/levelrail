@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/agent"
-	"github.com/GLINCKER/levelrail/internal/cloudmeta"
+	"github.com/glincker/levelrail/internal/agent"
+	"github.com/glincker/levelrail/internal/cloudmeta"
 	"os"
 )
 

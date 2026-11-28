@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/integrations"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/integrations"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // AppIntegrationStore is the store surface the app integration handlers

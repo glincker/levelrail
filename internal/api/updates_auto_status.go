@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgradesched"
+	"github.com/glincker/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/upgradesched"
 )
 
 // Automatic update states shown on the status line.

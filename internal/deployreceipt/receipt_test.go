@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/supplychain"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/supplychain"
 )
 
 func TestAssembleGolden(t *testing.T) {

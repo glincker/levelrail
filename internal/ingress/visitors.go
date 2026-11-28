@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/trafficclass"
+	"github.com/glincker/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/trafficclass"
 )
 
 const (

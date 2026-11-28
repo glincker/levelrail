@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/auditanchor"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/auditanchor"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // anchorMaxBody bounds an anchor check body; an export line is about 200 bytes.

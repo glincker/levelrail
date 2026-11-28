@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/catalog"
 )
 
 // Go batch templates live in internal/catalog/templates_catalog_batch*.go, not in

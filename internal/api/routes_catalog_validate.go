@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/glincker/levelrail/internal/catalog"
 )
 
 // registerCatalogRoutes wires the template submission checker. It is pure

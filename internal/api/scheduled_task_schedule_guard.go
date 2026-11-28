@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // checkScheduleFires rejects an expression such as 0 0 30 2 * that parses but

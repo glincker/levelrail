@@ -17,11 +17,11 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/mailbackup"
-	"github.com/GLINCKER/levelrail/internal/mailbackup/moxrun"
-	"github.com/GLINCKER/levelrail/internal/mailstorage"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/mailbackup"
+	"github.com/glincker/levelrail/internal/mailbackup/moxrun"
+	"github.com/glincker/levelrail/internal/mailstorage"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

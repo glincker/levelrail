@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/proxyroutes"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/proxyroutes"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Provider choices the picker offers besides the external proxy kinds.

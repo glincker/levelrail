@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/reconcile"
+	registryreconcile "github.com/glincker/levelrail/internal/reconcile/registry"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // registryUsername is the fixed login name generated for the built-in

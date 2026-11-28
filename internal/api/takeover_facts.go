@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/proxycoexist"
-	"github.com/GLINCKER/levelrail/internal/serverready"
-	"github.com/GLINCKER/levelrail/internal/takeover"
+	"github.com/glincker/levelrail/internal/proxycoexist"
+	"github.com/glincker/levelrail/internal/serverready"
+	"github.com/glincker/levelrail/internal/takeover"
 )
 
 // takeoverDomains lists every domain this server serves with its app and health.

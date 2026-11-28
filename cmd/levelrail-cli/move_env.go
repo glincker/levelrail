@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 type moveEnvCall func(ctx context.Context, client *Client, name string, req apiclient.MoveEnvironmentRequest) (apiclient.MoveEnvironmentResult, error)

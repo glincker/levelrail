@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/diskguard"
 )
 
 func TestDiskResilience_Routes(t *testing.T) {

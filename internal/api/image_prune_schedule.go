@@ -3,16 +3,16 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/glincker/levelrail/internal/footprint"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/imagelife"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/internal/imagelife"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 // imagePruneTick is how often the schedule setting is re-read, so a change applies within a minute.

@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/secretmask"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/secretmask"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const fakeToken = "fake-provider-token-for-tests" //nolint:gosec // test fixture, not a credential

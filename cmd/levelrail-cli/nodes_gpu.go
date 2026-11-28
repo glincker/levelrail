@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // nodeGPUColumn is the GPU cell of "nodes list": free/total GPUs, or "-"

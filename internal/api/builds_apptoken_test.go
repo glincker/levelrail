@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/glincker/levelrail/internal/githubapp"
 )
 
 func TestGitHubAppTokenAllowedByCallerScope(t *testing.T) {

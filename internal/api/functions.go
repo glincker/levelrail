@@ -5,8 +5,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/functions"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/glincker/levelrail/internal/functions"
+	"github.com/glincker/levelrail/internal/telemetry"
 )
 
 var functionWindows = map[string]time.Duration{

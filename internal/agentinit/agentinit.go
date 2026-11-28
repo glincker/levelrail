@@ -10,8 +10,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/kit/stackdetect"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/kit/stackdetect"
 )
 
 // TokenEnvVar is the env var the MCP config references for the API token.

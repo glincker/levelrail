@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dockertest"
+	"github.com/glincker/levelrail/internal/dockertest"
 )
 
 // A CA that cannot be reached (the same outcome as a contact it rejects) must

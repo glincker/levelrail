@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/failure"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/failure"
 )
 
 const waitTimelineLimit = 20

@@ -1,0 +1,74 @@
+---
+title: "Self-host Casdoor with Docker"
+sidebarTitle: "Casdoor"
+description: "An identity and SSO platform with OAuth 2, OIDC, SAML and LDAP support."
+"og:url": "https://docs.levelrail.com/self-host/casdoor"
+---
+
+An identity and SSO platform with OAuth 2, OIDC, SAML and LDAP support.
+
+This page describes the Levelrail template for Casdoor (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://casdoor.org/docs/overview.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `casdoor` | `casbin/casdoor:v4.32.0` | 8000 | none |
+| `db` | `postgres:16-alpine` | none | `casdoor_data -&#62; /var/lib/postgresql/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `casdoor` | `RUNNING_IN_DOCKER` | Preset in the template |
+| `casdoor` | `dataSourceName` | Generated at deploy |
+| `casdoor` | `dbName` | Preset in the template |
+| `casdoor` | `driverName` | Preset in the template |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`casdoor`, `db`): POSTGRES_PASSWORD, dataSourceName.
+- Stores data in named volumes (`db`): casdoor_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Casdoor with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Casdoor. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy casdoor --name my-casdoor
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [Anubis](/self-host/anubis)
+- [Authelia](/self-host/authelia)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+
+All templates are listed in the [self-host gallery](/self-host).

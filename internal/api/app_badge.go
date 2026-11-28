@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // The badge route 404s until an operator opts an app in, so disabled apps look like unknown ones.

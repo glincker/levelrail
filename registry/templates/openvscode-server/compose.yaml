@@ -1,0 +1,19 @@
+services:
+  openvscode-server:
+    image: linuxserver/openvscode-server:1.109.5
+    ports: ["3000"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+      CONNECTION_TOKEN: $SERVICE_PASSWORD_TOKEN
+    volumes:
+      - openvscode_server_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ | grep -qE '^(200|301|302|401|403)'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+volumes:
+  openvscode_server_config:

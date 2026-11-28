@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Name is the logical app.yaml name, not the platform-prefixed Docker volume name; response-only on the app resource.

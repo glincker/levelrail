@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/quota"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/quota"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // growth is how much more of each dimension next asks for than prev; a

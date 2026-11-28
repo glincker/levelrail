@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/brand"
-	"github.com/GLINCKER/levelrail/internal/cloudflareips"
-	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
-	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/api"
+	"github.com/glincker/levelrail/internal/brand"
+	"github.com/glincker/levelrail/internal/cloudflareips"
+	ingressdriver "github.com/glincker/levelrail/internal/ingress"
+	ingressreconcile "github.com/glincker/levelrail/internal/reconcile/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

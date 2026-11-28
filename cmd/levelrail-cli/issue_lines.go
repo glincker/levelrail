@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/glincker/levelrail/internal/iac"
 )
 
 // maxIssueLines caps the text listing so a broken tree stays readable; --json carries every issue.

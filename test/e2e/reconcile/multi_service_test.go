@@ -24,13 +24,13 @@ import (
 
 	"github.com/docker/docker/api/types/image"
 
-	"github.com/GLINCKER/levelrail/internal/deploy"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
-	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/deploy"
+	"github.com/glincker/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/reconcile/application"
+	ingressreconcile "github.com/glincker/levelrail/internal/reconcile/ingress"
+	"github.com/glincker/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

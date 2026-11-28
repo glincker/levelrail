@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/apiclient"
 )
 
 // waitUpDeploy follows the deploy up just started and records its verdict in result.

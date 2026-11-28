@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/awsx/awsxtest"
-	"github.com/GLINCKER/levelrail/internal/cloudguard"
+	"github.com/glincker/levelrail/internal/awsx/awsxtest"
+	"github.com/glincker/levelrail/internal/cloudguard"
 )
 
 func guard(maxUSD float64) *cloudguard.Guard {

@@ -1,0 +1,16 @@
+services:
+  graphite:
+    image: graphiteapp/graphite-statsd:1.1.10-5
+    ports: ["80", "2003"]
+    volumes:
+      - graphite_conf:/opt/graphite/conf
+      - graphite_storage:/opt/graphite/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+volumes:
+  graphite_conf:
+  graphite_storage:

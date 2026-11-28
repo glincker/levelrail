@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/GLINCKER/levelrail/internal/defparse"
+	"github.com/glincker/levelrail/internal/defparse"
 	"strings"
 	"testing"
 )

@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/resourceadvisor"
-	"github.com/GLINCKER/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/apiclient"
+	"github.com/glincker/levelrail/internal/experimental"
+	"github.com/glincker/levelrail/internal/resourceadvisor"
+	"github.com/glincker/levelrail/internal/rightsizing"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 )
 
 // runAdvisor dispatches "advisor <verb>": the beta resource advisor.
@@ -32,6 +34,8 @@ func runAdvisor(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runAdvisorApply(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dismiss", "snooze", "restore":
 		return runAdvisorState(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+	case "price":
+		return runAdvisorPrice(prog, args[1:], stdout, stderr, lookupEnv)
 	case "enable", "disable":
 		return runAdvisorSwitch(prog, args[0] == "enable", args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -46,9 +50,11 @@ func advisorUsage(prog string) string {
   %[1]s advisor findings [--resource app:NAME] [--severity S] [--all]   list resource advice (beta)
   %[1]s advisor summary                                              counts and the biggest savings
   %[1]s advisor apply <finding-id> [--yes]                           preview, then apply with --yes
+  %[1]s advisor apply --kind idle --all [--yes]                      sleep every idle app the advisor found
   %[1]s advisor dismiss <finding-id>                                 hide a finding until restored
   %[1]s advisor snooze <finding-id> [--for 7d]                       hide a finding for a while
   %[1]s advisor restore <finding-id>                                 show a dismissed or snoozed finding again
+  %[1]s advisor price <node> <amount> | --clear <node>               set a node's monthly price so savings show money
   %[1]s advisor enable|disable                                       switch the beta on or off for this instance
 
 The resource advisor is in beta and off by default. It only suggests:
@@ -145,7 +151,10 @@ func runAdvisorSummary(prog string, args []string, stdout, stderr io.Writer, loo
 			_, _ = fmt.Fprintf(stdout, "not enough data yet: %d resources\n", res.PendingData)
 		}
 		if res.SavingMemoryBytes > 0 {
-			_, _ = fmt.Fprintf(stdout, "estimated memory to reclaim: %s\n", rightsizing.FormatMemory(res.SavingMemoryBytes))
+			_, _ = fmt.Fprintf(stdout, "estimated memory to reclaim: %s (%d MB)\n", rightsizing.FormatMemory(res.SavingMemoryBytes), res.ReclaimableMB)
+		}
+		if res.MonthlySavings != nil {
+			_, _ = fmt.Fprintf(stdout, "estimated monthly savings: %.2f\n", *res.MonthlySavings)
 		}
 		tw := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
 		for _, f := range res.TopSavings {
@@ -156,6 +165,11 @@ func runAdvisorSummary(prog string, args []string, stdout, stderr io.Writer, loo
 }
 
 func runAdvisorApply(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	for _, a := range args {
+		if a == "--all" || a == "-all" {
+			return runAdvisorApplyAll(prog, args, stdout, stderr, lookupEnv)
+		}
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "advisor apply", "print the preview or result as JSON to stdout and nothing else", stderr)
 	yes := fs.Bool("yes", false, "apply the change; without it only the preview is shown")
 	client, id, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "advisor apply", "finding id"}, lookupEnv)
@@ -239,5 +253,48 @@ func runAdvisorSwitch(prog string, enable bool, args []string, stdout, stderr io
 		default:
 			_, _ = fmt.Fprintln(stdout, "resource advisor is off")
 		}
+	})
+}
+
+// runAdvisorPrice sets or clears one node's monthly price, which turns reclaimable memory into money.
+func runAdvisorPrice(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "advisor price", "print the saved prices as JSON to stdout and nothing else", stderr)
+	drop := fs.Bool("clear", false, "remove the price of this node")
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	rest := fs.Args()
+	if len(rest) != 1+map[bool]int{true: 0, false: 1}[*drop] {
+		_, _ = fmt.Fprintf(stderr, "usage: %s advisor price <node> <monthly-amount> | --clear <node>\n", prog)
+		return exitUsage
+	}
+	prices := map[string]float64{}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	cur, err := client.GetRuntimeSetting(context.Background(), runtimesettings.KeyAdvisorNodePrices)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read node prices: %w", err))
+	}
+	if s, isStr := cur.Value.(string); isStr {
+		if prices, err = runtimesettings.ParseNodePrices(s); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("read node prices: %w", err))
+		}
+	}
+	if *drop {
+		delete(prices, rest[0])
+	} else {
+		amount, perr := strconv.ParseFloat(rest[1], 64)
+		if perr != nil || amount <= 0 {
+			_, _ = fmt.Fprintf(stderr, "%s: the monthly amount must be a positive number\n", prog)
+			return exitUsage
+		}
+		prices[rest[0]] = amount
+	}
+	res, err := client.PutRuntimeSetting(context.Background(), runtimesettings.KeyAdvisorNodePrices, apiclient.RuntimeSettingWrite{Value: runtimesettings.FormatNodePrices(prices)})
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save node prices: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+		_, _ = fmt.Fprintf(stdout, "node prices: %s\n", runtimesettings.FormatNodePrices(prices))
 	})
 }

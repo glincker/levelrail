@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/statuspage"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/usagecost"
+	"github.com/glincker/levelrail/internal/statuspage"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/usagecost"
 )
 
 const statusHistoryDays = 90

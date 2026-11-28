@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgradehistory"
-	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/glincker/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/upgradehistory"
+	"github.com/glincker/levelrail/internal/version"
 )
 
 // priorDataGrace separates "this database was created in this boot" from one

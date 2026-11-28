@@ -1,0 +1,16 @@
+id: redis-stack
+name: Redis Stack Server
+slogan: Redis with JSON, search, time series and probabilistic modules built in.
+description: Source-available modules on top of Redis. Speaks the Redis protocol on port 6379. The generated password is required to connect.
+category: Databases
+documentation_url: https://redis.io/docs/latest/operate/oss_and_stack
+recommended_memory_bytes: 536870912
+requires_gpu: false
+platforms:
+    - linux/amd64
+    - linux/arm64
+icon: redis
+source_repo: https://github.com/redis-stack/redis-stack
+license: LicenseRef-Redis-Stack
+license_class: source-available
+license_url: https://redis.io/legal/licenses

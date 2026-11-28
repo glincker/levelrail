@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/glincker/levelrail/kit/cronexpr"
 )
 
 const maxJobsNextCount = 50

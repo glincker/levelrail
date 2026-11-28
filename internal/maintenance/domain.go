@@ -8,7 +8,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // Bounds on a domain's maintenance settings.

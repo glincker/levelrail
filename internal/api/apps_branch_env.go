@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/envredact"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/envredact"
+	"github.com/glincker/levelrail/internal/envrules"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // branchEnvOverrideResource is the wire shape for one branch-scoped env
@@ -21,6 +22,8 @@ type branchEnvOverrideResource struct {
 	Value         string `json:"value"`
 	Secret        bool   `json:"secret"`
 	UpdatedAt     string `json:"updated_at"`
+	// Warnings is only set on a write response.
+	Warnings []envrules.Issue `json:"warnings,omitempty"`
 }
 
 func branchEnvOverrideResources(overrides []store.ServiceBranchEnvOverride) []branchEnvOverrideResource {
@@ -92,11 +95,8 @@ func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
-	} else if err != nil {
-		rt.internalError(w, "api: set app branch env: load app failed", err, slog.String("name", name))
+	warnings, ok := rt.checkAppOverrideEnv(r.Context(), w, name, req.Key, req.Value, req.Secret)
+	if !ok {
 		return
 	}
 
@@ -129,6 +129,7 @@ func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) 
 		Key:           req.Key,
 		Secret:        req.Secret,
 		UpdatedAt:     time.Now().UTC().Format(time.RFC3339),
+		Warnings:      warnings,
 	}
 	if !req.Secret {
 		resource.Value = req.Value

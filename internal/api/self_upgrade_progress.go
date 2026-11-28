@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/selfupgrade"
+	"github.com/glincker/levelrail/internal/selfupgrade"
 )
 
 // selfUpgradeProgress is the live view of the newest attempt: what the

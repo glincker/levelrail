@@ -3,7 +3,7 @@ package catalog
 import (
 	"io/fs"
 
-	"github.com/GLINCKER/levelrail/registry"
+	"github.com/glincker/levelrail/registry"
 )
 
 // registryOnlyTemplates are registry ids no Go source, contrib file or manifest

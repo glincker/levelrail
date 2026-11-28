@@ -1,8 +1,8 @@
 package ai
 
 import (
-	"github.com/GLINCKER/levelrail/internal/mcptools"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/mcptools"
+	"github.com/glincker/levelrail/internal/store"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
-	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/glincker/levelrail/internal/agent/agentpb"
 )
 
 // Defaults for RenewConfig. Renewing at two thirds of the lifetime leaves

@@ -3,7 +3,7 @@ package deploy
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // externalDatabaseGetter is satisfied by *store.DB; fakes that lack it only

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbviewer"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbviewer"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 const (

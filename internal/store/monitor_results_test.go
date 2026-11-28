@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/glincker/levelrail/internal/monitor"
 )
 
 func TestMonitorResultsRollupAndPruneBatches(t *testing.T) {

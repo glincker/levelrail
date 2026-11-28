@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/glincker/levelrail/internal/diskguard"
 )
 
 // DiskResilience mirrors GET /api/v1/resilience/disk.

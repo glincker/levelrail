@@ -3,7 +3,7 @@ package semver_test
 import (
 	"fmt"
 
-	"github.com/GLINCKER/levelrail/kit/semver"
+	"github.com/glincker/levelrail/kit/semver"
 )
 
 func ExampleCompare() {

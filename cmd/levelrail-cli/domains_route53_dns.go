@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GLINCKER/levelrail/internal/fielddesc"
+	"github.com/glincker/levelrail/internal/fielddesc"
 )
 
 // domainsRoute53DNSJSONUsage is every domains route53-dns subcommand's

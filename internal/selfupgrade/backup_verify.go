@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 // EnvVerifyFreeFactor scales the backup size into the free space a scratch

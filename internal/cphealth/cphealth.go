@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/doctor"
+	"github.com/glincker/levelrail/internal/doctor"
 )
 
 // Severity ranks a finding.

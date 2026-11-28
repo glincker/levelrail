@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/dbaccess"
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/glincker/levelrail/internal/dbaccess"
+	"github.com/glincker/levelrail/internal/store"
 )
 
 type databaseTempIssueRequest struct {

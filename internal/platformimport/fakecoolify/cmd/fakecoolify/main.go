@@ -12,7 +12,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/platformimport/fakecoolify"
+	"github.com/glincker/levelrail/internal/platformimport/fakecoolify"
 )
 
 func main() {

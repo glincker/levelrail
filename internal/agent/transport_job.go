@@ -3,7 +3,7 @@ package agent
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/glincker/levelrail/internal/docker"
 )
 
 // RunToCompletion implements docker.RunToCompletionRuntime by forwarding to

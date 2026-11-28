@@ -19,7 +19,7 @@ func TestValidate_RejectsHostAccess(t *testing.T) {
 		{"host ipc", "ipc: host", "[host_ipc]"},
 		{"host userns", "userns_mode: host", "[host_userns]"},
 		{"cap_add", "cap_add: [SYS_ADMIN]", "cap_add: SYS_ADMIN is not allowed"},
-		{"devices", "devices: [\"/dev/kvm:/dev/kvm\"]", "devices: is not allowed"},
+		{"devices", "devices: [\"/dev/kvm:/dev/kvm\"]", "devices: /dev/kvm is not on the device allowlist"},
 		{"seccomp off", "security_opt: [\"seccomp=unconfined\"]", "[security_opt_weakened]"},
 		{"volumes_from", "volumes_from: [other]", "[volumes_from]"},
 		{"docker socket bind", "volumes: [\"/var/run/docker.sock:/var/run/docker.sock\"]", "Docker socket"},
@@ -229,5 +229,27 @@ func TestUndeclaredCaps_SetpcapNeverCoveredByAGrant(t *testing.T) {
 	got := undeclaredCaps([]string{"SETPCAP"}, []string{"SETPCAP"}, false)
 	if len(got) != 1 {
 		t.Errorf("a compose cap_add of SETPCAP must stay undeclared even if listed as granted, got %v", got)
+	}
+}
+
+func TestHostNetworkLayout_RefusesCapAdd(t *testing.T) {
+	cases := []struct {
+		name    string
+		service string
+		wantErr bool
+	}{
+		{"host network alone", "network_mode: host", false},
+		{"with net_admin", "network_mode: host\n    cap_add: [NET_ADMIN]", true},
+		{"with chown", "network_mode: host\n    cap_add: [CHOWN]", true},
+	}
+	for _, c := range cases {
+		f, err := Parse([]byte("services:\n  app:\n    image: nginx:alpine\n    " + c.service + "\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.CapGrants = map[string][]string{"app": {"HOST_NETWORK", "NET_ADMIN", "CHOWN"}}
+		if err := hostNetworkLayout(f, "app", f.Services["app"]); (err != nil) != c.wantErr {
+			t.Errorf("%s: err = %v, wantErr %v", c.name, err, c.wantErr)
+		}
 	}
 }

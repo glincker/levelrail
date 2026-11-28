@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/docker"
-	appspec "github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/glincker/levelrail/internal/docker"
+	appspec "github.com/glincker/levelrail/internal/spec"
 )
 
 // imageEngines maps the last path segment of an image repository to an engine.

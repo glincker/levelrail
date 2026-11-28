@@ -3,7 +3,7 @@ package repolayout
 import (
 	"sort"
 
-	"github.com/GLINCKER/levelrail/kit/pathfilter"
+	"github.com/glincker/levelrail/kit/pathfilter"
 )
 
 // Affected returns the directories of the packages whose watch paths match any
