@@ -205,6 +205,8 @@ type backupHistoryResource struct {
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
 	// Codec is "zstd+age" for an encrypted object, empty for a raw one.
 	Codec string `json:"codec,omitempty"`
+	// UnownedLegacy marks a volume backup from before app instances were recorded, shown to root only.
+	UnownedLegacy bool `json:"unowned_legacy,omitempty"`
 	// HookOutput is a failing volume hook's masked output, filled only for
 	// callers who may change that app's hooks.
 	HookOutput string `json:"hook_output,omitempty"`

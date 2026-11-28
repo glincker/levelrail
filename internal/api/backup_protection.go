@@ -294,7 +294,11 @@ func (rt *Router) handleStartBackupDrill(w http.ResponseWriter, r *http.Request)
 	if !rt.authorizeDrillBackup(w, r, h) {
 		return
 	}
-	if h.ResourceKind != store.BackupResourceKindVolume {
+	if h.ResourceKind == store.BackupResourceKindVolume {
+		if rt.refuseForeignVolumeBackup(w, r, h.ServiceName, h) {
+			return
+		}
+	} else {
 		if db, derr := rt.databases.GetDesiredDatabase(r.Context(), h.DatabaseName); derr == nil && !db.OwnsBackup(h.InstanceID, h.StartedAt) {
 			writeError(w, http.StatusNotFound, "backup not found")
 			return
@@ -491,6 +495,9 @@ func (rt *Router) handleVolumeRestoreTo(w http.ResponseWriter, r *http.Request) 
 	}
 	if bh.ServiceName != svcName || bh.VolumeName != volName {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", req.BackupID, svcName, volName))
+		return
+	}
+	if rt.refuseForeignVolumeBackup(w, r, svcName, bh) {
 		return
 	}
 	if bh.Status != store.BackupStatusSucceeded {

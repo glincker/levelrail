@@ -65,6 +65,9 @@ func (rt *Router) handleTriggerVolumeRestore(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", req.BackupID, serviceName, volumeName))
 		return
 	}
+	if rt.refuseForeignVolumeBackup(w, r, serviceName, backup) {
+		return
+	}
 	if backup.Status != store.BackupStatusSucceeded {
 		writeError(w, http.StatusConflict, fmt.Sprintf("backup %q has status %q, only a succeeded backup can be restored from", req.BackupID, backup.Status))
 		return
