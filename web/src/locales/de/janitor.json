@@ -104,5 +104,18 @@
     "empty": "Noch keine Bereinigungsläufe aufgezeichnet.",
     "row": "{{when}}, {{trigger}}",
     "failed": "hatte Fehler"
+  },
+  "remote": {
+    "description": "Der letzte Vorschau-Durchlauf auf jedem Remote-Node und ob ein Node ungenutzte Images oberhalb seines Speicherbudgets hält.",
+    "empty": "Keine Remote-Nodes verbunden.",
+    "lastDry": "Letzte Vorschau {{when}}, {{size}} könnten freigegeben werden",
+    "loading": "Wird geladen",
+    "noDry": "Noch kein Vorschau-Durchlauf",
+    "status": {
+      "fail": "Über dem Budget",
+      "ok": "Innerhalb des Budgets",
+      "warn": "Über dem Budget"
+    },
+    "title": "Remote-Nodes"
   }
 }

@@ -695,5 +695,14 @@
     "deploy": "Un clic le déploie avec des health checks.",
     "address": "Les apps reçoivent une adresse sous {{domain}}.",
     "label": "Ce que vous obtiendrez et autres façons d'entrer"
+  },
+  "deployTemplate": {
+    "grants": "Autorisations demandées",
+    "install": "Vérifier et installer",
+    "loading": "Chargement du modèle",
+    "noGrants": "Aucune autorisation particulière",
+    "notFound": "Ce serveur n'a aucun modèle nommé {{id}}.",
+    "platforms": "Plateformes",
+    "title": "Modèle depuis un lien"
   }
 }

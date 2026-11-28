@@ -98,5 +98,21 @@
     "rangeEnd": "Der Bereich endet bei Eintrag {{seq}}",
     "outside_one": "Dieser Bereich ist intakt, aber die gesamte Kette hat außerhalb davon {{count}} Problem. Verifizieren Sie ohne Bereich.",
     "outside_other": "Dieser Bereich ist intakt, aber die gesamte Kette hat außerhalb davon {{count}} Probleme. Verifizieren Sie ohne Bereich."
+  },
+  "agentActivity": {
+    "approvedBy": "Genehmigt von {{name}}",
+    "emptyDescription": "Aktionen von API-Tokens, MCP-Clients und KI erscheinen hier.",
+    "emptyTitle": "Keine Agenten-Aktivität",
+    "label": "Aktionen von Agenten, Tokens und KI",
+    "noApproval": "Keine Genehmigung nötig",
+    "status": {
+      "approved": "Genehmigt",
+      "approving": "Wird genehmigt",
+      "expired": "Abgelaufen",
+      "pending": "Wartet auf Genehmigung",
+      "rejected": "Abgelehnt"
+    },
+    "summary": "{{method}} {{path}}",
+    "toggle": "Agenten-Aktivität"
   }
 }

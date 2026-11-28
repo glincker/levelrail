@@ -67,7 +67,13 @@
   "finish": {
     "deploy": "最初のアプリをデプロイ",
     "guide": "HTTPS、バックアップ、アラートのセットアップガイドに従う",
-    "open": "開く"
+    "open": "開く",
+    "starter": {
+      "nginx": "静的サイト",
+      "postgres": "データベース",
+      "uptime-kuma": "人気"
+    },
+    "starterLabel": "クイックスタート"
   },
   "card": {
     "title": "ダッシュボードをセットアップ",

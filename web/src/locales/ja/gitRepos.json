@@ -84,7 +84,10 @@
       "registerAgain": "再登録",
       "registering": "登録中",
       "done": "Webhookを登録しました。",
-      "failedToast": "Webhookを登録できませんでした。"
+      "failedToast": "Webhookを登録できませんでした。",
+      "grant": "この権限を付与してから修復してください:",
+      "missing": "このWebhookはまだプロバイダーに登録されていません。",
+      "repair": "Webhookを修復"
     },
     "poll": {
       "last": "最終確認 {{time}}。",

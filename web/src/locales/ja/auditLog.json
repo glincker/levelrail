@@ -95,5 +95,21 @@
     "problem": "エントリ{{seq}}: {{reason}}",
     "rangeEnd": "範囲の終端: エントリ{{seq}}",
     "outside_other": "この範囲に問題はありませんが、範囲外のチェーン全体に{{count}}件の問題があります。範囲を指定せずに検証してください。"
+  },
+  "agentActivity": {
+    "approvedBy": "{{name}}による承認",
+    "emptyDescription": "APIトークン、MCPクライアント、AIによる操作がここに表示されます。",
+    "emptyTitle": "エージェントの操作はありません",
+    "label": "エージェント、トークン、AIによる操作",
+    "noApproval": "承認は不要です",
+    "status": {
+      "approved": "承認済み",
+      "approving": "承認中",
+      "expired": "期限切れ",
+      "pending": "承認待ち",
+      "rejected": "却下"
+    },
+    "summary": "{{method}} {{path}}",
+    "toggle": "エージェントの操作"
   }
 }

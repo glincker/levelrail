@@ -104,5 +104,18 @@
     "empty": "Aucune exécution de nettoyage enregistrée pour l'instant.",
     "row": "{{when}}, {{trigger}}",
     "failed": "a eu des erreurs"
+  },
+  "remote": {
+    "description": "Le dernier passage de prévisualisation sur chaque node distant, et si un node conserve des images inutilisées au-delà de son budget de stockage.",
+    "empty": "Aucun node distant connecté.",
+    "lastDry": "Dernière prévisualisation {{when}}, {{size}} pourraient être libérés",
+    "loading": "Chargement",
+    "noDry": "Aucun passage de prévisualisation pour l'instant",
+    "status": {
+      "fail": "Au-delà du budget",
+      "ok": "Dans le budget",
+      "warn": "Au-delà du budget"
+    },
+    "title": "Nodes distants"
   }
 }

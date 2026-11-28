@@ -1,0 +1,65 @@
+{
+  "title": "Connexion à Docker Hub",
+  "description": "État du token, limites de pulls et accès aux dépôts privés pour vos identifiants Docker Hub.",
+  "status": {
+    "label": "État du token",
+    "checking": "Vérification du token...",
+    "valid": "Valide",
+    "invalid": "Refusé",
+    "expired": "Expiré",
+    "unknown": "Inconnu",
+    "checkedAt": "Vérifié {{when}}",
+    "scopes": "Permissions : {{scopes}}",
+    "noScopes": "Aucune permission signalée",
+    "kind": "Token {{kind}}",
+    "privateRepos": "Dépôts privés accessibles",
+    "expiresOn": "Expire {{when}}",
+    "loadFailed": "Impossible de lire l'état de la connexion : {{message}}"
+  },
+  "limits": {
+    "label": "Limite de pulls",
+    "remaining": "{{remaining}} pulls restants sur {{limit}}",
+    "window": "par fenêtre de {{hours}} h",
+    "sourceAccount": "Comptabilisé par compte",
+    "sourceIp": "Comptabilisé par adresse IP",
+    "anonymous": "Anonyme",
+    "authenticated": "Authentifié",
+    "unknown": "Docker Hub n'a pas signalé de limite de pulls.",
+    "low": "Faible : moins de {{percent}} % de la limite restante",
+    "meter": "Pulls restants",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation...",
+    "refreshFailed": "Impossible d'actualiser la limite de pulls : {{message}}",
+    "unavailable": "La limite de pulls n'a pas pu être lue."
+  },
+  "actions": {
+    "test": "Tester la connexion",
+    "testing": "Test en cours...",
+    "retest": "Tester à nouveau",
+    "replaceToken": "Remplacer le token",
+    "testOk": "{{name}} : Docker Hub a accepté le token.",
+    "testRejected": "{{name}} : Docker Hub a refusé le token.",
+    "testFailed": "{{name}} : le test a échoué.",
+    "tokenLabel": "Nouveau token d'accès",
+    "tokenHelp": "Créez un token d'accès en lecture seule dans les paramètres de votre compte Docker Hub.",
+    "save": "Enregistrer le token",
+    "saving": "Enregistrement...",
+    "cancel": "Annuler",
+    "replaced": "{{name}} : token remplacé."
+  },
+  "cli": {
+    "summary": "Corriger via la CLI",
+    "hint": "Exécutez cette commande pour vérifier la connexion depuis un terminal."
+  },
+  "tags": {
+    "filterLabel": "Filtrer les tags",
+    "filterPlaceholder": "Saisissez pour filtrer",
+    "empty": "Aucun tag ne correspond.",
+    "loading": "Chargement des tags...",
+    "loadFailed": "Impossible de charger les tags : {{message}}",
+    "retry": "Réessayer",
+    "showing": "Affichage de {{from}} à {{to}} sur {{total}}",
+    "listLabel": "Tags de {{repository}}",
+    "pick": "Utiliser le tag {{tag}}"
+  }
+}

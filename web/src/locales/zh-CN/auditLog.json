@@ -95,5 +95,21 @@
     "problem": "条目 {{seq}}：{{reason}}",
     "rangeEnd": "范围结束于条目 {{seq}}",
     "outside_other": "此范围是完整的，但整条链在范围之外有 {{count}} 个问题。请不指定范围再验证一次。"
+  },
+  "agentActivity": {
+    "approvedBy": "由 {{name}} 批准",
+    "emptyDescription": "API 令牌、MCP 客户端和 AI 的操作会显示在这里。",
+    "emptyTitle": "暂无代理活动",
+    "label": "代理、令牌和 AI 的操作",
+    "noApproval": "无需批准",
+    "status": {
+      "approved": "已批准",
+      "approving": "批准中",
+      "expired": "已过期",
+      "pending": "等待批准",
+      "rejected": "已拒绝"
+    },
+    "summary": "{{method}} {{path}}",
+    "toggle": "代理活动"
   }
 }

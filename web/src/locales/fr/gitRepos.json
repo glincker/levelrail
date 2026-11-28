@@ -84,7 +84,10 @@
       "registerAgain": "Enregistrer à nouveau",
       "registering": "Enregistrement",
       "done": "Webhook enregistré.",
-      "failedToast": "Impossible d'enregistrer le webhook."
+      "failedToast": "Impossible d'enregistrer le webhook.",
+      "grant": "Accordez cette autorisation, puis réparez :",
+      "missing": "Le webhook n'a pas encore été enregistré chez le fournisseur.",
+      "repair": "Réparer le webhook"
     },
     "poll": {
       "last": "Dernière vérification {{time}}.",

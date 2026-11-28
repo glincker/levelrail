@@ -695,5 +695,14 @@
     "deploy": "Um clique faz o deploy com verificações de saúde.",
     "address": "Os apps recebem um endereço em {{domain}}.",
     "label": "O que você vai ter e outras formas de entrar"
+  },
+  "deployTemplate": {
+    "grants": "Permissões solicitadas",
+    "install": "Revisar e instalar",
+    "loading": "Carregando template",
+    "noGrants": "Sem permissões especiais",
+    "notFound": "Este servidor não tem um template chamado {{id}}.",
+    "platforms": "Plataformas",
+    "title": "Template de um link"
   }
 }

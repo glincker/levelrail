@@ -101,5 +101,21 @@
     "outside_one": "Cette plage est intacte, mais la chaîne entière présente {{count}} problème en dehors. Vérifiez sans plage.",
     "outside_other": "Cette plage est intacte, mais la chaîne entière présente {{count}} problèmes en dehors. Vérifiez sans plage.",
     "outside_many": "Cette plage est intacte, mais la chaîne entière présente {{count}} problèmes en dehors. Vérifiez sans plage."
+  },
+  "agentActivity": {
+    "approvedBy": "Approuvé par {{name}}",
+    "emptyDescription": "Les actions effectuées avec des tokens d'API, des clients MCP et l'IA apparaîtront ici.",
+    "emptyTitle": "Aucune activité d'agent",
+    "label": "Actions des agents, tokens et IA",
+    "noApproval": "Aucune approbation requise",
+    "status": {
+      "approved": "Approuvé",
+      "approving": "Approbation en cours",
+      "expired": "Expiré",
+      "pending": "En attente d'approbation",
+      "rejected": "Refusé"
+    },
+    "summary": "{{method}} {{path}}",
+    "toggle": "Activité des agents"
   }
 }

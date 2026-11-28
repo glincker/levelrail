@@ -67,7 +67,13 @@
   "finish": {
     "deploy": "Faça o deploy do seu primeiro app",
     "guide": "Siga o guia de configuração para HTTPS, backups e alertas",
-    "open": "Abrir"
+    "open": "Abrir",
+    "starter": {
+      "nginx": "Site estático",
+      "postgres": "Banco de dados",
+      "uptime-kuma": "Popular"
+    },
+    "starterLabel": "Inícios rápidos"
   },
   "card": {
     "title": "Configure seu painel",

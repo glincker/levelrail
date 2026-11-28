@@ -84,7 +84,10 @@
       "registerAgain": "重新注册",
       "registering": "注册中",
       "done": "Webhook 已注册。",
-      "failedToast": "无法注册 Webhook。"
+      "failedToast": "无法注册 Webhook。",
+      "grant": "请先授予此权限，然后修复：",
+      "missing": "Webhook 尚未在提供方注册。",
+      "repair": "修复 Webhook"
     },
     "poll": {
       "last": "上次检查于 {{time}}。",

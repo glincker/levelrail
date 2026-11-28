@@ -1,0 +1,65 @@
+{
+  "title": "Docker-Hub-Verbindung",
+  "description": "Tokenstatus, Pull-Limits und Zugriff auf private Repositories für Ihre Docker-Hub-Zugangsdaten.",
+  "status": {
+    "label": "Tokenstatus",
+    "checking": "Token wird geprüft...",
+    "valid": "Gültig",
+    "invalid": "Abgelehnt",
+    "expired": "Abgelaufen",
+    "unknown": "Unbekannt",
+    "checkedAt": "Geprüft {{when}}",
+    "scopes": "Berechtigungen: {{scopes}}",
+    "noScopes": "Keine Berechtigungen gemeldet",
+    "kind": "{{kind}}-Token",
+    "privateRepos": "Private Repositories sichtbar",
+    "expiresOn": "Läuft ab {{when}}",
+    "loadFailed": "Der Verbindungsstatus konnte nicht gelesen werden: {{message}}"
+  },
+  "limits": {
+    "label": "Pull-Limit",
+    "remaining": "{{remaining}} von {{limit}} Pulls übrig",
+    "window": "pro {{hours}}-Stunden-Fenster",
+    "sourceAccount": "Gezählt pro Konto",
+    "sourceIp": "Gezählt pro IP-Adresse",
+    "anonymous": "Anonym",
+    "authenticated": "Angemeldet",
+    "unknown": "Docker Hub hat kein Pull-Limit gemeldet.",
+    "low": "Niedrig: weniger als {{percent}} % des Limits übrig",
+    "meter": "Verbleibende Pulls",
+    "refresh": "Aktualisieren",
+    "refreshing": "Wird aktualisiert...",
+    "refreshFailed": "Das Pull-Limit konnte nicht aktualisiert werden: {{message}}",
+    "unavailable": "Das Pull-Limit konnte nicht gelesen werden."
+  },
+  "actions": {
+    "test": "Verbindung testen",
+    "testing": "Wird getestet...",
+    "retest": "Erneut testen",
+    "replaceToken": "Token ersetzen",
+    "testOk": "{{name}}: Docker Hub hat das Token akzeptiert.",
+    "testRejected": "{{name}}: Docker Hub hat das Token abgelehnt.",
+    "testFailed": "{{name}}: Der Test ist fehlgeschlagen.",
+    "tokenLabel": "Neues Zugriffstoken",
+    "tokenHelp": "Erstellen Sie in den Kontoeinstellungen von Docker Hub ein Zugriffstoken mit Nur-Lese-Berechtigung.",
+    "save": "Token speichern",
+    "saving": "Wird gespeichert...",
+    "cancel": "Abbrechen",
+    "replaced": "{{name}}: Token ersetzt."
+  },
+  "cli": {
+    "summary": "Per CLI beheben",
+    "hint": "Führen Sie diesen Befehl aus, um die Verbindung vom Terminal aus zu prüfen."
+  },
+  "tags": {
+    "filterLabel": "Tags filtern",
+    "filterPlaceholder": "Zum Filtern tippen",
+    "empty": "Keine Tags gefunden.",
+    "loading": "Tags werden geladen...",
+    "loadFailed": "Tags konnten nicht geladen werden: {{message}}",
+    "retry": "Erneut versuchen",
+    "showing": "Zeigt {{from}} bis {{to}} von {{total}}",
+    "listLabel": "Tags von {{repository}}",
+    "pick": "Tag {{tag}} verwenden"
+  }
+}

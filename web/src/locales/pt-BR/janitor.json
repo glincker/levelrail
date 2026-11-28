@@ -104,5 +104,18 @@
     "empty": "Nenhuma limpeza registrada ainda.",
     "row": "{{when}}, {{trigger}}",
     "failed": "teve erros"
+  },
+  "remote": {
+    "description": "A última prévia de cada node remoto e se algum node mantém imagens não usadas acima do orçamento de disco.",
+    "empty": "Nenhum node remoto conectado.",
+    "lastDry": "Última prévia {{when}}, {{size}} podem ser liberados",
+    "loading": "Carregando",
+    "noDry": "Nenhuma prévia ainda",
+    "status": {
+      "fail": "Acima do orçamento",
+      "ok": "Dentro do orçamento",
+      "warn": "Acima do orçamento"
+    },
+    "title": "Nodes remotos"
   }
 }

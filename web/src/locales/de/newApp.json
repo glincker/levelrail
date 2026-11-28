@@ -687,5 +687,14 @@
     "deploy": "Ein Klick deployt es mit Health-Checks.",
     "address": "Apps erhalten eine Adresse unter {{domain}}.",
     "label": "Was Sie erhalten und weitere Wege hinein"
+  },
+  "deployTemplate": {
+    "grants": "Angeforderte Berechtigungen",
+    "install": "Prüfen und installieren",
+    "loading": "Vorlage wird geladen",
+    "noGrants": "Keine besonderen Berechtigungen",
+    "notFound": "Dieser Server hat keine Vorlage namens {{id}}.",
+    "platforms": "Plattformen",
+    "title": "Vorlage aus einem Link"
   }
 }

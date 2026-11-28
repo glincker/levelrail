@@ -101,5 +101,21 @@
     "outside_one": "Este intervalo está íntegro, mas a cadeia inteira tem {{count}} problema fora dele. Verifique sem um intervalo.",
     "outside_many": "Este intervalo está íntegro, mas a cadeia inteira tem {{count}} problemas fora dele. Verifique sem um intervalo.",
     "outside_other": "Este intervalo está íntegro, mas a cadeia inteira tem {{count}} problemas fora dele. Verifique sem um intervalo."
+  },
+  "agentActivity": {
+    "approvedBy": "Aprovado por {{name}}",
+    "emptyDescription": "Ações feitas por tokens de API, clientes MCP e IA aparecerão aqui.",
+    "emptyTitle": "Nenhuma atividade de agente",
+    "label": "Ações de agentes, tokens e IA",
+    "noApproval": "Não precisa de aprovação",
+    "status": {
+      "approved": "Aprovada",
+      "approving": "Aprovando",
+      "expired": "Expirada",
+      "pending": "Aguardando aprovação",
+      "rejected": "Rejeitada"
+    },
+    "summary": "{{method}} {{path}}",
+    "toggle": "Atividade de agentes"
   }
 }

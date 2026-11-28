@@ -678,5 +678,14 @@
     "deploy": "一键部署，并带有健康检查。",
     "address": "应用会获得 {{domain}} 下的地址。",
     "label": "你将得到什么，以及其他入口"
+  },
+  "deployTemplate": {
+    "grants": "所需权限",
+    "install": "查看并安装",
+    "loading": "正在加载模板",
+    "noGrants": "无特殊权限",
+    "notFound": "此服务器上没有名为 {{id}} 的模板。",
+    "platforms": "平台",
+    "title": "来自链接的模板"
   }
 }

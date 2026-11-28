@@ -1,0 +1,65 @@
+{
+  "title": "Docker Hub 连接",
+  "description": "Docker Hub 凭据的令牌状态、拉取限额和私有仓库访问权限。",
+  "status": {
+    "label": "令牌状态",
+    "checking": "正在检查令牌...",
+    "valid": "有效",
+    "invalid": "已拒绝",
+    "expired": "已过期",
+    "unknown": "未知",
+    "checkedAt": "检查于 {{when}}",
+    "scopes": "权限范围：{{scopes}}",
+    "noScopes": "未报告权限范围",
+    "kind": "{{kind}} 令牌",
+    "privateRepos": "可见的私有仓库",
+    "expiresOn": "{{when}} 过期",
+    "loadFailed": "无法读取连接状态：{{message}}"
+  },
+  "limits": {
+    "label": "拉取限额",
+    "remaining": "剩余 {{remaining}} / {{limit}} 次拉取",
+    "window": "每 {{hours}} 小时窗口",
+    "sourceAccount": "按账户计数",
+    "sourceIp": "按 IP 地址计数",
+    "anonymous": "匿名",
+    "authenticated": "已认证",
+    "unknown": "Docker Hub 未报告拉取限额。",
+    "low": "偏低：剩余不足限额的 {{percent}}%",
+    "meter": "剩余拉取次数",
+    "refresh": "刷新",
+    "refreshing": "正在刷新...",
+    "refreshFailed": "无法刷新拉取限额：{{message}}",
+    "unavailable": "无法读取拉取限额。"
+  },
+  "actions": {
+    "test": "测试连接",
+    "testing": "测试中...",
+    "retest": "重新测试",
+    "replaceToken": "替换令牌",
+    "testOk": "{{name}}：Docker Hub 已接受该令牌。",
+    "testRejected": "{{name}}：Docker Hub 已拒绝该令牌。",
+    "testFailed": "{{name}}：测试失败。",
+    "tokenLabel": "新的访问令牌",
+    "tokenHelp": "请在 Docker Hub 账户设置中创建只读访问令牌。",
+    "save": "保存令牌",
+    "saving": "保存中...",
+    "cancel": "取消",
+    "replaced": "{{name}}：令牌已替换。"
+  },
+  "cli": {
+    "summary": "通过 CLI 修复",
+    "hint": "在终端中运行此命令，检查连接。"
+  },
+  "tags": {
+    "filterLabel": "筛选标签",
+    "filterPlaceholder": "输入以筛选",
+    "empty": "没有匹配的标签。",
+    "loading": "正在加载标签...",
+    "loadFailed": "无法加载标签：{{message}}",
+    "retry": "重试",
+    "showing": "显示第 {{from}} 到 {{to}} 项，共 {{total}} 项",
+    "listLabel": "{{repository}} 的标签",
+    "pick": "使用标签 {{tag}}"
+  }
+}

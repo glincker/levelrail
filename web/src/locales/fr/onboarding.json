@@ -67,7 +67,13 @@
   "finish": {
     "deploy": "Deployez votre première app",
     "guide": "Suivez le guide de configuration pour HTTPS, les sauvegardes et les alertes",
-    "open": "Ouvrir"
+    "open": "Ouvrir",
+    "starter": {
+      "nginx": "Site statique",
+      "postgres": "Base de données",
+      "uptime-kuma": "Populaire"
+    },
+    "starterLabel": "Démarrages rapides"
   },
   "card": {
     "title": "Configurez votre tableau de bord",

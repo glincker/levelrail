@@ -67,7 +67,13 @@
   "finish": {
     "deploy": "部署你的第一个应用",
     "guide": "按照设置指南配置 HTTPS、备份和告警",
-    "open": "打开"
+    "open": "打开",
+    "starter": {
+      "nginx": "静态站点",
+      "postgres": "数据库",
+      "uptime-kuma": "热门"
+    },
+    "starterLabel": "快速开始"
   },
   "card": {
     "title": "设置你的仪表盘",

@@ -1,0 +1,65 @@
+{
+  "title": "Docker Hub接続",
+  "description": "Docker Hubの認証情報のトークン状態、プル制限、プライベートリポジトリへのアクセスを表示します。",
+  "status": {
+    "label": "トークンの状態",
+    "checking": "トークンを確認しています...",
+    "valid": "有効",
+    "invalid": "拒否",
+    "expired": "期限切れ",
+    "unknown": "不明",
+    "checkedAt": "{{when}}に確認",
+    "scopes": "スコープ: {{scopes}}",
+    "noScopes": "スコープの報告はありません",
+    "kind": "{{kind}}トークン",
+    "privateRepos": "プライベートリポジトリを参照可能",
+    "expiresOn": "{{when}}に期限切れ",
+    "loadFailed": "接続状態を読み込めませんでした: {{message}}"
+  },
+  "limits": {
+    "label": "プル制限",
+    "remaining": "{{limit}}回中{{remaining}}回のプルが残っています",
+    "window": "{{hours}}時間ごとのウィンドウ",
+    "sourceAccount": "アカウント単位でカウント",
+    "sourceIp": "IPアドレス単位でカウント",
+    "anonymous": "匿名",
+    "authenticated": "認証済み",
+    "unknown": "Docker Hubからプル制限が報告されていません。",
+    "low": "残りわずか: 制限の{{percent}}%未満が残っています",
+    "meter": "残りのプル",
+    "refresh": "更新",
+    "refreshing": "更新中...",
+    "refreshFailed": "プル制限を更新できませんでした: {{message}}",
+    "unavailable": "プル制限を読み取れませんでした。"
+  },
+  "actions": {
+    "test": "接続をテスト",
+    "testing": "テスト中...",
+    "retest": "再テスト",
+    "replaceToken": "トークンを置き換え",
+    "testOk": "{{name}}: Docker Hubがトークンを受け入れました。",
+    "testRejected": "{{name}}: Docker Hubがトークンを拒否しました。",
+    "testFailed": "{{name}}: テストに失敗しました。",
+    "tokenLabel": "新しいアクセストークン",
+    "tokenHelp": "Docker Hubのアカウント設定で、読み取り専用のアクセストークンを作成してください。",
+    "save": "トークンを保存",
+    "saving": "保存中...",
+    "cancel": "キャンセル",
+    "replaced": "{{name}}: トークンを置き換えました。"
+  },
+  "cli": {
+    "summary": "CLIで修正",
+    "hint": "このコマンドを実行すると、ターミナルから接続を確認できます。"
+  },
+  "tags": {
+    "filterLabel": "タグを絞り込む",
+    "filterPlaceholder": "入力して絞り込み",
+    "empty": "一致するタグはありません。",
+    "loading": "タグを読み込み中...",
+    "loadFailed": "タグを読み込めませんでした: {{message}}",
+    "retry": "再試行",
+    "showing": "{{total}}件中{{from}}から{{to}}を表示",
+    "listLabel": "{{repository}}のタグ",
+    "pick": "タグ{{tag}}を使用"
+  }
+}
