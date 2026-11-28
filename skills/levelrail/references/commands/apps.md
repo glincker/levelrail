@@ -1033,6 +1033,7 @@ Usage:
   levelrail-cli apps git-source affected <name> --files a,b [flags]             dry run: which packages a change would redeploy
   levelrail-cli apps git-source settings <name> [flags]                         set push path filters and forge status reporting
   levelrail-cli apps git-source webhook <name> [--rotate] [flags]               print the URL, content type and events for the provider
+  levelrail-cli apps git-source webhook repair <name> [flags]                   list hooks, create the push webhook only if missing
   levelrail-cli apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once
   levelrail-cli apps git-source register-webhook <name> [flags]                 register the push webhook on the provider again
   levelrail-cli apps git-source ssh-key show|generate|rotate|delete <name> [flags]  manage the SSH deploy key for a private repo

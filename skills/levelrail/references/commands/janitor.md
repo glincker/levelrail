@@ -10,6 +10,7 @@ Subcommands: policy, run, status
 Usage:
   levelrail-cli janitor status [flags]                    disk state, policy, last pass and quarantined volumes
   levelrail-cli janitor run [--dry-run] [--if-needed]     one cleanup pass now (--dry-run previews, --if-needed waits for disk pressure)
+  levelrail-cli janitor run --node <id> [--yes]           preview a remote node against its disk budget, --yes removes the safe classes
   levelrail-cli janitor policy [--enabled=BOOL ...]       show the policy, or change the fields you pass
 
 Policy flags: --enabled, --dry-run, --interval-minutes, --disk-free-budget-percent,

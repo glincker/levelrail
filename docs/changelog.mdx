@@ -4,6 +4,145 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="1.5.14" description="2026-11-28">
+**Features**
+
+* add dragonfly, postgrest, sshwifty, gokapi, cobalt, quickwit, manticore, tududi, donetick and dgraph templates
+* add gancio and parseable templates
+* add kubo, mumble, cinny, mediamtx, screego, rqlite, pinry and plik templates
+* add memgraph, piwigo, hammond, graphite, casdoor, perplexica, nzbhydra2, medusa, znc and airsonic-advanced templates
+* add portkey-gateway, gotosocial, microbin, chhoto-url, yopass, profilarr, kafka-ui and unmanic templates
+* add sickgear, lazylibrarian, tvheadend, openvscode-server, ngircd, projectsend, redis-stack, jdownloader and cronicle templates
+* add template icons
+* announcement banner and page
+* announcement tooling and schema
+* announcements in the CLI
+* bind udp and direct ports with conflict checks
+* branded qr code and honest app urls
+* build parallelism default for small hosts
+* classify template install failures as compat gaps
+* compose fidelity for platform, network mode and capabilities
+* conflict aware env editor
+* dashboard for grant review, platform blocks, compat badges and advisor savings
+* deploy failure explanation
+* doctor lists apps on the legacy vault path
+* dozzle template and docker api grant flag
+* env apply in the CLI and MCP tools
+* fence tokens on destructive agent actions
+* gpu inventory and placement for gpu templates
+* host network and device grants for templates
+* image and build cache gc with dry run
+* import fidelity report for compose and docker run
+* install templates from sources
+* installer swap prompt for small hosts
+* instance id in the CLI, bundle and backup manifests
+* Levelrail v1.5.14
+* low memory and swap helper
+* node picker, per-server cost shares and import report in the dashboard
+* node prices feed right-sizing savings
+* node targeting for compose and template install
+* one validator for env keys and values
+* per-app share of the server bill
+* platform preflight and delete race on template install
+* private template sources
+* replica scale stepper
+* replica spread placement and setting
+* right-sizing shows reclaimable memory and weekly digest
+* scoped docker api grants for templates
+* selfh.st candidate pipeline and template lint fix
+* signed announcement feed core
+* sleep idle apps from advisor findings
+* spend caps really pause apps
+* token list filters and bulk revoke
+* tokens hygiene doctor check
+* tokens in the cli
+* tokens page filters, grouping and bulk revoke
+* translate the new app page and instance id strings
+* versioned atomic env apply
+* wire docker api grants at boot
+* wire fence tokens into placement and node failure
+* wireguard preflight and wg-easy template
+
+
+**Bug Fixes**
+
+* a kept database volume is never reused by another team
+* api and e2e tests match the reserved-name, stack-name and token status rules
+* app scoped secret access refuses reserved namespaces
+* app volume backups are owned by the app instance that made them
+* apps, databases and stacks share one name check
+* attention items respect app visibility
+* backup routes check ownership and the history is filtered
+* build and registry cache are owned by the app instance
+* cli command tree and apiclient guards for this release
+* cli secrets set replaces plain env atomically and env set retries on unrelated conflicts
+* compose deploy cannot write secrets into reserved or foreign namespaces
+* compose deploy locks every derived name
+* control plane secret namespaces are reserved on every service name writer
+* database page opens at the top
+* database references are bound to the database instance
+* deleted database credentials never reach the next owner of the name
+* device login notices are a root only channel flag
+* docker api logs profile for log viewers
+* doctor explain entry for kernel_modules
+* emergency token fails closed when the audit write fails
+* env apply and restore use the shared validator
+* env revision restore honors the protected app gate
+* exec health probes in shell-less images
+* expired tokens are not active and emergency tokens are capped
+* fence cleanup tokens and post-hoc rejection
+* full env rules on clone, import, iac and provider writers
+* full env rules on every remaining writer
+* harden template source sync
+* hostswap runs host commands through the approved exec path
+* instance identity getter uses the generated helper
+* integration and database attach namespaces are authorized
+* keep licence, source and attribution fields when exporting the registry
+* legacy vault paths are vetted before the platform credential reads them
+* locale plural parity for the advisor sleep button
+* logs profile allowlists and dozzle auth
+* lower package fan-in for the secret guard
+* make fence tokens safe by default
+* migration hub target cannot be steered onto another resource
+* multi service previews cannot take another team's app name
+* names are admitted before any secret is written
+* netguard refuses a blocked dial cleanly when no opt-in env names are given
+* no dual copies between plain env and secrets
+* node targeting filters nodes before choosing
+* one validator and one source of truth on every env writer
+* platform preflight uses the docker daemon platform
+* postgrest compose escape and registry export
+* preview and branch env use the shared validator
+* probe fallback without a port
+* project scoped tokens cannot reach organization env
+* purge always drops parked secrets
+* register template source wire cap setting
+* report a corrupt fence book and fsync saves
+* reserve traffic export, dns providers and database names
+* reserved name apps are refused by every secret handler
+* source template install test follows the approval flow
+* swap helper memory detection
+* template source review and cap hardening
+* the announcement fetch uses the guarded dialer
+* the legacy vault refusal is recorded as a security event
+* the logs grant is refused on multi team instances
+* tighten docker api grant scoping
+* tighten host network and device grants
+* token bulk routes are classified for tenants
+* undo of a deleted app restores its secret values
+* undo rollback never erases the live secrets
+* undo tells you what it could not bring back
+* unnamed production builds keep the repo derived railpack cache id
+* validate app names on clone and in the store
+* wg-easy manifest description
+* wg-easy ports, exposure rebase and compat classification
+
+
+**Performance**
+
+* lazy-load overview side cards and trim docs search excerpts to fit the bundle budgets
+</Update>
+
 <Update label="1.5.13" description="2026-11-27">
 **Features**
 
