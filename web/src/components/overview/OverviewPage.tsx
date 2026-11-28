@@ -33,7 +33,6 @@ import { UploadSourceCard } from './UploadSourceCard'
 import { latestUpload } from './uploadSource'
 import { LogsTail } from './LogsTail'
 import { OverviewHero } from './OverviewHero'
-import { OverviewQuickLinks } from './OverviewQuickLinks'
 import { OverviewSuggestions } from './OverviewSuggestions'
 import { useOverviewSuggestions } from './useOverviewSuggestions'
 import { RecommendedSetup } from './RecommendedSetup'
@@ -54,7 +53,7 @@ import { StaticStatStrip } from './StaticStatStrip'
 import { RecentDeploys } from './RecentDeploys'
 import { AppDeploys } from './AppDeploys'
 import { AppRecentPreviews } from './AppRecentPreviews'
-import { AppSummaryStrip } from './AppSummaryStrip'
+import { AppStatusStrip } from './AppStatusStrip'
 import { AppWiring } from './AppWiring'
 import type { VisitorsWindow } from '../../queries/appVisitors'
 import { useAppUrl } from './useAppUrl'
@@ -294,7 +293,7 @@ export function OverviewPage({
       preview={isStatic ? preview : undefined}
       summary={
         isStatic ? undefined : (
-          <AppSummaryStrip
+          <AppStatusStrip
             app={app}
             attempts={attempts}
             url={openUrl}
@@ -310,6 +309,7 @@ export function OverviewPage({
       latest={latest}
       omit={[
         'add_domain',
+        'add_health_check',
         ...(diagnosisShown ? (['failed_deploy'] as const) : []),
         // A static site has no process to probe.
         ...(isStatic ? (['add_health_check'] as const) : []),
@@ -340,12 +340,6 @@ export function OverviewPage({
     <div className="space-y-3">
       {actions.confirmDialog}
       {hero}
-      <OverviewQuickLinks
-        app={app}
-        reading={reading}
-        latest={latest}
-        isStatic={isStatic}
-      />
       {next}
       {top.map((id) => (
         <Fragment key={id}>{sections[id]}</Fragment>

@@ -108,6 +108,7 @@
     "linesLabel": "Last log lines of the failing container",
     "noLines": "No log lines were captured for this failure.",
     "openFullLogs": "Open full logs",
-    "crashSummary": "{{count}} restarts in the last {{minutes}} minutes."
+    "crashSummary": "{{count}} restarts in the last {{minutes}} minutes.",
+    "sectionWarnings": "Warnings ({{count}})"
   }
 }

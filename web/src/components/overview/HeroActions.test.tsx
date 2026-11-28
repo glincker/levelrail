@@ -16,6 +16,12 @@ vi.mock('react-i18next', () => ({
 }))
 
 const redeploy = vi.fn()
+vi.mock('./useUrlReachability', () => ({
+  useUrlReachability: () => ({
+    reach: { state: 'reachable', reason: 'ok' },
+    shareUrl: null,
+  }),
+}))
 vi.mock('./useOverviewActions', () => ({
   useOverviewActions: () => ({
     redeploy,

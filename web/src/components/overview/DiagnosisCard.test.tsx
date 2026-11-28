@@ -32,6 +32,9 @@ let failure: FailureContext = {
   total_lines: 0,
 }
 let stuck: StuckReport | undefined
+vi.mock('../../queries/healthScore', () => ({
+  useAppHealthScore: () => ({ data: undefined }),
+}))
 vi.mock('../../queries/investigate', () => ({
   useFailureContext: () => ({ data: failure }),
 }))

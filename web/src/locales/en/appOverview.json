@@ -172,5 +172,45 @@
   "trafficUnavailable": "Live traffic numbers are unavailable right now.",
   "trafficRetry": "Retry",
   "noTrafficTitle": "No traffic yet",
-  "noTrafficHint": "Send a request to see live numbers."
+  "noTrafficHint": "Send a request to see live numbers.",
+  "status": {
+    "chips": "Status",
+    "openAnyway": "Open anyway",
+    "reason": {
+      "down": "The app is stopped or not ready, so this address will not answer yet.",
+      "waiting_dns": "Waiting for DNS: the domain does not point here yet.",
+      "local_only": "This address only works on this computer.",
+      "unknown": "The app address could not be checked yet."
+    },
+    "chip": {
+      "down": "Not ready",
+      "waiting_dns": "Waiting for DNS",
+      "local_only": "This computer only",
+      "unknown": "Unchecked"
+    },
+    "qr": {
+      "open": "Show QR code",
+      "title": "QR code for this app",
+      "fallback": "This app is local. Scan this public address instead."
+    },
+    "deploy": {
+      "title": "Latest deploy"
+    },
+    "health": {
+      "title": "Health checks",
+      "on": "Health check on",
+      "none": "No health check",
+      "add": "Add a health check",
+      "dismiss": "Dismiss the health check suggestion"
+    },
+    "warnings": {
+      "label_one": "{{count}} warning",
+      "label_other": "{{count}} warnings",
+      "title_one": "{{count}} warning, open health",
+      "title_other": "{{count}} warnings, open health"
+    },
+    "resources": "Resources",
+    "domains": "Domains",
+    "addDomain": "Add a domain"
+  }
 }
