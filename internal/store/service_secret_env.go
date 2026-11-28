@@ -51,7 +51,7 @@ func (db *DB) SetServiceSecretEnvDeclared(ctx context.Context, name, key string,
 	if err != nil {
 		return false, fmt.Errorf("store: declare secret env for %q: marshal: %w", name, err)
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE desired_services SET secret_env = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, string(out), name); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE desired_services SET secret_env = ?, env_version = env_version + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, string(out), name); err != nil {
 		return false, fmt.Errorf("store: declare secret env for %q: update: %w", name, err)
 	}
 	if err := tx.Commit(); err != nil {

@@ -33,6 +33,7 @@ type envMergeResource struct {
 	Missing     []string `json:"missing"`
 	Keys        []string `json:"keys"`
 	RebuildKeys []string `json:"rebuild_keys,omitempty"`
+	EnvVersion  int      `json:"env_version,omitempty"`
 }
 
 // handlePutAppEnv handles PUT /api/v1/apps/{name}/env: a batch of set and unset
@@ -125,6 +126,7 @@ func (rt *Router) handlePutAppEnv(w http.ResponseWriter, r *http.Request) {
 		rt.nudgeReconciler()
 		rt.changes.Publish(changeApps, name)
 	}
+	out.EnvVersion = rt.envVersionOf(r.Context(), name)
 	rt.auditEnvMerge(r, out)
 	writeJSON(w, http.StatusOK, out)
 }

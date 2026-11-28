@@ -128,7 +128,7 @@ func (db *DB) mergeEnvCore(ctx context.Context, name string, set map[string]stri
 		return EnvMergeResult{}, fmt.Errorf("store: merge env for %q: marshal: %w", name, err)
 	}
 	// env_dirty stays set until a restart recreates the container, the same latch the update endpoint keeps.
-	if _, err := conn.ExecContext(ctx, `UPDATE desired_services SET env = ?, env_dirty = 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, string(nextJSON), name); err != nil {
+	if _, err := conn.ExecContext(ctx, `UPDATE desired_services SET env = ?, env_dirty = 1, env_version = env_version + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, string(nextJSON), name); err != nil {
 		return EnvMergeResult{}, fmt.Errorf("store: merge env for %q: write: %w", name, err)
 	}
 	if _, err := conn.ExecContext(ctx, `COMMIT`); err != nil {

@@ -34,6 +34,8 @@ func (rt *Router) registerEnvProtectionRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/env/revisions/diff", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleDiffEnvRevisions))
 	// Restore needs the same ability as any env write.
 	mux.HandleFunc("POST /api/v1/apps/{name}/env/revisions/{rev}/restore", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleRestoreEnvRevision))
+	// Plain edits need write; secret, convert and vault parts additionally check write:sensitive in the handler.
+	mux.HandleFunc("POST /api/v1/apps/{name}/env/apply", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleApplyEnvPlan))
 	mux.HandleFunc("GET /api/v1/databases/{name}/links", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListDatabaseLinks))
 	mux.HandleFunc("POST /api/v1/databases/{name}/links", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleConnectDatabaseApp))
 }

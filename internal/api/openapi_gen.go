@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2439 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2440 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -276,6 +276,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-report", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppEgressReport", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/env", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppEnv", Description: "Batch set and unset merged in one transaction; the CLI uses this instead of a full-spec PUT."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env-diff", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleEnvDiff", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/env/apply", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyEnvPlan", Description: "Plain edits need write; secret, convert and vault parts additionally check write:sensitive in the handler."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/bound", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBoundEnv", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/check", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckEnv", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/check/fix", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleFixEnv", Description: ""},

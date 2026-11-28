@@ -33,6 +33,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
+	resource.EnvVersion = rt.envVersionOf(r.Context(), name)
 	resource.AppKind, resource.KindSource = classifyApp(kindInputFor(*svc, rt.appHasJobs(r.Context(), name)))
 	rt.attachSecretPolicy(r.Context(), &resource, *svc)
 	pendingImage := ""

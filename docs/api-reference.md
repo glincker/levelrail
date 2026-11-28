@@ -817,9 +817,10 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/env/revisions/{rev}/restore | AbilityWrite | handleRestoreEnvRevision |
 | GET | /api/v1/deploys/{id}/why | AbilityRead | handleGetDeployWhy |
 | PUT | /api/v1/apps/{name}/env | AbilityWrite | handlePutAppEnv |
+| POST | /api/v1/apps/{name}/budget/resume | AbilityRoot | handleSpendCapResume |
+| POST | /api/v1/apps/{name}/env/apply | AbilityWrite | handleApplyEnvPlan |
 | GET | /api/v1/apps/{name}/notes | AbilityRead |  |
 | PUT | /api/v1/apps/{name}/notes | AbilityWrite |  |
-| POST | /api/v1/apps/{name}/budget/resume | AbilityRoot | handleSpendCapResume |
 
 </Accordion>
 
@@ -2669,8 +2670,8 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/templates/sources/{name} | AbilityRoot | handleDeleteTemplateSource |
 | POST | /api/v1/templates/sources/{name}/templates/{id}/approve | AbilityRoot | handleApproveTemplateSourceEntry |
 | GET | /api/v1/templates/sources/{name}/templates/{id} | AbilityRoot | handleGetTemplateSourceEntry |
-| POST | /mcp | Public |  |
 | GET | /api/v1/costs/capped-apps | AbilityRead | handleListSpendCapPaused |
+| POST | /mcp | Public |  |
 
 ## See also
 
