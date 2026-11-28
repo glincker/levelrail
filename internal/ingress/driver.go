@@ -165,6 +165,8 @@ func (d *Driver) noteSwitchFailure(ctx context.Context, payload []byte, restored
 type Driver struct {
 	logger *slog.Logger
 
+	// applyMu serialises whole Apply and ResetCertCache runs, which release mu around loads.
+	applyMu     sync.Mutex
 	mu          sync.Mutex
 	listenPorts map[int]bool
 	// pinnedListens maps a :0 listener to its first bound port for this run.
@@ -205,6 +207,8 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 		return fmt.Errorf("ingress: apply: config is nil")
 	}
 
+	d.applyMu.Lock()
+	defer d.applyMu.Unlock()
 	d.pinEphemeralListens(cfg)
 	payload, err := json.Marshal(cfg)
 	if err != nil {
@@ -281,7 +285,9 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 
 // ResetCertCache drops Caddy's in-memory certificate cache and reloads the last
 // good config, so a certificate removed from storage stops being served at once.
-func (d *Driver) ResetCertCache(_ context.Context) error {
+func (d *Driver) ResetCertCache(ctx context.Context) error {
+	d.applyMu.Lock()
+	defer d.applyMu.Unlock()
 	d.mu.Lock()
 	prev := d.lastGood
 	d.mu.Unlock()
@@ -292,15 +298,27 @@ func (d *Driver) ResetCertCache(_ context.Context) error {
 	if err := json.Unmarshal(prev, &cfg); err != nil {
 		return fmt.Errorf("ingress: reset certificate cache: decode config: %w", err)
 	}
+	// The empty config replaces what Caddy serves, so a later Apply must not
+	// be skipped as unchanged until the reload succeeds.
+	d.mu.Lock()
+	d.lastApplied = nil
+	d.mu.Unlock()
 	if err := loadConfig(emptyAppsPayload(&cfg), true); err != nil {
 		return fmt.Errorf("ingress: reset certificate cache: %w", err)
 	}
-	if err := loadConfig(prev, true); err != nil {
-		d.mu.Lock()
-		d.lastApplied = nil
-		d.mu.Unlock()
-		return fmt.Errorf("ingress: reset certificate cache: reload config: %w", err)
+	err := loadConfig(prev, true)
+	if err != nil {
+		err = loadConfig(prev, true)
 	}
+	if err != nil {
+		if !d.restorePrevious(ctx, prev) {
+			return fmt.Errorf("ingress: reset certificate cache: reload config: %w", err)
+		}
+		return nil
+	}
+	d.mu.Lock()
+	d.lastApplied = prev
+	d.mu.Unlock()
 	return nil
 }
 

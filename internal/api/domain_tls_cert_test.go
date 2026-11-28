@@ -555,3 +555,34 @@ func TestRenewDomainCertificateRoute_RequireAuth(t *testing.T) {
 		{http.MethodPost, "/api/v1/apps/web/domains/app.example.com/cert/renew"},
 	})
 }
+
+func TestHandleRenewDomainCertificate_ResetOnlyWhenDroppedAndThrottled(t *testing.T) {
+	rt, db := newTestRouter(t)
+	seedAppWithDomain(t, db)
+	cookie := loginTestSession(t, rt, db)
+	var resets int
+	rt.certCacheReset = func(context.Context) error { resets++; return nil }
+	renew := func() {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/domains/app.example.com/cert/renew", ""))
+		if rec.Code != http.StatusAccepted {
+			t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+		}
+	}
+
+	renew()
+	if resets != 0 {
+		t.Fatalf("resets = %d with nothing dropped, want 0", resets)
+	}
+	now := time.Now()
+	seedCert(t, db, "app.example.com", now.Add(-time.Hour), now.Add(24*time.Hour))
+	renew()
+	if resets != 1 {
+		t.Fatalf("resets = %d after a dropped cert, want 1", resets)
+	}
+	seedCert(t, db, "app.example.com", now.Add(-time.Hour), now.Add(24*time.Hour))
+	renew()
+	if resets != 1 {
+		t.Fatalf("resets = %d inside the interval, want the second skipped", resets)
+	}
+}

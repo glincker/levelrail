@@ -6,6 +6,7 @@ import "time"
 const (
 	KeyCertFallbackRetryInterval = "ingress.cert_fallback_retry_interval"
 	KeyCertFallbackRetryMax      = "ingress.cert_fallback_retry_max"
+	KeyCertResetMinInterval      = "ingress.cert_reset_min_interval_seconds"
 )
 
 func init() {
@@ -20,5 +21,11 @@ func init() {
 		CheckValue:  intRangeCheck(1, 1000),
 		Title:       "Fallback certificate retry limit",
 		Description: "How many times one domain is retried automatically before it waits for a manual renewal or a restart, from 1 to 1000.",
+	})
+	Register(Definition{
+		Key: KeyCertResetMinInterval, Category: CategoryNetworking, Kind: KindInt, Default: "30", Env: "APP_INGRESS_CERT_RESET_MIN_INTERVAL_SECONDS", Apply: ApplyLive,
+		CheckValue:  intRangeCheck(0, 3600),
+		Title:       "Certificate cache reset minimum interval",
+		Description: "Fewest seconds between certificate cache resets after manual renewals. A reset briefly drops every listener, so renewals inside the interval share one later reset. From 0 to 3600.",
 	})
 }

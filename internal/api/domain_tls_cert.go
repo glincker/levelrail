@@ -9,12 +9,14 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/glincker/levelrail/internal/alerting"
 	"github.com/glincker/levelrail/internal/certfallback"
 	"github.com/glincker/levelrail/internal/domaindoctor"
 	"github.com/glincker/levelrail/internal/ingress"
+	"github.com/glincker/levelrail/internal/runtimesettings"
 	"github.com/glincker/levelrail/internal/store"
 )
 
@@ -407,10 +409,9 @@ func (rt *Router) handleRenewDomainCertificate(w http.ResponseWriter, r *http.Re
 		ingress.DefaultACMEFailures().Clear(domain)
 	}
 
-	if rt.certCacheReset != nil {
-		if err := rt.certCacheReset(r.Context()); err != nil {
-			rt.logger.Warn("api: reset certificate cache after renewal", slog.String("domain", domain), slog.String("error", err.Error()))
-		}
+	// Nothing was removed, so there is no stale certificate to evict.
+	if hadCert {
+		rt.requestCertCacheReset(r.Context(), domain)
 	}
 	rt.nudgeReconciler()
 	rt.logger.Info("api: domain certificate renewal requested", slog.String("domain", domain), slog.Bool("had_stored_certificate", hadCert), slog.String("reason", req.Reason))
@@ -439,5 +440,50 @@ func (rt *Router) annotateDomainIssues(ctx context.Context, rows []domainResourc
 	}
 	for i := range rows {
 		rows[i].Issues = byDomain[rows[i].Domain]
+	}
+}
+
+// certResetGate coalesces cache resets, since each one briefly drops every listener.
+type certResetGate struct {
+	mu      sync.Mutex
+	last    time.Time
+	pending bool
+}
+
+// requestCertCacheReset resets now when the minimum interval has passed, else
+// schedules one trailing reset so a dropped certificate is still evicted.
+func (rt *Router) requestCertCacheReset(ctx context.Context, domain string) {
+	if rt.certCacheReset == nil {
+		return
+	}
+	interval := 30 * time.Second
+	if rt.runtimeSettings != nil {
+		interval = time.Duration(rt.runtimeSettings.Int(ctx, runtimesettings.KeyCertResetMinInterval)) * time.Second
+	}
+	g := &rt.certReset
+	g.mu.Lock()
+	wait := interval - time.Since(g.last)
+	if wait > 0 {
+		if !g.pending {
+			g.pending = true
+			time.AfterFunc(wait, func() {
+				g.mu.Lock()
+				g.pending = false
+				g.last = time.Now()
+				g.mu.Unlock()
+				rt.runCertCacheReset(context.Background(), domain)
+			})
+		}
+		g.mu.Unlock()
+		return
+	}
+	g.last = time.Now()
+	g.mu.Unlock()
+	rt.runCertCacheReset(ctx, domain)
+}
+
+func (rt *Router) runCertCacheReset(ctx context.Context, domain string) {
+	if err := rt.certCacheReset(ctx); err != nil {
+		rt.logger.Warn("api: reset certificate cache after renewal", slog.String("domain", domain), slog.String("error", err.Error()))
 	}
 }
