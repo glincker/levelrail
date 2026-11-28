@@ -88,7 +88,7 @@ func (db *DB) SetBackupSealInfo(ctx context.Context, id, codec, manifestDigest s
 	return nil
 }
 
-const backupHistoryColumns = `id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes`
+const backupHistoryColumns = `id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes, instance_id`
 
 // ListSucceededVolumeBackups returns every succeeded backup of one volume,
 // newest first, with no paging: retention needs the whole set.

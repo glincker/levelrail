@@ -149,6 +149,12 @@ func (rt *Router) handleListBackupVerifications(w http.ResponseWriter, r *http.R
 // error response itself on failure. Shared by handleVerifyBackup and
 // handleListBackupVerifications.
 func (rt *Router) loadDatabaseBackupHistory(w http.ResponseWriter, r *http.Request, databaseName, historyID, logContext string) (store.BackupHistory, bool) {
+	// A deleted database keeps its history on purpose, so a missing one has no owner to check against.
+	db, derr := rt.databases.GetDesiredDatabase(r.Context(), databaseName)
+	if derr != nil && !errors.Is(derr, store.ErrDatabaseNotFound) {
+		rt.internalError(w, logContext, derr, slog.String("name", databaseName))
+		return store.BackupHistory{}, false
+	}
 	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
 	if errors.Is(err, store.ErrBackupHistoryNotFound) {
 		writeError(w, http.StatusNotFound, "backup not found")
@@ -160,6 +166,11 @@ func (rt *Router) loadDatabaseBackupHistory(w http.ResponseWriter, r *http.Reque
 	}
 	if h.DatabaseName != databaseName {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was taken from database %q, not %q", historyID, h.DatabaseName, databaseName))
+		return store.BackupHistory{}, false
+	}
+	// A row from an earlier database of the same name is answered like a missing one, so the id leaks nothing.
+	if derr == nil && !db.OwnsBackup(h.InstanceID, h.StartedAt) {
+		writeError(w, http.StatusNotFound, "backup not found")
 		return store.BackupHistory{}, false
 	}
 	return h, true

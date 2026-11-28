@@ -349,7 +349,8 @@ const (
 func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
@@ -369,6 +370,9 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 	}
 	out := make([]backupHistoryResource, 0, len(history))
 	for _, h := range history {
+		if !db.OwnsBackup(h.InstanceID, h.StartedAt) {
+			continue
+		}
 		out = append(out, toBackupHistoryResource(h))
 	}
 	rt.attachBackupLabels(r.Context(), out)

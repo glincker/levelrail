@@ -294,6 +294,12 @@ func (rt *Router) handleStartBackupDrill(w http.ResponseWriter, r *http.Request)
 	if !rt.authorizeDrillBackup(w, r, h) {
 		return
 	}
+	if h.ResourceKind != store.BackupResourceKindVolume {
+		if db, derr := rt.databases.GetDesiredDatabase(r.Context(), h.DatabaseName); derr == nil && !db.OwnsBackup(h.InstanceID, h.StartedAt) {
+			writeError(w, http.StatusNotFound, "backup not found")
+			return
+		}
+	}
 	if h.Status != store.BackupStatusSucceeded {
 		writeError(w, http.StatusConflict, fmt.Sprintf("backup %q has status %q, only a succeeded backup can be drilled", req.BackupID, h.Status))
 		return
