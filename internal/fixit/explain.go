@@ -230,6 +230,8 @@ func buildExplainTable() map[string]Explanation {
 		// Nodes and mesh
 		ex("nodes", "A remote node is offline or runs an older agent.", "Apps on it may be unreachable or behave differently.",
 			"Open Nodes, pick the node and press Reconnect, or Update agent if it is behind.", "", KindGuided),
+		ex("node_disk_budget", "A remote node holds unused container images over its disk budget.", "The node's disk can fill up and stop deploys and builds there.",
+			"Open Settings and raise janitor.node_images_budget_gb, or set a per-node value in janitor.node_images_budget_overrides. To clean now, run levelrail-cli janitor run --node <id> to preview, then add --yes. Remote cleanup only executes when janitor.remote_execute is on.", "", KindGuided),
 		ex("mesh", "The private network between nodes is not ready.", "Nodes cannot talk to each other.",
 			"Open Nodes, then Mesh, and follow the failing step shown there.", "", KindGuided),
 		ex("wireguard", "The private network tool cannot run with the access it has.", "Nodes cannot join the mesh.",
