@@ -35,9 +35,14 @@ capabilities:
 
 func addCapTemplate(t *testing.T, capLine, capAdd string) {
 	t.Helper()
+	addCapTemplateWith(t, capLine, capAdd, "")
+}
+
+func addCapTemplateWith(t *testing.T, capLine, capAdd, extra string) {
+	t.Helper()
 	fsys := fstest.MapFS{
 		"m/captpl/template.yaml": {Data: []byte(capTplManifest + capLine)},
-		"m/captpl/compose.yaml":  {Data: []byte("services:\n  web:\n    image: nginx:1.27.0\n    ports: [\"80\"]\n    cap_add: [" + capAdd + "]\n")},
+		"m/captpl/compose.yaml":  {Data: []byte("services:\n  web:\n    image: nginx:1.27.0\n    ports: [\"80\"]\n    cap_add: [" + capAdd + "]\n" + extra)},
 	}
 	m, err := catalog.LoadManifest(fsys, "m/captpl")
 	if err != nil {
@@ -364,7 +369,7 @@ func TestEgressPolicy_RefusedOnElevatedService(t *testing.T) {
 
 func logsGrantFixture(t *testing.T, teams int) (*Router, *store.DB, *http.Cookie) {
 	t.Helper()
-	addCapTemplate(t, "  - {class: docker_api, service: web, reason: log viewer, caps: [LOGS]}\n", "")
+	addCapTemplateWith(t, "  - {class: docker_api, service: web, reason: log viewer, caps: [LOGS]}\n", "", "    volumes: [\"/var/run/docker.sock:/var/run/docker.sock\"]\n")
 	rt, db := newTestRouterWithComposeSecrets(t)
 	rt.runtimeSettings = runtimesettings.New(db, func(string) (string, bool) { return "", false })
 	ctx := context.Background()
