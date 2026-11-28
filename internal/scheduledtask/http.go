@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"io"
 	"net/http"
 	"net/url"
@@ -208,6 +209,9 @@ func (r *Runner) resolveHeaderSecret(ctx context.Context, svc *store.DesiredServ
 		}
 		if r.Secrets == nil {
 			return "", fmt.Errorf("secret %s cannot be read: no secret resolver is configured", name)
+		}
+		if err := secrets.AppNamespace(svc.Name); err != nil {
+			return "", fmt.Errorf("secret %s cannot be read: %w", name, err)
 		}
 		ok, err := r.Secrets.Exists(ctx, svc.Name, name)
 		if err != nil || !ok {

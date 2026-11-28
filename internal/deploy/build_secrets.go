@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"os"
 	"strconv"
 	"strings"
@@ -61,6 +62,9 @@ func (p *Pipeline) applyBuildSecrets(ctx context.Context, serviceName string, na
 	var out pkgregistry.Output
 	if p.buildSecrets != nil {
 		var err error
+		if err = secrets.AppNamespace(serviceName); err != nil {
+			return nil, fmt.Errorf("package registry secrets: %w", err)
+		}
 		out, err = p.buildSecrets.BuildSecrets(ctx, serviceName)
 		if err != nil {
 			return nil, fmt.Errorf("package registry secrets: %w", err)

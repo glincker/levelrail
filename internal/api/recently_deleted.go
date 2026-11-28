@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
 	"net/http"
 	"sort"
@@ -271,7 +272,7 @@ func (rt *Router) restoreDeletedApp(ctx context.Context, e store.RecentlyDeleted
 				return
 			}
 		}
-		if rt.secrets != nil {
+		if rt.secrets != nil && secrets.AppNamespace(e.Name) == nil {
 			_ = rt.secrets.DeleteAll(bg, e.Name)
 		}
 	}()

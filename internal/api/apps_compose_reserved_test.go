@@ -63,3 +63,27 @@ func TestComposeDeployOwnerRedeployStillWorks(t *testing.T) {
 		t.Errorf("owner secret missing: %v", err)
 	}
 }
+
+func TestAppScopedSecretPathsRefuseReservedNamespace(t *testing.T) {
+	db := openTestDB(t)
+	mk, err := secrets.GenerateMasterKey()
+	if err != nil {
+		t.Fatalf("GenerateMasterKey() error = %v", err)
+	}
+	sm := secrets.NewManager(db, mk)
+	rt := NewRouter(slog.New(slog.NewTextHandler(discardWriter{}, nil)), testBrand(), db, WithSecretSetter(sm))
+	b := rotationBackend{rt: rt}
+	ctx := context.Background()
+	if _, err := b.Value(ctx, "vault", "token"); !errors.Is(err, secrets.ErrReservedNamespace) {
+		t.Errorf("Value err = %v", err)
+	}
+	if err := b.SetValue(ctx, "vault", "token", "x"); !errors.Is(err, secrets.ErrReservedNamespace) {
+		t.Errorf("SetValue err = %v", err)
+	}
+	if _, _, _, err := b.KeyState(ctx, "vault", "token"); !errors.Is(err, secrets.ErrReservedNamespace) {
+		t.Errorf("KeyState err = %v", err)
+	}
+	if err := sm.SetValue(ctx, secrets.ControlPlaneService("vault"), "token", "x"); err != nil {
+		t.Errorf("control plane write refused: %v", err)
+	}
+}

@@ -68,6 +68,9 @@ func (rt *Router) applyCloneExtras(ctx context.Context, source store.DesiredServ
 	if !req.CopySecrets {
 		return nil
 	}
+	if err := errors.Join(secrets.AppNamespace(source.Name), secrets.AppNamespace(req.NewName)); err != nil {
+		return err
+	}
 	for _, ref := range source.SecretEnv {
 		value, err := rt.secrets.Resolve(ctx, source.Name, ref.Name)
 		if errors.Is(err, secrets.ErrValueNotFound) {
@@ -105,7 +108,7 @@ func (rt *Router) validateCloneEnvironment(ctx context.Context, source store.Des
 func (rt *Router) rollbackClone(reqCtx context.Context, name string) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(reqCtx), cloneRollbackTimeout)
 	defer cancel()
-	if rt.secrets != nil {
+	if rt.secrets != nil && secrets.AppNamespace(name) == nil {
 		if err := rt.secrets.DeleteAll(ctx, name); err != nil {
 			rt.logger.Error("api: clone app: roll back secrets failed", slog.String("error", err.Error()), slog.String("new_name", name))
 		}

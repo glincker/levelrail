@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"maps"
 	"regexp"
 	"strings"
@@ -58,6 +59,9 @@ func (jr *jobRun) stepScope(ctx context.Context, step Step, texts ...string) (Sc
 	for n := range names {
 		if jr.e.cfg.Secrets == nil {
 			return sc, errors.New("secrets are not configured on this control plane")
+		}
+		if err := secrets.AppNamespace(jr.run.AppName); err != nil {
+			return sc, fmt.Errorf("secret %q: %w", n, err)
 		}
 		v, err := jr.e.cfg.Secrets.Resolve(ctx, jr.run.AppName, n)
 		if err != nil {

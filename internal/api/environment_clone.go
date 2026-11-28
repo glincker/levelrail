@@ -540,6 +540,9 @@ func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, 
 	}
 
 	if copySecretValues && rt.secrets != nil {
+		if err := errors.Join(secrets.AppNamespace(source.Name), secrets.AppNamespace(newName)); err != nil {
+			return store.DesiredService{}, err
+		}
 		for _, ref := range source.SecretEnv {
 			value, err := rt.secrets.Resolve(ctx, source.Name, ref.Name)
 			if errors.Is(err, secrets.ErrValueNotFound) {

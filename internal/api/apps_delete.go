@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -352,6 +353,9 @@ func (rt *Router) restoreParkedSecrets(ctx context.Context, name string) error {
 	c, ok := rt.secrets.(namespaceCopier)
 	if !ok {
 		return nil
+	}
+	if err := secrets.AppNamespace(name); err != nil {
+		return err
 	}
 	if err := rt.secrets.DeleteAll(ctx, name); err != nil {
 		return err

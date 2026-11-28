@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -111,6 +112,10 @@ func (rt *Router) declaredSecretValues(ctx context.Context, svc store.DesiredSer
 	values = map[string]string{}
 	for _, ref := range svc.SecretEnv {
 		if rt.secrets == nil {
+			unresolved = append(unresolved, ref.Name)
+			continue
+		}
+		if secrets.AppNamespace(svc.Name) != nil {
 			unresolved = append(unresolved, ref.Name)
 			continue
 		}
