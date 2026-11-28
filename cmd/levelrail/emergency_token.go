@@ -163,7 +163,12 @@ func runEmergencyToken(ctx context.Context, logger *slog.Logger, args []string, 
 		Ability: api.AbilityRoot, Method: "CLI", Path: "emergency-token " + owner.Email,
 		StatusCode: 200, RemoteAddr: "host", Detail: fmt.Sprintf(`{"revoked_oldest":%d}`, revoked), CreatedAt: time.Now().UTC().Format(time.RFC3339), ClientKind: "system",
 	}); err != nil {
-		logger.Error("emergency token audit entry failed", slog.String("error", err.Error()))
+		// Fail closed: a token with no audit trail must not stay valid.
+		if rerr := eng.RevokeToken(ctx, rec.EngineID); rerr != nil {
+			logger.Error("emergency token revoke after audit failure failed", slog.String("error", rerr.Error()))
+		}
+		_ = db.RevokeAPIToken(ctx, legacyID)
+		return fmt.Errorf("audit emergency token: %w", err)
 	}
 	logger.Warn("emergency token minted", slog.String("owner", owner.Email), slog.String("token_id", legacyID), slog.Time("expires_at", expires))
 
